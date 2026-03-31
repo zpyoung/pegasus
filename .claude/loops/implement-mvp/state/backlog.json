@@ -11,7 +11,7 @@
     "id": "02-pydantic-models",
     "description": "models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["01-scaffold"],
     "target_files": ["src/pegasus/models.py", "tests/test_models.py"]
   },

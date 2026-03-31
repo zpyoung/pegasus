@@ -13,3 +13,12 @@
 **Tests added**: 4
 **Status**: done
 **Notes**: Used `setuptools.build_meta` (not `setuptools.backends.legacy:build`) for Python 3.10 compatibility. All 4 tests pass; ruff clean.
+
+## Iteration 2: 02-pydantic-models
+**Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
+**Files created/modified**:
+- `src/pegasus/models.py` — Pydantic models: `ClaudeFlags` (9-flag allowlist, extras forbidden), `StageConfig` (id pattern, name, prompt, flags, requires_approval), `PipelineConfig` (name, description, execution, defaults, stages with duplicate/count/reference validation), `PegasusConfig` (project, git, defaults, concurrency, notifications, worktrees), plus YAML loading helpers (`load_pipeline_config`, `load_project_config`, `parse_pipeline_yaml`, `parse_project_config_yaml`)
+- `tests/test_models.py` — 58 unit tests covering valid/invalid YAML fixtures for all model classes; file-based loading with `tmp_path`; allowlist correctness
+**Tests added**: 58 (total 62 with scaffold)
+**Status**: done
+**Notes**: All extras forbidden at every model level. Stage ID validated with regex `^[a-z][a-z0-9_-]*$`. Stage count capped at 10. Cross-stage reference validation via regex scan of prompts. Empty config YAML defaults gracefully to built-ins. Removed quoted self-reference in `model_validator` to satisfy `ruff UP037`.
