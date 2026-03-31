@@ -41,6 +41,16 @@
 **Status**: done
 **Notes**: All 173 tests pass; ruff clean. validate_pipeline accepts Path objects (file load), str (raw YAML content), or pre-parsed dict. Forward reference detection distinguishes "forward reference" from "unknown stage ID" by checking if the ref ID exists anywhere in the pipeline. Levenshtein suggestion fires within edit distance ≤3. Pydantic ValidationError prefix stripped for cleaner UX. validate_all_pipelines returns empty dict when no pipelines directory exists.
 
+## Iteration 6: 06-engine-abstraction
+**Feature**: AgentRunnerProtocol (Protocol class), ClaudeAgentRunner (concrete SDK wrapper with CLAUDECODE=1 unset), FakeAgentRunner (test fake), PegasusEngine (session_id management, cost tracking, SDK callback mapping, SQLite state transitions).
+**Files created**:
+- `src/pegasus/runner.py` — `AgentRunnerProtocol` (@runtime_checkable Protocol), internal message dataclasses (`AgentMessage`, `ToolUseMessage`, `ResultMessage`, `ErrorMessage`), `ClaudeAgentRunner` (guards SDK import with try/except; unsets CLAUDECODE env var), `PegasusEngine` (run_stage method: queued→running transition, stage_runs row management, cost accumulation from both streaming messages and final ResultMessage, session_id persistence, four optional callbacks)
+- `tests/fakes.py` — `FakeAgentRunner` (configurable messages list, raise_on_run for exception testing, run_calls tracking, interrupt_called flag), factory helpers `make_fake_runner_with_tool_use()` and `make_fake_runner_with_error()`
+- `tests/test_runner.py` — 32 tests across 7 test classes: protocol structural checks, FakeAgentRunner behaviour, PegasusEngine happy path, cost tracking, session_id management, error handling, callbacks, interrupt delegation
+**Tests added**: 32 (total 205 including prior iterations)
+**Status**: done
+**Notes**: All 205 tests pass; ruff clean. SDK import is guarded with try/except so tests work without claude-agent-sdk installed. Cost accumulation handles the case where ResultMessage.total_cost_usd may be higher than the sum of incremental AgentMessage costs (uses delta to prevent double-counting). Engine never imports ui.py.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:

@@ -43,7 +43,7 @@
     "id": "06-engine-abstraction",
     "description": "runner.py: AgentRunnerProtocol (Protocol class), ClaudeAgentRunner (concrete SDK wrapper with CLAUDECODE=1 unset), FakeAgentRunner (test fake). PegasusEngine class wrapping the protocol with session_id management, SDK callback mapping (on_message, on_tool_use, on_result, on_error), and cost tracking. Include unit tests with FakeAgentRunner.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["03-sqlite-schema"],
     "target_files": ["src/pegasus/runner.py", "tests/test_runner.py", "tests/fakes.py"]
   },
