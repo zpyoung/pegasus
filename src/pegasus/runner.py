@@ -18,8 +18,10 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import platform
 import re
 import shlex
+import signal
 import sqlite3
 import subprocess
 from collections.abc import AsyncIterator, Callable
@@ -27,7 +29,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from pegasus.models import init_db, make_connection, transition_task_state
+from pegasus.models import (
+    init_db,
+    load_config,
+    load_pipeline_config,
+    make_connection,
+    resolve_stage_flags,
+    transition_task_state,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -936,3 +945,692 @@ def _pid_alive(pid: int) -> bool:
     except PermissionError:
         # Process exists but we don't have permission to signal it.
         return True
+
+
+# ---------------------------------------------------------------------------
+# RateLimitError — sentinel for exponential backoff
+# ---------------------------------------------------------------------------
+
+
+class RateLimitError(Exception):
+    """Raised (or detected) when the Agent SDK reports an API rate limit."""
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor
+# ---------------------------------------------------------------------------
+
+
+class PipelineExecutor:
+    """Orchestrates full pipeline execution: worktree creation, stage iteration,
+    heartbeat maintenance, rate-limit retry, and graceful shutdown.
+
+    This class is the top-level coordinator that:
+
+    - Creates a git worktree for the task via ``WorktreeManager``.
+    - Loads and validates the pipeline YAML.
+    - Resolves layered configuration (stage > pipeline > project > user > built-in).
+    - Iterates stages sequentially, calling ``PegasusEngine.run_stage`` for each.
+    - Handles ``requires_approval`` gates (writes ``paused`` to SQLite and waits).
+    - Maintains a heartbeat (``tasks.heartbeat_at``) every *heartbeat_interval*
+      seconds while the pipeline is running.
+    - Retries stages on rate-limit errors with exponential backoff.
+    - Handles ``SIGTERM`` / ``SIGINT`` gracefully: marks task as ``paused`` and
+      interrupts the engine.
+    - Fires OS-native desktop notifications on stage/pipeline events.
+
+    Args:
+        db_path:            Path to the Pegasus SQLite database.
+        agent_runner:       An ``AgentRunnerProtocol``-compliant runner.
+        project_dir:        Root directory of the project (used for config + pipeline
+                            YAML lookup and worktree base-path resolution).
+        heartbeat_interval: Seconds between heartbeat writes (default 5; use 0.1
+                            in tests).
+        on_approval_needed: Optional async callback invoked when a stage requires
+                            approval before it can proceed.  Receives
+                            ``(task_id, stage_id)`` and must return ``True`` to
+                            approve or ``False`` to abort the pipeline.
+    """
+
+    #: Default base-2 exponent cap for backoff: 2^5 = 32s
+    _MAX_BACKOFF_EXP: int = 5
+
+    def __init__(
+        self,
+        db_path: str | os.PathLike[str],
+        agent_runner: AgentRunnerProtocol,
+        project_dir: str | os.PathLike[str],
+        *,
+        heartbeat_interval: float = 5.0,
+        on_approval_needed: Callable[[str, str], Any] | None = None,
+    ) -> None:
+        self.db_path = str(db_path)
+        self.agent_runner = agent_runner
+        self.project_dir = Path(project_dir)
+        self.heartbeat_interval = heartbeat_interval
+        self._on_approval_needed = on_approval_needed
+
+        self._worktree_manager = WorktreeManager()
+        self._shutdown_requested: bool = False
+        self._current_engine: PegasusEngine | None = None
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _get_conn(self) -> sqlite3.Connection:
+        conn = make_connection(self.db_path, read_only=False)
+        init_db(conn)
+        return conn
+
+    def _create_task_record(
+        self,
+        conn: sqlite3.Connection,
+        task_id: str,
+        pipeline_name: str,
+        description: str,
+        worktree_path: str,
+        branch: str,
+    ) -> None:
+        """Insert a new task row in 'queued' state."""
+        conn.execute(
+            """
+            INSERT INTO tasks
+                (id, pipeline, description, status, worktree_path, branch,
+                 runner_pid, heartbeat_at)
+            VALUES
+                (?, ?, ?, 'queued', ?, ?, ?, CURRENT_TIMESTAMP)
+            """,
+            (task_id, pipeline_name, description, worktree_path, branch, os.getpid()),
+        )
+        conn.commit()
+
+    def _update_heartbeat(self, conn: sqlite3.Connection, task_id: str) -> None:
+        """Touch ``heartbeat_at`` for *task_id*."""
+        conn.execute(
+            "UPDATE tasks SET heartbeat_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (task_id,),
+        )
+        conn.commit()
+
+    def _mark_task_status(
+        self,
+        conn: sqlite3.Connection,
+        task_id: str,
+        status: str,
+        error: str | None = None,
+    ) -> None:
+        """Directly set task status (without TOCTOU guard — for terminal states)."""
+        if error is not None:
+            conn.execute(
+                "UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP, "
+                "context = ? WHERE id = ?",
+                (status, error, task_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP "
+                "WHERE id = ?",
+                (status, task_id),
+            )
+        conn.commit()
+
+    # ------------------------------------------------------------------
+    # Heartbeat loop
+    # ------------------------------------------------------------------
+
+    async def _heartbeat_loop(
+        self, conn: sqlite3.Connection, task_id: str
+    ) -> None:
+        """Async loop: update ``heartbeat_at`` every *heartbeat_interval* seconds.
+
+        Runs until cancelled (e.g. when the pipeline finishes or fails).
+        """
+        try:
+            while True:
+                await asyncio.sleep(self.heartbeat_interval)
+                try:
+                    self._update_heartbeat(conn, task_id)
+                    logger.debug("heartbeat updated for task=%s", task_id)
+                except Exception:  # noqa: BLE001
+                    logger.warning(
+                        "heartbeat update failed for task=%s", task_id, exc_info=True
+                    )
+        except asyncio.CancelledError:
+            pass
+
+    # ------------------------------------------------------------------
+    # Desktop notifications
+    # ------------------------------------------------------------------
+
+    def _send_notification(self, title: str, message: str) -> None:
+        """Fire an OS-native desktop notification.
+
+        - **macOS**: uses ``osascript`` (bundled in macOS 10.10+).
+        - **Linux**: uses ``notify-send`` (libnotify-bin package).
+        - Other platforms: silently skipped.
+
+        Errors from the notification command are logged at WARNING level but
+        never raise — notifications are best-effort.
+
+        Args:
+            title:   Notification title / app name.
+            message: Body text of the notification.
+        """
+        try:
+            system = platform.system()
+            if system == "Darwin":
+                script = (
+                    f'display notification "{message}" with title "{title}"'
+                )
+                subprocess.run(
+                    ["osascript", "-e", script],
+                    capture_output=True,
+                    timeout=5,
+                )
+            elif system == "Linux":
+                subprocess.run(
+                    ["notify-send", title, message],
+                    capture_output=True,
+                    timeout=5,
+                )
+            # Windows and other platforms: silently skip
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "desktop notification failed: title=%r message=%r",
+                title,
+                message,
+                exc_info=True,
+            )
+
+    # ------------------------------------------------------------------
+    # Signal handling
+    # ------------------------------------------------------------------
+
+    def _install_signal_handlers(self, task_id: str) -> None:
+        """Register SIGTERM / SIGINT handlers for graceful shutdown."""
+
+        def _handle_signal(signum: int, frame: Any) -> None:
+            logger.warning(
+                "signal %s received — requesting graceful shutdown for task=%s",
+                signal.Signals(signum).name,
+                task_id,
+            )
+            self._shutdown_requested = True
+            # Interrupt the engine if it is currently running a stage.
+            if self._current_engine is not None:
+                try:
+                    loop = asyncio.get_event_loop()
+                    loop.create_task(self._current_engine.interrupt())
+                except Exception:  # noqa: BLE001
+                    pass
+
+        signal.signal(signal.SIGTERM, _handle_signal)
+        signal.signal(signal.SIGINT, _handle_signal)
+
+    # ------------------------------------------------------------------
+    # Rate-limit detection
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _is_rate_limit_error(error_msg: str) -> bool:
+        """Return True if *error_msg* looks like an API rate limit response."""
+        lower = error_msg.lower()
+        return any(
+            phrase in lower
+            for phrase in (
+                "rate limit",
+                "ratelimit",
+                "too many requests",
+                "429",
+                "overloaded",
+            )
+        )
+
+    # ------------------------------------------------------------------
+    # Core execution
+    # ------------------------------------------------------------------
+
+    async def run_task(
+        self,
+        task_id: str,
+        pipeline_name: str,
+        description: str,
+    ) -> bool:
+        """Execute a full pipeline task from worktree creation to completion.
+
+        Full lifecycle:
+
+        1. Load pipeline YAML and project config.
+        2. Create a git worktree via ``WorktreeManager``.
+        3. Insert a ``tasks`` row in ``'queued'`` state.
+        4. Start the heartbeat loop.
+        5. For each stage:
+           a. Resolve flags (layered config + permission ceiling).
+           b. If ``requires_approval``, pause and wait for approval.
+           c. Call ``PegasusEngine.run_stage`` with exponential-backoff retry
+              on rate-limit errors.
+           d. If the stage fails for a non-rate-limit reason, mark task
+              ``'failed'`` and return ``False``.
+        6. On completion: mark task ``'completed'``, fire desktop notification.
+        7. On any unhandled exception: mark task ``'failed'``.
+
+        Args:
+            task_id:       Unique task identifier (e.g. UUID string).
+            pipeline_name: Name of the pipeline YAML file (without ``.yaml``
+                           extension) under ``.pegasus/pipelines/``.
+            description:   Human-readable description of the task (used for
+                           branch naming and SQLite).
+
+        Returns:
+            ``True`` if all stages completed successfully, ``False`` otherwise.
+        """
+        # ------------------------------------------------------------------
+        # 1. Load pipeline + config
+        # ------------------------------------------------------------------
+        pipeline_yaml_path = (
+            self.project_dir / ".pegasus" / "pipelines" / f"{pipeline_name}.yaml"
+        )
+        pipeline = load_pipeline_config(pipeline_yaml_path)
+        project_config = load_config(self.project_dir)
+
+        setup_command: str | None = project_config.project.setup_command
+        base_path = Path(project_config.worktrees.base_path).expanduser()
+        retry_max: int = project_config.concurrency.retry_max
+        retry_base_delay: float = project_config.concurrency.retry_base_delay
+
+        # ------------------------------------------------------------------
+        # 2. Create worktree
+        # ------------------------------------------------------------------
+        worktree_path = self._worktree_manager.create_worktree(
+            repo_dir=self.project_dir,
+            task_id=task_id,
+            description=description,
+            base_path=base_path,
+            setup_command=setup_command,
+        )
+        branch_name = f"pegasus/{task_id}-{self._worktree_manager._slug(description)}"
+
+        # ------------------------------------------------------------------
+        # 3. Insert task record
+        # ------------------------------------------------------------------
+        conn = self._get_conn()
+        try:
+            self._create_task_record(
+                conn,
+                task_id=task_id,
+                pipeline_name=pipeline_name,
+                description=description,
+                worktree_path=str(worktree_path),
+                branch=branch_name,
+            )
+
+            # Record worktree in worktrees table
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO worktrees (task_id, path, branch, status)
+                VALUES (?, ?, ?, 'active')
+                """,
+                (task_id, str(worktree_path), branch_name),
+            )
+            conn.commit()
+        except Exception:
+            conn.close()
+            raise
+
+        # ------------------------------------------------------------------
+        # 4. Signal handling + heartbeat
+        # ------------------------------------------------------------------
+        self._install_signal_handlers(task_id)
+
+        heartbeat_task = asyncio.ensure_future(
+            self._heartbeat_loop(conn, task_id)
+        )
+
+        # ------------------------------------------------------------------
+        # 5. Iterate stages
+        # ------------------------------------------------------------------
+        engine = PegasusEngine(self.agent_runner, self.db_path)
+        self._current_engine = engine
+
+        try:
+            for stage_index, stage in enumerate(pipeline.stages):
+                if self._shutdown_requested:
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._send_notification(
+                        "Pegasus",
+                        f"Task paused: {description} (SIGTERM received)",
+                    )
+                    return False
+
+                # --- Resolve effective flags ---
+                resolved_flags, requires_approval = resolve_stage_flags(
+                    stage,
+                    pipeline_defaults=pipeline.defaults,
+                    project_config=project_config,
+                )
+
+                # --- Approval gate ---
+                if requires_approval:
+                    # Pause the task in SQLite while waiting for approval.
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._send_notification(
+                        "Pegasus — Approval Required",
+                        f"Stage '{stage.name}' requires approval for task: {description}",
+                    )
+                    if self._on_approval_needed is not None:
+                        approved = await self._on_approval_needed(task_id, stage.id)
+                        if not approved:
+                            logger.info(
+                                "task=%s stage=%s approval rejected — aborting",
+                                task_id,
+                                stage.id,
+                            )
+                            self._mark_task_status(conn, task_id, "failed")
+                            return False
+                        # Resume after approval.
+                        self._mark_task_status(conn, task_id, "running")
+                    else:
+                        # No handler: auto-approve (useful in tests / non-interactive).
+                        self._mark_task_status(conn, task_id, "running")
+
+                # --- Rate-limit retry loop ---
+                stage_success = False
+                attempt = 0
+                while attempt <= retry_max:
+                    if self._shutdown_requested:
+                        break
+
+                    stage_success = await engine.run_stage(
+                        task_id=task_id,
+                        stage_id=stage.id,
+                        stage_index=stage_index,
+                        prompt=stage.prompt,
+                        cwd=str(worktree_path),
+                    )
+
+                    if stage_success:
+                        self._send_notification(
+                            "Pegasus",
+                            f"Stage '{stage.name}' complete for: {description}",
+                        )
+                        break
+
+                    # Check whether the failure was a rate-limit.
+                    # Inspect the most recent stage_run error.
+                    stage_runs_conn = self._get_conn()
+                    last_run = stage_runs_conn.execute(
+                        """
+                        SELECT error FROM stage_runs
+                        WHERE task_id = ? AND stage_id = ?
+                        ORDER BY id DESC LIMIT 1
+                        """,
+                        (task_id, stage.id),
+                    ).fetchone()
+                    stage_runs_conn.close()
+
+                    error_text = (last_run["error"] or "") if last_run else ""
+                    if self._is_rate_limit_error(error_text) and attempt < retry_max:
+                        delay = retry_base_delay * (2**min(attempt, self._MAX_BACKOFF_EXP))
+                        logger.warning(
+                            "task=%s stage=%s rate-limit hit — retry %d/%d in %.1fs",
+                            task_id,
+                            stage.id,
+                            attempt + 1,
+                            retry_max,
+                            delay,
+                        )
+                        await asyncio.sleep(delay)
+                        attempt += 1
+                        # Reset task status back to running for retry
+                        transition_task_state(conn, task_id, "failed", "running")
+                        continue
+
+                    # Non-rate-limit failure (or retries exhausted).
+                    if not stage_success:
+                        self._send_notification(
+                            "Pegasus — Pipeline Failed",
+                            f"Stage '{stage.name}' failed for: {description}",
+                        )
+                        return False
+
+                if self._shutdown_requested:
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._send_notification(
+                        "Pegasus",
+                        f"Task paused: {description}",
+                    )
+                    return False
+
+                if not stage_success:
+                    return False
+
+            # All stages completed successfully.
+            self._mark_task_status(conn, task_id, "completed")
+            self._send_notification(
+                "Pegasus — Pipeline Complete",
+                f"All stages finished for: {description}",
+            )
+            return True
+
+        except Exception as exc:
+            logger.exception("task=%s unhandled exception in run_task", task_id)
+            try:
+                self._mark_task_status(conn, task_id, "failed", error=str(exc))
+            except Exception:  # noqa: BLE001
+                pass
+            self._send_notification(
+                "Pegasus — Pipeline Failed",
+                f"Unexpected error for: {description}",
+            )
+            return False
+
+        finally:
+            heartbeat_task.cancel()
+            await asyncio.gather(heartbeat_task, return_exceptions=True)
+            conn.close()
+            self._current_engine = None
+
+    async def resume_task(self, task_id: str) -> bool:
+        """Restart a failed task from the last failed stage.
+
+        Looks up the task and its stage_runs in SQLite, finds the first
+        stage that did not complete, re-loads the pipeline, and resumes
+        execution from that stage onwards.
+
+        Args:
+            task_id: The ``id`` of the task to resume (must be in ``'failed'``
+                     or ``'paused'`` state).
+
+        Returns:
+            ``True`` if the task completed, ``False`` if it failed again.
+
+        Raises:
+            ValueError: If the task does not exist or is not in a resumable
+                        state (``'failed'`` or ``'paused'``).
+        """
+        conn = self._get_conn()
+        try:
+            task_row = conn.execute(
+                "SELECT * FROM tasks WHERE id = ?", (task_id,)
+            ).fetchone()
+        finally:
+            conn.close()
+
+        if task_row is None:
+            raise ValueError(f"Task '{task_id}' not found in database")
+
+        status = task_row["status"]
+        if status not in ("failed", "paused"):
+            raise ValueError(
+                f"Task '{task_id}' cannot be resumed from status '{status}'. "
+                "Only 'failed' or 'paused' tasks can be resumed."
+            )
+
+        pipeline_name: str = task_row["pipeline"]
+        description: str = task_row["description"] or ""
+        worktree_path_str: str | None = task_row["worktree_path"]
+
+        if worktree_path_str is None:
+            raise ValueError(f"Task '{task_id}' has no worktree_path — cannot resume")
+
+        worktree_path = Path(worktree_path_str)
+        if not worktree_path.is_dir():
+            raise ValueError(
+                f"Worktree directory does not exist: {worktree_path}. "
+                "Run cleanup and re-create the task."
+            )
+
+        # ------------------------------------------------------------------
+        # Find the first incomplete stage
+        # ------------------------------------------------------------------
+        pipeline_yaml_path = (
+            self.project_dir / ".pegasus" / "pipelines" / f"{pipeline_name}.yaml"
+        )
+        pipeline = load_pipeline_config(pipeline_yaml_path)
+        project_config = load_config(self.project_dir)
+        retry_max: int = project_config.concurrency.retry_max
+        retry_base_delay: float = project_config.concurrency.retry_base_delay
+
+        conn = self._get_conn()
+        try:
+            completed_stages = {
+                row["stage_id"]
+                for row in conn.execute(
+                    "SELECT stage_id FROM stage_runs WHERE task_id = ? AND status = 'completed'",
+                    (task_id,),
+                ).fetchall()
+            }
+
+            # Restore task to running state
+            conn.execute(
+                "UPDATE tasks SET status = 'running', "
+                "runner_pid = ?, heartbeat_at = CURRENT_TIMESTAMP, "
+                "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (os.getpid(), task_id),
+            )
+            conn.commit()
+        except Exception:
+            conn.close()
+            raise
+
+        # ------------------------------------------------------------------
+        # Signal handling + heartbeat
+        # ------------------------------------------------------------------
+        self._install_signal_handlers(task_id)
+        heartbeat_task = asyncio.ensure_future(
+            self._heartbeat_loop(conn, task_id)
+        )
+
+        engine = PegasusEngine(self.agent_runner, self.db_path)
+        self._current_engine = engine
+
+        try:
+            for stage_index, stage in enumerate(pipeline.stages):
+                if stage.id in completed_stages:
+                    logger.info(
+                        "task=%s stage=%s already completed — skipping",
+                        task_id,
+                        stage.id,
+                    )
+                    continue
+
+                if self._shutdown_requested:
+                    self._mark_task_status(conn, task_id, "paused")
+                    return False
+
+                resolved_flags, requires_approval = resolve_stage_flags(
+                    stage,
+                    pipeline_defaults=pipeline.defaults,
+                    project_config=project_config,
+                )
+
+                if requires_approval:
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._send_notification(
+                        "Pegasus — Approval Required",
+                        f"Stage '{stage.name}' requires approval for task: {description}",
+                    )
+                    if self._on_approval_needed is not None:
+                        approved = await self._on_approval_needed(task_id, stage.id)
+                        if not approved:
+                            self._mark_task_status(conn, task_id, "failed")
+                            return False
+                        self._mark_task_status(conn, task_id, "running")
+                    else:
+                        self._mark_task_status(conn, task_id, "running")
+
+                stage_success = False
+                attempt = 0
+                while attempt <= retry_max:
+                    if self._shutdown_requested:
+                        break
+
+                    stage_success = await engine.run_stage(
+                        task_id=task_id,
+                        stage_id=stage.id,
+                        stage_index=stage_index,
+                        prompt=stage.prompt,
+                        cwd=str(worktree_path),
+                    )
+
+                    if stage_success:
+                        self._send_notification(
+                            "Pegasus",
+                            f"Stage '{stage.name}' complete for: {description}",
+                        )
+                        break
+
+                    stage_runs_conn = self._get_conn()
+                    last_run = stage_runs_conn.execute(
+                        """
+                        SELECT error FROM stage_runs
+                        WHERE task_id = ? AND stage_id = ?
+                        ORDER BY id DESC LIMIT 1
+                        """,
+                        (task_id, stage.id),
+                    ).fetchone()
+                    stage_runs_conn.close()
+
+                    error_text = (last_run["error"] or "") if last_run else ""
+                    if self._is_rate_limit_error(error_text) and attempt < retry_max:
+                        delay = retry_base_delay * (2**min(attempt, self._MAX_BACKOFF_EXP))
+                        await asyncio.sleep(delay)
+                        attempt += 1
+                        transition_task_state(conn, task_id, "failed", "running")
+                        continue
+
+                    if not stage_success:
+                        self._send_notification(
+                            "Pegasus — Pipeline Failed",
+                            f"Stage '{stage.name}' failed for: {description}",
+                        )
+                        return False
+
+                if self._shutdown_requested:
+                    self._mark_task_status(conn, task_id, "paused")
+                    return False
+
+                if not stage_success:
+                    return False
+
+            self._mark_task_status(conn, task_id, "completed")
+            self._send_notification(
+                "Pegasus — Pipeline Complete",
+                f"All stages finished for: {description}",
+            )
+            return True
+
+        except Exception as exc:
+            logger.exception("task=%s unhandled exception in resume_task", task_id)
+            try:
+                self._mark_task_status(conn, task_id, "failed", error=str(exc))
+            except Exception:  # noqa: BLE001
+                pass
+            return False
+
+        finally:
+            heartbeat_task.cancel()
+            await asyncio.gather(heartbeat_task, return_exceptions=True)
+            conn.close()
+            self._current_engine = None

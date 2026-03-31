@@ -60,6 +60,15 @@
 **Status**: done
 **Notes**: All 235 tests pass; ruff clean. Integration tests use real git repos in tmp_path: `_init_git_repo()` helper initialises a git repo with an initial commit and configures user identity. `detect_default_branch` tries `git symbolic-ref refs/remotes/origin/HEAD` first then falls back to current HEAD. Lock file test accounts for git worktree `.git` being a file (not directory) — temporarily swaps it with a directory to place the lock. Orphan detection uses SQLite's `strftime('%s', ...)` for heartbeat staleness check (>30s) combined with PID liveness check via `os.kill(pid, 0)`. `cleanup_worktree` infers main repo from gitdir pointer in the `.git` file when `repo_dir` is not provided.
 
+## Iteration 8: 08-pipeline-executor
+**Feature**: Pipeline executor with heartbeat, retry, and desktop notification support
+**Files modified**:
+- `src/pegasus/runner.py` — added `PipelineExecutor` class (and `RateLimitError` sentinel), updated imports (`platform`, `signal`, `load_config`, `load_pipeline_config`, `resolve_stage_flags`). `PipelineExecutor` implements: `run_task` (full pipeline lifecycle: worktree creation, task/worktree DB rows, heartbeat loop, stage iteration with requires_approval gates, rate-limit retry with exponential backoff, SIGTERM/SIGINT graceful shutdown, desktop notifications on stage/pipeline events), `resume_task` (restart from first incomplete stage), `_heartbeat_loop` (async loop updating `heartbeat_at` every N seconds), `_send_notification` (osascript on macOS, notify-send on Linux, silent skip on other platforms), `_install_signal_handlers` (SIGTERM/SIGINT → graceful shutdown), `_is_rate_limit_error` (keyword detection for 429/rate-limit responses)
+- `tests/test_runner.py` — added 23 integration tests across 7 new test classes: `TestPipelineExecutorHappyPath` (4), `TestPipelineExecutorStageFailure` (3), `TestPipelineExecutorApprovalGate` (3), `TestPipelineExecutorResumeTask` (3), `TestPipelineExecutorHeartbeat` (1), `TestPipelineExecutorRateLimitRetry` (2), `TestPipelineExecutorNotifications` (5), `TestRateLimitDetection` (2); also added `yaml` import, `PipelineExecutor` import, `patch` import, and helper functions `_make_pipeline_yaml`, `_make_executor`, `_make_project_with_git`
+**Tests added**: 23 (total 258 including prior iterations)
+**Status**: done
+**Notes**: All 258 tests pass; ruff clean. Tests use isolated worktrees via per-test `.pegasus/config.yaml` overriding `worktrees.base_path` to `tmp_path/worktrees`. Heartbeat tests use 0.1s interval + 0.35s sleep to confirm updates without slowing the suite. Rate-limit retry tests use 0.01s base delay. Notification tests monkey-patch `_send_notification` directly to avoid spawning `osascript`/`notify-send` in tests. SIGTERM/SIGINT handling via `signal.signal` registers graceful shutdown that marks task `paused` and calls `engine.interrupt()`.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:

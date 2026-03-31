@@ -11,6 +11,10 @@ from typing import Any
 
 import pytest
 
+from unittest.mock import patch
+
+import yaml
+
 from pegasus.models import init_db, make_connection
 from pegasus.runner import (
     AgentMessage,
@@ -19,6 +23,7 @@ from pegasus.runner import (
     ErrorMessage,
     Message,
     PegasusEngine,
+    PipelineExecutor,
     ResultMessage,
     ToolUseMessage,
     WorktreeError,
@@ -1045,3 +1050,679 @@ class TestPidAlive:
 
     def test_impossible_pid_is_dead(self) -> None:
         assert _pid_alive(9_999_999) is False
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_pipeline_yaml(
+    tmp_path: Path,
+    stages: list[dict[str, Any]] | None = None,
+    name: str = "test-pipeline",
+) -> tuple[Path, str]:
+    """Write a minimal pipeline YAML and return (project_dir, pipeline_name).
+
+    The pipeline YAML is placed at:
+        <tmp_path>/project/.pegasus/pipelines/<name>.yaml
+    """
+    if stages is None:
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze the codebase."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement the fix."},
+        ]
+
+    project_dir = tmp_path / "project"
+    project_dir.mkdir(parents=True, exist_ok=True)
+    pipeline_dir = project_dir / ".pegasus" / "pipelines"
+    pipeline_dir.mkdir(parents=True, exist_ok=True)
+
+    pipeline_data = {
+        "name": name,
+        "description": "Test pipeline",
+        "stages": stages,
+    }
+    pipeline_file = pipeline_dir / f"{name}.yaml"
+    pipeline_file.write_text(yaml.dump(pipeline_data))
+    return project_dir, name
+
+
+def _make_executor(
+    tmp_path: Path,
+    project_dir: Path,
+    runner: FakeAgentRunner,
+    *,
+    heartbeat_interval: float = 0.1,
+    on_approval_needed: Any = None,
+) -> tuple[PipelineExecutor, Path]:
+    """Create a PipelineExecutor with a tmp SQLite db, returning (executor, db_path)."""
+    db_path = tmp_path / "pegasus.db"
+    executor = PipelineExecutor(
+        db_path=db_path,
+        agent_runner=runner,
+        project_dir=project_dir,
+        heartbeat_interval=heartbeat_interval,
+        on_approval_needed=on_approval_needed,
+    )
+    return executor, db_path
+
+
+def _make_project_with_git(
+    tmp_path: Path,
+    stages: list[dict[str, Any]] | None = None,
+    pipeline_name: str = "test-pipeline",
+) -> tuple[Path, str]:
+    """Create a git repo + pipeline YAML; return (project_dir, pipeline_name).
+
+    Also writes a .pegasus/config.yaml that redirects worktrees to tmp_path/worktrees
+    to avoid polluting ~/.pegasus/worktrees during tests.
+    """
+    project_dir, pl_name = _make_pipeline_yaml(tmp_path, stages=stages, name=pipeline_name)
+    _init_git_repo(project_dir)
+
+    # Override worktrees base_path to use tmp_path so tests are isolated
+    config_dir = project_dir / ".pegasus"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = config_dir / "config.yaml"
+    if not config_path.exists():
+        worktrees_base = tmp_path / "worktrees"
+        config_path.write_text(
+            f"worktrees:\n  base_path: {worktrees_base}\n"
+        )
+
+    return project_dir, pl_name
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — happy path
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorHappyPath:
+    def test_all_stages_complete_marks_task_completed(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-happy-1"
+        result = _run(executor.run_task(task_id, pl_name, "fix login bug"))
+
+        assert result is True
+        row = _get_task(db_path, task_id)
+        assert row is not None
+        assert row["status"] == "completed"
+
+    def test_all_stages_create_stage_run_rows(self, tmp_path: Path) -> None:
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement."},
+            {"id": "test", "name": "Test", "prompt": "Test."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-happy-2"
+        result = _run(executor.run_task(task_id, pl_name, "add feature"))
+
+        assert result is True
+        stage_rows = _get_stage_runs(db_path, task_id)
+        assert len(stage_rows) == 3
+        assert {r["stage_id"] for r in stage_rows} == {"analyze", "implement", "test"}
+        assert all(r["status"] == "completed" for r in stage_rows)
+
+    def test_task_row_inserted_in_db(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-happy-3"
+        _run(executor.run_task(task_id, pl_name, "description here"))
+
+        row = _get_task(db_path, task_id)
+        assert row is not None
+        assert row["pipeline"] == pl_name
+        assert row["description"] == "description here"
+
+    def test_worktree_row_inserted_in_db(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-happy-4"
+        _run(executor.run_task(task_id, pl_name, "worktree test"))
+
+        conn = make_connection(db_path, read_only=False)
+        wt_row = conn.execute(
+            "SELECT * FROM worktrees WHERE task_id = ?", (task_id,)
+        ).fetchone()
+        conn.close()
+        assert wt_row is not None
+        assert wt_row["status"] == "active"
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — stage failure handling
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorStageFailure:
+    def test_stage_failure_marks_task_failed(self, tmp_path: Path) -> None:
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        # Runner that fails on second call
+        call_count = 0
+
+        class FailOnSecondCall:
+            interrupt_called = False
+            run_calls: list[tuple[str, str]] = []
+
+            async def run_task(self, prompt: str, cwd: str) -> Any:
+                nonlocal call_count
+                call_count += 1
+                self.run_calls.append((prompt, cwd))
+
+                async def _gen() -> Any:
+                    if call_count == 1:
+                        yield ResultMessage(output="ok", total_cost_usd=0.01, session_id="s1")
+                    else:
+                        yield ErrorMessage(error="stage 2 exploded", cost=0.0)
+
+                return _gen()
+
+            async def interrupt(self) -> None:
+                self.interrupt_called = True
+
+        runner = FailOnSecondCall()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-fail-1"
+        result = _run(executor.run_task(task_id, pl_name, "failing task"))
+
+        assert result is False
+        row = _get_task(db_path, task_id)
+        assert row is not None
+        assert row["status"] == "failed"
+
+    def test_first_stage_failure_marks_task_failed(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = make_fake_runner_with_error("first stage error")
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-fail-2"
+        result = _run(executor.run_task(task_id, pl_name, "fails immediately"))
+
+        assert result is False
+        row = _get_task(db_path, task_id)
+        assert row is not None
+        assert row["status"] == "failed"
+
+    def test_failure_stops_at_failed_stage(self, tmp_path: Path) -> None:
+        """When stage 1 fails, stage 2 should not run."""
+        stages = [
+            {"id": "stage1", "name": "Stage 1", "prompt": "First."},
+            {"id": "stage2", "name": "Stage 2", "prompt": "Second."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = make_fake_runner_with_error("fail at stage1")
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-fail-3"
+        _run(executor.run_task(task_id, pl_name, "stops early"))
+
+        stage_rows = _get_stage_runs(db_path, task_id)
+        # Only stage1 should have a run row (stage2 never started)
+        assert len(stage_rows) == 1
+        assert stage_rows[0]["stage_id"] == "stage1"
+        assert stage_rows[0]["status"] == "failed"
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — requires_approval gate
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorApprovalGate:
+    def test_approval_pauses_then_resumes(self, tmp_path: Path) -> None:
+        stages = [
+            {
+                "id": "write",
+                "name": "Write",
+                "prompt": "Write code.",
+                "claude_flags": {"permission_mode": "acceptEdits"},
+            },
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+        approvals: list[tuple[str, str]] = []
+
+        async def approve(task_id: str, stage_id: str) -> bool:
+            approvals.append((task_id, stage_id))
+            return True  # Always approve
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve
+        )
+
+        task_id = "exec-approval-1"
+        result = _run(executor.run_task(task_id, pl_name, "write task"))
+
+        assert result is True
+        # The approval callback was called once for the write stage
+        assert len(approvals) == 1
+        assert approvals[0][1] == "write"
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "completed"
+
+    def test_rejected_approval_marks_task_failed(self, tmp_path: Path) -> None:
+        stages = [
+            {
+                "id": "write",
+                "name": "Write",
+                "prompt": "Write code.",
+                "claude_flags": {"permission_mode": "acceptEdits"},
+            },
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+
+        async def reject(task_id: str, stage_id: str) -> bool:
+            return False  # Always reject
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=reject
+        )
+
+        task_id = "exec-approval-2"
+        result = _run(executor.run_task(task_id, pl_name, "rejected write task"))
+
+        assert result is False
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "failed"
+
+    def test_no_approval_handler_auto_approves(self, tmp_path: Path) -> None:
+        """When no on_approval_needed handler is set, the stage auto-approves."""
+        stages = [
+            {
+                "id": "write",
+                "name": "Write",
+                "prompt": "Write code.",
+                "claude_flags": {"permission_mode": "acceptEdits"},
+            },
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        task_id = "exec-approval-3"
+        result = _run(executor.run_task(task_id, pl_name, "auto-approve write task"))
+
+        assert result is True
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "completed"
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — resume_task
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorResumeTask:
+    def test_resume_completes_from_failed_stage(self, tmp_path: Path) -> None:
+        stages = [
+            {"id": "stage1", "name": "Stage 1", "prompt": "First."},
+            {"id": "stage2", "name": "Stage 2", "prompt": "Second."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        db_path = tmp_path / "pegasus.db"
+
+        # Manually set up a task that "already completed stage1"
+        # We do this by running the full pipeline first with a success runner
+        # then marking it as failed and removing stage2 completion.
+        runner = FakeAgentRunner()
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=runner,
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+
+        # Run the full pipeline to create the worktree and insert task/stage rows
+        task_id = "exec-resume-1"
+        _run(executor.run_task(task_id, pl_name, "resumable task"))
+
+        # Now simulate a failure: reset task to 'failed', remove stage2 completion
+        conn = make_connection(db_path, read_only=False)
+        conn.execute("UPDATE tasks SET status = 'failed' WHERE id = ?", (task_id,))
+        conn.execute(
+            "DELETE FROM stage_runs WHERE task_id = ? AND stage_id = 'stage2'",
+            (task_id,),
+        )
+        conn.commit()
+        conn.close()
+
+        # Resume should re-run stage2 only and complete
+        runner2 = FakeAgentRunner()
+        executor2 = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=runner2,
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+        result = _run(executor2.resume_task(task_id))
+
+        assert result is True
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "completed"
+        # stage2 should have been re-run
+        assert runner2.run_calls, "runner2 should have been called for stage2"
+
+    def test_resume_raises_for_missing_task(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        db_path = tmp_path / "pegasus.db"
+        conn = make_connection(db_path, read_only=False)
+        init_db(conn)
+        conn.close()
+
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=FakeAgentRunner(),
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+        with pytest.raises(ValueError, match="not found"):
+            _run(executor.resume_task("nonexistent-task"))
+
+    def test_resume_raises_for_non_resumable_status(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        db_path = tmp_path / "pegasus.db"
+        conn = make_connection(db_path, read_only=False)
+        init_db(conn)
+        conn.execute(
+            "INSERT INTO tasks (id, pipeline, description, status) VALUES (?, ?, ?, ?)",
+            ("exec-resume-bad", pl_name, "running task", "running"),
+        )
+        conn.commit()
+        conn.close()
+
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=FakeAgentRunner(),
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+        with pytest.raises(ValueError, match="cannot be resumed"):
+            _run(executor.resume_task("exec-resume-bad"))
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — heartbeat
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorHeartbeat:
+    def test_heartbeat_updates_during_execution(self, tmp_path: Path) -> None:
+        """Heartbeat should be updated at least once during a pipeline run."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        # Use a runner with a slight delay to allow heartbeat to fire
+        class SlowRunner:
+            run_calls: list[tuple[str, str]] = []
+            interrupt_called = False
+
+            async def run_task(self, prompt: str, cwd: str) -> Any:
+                self.run_calls.append((prompt, cwd))
+
+                async def _gen() -> Any:
+                    await asyncio.sleep(0.35)  # allow 3 heartbeats at 0.1s
+                    yield ResultMessage(output="done", total_cost_usd=0.0, session_id="s")
+
+                return _gen()
+
+            async def interrupt(self) -> None:
+                self.interrupt_called = True
+
+        runner = SlowRunner()
+        db_path = tmp_path / "pegasus.db"
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=runner,
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+
+        task_id = "exec-hb-1"
+        result = _run(executor.run_task(task_id, pl_name, "heartbeat test"))
+
+        assert result is True
+        # Verify heartbeat_at is set in the DB
+        row = _get_task(db_path, task_id)
+        assert row is not None
+        assert row["heartbeat_at"] is not None
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — rate limit retry
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorRateLimitRetry:
+    def test_rate_limit_retried_and_succeeds(self, tmp_path: Path) -> None:
+        """A rate-limit error on attempt 0 should trigger retry; second attempt succeeds."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        call_count = 0
+
+        class RateLimitThenOkRunner:
+            run_calls: list[tuple[str, str]] = []
+            interrupt_called = False
+
+            async def run_task(self, prompt: str, cwd: str) -> Any:
+                nonlocal call_count
+                call_count += 1
+                self.run_calls.append((prompt, cwd))
+
+                async def _gen() -> Any:
+                    if call_count == 1:
+                        yield ErrorMessage(error="rate limit exceeded: 429", cost=0.0)
+                    else:
+                        yield ResultMessage(output="ok", total_cost_usd=0.01, session_id="s")
+
+                return _gen()
+
+            async def interrupt(self) -> None:
+                self.interrupt_called = True
+
+        runner = RateLimitThenOkRunner()
+        db_path = tmp_path / "pegasus.db"
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=runner,
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+        # Override retry base delay to 0.01s (very fast for tests)
+        # We achieve this via a minimal config: write a custom config.yaml
+        worktrees_base = tmp_path / "worktrees"
+        config_path = project_dir / ".pegasus" / "config.yaml"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(
+            f"concurrency:\n  retry_max: 3\n  retry_base_delay: 0.01\n"
+            f"worktrees:\n  base_path: {worktrees_base}\n"
+        )
+
+        task_id = "exec-retry-1"
+        result = _run(executor.run_task(task_id, pl_name, "rate limit test"))
+
+        assert result is True
+        assert call_count >= 2, "Runner should have been called at least twice"
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "completed"
+
+    def test_rate_limit_exhausted_marks_failed(self, tmp_path: Path) -> None:
+        """If all retries are exhausted, the task should be marked failed."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        class AlwaysRateLimitRunner:
+            run_calls: list[tuple[str, str]] = []
+            interrupt_called = False
+
+            async def run_task(self, prompt: str, cwd: str) -> Any:
+                self.run_calls.append((prompt, cwd))
+
+                async def _gen() -> Any:
+                    yield ErrorMessage(error="too many requests: 429", cost=0.0)
+
+                return _gen()
+
+            async def interrupt(self) -> None:
+                self.interrupt_called = True
+
+        runner = AlwaysRateLimitRunner()
+        db_path = tmp_path / "pegasus.db"
+
+        # Write a config.yaml with only 2 retries + tiny delay + isolated worktrees
+        worktrees_base = tmp_path / "worktrees"
+        config_path = project_dir / ".pegasus" / "config.yaml"
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(
+            f"concurrency:\n  retry_max: 2\n  retry_base_delay: 0.01\n"
+            f"worktrees:\n  base_path: {worktrees_base}\n"
+        )
+
+        executor = PipelineExecutor(
+            db_path=db_path,
+            agent_runner=runner,
+            project_dir=project_dir,
+            heartbeat_interval=0.1,
+        )
+
+        task_id = "exec-retry-2"
+        result = _run(executor.run_task(task_id, pl_name, "always rate limited"))
+
+        assert result is False
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "failed"
+        # runner was called retry_max+1 times (1 initial + 2 retries)
+        assert len(runner.run_calls) == 3
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — desktop notifications
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorNotifications:
+    def test_notification_called_on_completion(self, tmp_path: Path) -> None:
+        """Verify _send_notification is called at least once on pipeline completion."""
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        notifications: list[tuple[str, str]] = []
+        original_send = executor._send_notification
+
+        def capture_notification(title: str, message: str) -> None:
+            notifications.append((title, message))
+            # Don't actually fire the OS notification
+            pass
+
+        executor._send_notification = capture_notification  # type: ignore[method-assign]
+
+        task_id = "exec-notif-1"
+        result = _run(executor.run_task(task_id, pl_name, "notification test"))
+
+        assert result is True
+        assert len(notifications) >= 1  # At minimum a completion notification
+        row = _get_task(db_path, task_id)
+        assert row["status"] == "completed"
+
+    def test_send_notification_macos(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        with (
+            patch("pegasus.runner.platform.system", return_value="Darwin"),
+            patch("pegasus.runner.subprocess.run") as mock_run,
+        ):
+            executor._send_notification("Test Title", "Test message")
+            assert mock_run.called
+            call_args = mock_run.call_args[0][0]
+            assert call_args[0] == "osascript"
+
+    def test_send_notification_linux(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        with (
+            patch("pegasus.runner.platform.system", return_value="Linux"),
+            patch("pegasus.runner.subprocess.run") as mock_run,
+        ):
+            executor._send_notification("Test Title", "Test message")
+            assert mock_run.called
+            call_args = mock_run.call_args[0][0]
+            assert call_args[0] == "notify-send"
+
+    def test_send_notification_failure_does_not_raise(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        with (
+            patch("pegasus.runner.platform.system", return_value="Darwin"),
+            patch(
+                "pegasus.runner.subprocess.run",
+                side_effect=FileNotFoundError("osascript not found"),
+            ),
+        ):
+            # Should not raise
+            executor._send_notification("Title", "Message")
+
+    def test_send_notification_windows_skips(self, tmp_path: Path) -> None:
+        project_dir, pl_name = _make_project_with_git(tmp_path)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        with (
+            patch("pegasus.runner.platform.system", return_value="Windows"),
+            patch("pegasus.runner.subprocess.run") as mock_run,
+        ):
+            executor._send_notification("Title", "Message")
+            assert not mock_run.called
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — rate limit detection helper
+# ---------------------------------------------------------------------------
+
+
+class TestRateLimitDetection:
+    def test_detects_rate_limit_keyword(self) -> None:
+        assert PipelineExecutor._is_rate_limit_error("rate limit exceeded")
+        assert PipelineExecutor._is_rate_limit_error("Rate Limit Error")
+        assert PipelineExecutor._is_rate_limit_error("too many requests")
+        assert PipelineExecutor._is_rate_limit_error("429 Too Many Requests")
+        assert PipelineExecutor._is_rate_limit_error("API is overloaded")
+        assert PipelineExecutor._is_rate_limit_error("ratelimit hit")
+
+    def test_does_not_false_positive(self) -> None:
+        assert not PipelineExecutor._is_rate_limit_error("network error")
+        assert not PipelineExecutor._is_rate_limit_error("timeout")
+        assert not PipelineExecutor._is_rate_limit_error("file not found")
+        assert not PipelineExecutor._is_rate_limit_error("")

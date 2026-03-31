@@ -59,7 +59,7 @@
     "id": "08-pipeline-executor",
     "description": "runner.py: Pipeline executor — read pipeline YAML, resolve config, iterate stages sequentially, call PegasusEngine per stage, write state transitions to SQLite, heartbeat every 5s, rate limit retry with exponential backoff, graceful shutdown (SIGTERM->SIGKILL), desktop notifications (osascript/notify-send). Integration tests with FakeAgentRunner.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["06-engine-abstraction", "07-worktree-lifecycle", "04-config-resolution"],
     "target_files": ["src/pegasus/runner.py", "tests/test_runner.py"]
   },
