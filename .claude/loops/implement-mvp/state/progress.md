@@ -23,6 +23,15 @@
 **Status**: done
 **Notes**: All tests pass; ruff clean. WAL mode confirmed via PRAGMA query. mode=ro URI used for read-only connections as required (immutable=1 rejected per ADR-002). Race condition test uses two threads with a single shared task row; exactly one transition wins. init_db is idempotent (CREATE IF NOT EXISTS + INSERT OR IGNORE).
 
+## Iteration 4: 04-config-resolution
+**Feature**: Layered config resolution (stage > pipeline > project > user > built-in), permission ceiling (deny-wins), auto-require-approval for write stages.
+**Files modified**:
+- `src/pegasus/models.py` — added `BUILT_IN_DEFAULTS` dict, `PERMISSION_ORDER` list, `_permission_index()`, `_cap_permission()`, `load_config(project_dir)` (built-in < user < project deep-merge), `resolve_stage_flags(stage, pipeline_defaults, project_config)` (returns `(ClaudeFlags, requires_approval)` tuple with permission ceiling applied and auto-requires-approval for write modes)
+- `tests/test_models.py` — added 41 new tests across `TestPermissionHelpers` (10), `TestBuiltInDefaults` (4), `TestLoadConfig` (9), `TestResolveStageFlags` (18)
+**Tests added**: 41 (total 126 including prior iterations)
+**Status**: done
+**Notes**: All 126 tests pass; ruff clean. Permission ceiling uses deny-wins: `_cap_permission` returns the lower of requested vs ceiling. `load_config` uses `Path.home()` for XDG user config; `resolve_stage_flags` applies ceiling after all four layers merge. Auto-require-approval triggers on `acceptEdits` and `bypassPermissions` (write modes); explicit `requires_approval=True` always preserved.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:

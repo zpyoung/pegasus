@@ -27,7 +27,7 @@
     "id": "04-config-resolution",
     "description": "models.py: Layered config resolution (stage > pipeline > project > user > built-in). Load and merge YAML configs from .pegasus/config.yaml, ~/.config/pegasus/config.yaml, and built-in defaults. Include permission ceiling (max_permission, deny-wins) and default-require-approval for write stages. Unit tests for resolution order and edge cases.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["02-pydantic-models"],
     "target_files": ["src/pegasus/models.py", "tests/test_models.py"]
   },

@@ -5,6 +5,8 @@ This module defines:
 - Project config.yaml schema (PegasusConfig)
 - claude_flags allowlist
 - Helper utilities for loading and validating YAML configs
+- Layered config resolution (stage > pipeline > project > user > built-in)
+- Permission ceiling logic (max_permission, deny-wins)
 - SQLite connection factory, schema initialization, and state transitions
 """
 
@@ -403,6 +405,222 @@ def parse_project_config_yaml(content: str) -> PegasusConfig:
     if not isinstance(raw, dict):
         raise ValueError(f"Config YAML must be a mapping, got {type(raw).__name__}")
     return PegasusConfig.model_validate(raw)
+
+
+# ---------------------------------------------------------------------------
+# Layered config resolution
+# ---------------------------------------------------------------------------
+
+#: Permission levels ordered from least to most permissive (index = power level).
+#: deny-wins means we always cap at the *lowest* permitted ceiling.
+PERMISSION_ORDER: list[str] = ["plan", "acceptEdits", "bypassPermissions"]
+
+#: Built-in default values used when no config files override them.
+BUILT_IN_DEFAULTS: dict[str, Any] = {
+    "model": "claude-sonnet-4-20250514",
+    "max_turns": 10,
+    "permission_mode": "plan",
+    "max_permission": "acceptEdits",
+}
+
+#: Write-mode permission levels that trigger auto-require-approval.
+_WRITE_PERMISSION_MODES: frozenset[str] = frozenset({"acceptEdits", "bypassPermissions"})
+
+
+def _permission_index(mode: str) -> int:
+    """Return numeric index for a permission mode (lower = more restricted).
+
+    Args:
+        mode: One of ``plan``, ``acceptEdits``, ``bypassPermissions``.
+
+    Returns:
+        Integer index (0, 1, or 2).  Defaults to 0 (most restrictive) for
+        unknown values so that unknown modes never escalate privilege.
+    """
+    try:
+        return PERMISSION_ORDER.index(mode)
+    except ValueError:
+        return 0
+
+
+def _cap_permission(requested: str, ceiling: str) -> str:
+    """Apply the deny-wins permission ceiling.
+
+    If *requested* is more permissive than *ceiling*, return *ceiling*.
+    Otherwise return *requested* unchanged.
+
+    Args:
+        requested: The permission mode being requested by a stage.
+        ceiling: The maximum permitted permission mode from project config.
+
+    Returns:
+        The effective (capped) permission mode string.
+    """
+    if _permission_index(requested) > _permission_index(ceiling):
+        return ceiling
+    return requested
+
+
+def load_config(project_dir: str | Path | None = None) -> PegasusConfig:
+    """Load and merge YAML configs: built-in < user < project.
+
+    Resolution order (each layer overrides the previous):
+
+    1. **Built-in defaults** — hard-coded in ``BUILT_IN_DEFAULTS``
+    2. **User config** — ``~/.config/pegasus/config.yaml`` (XDG compliant)
+    3. **Project config** — ``<project_dir>/.pegasus/config.yaml``
+
+    Absent config files are silently skipped.  A present but empty file is
+    treated as an empty mapping (all sections default).
+
+    Args:
+        project_dir: Root directory of the project.  When ``None``, the
+            current working directory is used.  Project-level config is
+            loaded from ``<project_dir>/.pegasus/config.yaml``.
+
+    Returns:
+        A merged ``PegasusConfig`` with the highest-precedence value for
+        every field.
+    """
+    if project_dir is None:
+        project_dir = Path.cwd()
+    else:
+        project_dir = Path(project_dir)
+
+    # --- Layer 1: built-in defaults (always present) ---
+    merged: dict[str, Any] = {}
+
+    def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+        """Recursively merge *override* into *base*.  Returns a new dict."""
+        result = dict(base)
+        for key, val in override.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(val, dict)
+            ):
+                result[key] = _deep_merge(result[key], val)
+            else:
+                result[key] = val
+        return result
+
+    # --- Layer 2: user config (~/.config/pegasus/config.yaml) ---
+    user_config_path = Path.home() / ".config" / "pegasus" / "config.yaml"
+    if user_config_path.exists():
+        raw_user: Any = yaml.safe_load(user_config_path.read_text(encoding="utf-8"))
+        if raw_user is None:
+            raw_user = {}
+        if isinstance(raw_user, dict):
+            merged = _deep_merge(merged, raw_user)
+
+    # --- Layer 3: project config (.pegasus/config.yaml) ---
+    project_config_path = project_dir / ".pegasus" / "config.yaml"
+    if project_config_path.exists():
+        raw_project: Any = yaml.safe_load(project_config_path.read_text(encoding="utf-8"))
+        if raw_project is None:
+            raw_project = {}
+        if isinstance(raw_project, dict):
+            merged = _deep_merge(merged, raw_project)
+
+    return PegasusConfig.model_validate(merged)
+
+
+def resolve_stage_flags(
+    stage: StageConfig,
+    pipeline_defaults: PipelineDefaults | None = None,
+    project_config: PegasusConfig | None = None,
+) -> tuple[ClaudeFlags, bool]:
+    """Resolve the effective ``ClaudeFlags`` and ``requires_approval`` for a stage.
+
+    Resolution order (later overrides earlier):
+
+    1. Built-in defaults (``BUILT_IN_DEFAULTS``)
+    2. Project config ``defaults`` section
+    3. Pipeline ``defaults`` block
+    4. Stage-level ``claude_flags`` overrides
+
+    After merging, the permission ceiling (``max_permission`` from project
+    config) is applied using deny-wins: if the effective ``permission_mode``
+    exceeds the ceiling, it is clamped down to the ceiling value.
+
+    ``requires_approval`` is auto-set to ``True`` for any stage whose
+    effective ``permission_mode`` is a write mode (``acceptEdits`` or
+    ``bypassPermissions``).  An explicit ``requires_approval=True`` on the
+    stage is always preserved; auto-set only upgrades ``False -> True``.
+
+    Args:
+        stage: The ``StageConfig`` whose flags to resolve.
+        pipeline_defaults: Optional pipeline-level defaults (from
+            ``PipelineConfig.defaults``).
+        project_config: Optional loaded ``PegasusConfig`` (project/user/built-in
+            merged).  When ``None``, only ``BUILT_IN_DEFAULTS`` apply.
+
+    Returns:
+        A ``(ClaudeFlags, requires_approval)`` tuple with fully resolved values.
+    """
+    # --- Start with built-in defaults ---
+    effective: dict[str, Any] = {
+        "model": BUILT_IN_DEFAULTS["model"],
+        "max_turns": BUILT_IN_DEFAULTS["max_turns"],
+        "permission_mode": BUILT_IN_DEFAULTS["permission_mode"],
+    }
+
+    # --- Layer 2: project config defaults ---
+    max_permission: str = BUILT_IN_DEFAULTS["max_permission"]
+    if project_config is not None:
+        d = project_config.defaults
+        if d.model is not None:
+            effective["model"] = d.model
+        if d.max_turns is not None:
+            effective["max_turns"] = d.max_turns
+        if d.permission_mode is not None:
+            effective["permission_mode"] = d.permission_mode
+        max_permission = d.max_permission
+
+    # --- Layer 3: pipeline defaults ---
+    if pipeline_defaults is not None:
+        if pipeline_defaults.model is not None:
+            effective["model"] = pipeline_defaults.model
+        if pipeline_defaults.max_turns is not None:
+            effective["max_turns"] = pipeline_defaults.max_turns
+        if pipeline_defaults.permission_mode is not None:
+            effective["permission_mode"] = pipeline_defaults.permission_mode
+
+    # --- Layer 4: stage-level overrides ---
+    stage_flags = stage.claude_flags
+    if stage_flags.model is not None:
+        effective["model"] = stage_flags.model
+    if stage_flags.max_turns is not None:
+        effective["max_turns"] = stage_flags.max_turns
+    if stage_flags.permission_mode is not None:
+        effective["permission_mode"] = stage_flags.permission_mode
+    # Pass through remaining stage-specific flags directly.
+    if stage_flags.tools is not None:
+        effective["tools"] = stage_flags.tools
+    if stage_flags.output_format is not None:
+        effective["output_format"] = stage_flags.output_format
+    if stage_flags.allowed_tools is not None:
+        effective["allowed_tools"] = stage_flags.allowed_tools
+    if stage_flags.disallowed_tools is not None:
+        effective["disallowed_tools"] = stage_flags.disallowed_tools
+    if stage_flags.add_dir is not None:
+        effective["add_dir"] = stage_flags.add_dir
+    if stage_flags.append_system_prompt is not None:
+        effective["append_system_prompt"] = stage_flags.append_system_prompt
+
+    # --- Apply permission ceiling (deny-wins) ---
+    effective["permission_mode"] = _cap_permission(
+        effective["permission_mode"], max_permission
+    )
+
+    resolved_flags = ClaudeFlags.model_validate(effective)
+
+    # --- Auto-require-approval for write stages ---
+    requires_approval = stage.requires_approval
+    if resolved_flags.permission_mode in _WRITE_PERMISSION_MODES:
+        requires_approval = True
+
+    return resolved_flags, requires_approval
 
 
 # ---------------------------------------------------------------------------

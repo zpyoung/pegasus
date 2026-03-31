@@ -12,6 +12,8 @@ from pydantic import ValidationError
 
 from pegasus.models import (
     ALLOWED_CLAUDE_FLAGS,
+    BUILT_IN_DEFAULTS,
+    PERMISSION_ORDER,
     SCHEMA_VERSION,
     ClaudeFlags,
     DefaultsConfig,
@@ -20,12 +22,16 @@ from pegasus.models import (
     PipelineConfig,
     PipelineDefaults,
     StageConfig,
+    _cap_permission,
+    _permission_index,
     init_db,
+    load_config,
     load_pipeline_config,
     load_project_config,
     make_connection,
     parse_pipeline_yaml,
     parse_project_config_yaml,
+    resolve_stage_flags,
     transition_task_state,
 )
 
@@ -966,3 +972,422 @@ class TestTransitionTaskState:
         ).fetchone()
         assert row["status"] == "running"
         verify_conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Permission helpers tests
+# ---------------------------------------------------------------------------
+
+
+class TestPermissionHelpers:
+    """Tests for internal permission ceiling helpers."""
+
+    def test_permission_order_has_three_levels(self) -> None:
+        assert len(PERMISSION_ORDER) == 3
+        assert PERMISSION_ORDER[0] == "plan"
+        assert PERMISSION_ORDER[1] == "acceptEdits"
+        assert PERMISSION_ORDER[2] == "bypassPermissions"
+
+    def test_permission_index_plan(self) -> None:
+        assert _permission_index("plan") == 0
+
+    def test_permission_index_accept_edits(self) -> None:
+        assert _permission_index("acceptEdits") == 1
+
+    def test_permission_index_bypass(self) -> None:
+        assert _permission_index("bypassPermissions") == 2
+
+    def test_permission_index_unknown_defaults_to_zero(self) -> None:
+        assert _permission_index("unknown_mode") == 0
+
+    def test_cap_permission_no_change_when_at_ceiling(self) -> None:
+        assert _cap_permission("acceptEdits", "acceptEdits") == "acceptEdits"
+
+    def test_cap_permission_no_change_when_below_ceiling(self) -> None:
+        assert _cap_permission("plan", "acceptEdits") == "plan"
+
+    def test_cap_permission_clamps_above_ceiling(self) -> None:
+        # bypassPermissions > acceptEdits ceiling → must clamp to acceptEdits
+        assert _cap_permission("bypassPermissions", "acceptEdits") == "acceptEdits"
+
+    def test_cap_permission_plan_ceiling_blocks_all_writes(self) -> None:
+        assert _cap_permission("acceptEdits", "plan") == "plan"
+        assert _cap_permission("bypassPermissions", "plan") == "plan"
+
+    def test_cap_permission_bypass_ceiling_allows_everything(self) -> None:
+        assert _cap_permission("plan", "bypassPermissions") == "plan"
+        assert _cap_permission("acceptEdits", "bypassPermissions") == "acceptEdits"
+        assert _cap_permission("bypassPermissions", "bypassPermissions") == "bypassPermissions"
+
+
+# ---------------------------------------------------------------------------
+# BUILT_IN_DEFAULTS constant tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuiltInDefaults:
+    """Tests for the BUILT_IN_DEFAULTS constant."""
+
+    def test_built_in_defaults_has_required_keys(self) -> None:
+        assert "model" in BUILT_IN_DEFAULTS
+        assert "max_turns" in BUILT_IN_DEFAULTS
+        assert "permission_mode" in BUILT_IN_DEFAULTS
+        assert "max_permission" in BUILT_IN_DEFAULTS
+
+    def test_built_in_default_permission_mode_is_plan(self) -> None:
+        assert BUILT_IN_DEFAULTS["permission_mode"] == "plan"
+
+    def test_built_in_default_max_permission_is_accept_edits(self) -> None:
+        assert BUILT_IN_DEFAULTS["max_permission"] == "acceptEdits"
+
+    def test_built_in_default_max_turns_is_ten(self) -> None:
+        assert BUILT_IN_DEFAULTS["max_turns"] == 10
+
+
+# ---------------------------------------------------------------------------
+# load_config tests
+# ---------------------------------------------------------------------------
+
+
+class TestLoadConfig:
+    """Tests for layered config resolution via load_config()."""
+
+    def test_no_config_files_returns_defaults(self, tmp_path: Path) -> None:
+        """With no config files anywhere, all built-in defaults are used."""
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        config = load_config(project_dir)
+        assert config.defaults.model == BUILT_IN_DEFAULTS["model"]
+        assert config.defaults.max_turns == BUILT_IN_DEFAULTS["max_turns"]
+        assert config.defaults.permission_mode == BUILT_IN_DEFAULTS["permission_mode"]
+        assert config.defaults.max_permission == BUILT_IN_DEFAULTS["max_permission"]
+
+    def test_project_config_overrides_defaults(self, tmp_path: Path) -> None:
+        """Project config overrides built-in defaults."""
+        project_dir = tmp_path / "project"
+        pegasus_dir = project_dir / ".pegasus"
+        pegasus_dir.mkdir(parents=True)
+        (pegasus_dir / "config.yaml").write_text(
+            textwrap.dedent(
+                """\
+                defaults:
+                  model: claude-opus-4-20250514
+                  max_turns: 20
+                """
+            ),
+            encoding="utf-8",
+        )
+        config = load_config(project_dir)
+        assert config.defaults.model == "claude-opus-4-20250514"
+        assert config.defaults.max_turns == 20
+        # Unspecified fields keep their built-in defaults.
+        assert config.defaults.permission_mode == BUILT_IN_DEFAULTS["permission_mode"]
+
+    def test_user_config_overrides_defaults(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """User config is loaded and overrides built-in defaults."""
+        # Point HOME at tmp_path so user config is isolated.
+        user_config_dir = tmp_path / ".config" / "pegasus"
+        user_config_dir.mkdir(parents=True)
+        (user_config_dir / "config.yaml").write_text(
+            textwrap.dedent(
+                """\
+                defaults:
+                  max_turns: 7
+                  permission_mode: acceptEdits
+                """
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        config = load_config(project_dir)
+        assert config.defaults.max_turns == 7
+        assert config.defaults.permission_mode == "acceptEdits"
+
+    def test_project_config_overrides_user_config(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Project config takes precedence over user config."""
+        # User config sets max_turns=7.
+        user_config_dir = tmp_path / ".config" / "pegasus"
+        user_config_dir.mkdir(parents=True)
+        (user_config_dir / "config.yaml").write_text(
+            "defaults:\n  max_turns: 7\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        # Project config sets max_turns=3 — should win.
+        project_dir = tmp_path / "project"
+        pegasus_dir = project_dir / ".pegasus"
+        pegasus_dir.mkdir(parents=True)
+        (pegasus_dir / "config.yaml").write_text(
+            "defaults:\n  max_turns: 3\n",
+            encoding="utf-8",
+        )
+
+        config = load_config(project_dir)
+        assert config.defaults.max_turns == 3
+
+    def test_missing_project_config_falls_back_gracefully(self, tmp_path: Path) -> None:
+        """No .pegasus/config.yaml is not an error; defaults are used."""
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        # No .pegasus/ directory at all.
+        config = load_config(project_dir)
+        assert config.defaults.max_turns == BUILT_IN_DEFAULTS["max_turns"]
+
+    def test_empty_project_config_uses_defaults(self, tmp_path: Path) -> None:
+        """Empty .pegasus/config.yaml is treated as no overrides."""
+        project_dir = tmp_path / "project"
+        pegasus_dir = project_dir / ".pegasus"
+        pegasus_dir.mkdir(parents=True)
+        (pegasus_dir / "config.yaml").write_text("", encoding="utf-8")
+        config = load_config(project_dir)
+        assert config.defaults.max_turns == BUILT_IN_DEFAULTS["max_turns"]
+
+    def test_partial_project_config_merges_with_defaults(self, tmp_path: Path) -> None:
+        """Only specified keys are overridden; the rest fall back to defaults."""
+        project_dir = tmp_path / "project"
+        pegasus_dir = project_dir / ".pegasus"
+        pegasus_dir.mkdir(parents=True)
+        (pegasus_dir / "config.yaml").write_text(
+            "project:\n  language: rust\n",
+            encoding="utf-8",
+        )
+        config = load_config(project_dir)
+        assert config.project.language == "rust"
+        assert config.defaults.max_turns == BUILT_IN_DEFAULTS["max_turns"]
+        assert config.git.default_branch == "main"  # built-in default preserved
+
+    def test_all_three_layers_merge_correctly(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Verify built-in < user < project resolution across different keys."""
+        # User overrides model.
+        user_config_dir = tmp_path / ".config" / "pegasus"
+        user_config_dir.mkdir(parents=True)
+        (user_config_dir / "config.yaml").write_text(
+            "defaults:\n  model: claude-haiku-4-20250514\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        # Project overrides max_turns.
+        project_dir = tmp_path / "project"
+        pegasus_dir = project_dir / ".pegasus"
+        pegasus_dir.mkdir(parents=True)
+        (pegasus_dir / "config.yaml").write_text(
+            "defaults:\n  max_turns: 15\n",
+            encoding="utf-8",
+        )
+
+        config = load_config(project_dir)
+        # user layer wins for model
+        assert config.defaults.model == "claude-haiku-4-20250514"
+        # project layer wins for max_turns
+        assert config.defaults.max_turns == 15
+        # built-in wins for permission_mode (no override in any layer)
+        assert config.defaults.permission_mode == BUILT_IN_DEFAULTS["permission_mode"]
+
+    def test_load_config_none_project_dir_does_not_raise(self) -> None:
+        """Passing None as project_dir should not raise (uses cwd)."""
+        # As long as cwd doesn't have an invalid .pegasus/config.yaml, this is fine.
+        config = load_config(None)
+        assert isinstance(config, PegasusConfig)
+
+
+# ---------------------------------------------------------------------------
+# resolve_stage_flags tests
+# ---------------------------------------------------------------------------
+
+
+def _make_stage(
+    stage_id: str = "test",
+    permission_mode: str | None = None,
+    max_turns: int | None = None,
+    model: str | None = None,
+    requires_approval: bool = False,
+) -> StageConfig:
+    """Helper: build a minimal StageConfig with optional claude_flags."""
+    flags = ClaudeFlags(
+        permission_mode=permission_mode,
+        max_turns=max_turns,
+        model=model,
+    )
+    return StageConfig(
+        id=stage_id,
+        name=stage_id.capitalize(),
+        prompt="Do it.",
+        claude_flags=flags,
+        requires_approval=requires_approval,
+    )
+
+
+class TestResolveStageFlags:
+    """Tests for the full layered flag resolution function."""
+
+    def test_no_overrides_returns_built_in_defaults(self) -> None:
+        stage = _make_stage()
+        flags, requires_approval = resolve_stage_flags(stage)
+        assert flags.permission_mode == BUILT_IN_DEFAULTS["permission_mode"]
+        assert flags.max_turns == BUILT_IN_DEFAULTS["max_turns"]
+        assert flags.model == BUILT_IN_DEFAULTS["model"]
+        assert requires_approval is False
+
+    def test_stage_overrides_take_highest_precedence(self) -> None:
+        stage = _make_stage(permission_mode="plan", max_turns=3)
+        pipeline_defaults = PipelineDefaults(max_turns=8, permission_mode="acceptEdits")
+        project_config = parse_project_config_yaml("defaults:\n  max_turns: 5\n")
+        flags, _ = resolve_stage_flags(stage, pipeline_defaults, project_config)
+        # Stage level wins on both fields.
+        assert flags.permission_mode == "plan"
+        assert flags.max_turns == 3
+
+    def test_pipeline_defaults_override_project_defaults(self) -> None:
+        stage = _make_stage()  # no stage-level overrides
+        pipeline_defaults = PipelineDefaults(max_turns=8)
+        project_config = parse_project_config_yaml("defaults:\n  max_turns: 5\n")
+        flags, _ = resolve_stage_flags(stage, pipeline_defaults, project_config)
+        assert flags.max_turns == 8
+
+    def test_project_defaults_override_built_in(self) -> None:
+        stage = _make_stage()  # no stage-level overrides
+        project_config = parse_project_config_yaml("defaults:\n  max_turns: 5\n")
+        flags, _ = resolve_stage_flags(stage, None, project_config)
+        assert flags.max_turns == 5
+
+    def test_full_resolution_order(self) -> None:
+        """Built-in < project < pipeline < stage for max_turns."""
+        # built-in = 10, project = 5, pipeline = 8, stage = 3 → expect 3.
+        stage = _make_stage(max_turns=3)
+        pipeline_defaults = PipelineDefaults(max_turns=8)
+        project_config = parse_project_config_yaml("defaults:\n  max_turns: 5\n")
+        flags, _ = resolve_stage_flags(stage, pipeline_defaults, project_config)
+        assert flags.max_turns == 3
+
+    # --- Permission ceiling (deny-wins) tests ---
+
+    def test_permission_ceiling_clamps_stage_flags(self) -> None:
+        """Stage wants bypassPermissions but project ceiling is acceptEdits."""
+        stage = _make_stage(permission_mode="bypassPermissions")
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        flags, _ = resolve_stage_flags(stage, None, project_config)
+        assert flags.permission_mode == "acceptEdits"
+
+    def test_permission_ceiling_plan_blocks_all_writes(self) -> None:
+        """Project ceiling of plan blocks acceptEdits and bypassPermissions."""
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: plan\n"
+        )
+        for requested in ("acceptEdits", "bypassPermissions"):
+            stage = _make_stage(permission_mode=requested)
+            flags, _ = resolve_stage_flags(stage, None, project_config)
+            assert flags.permission_mode == "plan", f"Expected plan, got {flags.permission_mode!r} for {requested!r}"
+
+    def test_permission_ceiling_allows_lower_modes(self) -> None:
+        """A stage requesting plan is unaffected by an acceptEdits ceiling."""
+        stage = _make_stage(permission_mode="plan")
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        flags, _ = resolve_stage_flags(stage, None, project_config)
+        assert flags.permission_mode == "plan"
+
+    def test_permission_ceiling_applied_after_pipeline_override(self) -> None:
+        """Pipeline default escalates to bypassPermissions, ceiling clamps it back."""
+        stage = _make_stage()  # no stage override
+        pipeline_defaults = PipelineDefaults(permission_mode="bypassPermissions")
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        flags, _ = resolve_stage_flags(stage, pipeline_defaults, project_config)
+        assert flags.permission_mode == "acceptEdits"
+
+    def test_deny_wins_ceiling_from_default_built_in(self) -> None:
+        """Default max_permission ceiling (acceptEdits) blocks bypassPermissions."""
+        # No explicit project config — uses BUILT_IN_DEFAULTS max_permission.
+        stage = _make_stage(permission_mode="bypassPermissions")
+        flags, _ = resolve_stage_flags(stage)
+        assert flags.permission_mode == "acceptEdits"
+
+    # --- Auto-require-approval tests ---
+
+    def test_auto_require_approval_for_accept_edits(self) -> None:
+        """Stages with acceptEdits permission mode get requires_approval=True."""
+        stage = _make_stage(permission_mode="acceptEdits", requires_approval=False)
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        _, requires_approval = resolve_stage_flags(stage, None, project_config)
+        assert requires_approval is True
+
+    def test_auto_require_approval_not_set_for_plan_mode(self) -> None:
+        """Plan-mode stages do NOT get auto-require-approval."""
+        stage = _make_stage(permission_mode="plan", requires_approval=False)
+        _, requires_approval = resolve_stage_flags(stage)
+        assert requires_approval is False
+
+    def test_explicit_requires_approval_preserved(self) -> None:
+        """Explicit requires_approval=True is always preserved regardless of mode."""
+        stage = _make_stage(permission_mode="plan", requires_approval=True)
+        _, requires_approval = resolve_stage_flags(stage)
+        assert requires_approval is True
+
+    def test_auto_require_approval_triggered_by_clamped_accept_edits(self) -> None:
+        """Even after clamping, if effective mode is acceptEdits, approval is required."""
+        # Stage requests bypassPermissions, ceiling is acceptEdits.
+        # Clamped to acceptEdits → auto-requires-approval.
+        stage = _make_stage(permission_mode="bypassPermissions", requires_approval=False)
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        _, requires_approval = resolve_stage_flags(stage, None, project_config)
+        assert requires_approval is True
+
+    def test_no_stage_flag_overrides_fall_through_to_pipeline(self) -> None:
+        """With no stage flags set, pipeline defaults fill in."""
+        stage = StageConfig(id="test", name="Test", prompt="Do it.")
+        pipeline_defaults = PipelineDefaults(
+            model="claude-haiku-4-20250514",
+            max_turns=4,
+            permission_mode="plan",
+        )
+        flags, _ = resolve_stage_flags(stage, pipeline_defaults)
+        assert flags.model == "claude-haiku-4-20250514"
+        assert flags.max_turns == 4
+
+    def test_stage_specific_flags_pass_through(self) -> None:
+        """Non-permission fields (tools, output_format, etc.) pass through unchanged."""
+        stage = StageConfig(
+            id="test",
+            name="Test",
+            prompt="Do it.",
+            claude_flags=ClaudeFlags(
+                tools="Read,Grep",
+                output_format="json",
+                add_dir="/src",
+                append_system_prompt="Be concise.",
+            ),
+        )
+        flags, _ = resolve_stage_flags(stage)
+        assert flags.tools == "Read,Grep"
+        assert flags.output_format == "json"
+        assert flags.add_dir == "/src"
+        assert flags.append_system_prompt == "Be concise."
+
+    def test_none_pipeline_defaults_does_not_raise(self) -> None:
+        stage = _make_stage()
+        flags, _ = resolve_stage_flags(stage, None, None)
+        assert isinstance(flags, ClaudeFlags)
+
+    def test_none_project_config_uses_built_in_ceiling(self) -> None:
+        """When project_config is None, BUILT_IN max_permission ceiling applies."""
+        stage = _make_stage(permission_mode="bypassPermissions")
+        flags, _ = resolve_stage_flags(stage, None, None)
+        # Built-in ceiling is acceptEdits → bypassPermissions must be clamped.
+        assert flags.permission_mode == "acceptEdits"
