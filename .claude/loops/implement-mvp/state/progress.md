@@ -69,6 +69,16 @@
 **Status**: done
 **Notes**: All 258 tests pass; ruff clean. Tests use isolated worktrees via per-test `.pegasus/config.yaml` overriding `worktrees.base_path` to `tmp_path/worktrees`. Heartbeat tests use 0.1s interval + 0.35s sleep to confirm updates without slowing the suite. Rate-limit retry tests use 0.01s base delay. Notification tests monkey-patch `_send_notification` directly to avoid spawning `osascript`/`notify-send` in tests. SIGTERM/SIGINT handling via `signal.signal` registers graceful shutdown that marks task `paused` and calls `engine.interrupt()`.
 
+## Iteration 9: 09-cli-commands
+**Feature**: Click CLI commands — init, run, status, validate, resume
+**Files created/modified**:
+- `src/pegasus/ui.py` — Click CLI with `@click.group()` + 5 commands: `init` (auto-detect language/test/lint/branch, scaffold `.pegasus/`, starter templates, gitignore update, SQLite init), `run` (verify pipeline exists, insert task row, spawn `python3 -m pegasus._run_task <task-id>` as detached subprocess via `start_new_session=True`, `--dry-run` mode), `status` (read-only SQLite via `make_connection(read_only=True)`, Rich table for all tasks, detailed view with stage_runs for single task), `validate` (calls `validate_all_pipelines` or `validate_pipeline`, formats errors with Rich colors, exits non-zero on errors), `resume` (checks task state is failed/paused, spawns runner with `--resume` flag)
+- `src/pegasus/_run_task.py` — subprocess entry-point; sole importer of `runner.PipelineExecutor`; reads `PEGASUS_PROJECT_DIR` env var; calls `executor.run_task` or `executor.resume_task` depending on `--resume` flag
+- `tests/test_ui.py` — 54 CLI integration tests across 7 classes: `TestDetectLanguage` (7), `TestInitCommand` (13), `TestValidateCommand` (8), `TestStatusCommand` (9), `TestRunCommand` (6), `TestResumeCommand` (7), `TestRunTaskModule` (2); uses `CliRunner` + `tmp_path`; monkeypatches `subprocess.Popen`
+**Tests added**: 54 (total 312 including prior iterations)
+**Status**: done
+**Notes**: All 312 tests pass; ruff clean. Design constraint preserved — ui.py NEVER imports runner.py; _run_task.py is the sole bridge. Gitignore deduplication uses sentinel comment `# Pegasus runtime files`. Language auto-detection via ordered marker files (pyproject.toml→python, package.json→node, etc.). Subprocess spawned with `start_new_session=True` for proper daemon detachment. `PEGASUS_PROJECT_DIR` env var passed to subprocess for project discovery.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:

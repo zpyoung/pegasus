@@ -67,7 +67,7 @@
     "id": "09-cli-commands",
     "description": "ui.py: Click CLI commands — pegasus init (auto-detect language, test command, lint command, default branch; scaffold .pegasus/ with starter templates), run (spawn runner subprocess, create task+worktree), status (read SQLite, display task progress), validate (call models.py validation, format errors), resume (restart failed task from failed stage). Include CLI integration tests.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["05-pipeline-validation", "08-pipeline-executor"],
     "target_files": ["src/pegasus/ui.py", "tests/test_ui.py"]
   },
