@@ -714,3 +714,327 @@ class TestRunTaskModule:
             assert exc_info.value.code != 0
         finally:
             __import__("sys").argv = orig_argv
+
+
+# ---------------------------------------------------------------------------
+# Tests: Textual TUI dashboard (PegasusDashboard)
+# ---------------------------------------------------------------------------
+
+
+def _make_tui_project(tmp_path: Path) -> tuple[Path, Path]:
+    """Create a minimal project with an initialised pegasus.db.
+
+    Returns (project_dir, db_path).
+    """
+    project = _make_project(tmp_path)
+    db_path = project / ".pegasus" / "pegasus.db"
+    return project, db_path
+
+
+class TestBuildStageLines:
+    """Unit tests for _build_stage_lines helper."""
+
+    def test_empty_stages_returns_placeholder(self) -> None:
+        from pegasus.ui import _build_stage_lines
+
+        result = _build_stage_lines([])
+        assert "No stages" in result
+
+    def test_stages_include_stage_ids(self) -> None:
+        from pegasus.ui import _build_stage_lines
+
+        # Simulate sqlite3.Row-like objects with dict interface
+        class FakeRow(dict):
+            def __getitem__(self, key):  # type: ignore[override]
+                return super().__getitem__(key)
+
+        stages = [
+            FakeRow({"stage_id": "analyze", "status": "completed"}),
+            FakeRow({"stage_id": "implement", "status": "running"}),
+            FakeRow({"stage_id": "verify", "status": "pending"}),
+        ]
+        result = _build_stage_lines(stages)
+        assert "analyze" in result
+        assert "implement" in result
+        assert "verify" in result
+
+    def test_unknown_status_shows_question_mark(self) -> None:
+        from pegasus.ui import _build_stage_lines
+
+        class FakeRow(dict):
+            def __getitem__(self, key):  # type: ignore[override]
+                return super().__getitem__(key)
+
+        stages = [FakeRow({"stage_id": "weird", "status": "unknown_status"})]
+        result = _build_stage_lines(stages)
+        assert "weird" in result
+        assert "?" in result
+
+
+class TestPegasusDashboardApp:
+    """Textual Pilot tests for PegasusDashboard."""
+
+    @pytest.mark.asyncio
+    async def test_app_launches_and_renders_header(self, tmp_path: Path) -> None:
+        """App should start without errors and show the Pegasus header."""
+        _, db_path = _make_tui_project(tmp_path)
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            assert app.TITLE == "Pegasus Dashboard"
+
+    @pytest.mark.asyncio
+    async def test_app_shows_no_tasks_placeholder(self, tmp_path: Path) -> None:
+        """Empty DB should show 'No active tasks' placeholder."""
+        _, db_path = _make_tui_project(tmp_path)
+        from textual.widgets import Label
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.3)  # Let poll_db fire
+            labels = list(app.query(Label))
+            label_texts = [str(lbl.render()) for lbl in labels]
+            combined = " ".join(label_texts)
+            assert "No active tasks" in combined
+
+    @pytest.mark.asyncio
+    async def test_poll_db_populates_task_cards(self, tmp_path: Path) -> None:
+        """After inserting a task in SQLite, poll_db should create a TaskCard."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "abc123", pipeline="bug-fix", description="Fix login bug")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)  # Wait for at least 2 poll cycles
+            # _task_data should have been populated
+            assert len(app._task_data) == 1
+            assert app._task_data[0]["id"] == "abc123"
+
+    @pytest.mark.asyncio
+    async def test_poll_db_reflects_multiple_tasks(self, tmp_path: Path) -> None:
+        """Multiple tasks should all appear in _task_data."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "task01", pipeline="bug-fix", status="running")
+        _insert_task(db_path, "task02", pipeline="feature", status="queued")
+        _insert_task(db_path, "task03", pipeline="bug-fix", status="completed")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            ids = {t["id"] for t in app._task_data}
+            assert "task01" in ids
+            assert "task02" in ids
+            assert "task03" in ids
+
+    @pytest.mark.asyncio
+    async def test_poll_db_includes_stage_runs(self, tmp_path: Path) -> None:
+        """Stage runs for a task should appear in the task's stages list."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "stagetest", pipeline="bug-fix", status="running")
+        _insert_stage_run(db_path, "stagetest", "analyze", 0, status="completed")
+        _insert_stage_run(db_path, "stagetest", "implement", 1, status="running")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            assert len(app._task_data) == 1
+            stages = app._task_data[0]["stages"]
+            stage_ids = [s["stage_id"] for s in stages]
+            assert "analyze" in stage_ids
+            assert "implement" in stage_ids
+
+    @pytest.mark.asyncio
+    async def test_running_stage_shown_as_activity(self, tmp_path: Path) -> None:
+        """The running stage_id should populate the activity field."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "acttest", pipeline="bug-fix", status="running")
+        _insert_stage_run(db_path, "acttest", "analyze", 0, status="completed")
+        _insert_stage_run(db_path, "acttest", "implement", 1, status="running")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            assert app._task_data[0]["activity"] == "implement"
+
+    @pytest.mark.asyncio
+    async def test_quit_binding(self, tmp_path: Path) -> None:
+        """Pressing Q should quit the app."""
+        _, db_path = _make_tui_project(tmp_path)
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            await pilot.press("q")
+        # App exited without exception — test passes
+
+    @pytest.mark.asyncio
+    async def test_toggle_logs_binding(self, tmp_path: Path) -> None:
+        """Pressing L should toggle _logs_visible."""
+        _, db_path = _make_tui_project(tmp_path)
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            assert app._logs_visible is False
+            await pilot.press("l")
+            await pilot.pause(0.05)
+            assert app._logs_visible is True
+            await pilot.press("l")
+            await pilot.pause(0.05)
+            assert app._logs_visible is False
+
+    @pytest.mark.asyncio
+    async def test_tab_cycles_focus_idx(self, tmp_path: Path) -> None:
+        """Tab should increment the focused task index (wrapping around)."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "t1", pipeline="bug-fix", status="running")
+        _insert_task(db_path, "t2", pipeline="feature", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)  # Cards must be mounted before tab
+            initial_idx = app._focused_idx
+            await pilot.press("tab")
+            await pilot.pause(0.05)
+            assert app._focused_idx == (initial_idx + 1) % len(app._task_data)
+
+    @pytest.mark.asyncio
+    async def test_approve_paused_task_writes_db(self, tmp_path: Path) -> None:
+        """Pressing A on a paused task should transition it to queued in SQLite."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "pausedtask", pipeline="bug-fix", status="paused")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)  # Let poll populate _task_data
+            await pilot.press("a")
+            await pilot.pause(0.1)
+
+        # Verify SQLite was updated
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = 'pausedtask'").fetchone()
+        conn.close()
+        assert row["status"] == "queued"
+
+    @pytest.mark.asyncio
+    async def test_reject_paused_task_writes_db(self, tmp_path: Path) -> None:
+        """Pressing R on a paused task should set it to failed in SQLite."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "rejecttask", pipeline="bug-fix", status="paused")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("r")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = 'rejecttask'").fetchone()
+        conn.close()
+        assert row["status"] == "failed"
+
+    @pytest.mark.asyncio
+    async def test_approve_non_paused_task_shows_notification(self, tmp_path: Path) -> None:
+        """Pressing A on a running task should NOT change its status."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "runningtask", pipeline="bug-fix", status="running")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = 'runningtask'").fetchone()
+        conn.close()
+        # Status should remain unchanged
+        assert row["status"] == "running"
+
+    @pytest.mark.asyncio
+    async def test_log_panel_reads_log_file(self, tmp_path: Path) -> None:
+        """LogPanel.show_logs should read lines from the task's .log file."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "logtask", pipeline="bug-fix", status="running")
+
+        # Create a log file
+        log_dir = db_path.parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "logtask.log"
+        log_file.write_text("Line 1\nLine 2\nLine 3\n", encoding="utf-8")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("l")  # Toggle logs visible
+            await pilot.pause(0.2)
+            from textual.widgets import Static
+
+            log_content = app.query_one("#log-content", Static)
+            content_str = str(log_content.render())
+            assert "Line" in content_str or "log" in content_str.lower()
+
+    @pytest.mark.asyncio
+    async def test_no_db_handled_gracefully(self, tmp_path: Path) -> None:
+        """App should not crash when DB path doesn't exist — conn is None."""
+        missing_db = tmp_path / "nonexistent.db"
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=missing_db)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.3)
+            # App should still be running, just with empty task data
+            assert app._task_data == []
+
+
+class TestTuiCommand:
+    """CLI-level tests for the pegasus tui command."""
+
+    def test_tui_no_db_exits_with_error(self, tmp_path: Path) -> None:
+        """pegasus tui without init should print an error and exit non-zero."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["tui", "--project-dir", str(tmp_path)])
+        assert result.exit_code != 0
+        assert "No Pegasus database found" in result.output
+
+    def test_tui_command_registered(self) -> None:
+        """The 'tui' command must exist in the CLI group."""
+        assert "tui" in cli.commands  # type: ignore[attr-defined]

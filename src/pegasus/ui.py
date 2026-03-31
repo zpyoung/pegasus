@@ -7,6 +7,7 @@ This module defines the top-level ``cli`` Click group and all sub-commands:
 - ``status``   — Display task progress read directly from SQLite (read-only)
 - ``validate`` — Validate all pipeline YAML files and report errors
 - ``resume``   — Restart a failed task from its failed stage
+- ``tui``      — Launch the interactive Textual dashboard
 
 **CRITICAL DESIGN CONSTRAINT**: This module NEVER imports runner.py.  All state
 is read from SQLite via ``models.make_connection(read_only=True)``.  The runner is
@@ -785,3 +786,405 @@ def resume(task_id: str, project_dir: Path) -> None:
 
     console.print()
     console.print(f"Monitor progress: [bold]pegasus status {task_id}[/bold]")
+
+
+# ---------------------------------------------------------------------------
+# TUI — Textual dashboard
+# ---------------------------------------------------------------------------
+
+
+def _build_stage_lines(stages: list) -> str:
+    """Format stage rows into a multi-line string for display in a TaskCard."""
+    if not stages:
+        return "[dim]No stages yet.[/dim]"
+    icons: dict[str, str] = {
+        "completed": "[bold green]checkmark[/bold green]",
+        "running": "[bold cyan]running[/bold cyan]",
+        "failed": "[bold red]failed[/bold red]",
+        "pending": "[dim]pending[/dim]",
+        "skipped": "[dim]skipped[/dim]",
+    }
+    lines = []
+    for s in stages:
+        icon = icons.get(s["status"], "[dim]?[/dim]")
+        lines.append(f"{icon} {s['stage_id']}")
+    return "\n".join(lines)
+
+
+def _get_textual_app() -> type:
+    """Build and return the PegasusDashboard Textual App class.
+
+    Imports are deferred so Textual is not loaded until the ``tui`` command
+    is actually invoked.
+    """
+    import sqlite3 as _sqlite3
+
+    from textual.app import App, ComposeResult
+    from textual.binding import Binding
+    from textual.containers import Horizontal
+    from textual.widget import Widget
+    from textual.widgets import Footer, Header, Label, Static
+
+    class TaskCard(Widget):
+        """Widget showing one task: header, stage list, current activity."""
+
+        DEFAULT_CSS = """
+        TaskCard {
+            border: solid $primary;
+            padding: 0 1;
+            width: 1fr;
+            height: auto;
+            min-height: 10;
+        }
+        TaskCard:focus {
+            border: double $accent;
+        }
+        """
+
+        can_focus = True
+
+        def compose(self) -> ComposeResult:
+            yield Static("", id="card-header")
+            yield Static("", id="card-stages")
+            yield Static("", id="card-activity")
+
+        def update_data(
+            self,
+            task_id: str,
+            pipeline: str,
+            description: str,
+            status: str,
+            stages: list,
+            activity: str,
+        ) -> None:
+            """Refresh the card's displayed content."""
+            status_colors: dict[str, str] = {
+                "queued": "yellow",
+                "running": "cyan",
+                "paused": "magenta",
+                "completed": "green",
+                "failed": "red",
+            }
+            color = status_colors.get(status, "white")
+            header_text = (
+                f"[bold {color}]{task_id}[/bold {color}] [{color}]{status}[/{color}]\n"
+                f"[dim]{pipeline}[/dim]\n"
+                f"{description[:40]}"
+            )
+            self.query_one("#card-header", Static).update(header_text)
+            self.query_one("#card-stages", Static).update(_build_stage_lines(stages))
+            activity_text = f"[dim]> {activity[:50]}[/dim]" if activity else ""
+            self.query_one("#card-activity", Static).update(activity_text)
+
+    class LogPanel(Widget):
+        """Widget that tails a task's log file (last 8 lines)."""
+
+        DEFAULT_CSS = """
+        LogPanel {
+            height: 8;
+            border: solid $surface;
+            background: $surface;
+            padding: 0 1;
+            display: none;
+        }
+        LogPanel.visible-log {
+            display: block;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            yield Static("LOGS", id="log-header")
+            yield Static("", id="log-content")
+
+        def show_logs(self, task_id: str, log_dir: Path) -> None:
+            """Update displayed log content from the task log file."""
+            self.query_one("#log-header", Static).update(f"LOGS ({task_id})")
+            log_path = log_dir / f"{task_id}.log"
+            if not log_path.exists():
+                self.query_one("#log-content", Static).update("[dim](no log file yet)[/dim]")
+                return
+            try:
+                text = log_path.read_text(encoding="utf-8", errors="replace")
+                lines = text.splitlines()
+                tail = "\n".join(lines[-8:]) if lines else "(empty log)"
+                self.query_one("#log-content", Static).update(tail)
+            except OSError:
+                self.query_one("#log-content", Static).update("[dim](log unreadable)[/dim]")
+
+    class PegasusDashboard(App):
+        """Textual TUI dashboard for Pegasus task monitoring.
+
+        Polls SQLite at 100ms via set_interval using read-only (mode=ro)
+        connections.  Never imports runner.py.
+        """
+
+        TITLE = "Pegasus Dashboard"
+        SUB_TITLE = "Live task monitoring"
+
+        DEFAULT_CSS = """
+        PegasusDashboard {
+            background: $background;
+        }
+        #task-area {
+            height: 1fr;
+        }
+        #log-panel {
+            dock: bottom;
+        }
+        """
+
+        BINDINGS = [
+            Binding("d", "toggle_view", "Dashboard", show=True),
+            Binding("tab", "focus_next_task", "Next task", show=True, priority=True),
+            Binding("shift+tab", "focus_prev_task", "Prev task", show=False, priority=True),
+            Binding("a", "approve_task", "Approve", show=True),
+            Binding("r", "reject_task", "Reject", show=True),
+            Binding("l", "toggle_logs", "Logs", show=True),
+            Binding("q", "quit_app", "Quit", show=True),
+        ]
+
+        _task_data: list = []
+        _focused_idx: int = 0
+        _logs_visible: bool = False
+
+        def __init__(self, db_path: Path, **kwargs: object) -> None:
+            super().__init__(**kwargs)
+            self._db_path = db_path
+            self._conn: _sqlite3.Connection | None = None
+
+        def on_mount(self) -> None:
+            """Open read-only SQLite connection and start 100ms polling."""
+            try:
+                self._conn = make_connection(self._db_path, read_only=True)
+            except Exception:
+                self._conn = None
+            self.set_interval(0.1, self.poll_db)
+
+        def on_unmount(self) -> None:
+            """Close the SQLite connection on exit."""
+            if self._conn is not None:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+                self._conn = None
+
+        def compose(self) -> ComposeResult:
+            yield Header()
+            yield Horizontal(id="task-area")
+            yield LogPanel(id="log-panel")
+            yield Footer()
+
+        def poll_db(self) -> None:
+            """Query SQLite for current tasks/stage_runs; refresh widgets."""
+            if self._conn is None:
+                return
+            try:
+                tasks = self._conn.execute(
+                    """SELECT id, pipeline, description, status
+                       FROM tasks
+                       ORDER BY created_at DESC"""
+                ).fetchall()
+
+                result = []
+                for t in tasks:
+                    stages = self._conn.execute(
+                        """SELECT stage_id, stage_index, status
+                           FROM stage_runs
+                           WHERE task_id = ?
+                           ORDER BY stage_index ASC""",
+                        (t["id"],),
+                    ).fetchall()
+                    running = [s for s in stages if s["status"] == "running"]
+                    activity = running[0]["stage_id"] if running else ""
+                    result.append(
+                        {
+                            "id": t["id"],
+                            "pipeline": t["pipeline"],
+                            "description": t["description"] or "",
+                            "status": t["status"],
+                            "stages": list(stages),
+                            "activity": activity,
+                        }
+                    )
+                self._task_data = result
+                self._refresh_cards()
+                if self._logs_visible:
+                    self._refresh_logs()
+            except Exception:
+                pass
+
+        # ------------------------------------------------------------------
+        # Internal refresh helpers
+        # ------------------------------------------------------------------
+
+        def _refresh_cards(self) -> None:
+            """Sync TaskCards in #task-area to match current _task_data."""
+            area = self.query_one("#task-area", Horizontal)
+            tasks = self._task_data
+            current_cards = list(self.query(TaskCard))
+
+            # Update existing / create new cards
+            for i, task in enumerate(tasks):
+                if i < len(current_cards):
+                    card = current_cards[i]
+                else:
+                    card = TaskCard()
+                    area.mount(card)
+                card.update_data(
+                    task_id=task["id"],
+                    pipeline=task["pipeline"],
+                    description=task["description"],
+                    status=task["status"],
+                    stages=task["stages"],
+                    activity=task["activity"],
+                )
+
+            # Remove extra cards
+            for card in current_cards[len(tasks) :]:
+                card.remove()
+
+            # Placeholder label when no tasks exist
+            no_label_results = self.query("#no-tasks-label")
+            no_label: Label | None = next(iter(no_label_results), None)
+            if not tasks and no_label is None:
+                area.mount(
+                    Label(
+                        "No active tasks.  Run [bold]pegasus run[/bold] to start one.",
+                        id="no-tasks-label",
+                    )
+                )
+            elif tasks and no_label is not None:
+                no_label.remove()
+
+        def _refresh_logs(self) -> None:
+            """Tail the focused task's log file into the LogPanel."""
+            tasks = self._task_data
+            if not tasks:
+                return
+            idx = min(self._focused_idx, len(tasks) - 1)
+            task_id = tasks[idx]["id"]
+            log_dir = self._db_path.parent / "logs"
+            log_panel = self.query_one("#log-panel", LogPanel)
+            log_panel.show_logs(task_id, log_dir)
+
+        # ------------------------------------------------------------------
+        # Key-action handlers
+        # ------------------------------------------------------------------
+
+        def action_toggle_view(self) -> None:
+            """D -- toggle between dashboard and focus view (focus deferred to v0.2)."""
+            self.notify("Dashboard view active (focus view: v0.2)", timeout=2)
+
+        def action_focus_next_task(self) -> None:
+            """Tab -- cycle focus forward through task cards."""
+            cards = list(self.query(TaskCard))
+            if not cards:
+                return
+            self._focused_idx = (self._focused_idx + 1) % len(cards)
+            cards[self._focused_idx].focus()
+            if self._logs_visible:
+                self._refresh_logs()
+
+        def action_focus_prev_task(self) -> None:
+            """Shift+Tab -- cycle focus backward through task cards."""
+            cards = list(self.query(TaskCard))
+            if not cards:
+                return
+            self._focused_idx = (self._focused_idx - 1) % len(cards)
+            cards[self._focused_idx].focus()
+            if self._logs_visible:
+                self._refresh_logs()
+
+        def action_approve_task(self) -> None:
+            """A -- approve the focused paused task by writing queued to SQLite."""
+            if not self._task_data:
+                return
+            idx = min(self._focused_idx, len(self._task_data) - 1)
+            task = self._task_data[idx]
+            if task["status"] != "paused":
+                self.notify(
+                    f"Task {task['id']} is not paused (status: {task['status']})", timeout=3
+                )
+                return
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    conn.execute(
+                        "UPDATE tasks SET status = 'queued', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (task["id"],),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+                self.notify(f"Approved task {task['id']}", timeout=2)
+            except Exception as exc:
+                self.notify(f"Approve failed: {exc}", severity="error", timeout=4)
+
+        def action_reject_task(self) -> None:
+            """R -- reject/mark the focused task as failed."""
+            if not self._task_data:
+                return
+            idx = min(self._focused_idx, len(self._task_data) - 1)
+            task = self._task_data[idx]
+            if task["status"] not in ("paused", "running"):
+                self.notify(
+                    f"Task {task['id']} cannot be rejected (status: {task['status']})", timeout=3
+                )
+                return
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    conn.execute(
+                        "UPDATE tasks SET status = 'failed', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (task["id"],),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+                self.notify(f"Rejected task {task['id']}", timeout=2)
+            except Exception as exc:
+                self.notify(f"Reject failed: {exc}", severity="error", timeout=4)
+
+        def action_toggle_logs(self) -> None:
+            """L -- show/hide the log panel."""
+            self._logs_visible = not self._logs_visible
+            log_panel = self.query_one("#log-panel", LogPanel)
+            if self._logs_visible:
+                log_panel.add_class("visible-log")
+                self._refresh_logs()
+            else:
+                log_panel.remove_class("visible-log")
+
+        def action_quit_app(self) -> None:
+            """Q -- quit TUI; tasks continue running as detached subprocesses."""
+            self.exit()
+
+    return PegasusDashboard
+
+
+# ---------------------------------------------------------------------------
+# pegasus tui
+# ---------------------------------------------------------------------------
+
+
+@cli.command("tui")
+@click.option(
+    "--project-dir",
+    default=".",
+    show_default=True,
+    help="Project root directory.",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+)
+def tui(project_dir: Path) -> None:
+    """Launch the interactive Textual terminal dashboard."""
+    project_dir = project_dir.resolve()
+    db_path = _get_db_path(project_dir)
+
+    if not db_path.exists():
+        console.print("[red]Error:[/red] No Pegasus database found. Run [bold]pegasus init[/bold] first.")
+        sys.exit(1)
+
+    PegasusDashboard = _get_textual_app()
+    app = PegasusDashboard(db_path=db_path)
+    app.run()

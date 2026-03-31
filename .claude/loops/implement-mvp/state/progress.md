@@ -87,3 +87,12 @@
 **Tests added**: 58 (total 62 with scaffold)
 **Status**: done
 **Notes**: All extras forbidden at every model level. Stage ID validated with regex `^[a-z][a-z0-9_-]*$`. Stage count capped at 10. Cross-stage reference validation via regex scan of prompts. Empty config YAML defaults gracefully to built-ins. Removed quoted self-reference in `model_validator` to satisfy `ruff UP037`.
+
+## Iteration 10: 10-tui-dashboard
+**Feature**: Textual TUI dashboard — pegasus tui command, PegasusDashboard App, TaskCard widget, LogPanel widget
+**Files created/modified**:
+- `src/pegasus/ui.py` — added `_build_stage_lines()` helper, `_get_textual_app()` factory (deferred Textual imports), `PegasusDashboard(App)` (Header, Horizontal task-card area, LogPanel, Footer; `on_mount` opens read-only SQLite connection; `set_interval(0.1, poll_db)` for live updates; `_refresh_cards()` reconciles TaskCard widgets; `_refresh_logs()` tails log files), `TaskCard(Widget)` (header/stages/activity statics; `update_data` method), `LogPanel(Widget)` (tails `.pegasus/logs/<task-id>.log`, toggled visible via CSS class), `tui` Click command (resolves db_path, exits with error if missing, runs app)
+- `tests/test_ui.py` — added `TestBuildStageLines` (3 tests), `TestPegasusDashboardApp` (14 tests: app launch, no-tasks placeholder, poll_db task population, multiple tasks, stage runs, activity field, Q quit, L toggle logs, Tab cycle focus, A approve paused→queued, R reject paused→failed, approve non-paused unchanged, log file tail, graceful no-db handling), `TestTuiCommand` (2 tests: no-db error, tui command registered)
+**Tests added**: 19 (total 331 including prior iterations)
+**Status**: done
+**Notes**: All 331 tests pass; ruff clean. Tab binding requires `priority=True` to override Textual's default focus cycling (Textual intercepts Tab at the Screen level). Deferred Textual imports via `_get_textual_app()` so Textual is only loaded when `pegasus tui` is invoked. Mode=ro SQLite connections preserved per ADR-002. Log panel reads last 8 lines from `.pegasus/logs/<task-id>.log`. Approve action writes `status='queued'` directly to SQLite (runner picks it up). Reject writes `status='failed'`. D binding shows "focus view: v0.2" notification per spec.

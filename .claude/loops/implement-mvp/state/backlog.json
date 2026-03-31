@@ -75,7 +75,7 @@
     "id": "10-tui-dashboard",
     "description": "ui.py: Textual TUI dashboard — pegasus tui command launches Textual app with dashboard view (split pane showing all active tasks, stage progress, live log tail). Poll SQLite via set_interval at 100ms using mode=ro connections. Keyboard bindings: D (toggle view), Tab (cycle tasks), A (approve), R (reject), L (toggle logs), Q (quit). Include Textual Pilot tests.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["09-cli-commands"],
     "target_files": ["src/pegasus/ui.py", "tests/test_ui.py"]
   },
