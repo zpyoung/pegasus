@@ -18,9 +18,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
+import shlex
 import sqlite3
+import subprocess
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from pegasus.models import init_db, make_connection, transition_task_state
@@ -451,3 +455,484 @@ class PegasusEngine:
     async def interrupt(self) -> None:
         """Delegate an interrupt request to the underlying runner."""
         await self.runner.interrupt()
+
+
+# ---------------------------------------------------------------------------
+# WorktreeManager
+# ---------------------------------------------------------------------------
+
+
+class WorktreeError(Exception):
+    """Raised when a git worktree operation fails."""
+
+
+class WorktreeManager:
+    """Manages git worktree lifecycle for Pegasus tasks.
+
+    Each task runs in an isolated git worktree branched from the project's
+    default branch.  This class handles:
+
+    - Detecting the repository's default branch (``detect_default_branch``).
+    - Creating a worktree with an optional setup command
+      (``create_worktree``).
+    - Health-checking an existing worktree (``health_check``).
+    - Cleaning up a worktree and its branch (``cleanup_worktree``).
+    - Detecting and marking orphaned worktrees on startup
+      (``detect_orphans``).
+    - Removing all orphaned worktrees (``cleanup_orphans``).
+    """
+
+    #: Seconds after which a running task with no heartbeat is considered stale.
+    HEARTBEAT_TIMEOUT: int = 30
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _run_git(
+        args: list[str],
+        cwd: str | os.PathLike[str] | None = None,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Run a git sub-command and return the completed process.
+
+        Args:
+            args:  Argument list, e.g. ``["worktree", "list"]``.
+            cwd:   Working directory for the git command.
+            check: If ``True`` (default), raise ``WorktreeError`` on non-zero
+                   exit code instead of ``subprocess.CalledProcessError``.
+
+        Raises:
+            WorktreeError: When *check* is True and git exits non-zero.
+        """
+        cmd = ["git", *args]
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError as exc:
+            raise WorktreeError("git executable not found") from exc
+
+        if check and result.returncode != 0:
+            raise WorktreeError(
+                f"git {' '.join(args)} failed (exit {result.returncode}): "
+                f"{result.stderr.strip()}"
+            )
+        return result
+
+    @staticmethod
+    def _slug(text: str) -> str:
+        """Convert *text* to a branch-safe slug (lowercase, hyphens only)."""
+        text = text.lower()
+        text = re.sub(r"[^a-z0-9]+", "-", text)
+        text = text.strip("-")
+        return text[:40] or "task"
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def detect_default_branch(self, repo_dir: str | os.PathLike[str]) -> str:
+        """Return the default branch name for *repo_dir*.
+
+        Strategy:
+        1. Try ``git symbolic-ref refs/remotes/origin/HEAD`` (fast, works with
+           a remote).
+        2. Fall back to the current HEAD branch name.
+        3. Fall back to ``"main"`` if the repo has no commits.
+
+        Args:
+            repo_dir: Path to the git repository root.
+
+        Returns:
+            Branch name string, e.g. ``"main"`` or ``"master"``.
+        """
+        # Try remote HEAD first (most reliable).
+        result = self._run_git(
+            ["symbolic-ref", "refs/remotes/origin/HEAD"],
+            cwd=repo_dir,
+            check=False,
+        )
+        if result.returncode == 0:
+            ref = result.stdout.strip()
+            # ref looks like "refs/remotes/origin/main" — extract last component.
+            return ref.split("/")[-1]
+
+        # Fall back to current HEAD branch.
+        result = self._run_git(
+            ["symbolic-ref", "--short", "HEAD"],
+            cwd=repo_dir,
+            check=False,
+        )
+        if result.returncode == 0:
+            branch = result.stdout.strip()
+            if branch:
+                return branch
+
+        # Last resort: assume "main".
+        return "main"
+
+    def create_worktree(
+        self,
+        repo_dir: str | os.PathLike[str],
+        task_id: str,
+        description: str,
+        base_path: str | os.PathLike[str],
+        setup_command: str | None = None,
+    ) -> Path:
+        """Create a new git worktree for *task_id*.
+
+        Steps:
+        1. Detect the default branch.
+        2. Derive a branch name ``pegasus/<task-id>-<slug>``.
+        3. Create the worktree directory under *base_path*.
+        4. Run ``git worktree add <path> -b <branch> <default-branch>``.
+        5. Optionally run *setup_command* inside the new worktree.
+
+        Args:
+            repo_dir:      Path to the git repository root.
+            task_id:       Unique task identifier (used in branch name).
+            description:   Human-readable task description (slugified for branch name).
+            base_path:     Parent directory under which the worktree is created.
+            setup_command: Shell command to run inside the worktree after creation
+                           (e.g. ``"pip install -e ."``).
+
+        Returns:
+            Absolute ``Path`` to the newly created worktree directory.
+
+        Raises:
+            WorktreeError: If ``git worktree add`` fails or *setup_command* exits
+                           non-zero.
+        """
+        repo_dir = Path(repo_dir)
+        base_path = Path(base_path)
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        default_branch = self.detect_default_branch(repo_dir)
+        slug = self._slug(description)
+        branch_name = f"pegasus/{task_id}-{slug}"
+        worktree_path = base_path / f"{task_id}-{slug}"
+
+        self._run_git(
+            ["worktree", "add", str(worktree_path), "-b", branch_name, default_branch],
+            cwd=repo_dir,
+        )
+
+        if setup_command:
+            try:
+                result = subprocess.run(
+                    shlex.split(setup_command),
+                    cwd=worktree_path,
+                    capture_output=True,
+                    text=True,
+                )
+            except FileNotFoundError as exc:
+                raise WorktreeError(
+                    f"setup_command executable not found: {setup_command}"
+                ) from exc
+            if result.returncode != 0:
+                raise WorktreeError(
+                    f"setup_command failed (exit {result.returncode}): "
+                    f"{result.stderr.strip()}"
+                )
+
+        logger.info(
+            "worktree created: path=%s branch=%s",
+            worktree_path,
+            branch_name,
+        )
+        return worktree_path.resolve()
+
+    def health_check(self, worktree_path: str | os.PathLike[str]) -> dict[str, Any]:
+        """Check the health of a worktree.
+
+        Checks:
+        - Directory exists.
+        - ``git status --porcelain`` returns nothing (clean working tree).
+        - No stale ``.git/index.lock`` file.
+
+        Args:
+            worktree_path: Path to the worktree directory.
+
+        Returns:
+            Dict with keys:
+            - ``"healthy"`` (bool): True if all checks pass.
+            - ``"exists"`` (bool): Whether the directory exists.
+            - ``"clean"`` (bool): Whether the working tree is clean.
+            - ``"no_lock"`` (bool): Whether there is no stale lock file.
+            - ``"error"`` (str | None): Error message if unhealthy.
+        """
+        worktree_path = Path(worktree_path)
+        result: dict[str, Any] = {
+            "healthy": False,
+            "exists": False,
+            "clean": False,
+            "no_lock": False,
+            "error": None,
+        }
+
+        if not worktree_path.is_dir():
+            result["error"] = f"worktree directory does not exist: {worktree_path}"
+            return result
+        result["exists"] = True
+
+        # Check for stale index lock.
+        lock_file = worktree_path / ".git" / "index.lock"
+        if lock_file.exists():
+            result["error"] = f"stale lock file found: {lock_file}"
+            result["no_lock"] = False
+            return result
+        result["no_lock"] = True
+
+        # Check working tree is clean.
+        status_result = self._run_git(
+            ["status", "--porcelain"],
+            cwd=worktree_path,
+            check=False,
+        )
+        if status_result.returncode != 0:
+            result["error"] = (
+                f"git status failed: {status_result.stderr.strip()}"
+            )
+            return result
+
+        if status_result.stdout.strip():
+            result["error"] = "working tree is dirty"
+            result["clean"] = False
+        else:
+            result["clean"] = True
+
+        result["healthy"] = result["exists"] and result["clean"] and result["no_lock"]
+        return result
+
+    def cleanup_worktree(
+        self,
+        worktree_path: str | os.PathLike[str],
+        repo_dir: str | os.PathLike[str] | None = None,
+        branch: str | None = None,
+    ) -> None:
+        """Remove a worktree and optionally delete its branch.
+
+        Steps:
+        1. ``git worktree remove --force <path>``.
+        2. ``git worktree prune`` to update the worktree list.
+        3. If *branch* is provided, ``git branch -d <branch>`` (force-deletes
+           with ``-D`` if ``-d`` fails).
+
+        Args:
+            worktree_path: Path to the worktree to remove.
+            repo_dir:      Repository root for running prune/branch commands.
+                           If ``None``, uses the worktree's own ``.git`` parent;
+                           falls back to the worktree path itself.
+            branch:        Branch name to delete after removing the worktree.
+
+        Raises:
+            WorktreeError: If ``git worktree remove`` fails.
+        """
+        worktree_path = Path(worktree_path)
+
+        # Determine a valid git directory to run prune from.
+        if repo_dir is not None:
+            git_dir = Path(repo_dir)
+        else:
+            # Try to find the main repo from the worktree's .git file.
+            git_file = worktree_path / ".git"
+            if git_file.is_file():
+                # .git is a file in worktrees: "gitdir: /path/to/main/.git/worktrees/..."
+                try:
+                    content = git_file.read_text()
+                    match = re.search(r"gitdir:\s*(.+)", content)
+                    if match:
+                        gitdir_path = Path(match.group(1).strip())
+                        # Navigate up: .git/worktrees/<name> -> .git -> repo root
+                        git_dir = gitdir_path.parent.parent.parent
+                    else:
+                        git_dir = worktree_path
+                except OSError:
+                    git_dir = worktree_path
+            else:
+                git_dir = worktree_path
+
+        # Remove the worktree (force in case of dirty state).
+        self._run_git(
+            ["worktree", "remove", "--force", str(worktree_path)],
+            cwd=git_dir,
+        )
+
+        # Prune stale worktree refs.
+        self._run_git(["worktree", "prune"], cwd=git_dir, check=False)
+
+        # Optionally delete the branch.
+        if branch:
+            result = self._run_git(
+                ["branch", "-d", branch],
+                cwd=git_dir,
+                check=False,
+            )
+            if result.returncode != 0:
+                # Force-delete if regular delete fails (unmerged branch).
+                self._run_git(
+                    ["branch", "-D", branch],
+                    cwd=git_dir,
+                    check=False,
+                )
+
+        logger.info("worktree removed: path=%s branch=%s", worktree_path, branch)
+
+    def detect_orphans(
+        self,
+        conn: sqlite3.Connection,
+        base_path: str | os.PathLike[str],
+    ) -> list[str]:
+        """Find tasks in 'running' state whose runner process is dead.
+
+        A task is considered orphaned when:
+        - Its ``status`` is ``'running'``.
+        - Its ``heartbeat_at`` is more than ``HEARTBEAT_TIMEOUT`` seconds ago,
+          OR its ``runner_pid`` refers to a process that is no longer alive.
+
+        Orphaned tasks are updated in SQLite:
+        - ``tasks.status`` -> ``'failed'``
+        - ``worktrees.status`` -> ``'orphaned'`` (if a worktree row exists)
+
+        Args:
+            conn:      Open SQLite connection (writable).
+            base_path: Base path for worktrees (unused currently, reserved for
+                       future filesystem-level orphan scans).
+
+        Returns:
+            List of orphaned task IDs that were marked.
+        """
+        rows = conn.execute(
+            """
+            SELECT id, runner_pid, heartbeat_at
+            FROM tasks
+            WHERE status = 'running'
+            """,
+        ).fetchall()
+
+        orphaned_ids: list[str] = []
+        for row in rows:
+            task_id: str = row["id"]
+            pid: int | None = row["runner_pid"]
+            heartbeat_at: str | None = row["heartbeat_at"]
+
+            is_orphan = False
+
+            # Check heartbeat staleness.
+            if heartbeat_at is not None:
+                stale_result = conn.execute(
+                    """
+                    SELECT (CAST(strftime('%s', 'now') AS INTEGER)
+                            - CAST(strftime('%s', ?) AS INTEGER)) > ?
+                    """,
+                    (heartbeat_at, self.HEARTBEAT_TIMEOUT),
+                ).fetchone()
+                if stale_result and stale_result[0]:
+                    is_orphan = True
+            else:
+                # No heartbeat recorded — treat as orphan immediately.
+                is_orphan = True
+
+            # Additionally check PID liveness (if heartbeat alone isn't conclusive).
+            if not is_orphan and pid is not None:
+                is_orphan = not _pid_alive(pid)
+
+            if is_orphan:
+                conn.execute(
+                    "UPDATE tasks SET status = 'failed', "
+                    "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    (task_id,),
+                )
+                conn.execute(
+                    "UPDATE worktrees SET status = 'orphaned' WHERE task_id = ?",
+                    (task_id,),
+                )
+                orphaned_ids.append(task_id)
+                logger.warning(
+                    "orphan detected: task=%s pid=%s heartbeat=%s",
+                    task_id,
+                    pid,
+                    heartbeat_at,
+                )
+
+        if orphaned_ids:
+            conn.commit()
+
+        return orphaned_ids
+
+    def cleanup_orphans(
+        self,
+        conn: sqlite3.Connection,
+        base_path: str | os.PathLike[str],
+        repo_dir: str | os.PathLike[str] | None = None,
+    ) -> list[str]:
+        """Remove all worktrees with status 'orphaned'.
+
+        Queries the ``worktrees`` table for rows with ``status = 'orphaned'``
+        and calls ``cleanup_worktree`` on each.  Any filesystem errors are
+        logged but do not abort subsequent cleanups.
+
+        Args:
+            conn:      Open SQLite connection (writable).
+            base_path: Base path (unused; reserved for future use).
+            repo_dir:  Repository root for running git commands.  If ``None``,
+                       the cleanup attempts to infer it from the ``.git`` file
+                       inside each orphaned worktree.
+
+        Returns:
+            List of worktree paths that were successfully removed.
+        """
+        rows = conn.execute(
+            "SELECT task_id, path, branch FROM worktrees WHERE status = 'orphaned'"
+        ).fetchall()
+
+        removed: list[str] = []
+        for row in rows:
+            path: str = row["path"]
+            branch: str = row["branch"]
+            task_id: str = row["task_id"]
+            try:
+                self.cleanup_worktree(path, repo_dir=repo_dir, branch=branch)
+                conn.execute(
+                    "DELETE FROM worktrees WHERE task_id = ?", (task_id,)
+                )
+                removed.append(path)
+            except WorktreeError as exc:
+                logger.warning(
+                    "cleanup_orphans: failed to remove worktree %s: %s", path, exc
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "cleanup_orphans: unexpected error for worktree %s: %s", path, exc
+                )
+
+        if removed:
+            conn.commit()
+
+        return removed
+
+
+# ---------------------------------------------------------------------------
+# Process liveness helper
+# ---------------------------------------------------------------------------
+
+
+def _pid_alive(pid: int) -> bool:
+    """Return True if a process with *pid* is currently running.
+
+    Uses ``os.kill(pid, 0)`` which does not send a signal but checks
+    whether the process exists.  Works on macOS and Linux.
+    """
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        # Process exists but we don't have permission to signal it.
+        return True

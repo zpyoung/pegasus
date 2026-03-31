@@ -51,7 +51,7 @@
     "id": "07-worktree-lifecycle",
     "description": "runner.py: Git worktree manager — create worktree (branch from default branch, run setup_command), health check (clean state, setup success), cleanup (git worktree remove + prune), orphan detection on startup. Include integration tests with real git operations in tmp directories.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["03-sqlite-schema"],
     "target_files": ["src/pegasus/runner.py", "tests/test_runner.py"]
   },

@@ -51,6 +51,15 @@
 **Status**: done
 **Notes**: All 205 tests pass; ruff clean. SDK import is guarded with try/except so tests work without claude-agent-sdk installed. Cost accumulation handles the case where ResultMessage.total_cost_usd may be higher than the sum of incremental AgentMessage costs (uses delta to prevent double-counting). Engine never imports ui.py.
 
+## Iteration 7: 07-worktree-lifecycle
+**Feature**: Git worktree lifecycle manager — create, health-check, cleanup, orphan detection
+**Files created/modified**:
+- `src/pegasus/runner.py` — added `WorktreeError` exception class, `WorktreeManager` class (6 public methods: `detect_default_branch`, `create_worktree`, `health_check`, `cleanup_worktree`, `detect_orphans`, `cleanup_orphans`), `_pid_alive()` helper; added `re`, `shlex`, `subprocess`, `Path` imports
+- `tests/test_runner.py` — added 30 integration tests across 7 new test classes: `TestDetectDefaultBranch` (4), `TestCreateWorktree` (6), `TestHealthCheck` (4), `TestCleanupWorktree` (3), `TestDetectOrphans` (7), `TestCleanupOrphans` (4), `TestPidAlive` (2)
+**Tests added**: 30 (total 235 including prior iterations)
+**Status**: done
+**Notes**: All 235 tests pass; ruff clean. Integration tests use real git repos in tmp_path: `_init_git_repo()` helper initialises a git repo with an initial commit and configures user identity. `detect_default_branch` tries `git symbolic-ref refs/remotes/origin/HEAD` first then falls back to current HEAD. Lock file test accounts for git worktree `.git` being a file (not directory) — temporarily swaps it with a directory to place the lock. Orphan detection uses SQLite's `strftime('%s', ...)` for heartbeat staleness check (>30s) combined with PID liveness check via `os.kill(pid, 0)`. `cleanup_worktree` infers main repo from gitdir pointer in the `.git` file when `repo_dir` is not provided.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:
