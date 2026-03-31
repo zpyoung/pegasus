@@ -8,6 +8,7 @@ This module defines:
 - Layered config resolution (stage > pipeline > project > user > built-in)
 - Permission ceiling logic (max_permission, deny-wins)
 - SQLite connection factory, schema initialization, and state transitions
+- Pipeline validation (validate_pipeline, validate_all_pipelines)
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # claude_flags allowlist
@@ -780,3 +781,390 @@ def transition_task_state(
     )
     conn.commit()
     return True
+
+
+# ---------------------------------------------------------------------------
+# Pipeline validation
+# ---------------------------------------------------------------------------
+
+
+class PipelineValidationError:
+    """A single validation problem found in a pipeline YAML file.
+
+    Attributes:
+        file_path: Path to the YAML file (or ``"<string>"`` when validating
+            raw YAML content).
+        message:   Human-readable description of the problem.
+        location:  Optional hint indicating where in the file the error
+                   originates (e.g. ``"stage 'analyze' > claude_flags"``).
+    """
+
+    __slots__ = ("file_path", "location", "message")
+
+    def __init__(
+        self,
+        message: str,
+        file_path: str | Path = "<string>",
+        location: str | None = None,
+    ) -> None:
+        self.message = message
+        self.file_path = str(file_path)
+        self.location = location
+
+    def __str__(self) -> str:
+        loc_part = f" [{self.location}]" if self.location else ""
+        return f"{self.file_path}{loc_part}: {self.message}"
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"PipelineValidationError({self!s})"
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Compute the Levenshtein edit distance between two strings.
+
+    Pure Python implementation — no third-party dependencies.
+
+    Args:
+        a: First string.
+        b: Second string.
+
+    Returns:
+        Integer edit distance.
+    """
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+    m, n = len(a), len(b)
+    prev = list(range(n + 1))
+    for i in range(1, m + 1):
+        curr = [i] + [0] * n
+        for j in range(1, n + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+        prev = curr
+    return prev[n]
+
+
+def _suggest_flag(unknown: str, max_distance: int = 3) -> str | None:
+    """Return the closest allowed flag name if within *max_distance* edits.
+
+    Args:
+        unknown: The unrecognised flag key provided by the user.
+        max_distance: Maximum Levenshtein distance to qualify as a suggestion.
+
+    Returns:
+        The closest allowed flag string, or ``None`` if no close match exists.
+    """
+    best: str | None = None
+    best_dist = max_distance + 1
+    for allowed in sorted(ALLOWED_CLAUDE_FLAGS):
+        d = _levenshtein(unknown, allowed)
+        if d < best_dist:
+            best_dist = d
+            best = allowed
+    return best if best_dist <= max_distance else None
+
+
+#: Recognisable template variable namespaces in prompts.
+_KNOWN_TEMPLATE_NAMESPACES: frozenset[str] = frozenset({"stages", "task", "project"})
+
+#: Regex matching any ``{{...}}`` template expression.
+_TEMPLATE_RE: re.Pattern[str] = re.compile(r"\{\{([^}]+)\}\}")
+
+#: Regex matching valid stage output references: ``{{stages.<id>.<attr>}}``.
+_STAGE_REF_RE: re.Pattern[str] = re.compile(
+    r"\{\{stages\.([a-z][a-z0-9_-]*)\.(\w+)\}\}"
+)
+
+
+def _format_pydantic_errors(exc: ValidationError, file_path: str | Path) -> list[PipelineValidationError]:
+    """Convert a Pydantic ``ValidationError`` into a list of ``PipelineValidationError``.
+
+    Each Pydantic error becomes one entry with a human-readable location
+    path (e.g. ``stages -> 1 -> claude_flags -> permission_mode``).
+
+    Args:
+        exc: The Pydantic ``ValidationError`` raised during model validation.
+        file_path: Path to the YAML file (used as the error source label).
+
+    Returns:
+        A list of ``PipelineValidationError`` instances.
+    """
+    errors: list[PipelineValidationError] = []
+    for err in exc.errors():
+        loc_parts = [str(p) for p in err.get("loc", [])]
+        location = " -> ".join(loc_parts) if loc_parts else None
+        msg = err.get("msg", str(err))
+        # Strip redundant "Value error, " prefix that Pydantic sometimes adds.
+        if msg.startswith("Value error, "):
+            msg = msg[len("Value error, "):]
+        errors.append(
+            PipelineValidationError(
+                message=msg,
+                file_path=file_path,
+                location=location,
+            )
+        )
+    return errors
+
+
+def validate_pipeline(
+    pipeline: str | Path | dict[str, Any],
+    file_path: str | Path = "<string>",
+) -> list[PipelineValidationError]:
+    """Validate a pipeline definition and return all problems found.
+
+    Accepts a file path, raw YAML string content (when *file_path* is
+    ``"<string>"``), or an already-parsed dict.  All validation checks are
+    run even when some checks could short-circuit — the goal is to surface
+    *all* problems in a single pass so the user can fix them together.
+
+    Checks performed (in order):
+
+    1. **YAML syntax** — confirm the file parses without errors.
+    2. **Schema compliance** — validate against the ``PipelineConfig`` Pydantic
+       model; Pydantic errors are formatted into human-readable messages.
+    3. **Unique stage IDs** — already enforced by Pydantic; reported here too
+       if somehow bypassed.
+    4. **Stage reference validity** — ``{{stages.X.output}}`` references must
+       point to stage IDs that exist *and* are defined upstream (no forward
+       references in MVP linear pipelines).
+    5. **Unknown claude_flags** — keys not in ``ALLOWED_CLAUDE_FLAGS`` are
+       flagged with a Levenshtein-based suggestion when available.
+    6. **Template variable namespaces** — unrecognised ``{{X.Y}}`` namespaces
+       (i.e. not ``stages``, ``task``, or ``project``) are reported as warnings.
+
+    Args:
+        pipeline: One of:
+            - A ``pathlib.Path`` or ``str`` path to a YAML file.
+            - A raw YAML string (only when *file_path* is ``"<string>"``).
+            - A pre-parsed ``dict[str, Any]``.
+        file_path: Label used in error messages.  Defaults to ``"<string>"``
+            when *pipeline* is a string or dict.
+
+    Returns:
+        A (possibly empty) list of ``PipelineValidationError`` instances.
+        An empty list means the pipeline is valid.
+    """
+    errors: list[PipelineValidationError] = []
+    raw: Any = None
+
+    # -----------------------------------------------------------------------
+    # Step 1: Load raw YAML (or accept a pre-parsed dict)
+    # -----------------------------------------------------------------------
+    if isinstance(pipeline, dict):
+        raw = pipeline
+        # file_path already set by caller
+    elif isinstance(pipeline, Path):
+        # pathlib.Path — treat as a file path.
+        file_path = pipeline
+        try:
+            raw = yaml.safe_load(pipeline.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            errors.append(
+                PipelineValidationError(
+                    message=f"YAML syntax error: {exc}",
+                    file_path=file_path,
+                )
+            )
+            return errors
+    else:
+        # str — treat as raw YAML string content (never as a file path).
+        try:
+            raw = yaml.safe_load(str(pipeline))
+        except yaml.YAMLError as exc:
+            errors.append(
+                PipelineValidationError(
+                    message=f"YAML syntax error: {exc}",
+                    file_path=file_path,
+                )
+            )
+            return errors
+
+    # -----------------------------------------------------------------------
+    # Step 2: Must be a mapping
+    # -----------------------------------------------------------------------
+    if not isinstance(raw, dict):
+        errors.append(
+            PipelineValidationError(
+                message=(
+                    f"Pipeline YAML must be a mapping (got {type(raw).__name__}). "
+                    "Top-level structure should be 'name:', 'stages:', etc."
+                ),
+                file_path=file_path,
+            )
+        )
+        return errors
+
+    # -----------------------------------------------------------------------
+    # Step 3: Pydantic schema validation
+    # -----------------------------------------------------------------------
+    pipeline_config: PipelineConfig | None = None
+    try:
+        pipeline_config = PipelineConfig.model_validate(raw)
+    except ValidationError as exc:
+        errors.extend(_format_pydantic_errors(exc, file_path))
+        # Continue with raw dict for additional checks where possible.
+
+    # -----------------------------------------------------------------------
+    # Step 4: Raw-dict checks (unknown claude_flags with suggestions,
+    #         forward-reference detection, template namespace checks).
+    #         Run these even when Pydantic validation failed so the user
+    #         sees all problems at once.
+    # -----------------------------------------------------------------------
+    stages_raw: list[Any] = raw.get("stages", [])
+    if not isinstance(stages_raw, list):
+        stages_raw = []
+
+    # Build ordered list of stage IDs seen so far for forward-ref detection.
+    # We iterate once over the raw stage list.
+    seen_stage_ids: list[str] = []
+    for stage_raw in stages_raw:
+        if not isinstance(stage_raw, dict):
+            continue
+
+        stage_id = stage_raw.get("id", "<unknown>")
+        stage_loc = f"stage '{stage_id}'"
+
+        # --- 4a: Unknown claude_flags with Levenshtein suggestions ---
+        flags_raw = stage_raw.get("claude_flags", {})
+        if isinstance(flags_raw, dict):
+            for key in flags_raw:
+                if key not in ALLOWED_CLAUDE_FLAGS:
+                    suggestion = _suggest_flag(key)
+                    suggestion_hint = (
+                        f" Did you mean '{suggestion}'?" if suggestion else ""
+                    )
+                    errors.append(
+                        PipelineValidationError(
+                            message=(
+                                f"Unknown claude_flag '{key}'.{suggestion_hint} "
+                                f"Allowed flags: {sorted(ALLOWED_CLAUDE_FLAGS)}"
+                            ),
+                            file_path=file_path,
+                            location=f"{stage_loc} > claude_flags",
+                        )
+                    )
+
+        # --- 4b: Stage reference validity + forward-reference detection ---
+        prompt = stage_raw.get("prompt", "")
+        if isinstance(prompt, str):
+            for match in _STAGE_REF_RE.finditer(prompt):
+                ref_id = match.group(1)
+                full_ref = match.group(0)
+                if ref_id not in seen_stage_ids:
+                    if pipeline_config is not None:
+                        # Distinguish "unknown stage" from "forward reference"
+                        all_ids = {s.id for s in pipeline_config.stages}
+                        if ref_id in all_ids:
+                            errors.append(
+                                PipelineValidationError(
+                                    message=(
+                                        f"Forward reference to stage '{ref_id}' "
+                                        f"in template variable '{full_ref}'. "
+                                        "Stages can only reference earlier stages "
+                                        "(pipeline execution is linear)."
+                                    ),
+                                    file_path=file_path,
+                                    location=stage_loc,
+                                )
+                            )
+                        else:
+                            errors.append(
+                                PipelineValidationError(
+                                    message=(
+                                        f"Unknown stage reference '{ref_id}' "
+                                        f"in template variable '{full_ref}'. "
+                                        "No stage with this ID exists in the pipeline."
+                                    ),
+                                    file_path=file_path,
+                                    location=stage_loc,
+                                )
+                            )
+                    else:
+                        # Pydantic failed — we don't have a parsed config, use raw
+                        all_raw_ids = {
+                            s.get("id")
+                            for s in stages_raw
+                            if isinstance(s, dict)
+                        }
+                        if ref_id in all_raw_ids:
+                            errors.append(
+                                PipelineValidationError(
+                                    message=(
+                                        f"Forward reference to stage '{ref_id}' "
+                                        f"in template variable '{full_ref}'."
+                                    ),
+                                    file_path=file_path,
+                                    location=stage_loc,
+                                )
+                            )
+                        else:
+                            errors.append(
+                                PipelineValidationError(
+                                    message=(
+                                        f"Unknown stage reference '{ref_id}' "
+                                        f"in template variable '{full_ref}'."
+                                    ),
+                                    file_path=file_path,
+                                    location=stage_loc,
+                                )
+                            )
+
+            # --- 4c: Template namespace checks ---
+            for tmpl_match in _TEMPLATE_RE.finditer(prompt):
+                expr = tmpl_match.group(1).strip()
+                namespace = expr.split(".")[0] if "." in expr else expr
+                if namespace not in _KNOWN_TEMPLATE_NAMESPACES:
+                    errors.append(
+                        PipelineValidationError(
+                            message=(
+                                f"Unrecognised template namespace '{namespace}' "
+                                f"in '{{{{{{expr}}}}}}'.  "
+                                f"Known namespaces: {sorted(_KNOWN_TEMPLATE_NAMESPACES)}"
+                            ),
+                            file_path=file_path,
+                            location=stage_loc,
+                        )
+                    )
+
+        seen_stage_ids.append(str(stage_id))
+
+    return errors
+
+
+def validate_all_pipelines(
+    project_dir: str | Path | None = None,
+) -> dict[Path, list[PipelineValidationError]]:
+    """Validate every pipeline YAML file in ``.pegasus/pipelines/``.
+
+    Scans ``<project_dir>/.pegasus/pipelines/`` for ``*.yaml`` and ``*.yml``
+    files and runs ``validate_pipeline`` on each.
+
+    Args:
+        project_dir: Root of the project.  Defaults to ``Path.cwd()``.
+
+    Returns:
+        A dict mapping each ``Path`` to its list of ``PipelineValidationError``
+        instances.  Files with no errors map to an empty list.
+        Returns an empty dict if no pipeline files are found.
+    """
+    if project_dir is None:
+        project_dir = Path.cwd()
+    else:
+        project_dir = Path(project_dir)
+
+    pipelines_dir = project_dir / ".pegasus" / "pipelines"
+    if not pipelines_dir.is_dir():
+        return {}
+
+    results: dict[Path, list[PipelineValidationError]] = {}
+    for yaml_file in sorted(
+        list(pipelines_dir.glob("*.yaml")) + list(pipelines_dir.glob("*.yml"))
+    ):
+        results[yaml_file] = validate_pipeline(yaml_file, file_path=yaml_file)
+
+    return results

@@ -32,6 +32,15 @@
 **Status**: done
 **Notes**: All 126 tests pass; ruff clean. Permission ceiling uses deny-wins: `_cap_permission` returns the lower of requested vs ceiling. `load_config` uses `Path.home()` for XDG user config; `resolve_stage_flags` applies ceiling after all four layers merge. Auto-require-approval triggers on `acceptEdits` and `bypassPermissions` (write modes); explicit `requires_approval=True` always preserved.
 
+## Iteration 5: 05-pipeline-validation
+**Feature**: Pipeline YAML validation with stage reference and flag checks
+**Files modified**:
+- `src/pegasus/models.py` — added `PipelineValidationError` (slot-based class with `message`, `file_path`, `location`), `_levenshtein()` (pure-Python edit distance, no deps), `_suggest_flag()` (Levenshtein-based typo suggestions against ALLOWED_CLAUDE_FLAGS), `_format_pydantic_errors()` (converts Pydantic ValidationError to list of PipelineValidationError, strips "Value error, " prefix), `validate_pipeline(pipeline, file_path)` (accepts Path/str/dict; runs YAML syntax check, Pydantic schema validation, unknown claude_flags with suggestions, forward/unknown stage reference detection, template namespace checks), `validate_all_pipelines(project_dir)` (scans `.pegasus/pipelines/*.yaml|.yml`, returns dict of Path→errors)
+- `tests/test_models.py` — added 43 new tests across `TestPipelineValidationError` (4), `TestLevenshtein` (6), `TestSuggestFlag` (5), `TestValidatePipeline` (24), `TestValidateAllPipelines` (8)
+**Tests added**: 43 (total 173 including prior iterations)
+**Status**: done
+**Notes**: All 173 tests pass; ruff clean. validate_pipeline accepts Path objects (file load), str (raw YAML content), or pre-parsed dict. Forward reference detection distinguishes "forward reference" from "unknown stage ID" by checking if the ref ID exists anywhere in the pipeline. Levenshtein suggestion fires within edit distance ≤3. Pydantic ValidationError prefix stripped for cleaner UX. validate_all_pipelines returns empty dict when no pipelines directory exists.
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:

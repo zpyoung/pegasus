@@ -1391,3 +1391,480 @@ class TestResolveStageFlags:
         flags, _ = resolve_stage_flags(stage, None, None)
         # Built-in ceiling is acceptEdits → bypassPermissions must be clamped.
         assert flags.permission_mode == "acceptEdits"
+
+
+# ---------------------------------------------------------------------------
+# Pipeline validation tests
+# ---------------------------------------------------------------------------
+
+
+from pegasus.models import (  # noqa: E402
+    PipelineValidationError,
+    _levenshtein,
+    _suggest_flag,
+    validate_all_pipelines,
+    validate_pipeline,
+)
+
+
+class TestPipelineValidationError:
+    """Tests for the PipelineValidationError dataclass-like object."""
+
+    def test_str_with_location(self) -> None:
+        err = PipelineValidationError(
+            message="something wrong",
+            file_path="/some/file.yaml",
+            location="stage 'analyze'",
+        )
+        assert "/some/file.yaml" in str(err)
+        assert "stage 'analyze'" in str(err)
+        assert "something wrong" in str(err)
+
+    def test_str_without_location(self) -> None:
+        err = PipelineValidationError(message="bad yaml", file_path="pipeline.yaml")
+        s = str(err)
+        assert "pipeline.yaml" in s
+        assert "bad yaml" in s
+        assert "[" not in s  # no location bracket
+
+    def test_default_file_path_is_string(self) -> None:
+        err = PipelineValidationError(message="oops")
+        assert err.file_path == "<string>"
+
+    def test_attributes_accessible(self) -> None:
+        err = PipelineValidationError("msg", "/path", "loc")
+        assert err.message == "msg"
+        assert err.file_path == "/path"
+        assert err.location == "loc"
+
+
+class TestLevenshtein:
+    """Tests for the internal Levenshtein distance function."""
+
+    def test_identical_strings(self) -> None:
+        assert _levenshtein("model", "model") == 0
+
+    def test_single_deletion(self) -> None:
+        assert _levenshtein("models", "model") == 1
+
+    def test_single_insertion(self) -> None:
+        assert _levenshtein("model", "models") == 1
+
+    def test_single_substitution(self) -> None:
+        assert _levenshtein("model", "modle") == 2  # transposition is 2 ops
+
+    def test_empty_strings(self) -> None:
+        assert _levenshtein("", "") == 0
+        assert _levenshtein("abc", "") == 3
+        assert _levenshtein("", "abc") == 3
+
+    def test_completely_different(self) -> None:
+        assert _levenshtein("xyz", "abc") == 3
+
+
+class TestSuggestFlag:
+    """Tests for the typo-suggestion helper."""
+
+    def test_exact_match_not_a_suggestion(self) -> None:
+        # Exact match has distance 0 which is within limit — still returned.
+        assert _suggest_flag("model") == "model"
+
+    def test_typo_within_threshold(self) -> None:
+        suggestion = _suggest_flag("modell")  # one extra 'l'
+        assert suggestion == "model"
+
+    def test_distant_string_returns_none(self) -> None:
+        suggestion = _suggest_flag("zzz_totally_unknown_flag_xyz")
+        assert suggestion is None
+
+    def test_permission_mode_typo(self) -> None:
+        # "permission_modes" → should suggest "permission_mode"
+        suggestion = _suggest_flag("permission_modes")
+        assert suggestion == "permission_mode"
+
+    def test_max_turns_typo(self) -> None:
+        suggestion = _suggest_flag("max_turn")
+        assert suggestion == "max_turns"
+
+
+class TestValidatePipeline:
+    """Tests for the main validate_pipeline() function."""
+
+    # --- Valid pipeline passes ---
+
+    def test_valid_pipeline_yaml_string_returns_no_errors(self) -> None:
+        errors = validate_pipeline(VALID_PIPELINE_YAML)
+        assert errors == []
+
+    def test_valid_minimal_pipeline_returns_no_errors(self) -> None:
+        errors = validate_pipeline(MINIMAL_PIPELINE_YAML)
+        assert errors == []
+
+    def test_valid_pipeline_file_returns_no_errors(self, tmp_path: Path) -> None:
+        f = tmp_path / "bug-fix.yaml"
+        f.write_text(VALID_PIPELINE_YAML, encoding="utf-8")
+        errors = validate_pipeline(f)
+        assert errors == []
+
+    def test_valid_pipeline_dict_returns_no_errors(self) -> None:
+        raw = {
+            "name": "Test",
+            "stages": [{"id": "analyze", "name": "Analyze", "prompt": "Do it."}],
+        }
+        errors = validate_pipeline(raw)
+        assert errors == []
+
+    # --- YAML syntax errors ---
+
+    def test_invalid_yaml_syntax_returns_error(self) -> None:
+        bad_yaml = "name: Test\nstages: [\n  - id: analyze\n"  # unclosed bracket
+        errors = validate_pipeline(bad_yaml)
+        assert len(errors) >= 1
+        assert any("YAML syntax error" in e.message for e in errors)
+
+    def test_invalid_yaml_file_syntax_returns_error(self, tmp_path: Path) -> None:
+        f = tmp_path / "broken.yaml"
+        f.write_text("name: Test\nstages: [\n  - id:\n", encoding="utf-8")
+        errors = validate_pipeline(f)
+        # Should report YAML or schema error
+        assert len(errors) >= 1
+
+    # --- Schema / Pydantic errors ---
+
+    def test_missing_name_field_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("name" in e.message.lower() or (e.location and "name" in e.location) for e in errors)
+
+    def test_empty_stages_list_returns_error(self) -> None:
+        yaml_str = "name: Empty\nstages: []\n"
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+
+    def test_missing_stage_prompt_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Bad Stage
+            stages:
+              - id: analyze
+                name: Analyze
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("prompt" in e.message.lower() or (e.location and "prompt" in e.location) for e in errors)
+
+    def test_too_many_stages_returns_error(self) -> None:
+        stages = "\n".join(
+            f"  - id: stage{i}\n    name: Stage {i}\n    prompt: Do it."
+            for i in range(11)
+        )
+        yaml_str = f"name: Too Many Stages\nstages:\n{stages}\n"
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("maximum" in e.message.lower() or "10" in e.message for e in errors)
+
+    # --- Duplicate stage IDs ---
+
+    def test_duplicate_stage_ids_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Dups
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+              - id: analyze
+                name: Analyze Again
+                prompt: Do it again.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("duplicate" in e.message.lower() or "Duplicate" in e.message for e in errors)
+
+    # --- Unknown claude_flags ---
+
+    def test_unknown_claude_flag_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Bad Flags
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+                claude_flags:
+                  not_a_real_flag: true
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        # We expect at least one error (Pydantic 'extra inputs' + our custom check)
+        assert len(errors) >= 1
+        messages = " ".join(e.message for e in errors)
+        assert "not_a_real_flag" in messages
+
+    def test_unknown_flag_with_typo_suggests_correction(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Typo Flag
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+                claude_flags:
+                  max_turn: 5
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        # Our custom check should fire and suggest 'max_turns'
+        custom_errors = [e for e in errors if "max_turn" in e.message and "Unknown" in e.message]
+        assert len(custom_errors) >= 1
+        assert "max_turns" in custom_errors[0].message  # suggestion present
+
+    def test_known_claude_flags_do_not_produce_flag_errors(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Known Flags
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+                claude_flags:
+                  model: claude-sonnet-4-20250514
+                  max_turns: 5
+                  permission_mode: plan
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert errors == []
+
+    # --- Stage reference validity ---
+
+    def test_unknown_stage_reference_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Bad Ref
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Based on {{stages.nonexistent.output}}, do it.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("nonexistent" in e.message for e in errors)
+
+    def test_valid_upstream_stage_reference_no_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Cross Ref
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Find the bug.
+              - id: implement
+                name: Implement
+                prompt: Based on {{stages.analyze.output}}, implement the fix.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert errors == []
+
+    def test_forward_stage_reference_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Forward Ref
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: See result at {{stages.implement.output}}.
+              - id: implement
+                name: Implement
+                prompt: Do the work.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        forward_errors = [e for e in errors if "forward" in e.message.lower() or "Forward" in e.message]
+        assert len(forward_errors) >= 1
+        assert any("implement" in e.message for e in forward_errors)
+
+    # --- Template variable namespace checks ---
+
+    def test_unknown_template_namespace_returns_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Bad Template
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Use {{env.API_KEY}} for this.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert len(errors) >= 1
+        assert any("env" in e.message for e in errors)
+
+    def test_known_template_namespaces_no_error(self) -> None:
+        yaml_str = textwrap.dedent(
+            """\
+            name: Good Templates
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Task is {{task.description}} for {{project.name}}.
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        assert errors == []
+
+    # --- File path label propagation ---
+
+    def test_file_path_label_in_error(self, tmp_path: Path) -> None:
+        bad = tmp_path / "broken.yaml"
+        bad.write_text("stages: []\n", encoding="utf-8")  # missing name
+        errors = validate_pipeline(bad)
+        assert len(errors) >= 1
+        assert all(str(bad) in e.file_path for e in errors)
+
+    def test_custom_file_path_label_in_error(self) -> None:
+        errors = validate_pipeline("stages: []\n", file_path="/custom/path.yaml")
+        assert len(errors) >= 1
+        assert all("/custom/path.yaml" in e.file_path for e in errors)
+
+    # --- Non-mapping YAML ---
+
+    def test_non_mapping_yaml_returns_error(self) -> None:
+        errors = validate_pipeline("- item1\n- item2\n")
+        assert len(errors) >= 1
+        assert any("mapping" in e.message.lower() for e in errors)
+
+    # --- Multiple errors reported at once ---
+
+    def test_multiple_errors_returned(self) -> None:
+        """A pipeline with two bad flags should report both."""
+        yaml_str = textwrap.dedent(
+            """\
+            name: Multi Error
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Do it.
+                claude_flags:
+                  bad_flag_one: true
+                  bad_flag_two: true
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        custom_flag_errors = [
+            e for e in errors if "Unknown claude_flag" in e.message
+        ]
+        # Both unknown flags must be reported.
+        assert len(custom_flag_errors) == 2
+        flag_names = {e.message.split("'")[1] for e in custom_flag_errors}
+        assert "bad_flag_one" in flag_names
+        assert "bad_flag_two" in flag_names
+
+    def test_pydantic_error_message_strips_value_error_prefix(self) -> None:
+        """Pydantic 'Value error, ...' prefix should be stripped from messages."""
+        yaml_str = textwrap.dedent(
+            """\
+            name: Bad Pipeline
+            stages:
+              - id: analyze
+                name: Analyze
+                prompt: Ref {{stages.ghost.output}}
+            """
+        )
+        errors = validate_pipeline(yaml_str)
+        for e in errors:
+            assert not e.message.startswith("Value error, "), (
+                f"Error message should not start with 'Value error,': {e.message!r}"
+            )
+
+
+class TestValidateAllPipelines:
+    """Tests for validate_all_pipelines()."""
+
+    def test_no_pipelines_dir_returns_empty_dict(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        result = validate_all_pipelines(project_dir)
+        assert result == {}
+
+    def test_empty_pipelines_dir_returns_empty_dict(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        result = validate_all_pipelines(project_dir)
+        assert result == {}
+
+    def test_valid_pipeline_file_maps_to_no_errors(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "bug-fix.yaml").write_text(VALID_PIPELINE_YAML, encoding="utf-8")
+
+        result = validate_all_pipelines(project_dir)
+        assert len(result) == 1
+        errors = list(result.values())[0]
+        assert errors == []
+
+    def test_invalid_pipeline_file_maps_to_errors(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        bad_yaml = "stages: []\n"  # missing 'name'
+        (pipelines_dir / "bad.yaml").write_text(bad_yaml, encoding="utf-8")
+
+        result = validate_all_pipelines(project_dir)
+        assert len(result) == 1
+        errors = list(result.values())[0]
+        assert len(errors) >= 1
+
+    def test_multiple_files_all_validated(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "valid.yaml").write_text(VALID_PIPELINE_YAML, encoding="utf-8")
+        (pipelines_dir / "invalid.yaml").write_text("stages: []\n", encoding="utf-8")
+
+        result = validate_all_pipelines(project_dir)
+        assert len(result) == 2
+
+        # Find the two files in the result
+        paths = {p.name: errs for p, errs in result.items()}
+        assert paths["valid.yaml"] == []
+        assert len(paths["invalid.yaml"]) >= 1
+
+    def test_yml_extension_also_picked_up(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "pipeline.yml").write_text(MINIMAL_PIPELINE_YAML, encoding="utf-8")
+
+        result = validate_all_pipelines(project_dir)
+        assert len(result) == 1
+        assert list(result.values())[0] == []
+
+    def test_result_keys_are_path_objects(self, tmp_path: Path) -> None:
+        project_dir = tmp_path / "project"
+        pipelines_dir = project_dir / ".pegasus" / "pipelines"
+        pipelines_dir.mkdir(parents=True)
+        (pipelines_dir / "test.yaml").write_text(MINIMAL_PIPELINE_YAML, encoding="utf-8")
+
+        result = validate_all_pipelines(project_dir)
+        assert all(isinstance(k, Path) for k in result)
+
+    def test_none_project_dir_does_not_raise(self) -> None:
+        """Passing None uses cwd; should not raise even if no pipelines dir exists."""
+        result = validate_all_pipelines(None)
+        assert isinstance(result, dict)
