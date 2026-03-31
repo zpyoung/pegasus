@@ -5,11 +5,13 @@ This module defines:
 - Project config.yaml schema (PegasusConfig)
 - claude_flags allowlist
 - Helper utilities for loading and validating YAML configs
+- SQLite connection factory, schema initialization, and state transitions
 """
 
 from __future__ import annotations
 
 import re
+import sqlite3
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -401,3 +403,162 @@ def parse_project_config_yaml(content: str) -> PegasusConfig:
     if not isinstance(raw, dict):
         raise ValueError(f"Config YAML must be a mapping, got {type(raw).__name__}")
     return PegasusConfig.model_validate(raw)
+
+
+# ---------------------------------------------------------------------------
+# SQLite schema version
+# ---------------------------------------------------------------------------
+
+#: Current schema version.  Bump this when DDL changes.
+SCHEMA_VERSION: int = 1
+
+# ---------------------------------------------------------------------------
+# SQLite connection factory
+# ---------------------------------------------------------------------------
+
+_DDL = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    version     INTEGER PRIMARY KEY,
+    applied_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id            TEXT PRIMARY KEY,
+    pipeline      TEXT NOT NULL,
+    description   TEXT,
+    status        TEXT DEFAULT 'queued',
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    session_id    TEXT,
+    context       TEXT,
+    branch        TEXT,
+    worktree_path TEXT,
+    base_branch   TEXT,
+    merge_status  TEXT,
+    total_cost    REAL DEFAULT 0.0,
+    runner_pid    INTEGER,
+    heartbeat_at  DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS stage_runs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id     TEXT REFERENCES tasks(id),
+    stage_id    TEXT NOT NULL,
+    stage_index INTEGER NOT NULL,
+    status      TEXT DEFAULT 'pending',
+    started_at  DATETIME,
+    finished_at DATETIME,
+    error       TEXT,
+    cost        REAL DEFAULT 0.0,
+    claude_flags TEXT
+);
+
+CREATE TABLE IF NOT EXISTS worktrees (
+    task_id    TEXT PRIMARY KEY REFERENCES tasks(id),
+    path       TEXT NOT NULL UNIQUE,
+    branch     TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status     TEXT NOT NULL DEFAULT 'active'
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_heartbeat ON tasks(heartbeat_at) WHERE status = 'running';
+CREATE INDEX IF NOT EXISTS idx_stage_runs_task ON stage_runs(task_id);
+"""
+
+
+def make_connection(db_path: str | Path, read_only: bool = False) -> sqlite3.Connection:
+    """Create a SQLite connection with WAL mode and appropriate settings.
+
+    For read-only connections (e.g. TUI polling) the URI ``mode=ro`` parameter
+    is used.  This allows reads to proceed without blocking active writers and,
+    critically, does NOT cache data the way ``immutable=1`` would — so the TUI
+    always sees the latest committed state.
+
+    Args:
+        db_path: Path to the SQLite database file.
+        read_only: When ``True``, open with ``mode=ro`` URI flag.
+
+    Returns:
+        A configured ``sqlite3.Connection`` with WAL mode enabled.
+    """
+    path_str = str(db_path)
+    if read_only:
+        # CRITICAL: use mode=ro, NOT immutable=1.
+        # immutable=1 caches data and never detects external writes (stale TUI).
+        uri = f"file:{path_str}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
+    else:
+        conn = sqlite3.connect(path_str, timeout=30.0, check_same_thread=False)
+
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
+    conn.execute("PRAGMA wal_autocheckpoint = 100")
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+
+# ---------------------------------------------------------------------------
+# Schema initialisation
+# ---------------------------------------------------------------------------
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    """Create all Pegasus tables and indexes if they do not already exist.
+
+    Also inserts the current ``SCHEMA_VERSION`` row into ``schema_version``
+    (ignored if already present).
+
+    Args:
+        conn: An open ``sqlite3.Connection`` (writable, not ``mode=ro``).
+    """
+    conn.executescript(_DDL)
+    conn.execute(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (?)",
+        (SCHEMA_VERSION,),
+    )
+    conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Safe state transition
+# ---------------------------------------------------------------------------
+
+
+def transition_task_state(
+    conn: sqlite3.Connection,
+    task_id: str,
+    from_state: str,
+    to_state: str,
+) -> bool:
+    """Atomically transition a task from *from_state* to *to_state*.
+
+    Uses ``BEGIN IMMEDIATE`` to acquire the write lock upfront, avoiding
+    TOCTOU races when multiple runner processes operate concurrently.
+
+    Args:
+        conn: An open ``sqlite3.Connection``.
+        task_id: The task ``id`` to update.
+        from_state: Expected current status; the transition aborts if the
+            actual status differs.
+        to_state: The target status to set.
+
+    Returns:
+        ``True`` if the transition succeeded, ``False`` if the task was not
+        found or its status did not match *from_state*.
+    """
+    conn.execute("BEGIN IMMEDIATE")
+    row = conn.execute(
+        "SELECT status FROM tasks WHERE id = ?", (task_id,)
+    ).fetchone()
+    if row is None or row["status"] != from_state:
+        conn.rollback()
+        return False
+    conn.execute(
+        "UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (to_state, task_id),
+    )
+    conn.commit()
+    return True

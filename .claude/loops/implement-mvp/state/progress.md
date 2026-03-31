@@ -14,6 +14,15 @@
 **Status**: done
 **Notes**: Used `setuptools.build_meta` (not `setuptools.backends.legacy:build`) for Python 3.10 compatibility. All 4 tests pass; ruff clean.
 
+## Iteration 3: 03-sqlite-schema
+**Feature**: SQLite schema (tasks, stage_runs, worktrees, schema_version tables), make_connection() factory, init_db(), transition_task_state() with BEGIN IMMEDIATE.
+**Files created/modified**:
+- `src/pegasus/models.py` — added `import sqlite3`, `SCHEMA_VERSION = 1`, `make_connection(db_path, read_only=False)` (WAL mode, busy_timeout=5000, synchronous=NORMAL, mode=ro URI for reads, NOT immutable=1), `init_db(conn)` (CREATE TABLE IF NOT EXISTS for schema_version/tasks/stage_runs/worktrees + three indexes), `transition_task_state(conn, task_id, from_state, to_state)` using BEGIN IMMEDIATE to prevent TOCTOU races
+- `tests/test_models.py` — added 27 SQLite tests across TestMakeConnection (9 tests), TestInitDb (7 tests), TestTransitionTaskState (7 tests including threading race condition test); all use tmp_path fixtures; imported SCHEMA_VERSION, init_db, make_connection, transition_task_state
+**Tests added**: 27 (total 85 with prior iterations)
+**Status**: done
+**Notes**: All tests pass; ruff clean. WAL mode confirmed via PRAGMA query. mode=ro URI used for read-only connections as required (immutable=1 rejected per ADR-002). Race condition test uses two threads with a single shared task row; exactly one transition wins. init_db is idempotent (CREATE IF NOT EXISTS + INSERT OR IGNORE).
+
 ## Iteration 2: 02-pydantic-models
 **Feature**: models.py: Pydantic models for pipeline YAML config validation, stage schema, claude_flags allowlist, config.yaml schema. Include unit tests with valid/invalid YAML fixtures.
 **Files created/modified**:
