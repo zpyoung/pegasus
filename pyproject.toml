@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pegasus"
+version = "0.1.0"
+description = "Orchestrate Claude Code through YAML-defined multi-stage pipelines"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Pegasus Contributors" },
+]
+keywords = ["cli", "tui", "ai", "claude", "pipeline", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Terminals",
+]
+
+dependencies = [
+    "click>=8.1",
+    "textual>=0.40",
+    "rich>=13",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "claude-agent-sdk>=0.1.48,<0.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.1",
+    "mypy>=1.0",
+    "types-pyyaml",
+]
+
+[project.scripts]
+pegasus = "pegasus.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/zpyoung/pegasus"
+Repository = "https://github.com/zpyoung/pegasus"
+Issues = "https://github.com/zpyoung/pegasus/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pegasus = ["templates/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "PTH"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
