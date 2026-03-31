@@ -1,6 +1,6 @@
 <!--
 DESIGN_VERSION: 2.0
-GENERATED: 2026-03-31T20:45:00Z
+GENERATED: 2026-03-31T21:00:00Z
 RESEARCH_MODE: agent-swarm + multi-model
 RESEARCH_AGENTS: 8 agents dispatched
 RESEARCH_SOURCES: ~31 source hits
@@ -24,7 +24,7 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 
 - **What**: Pegasus is a Python CLI/TUI tool that orchestrates Claude Code through YAML-defined multi-stage pipelines, each running in an isolated git worktree
 - **Why**: Developers need a structured way to run repeatable, multi-step AI coding workflows (bug fixes, features, refactors) without manually chaining Claude Code invocations
-- **Architecture**: State-Machine Orchestrator — 3 Python modules where SQLite is the sole bridge between a headless pipeline runner and the UI layer, enabling future GUI support with zero runner changes
+- **Architecture**: State-Machine Orchestrator -- 3 Python modules where SQLite is the sole bridge between a headless pipeline runner and the UI layer, enabling future GUI support with zero runner changes
 - **Key outcome**: Users define pipelines once in YAML, then run `pegasus run --pipeline bug-fix --desc "Login fails"` and monitor progress in a rich terminal dashboard
 
 ## Scope
@@ -33,7 +33,7 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 - CLI commands: `init`, `run`, `status`, `validate`, `tui`, `diff`, `merge`, `resume`, `cleanup`, `list pipelines`, `history`
 - YAML pipeline definitions with curated per-stage `claude_flags` (allowlisted subset)
 - Claude Agent SDK integration via `PegasusEngine` abstraction layer (pinned SDK version)
-- Single-session execution mode (multi-stage via `--resume`)
+- Single-session execution mode -- `PegasusEngine` manages persistent `session_id` (stored in `tasks.session_id`) via the SDK's session lifecycle; `pegasus resume` continues from the failed stage using stored session context
 - Git worktree isolation per task with configurable `setup_command`
 - SQLite state management (WAL mode, max 3 concurrent tasks)
 - Textual TUI with dashboard (split pane) and focus (tabbed) views
@@ -54,11 +54,11 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 - Pipeline template registry or marketplace (v0.3+)
 - TOML configuration format
 - Shared/reusable stages and pipeline composition (v0.2)
-- Hard cost budgets with auto-pause (v0.2)
+- Hard cost budgets with auto-pause via SDK's `max_budget_usd` on `ClaudeAgentOptions` (v0.2)
 - `--hint` flag for enhanced resume with failure context (v0.2)
 
 ### Assumptions
-- Users have Claude Code CLI installed and a valid Anthropic API key
+- Users have a valid Anthropic API key (Claude Code CLI is bundled with the Agent SDK dependency)
 - Users have git 2.20+ installed (worktree support)
 - Python 3.10+ for development; Nuitka binary for end-user distribution
 - Target projects are git repositories with a remote `origin`
@@ -69,7 +69,7 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 - macOS and Linux support required (Windows deferred)
 - YAML-only configuration (no TOML, no GUI config editor)
 - Linear pipeline execution only (stage 1 -> 2 -> 3 -> ... -> N)
-- Complexity budget: ≤3 top-level modules, ≤2 external interfaces
+- Complexity budget: <=3 top-level modules, <=2 external interfaces
 - SQLite single-file database (no external database servers)
 - Standalone binary must work without Python runtime installed
 
@@ -88,13 +88,31 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 - `par` CLI tool for worktree + tmux session management patterns
 - pypyr for YAML-based task runner stage structure
 
+### v0.1 Critical Path vs Stretch
+
+**Critical Path (must ship):**
+- `pegasus init`, `run`, `validate`, `status`, `resume`, `tui`
+- Pipeline YAML parsing + Pydantic validation
+- `PegasusEngine` (SDK wrapper) with session management
+- Git worktree lifecycle (create, health-check, setup, cleanup)
+- SQLite state + cost tracking (display only)
+- TUI dashboard view
+- Heartbeat-based crash detection
+
+**Stretch (ship if time allows):**
+- `pegasus diff`, `merge`, `history`, `cd`, `cleanup --all`
+- Levenshtein typo suggestions in `validate`
+- Dry run mode
+- Nuitka standalone binary
+- Focus (tabbed) TUI view
+
 ## End-State Snapshot
 
 ### Success Criteria
 - User can define a 4-stage bug-fix pipeline in YAML and run it against a real project in under 5 minutes
 - 3 tasks can run in parallel across separate worktrees without SQLite contention or file conflicts
 - `pegasus validate` catches YAML errors, flag typos, and invalid stage references before any API calls
-- TUI dashboard shows real-time progress for all active tasks (≤500ms update latency)
+- TUI dashboard shows real-time progress for all active tasks (<=500ms update latency)
 - `pegasus resume` successfully restarts a failed pipeline from the exact failed stage
 - `pegasus merge` integrates completed work back to the default branch with pre-merge conflict detection
 
@@ -103,37 +121,56 @@ COMPLEXITY_BUDGET: {components:3/3, interfaces:2/2, nodes:4/5}
 - If API rate limiting occurs, exponential backoff retries up to 5 times before marking the stage as failed
 - If a worktree fails health check (dirty state from prior crash), Pegasus offers to recreate it
 - If SQLite write contention exceeds `busy_timeout` (5000ms), the write is retried once before failing the operation
+- If a runner process crashes mid-stage, heartbeat detection marks the task as failed and worktree as orphaned within 30s
 
 ## Architecture at a Glance
 
 ### Components (3)
 
-1. **runner.py** — Headless Pipeline Executor
-   - Wraps Claude Agent SDK via `PegasusEngine` abstraction
+1. **runner.py** -- Headless Pipeline Executor
+   - Wraps Claude Agent SDK via `PegasusEngine` abstraction (Protocol-based)
    - Manages git worktree lifecycle (create, health-check, setup, cleanup)
    - Reads YAML pipeline configs, resolves layered configuration
-   - Writes ALL state transitions to SQLite (WAL mode)
+   - Writes ALL state transitions to SQLite using `BEGIN IMMEDIATE` for safe locking
+   - Maintains heartbeat (every 5s) for crash detection
    - Handles rate limiting with exponential backoff
-   - NEVER imports `ui.py` — complete decoupling
+   - Graceful shutdown: SIGTERM -> 10s grace period -> SIGKILL -> `await process.wait()`; task marked `paused` in SQLite so `pegasus resume` can continue
+   - Unsets `CLAUDECODE=1` env var before spawning SDK sessions (prevents nested Claude Code conflicts)
+   - Fires OS-native desktop notifications directly (`osascript` on macOS, `notify-send` on Linux) on stage/pipeline events
+   - NEVER imports `ui.py` -- complete decoupling
 
-2. **ui.py** — CLI + TUI Interface
+   **SDK Callback -> Behavior Mapping:**
+
+   | SDK Event/Callback | Pegasus Behavior |
+   |--------------------|------------------|
+   | `on_message()` (AssistantMessage) | Append content to `.pegasus/logs/<task-id>.log`; update TUI via SQLite |
+   | `on_tool_use()` | Log tool name/input to stage_runs + task log file; enforce `disallowed_tools` from pipeline YAML |
+   | `requires_approval()` | Gate: check pipeline's `requires_approval` flag; pause pipeline and write `paused` to SQLite if approval needed |
+   | `on_result()` (ResultMessage) | Stage complete: update stage_runs status, record `message.total_cost_usd`, advance to next stage |
+   | `on_error()` (ProcessError) | Record error in stage_runs, set status to `failed`, fire desktop notification |
+   | `message.total_cost_usd` | Update `tasks.total_cost` and `stage_runs.cost` from SDK cost reporting |
+
+2. **ui.py** -- CLI + TUI Interface
    - Click-based CLI commands (init, run, status, validate, etc.)
    - Textual TUI with dashboard (split pane) and focus (tabbed) views
-   - NEVER imports `runner.py` — reads state from SQLite only
-   - Polls SQLite at ~100ms intervals for live TUI updates
+   - NEVER imports `runner.py` -- reads state from SQLite only
+   - Polls SQLite at ~100ms via Textual's `set_interval` (integrates with reactive system)
+   - Uses `mode=ro` URI for read-only connections (NOT `immutable=1`, which caches stale data)
    - Spawns runner as a subprocess when `pegasus run` is invoked
 
-3. **models.py** — Shared Data Contracts
+3. **models.py** -- Shared Data Contracts
    - Pydantic models for YAML pipeline config validation
-   - SQLite schema definitions (tasks, stage_runs tables) with migration support
-   - Query functions used by both runner and ui
+   - SQLite schema definitions (tasks, stage_runs, worktrees, schema_version tables)
+   - Query functions and connection factory used by both runner and ui
+   - `AgentRunnerProtocol` -- Protocol class shielding runner from SDK internals
    - Flag allowlist definitions and permission resolution
    - Config resolution logic (project > user > built-in)
+   - Schema migration support via version checks
 
 ### Interfaces/Inputs (2)
 
-1. **Claude Agent SDK (Python)** — Pipeline stage execution, cost reporting, event callbacks
-2. **Git CLI** — Worktree create/remove, branch management, merge operations, default branch detection
+1. **Claude Agent SDK (Python)** -- Spawns `claude` CLI as subprocess over JSON-lines stdio; provides typed message streams (`AssistantMessage`, `ResultMessage`), cost reporting, and error types (`ProcessError`, `CLINotFoundError`, `CLIJSONDecodeError`)
+2. **Git CLI** -- Worktree create/remove/prune, branch management, merge operations, default branch detection
 
 ### Flow Diagram
 
@@ -142,39 +179,40 @@ graph LR
     A[User] -->|CLI commands| B[ui.py]
     B -->|spawns subprocess| C[runner.py]
     C -->|executes stages| D[Agent SDK]
-    C -->|writes state| E[(SQLite DB)]
-    B -->|polls state| E
-    C -->|creates/manages| F[Git Worktrees]
+    D -->|spawns claude CLI| E[Claude Code]
+    C -->|writes state| F[(SQLite DB)]
+    B -->|polls state| F
+    C -->|creates/manages| G[Git Worktrees]
 ```
 
 ## Requirements Mapping
 
 ### Functional Requirements
-- **FR-001**: YAML pipeline definition — Users define multi-stage pipelines as individual YAML files in `.pegasus/pipelines/`, each with per-stage `claude_flags` from a curated allowlist
-- **FR-002**: Pipeline execution — Execute pipeline stages sequentially via Claude Agent SDK, with session continuation (`--resume`) for context preservation across stages
-- **FR-003**: Task lifecycle — Create, track (queued/running/paused/completed/failed), resume from failure, and clean up tasks with SQLite state persistence
-- **FR-004**: Git worktree isolation — Each task runs in an isolated git worktree at `~/.pegasus/worktrees/<project>--<task-id>`, branched from the auto-detected default branch
-- **FR-005**: TUI dashboard — Interactive terminal UI showing all active tasks (dashboard view) or deep-diving into one task (focus view) with real-time stage progress
-- **FR-006**: Project initialization — `pegasus init` scaffolds `.pegasus/` with auto-detected settings (language, test command, lint command, default branch) and starter pipeline templates
-- **FR-007**: Pipeline validation — `pegasus validate` checks all YAML files for schema errors, invalid stage references, unknown `claude_flags`, and typos (Levenshtein-based suggestions)
-- **FR-008**: Layered configuration — Config resolves in order: stage flags > pipeline defaults > project config > user config > built-in defaults
-- **FR-009**: Cost tracking — Track and display estimated API costs per task and per stage via Agent SDK cost reporting
-- **FR-010**: Dry run mode — `pegasus run --dry-run` resolves all templates and prints the exact Agent SDK calls without making API requests
+- **FR-001**: YAML pipeline definition -- Users define multi-stage pipelines as individual YAML files in `.pegasus/pipelines/`, each with per-stage `claude_flags` from a curated allowlist
+- **FR-002**: Pipeline execution -- Execute pipeline stages sequentially via Claude Agent SDK. `PegasusEngine` manages a persistent `session_id` (stored in `tasks.session_id`) via the SDK's session lifecycle for context preservation across stages. When `output_format: json` is specified, the SDK returns structured JSON; full Pydantic schema validation of stage outputs deferred to v0.2
+- **FR-003**: Task lifecycle -- Create, track (queued/running/paused/completed/failed), resume from failure, and clean up tasks with SQLite state persistence and heartbeat-based crash detection
+- **FR-004**: Git worktree isolation -- Each task runs in an isolated git worktree at `~/.pegasus/worktrees/<project>--<task-id>`, branched from the auto-detected default branch
+- **FR-005**: TUI dashboard -- Interactive terminal UI showing all active tasks (dashboard view) or deep-diving into one task (focus view) with real-time stage progress
+- **FR-006**: Project initialization -- `pegasus init` scaffolds `.pegasus/` with auto-detected settings (language, test command, lint command, default branch) and starter pipeline templates
+- **FR-007**: Pipeline validation -- `pegasus validate` checks all YAML files for schema errors, invalid stage references, unknown `claude_flags`, and typos (Levenshtein-based suggestions)
+- **FR-008**: Layered configuration -- Config resolves in order: stage flags > pipeline defaults > project config > user config > built-in defaults
+- **FR-009**: Cost tracking -- Track and display estimated API costs per task and per stage via Agent SDK cost reporting
+- **FR-010**: Dry run mode -- `pegasus run --dry-run` resolves all templates and prints the exact Agent SDK calls without making API requests
 
 ### Non-Functional Requirements
-- **NFR-001**: Standalone binary via Nuitka — End users install a single binary with no Python runtime dependency
-- **NFR-002**: SQLite WAL mode — Concurrent writers (up to 3 tasks) and readers (TUI) operate without blocking, with `busy_timeout=5000ms` and `synchronous=NORMAL`
-- **NFR-003**: CLI response time — Non-API operations (`status`, `validate`, `list`) respond in <200ms using read-only SQLite connections
+- **NFR-001**: Standalone binary via Nuitka (>= 1.4.2) -- End users install a single binary with no Python runtime dependency
+- **NFR-002**: SQLite WAL mode -- Concurrent writers (up to 3 tasks) and readers (TUI) operate without blocking, with `busy_timeout=5000ms` and `synchronous=NORMAL`
+- **NFR-003**: CLI response time -- Non-API operations (`status`, `validate`, `list`) respond in <200ms using read-only SQLite connections (`mode=ro`)
 
 ### Mapping Table
 
 | Requirement | Component | Test Method |
 |------------|-----------|-------------|
 | FR-001 | models.py | Unit (Pydantic model validation) |
-| FR-002 | runner.py | Integration (mock Agent SDK) |
+| FR-002 | runner.py | Integration (mock Agent SDK via FakeAgentRunner) |
 | FR-003 | runner.py + models.py | Unit (state transitions) + Integration (full lifecycle) |
 | FR-004 | runner.py | Integration (real git worktree create/remove) |
-| FR-005 | ui.py | Unit (Textual pilot testing) + Manual (visual) |
+| FR-005 | ui.py | Unit (Textual `App.run_test()` + Pilot API) + Manual |
 | FR-006 | ui.py + models.py | Integration (scaffold + validate output) |
 | FR-007 | models.py | Unit (valid/invalid YAML fixtures) |
 | FR-008 | models.py | Unit (layered resolution with fixtures) |
@@ -191,50 +229,47 @@ graph LR
 - State machine transitions: every valid and invalid status change (models.py)
 - Config resolution: layered override correctness with edge cases (models.py)
 - Flag allowlist enforcement and deny-wins logic (models.py)
+- **Critical**: Use file-based SQLite fixtures (`tmp_path`), NOT `:memory:` -- WAL mode requires real files
 
 ### Integration Testing
-- Mock `PegasusEngine` to test full pipeline lifecycle without API calls (runner.py)
+- Mock `PegasusEngine` via `FakeAgentRunner` (Protocol-based) to test full pipeline lifecycle without API calls
+- Deep mock point: `SubprocessCLITransport` in `claude_agent_sdk._internal.transport.subprocess_cli` for zero-subprocess tests
 - Real git worktree create/remove/merge cycle (runner.py)
-- SQLite concurrent write stress test: 3 writers + 1 poller (models.py)
-- `pegasus init` → `pegasus validate` → `pegasus run --dry-run` end-to-end flow
-- Textual pilot testing for TUI screens (ui.py)
+- SQLite concurrent write stress test: 3 writers + 1 poller with `mode=ro` connections
+- `pegasus init` -> `pegasus validate` -> `pegasus run --dry-run` end-to-end flow
+- Textual `App.run_test()` + Pilot API for TUI screens
 
 ### End-to-End Testing
-- Nuitka binary compilation + smoke test on macOS and Linux
+- Nuitka binary compilation + smoke test on macOS and Linux (requires `--include-package-data=textual`)
 - Full pipeline run with a real Claude API key against a test repository (manual/CI)
 
-## Simplicity Analysis
+## Simplicity Note
 
-**Cognitive Load Score**: 4/10 (low)
-- 3 modules with clear, single responsibilities
-- Zero direct coupling between runner and UI (SQLite bridge only)
-- YAML config is the primary user-facing complexity
-
-**Entanglement Level**: Minimal
-- runner.py and ui.py share NO imports — only models.py is shared
-- SQLite schema in models.py is the single point of coordination
-- Adding a future GUI requires only a new UI module reading the same SQLite DB
-
-**New Developer Friendliness**: Understandable in ~15 minutes
-- Read models.py (data contracts) → understand runner.py (how pipelines execute) → understand ui.py (how state is displayed)
-- No event buses, no dependency injection, no abstract factories
-
-**Complexity Budget Compliance**: 3/3 components, 2/2 interfaces
-- Note: Each module contains internal subsystems (config resolver, template engine, permission compiler within models.py; worktree manager, retry logic within runner.py). These are implementation details within the 3-module topology, not separate architectural components.
+3 modules, zero direct coupling between runner and UI, no event buses or DI. New developer path: models.py (contracts) -> runner.py (execution) -> ui.py (display). Each module contains internal subsystems but the 3-module constraint is about coupling topology. Complexity budget: 3/3 components, 2/2 interfaces.
 
 ## Architectural Decision Records (ADRs)
 
 ### ADR-001: Claude Agent SDK over Raw Subprocess
 
-**Decision**: Use the official Claude Agent SDK (Python) instead of spawning `claude -p` subprocesses.
+**Decision**: Use the official Claude Agent SDK (Python) instead of spawning `claude -p` subprocesses directly.
 
 **Alternatives considered**:
 1. Raw subprocess with CLI flag passthrough (original conversation design)
 2. Hybrid: SDK with subprocess fallback
 
-**Rationale**: The SDK provides typed event streams, built-in cost tracking, and Python callback hooks — eliminating the fragile `pegasus _internal` shell command pattern from the original conversation design. The multi-model review showed strong support from Claude Opus for this approach.
+**Rationale**: Specific advantages over raw subprocess:
+1. `message.total_cost_usd` provides typed per-message cost tracking
+2. `max_budget_usd` on `ClaudeAgentOptions` enables per-task spend limits (deferred to v0.2 but mechanism exists)
+3. Python async callbacks replace shell command hooks -- no more parsing stdout or injecting hook scripts
+4. `output_format` accepts JSON Schema for validated stage outputs (full Pydantic integration v0.2)
+5. SDK bundles the `claude` CLI binary -- cleaner distribution story; users don't need a separate CLI install
+6. SDK manages persistent sessions natively via session lifecycle API
 
-**Trade-off**: Adds dependency on a rapidly-evolving SDK. Mitigated by pinning the SDK version and wrapping all SDK calls behind the `PegasusEngine` abstraction, so SDK changes affect only `runner.py`.
+This eliminates the `pegasus _internal` hidden subcommand set (`stage-complete`, `notify`, `gate`, `log-tool`) and the per-worktree `.claude/settings.json` hook injection pattern from the original conversation design. All equivalent functionality is handled by Python callbacks within `PegasusEngine`.
+
+**Implementation note**: The SDK itself spawns the `claude` CLI binary as a subprocess over JSON-lines stdio -- it is NOT a direct Anthropic API wrapper. Two version numbers exist: the SDK version (e.g., `0.1.48`) and the bundled CLI version (e.g., `2.1.79`). Pin via `claude-agent-sdk>=0.1.48,<0.2.0`.
+
+**Trade-off**: Adds dependency on a rapidly-evolving SDK. Mitigated by pinning the SDK version and wrapping all SDK calls behind the `AgentRunnerProtocol`, so SDK changes affect only the concrete `ClaudeAgentRunner` class.
 
 ### ADR-002: SQLite-as-Bridge (State-Machine Orchestrator) over Direct Imports
 
@@ -244,9 +279,11 @@ graph LR
 1. Consolidated Three-Module (direct imports between ui and engine)
 2. Event bus + modular packages
 
-**Rationale**: This architecture enables future GUI support with zero runner changes — any UI (TUI, web dashboard, mobile) just reads the same SQLite database. Runner crashes don't affect the TUI. Gemini validated this as "the correct choice for a long-running LLM orchestrator."
+**Rationale**: This architecture enables future GUI support with zero runner changes -- any UI (TUI, web dashboard, mobile) just reads the same SQLite database. Runner crashes don't affect the TUI. Gemini validated this as "the correct choice for a long-running LLM orchestrator."
 
-**Trade-off**: TUI must poll SQLite (~100ms) instead of receiving push events. Acceptable for 3 concurrent tasks; mitigated by WAL mode enabling non-blocking reads during writes.
+**Critical implementation detail**: TUI read connections MUST use `mode=ro` URI, NOT `immutable=1`. The `immutable=1` flag caches data and never detects external writes, serving stale state to the polling TUI. Confirmed by SQLite official forum.
+
+**Trade-off**: TUI must poll SQLite (~100ms via Textual's `set_interval`) instead of receiving push events. Acceptable for 3 concurrent tasks; mitigated by WAL mode enabling non-blocking reads during writes.
 
 ### ADR-003: Allowlisted Flags over Full Passthrough
 
@@ -260,7 +297,7 @@ graph LR
 
 **Rationale**: All three models in the multi-model review agreed that unrestricted passthrough creates safety, compatibility, and reproducibility risks. An allowlist protects against CLI flag surface changes and enables `pegasus validate` to catch typos.
 
-**Trade-off**: Users cannot use newly added Claude Code flags until Pegasus adds them to the allowlist. Mitigated by clear documentation of the supported flag set and a release process for adding new flags.
+**Trade-off**: Users cannot use newly added Claude Code flags until Pegasus adds them to the allowlist. Mitigated by clear documentation and a straightforward process for adding new flags.
 
 ### ADR-004: File-Based Logs over SQLite Blobs
 
@@ -268,87 +305,44 @@ graph LR
 
 **Rationale**: Gemini recommended this to keep the SQLite database performant. Claude Code outputs can be large (hundreds of KB per stage), and storing them as SQLite blobs would bloat the database and degrade query performance. File-based logs are also easier to tail, grep, and stream into the TUI.
 
-**Trade-off**: Resume/recovery relies on SQLite state alone (not logs). Logs are supplementary for human inspection.
+**Trade-off**: Resume/recovery relies on SQLite state alone (not logs). Logs are supplementary for human inspection. SQLite is authoritative for all state transitions.
 
-## Industry Insights (from Web Research)
+### ADR-005: Heartbeat-Based Crash Detection
 
-### Domain Patterns (Agents 1-2)
-- **Par CLI** (github.com/coplane/par) validates the worktree + session management pattern — purpose-built for parallel AI agent orchestration
-- **Git Worktree Runner** (coderabbitai) confirms automated setup hooks and editor/AI tool integration as established patterns
-- Textual framework supports both async and sync patterns; async is recommended for responsive TUI during subprocess monitoring
+**Decision**: Runner processes write a heartbeat timestamp to SQLite every 5 seconds while executing. On startup, Pegasus detects stale tasks (heartbeat older than 30s with no running PID) and marks them as failed.
 
-### Anti-Patterns Confirmed (Agents 3-4)
-- **YAML DSL complexity creep**: YAML lacks native loops/conditionals; keep schema simple and provide opinionated stage templates (pypyr lesson)
-- **SQLite concurrent writer discipline**: WAL mode + `busy_timeout ≥ 5000ms` required; short transactions essential for 3 writers
-- **Subprocess cleanup**: Python's `terminate()` doesn't guarantee cleanup; must escalate SIGTERM → SIGKILL with `await process.wait()`
-- **Context window degradation**: In long sessions, context quality degrades; explicit CLAUDE.md files anchor behavior
+**Rationale**: The deep research found that even Anthropic's own Claude Code has an open issue (#26725) for stale worktrees that never get cleaned up. Without active crash detection, a killed runner leaves tasks permanently in "running" state and worktrees orphaned. Heartbeat + PID checking is the standard pattern for subprocess lifecycle management.
 
-### Success Metrics (Agent 5)
-- Developer AI tool adoption: 84% use or plan to use (2026)
-- AI coding tools save ~3.6 hours/week per developer
-- 40% of agent projects fail by 2027 due to governance gaps — validates the need for `pegasus validate` and permission ceilings
-- Supervised autonomy (human-in-the-loop at decision points) is the emerging sweet spot
+**Implementation**: Store `runner_pid` and `heartbeat_at` in the tasks table. On startup, call `os.kill(pid, 0)` to check if the process is alive. If dead + stale heartbeat, transition to `failed` and mark worktree as `orphaned` for cleanup.
 
-### Failure Modes (Agent 6)
-- Rate limiting causes 16% of infrastructure failures in multi-agent systems
-- Context collapse accounts for 36.9% of inter-agent failures — validates session continuation design
-- Multi-agent LLM systems fail at 41-86% rates without proper guardrails
-- Cost overruns from infinite loops: "thousands of dollars in minutes" — validates `max_turns` per stage
+## Research-Informed Design Decisions
 
-### Architecture Validation (Agents 7-8)
-- Flat monolith optimal for Python CLI tools under 5k LOC (research consensus)
-- Table-driven/declarative pipeline execution is proven (pypyr, Kestra, DAG Factory) but breaks down with complex conditional logic
-- Hybrid approach wins: standard patterns in YAML, complex logic in code (Temporal's lesson)
+Key findings from 8 research agents (31 sources) and multi-model review (Gemini + Codex) that directly influenced the spec:
 
-## Multi-Model Review Summary
-
-### Gemini Collaboration (Phases 2-3)
-
-**Phase 2 — Option Evaluation**:
-- Key insight: All 3 original options exceeded the ≤3 component budget. Gemini recommended consolidating to 3 modules: `ui.py`, `engine.py`, `store.py`
-- Suggested a "State-Machine Orchestrator" variant using SQLite as the sole communication bridge between runner and UI — this became the chosen architecture
-- Agreement: Both Claude and Gemini converged on the monolith-simple approach as most appropriate for an MVP
-
-**Phase 3 — Synthesis Validation**:
-- Validated architecture as "highly robust" for a long-running LLM orchestrator
-- 4 refinements adopted:
-  1. File-based log streaming instead of SQLite blobs (adopted as ADR-004)
-  2. Simple concurrency queue in runner.py (adopted)
-  3. Top-level `max_permission` in config.yaml (adopted as permission ceiling)
-  4. Cached/optimized setup_command for worktree dependencies (adopted)
-
-### Codex Adversarial Review (Phase 4)
-
-**Critical findings** (2 found, 1 resolved, 1 mitigated):
-
-1. **[CRITICAL → RESOLVED]** "Auto-approval defeats safety model" — Naming confusion. The design uses "default-require-approval": write stages AUTOMATICALLY REQUIRE human approval (safe-by-default). Users must explicitly set `requires_approval: false` to bypass. This is a safety feature, not a bypass. Clarified in spec.
-
-2. **[CRITICAL → MITIGATED]** "SQLite is a hidden single-writer bottleneck" — Valid concern about `busy_timeout=5000ms` causing UI freezes. Mitigated: CLI read operations use separate read-only connections (never blocked by WAL); write transactions are kept short (single-row INSERT/UPDATE); `synchronous=NORMAL` reduces fsync overhead; the 5000ms timeout is a safety net, not the expected case (typical WAL contention for 3 writers is <10ms).
-
-**High findings** (3, addressed in Risks section):
-- Resume/recovery: state split across SQLite + logs. Mitigation: SQLite is authoritative; logs are supplementary.
-- SQLite schema = implicit protocol. Mitigation: schema versioning table + Pydantic contracts in models.py.
-- Git worktree isolation is incomplete (shared .git directory). Mitigation: flag allowlists control what Claude can do; full clone isolation deferred.
-
-**Medium findings** (2):
-- Complexity budget gamed by hiding subsystems in modules. Acknowledged: modules contain internal subsystems; the 3-module constraint is about coupling topology.
-- Template interpolation into prompts creates injection risk. Mitigation: sanitize variables (no shell expansion), size caps (100k chars), tool specs never constructed from template variables.
-
-**Revision cycles**: 1 (naming clarification on approval semantics)
-**Unresolved issues**: None
+- **40% of agent projects fail by 2027** due to governance gaps -- validates `pegasus validate`, permission ceilings, and `max_turns` guardrails
+- **Supervised autonomy** (human-in-the-loop at decision points) is the emerging industry sweet spot -- validates `requires_approval` gates
+- **SQLite `mode=ro` vs `immutable=1`**: TUI polling connections MUST use `mode=ro` URI; `immutable=1` caches stale data (confirmed by SQLite official forum; caught during Codex adversarial review)
+- **WAL + `:memory:` incompatible**: Tests must use file-based fixtures (`tmp_path`), not `:memory:`
+- **Subprocess cleanup escalation**: Python's `terminate()` doesn't guarantee cleanup; must escalate SIGTERM -> SIGKILL (adopted into runner.py spec)
+- **Claude Code issue #26725**: Stale worktrees accumulate without cleanup -- validates heartbeat + DB-tracked worktree lifecycle (ADR-005)
+- **Gemini** suggested the State-Machine Orchestrator pattern and file-based logging (ADR-002, ADR-004); validated architecture as "highly robust"
+- **Codex adversarial review** found 2 critical issues: (1) naming confusion on auto-approval (resolved -- it means safe-by-default), (2) SQLite single-writer concern (mitigated with `BEGIN IMMEDIATE` + short transactions + `mode=ro` reads)
 
 ## Risks & Mitigations
 
 | Risk | Severity | Mitigation |
 |------|----------|------------|
-| SQLite write contention under 3 concurrent writers | High | WAL mode + short transactions + `busy_timeout=5000ms` + read-only connections for CLI/TUI |
-| Claude Agent SDK breaking changes | High | Pin SDK version + `PegasusEngine` abstraction layer isolates SDK from pipeline logic |
-| Git worktree shared state (hooks, refs, object DB) | Medium | Flag allowlists control Claude's actions; full clone isolation deferred to v0.2 if needed |
+| SQLite write contention under 3 concurrent writers | High | WAL mode + `BEGIN IMMEDIATE` + short transactions + `busy_timeout=5000ms` + `mode=ro` read connections for CLI/TUI |
+| Claude Agent SDK breaking changes | High | Pin SDK version (`>=0.1.48,<0.2.0`) + `AgentRunnerProtocol` abstraction isolates SDK from pipeline logic |
+| Runner crash leaves task in "running" state | High | Heartbeat every 5s + startup recovery checks PID liveness; marks stale tasks as failed within 30s |
+| Git worktree shared state (hooks, refs, object DB) | Medium | Flag allowlists control Claude's actions; `git worktree prune` on startup; full clone isolation deferred |
 | YAML DSL complexity creep as users add stages | Medium | `pegasus validate` with strict schema; max 10 stages per pipeline in MVP |
 | Template variable injection into prompts | Medium | Sanitize variables, size caps (100k chars), tool specs from YAML config only |
-| Nuitka binary portability (glibc, platform deps) | Medium | CI/CD builds for macOS (x86+ARM) and Linux (x86) with smoke tests |
-| Cost overruns from expensive Opus pipelines | Low | Cost tracking display + `max_turns` per stage; hard budgets deferred to v0.2 |
-| SQLite schema evolution across versions | Low | Schema version table + migration checks on startup |
+| Nuitka binary portability (glibc, platform deps) | Medium | Nuitka >= 1.4.2 + `--include-package-data=textual` + CI builds for macOS/Linux with smoke tests |
+| TUI shows stale data | Medium | Use `mode=ro` URI (NOT `immutable=1`); confirmed by SQLite forum |
+| `CLAUDECODE=1` env var inheritance | Medium | `PegasusEngine` unsets `CLAUDECODE` before spawning SDK sessions: `ClaudeAgentOptions(env={"CLAUDECODE": ""})` |
+| Cost overruns from expensive Opus pipelines | Low | Cost tracking display + `max_turns` per stage; hard budgets via SDK `max_budget_usd` deferred to v0.2 |
+| SQLite schema evolution across versions | Low | `schema_version` table + migration checks on startup |
 
 ## Configuration & Observability
 
@@ -390,6 +384,9 @@ worktrees:
   base_path: "~/.pegasus/worktrees"
 ```
 
+### Notification Mechanism
+Desktop notifications use `osascript` (macOS) / `notify-send` (Linux). Notifications are fired by `runner.py` via SDK callbacks when stage/pipeline events occur -- the runner fires the OS notification directly. The TUI does not send notifications; it reads notification state from SQLite for display only.
+
 ### Logging Strategy
 - Pipeline execution logs: `.pegasus/logs/<task-id>.log` (append-only, human-readable)
 - TUI tails log files for live output display
@@ -399,6 +396,74 @@ worktrees:
 ### Telemetry
 - No external telemetry in MVP
 - `pegasus history` provides local analytics from SQLite (task count, duration, cost aggregates)
+
+## Implementation Details
+
+### SQLite Connection Factory
+
+```python
+import sqlite3
+
+def make_connection(db_path: str, read_only: bool = False) -> sqlite3.Connection:
+    if read_only:
+        # CRITICAL: use mode=ro, NOT immutable=1
+        # immutable=1 caches data and never detects external writes
+        uri = f"file:{db_path}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
+    else:
+        conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False)
+
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
+    conn.execute("PRAGMA wal_autocheckpoint = 100")
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+```
+
+### Safe State Transition Pattern
+
+```python
+def transition_task_state(conn, task_id, from_state, to_state, metadata=None):
+    """Use BEGIN IMMEDIATE to acquire write lock upfront, avoiding TOCTOU races."""
+    conn.execute("BEGIN IMMEDIATE")
+    row = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None or row["status"] != from_state:
+        conn.rollback()
+        return False
+    conn.execute(
+        "UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (to_state, task_id)
+    )
+    conn.commit()
+    return True
+```
+
+### Agent SDK Abstraction
+
+```python
+from typing import Protocol, AsyncIterator, runtime_checkable
+
+@runtime_checkable
+class AgentRunnerProtocol(Protocol):
+    """Shields runner.py from claude-agent-sdk internals."""
+    async def run_task(self, prompt: str, cwd: str) -> AsyncIterator: ...
+    async def interrupt(self) -> None: ...
+```
+
+### Nuitka Build Command
+
+```bash
+python3 -m nuitka \
+  --mode=onefile \
+  --follow-imports \
+  --include-package-data=textual \
+  --include-package-data=rich \
+  --include-data-files=pegasus/templates/*.yaml=pegasus/templates/ \
+  --enable-plugin=anti-bloat \
+  pegasus/__main__.py
+```
 
 ## File System Layout
 
@@ -416,6 +481,7 @@ your-project/
 │   │   └── feature.yaml
 │   ├── pegasus.db                   # SQLite state (gitignored)
 │   ├── pegasus.db-wal               # WAL journal (gitignored)
+│   ├── pegasus.db-shm               # Shared memory (gitignored)
 │   └── logs/                        # Task logs (gitignored)
 │       ├── a3f8c2.log
 │       └── b7d1e9.log
@@ -438,19 +504,21 @@ CREATE TABLE schema_version (
 
 -- Core task record
 CREATE TABLE tasks (
-    id           TEXT PRIMARY KEY,        -- e.g., "a3f8c2"
-    pipeline     TEXT NOT NULL,           -- e.g., "bug-fix"
-    description  TEXT,
-    status       TEXT DEFAULT 'queued',   -- queued | running | paused | completed | failed
-    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    session_id   TEXT,                    -- Claude session ID for resume
-    context      TEXT,                    -- User-provided context (JSON)
-    branch       TEXT,                    -- e.g., "pegasus/a3f8c2-fix-login"
-    worktree_path TEXT,                   -- e.g., "~/.pegasus/worktrees/myapp--a3f8c2"
-    base_branch  TEXT,                    -- Auto-detected default branch
-    merge_status TEXT,                    -- pending | merged | conflict | abandoned
-    total_cost   REAL DEFAULT 0.0        -- Accumulated estimated cost (USD)
+    id            TEXT PRIMARY KEY,        -- e.g., "a3f8c2"
+    pipeline      TEXT NOT NULL,           -- e.g., "bug-fix"
+    description   TEXT,
+    status        TEXT DEFAULT 'queued',   -- queued | running | paused | completed | failed
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    session_id    TEXT,                    -- Claude session ID for resume
+    context       TEXT,                    -- User-provided context (JSON)
+    branch        TEXT,                    -- e.g., "pegasus/a3f8c2-fix-login"
+    worktree_path TEXT,                    -- e.g., "~/.pegasus/worktrees/myapp--a3f8c2"
+    base_branch   TEXT,                   -- Auto-detected default branch
+    merge_status  TEXT,                   -- pending | merged | conflict | abandoned
+    total_cost    REAL DEFAULT 0.0,       -- Accumulated estimated cost (USD)
+    runner_pid    INTEGER,                -- PID of runner process
+    heartbeat_at  DATETIME                -- Last heartbeat timestamp
 );
 
 -- One row per stage execution
@@ -466,6 +534,20 @@ CREATE TABLE stage_runs (
     cost        REAL DEFAULT 0.0,        -- Stage cost estimate (USD)
     claude_flags TEXT                    -- JSON of resolved flags used
 );
+
+-- Worktree lifecycle tracking
+CREATE TABLE worktrees (
+    task_id    TEXT PRIMARY KEY REFERENCES tasks(id),
+    path       TEXT NOT NULL UNIQUE,
+    branch     TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status     TEXT NOT NULL DEFAULT 'active'  -- active | removed | orphaned
+);
+
+-- Indexes for polling efficiency
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_heartbeat ON tasks(heartbeat_at) WHERE status = 'running';
+CREATE INDEX idx_stage_runs_task ON stage_runs(task_id);
 ```
 
 ## Pipeline YAML Schema
@@ -476,7 +558,7 @@ name: Bug Fix
 description: Analyze, patch, and verify a reported bug
 
 execution:
-  mode: session                      # Single session (MVP only mode)
+  mode: session                      # PegasusEngine manages session_id via SDK lifecycle (MVP only mode)
 
 defaults:
   model: claude-sonnet-4-20250514
@@ -514,7 +596,7 @@ stages:
       model: claude-sonnet-4-20250514
       permission_mode: acceptEdits
       max_turns: 10
-    # requires_approval: true        # Auto-set (write stage)
+    # requires_approval: true        # Auto-set (write stage default)
 
   - id: verify
     name: Verify
@@ -551,24 +633,24 @@ stages:
 
 ### Dashboard View (Split Pane)
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  PEGASUS DASHBOARD                         3 tasks running  │
-├────────────────────┬────────────────────┬───────────────────┤
-│ ● a3f8c2 bug-fix   │ ● b7d1e9 feature   │ ● c4f2a0 refactor│
-│ Login fails Safari  │ Dark mode toggle   │ Extract auth svc  │
-│                    │                    │                   │
-│ ✔ Analyze    [done]│ ✔ Parse Reqs [done]│ ● Analyze  [run] │
-│ ✔ Plan       [done]│ ● Implement  [run] │ ○ Plan     [wait] │
-│ ● Implement  [run] │ ○ Test       [wait]│ ○ Implement[wait] │
-│ ○ Verify     [wait]│                    │ ○ Verify   [wait] │
-│                    │                    │                   │
-│ ▸ Writing auth.py  │ ▸ Editing theme.ts │ ▸ Reading routes/ │
-├────────────────────┴────────────────────┴───────────────────┤
-│ LOGS (a3f8c2)                                               │
-│ [13:42] Stage 3: Generating patch using claude-sonnet-4     │
-│ [13:42] Files modified: src/auth.py, src/middleware.py      │
-│ [13:43] ⚠ Awaiting approval for file write...              │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|  PEGASUS DASHBOARD                         3 tasks running   |
++--------------------+--------------------+--------------------+
+| * a3f8c2 bug-fix   | * b7d1e9 feature   | * c4f2a0 refactor |
+| Login fails Safari  | Dark mode toggle   | Extract auth svc  |
+|                    |                    |                    |
+| [done] Analyze     | [done] Parse Reqs  | [run]  Analyze    |
+| [done] Plan        | [run]  Implement   | [wait] Plan       |
+| [run]  Implement   | [wait] Test        | [wait] Implement  |
+| [wait] Verify      |                    | [wait] Verify     |
+|                    |                    |                    |
+| > Writing auth.py  | > Editing theme.ts | > Reading routes/  |
++--------------------+--------------------+--------------------+
+| LOGS (a3f8c2)                                                |
+| [13:42] Stage 3: Generating patch using claude-sonnet-4      |
+| [13:42] Files modified: src/auth.py, src/middleware.py       |
+| [13:43] ! Awaiting approval for file write...                |
++-------------------------------------------------------------+
 ```
 
 ### Keyboard Navigation
@@ -590,19 +672,20 @@ stages:
 | CLI Framework | Click | 8.1+ | Unanimous research recommendation; lazy composition |
 | TUI Framework | Textual | 0.40+ | Rich terminal apps; CSS Grid layout; async support |
 | Terminal Styling | Rich | 13+ | Colors, tables, progress bars (Textual dependency) |
-| AI Engine | Claude Agent SDK | pinned | Typed events, cost tracking, Python callbacks |
-| Config Validation | Pydantic | 2.0+ | YAML → typed models with error messages |
+| AI Engine | Claude Agent SDK | >=0.1.48,<0.2.0 | Typed events, cost tracking, subprocess management |
+| Config Validation | Pydantic | 2.0+ | YAML -> typed models with error messages |
 | Database | SQLite3 | built-in | Zero dependencies; WAL mode for concurrency |
 | YAML Parsing | PyYAML | 6.0+ | Standard YAML parser |
-| Distribution | Nuitka | latest | Python → native binary; faster startup than PyInstaller |
-| VCS | Git | 2.20+ | Worktree support (create, remove, list) |
+| Distribution | Nuitka | >= 1.4.2 | Python -> native binary; rich.box fix required |
+| VCS | Git | 2.20+ | Worktree support (create, remove, list, prune) |
 
 ## Version Roadmap
 
-### v0.1 (MVP) — This Spec
+### v0.1 (MVP) -- This Spec
 - All CLI commands, TUI, pipeline execution, worktree isolation, validation
 - Single session execution mode
 - Cost tracking (display only)
+- Heartbeat-based crash detection and recovery
 - Standalone Nuitka binary
 
 ### v0.2
@@ -611,12 +694,13 @@ stages:
 - Pipeline composition (`use_pipeline: code-review`)
 - CLAUDE.md / context file injection per pipeline
 - `--hint` flag for enhanced resume
-- Configurable cost budgets with auto-pause
+- Configurable cost budgets with auto-pause via SDK `max_budget_usd`
 - Custom hooks at pipeline events
+- Full Pydantic schema validation for `output_format` (structured stage outputs)
 
 ### v0.3+
 - Conditional branching in pipelines
 - Parallel stage execution
-- Web GUI dashboard (reads same SQLite DB)
+- Web GUI dashboard (reads same SQLite DB -- zero runner changes)
 - GitHub Issues / Linear integration
 - Pipeline template registry
