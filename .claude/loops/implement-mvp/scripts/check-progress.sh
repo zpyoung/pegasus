@@ -10,6 +10,11 @@ PROJECT_ROOT="$(cd "$LOOP_DIR/../../.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
+# Activate venv if it exists
+if [ -f "$PROJECT_ROOT/.venv/bin/activate" ]; then
+  source "$PROJECT_ROOT/.venv/bin/activate"
+fi
+
 # Check if backlog exists
 if [ ! -f "$BACKLOG" ]; then
   echo "PENDING=11 DONE=0 TESTS=SKIP LINT=SKIP"

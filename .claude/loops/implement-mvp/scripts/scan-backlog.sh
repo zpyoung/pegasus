@@ -6,6 +6,12 @@ set -euo pipefail
 LOOP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 STATE_DIR="$LOOP_DIR/state"
 BACKLOG="$STATE_DIR/backlog.json"
+PROJECT_ROOT="$(cd "$LOOP_DIR/../../.." && pwd)"
+
+# Activate venv if it exists
+if [ -f "$PROJECT_ROOT/.venv/bin/activate" ]; then
+  source "$PROJECT_ROOT/.venv/bin/activate"
+fi
 
 if [ ! -f "$BACKLOG" ]; then
   # First run: generate backlog from the critical path
