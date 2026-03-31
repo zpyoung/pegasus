@@ -1,0 +1,42 @@
+name: Bug Fix
+description: Analyze, patch, and verify a reported bug
+
+execution:
+  mode: session
+
+defaults:
+  model: claude-sonnet-4-20250514
+  max_turns: 10
+  permission_mode: plan
+
+stages:
+  - id: analyze
+    name: Root Cause Analysis
+    prompt: |
+      Analyze this bug in a {{project.language}} project:
+      {{task.description}}
+      Identify the root cause and list all affected files.
+    claude_flags:
+      model: claude-sonnet-4-20250514
+      permission_mode: plan
+      max_turns: 5
+
+  - id: implement
+    name: Apply Fix
+    prompt: |
+      Implement the fix for the bug you analyzed.
+      Be minimal and targeted — only change what is necessary.
+    claude_flags:
+      model: claude-sonnet-4-20250514
+      permission_mode: acceptEdits
+      max_turns: 10
+    requires_approval: true
+
+  - id: verify
+    name: Verify Fix
+    prompt: |
+      Verify the fix is correct by reviewing the changes.
+      Check for any regressions or unintended side effects.
+    claude_flags:
+      permission_mode: plan
+      max_turns: 5

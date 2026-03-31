@@ -88,6 +88,16 @@
 **Status**: done
 **Notes**: All extras forbidden at every model level. Stage ID validated with regex `^[a-z][a-z0-9_-]*$`. Stage count capped at 10. Cross-stage reference validation via regex scan of prompts. Empty config YAML defaults gracefully to built-ins. Removed quoted self-reference in `model_validator` to satisfy `ruff UP037`.
 
+## Iteration 11: 11-integration (FINAL)
+**Feature**: End-to-end integration: wire all modules together, __main__.py entry point, smoke tests, import graph verification, package data templates.
+**Files created/modified**:
+- `src/pegasus/templates/bug-fix.yaml` — starter pipeline template (3-stage: analyze, implement, verify) as package data
+- `src/pegasus/templates/feature.yaml` — starter pipeline template (3-stage: plan, implement, review) as package data
+- `tests/test_integration.py` — 20 end-to-end smoke tests across 5 test classes: `TestInitThenValidate` (3), `TestInitThenRunDryRun` (3), `TestImportGraphIsolation` (3), `TestMainModuleRuns` (3), `TestStatusEmpty` (2), `TestPackageDataTemplates` (6)
+**Tests added**: 20 (total 351 including all prior iterations)
+**Status**: done
+**Notes**: All 351 tests pass; ruff clean. `python3 -m pegasus --help` exits 0. Import graph verified at source level — runner.py contains zero references to `pegasus.ui` and ui.py contains zero references to `pegasus.runner`; _run_task.py is the sole bridge. Starter YAML templates live in `src/pegasus/templates/` (already declared as `[tool.setuptools.package-data]` in pyproject.toml). CliRunner instantiated without `mix_stderr` (not supported in installed Click version). Templates are also hardcoded as strings in ui.py `_BUG_FIX_TEMPLATE` / `_FEATURE_TEMPLATE` for the `init` command — both approaches coexist.
+
 ## Iteration 10: 10-tui-dashboard
 **Feature**: Textual TUI dashboard — pegasus tui command, PegasusDashboard App, TaskCard widget, LogPanel widget
 **Files created/modified**:

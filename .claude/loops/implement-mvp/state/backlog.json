@@ -83,7 +83,7 @@
     "id": "11-integration",
     "description": "End-to-end integration: wire all modules together, ensure __main__.py entry point works, add smoke tests (init -> validate -> run --dry-run flow), verify import graph (runner never imports ui, ui never imports runner), add .pegasus/ starter pipeline templates as package data.",
     "priority": "critical",
-    "status": "pending",
+    "status": "done",
     "depends_on": ["09-cli-commands", "10-tui-dashboard"],
     "target_files": ["src/pegasus/__main__.py", "tests/test_integration.py"]
   }
