@@ -1,0 +1,69 @@
+name: Feature from Design
+description: Read a design document and implement it
+
+execution:
+  mode: session
+
+defaults:
+  model: sonnet
+  max_turns: 10
+  permission_mode: plan
+
+stages:
+  - id: read-design
+    name: Read Design Document
+    prompt: |
+      Read the design document specified below and create a detailed implementation plan.
+      The design doc path is given in the task description.
+
+      Task: {{task.description}}
+
+      Steps:
+      1. Read the design document file specified in the task description.
+      2. Extract all requirements (FR-### and NFR-###), architecture decisions, components, and testing strategy.
+      3. Create a step-by-step implementation plan that maps each requirement to concrete code changes.
+      4. List every file to create or modify, in dependency order.
+      5. Note any ambiguities or gaps in the design that need assumptions.
+    claude_flags:
+      model: opus
+      permission_mode: plan
+      max_turns: 10
+    requires_approval: false
+
+  - id: implement
+    name: Implement from Design
+    prompt: |
+      Implement the design according to the plan from the previous stage.
+      Follow the architecture, components, and interfaces specified in the design document exactly.
+      Follow the existing code style and patterns in the project.
+      Implement in dependency order — shared types and utilities first, then core logic, then integration points.
+    claude_flags:
+      model: sonnet
+      permission_mode: acceptEdits
+      max_turns: 30
+    requires_approval: false
+
+  - id: test
+    name: Write Tests
+    prompt: |
+      Write tests for the implementation following the testing strategy from the design document.
+      Cover the test methods specified in the requirements mapping table (unit, integration, e2e as applicable).
+      Run the tests and fix any failures.
+      Use: {{project.test_command}}
+    claude_flags:
+      model: sonnet
+      permission_mode: acceptEdits
+      max_turns: 20
+    requires_approval: false
+
+  - id: review
+    name: Design Compliance Review
+    prompt: |
+      Review the implementation against the original design document.
+      For each requirement (FR-### and NFR-###), verify it is correctly implemented and tested.
+      Check that the architecture matches the design — correct components, interfaces, and data flow.
+      Flag any deviations, missing requirements, or untested code paths.
+    claude_flags:
+      model: opus
+      permission_mode: plan
+      max_turns: 10

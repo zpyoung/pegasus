@@ -1457,6 +1457,8 @@ class PipelineExecutor:
         self._log("---")
 
         def _on_message(msg: AgentMessage) -> None:
+            if not msg.content.strip():
+                return
             # Truncate very long messages to keep logs readable
             content = msg.content[:2000] + ("..." if len(msg.content) > 2000 else "")
             self._log(f"[agent] {content}")

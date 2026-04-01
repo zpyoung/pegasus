@@ -1116,8 +1116,7 @@ def _get_textual_app() -> type:
             display: block;
         }
         #create-dialog {
-            width: 80%;
-            max-width: 100;
+            width: 100%;
             height: auto;
             background: $surface;
             border: thick $primary;
