@@ -56,6 +56,7 @@ class FakeAgentRunner:
         self,
         prompt: str,
         cwd: str,
+        claude_flags: dict | None = None,
     ) -> AsyncIterator[Message]:
         self.run_calls.append((prompt, cwd))
         if self._raise_on_run is not None:

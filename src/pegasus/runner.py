@@ -101,8 +101,13 @@ class AgentRunnerProtocol(Protocol):
         self,
         prompt: str,
         cwd: str,
+        claude_flags: dict[str, Any] | None = None,
     ) -> AsyncIterator[Message]:
         """Execute a single stage prompt inside *cwd*.
+
+        Args:
+            claude_flags: Resolved stage flags (permission_mode, model, max_turns, etc.)
+                          passed through to the SDK's ClaudeAgentOptions.
 
         Yields:
             A sequence of ``AgentMessage``, ``ToolUseMessage``, ``ResultMessage``,
@@ -149,6 +154,7 @@ class ClaudeAgentRunner:
         self,
         prompt: str,
         cwd: str,
+        claude_flags: dict[str, Any] | None = None,
     ) -> AsyncIterator[Message]:
         if not _SDK_AVAILABLE:  # pragma: no cover
             raise RuntimeError(
@@ -159,16 +165,31 @@ class ClaudeAgentRunner:
         # Unset CLAUDECODE=1 to avoid nested Claude Code conflicts.
         env = {**os.environ, "CLAUDECODE": ""}
 
+        # Build SDK options from resolved claude_flags
+        flags = claude_flags or {}
+        sdk_opts: dict[str, Any] = {"cwd": cwd, "env": env}
+        # Map pegasus flag names to SDK ClaudeAgentOptions field names
+        _flag_map = {
+            "model": "model",
+            "permission_mode": "permission_mode",
+            "max_turns": "max_turns",
+            "allowed_tools": "allowed_tools",
+            "disallowed_tools": "disallowed_tools",
+            "add_dir": "add_dirs",
+            "append_system_prompt": "system_prompt",
+            "output_format": "output_format",
+        }
+        for pegasus_key, sdk_key in _flag_map.items():
+            if pegasus_key in flags and flags[pegasus_key] is not None:
+                sdk_opts[sdk_key] = flags[pegasus_key]
+
         # The SDK exposes an async query() interface.  Adapt it to our
         # internal message types.
         async def _generate() -> AsyncIterator[Message]:  # pragma: no cover
             try:
                 async for sdk_message in _sdk.query(
                     prompt=prompt,
-                    options=_sdk.ClaudeCodeOptions(
-                        cwd=cwd,
-                        env=env,
-                    ),
+                    options=_sdk.ClaudeAgentOptions(**sdk_opts),
                 ):
                     msg_type = type(sdk_message).__name__
                     if msg_type == "AssistantMessage":
@@ -349,23 +370,17 @@ class PegasusEngine:
         stage_index: int,
         prompt: str,
         cwd: str,
+        claude_flags: dict[str, Any] | None = None,
     ) -> bool:
         """Execute a single pipeline stage and update SQLite state.
 
-        1. Inserts a ``stage_runs`` row with status ``'running'``.
-        2. Transitions ``tasks`` status from ``'queued'`` to ``'running'``
-           (no-op if already ``'running'``).
-        3. Streams messages from the runner, dispatching callbacks.
-        4. On ``ResultMessage``: marks stage successful, records cost +
-           session_id.
-        5. On ``ErrorMessage`` or unexpected exception: marks stage failed.
-
         Args:
-            task_id:     Row ``id`` in the ``tasks`` table.
-            stage_id:    Stage identifier from the pipeline YAML.
-            stage_index: Zero-based position of the stage in the pipeline.
-            prompt:      The fully-resolved stage prompt.
-            cwd:         Working directory for the runner subprocess.
+            task_id:      Row ``id`` in the ``tasks`` table.
+            stage_id:     Stage identifier from the pipeline YAML.
+            stage_index:  Zero-based position of the stage in the pipeline.
+            prompt:       The fully-resolved stage prompt.
+            cwd:          Working directory for the runner subprocess.
+            claude_flags: Resolved stage flags passed through to the agent runner.
 
         Returns:
             ``True`` if the stage completed successfully, ``False`` on error.
@@ -380,7 +395,7 @@ class PegasusEngine:
 
         success = False
         try:
-            message_stream = await self.runner.run_task(prompt, cwd)
+            message_stream = await self.runner.run_task(prompt, cwd, claude_flags=claude_flags)
             async for message in message_stream:
                 if isinstance(message, AgentMessage):
                     self._stage_cost += message.cost
@@ -1032,10 +1047,14 @@ class PipelineExecutor:
         worktree_path: str,
         branch: str,
     ) -> None:
-        """Insert a new task row in 'queued' state."""
+        """Insert or update a task row in 'queued' state.
+
+        Uses INSERT OR REPLACE so the runner can pick up tasks already
+        inserted by the CLI's ``run`` command (which pre-creates the row).
+        """
         conn.execute(
             """
-            INSERT INTO tasks
+            INSERT OR REPLACE INTO tasks
                 (id, pipeline, description, status, worktree_path, branch,
                  runner_pid, heartbeat_at)
             VALUES
@@ -1347,6 +1366,7 @@ class PipelineExecutor:
                         stage_index=stage_index,
                         prompt=stage.prompt,
                         cwd=str(worktree_path),
+                        claude_flags=resolved_flags.model_dump(exclude_none=True),
                     )
 
                     if stage_success:
@@ -1572,6 +1592,7 @@ class PipelineExecutor:
                         stage_index=stage_index,
                         prompt=stage.prompt,
                         cwd=str(worktree_path),
+                        claude_flags=resolved_flags.model_dump(exclude_none=True),
                     )
 
                     if stage_success:

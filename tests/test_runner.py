@@ -1222,7 +1222,7 @@ class TestPipelineExecutorStageFailure:
             interrupt_called = False
             run_calls: list[tuple[str, str]] = []
 
-            async def run_task(self, prompt: str, cwd: str) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
                 nonlocal call_count
                 call_count += 1
                 self.run_calls.append((prompt, cwd))
@@ -1478,7 +1478,7 @@ class TestPipelineExecutorHeartbeat:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
                 self.run_calls.append((prompt, cwd))
 
                 async def _gen() -> Any:
@@ -1528,7 +1528,7 @@ class TestPipelineExecutorRateLimitRetry:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
                 nonlocal call_count
                 call_count += 1
                 self.run_calls.append((prompt, cwd))
@@ -1581,7 +1581,7 @@ class TestPipelineExecutorRateLimitRetry:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
                 self.run_calls.append((prompt, cwd))
 
                 async def _gen() -> Any:

@@ -50,7 +50,20 @@ def main() -> None:
     if resume_mode:
         asyncio.run(executor.resume_task(task_id))
     else:
-        asyncio.run(executor.run_task(task_id))
+        # Read task data from SQLite (ui.py already inserted the row)
+        from pegasus.models import make_connection  # noqa: PLC0415
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute(
+            "SELECT pipeline, description FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+        conn.close()
+
+        if row is None:
+            print(f"Task {task_id} not found in database", file=sys.stderr)
+            sys.exit(1)
+
+        asyncio.run(executor.run_task(task_id, row["pipeline"], row["description"] or ""))
 
 
 if __name__ == "__main__":
