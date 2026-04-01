@@ -1,0 +1,27 @@
+pegasus:
+  version: 0.1.0
+project:
+  language: python
+  test_command: pytest
+  lint_command: ruff check .
+  setup_command: ''
+git:
+  default_branch: main
+  branch_prefix: pegasus/
+  auto_cleanup: true
+defaults:
+  model: claude-sonnet-4-20250514
+  max_turns: 10
+  permission_mode: plan
+  max_permission: acceptEdits
+concurrency:
+  max_tasks: 3
+  retry_max: 5
+  retry_base_delay: 1.0
+notifications:
+  on_stage_complete: desktop
+  on_approval_needed: desktop
+  on_pipeline_complete: desktop
+  on_pipeline_failed: desktop
+worktrees:
+  base_path: ~/.pegasus/worktrees

@@ -1,0 +1,43 @@
+name: Feature
+description: Plan, implement, and test a new feature
+
+execution:
+  mode: session
+
+defaults:
+  model: claude-sonnet-4-20250514
+  max_turns: 10
+  permission_mode: plan
+
+stages:
+  - id: plan
+    name: Feature Planning
+    prompt: |
+      Plan the implementation for this feature in a {{project.language}} project:
+      {{task.description}}
+      List all files to create/modify and the exact changes needed.
+    claude_flags:
+      model: claude-sonnet-4-20250514
+      permission_mode: plan
+      max_turns: 5
+    requires_approval: true
+
+  - id: implement
+    name: Implement Feature
+    prompt: |
+      Implement the feature according to the approved plan.
+      Follow the existing code style and patterns.
+    claude_flags:
+      model: claude-sonnet-4-20250514
+      permission_mode: acceptEdits
+      max_turns: 15
+    requires_approval: true
+
+  - id: review
+    name: Code Review
+    prompt: |
+      Review the implemented code for correctness, style, and potential issues.
+      Suggest any improvements.
+    claude_flags:
+      permission_mode: plan
+      max_turns: 5
