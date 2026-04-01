@@ -35,11 +35,17 @@ def main() -> None:
         project_dir_str = str(Path.cwd())
 
     project_dir = Path(project_dir_str)
+    db_path = project_dir / ".pegasus" / "pegasus.db"
 
-    # Import PipelineExecutor here (only this module imports runner.py)
-    from pegasus.runner import PipelineExecutor  # noqa: PLC0415
+    # Import runner components here (only this module imports runner.py)
+    from pegasus.runner import ClaudeAgentRunner, PipelineExecutor  # noqa: PLC0415
 
-    executor = PipelineExecutor(project_dir=project_dir)
+    agent_runner = ClaudeAgentRunner()
+    executor = PipelineExecutor(
+        db_path=db_path,
+        agent_runner=agent_runner,
+        project_dir=project_dir,
+    )
 
     if resume_mode:
         asyncio.run(executor.resume_task(task_id))
