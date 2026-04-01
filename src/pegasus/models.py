@@ -116,6 +116,14 @@ class StageConfig(BaseModel):
     prompt: str = Field(..., min_length=1)
     claude_flags: ClaudeFlags = Field(default_factory=ClaudeFlags)
     requires_approval: bool = False
+    question: str | None = None
+    """Optional question to ask the user *before* this stage runs.
+
+    When set, Pegasus pauses the pipeline and prompts the user for a text
+    answer.  The answer is available in the stage's own prompt via
+    ``{{stage.question_response}}`` and in subsequent stages via
+    ``{{stages.<stage-id>.question_response}}``.
+    """
 
     @field_validator("id")
     @classmethod
@@ -629,7 +637,7 @@ def resolve_stage_flags(
 # ---------------------------------------------------------------------------
 
 #: Current schema version.  Bump this when DDL changes.
-SCHEMA_VERSION: int = 1
+SCHEMA_VERSION: int = 2
 
 # ---------------------------------------------------------------------------
 # SQLite connection factory
@@ -680,9 +688,22 @@ CREATE TABLE IF NOT EXISTS worktrees (
     status     TEXT NOT NULL DEFAULT 'active'
 );
 
+CREATE TABLE IF NOT EXISTS agent_questions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id      TEXT REFERENCES tasks(id),
+    stage_id     TEXT NOT NULL,
+    stage_index  INTEGER NOT NULL,
+    question     TEXT NOT NULL,
+    answer       TEXT,
+    asked_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    answered_at  DATETIME,
+    status       TEXT NOT NULL DEFAULT 'pending'
+);
+
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_heartbeat ON tasks(heartbeat_at) WHERE status = 'running';
 CREATE INDEX IF NOT EXISTS idx_stage_runs_task ON stage_runs(task_id);
+CREATE INDEX IF NOT EXISTS idx_agent_questions_task ON agent_questions(task_id);
 """
 
 
@@ -869,7 +890,7 @@ def _suggest_flag(unknown: str, max_distance: int = 3) -> str | None:
 
 
 #: Recognisable template variable namespaces in prompts.
-_KNOWN_TEMPLATE_NAMESPACES: frozenset[str] = frozenset({"stages", "task", "project"})
+_KNOWN_TEMPLATE_NAMESPACES: frozenset[str] = frozenset({"stages", "task", "project", "stage"})
 
 #: Regex matching any ``{{...}}`` template expression.
 _TEMPLATE_RE: re.Pattern[str] = re.compile(r"\{\{([^}]+)\}\}")

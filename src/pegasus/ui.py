@@ -1012,7 +1012,7 @@ def _get_textual_app() -> type:
     from textual.binding import Binding
     from textual.containers import Horizontal, Vertical
     from textual.widget import Widget
-    from textual.widgets import Footer, Header, Label, Static, Button, Select, TextArea
+    from textual.widgets import Footer, Header, Input, Label, Static, Button, Select, TextArea
     from textual import events
 
     class TaskCard(Widget):
@@ -1046,6 +1046,7 @@ def _get_textual_app() -> type:
             status: str,
             stages: list,
             activity: str,
+            pending_question: str | None = None,
         ) -> None:
             """Refresh the card's displayed content."""
             status_colors: dict[str, str] = {
@@ -1063,7 +1064,12 @@ def _get_textual_app() -> type:
             )
             self.query_one("#card-header", Static).update(header_text)
             self.query_one("#card-stages", Static).update(_build_stage_lines(stages))
-            activity_text = f"[dim]> {activity[:50]}[/dim]" if activity else ""
+            if pending_question:
+                activity_text = f"[bold yellow]?[/bold yellow] {pending_question[:50]}"
+            elif activity:
+                activity_text = f"[dim]> {activity[:50]}[/dim]"
+            else:
+                activity_text = ""
             self.query_one("#card-activity", Static).update(activity_text)
 
     class LogPanel(Widget):
@@ -1100,6 +1106,64 @@ def _get_textual_app() -> type:
                 self.query_one("#log-content", Static).update(tail)
             except OSError:
                 self.query_one("#log-content", Static).update("[dim](log unreadable)[/dim]")
+
+    class QuestionBar(Widget):
+        """Bottom bar shown when an agent question is pending on the focused task.
+
+        When a stage has ``question:`` set, the pipeline pauses and this bar
+        appears with the question text and a text input for the user's answer.
+        Pressing Enter (or Escape to cancel) submits or discards the answer.
+        """
+
+        DEFAULT_CSS = """
+        QuestionBar {
+            dock: bottom;
+            height: 4;
+            border: solid $warning;
+            background: $surface;
+            padding: 0 1;
+            display: none;
+        }
+        QuestionBar.visible-question {
+            display: block;
+        }
+        #question-text {
+            height: 1;
+        }
+        #question-input {
+            height: 1;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            yield Static("", id="question-text")
+            yield Input(placeholder="Type your answer and press Enter…", id="question-input")
+
+        def show_question(self, question: str) -> None:
+            """Display *question* and focus the answer input."""
+            self.query_one("#question-text", Static).update(
+                f"[bold yellow]?[/bold yellow] {question}"
+            )
+            self.query_one("#question-input", Input).value = ""
+            self.add_class("visible-question")
+            self.query_one("#question-input", Input).focus()
+
+        def hide_question(self) -> None:
+            """Hide the bar and clear the input."""
+            self.remove_class("visible-question")
+            self.query_one("#question-input", Input).value = ""
+
+        def on_input_submitted(self, event: Input.Submitted) -> None:
+            """Submit the answer when the user presses Enter."""
+            answer = event.value.strip()
+            if answer:
+                self.app._submit_question_answer(answer)  # type: ignore[attr-defined]
+
+        def on_key(self, event: events.Key) -> None:
+            """Escape cancels the question (rejects the task)."""
+            if event.key == "escape":
+                self.app._cancel_question()  # type: ignore[attr-defined]
+                event.prevent_default()
 
     class TaskCreateModal(Widget):
         """Modal widget for creating new tasks with pipeline selection and description input."""
@@ -1231,6 +1295,8 @@ def _get_textual_app() -> type:
         _focused_idx: int = 0
         _logs_visible: bool = False
         _create_visible: bool = False
+        _answering_question_id: int | None = None
+        _answering_task_id: str | None = None
 
         def __init__(self, db_path: Path, **kwargs: object) -> None:
             super().__init__(**kwargs)
@@ -1258,6 +1324,7 @@ def _get_textual_app() -> type:
             yield Header()
             yield Horizontal(id="task-area")
             yield LogPanel(id="log-panel")
+            yield QuestionBar(id="question-bar")
             yield TaskCreateModal(id="create-modal")
             yield Footer()
 
@@ -1283,6 +1350,21 @@ def _get_textual_app() -> type:
                     ).fetchall()
                     running = [s for s in stages if s["status"] == "running"]
                     activity = running[0]["stage_id"] if running else ""
+
+                    # Check for a pending agent question on paused tasks.
+                    pending_question: str | None = None
+                    pending_question_id: int | None = None
+                    if t["status"] == "paused":
+                        q_row = self._conn.execute(
+                            """SELECT id, question FROM agent_questions
+                               WHERE task_id = ? AND status = 'pending'
+                               ORDER BY id DESC LIMIT 1""",
+                            (t["id"],),
+                        ).fetchone()
+                        if q_row:
+                            pending_question_id = q_row["id"]
+                            pending_question = q_row["question"]
+
                     result.append(
                         {
                             "id": t["id"],
@@ -1291,6 +1373,8 @@ def _get_textual_app() -> type:
                             "status": t["status"],
                             "stages": list(stages),
                             "activity": activity,
+                            "pending_question": pending_question,
+                            "pending_question_id": pending_question_id,
                         }
                     )
                 self._task_data = result
@@ -1324,6 +1408,7 @@ def _get_textual_app() -> type:
                     status=task["status"],
                     stages=task["stages"],
                     activity=task["activity"],
+                    pending_question=task.get("pending_question"),
                 )
 
             # Remove extra cards
@@ -1383,7 +1468,12 @@ def _get_textual_app() -> type:
                 self._refresh_logs()
 
         def action_approve_task(self) -> None:
-            """A -- approve the focused paused task by writing queued to SQLite."""
+            """A -- approve the focused paused task.
+
+            If the task has a pending agent question, opens the QuestionBar so
+            the user can type an answer.  Otherwise approves directly by writing
+            ``status='queued'`` to SQLite.
+            """
             if not self._task_data:
                 return
             idx = min(self._focused_idx, len(self._task_data) - 1)
@@ -1393,6 +1483,16 @@ def _get_textual_app() -> type:
                     f"Task {task['id']} is not paused (status: {task['status']})", timeout=3
                 )
                 return
+            # If there is a pending question, show the question input bar.
+            q_id = task.get("pending_question_id")
+            q_text = task.get("pending_question")
+            if q_id is not None and q_text:
+                self._answering_question_id = q_id
+                self._answering_task_id = task["id"]
+                question_bar = self.query_one("#question-bar", QuestionBar)
+                question_bar.show_question(q_text)
+                return
+            # No pending question — plain approval.
             try:
                 conn = make_connection(self._db_path)
                 try:
@@ -1406,6 +1506,46 @@ def _get_textual_app() -> type:
                 self.notify(f"Approved task {task['id']}", timeout=2)
             except Exception as exc:
                 self.notify(f"Approve failed: {exc}", severity="error", timeout=4)
+
+        def _submit_question_answer(self, answer: str) -> None:
+            """Write *answer* to the pending agent_questions row and resume the task."""
+            if self._answering_question_id is None or self._answering_task_id is None:
+                return
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    conn.execute(
+                        "UPDATE agent_questions "
+                        "SET status = 'answered', answer = ?, "
+                        "answered_at = CURRENT_TIMESTAMP "
+                        "WHERE id = ?",
+                        (answer, self._answering_question_id),
+                    )
+                    conn.execute(
+                        "UPDATE tasks SET status = 'queued', "
+                        "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (self._answering_task_id,),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+                self.notify(
+                    f"Answer submitted for task {self._answering_task_id}", timeout=2
+                )
+            except Exception as exc:
+                self.notify(f"Submit failed: {exc}", severity="error", timeout=4)
+            finally:
+                question_bar = self.query_one("#question-bar", QuestionBar)
+                question_bar.hide_question()
+                self._answering_question_id = None
+                self._answering_task_id = None
+
+        def _cancel_question(self) -> None:
+            """Dismiss the QuestionBar without answering (does not reject the task)."""
+            question_bar = self.query_one("#question-bar", QuestionBar)
+            question_bar.hide_question()
+            self._answering_question_id = None
+            self._answering_task_id = None
 
         def action_reject_task(self) -> None:
             """R -- reject/mark the focused task as failed."""
@@ -1464,7 +1604,10 @@ def _get_textual_app() -> type:
             select_widget.focus()
 
         def action_dismiss_modal(self) -> None:
-            """Escape -- hide any visible modal."""
+            """Escape -- hide any visible modal or question bar."""
+            if self._answering_question_id is not None:
+                self._cancel_question()
+                return
             if self._create_visible:
                 modal = self.query_one("#create-modal", TaskCreateModal)
                 modal.remove_class("visible-create")

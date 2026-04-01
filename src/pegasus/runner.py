@@ -1050,12 +1050,14 @@ class PipelineExecutor:
         *,
         heartbeat_interval: float = 5.0,
         on_approval_needed: Callable[[str, str], Any] | None = None,
+        on_question_asked: Callable[[str, str, str], Any] | None = None,
     ) -> None:
         self.db_path = str(db_path)
         self.agent_runner = agent_runner
         self.project_dir = Path(project_dir)
         self.heartbeat_interval = heartbeat_interval
         self._on_approval_needed = on_approval_needed
+        self._on_question_asked = on_question_asked
 
         self._worktree_manager = WorktreeManager()
         self._shutdown_requested: bool = False
@@ -1095,6 +1097,8 @@ class PipelineExecutor:
         project_config: Any,
         description: str,
         stage_outputs: dict[str, str] | None = None,
+        question_responses: dict[str, str] | None = None,
+        current_stage_id: str | None = None,
     ) -> str:
         """Resolve ``{{…}}`` template variables in a stage prompt.
 
@@ -1103,8 +1107,11 @@ class PipelineExecutor:
         - ``{{project.test_command}}`` / ``{{project.lint_command}}`` etc.
         - ``{{task.description}}``  — the task's human description
         - ``{{stages.<id>.output}}`` — output of a previously completed stage
+        - ``{{stages.<id>.question_response}}`` — answer to another stage's question
+        - ``{{stage.question_response}}`` — answer to the *current* stage's question
         """
         outputs = stage_outputs or {}
+        q_resp = question_responses or {}
 
         def _replace(match: re.Match[str]) -> str:
             expr = match.group(1).strip()
@@ -1122,12 +1129,19 @@ class PipelineExecutor:
                     return description
                 return match.group(0)
             elif namespace == "stages":
-                # e.g. {{stages.plan.output}}
+                # e.g. {{stages.plan.output}} or {{stages.plan.question_response}}
                 sub_parts = key.split(".", 1)
                 if len(sub_parts) == 2:
                     stage_id, attr = sub_parts
                     if attr == "output" and stage_id in outputs:
                         return outputs[stage_id]
+                    if attr == "question_response" and stage_id in q_resp:
+                        return q_resp[stage_id]
+                return match.group(0)
+            elif namespace == "stage":
+                # Shorthand for the current stage's own question response.
+                if key == "question_response" and current_stage_id and current_stage_id in q_resp:
+                    return q_resp[current_stage_id]
                 return match.group(0)
             return match.group(0)
 
@@ -1328,6 +1342,119 @@ class PipelineExecutor:
         signal.signal(signal.SIGINT, _handle_signal)
 
     # ------------------------------------------------------------------
+    # Agent question gate
+    # ------------------------------------------------------------------
+
+    def _insert_question(
+        self,
+        conn: sqlite3.Connection,
+        task_id: str,
+        stage_id: str,
+        stage_index: int,
+        question: str,
+    ) -> int:
+        """Insert an ``agent_questions`` row and return its rowid."""
+        cursor = conn.execute(
+            "INSERT INTO agent_questions "
+            "(task_id, stage_id, stage_index, question, status) "
+            "VALUES (?, ?, ?, ?, 'pending')",
+            (task_id, stage_id, stage_index, question),
+        )
+        conn.commit()
+        return cursor.lastrowid  # type: ignore[return-value]
+
+    async def _poll_for_question_answer(
+        self,
+        task_id: str,
+        question_id: int,
+        poll_interval: float = 2.0,
+    ) -> str | None:
+        """Poll SQLite until the question is answered or the task is aborted.
+
+        Returns the answer string when ``agent_questions.status`` becomes
+        ``'answered'``, or ``None`` if the task is set to ``'failed'`` (user
+        rejected) or a shutdown was requested.
+        """
+        while not self._shutdown_requested:
+            await asyncio.sleep(poll_interval)
+            conn = make_connection(self.db_path, read_only=True)
+            try:
+                q_row = conn.execute(
+                    "SELECT status, answer FROM agent_questions WHERE id = ?",
+                    (question_id,),
+                ).fetchone()
+                t_row = conn.execute(
+                    "SELECT status FROM tasks WHERE id = ?", (task_id,)
+                ).fetchone()
+            finally:
+                conn.close()
+            if q_row and q_row["status"] == "answered":
+                return q_row["answer"] or ""
+            if t_row and t_row["status"] == "failed":
+                return None
+        return None
+
+    async def _ask_stage_question(
+        self,
+        conn: sqlite3.Connection,
+        task_id: str,
+        stage_id: str,
+        stage_index: int,
+        question: str,
+    ) -> str | None:
+        """Pause the pipeline and wait for the user to answer a question.
+
+        Inserts a pending ``agent_questions`` row, marks the task as
+        ``'paused'``, then either invokes the ``on_question_asked`` callback
+        (test/programmatic mode) or polls SQLite (TUI-driven mode).
+
+        After receiving an answer, marks the question row as ``'answered'``
+        (if not already done by the TUI) and transitions the task back to
+        ``'running'``.
+
+        Args:
+            conn:        Writable SQLite connection (already open).
+            task_id:     ID of the running task.
+            stage_id:    ID of the stage that has the question.
+            stage_index: Zero-based stage position.
+            question:    The question text to present to the user.
+
+        Returns:
+            The answer string, or ``None`` if the pipeline was aborted or
+            a shutdown was requested.
+        """
+        question_id = self._insert_question(conn, task_id, stage_id, stage_index, question)
+        self._mark_task_status(conn, task_id, "paused")
+        self._log(f"Stage '{stage_id}' asks: {question}")
+        self._send_notification(
+            "Pegasus — Question",
+            f"Stage '{stage_id}' needs input: {question[:60]}",
+        )
+
+        if self._on_question_asked is not None:
+            answer = await self._on_question_asked(task_id, stage_id, question)
+        else:
+            answer = await self._poll_for_question_answer(task_id, question_id)
+
+        if answer is not None:
+            # Persist answer if callback mode (polling mode: TUI already wrote it).
+            update_conn = self._get_conn()
+            try:
+                update_conn.execute(
+                    "UPDATE agent_questions "
+                    "SET status = 'answered', answer = ?, answered_at = CURRENT_TIMESTAMP "
+                    "WHERE id = ? AND status = 'pending'",
+                    (answer, question_id),
+                )
+                update_conn.commit()
+            finally:
+                update_conn.close()
+            self._mark_task_status(conn, task_id, "running")
+            self._log(f"Stage '{stage_id}' question answered")
+
+        return answer
+
+    # ------------------------------------------------------------------
     # Rate-limit detection
     # ------------------------------------------------------------------
 
@@ -1466,6 +1593,8 @@ class PipelineExecutor:
 
         # Track stage outputs for {{stages.X.output}} template resolution
         stage_outputs: dict[str, str] = {}
+        # Track question responses for {{stage.question_response}} / {{stages.X.question_response}}
+        question_responses: dict[str, str] = {}
         _last_result_output: list[str] = [""]  # mutable container for closure
 
         def _on_result(msg: ResultMessage) -> None:
@@ -1505,12 +1634,30 @@ class PipelineExecutor:
                     project_config=project_config,
                 )
 
+                # --- Pre-stage question (if defined on the stage) ---
+                if stage.question and not self._shutdown_requested:
+                    answer = await self._ask_stage_question(
+                        conn, task_id, stage.id, stage_index, stage.question
+                    )
+                    if answer is None:
+                        # User rejected or shutdown — pipeline aborted
+                        if not self._shutdown_requested:
+                            self._mark_task_status(conn, task_id, "failed")
+                            self._send_notification(
+                                "Pegasus — Pipeline Failed",
+                                f"Question dismissed for: {description}",
+                            )
+                        return False
+                    question_responses[stage.id] = answer
+
                 # --- Resolve template variables in the prompt ---
                 resolved_prompt = self._resolve_prompt(
                     stage.prompt,
                     project_config=project_config,
                     description=description,
                     stage_outputs=stage_outputs,
+                    question_responses=question_responses,
+                    current_stage_id=stage.id,
                 )
 
                 # --- Rate-limit retry loop ---
@@ -1717,6 +1864,17 @@ class PipelineExecutor:
                 ).fetchall()
             }
 
+            # Reload question responses from previously answered questions.
+            question_responses: dict[str, str] = {
+                row["stage_id"]: row["answer"]
+                for row in conn.execute(
+                    "SELECT stage_id, answer FROM agent_questions "
+                    "WHERE task_id = ? AND status = 'answered'",
+                    (task_id,),
+                ).fetchall()
+                if row["answer"] is not None
+            }
+
             # Restore task to running state
             conn.execute(
                 "UPDATE tasks SET status = 'running', "
@@ -1760,11 +1918,25 @@ class PipelineExecutor:
                     project_config=project_config,
                 )
 
+                # Pre-stage question: reuse previous answer if available, else re-ask.
+                if stage.question and not self._shutdown_requested:
+                    if stage.id not in question_responses:
+                        answer = await self._ask_stage_question(
+                            conn, task_id, stage.id, stage_index, stage.question
+                        )
+                        if answer is None:
+                            if not self._shutdown_requested:
+                                self._mark_task_status(conn, task_id, "failed")
+                            return False
+                        question_responses[stage.id] = answer
+
                 # Resolve template variables
                 resolved_prompt = self._resolve_prompt(
                     stage.prompt,
                     project_config=project_config,
                     description=description,
+                    question_responses=question_responses,
+                    current_stage_id=stage.id,
                 )
 
                 stage_success = False
