@@ -821,9 +821,10 @@ def _get_textual_app() -> type:
 
     from textual.app import App, ComposeResult
     from textual.binding import Binding
-    from textual.containers import Horizontal
+    from textual.containers import Horizontal, Vertical
     from textual.widget import Widget
-    from textual.widgets import Footer, Header, Label, Static
+    from textual.widgets import Footer, Header, Label, Static, Button, Select, TextArea
+    from textual import events
 
     class TaskCard(Widget):
         """Widget showing one task: header, stage list, current activity."""
@@ -911,6 +912,96 @@ def _get_textual_app() -> type:
             except OSError:
                 self.query_one("#log-content", Static).update("[dim](log unreadable)[/dim]")
 
+    class TaskCreateModal(Widget):
+        """Modal widget for creating new tasks with pipeline selection and description input."""
+
+        DEFAULT_CSS = """
+        TaskCreateModal {
+            dock: fill;
+            layer: overlay;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+        }
+        TaskCreateModal.visible-create {
+            display: block;
+        }
+        #create-dialog {
+            width: 60;
+            height: auto;
+            background: $surface;
+            border: thick $primary;
+            margin: 10% auto;
+            padding: 1;
+        }
+        #create-form {
+            height: auto;
+        }
+        #pipeline-select {
+            margin: 1 0;
+        }
+        #description-input {
+            margin: 1 0;
+            height: 3;
+        }
+        #button-row {
+            dock: bottom;
+            height: 3;
+            margin: 1 0;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            with Vertical(id="create-dialog"):
+                yield Static("Create New Task", id="dialog-title")
+                with Vertical(id="create-form"):
+                    yield Static("Pipeline:")
+                    yield Select(id="pipeline-select", options=[], allow_blank=False)
+                    yield Static("Description:")
+                    yield TextArea(id="description-input", placeholder="Describe the task...")
+                with Horizontal(id="button-row"):
+                    yield Button("Create", variant="primary", id="create-btn")
+                    yield Button("Cancel", variant="default", id="cancel-btn")
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            """Handle create/cancel button presses."""
+            if event.button.id == "cancel-btn":
+                self.app.action_dismiss_modal()
+            elif event.button.id == "create-btn":
+                self._submit_form()
+
+        def on_key(self, event: events.Key) -> None:
+            """Handle escape key to close modal and ctrl+enter to submit."""
+            if event.key == "escape" and self.has_class("visible-create"):
+                self.app.action_dismiss_modal()
+                event.prevent_default()
+            elif event.key == "enter" and event.ctrl:
+                # Ctrl+Enter submits form
+                self._submit_form()
+                event.prevent_default()
+
+        def _submit_form(self) -> None:
+            """Validate form and create task."""
+            # Get form values
+            select_widget = self.query_one("#pipeline-select", Select)
+            description_widget = self.query_one("#description-input", TextArea)
+
+            pipeline = select_widget.value
+            description = description_widget.text.strip()
+
+            # Validation
+            if not pipeline:
+                self.app.notify("Please select a pipeline", severity="error", timeout=3)
+                select_widget.focus()
+                return
+
+            if not description:
+                self.app.notify("Please enter a task description", severity="error", timeout=3)
+                description_widget.focus()
+                return
+
+            # Create task (delegate to app)
+            self.app._create_task_impl(pipeline, description)
+
     class PegasusDashboard(App):
         """Textual TUI dashboard for Pegasus task monitoring.
 
@@ -937,15 +1028,18 @@ def _get_textual_app() -> type:
             Binding("d", "toggle_view", "Dashboard", show=True),
             Binding("tab", "focus_next_task", "Next task", show=True, priority=True),
             Binding("shift+tab", "focus_prev_task", "Prev task", show=False, priority=True),
+            Binding("n", "create_task", "New task", show=True),
             Binding("a", "approve_task", "Approve", show=True),
             Binding("r", "reject_task", "Reject", show=True),
             Binding("l", "toggle_logs", "Logs", show=True),
+            Binding("escape", "dismiss_modal", "Close", show=False, priority=True),
             Binding("q", "quit_app", "Quit", show=True),
         ]
 
         _task_data: list = []
         _focused_idx: int = 0
         _logs_visible: bool = False
+        _create_visible: bool = False
 
         def __init__(self, db_path: Path, **kwargs: object) -> None:
             super().__init__(**kwargs)
@@ -973,6 +1067,7 @@ def _get_textual_app() -> type:
             yield Header()
             yield Horizontal(id="task-area")
             yield LogPanel(id="log-panel")
+            yield TaskCreateModal(id="create-modal")
             yield Footer()
 
         def poll_db(self) -> None:
@@ -1155,6 +1250,110 @@ def _get_textual_app() -> type:
                 self._refresh_logs()
             else:
                 log_panel.remove_class("visible-log")
+
+        def action_create_task(self) -> None:
+            """N -- show the task creation modal."""
+            modal = self.query_one("#create-modal", TaskCreateModal)
+
+            # Populate pipeline options
+            pipelines = self._discover_pipelines()
+            if not pipelines:
+                self.notify("No pipelines found in .pegasus/pipelines/", severity="error", timeout=4)
+                return
+
+            select_widget = modal.query_one("#pipeline-select", Select)
+            select_widget.set_options([(name, display) for name, display in pipelines])
+
+            # Clear previous form data
+            modal.query_one("#description-input", TextArea).text = ""
+
+            # Show modal and focus first input
+            modal.add_class("visible-create")
+            self._create_visible = True
+            select_widget.focus()
+
+        def action_dismiss_modal(self) -> None:
+            """Escape -- hide any visible modal."""
+            if self._create_visible:
+                modal = self.query_one("#create-modal", TaskCreateModal)
+                modal.remove_class("visible-create")
+                self._create_visible = False
+                # Return focus to task area
+                cards = list(self.query(TaskCard))
+                if cards:
+                    cards[self._focused_idx].focus()
+
+        def _discover_pipelines(self) -> list[tuple[str, str]]:
+            """Discover available pipeline files and return (name, display_name) tuples."""
+            project_dir = self._db_path.parent.parent  # Navigate from .pegasus/pegasus.db to project root
+            pipelines_dir = project_dir / ".pegasus" / "pipelines"
+
+            if not pipelines_dir.exists():
+                return []
+
+            pipelines = []
+            for pattern in ["*.yaml", "*.yml"]:
+                for path in pipelines_dir.glob(pattern):
+                    name = path.stem
+                    # Try to read display name from YAML
+                    try:
+                        with path.open() as f:
+                            data = yaml.safe_load(f)
+                        display_name = data.get("name", name)
+                        pipelines.append((name, f"{display_name} ({name})"))
+                    except Exception:
+                        pipelines.append((name, name))
+
+            return sorted(pipelines)
+
+        def _create_task_impl(self, pipeline: str, description: str) -> None:
+            """Create task in database and spawn subprocess - follows CLI pattern exactly."""
+            # Generate task ID (same as CLI)
+            task_id = secrets.token_hex(3)
+
+            # Verify pipeline exists (same validation as CLI)
+            project_dir = self._db_path.parent.parent
+            pipeline_yaml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yaml"
+            pipeline_yml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yml"
+
+            if not pipeline_yaml.exists() and not pipeline_yml.exists():
+                self.notify(f"Pipeline '{pipeline}' not found", severity="error", timeout=4)
+                return
+
+            try:
+                # Insert task into database (same as CLI lines 466-474)
+                conn = make_connection(self._db_path)
+                try:
+                    conn.execute(
+                        """INSERT INTO tasks (id, pipeline, description, status)
+                           VALUES (?, ?, ?, 'queued')""",
+                        (task_id, pipeline, description),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                # Spawn subprocess (same as CLI lines 482-495)
+                runner_cmd = [sys.executable, "-m", "pegasus._run_task", task_id]
+                env = dict(os.environ)
+                env["PEGASUS_PROJECT_DIR"] = str(project_dir)
+
+                proc = subprocess.Popen(
+                    runner_cmd,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+
+                # Success feedback
+                self.notify(f"Task {task_id} created successfully (PID: {proc.pid})", timeout=4)
+
+                # Hide modal and return focus
+                self.action_dismiss_modal()
+
+            except Exception as exc:
+                self.notify(f"Task creation failed: {exc}", severity="error", timeout=5)
 
         def action_quit_app(self) -> None:
             """Q -- quit TUI; tasks continue running as detached subprocesses."""

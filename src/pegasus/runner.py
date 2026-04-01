@@ -103,12 +103,14 @@ class AgentRunnerProtocol(Protocol):
         prompt: str,
         cwd: str,
         claude_flags: dict[str, Any] | None = None,
+        session_id: str | None = None,
     ) -> AsyncIterator[Message]:
         """Execute a single stage prompt inside *cwd*.
 
         Args:
             claude_flags: Resolved stage flags (permission_mode, model, max_turns, etc.)
                           passed through to the SDK's ClaudeAgentOptions.
+            session_id: Optional session ID to resume a previous conversation.
 
         Yields:
             A sequence of ``AgentMessage``, ``ToolUseMessage``, ``ResultMessage``,
@@ -157,6 +159,7 @@ class ClaudeAgentRunner:
         prompt: str,
         cwd: str,
         claude_flags: dict[str, Any] | None = None,
+        session_id: str | None = None,
     ) -> AsyncIterator[Message]:
         if not _SDK_AVAILABLE:  # pragma: no cover
             raise RuntimeError(
@@ -178,6 +181,9 @@ class ClaudeAgentRunner:
             sdk_opts["cli_path"] = system_claude
         if self._on_stderr:
             sdk_opts["stderr"] = self._on_stderr
+        # Resume a previous session if provided (enables multi-stage continuity).
+        if session_id:
+            sdk_opts["resume"] = session_id
         # Map pegasus flag names to SDK ClaudeAgentOptions field names
         _flag_map = {
             "model": "model",
@@ -381,6 +387,7 @@ class PegasusEngine:
         prompt: str,
         cwd: str,
         claude_flags: dict[str, Any] | None = None,
+        session_id: str | None = None,
     ) -> bool:
         """Execute a single pipeline stage and update SQLite state.
 
@@ -391,6 +398,7 @@ class PegasusEngine:
             prompt:       The fully-resolved stage prompt.
             cwd:          Working directory for the runner subprocess.
             claude_flags: Resolved stage flags passed through to the agent runner.
+            session_id:   Optional session ID to resume (for session-mode continuity).
 
         Returns:
             ``True`` if the stage completed successfully, ``False`` on error.
@@ -405,7 +413,9 @@ class PegasusEngine:
 
         success = False
         try:
-            message_stream = await self.runner.run_task(prompt, cwd, claude_flags=claude_flags)
+            message_stream = await self.runner.run_task(
+                prompt, cwd, claude_flags=claude_flags, session_id=session_id,
+            )
             async for message in message_stream:
                 if isinstance(message, AgentMessage):
                     self._stage_cost += message.cost
@@ -458,17 +468,29 @@ class PegasusEngine:
                 elif isinstance(message, ErrorMessage):
                     self._stage_cost += message.cost
                     self._total_cost += message.cost
-                    self._finish_stage_run(
-                        conn, stage_run_id, "failed", error=message.error
-                    )
-                    self._save_cost(conn, task_id, stage_run_id)
-                    transition_task_state(conn, task_id, "running", "failed")
-                    logger.error(
-                        "task=%s stage=%s error: %s", task_id, stage_id, message.error
-                    )
-                    if self._on_error:
-                        self._on_error(message)
-                    success = False
+                    if success:
+                        # A ResultMessage already marked this stage completed.
+                        # The trailing error (e.g. exit code 1 from plan mode)
+                        # should not override a successful result.
+                        logger.warning(
+                            "task=%s stage=%s post-result error (ignored): %s",
+                            task_id,
+                            stage_id,
+                            message.error,
+                        )
+                        if self._on_error:
+                            self._on_error(message)
+                    else:
+                        self._finish_stage_run(
+                            conn, stage_run_id, "failed", error=message.error
+                        )
+                        self._save_cost(conn, task_id, stage_run_id)
+                        transition_task_state(conn, task_id, "running", "failed")
+                        logger.error(
+                            "task=%s stage=%s error: %s", task_id, stage_id, message.error
+                        )
+                        if self._on_error:
+                            self._on_error(message)
 
         except Exception as exc:
             error_msg = str(exc)
@@ -1063,6 +1085,91 @@ class PipelineExecutor:
             self._log_file = None
 
     # ------------------------------------------------------------------
+    # Template resolution
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_prompt(
+        prompt: str,
+        *,
+        project_config: Any,
+        description: str,
+        stage_outputs: dict[str, str] | None = None,
+    ) -> str:
+        """Resolve ``{{…}}`` template variables in a stage prompt.
+
+        Supported namespaces:
+        - ``{{project.language}}``  — project language from config
+        - ``{{project.test_command}}`` / ``{{project.lint_command}}`` etc.
+        - ``{{task.description}}``  — the task's human description
+        - ``{{stages.<id>.output}}`` — output of a previously completed stage
+        """
+        outputs = stage_outputs or {}
+
+        def _replace(match: re.Match[str]) -> str:
+            expr = match.group(1).strip()
+            parts = expr.split(".", 1)
+            if len(parts) != 2:
+                return match.group(0)  # leave unrecognised as-is
+            namespace, key = parts
+
+            if namespace == "project":
+                proj = project_config.project
+                val = getattr(proj, key, None)
+                return str(val) if val is not None else match.group(0)
+            elif namespace == "task":
+                if key == "description":
+                    return description
+                return match.group(0)
+            elif namespace == "stages":
+                # e.g. {{stages.plan.output}}
+                sub_parts = key.split(".", 1)
+                if len(sub_parts) == 2:
+                    stage_id, attr = sub_parts
+                    if attr == "output" and stage_id in outputs:
+                        return outputs[stage_id]
+                return match.group(0)
+            return match.group(0)
+
+        return re.sub(r"\{\{(.+?)\}\}", _replace, prompt)
+
+    # ------------------------------------------------------------------
+    # Approval gate polling
+    # ------------------------------------------------------------------
+
+    async def _poll_for_approval(
+        self,
+        task_id: str,
+        poll_interval: float = 2.0,
+    ) -> bool:
+        """Poll SQLite until the task status changes from ``'paused'``.
+
+        The TUI sets status to ``'queued'`` (approve) or ``'failed'`` (reject).
+
+        Returns:
+            ``True`` if approved (status changed to ``'queued'``),
+            ``False`` if rejected (status changed to ``'failed'``).
+        """
+        while not self._shutdown_requested:
+            await asyncio.sleep(poll_interval)
+            conn = make_connection(self.db_path, read_only=True)
+            try:
+                row = conn.execute(
+                    "SELECT status FROM tasks WHERE id = ?", (task_id,)
+                ).fetchone()
+            finally:
+                conn.close()
+            if row is None:
+                return False
+            status = row["status"]
+            if status == "queued":
+                return True
+            if status == "failed":
+                return False
+            # Still paused — keep polling.
+        return False
+
+    # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
 
@@ -1357,8 +1464,13 @@ class PipelineExecutor:
         def _on_tool_use(msg: ToolUseMessage) -> None:
             self._log(f"[tool] {msg.tool_name}({json.dumps(msg.tool_input)[:200]})")
 
+        # Track stage outputs for {{stages.X.output}} template resolution
+        stage_outputs: dict[str, str] = {}
+        _last_result_output: list[str] = [""]  # mutable container for closure
+
         def _on_result(msg: ResultMessage) -> None:
             self._log(f"[result] cost=${msg.total_cost_usd:.4f} session={msg.session_id}")
+            _last_result_output[0] = msg.output or ""
 
         def _on_error(msg: ErrorMessage) -> None:
             self._log(f"[ERROR] {msg.error}")
@@ -1393,29 +1505,13 @@ class PipelineExecutor:
                     project_config=project_config,
                 )
 
-                # --- Approval gate ---
-                if requires_approval:
-                    # Pause the task in SQLite while waiting for approval.
-                    self._mark_task_status(conn, task_id, "paused")
-                    self._send_notification(
-                        "Pegasus — Approval Required",
-                        f"Stage '{stage.name}' requires approval for task: {description}",
-                    )
-                    if self._on_approval_needed is not None:
-                        approved = await self._on_approval_needed(task_id, stage.id)
-                        if not approved:
-                            logger.info(
-                                "task=%s stage=%s approval rejected — aborting",
-                                task_id,
-                                stage.id,
-                            )
-                            self._mark_task_status(conn, task_id, "failed")
-                            return False
-                        # Resume after approval.
-                        self._mark_task_status(conn, task_id, "running")
-                    else:
-                        # No handler: auto-approve (useful in tests / non-interactive).
-                        self._mark_task_status(conn, task_id, "running")
+                # --- Resolve template variables in the prompt ---
+                resolved_prompt = self._resolve_prompt(
+                    stage.prompt,
+                    project_config=project_config,
+                    description=description,
+                    stage_outputs=stage_outputs,
+                )
 
                 # --- Rate-limit retry loop ---
                 stage_success = False
@@ -1424,16 +1520,24 @@ class PipelineExecutor:
                     if self._shutdown_requested:
                         break
 
+                    # Pass session_id for session-mode continuity (stages > 0).
+                    resume_session = engine.session_id if (
+                        pipeline.execution.mode == "session" and stage_index > 0
+                    ) else None
+
                     stage_success = await engine.run_stage(
                         task_id=task_id,
                         stage_id=stage.id,
                         stage_index=stage_index,
-                        prompt=stage.prompt,
+                        prompt=resolved_prompt,
                         cwd=str(worktree_path),
                         claude_flags=resolved_flags.model_dump(exclude_none=True),
+                        session_id=resume_session,
                     )
 
                     if stage_success:
+                        # Capture output for {{stages.X.output}} in later stages.
+                        stage_outputs[stage.id] = _last_result_output[0]
                         self._send_notification(
                             "Pegasus",
                             f"Stage '{stage.name}' complete for: {description}",
@@ -1488,6 +1592,31 @@ class PipelineExecutor:
 
                 if not stage_success:
                     return False
+
+                # --- Post-stage approval gate ---
+                # Pause after the stage completes so the user can review
+                # the output before the next stage begins.
+                if requires_approval:
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._log(f"Stage '{stage.name}' completed — approval required before next stage.")
+                    self._send_notification(
+                        "Pegasus — Approval Required",
+                        f"Stage '{stage.name}' done. Approve to continue: {description}",
+                    )
+                    if self._on_approval_needed is not None:
+                        approved = await self._on_approval_needed(task_id, stage.id)
+                    else:
+                        approved = await self._poll_for_approval(task_id)
+                    if not approved:
+                        logger.info(
+                            "task=%s stage=%s approval rejected — aborting",
+                            task_id,
+                            stage.id,
+                        )
+                        self._mark_task_status(conn, task_id, "failed")
+                        return False
+                    self._mark_task_status(conn, task_id, "running")
+                    self._log(f"Stage '{stage.name}' approved — continuing to next stage.")
 
             # All stages completed successfully.
             self._mark_task_status(conn, task_id, "completed")
@@ -1631,20 +1760,12 @@ class PipelineExecutor:
                     project_config=project_config,
                 )
 
-                if requires_approval:
-                    self._mark_task_status(conn, task_id, "paused")
-                    self._send_notification(
-                        "Pegasus — Approval Required",
-                        f"Stage '{stage.name}' requires approval for task: {description}",
-                    )
-                    if self._on_approval_needed is not None:
-                        approved = await self._on_approval_needed(task_id, stage.id)
-                        if not approved:
-                            self._mark_task_status(conn, task_id, "failed")
-                            return False
-                        self._mark_task_status(conn, task_id, "running")
-                    else:
-                        self._mark_task_status(conn, task_id, "running")
+                # Resolve template variables
+                resolved_prompt = self._resolve_prompt(
+                    stage.prompt,
+                    project_config=project_config,
+                    description=description,
+                )
 
                 stage_success = False
                 attempt = 0
@@ -1652,13 +1773,18 @@ class PipelineExecutor:
                     if self._shutdown_requested:
                         break
 
+                    resume_session = engine.session_id if (
+                        pipeline.execution.mode == "session" and stage_index > 0
+                    ) else None
+
                     stage_success = await engine.run_stage(
                         task_id=task_id,
                         stage_id=stage.id,
                         stage_index=stage_index,
-                        prompt=stage.prompt,
+                        prompt=resolved_prompt,
                         cwd=str(worktree_path),
                         claude_flags=resolved_flags.model_dump(exclude_none=True),
+                        session_id=resume_session,
                     )
 
                     if stage_success:
@@ -1700,6 +1826,22 @@ class PipelineExecutor:
 
                 if not stage_success:
                     return False
+
+                # Post-stage approval gate
+                if requires_approval:
+                    self._mark_task_status(conn, task_id, "paused")
+                    self._send_notification(
+                        "Pegasus — Approval Required",
+                        f"Stage '{stage.name}' done. Approve to continue: {description}",
+                    )
+                    if self._on_approval_needed is not None:
+                        approved = await self._on_approval_needed(task_id, stage.id)
+                    else:
+                        approved = await self._poll_for_approval(task_id)
+                    if not approved:
+                        self._mark_task_status(conn, task_id, "failed")
+                        return False
+                    self._mark_task_status(conn, task_id, "running")
 
             self._mark_task_status(conn, task_id, "completed")
             self._send_notification(
