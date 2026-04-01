@@ -116,6 +116,7 @@ class StageConfig(BaseModel):
     prompt: str = Field(..., min_length=1)
     claude_flags: ClaudeFlags = Field(default_factory=ClaudeFlags)
     requires_approval: bool = False
+    auto_commit: bool | None = None
     question: str | None = None
     """Optional question to ask the user *before* this stage runs.
 
@@ -149,6 +150,7 @@ class PipelineDefaults(BaseModel):
     model: str | None = None
     max_turns: Annotated[int, Field(gt=0, le=MAX_TURNS_LIMIT)] | None = None
     permission_mode: str | None = None
+    auto_commit: bool | None = None
 
     @field_validator("permission_mode")
     @classmethod
@@ -630,6 +632,36 @@ def resolve_stage_flags(
         requires_approval = True
 
     return resolved_flags, requires_approval
+
+
+def resolve_auto_commit(
+    stage: StageConfig,
+    pipeline_defaults: PipelineDefaults | None = None,
+) -> bool:
+    """Resolve the effective ``auto_commit`` setting for a stage.
+
+    Resolution order (later overrides earlier):
+
+    1. Built-in default (``True``)
+    2. Pipeline ``defaults.auto_commit``
+    3. Stage-level ``auto_commit``
+
+    Args:
+        stage: The stage to resolve for.
+        pipeline_defaults: Optional pipeline-level defaults.
+
+    Returns:
+        ``True`` if the worktree should be auto-committed after this stage.
+    """
+    result = True  # built-in default: commit between stages
+
+    if pipeline_defaults is not None and pipeline_defaults.auto_commit is not None:
+        result = pipeline_defaults.auto_commit
+
+    if stage.auto_commit is not None:
+        result = stage.auto_commit
+
+    return result
 
 
 # ---------------------------------------------------------------------------

@@ -16,11 +16,12 @@ stages:
       Plan the implementation for this feature in a {{project.language}} project:
       {{task.description}}
       List all files to create/modify and the exact changes needed.
+      Ask the user at least 3 clarifying questions about the feature requirements before creating the plan.
     claude_flags:
       model: opus
       permission_mode: plan
       max_turns: 5
-    requires_approval: false
+    requires_approval: true
 
   - id: implement
     name: Implement Feature

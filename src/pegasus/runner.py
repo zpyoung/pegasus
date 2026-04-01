@@ -35,6 +35,7 @@ from pegasus.models import (
     load_config,
     load_pipeline_config,
     make_connection,
+    resolve_auto_commit,
     resolve_stage_flags,
     transition_task_state,
 )
@@ -871,6 +872,63 @@ class WorktreeManager:
                 )
 
         logger.info("worktree removed: path=%s branch=%s", worktree_path, branch)
+
+    def commit_stage_work(
+        self,
+        worktree_path: str | os.PathLike[str],
+        *,
+        stage_name: str,
+        stage_id: str,
+        task_id: str,
+        pipeline_name: str,
+        description: str,
+    ) -> bool:
+        """Commit all changes in a worktree after a stage completes.
+
+        Stages all changes (``git add -A``) and commits with a descriptive
+        message.  If the working tree is clean, no commit is created.
+
+        Returns:
+            ``True`` if a commit was created, ``False`` if the working tree
+            was clean.
+        """
+        worktree_path = Path(worktree_path)
+
+        # Check if working tree has changes
+        status_result = self._run_git(
+            ["status", "--porcelain"],
+            cwd=worktree_path,
+        )
+        if not status_result.stdout.strip():
+            logger.info(
+                "task=%s stage=%s auto-commit skipped (clean working tree)",
+                task_id,
+                stage_id,
+            )
+            return False
+
+        # Stage all changes
+        self._run_git(["add", "-A"], cwd=worktree_path)
+
+        # Build commit message
+        commit_msg = (
+            f"pegasus: {stage_name} [{task_id}]\n\n"
+            f"Pipeline: {pipeline_name}\n"
+            f"Stage: {stage_id} ({stage_name})\n"
+            f"Task: {description}"
+        )
+
+        self._run_git(
+            ["commit", "-m", commit_msg],
+            cwd=worktree_path,
+        )
+
+        logger.info(
+            "task=%s stage=%s auto-committed changes",
+            task_id,
+            stage_id,
+        )
+        return True
 
     def detect_orphans(
         self,
@@ -1782,6 +1840,21 @@ class PipelineExecutor:
                 if not stage_success:
                     return False
 
+                # --- Post-stage auto-commit ---
+                if resolve_auto_commit(stage, pipeline.defaults):
+                    committed = self._worktree_manager.commit_stage_work(
+                        worktree_path,
+                        stage_name=stage.name,
+                        stage_id=stage.id,
+                        task_id=task_id,
+                        pipeline_name=pipeline_name,
+                        description=description,
+                    )
+                    if committed:
+                        self._log(f"Auto-committed changes after stage '{stage.name}'")
+                    else:
+                        self._log(f"No changes to commit after stage '{stage.name}'")
+
                 # --- Post-stage approval gate ---
                 # Pause after the stage completes so the user can review
                 # the output before the next stage begins.
@@ -2040,6 +2113,21 @@ class PipelineExecutor:
 
                 if not stage_success:
                     return False
+
+                # Post-stage auto-commit
+                if resolve_auto_commit(stage, pipeline.defaults):
+                    committed = self._worktree_manager.commit_stage_work(
+                        worktree_path,
+                        stage_name=stage.name,
+                        stage_id=stage.id,
+                        task_id=task_id,
+                        pipeline_name=pipeline_name,
+                        description=description,
+                    )
+                    if committed:
+                        self._log(f"Auto-committed changes after stage '{stage.name}'")
+                    else:
+                        self._log(f"No changes to commit after stage '{stage.name}'")
 
                 # Post-stage approval gate
                 if requires_approval:

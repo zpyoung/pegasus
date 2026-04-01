@@ -1760,3 +1760,168 @@ class TestRateLimitDetection:
         assert not PipelineExecutor._is_rate_limit_error("timeout")
         assert not PipelineExecutor._is_rate_limit_error("file not found")
         assert not PipelineExecutor._is_rate_limit_error("")
+
+
+# ---------------------------------------------------------------------------
+# WorktreeManager — commit_stage_work
+# ---------------------------------------------------------------------------
+
+
+class TestWorktreeManagerCommitStageWork:
+    def test_creates_commit_when_changes_exist(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        _init_git_repo(repo)
+        (repo / "output.txt").write_text("stage output")
+
+        mgr = WorktreeManager()
+        committed = mgr.commit_stage_work(
+            repo,
+            stage_name="Analyze",
+            stage_id="analyze",
+            task_id="t1",
+            pipeline_name="test",
+            description="fix bug",
+        )
+        assert committed is True
+
+        result = subprocess.run(
+            ["git", "log", "--oneline", "-1"],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+        )
+        assert "pegasus: Analyze [t1]" in result.stdout
+
+    def test_skips_when_worktree_is_clean(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        _init_git_repo(repo)
+
+        mgr = WorktreeManager()
+        committed = mgr.commit_stage_work(
+            repo,
+            stage_name="Analyze",
+            stage_id="analyze",
+            task_id="t1",
+            pipeline_name="test",
+            description="fix bug",
+        )
+        assert committed is False
+
+    def test_commit_message_contains_metadata(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        _init_git_repo(repo)
+        (repo / "code.py").write_text("print('hello')")
+
+        mgr = WorktreeManager()
+        mgr.commit_stage_work(
+            repo,
+            stage_name="Implement",
+            stage_id="implement",
+            task_id="task-42",
+            pipeline_name="feature",
+            description="add login",
+        )
+
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%B"],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+        )
+        body = result.stdout
+        assert "Pipeline: feature" in body
+        assert "Stage: implement (Implement)" in body
+        assert "Task: add login" in body
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — auto-commit between stages
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineExecutorAutoCommit:
+    def test_auto_commit_called_after_each_stage(self, tmp_path: Path) -> None:
+        """commit_stage_work is called for each stage by default."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        committed_stages: list[str] = []
+        original_commit = executor._worktree_manager.commit_stage_work
+
+        def spy_commit(worktree_path: Any, **kwargs: Any) -> bool:
+            committed_stages.append(kwargs["stage_id"])
+            return False  # clean tree in test
+
+        executor._worktree_manager.commit_stage_work = spy_commit  # type: ignore[assignment]
+
+        result = _run(executor.run_task("t-ac-1", pl_name, "test auto commit"))
+        assert result is True
+        assert committed_stages == ["analyze", "implement"]
+
+    def test_auto_commit_disabled_per_pipeline(self, tmp_path: Path) -> None:
+        """Pipeline-level auto_commit: false skips commits for all stages."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement."},
+        ]
+        project_dir = tmp_path / "project"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        pipeline_dir = project_dir / ".pegasus" / "pipelines"
+        pipeline_dir.mkdir(parents=True, exist_ok=True)
+
+        pipeline_data = {
+            "name": "no-commit-pl",
+            "description": "Test pipeline",
+            "defaults": {"auto_commit": False},
+            "stages": stages,
+        }
+        (pipeline_dir / "no-commit-pl.yaml").write_text(yaml.dump(pipeline_data))
+        _init_git_repo(project_dir)
+
+        config_dir = project_dir / ".pegasus"
+        worktrees_base = tmp_path / "worktrees"
+        (config_dir / "config.yaml").write_text(
+            f"worktrees:\n  base_path: {worktrees_base}\n"
+        )
+
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        committed_stages: list[str] = []
+
+        def spy_commit(worktree_path: Any, **kwargs: Any) -> bool:
+            committed_stages.append(kwargs["stage_id"])
+            return False
+
+        executor._worktree_manager.commit_stage_work = spy_commit  # type: ignore[assignment]
+
+        result = _run(executor.run_task("t-ac-2", "no-commit-pl", "test disabled"))
+        assert result is True
+        assert committed_stages == []
+
+    def test_auto_commit_disabled_per_stage(self, tmp_path: Path) -> None:
+        """Stage-level auto_commit: false skips commit for that stage only."""
+        stages = [
+            {"id": "analyze", "name": "Analyze", "prompt": "Analyze.", "auto_commit": False},
+            {"id": "implement", "name": "Implement", "prompt": "Implement."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+        executor, db_path = _make_executor(tmp_path, project_dir, runner)
+
+        committed_stages: list[str] = []
+
+        def spy_commit(worktree_path: Any, **kwargs: Any) -> bool:
+            committed_stages.append(kwargs["stage_id"])
+            return False
+
+        executor._worktree_manager.commit_stage_work = spy_commit  # type: ignore[assignment]
+
+        result = _run(executor.run_task("t-ac-3", pl_name, "test per-stage"))
+        assert result is True
+        assert committed_stages == ["implement"]

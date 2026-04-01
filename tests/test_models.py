@@ -31,6 +31,7 @@ from pegasus.models import (
     make_connection,
     parse_pipeline_yaml,
     parse_project_config_yaml,
+    resolve_auto_commit,
     resolve_stage_flags,
     transition_task_state,
 )
@@ -1391,6 +1392,47 @@ class TestResolveStageFlags:
         flags, _ = resolve_stage_flags(stage, None, None)
         # Built-in ceiling is acceptEdits → bypassPermissions must be clamped.
         assert flags.permission_mode == "acceptEdits"
+
+
+# ---------------------------------------------------------------------------
+# resolve_auto_commit tests
+# ---------------------------------------------------------------------------
+
+
+class TestResolveAutoCommit:
+    """Tests for the ``resolve_auto_commit`` helper."""
+
+    def test_default_is_true(self) -> None:
+        stage = _make_stage()
+        assert resolve_auto_commit(stage) is True
+
+    def test_default_is_true_with_none_pipeline_defaults(self) -> None:
+        stage = _make_stage()
+        assert resolve_auto_commit(stage, PipelineDefaults()) is True
+
+    def test_pipeline_default_disables(self) -> None:
+        stage = _make_stage()
+        defaults = PipelineDefaults(auto_commit=False)
+        assert resolve_auto_commit(stage, defaults) is False
+
+    def test_pipeline_default_enables(self) -> None:
+        stage = _make_stage()
+        defaults = PipelineDefaults(auto_commit=True)
+        assert resolve_auto_commit(stage, defaults) is True
+
+    def test_stage_overrides_pipeline_false(self) -> None:
+        stage = StageConfig(id="s", name="S", prompt="Do.", auto_commit=True)
+        defaults = PipelineDefaults(auto_commit=False)
+        assert resolve_auto_commit(stage, defaults) is True
+
+    def test_stage_disables_when_pipeline_enables(self) -> None:
+        stage = StageConfig(id="s", name="S", prompt="Do.", auto_commit=False)
+        defaults = PipelineDefaults(auto_commit=True)
+        assert resolve_auto_commit(stage, defaults) is False
+
+    def test_stage_disables_with_no_pipeline_defaults(self) -> None:
+        stage = StageConfig(id="s", name="S", prompt="Do.", auto_commit=False)
+        assert resolve_auto_commit(stage) is False
 
 
 # ---------------------------------------------------------------------------
