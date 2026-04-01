@@ -167,7 +167,13 @@ class ClaudeAgentRunner:
 
         # Build SDK options from resolved claude_flags
         flags = claude_flags or {}
+        # Prefer system claude over bundled — the bundled binary may be
+        # an older version that doesn't respond to the initialize handshake.
+        import shutil
+        system_claude = shutil.which("claude")
         sdk_opts: dict[str, Any] = {"cwd": cwd, "env": env}
+        if system_claude:
+            sdk_opts["cli_path"] = system_claude
         # Map pegasus flag names to SDK ClaudeAgentOptions field names
         _flag_map = {
             "model": "model",
