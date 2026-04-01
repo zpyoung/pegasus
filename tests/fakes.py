@@ -14,6 +14,7 @@ from pegasus.runner import (
     ErrorMessage,
     Message,
     ResultMessage,
+    ToolResultMessage,
     ToolUseMessage,
 )
 

@@ -4,7 +4,7 @@ This module defines:
 
 - ``AgentRunnerProtocol``  — structural Protocol shielding runner from SDK internals
 - Internal message dataclasses: ``AgentMessage``, ``ToolUseMessage``,
-  ``ResultMessage``, ``ErrorMessage``
+  ``ToolResultMessage``, ``ResultMessage``, ``ErrorMessage``
 - ``ClaudeAgentRunner``  — concrete SDK wrapper (SDK import is optional; guarded
   by try/except so tests work without the package installed)
 - ``PegasusEngine``       — high-level wrapper managing session_id, cost
@@ -74,6 +74,16 @@ class ResultMessage:
 
 
 @dataclass
+class ToolResultMessage:
+    """The output returned by a tool invocation."""
+
+    tool_use_id: str
+    content: str | None = None
+    is_error: bool = False
+    cost: float = 0.0
+
+
+@dataclass
 class ErrorMessage:
     """An error produced during agent execution."""
 
@@ -82,7 +92,7 @@ class ErrorMessage:
 
 
 # Union type alias for any internal message.
-Message = AgentMessage | ToolUseMessage | ResultMessage | ErrorMessage
+Message = AgentMessage | ToolUseMessage | ToolResultMessage | ResultMessage | ErrorMessage
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +230,14 @@ class ClaudeAgentRunner:
                             tool_name=getattr(sdk_message, "name", ""),
                             tool_input=getattr(sdk_message, "input", {}),
                         )
+                    elif msg_type == "ToolResultBlock":
+                        raw = getattr(sdk_message, "content", None)
+                        text = raw if isinstance(raw, str) else str(raw) if raw else None
+                        yield ToolResultMessage(
+                            tool_use_id=getattr(sdk_message, "tool_use_id", ""),
+                            content=text,
+                            is_error=bool(getattr(sdk_message, "is_error", False)),
+                        )
                     elif msg_type == "ResultMessage":
                         yield ResultMessage(
                             output=getattr(sdk_message, "result", ""),
@@ -259,7 +277,7 @@ class PegasusEngine:
     - Accumulates per-stage cost and cumulative task cost.
     - Writes SQLite state transitions via ``transition_task_state``.
     - Dispatches SDK event callbacks: ``on_message``, ``on_tool_use``,
-      ``on_result``, ``on_error``.
+      ``on_tool_result``, ``on_result``, ``on_error``.
 
     Args:
         runner: An ``AgentRunnerProtocol``-compliant instance.
@@ -274,6 +292,7 @@ class PegasusEngine:
         *,
         on_message: Callable[[AgentMessage], None] | None = None,
         on_tool_use: Callable[[ToolUseMessage], None] | None = None,
+        on_tool_result: Callable[[ToolResultMessage], None] | None = None,
         on_result: Callable[[ResultMessage], None] | None = None,
         on_error: Callable[[ErrorMessage], None] | None = None,
     ) -> None:
@@ -281,6 +300,7 @@ class PegasusEngine:
         self.db_path = str(db_path)
         self._on_message = on_message
         self._on_tool_use = on_tool_use
+        self._on_tool_result = on_tool_result
         self._on_result = on_result
         self._on_error = on_error
 
@@ -440,6 +460,19 @@ class PegasusEngine:
                     )
                     if self._on_tool_use:
                         self._on_tool_use(message)
+
+                elif isinstance(message, ToolResultMessage):
+                    self._stage_cost += message.cost
+                    self._total_cost += message.cost
+                    logger.debug(
+                        "task=%s stage=%s tool_result id=%s is_error=%s",
+                        task_id,
+                        stage_id,
+                        message.tool_use_id,
+                        message.is_error,
+                    )
+                    if self._on_tool_result:
+                        self._on_tool_result(message)
 
                 elif isinstance(message, ResultMessage):
                     # Record final cost from the result (authoritative).
@@ -1466,6 +1499,12 @@ class PipelineExecutor:
         def _on_tool_use(msg: ToolUseMessage) -> None:
             self._log(f"[tool] {msg.tool_name}({json.dumps(msg.tool_input)[:200]})")
 
+        def _on_tool_result(msg: ToolResultMessage) -> None:
+            prefix = "[tool-error]" if msg.is_error else "[tool-result]"
+            content = (msg.content or "")[:500]
+            if content.strip():
+                self._log(f"{prefix} {content}")
+
         # Track stage outputs for {{stages.X.output}} template resolution
         stage_outputs: dict[str, str] = {}
         _last_result_output: list[str] = [""]  # mutable container for closure
@@ -1482,6 +1521,7 @@ class PipelineExecutor:
             self.db_path,
             on_message=_on_message,
             on_tool_use=_on_tool_use,
+            on_tool_result=_on_tool_result,
             on_result=_on_result,
             on_error=_on_error,
         )
