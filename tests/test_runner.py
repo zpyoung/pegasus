@@ -1222,7 +1222,7 @@ class TestPipelineExecutorStageFailure:
             interrupt_called = False
             run_calls: list[tuple[str, str]] = []
 
-            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None, session_id: str | None = None) -> Any:
                 nonlocal call_count
                 call_count += 1
                 self.run_calls.append((prompt, cwd))
@@ -1345,8 +1345,12 @@ class TestPipelineExecutorApprovalGate:
         row = _get_task(db_path, task_id)
         assert row["status"] == "failed"
 
-    def test_no_approval_handler_auto_approves(self, tmp_path: Path) -> None:
-        """When no on_approval_needed handler is set, the stage auto-approves."""
+    def test_no_approval_handler_polls_sqlite(self, tmp_path: Path) -> None:
+        """When no on_approval_needed handler is set, the runner polls SQLite.
+
+        Simulate TUI approval by writing 'queued' to the task status from a
+        background coroutine while the runner is polling.
+        """
         stages = [
             {
                 "id": "write",
@@ -1360,7 +1364,37 @@ class TestPipelineExecutorApprovalGate:
         executor, db_path = _make_executor(tmp_path, project_dir, runner)
 
         task_id = "exec-approval-3"
-        result = _run(executor.run_task(task_id, pl_name, "auto-approve write task"))
+
+        async def _run_with_bg_approve() -> bool:
+            """Run the task while a background coroutine approves it via SQLite."""
+            import asyncio
+
+            async def _approve_after_delay() -> None:
+                # Wait for the runner to set status to 'paused', then approve.
+                for _ in range(50):  # up to 5 seconds
+                    await asyncio.sleep(0.1)
+                    conn = make_connection(db_path, read_only=True)
+                    row = conn.execute(
+                        "SELECT status FROM tasks WHERE id = ?", (task_id,)
+                    ).fetchone()
+                    conn.close()
+                    if row and row["status"] == "paused":
+                        conn = make_connection(db_path)
+                        conn.execute(
+                            "UPDATE tasks SET status = 'queued', "
+                            "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            (task_id,),
+                        )
+                        conn.commit()
+                        conn.close()
+                        return
+
+            bg = asyncio.ensure_future(_approve_after_delay())
+            result = await executor.run_task(task_id, pl_name, "poll-approve write task")
+            bg.cancel()
+            return result
+
+        result = _run(_run_with_bg_approve())
 
         assert result is True
         row = _get_task(db_path, task_id)
@@ -1478,7 +1512,7 @@ class TestPipelineExecutorHeartbeat:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None, session_id: str | None = None) -> Any:
                 self.run_calls.append((prompt, cwd))
 
                 async def _gen() -> Any:
@@ -1528,7 +1562,7 @@ class TestPipelineExecutorRateLimitRetry:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None, session_id: str | None = None) -> Any:
                 nonlocal call_count
                 call_count += 1
                 self.run_calls.append((prompt, cwd))
@@ -1581,7 +1615,7 @@ class TestPipelineExecutorRateLimitRetry:
             run_calls: list[tuple[str, str]] = []
             interrupt_called = False
 
-            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None) -> Any:
+            async def run_task(self, prompt: str, cwd: str, claude_flags: dict | None = None, session_id: str | None = None) -> Any:
                 self.run_calls.append((prompt, cwd))
 
                 async def _gen() -> Any:

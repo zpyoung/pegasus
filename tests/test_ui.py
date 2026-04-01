@@ -75,12 +75,14 @@ def _insert_task(
     pipeline: str = "bug-fix",
     description: str = "Test task",
     status: str = "queued",
+    worktree_path: str | None = None,
+    branch: str | None = None,
 ) -> None:
     conn = make_connection(db_path)
     try:
         conn.execute(
-            "INSERT INTO tasks (id, pipeline, description, status) VALUES (?, ?, ?, ?)",
-            (task_id, pipeline, description, status),
+            "INSERT INTO tasks (id, pipeline, description, status, worktree_path, branch) VALUES (?, ?, ?, ?, ?, ?)",
+            (task_id, pipeline, description, status, worktree_path, branch),
         )
         conn.commit()
     finally:
@@ -692,6 +694,173 @@ class TestResumeCommand:
             runner.invoke(cli, ["resume", "abc123", "--project-dir", str(project)])
         env = mock_popen.call_args[1]["env"]
         assert env["PEGASUS_PROJECT_DIR"] == str(project)
+
+
+# ---------------------------------------------------------------------------
+# Tests: pegasus clean
+# ---------------------------------------------------------------------------
+
+
+class TestCleanCommand:
+    def test_clean_no_db(self, tmp_path: Path) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["clean", "--project-dir", str(tmp_path)])
+        assert result.exit_code != 0
+        assert "No Pegasus database found" in result.output
+
+    def test_clean_no_cleanable_tasks(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "running1", status="running")
+        _insert_task(db_path, "queued1", status="queued")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "No cleanable tasks found" in result.output
+
+    def test_clean_removes_failed_tasks(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "fail1", status="failed")
+        _insert_stage_run(db_path, "fail1", "analyze", 0, status="completed")
+        _insert_stage_run(db_path, "fail1", "implement", 1, status="failed", error="boom")
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Cleaned 1 task(s)" in result.output
+        # Verify DB rows deleted
+        conn = make_connection(db_path, read_only=True)
+        assert conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM stage_runs").fetchone()[0] == 0
+        conn.close()
+
+    def test_clean_removes_completed_tasks(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "done1", status="completed")
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Cleaned 1 task(s)" in result.output
+        conn = make_connection(db_path, read_only=True)
+        assert conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        conn.close()
+
+    def test_clean_preserves_active_tasks(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "running1", status="running")
+        _insert_task(db_path, "queued1", status="queued")
+        _insert_task(db_path, "paused1", status="paused")
+        _insert_task(db_path, "fail1", status="failed")
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Cleaned 1 task(s)" in result.output
+        # Active tasks should remain
+        conn = make_connection(db_path, read_only=True)
+        remaining = conn.execute("SELECT id FROM tasks ORDER BY id").fetchall()
+        remaining_ids = {r["id"] for r in remaining}
+        assert remaining_ids == {"running1", "queued1", "paused1"}
+        conn.close()
+
+    def test_clean_removes_log_files(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        logs_dir = project / ".pegasus" / "logs"
+        _insert_task(db_path, "logtest", status="failed")
+        # Create log files
+        (logs_dir / "logtest.log").write_text("some log output", encoding="utf-8")
+        (logs_dir / "logtest.stderr.log").write_text("some stderr", encoding="utf-8")
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert not (logs_dir / "logtest.log").exists()
+        assert not (logs_dir / "logtest.stderr.log").exists()
+
+    def test_clean_dry_run(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "dry1", status="failed")
+        _insert_stage_run(db_path, "dry1", "analyze", 0, status="failed")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["clean", "--dry-run", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Dry run" in result.output
+        # DB should be unchanged
+        conn = make_connection(db_path, read_only=True)
+        assert conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 1
+        assert conn.execute("SELECT COUNT(*) FROM stage_runs").fetchone()[0] == 1
+        conn.close()
+
+    def test_clean_specific_task(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "fail1", status="failed")
+        _insert_task(db_path, "fail2", status="failed")
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "fail1", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Cleaned 1 task(s)" in result.output
+        # Only fail1 should be removed, fail2 should remain
+        conn = make_connection(db_path, read_only=True)
+        remaining = conn.execute("SELECT id FROM tasks").fetchall()
+        remaining_ids = {r["id"] for r in remaining}
+        assert remaining_ids == {"fail2"}
+        conn.close()
+
+    def test_clean_specific_task_not_cleanable(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "running1", status="running")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["clean", "running1", "--force", "--project-dir", str(project)])
+        assert result.exit_code != 0
+        assert "cannot be cleaned" in result.output
+
+    def test_clean_worktree_db_rows_deleted(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        _insert_task(db_path, "wt1", status="completed", worktree_path="/tmp/fake-wt", branch="pegasus/wt1")
+        # Insert a worktree row
+        conn = make_connection(db_path)
+        conn.execute(
+            "INSERT INTO worktrees (task_id, path, branch) VALUES (?, ?, ?)",
+            ("wt1", "/tmp/fake-wt", "pegasus/wt1"),
+        )
+        conn.commit()
+        conn.close()
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        conn = make_connection(db_path, read_only=True)
+        assert conn.execute("SELECT COUNT(*) FROM worktrees").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        conn.close()
+
+    def test_clean_handles_missing_worktree(self, tmp_path: Path) -> None:
+        project = _make_project(tmp_path)
+        db_path = project / ".pegasus" / "pegasus.db"
+        # worktree_path points to a directory that doesn't exist
+        _insert_task(
+            db_path, "gone1", status="failed",
+            worktree_path="/tmp/nonexistent-worktree-12345",
+            branch="pegasus/gone1",
+        )
+        with patch("pegasus.ui.subprocess.run"):
+            runner = CliRunner()
+            result = runner.invoke(cli, ["clean", "--force", "--project-dir", str(project)])
+        assert result.exit_code == 0, result.output
+        assert "Cleaned 1 task(s)" in result.output
+        conn = make_connection(db_path, read_only=True)
+        assert conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0] == 0
+        conn.close()
 
 
 # ---------------------------------------------------------------------------

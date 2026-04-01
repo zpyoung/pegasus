@@ -251,6 +251,72 @@ def _status_icon(status: str) -> Text:
     return Text(status, style=f"bold {color}")
 
 
+def _remove_worktree(worktree_path: str, branch: str | None, repo_dir: Path) -> str | None:
+    """Remove a git worktree and its branch.
+
+    Returns an error message string on failure, or None on success.
+    Handles missing paths and timeouts gracefully.
+    """
+    errors: list[str] = []
+
+    # Remove the worktree (--force handles dirty trees)
+    if Path(worktree_path).exists():
+        try:
+            result = subprocess.run(
+                ["git", "worktree", "remove", "--force", worktree_path],
+                capture_output=True,
+                text=True,
+                cwd=str(repo_dir),
+                timeout=30,
+            )
+            if result.returncode != 0:
+                errors.append(f"worktree remove: {result.stderr.strip()}")
+        except subprocess.TimeoutExpired:
+            errors.append("worktree remove: timed out")
+        except (FileNotFoundError, OSError) as exc:
+            errors.append(f"worktree remove: {exc}")
+
+    # Prune stale worktree entries
+    try:
+        subprocess.run(
+            ["git", "worktree", "prune"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_dir),
+            timeout=10,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        pass  # best-effort
+
+    # Delete the branch
+    if branch:
+        try:
+            result = subprocess.run(
+                ["git", "branch", "-d", branch],
+                capture_output=True,
+                text=True,
+                cwd=str(repo_dir),
+                timeout=10,
+            )
+            if result.returncode != 0:
+                # Force delete if soft delete fails
+                result = subprocess.run(
+                    ["git", "branch", "-D", branch],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(repo_dir),
+                    timeout=10,
+                )
+                if result.returncode != 0:
+                    errors.append(f"branch delete: {result.stderr.strip()}")
+        except subprocess.TimeoutExpired:
+            errors.append("branch delete: timed out")
+        except (FileNotFoundError, OSError) as exc:
+            errors.append(f"branch delete: {exc}")
+
+    return "; ".join(errors) if errors else None
+
+
 # ---------------------------------------------------------------------------
 # CLI group
 # ---------------------------------------------------------------------------
@@ -789,6 +855,129 @@ def resume(task_id: str, project_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# pegasus clean
+# ---------------------------------------------------------------------------
+
+
+@cli.command("clean")
+@click.argument("task_id", required=False)
+@click.option(
+    "--project-dir",
+    default=".",
+    show_default=True,
+    help="Project root directory.",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+)
+@click.option("--dry-run", is_flag=True, default=False, help="Show what would be cleaned without making changes.")
+@click.option("--force", is_flag=True, default=False, help="Skip confirmation prompt.")
+def clean(task_id: str | None, project_dir: Path, dry_run: bool, force: bool) -> None:
+    """Remove artifacts for completed and failed tasks."""
+    project_dir = project_dir.resolve()
+    db_path = _get_db_path(project_dir)
+
+    if not db_path.exists():
+        console.print("[red]Error:[/red] No Pegasus database found. Run [bold]pegasus init[/bold] first.")
+        sys.exit(1)
+
+    conn = make_connection(db_path)
+    try:
+        if task_id is not None:
+            # Clean a specific task
+            row = conn.execute(
+                "SELECT id, pipeline, description, status, worktree_path, branch FROM tasks WHERE id = ?",
+                (task_id,),
+            ).fetchone()
+
+            if row is None:
+                console.print(f"[red]Error:[/red] Task '{task_id}' not found.")
+                sys.exit(1)
+
+            cleanable_states = {"completed", "failed"}
+            if row["status"] not in cleanable_states:
+                console.print(
+                    f"[red]Error:[/red] Task '{task_id}' is in state '{row['status']}' and cannot be cleaned."
+                )
+                console.print(f"  Only tasks in states {cleanable_states} can be cleaned.")
+                sys.exit(1)
+
+            tasks_to_clean = [row]
+        else:
+            # Find all cleanable tasks
+            tasks_to_clean = conn.execute(
+                "SELECT id, pipeline, description, status, worktree_path, branch FROM tasks WHERE status IN ('completed', 'failed')"
+            ).fetchall()
+
+        if not tasks_to_clean:
+            console.print("[yellow]No cleanable tasks found.[/yellow] Only completed and failed tasks can be cleaned.")
+            return
+
+        # Show what will be cleaned
+        table = Table(title="Tasks to clean", show_lines=True)
+        table.add_column("ID", style="bold cyan", no_wrap=True)
+        table.add_column("Pipeline", style="magenta")
+        table.add_column("Status", no_wrap=True)
+        table.add_column("Description")
+
+        for t in tasks_to_clean:
+            desc = (t["description"] or "")[:60]
+            table.add_row(t["id"], t["pipeline"], _status_icon(t["status"]), desc)
+
+        console.print(table)
+
+        if dry_run:
+            console.print()
+            console.print(f"[bold yellow]Dry run:[/bold yellow] {len(tasks_to_clean)} task(s) would be cleaned.")
+            return
+
+        if not force:
+            if not click.confirm(f"Remove {len(tasks_to_clean)} task(s) and their artifacts?"):
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+
+        # Clean each task
+        cleaned = 0
+        errors_list: list[str] = []
+        logs_dir = project_dir / ".pegasus" / "logs"
+
+        for t in tasks_to_clean:
+            tid = t["id"]
+
+            # Remove worktree if present
+            wt_path = t["worktree_path"]
+            branch = t["branch"]
+            if wt_path:
+                err = _remove_worktree(wt_path, branch, project_dir)
+                if err:
+                    errors_list.append(f"  {tid}: {err}")
+
+            # Delete log files
+            for suffix in [".log", ".stderr.log"]:
+                log_file = logs_dir / f"{tid}{suffix}"
+                if log_file.exists():
+                    try:
+                        log_file.unlink()
+                    except OSError:
+                        pass
+
+            # Delete DB rows in FK-safe order: worktrees -> stage_runs -> tasks
+            conn.execute("DELETE FROM worktrees WHERE task_id = ?", (tid,))
+            conn.execute("DELETE FROM stage_runs WHERE task_id = ?", (tid,))
+            conn.execute("DELETE FROM tasks WHERE id = ?", (tid,))
+            cleaned += 1
+
+        conn.commit()
+
+        console.print()
+        console.print(f"[bold green]Cleaned {cleaned} task(s).[/bold green]")
+        if errors_list:
+            console.print("[yellow]Warnings:[/yellow]")
+            for e in errors_list:
+                console.print(e)
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # TUI — Textual dashboard
 # ---------------------------------------------------------------------------
 
@@ -917,7 +1106,8 @@ def _get_textual_app() -> type:
 
         DEFAULT_CSS = """
         TaskCreateModal {
-            dock: fill;
+            width: 100%;
+            height: 100%;
             layer: overlay;
             background: rgba(0, 0, 0, 0.8);
             display: none;
@@ -926,11 +1116,12 @@ def _get_textual_app() -> type:
             display: block;
         }
         #create-dialog {
-            width: 60;
+            width: 80%;
+            max-width: 100;
             height: auto;
             background: $surface;
             border: thick $primary;
-            margin: 10% auto;
+            margin: 4 8;
             padding: 1;
         }
         #create-form {
@@ -941,7 +1132,7 @@ def _get_textual_app() -> type:
         }
         #description-input {
             margin: 1 0;
-            height: 3;
+            height: 8;
         }
         #button-row {
             dock: bottom;
@@ -955,7 +1146,7 @@ def _get_textual_app() -> type:
                 yield Static("Create New Task", id="dialog-title")
                 with Vertical(id="create-form"):
                     yield Static("Pipeline:")
-                    yield Select(id="pipeline-select", options=[], allow_blank=False)
+                    yield Select(id="pipeline-select", options=[("", "Select a pipeline...")], allow_blank=True)
                     yield Static("Description:")
                     yield TextArea(id="description-input", placeholder="Describe the task...")
                 with Horizontal(id="button-row"):
@@ -1262,7 +1453,7 @@ def _get_textual_app() -> type:
                 return
 
             select_widget = modal.query_one("#pipeline-select", Select)
-            select_widget.set_options([(name, display) for name, display in pipelines])
+            select_widget.set_options([(display, name) for name, display in pipelines])
 
             # Clear previous form data
             modal.query_one("#description-input", TextArea).text = ""
