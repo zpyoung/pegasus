@@ -16,6 +16,7 @@ This module defines:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import platform
@@ -147,8 +148,9 @@ class ClaudeAgentRunner:
       raised only when ``run_task`` is called without the SDK present.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, on_stderr: Callable[[str], None] | None = None) -> None:
         self._current_task: asyncio.Task[None] | None = None
+        self._on_stderr = on_stderr
 
     async def run_task(
         self,
@@ -174,6 +176,8 @@ class ClaudeAgentRunner:
         sdk_opts: dict[str, Any] = {"cwd": cwd, "env": env}
         if system_claude:
             sdk_opts["cli_path"] = system_claude
+        if self._on_stderr:
+            sdk_opts["stderr"] = self._on_stderr
         # Map pegasus flag names to SDK ClaudeAgentOptions field names
         _flag_map = {
             "model": "model",
@@ -1034,6 +1038,29 @@ class PipelineExecutor:
         self._worktree_manager = WorktreeManager()
         self._shutdown_requested: bool = False
         self._current_engine: PegasusEngine | None = None
+        self._log_file: Any | None = None
+
+    def _open_log(self, task_id: str) -> Path:
+        """Open an append-only log file at ``.pegasus/logs/<task-id>.log``."""
+        log_dir = self.project_dir / ".pegasus" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"{task_id}.log"
+        self._log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
+        return log_path
+
+    def _log(self, line: str) -> None:
+        """Write a timestamped line to the task log file."""
+        if self._log_file:
+            from datetime import datetime
+            ts = datetime.now().strftime("%H:%M:%S")
+            self._log_file.write(f"[{ts}] {line}\n")
+            self._log_file.flush()
+
+    def _close_log(self) -> None:
+        """Close the log file handle."""
+        if self._log_file:
+            self._log_file.close()
+            self._log_file = None
 
     # ------------------------------------------------------------------
     # Helpers
@@ -1313,9 +1340,37 @@ class PipelineExecutor:
         )
 
         # ------------------------------------------------------------------
-        # 5. Iterate stages
+        # 5. Open log + iterate stages
         # ------------------------------------------------------------------
-        engine = PegasusEngine(self.agent_runner, self.db_path)
+        log_path = self._open_log(task_id)
+        self._log(f"Pipeline: {pipeline_name} | Task: {task_id}")
+        self._log(f"Description: {description}")
+        self._log(f"Worktree: {worktree_path}")
+        self._log(f"Log: {log_path}")
+        self._log("---")
+
+        def _on_message(msg: AgentMessage) -> None:
+            # Truncate very long messages to keep logs readable
+            content = msg.content[:2000] + ("..." if len(msg.content) > 2000 else "")
+            self._log(f"[agent] {content}")
+
+        def _on_tool_use(msg: ToolUseMessage) -> None:
+            self._log(f"[tool] {msg.tool_name}({json.dumps(msg.tool_input)[:200]})")
+
+        def _on_result(msg: ResultMessage) -> None:
+            self._log(f"[result] cost=${msg.total_cost_usd:.4f} session={msg.session_id}")
+
+        def _on_error(msg: ErrorMessage) -> None:
+            self._log(f"[ERROR] {msg.error}")
+
+        engine = PegasusEngine(
+            self.agent_runner,
+            self.db_path,
+            on_message=_on_message,
+            on_tool_use=_on_tool_use,
+            on_result=_on_result,
+            on_error=_on_error,
+        )
         self._current_engine = engine
 
         try:
@@ -1327,6 +1382,9 @@ class PipelineExecutor:
                         f"Task paused: {description} (SIGTERM received)",
                     )
                     return False
+
+                # --- Log stage start ---
+                self._log(f"--- Stage {stage_index + 1}/{len(pipeline.stages)}: {stage.name} ({stage.id}) ---")
 
                 # --- Resolve effective flags ---
                 resolved_flags, requires_approval = resolve_stage_flags(
@@ -1452,10 +1510,12 @@ class PipelineExecutor:
             return False
 
         finally:
+            self._log("--- Pipeline finished ---")
             heartbeat_task.cancel()
             await asyncio.gather(heartbeat_task, return_exceptions=True)
             conn.close()
             self._current_engine = None
+            self._close_log()
 
     async def resume_task(self, task_id: str) -> bool:
         """Restart a failed task from the last failed stage.

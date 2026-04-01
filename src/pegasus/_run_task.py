@@ -40,7 +40,16 @@ def main() -> None:
     # Import runner components here (only this module imports runner.py)
     from pegasus.runner import ClaudeAgentRunner, PipelineExecutor  # noqa: PLC0415
 
-    agent_runner = ClaudeAgentRunner()
+    # Set up stderr logging — captures claude CLI stderr into the task log
+    log_dir = project_dir / ".pegasus" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    stderr_log = open(log_dir / f"{task_id}.stderr.log", "a", encoding="utf-8")  # noqa: SIM115
+
+    def _on_stderr(line: str) -> None:
+        stderr_log.write(line + "\n")
+        stderr_log.flush()
+
+    agent_runner = ClaudeAgentRunner(on_stderr=_on_stderr)
     executor = PipelineExecutor(
         db_path=db_path,
         agent_runner=agent_runner,
