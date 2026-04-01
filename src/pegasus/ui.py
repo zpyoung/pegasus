@@ -1137,21 +1137,29 @@ def _get_textual_app() -> type:
 
         def compose(self) -> ComposeResult:
             yield Static("", id="question-text")
-            yield Input(placeholder="Type your answer and press Enter…", id="question-input")
+            yield Input(
+                placeholder="Type your answer and press Enter…",
+                id="question-input",
+                disabled=True,
+            )
 
         def show_question(self, question: str) -> None:
             """Display *question* and focus the answer input."""
             self.query_one("#question-text", Static).update(
                 f"[bold yellow]?[/bold yellow] {question}"
             )
-            self.query_one("#question-input", Input).value = ""
+            inp = self.query_one("#question-input", Input)
+            inp.value = ""
+            inp.disabled = False
             self.add_class("visible-question")
-            self.query_one("#question-input", Input).focus()
+            inp.focus()
 
         def hide_question(self) -> None:
             """Hide the bar and clear the input."""
             self.remove_class("visible-question")
-            self.query_one("#question-input", Input).value = ""
+            inp = self.query_one("#question-input", Input)
+            inp.value = ""
+            inp.disabled = True
 
         def on_input_submitted(self, event: Input.Submitted) -> None:
             """Submit the answer when the user presses Enter."""
