@@ -1123,8 +1123,9 @@ def _get_textual_app() -> type:
     from textual.app import App, ComposeResult
     from textual.binding import Binding
     from textual.containers import Horizontal, Vertical, VerticalScroll
+    from textual.screen import ModalScreen
     from textual.widget import Widget
-    from textual.widgets import Footer, Header, Input, Label, Static, Button, Select, TextArea
+    from textual.widgets import Footer, Header, Input, Label, Static, Button, Select, SelectionList, TextArea
     from textual import events
     from rich.text import Text as _RichText
 
@@ -1231,71 +1232,207 @@ def _get_textual_app() -> type:
             except OSError:
                 self.query_one("#log-content", Static).update("[dim](log unreadable)[/dim]")
 
-    class QuestionBar(Widget):
-        """Bottom bar shown when an agent question is pending on the focused task.
+    class QuestionScreen(ModalScreen[str | None]):
+        """Modal screen for answering agent questions.
 
-        When a stage has ``question:`` set, the pipeline pauses and this bar
-        appears with the question text and a text input for the user's answer.
-        Pressing Enter (or Escape to cancel) submits or discards the answer.
+        Pushed via ``app.push_screen(QuestionScreen(…), callback)``.
+        Dismisses with the answer string, or ``None`` if the user cancels.
+
+        Supports three answer modes based on ``question_meta``:
+
+        * **Free-text** (no meta / no options) — shows a text ``Input``.
+        * **Single-select** (``type: single_select``) — shows a ``Select``
+          dropdown.  Selecting a value auto-submits.
+        * **Multi-select** (``type: multi_select``) — shows a
+          ``SelectionList`` with checkboxes and a Submit button.
+
+        Because this is a ``ModalScreen``, parent-app key bindings are
+        suppressed while it is active and focus is properly isolated.
         """
 
         DEFAULT_CSS = """
-        QuestionBar {
-            dock: bottom;
-            height: 4;
-            border: solid $warning;
-            background: $surface;
-            padding: 0 1;
-            display: none;
+        QuestionScreen {
+            background: rgba(0, 0, 0, 0.8);
         }
-        QuestionBar.visible-question {
-            display: block;
+        #question-dialog {
+            width: 100%;
+            height: auto;
+            max-height: 80%;
+            background: $surface;
+            border: thick $warning;
+            margin: 4 8;
+            padding: 1 2;
+        }
+        #question-title {
+            text-style: bold;
+            color: $warning;
+            margin-bottom: 1;
         }
         #question-text {
-            height: 1;
+            height: auto;
+            max-height: 40%;
+            margin-bottom: 1;
+        }
+        #question-answer-area {
+            height: auto;
+            max-height: 40%;
         }
         #question-input {
+            margin-top: 1;
+        }
+        #question-select {
+            margin-top: 1;
+        }
+        #question-selection-list {
+            height: auto;
+            max-height: 12;
+            margin-top: 1;
+        }
+        #question-submit-btn {
+            margin-top: 1;
+            width: auto;
+            min-width: 12;
+        }
+        #question-hint {
             height: 1;
+            color: $text-muted;
+            margin-top: 1;
+        }
+        #question-input.hidden-widget,
+        #question-answer-area.hidden-widget {
+            display: none;
         }
         """
 
+        BINDINGS = [
+            Binding("escape", "cancel", "Cancel", show=False),
+        ]
+
+        def __init__(
+            self,
+            question: str,
+            meta: dict | None = None,
+            name: str | None = None,
+            id: str | None = None,
+            classes: str | None = None,
+        ) -> None:
+            super().__init__(name=name, id=id, classes=classes)
+            self._question = question
+            self._meta = meta
+            self._mode = "text"
+
         def compose(self) -> ComposeResult:
-            yield Static("", id="question-text")
-            yield Input(
-                placeholder="Type your answer and press Enter…",
-                id="question-input",
-                disabled=True,
-            )
+            meta = self._meta
+            question = self._question
 
-        def show_question(self, question: str) -> None:
-            """Display *question* and focus the answer input."""
-            self.query_one("#question-text", Static).update(
-                f"[bold yellow]?[/bold yellow] {question}"
-            )
-            inp = self.query_one("#question-input", Input)
-            inp.value = ""
-            inp.disabled = False
-            self.add_class("visible-question")
-            inp.focus()
+            # Strip option lines from display text when structured options exist.
+            display_text = question
+            if meta and meta.get("options"):
+                lines = question.split("\n")
+                display_text = "\n".join(
+                    ln for ln in lines if not ln.strip().startswith("- ")
+                ).strip()
 
-        def hide_question(self) -> None:
-            """Hide the bar and clear the input."""
-            self.remove_class("visible-question")
-            inp = self.query_one("#question-input", Input)
-            inp.value = ""
-            inp.disabled = True
+            q_type = (meta or {}).get("type", "text")
+            options = (meta or {}).get("options", [])
+
+            with Vertical(id="question-dialog"):
+                yield Static("Stage Question", id="question-title")
+                yield Static(
+                    f"[bold yellow]?[/bold yellow] {display_text}",
+                    id="question-text",
+                )
+
+                if q_type == "single_select" and options:
+                    self._mode = "single_select"
+                    select_options = [
+                        (
+                            f"{opt['label']}: {opt['description']}"
+                            if opt.get("description")
+                            else opt["label"],
+                            opt["label"],
+                        )
+                        for opt in options
+                    ]
+                    yield Select(  # type: ignore[arg-type]
+                        select_options,
+                        prompt="Choose one…",
+                        id="question-select",
+                    )
+                    hint = "[dim]Select[/dim] to submit · [dim]Escape[/dim] cancel"
+                elif q_type == "multi_select" and options:
+                    self._mode = "multi_select"
+                    sel_items = [
+                        (
+                            f"{opt['label']}: {opt['description']}"
+                            if opt.get("description")
+                            else opt["label"],
+                            opt["label"],
+                        )
+                        for opt in options
+                    ]
+                    yield SelectionList[str](  # type: ignore[type-arg]
+                        *sel_items,
+                        id="question-selection-list",
+                    )
+                    yield Button("Submit", variant="primary", id="question-submit-btn")
+                    hint = (
+                        "[dim]Space[/dim] toggle · [dim]Submit[/dim] confirm "
+                        "· [dim]Escape[/dim] cancel"
+                    )
+                else:
+                    self._mode = "text"
+                    yield Input(
+                        placeholder="Type your answer and press Enter…",
+                        id="question-input",
+                    )
+                    hint = "[dim]Enter[/dim] submit · [dim]Escape[/dim] cancel"
+
+                yield Static(hint, id="question-hint")
+
+        def on_mount(self) -> None:
+            """Focus the appropriate input widget after mount."""
+            if self._mode == "text":
+                self.query_one("#question-input", Input).focus()
+            elif self._mode == "single_select":
+                self.query_one("#question-select", Select).focus()
+            elif self._mode == "multi_select":
+                self.query_one("#question-selection-list", SelectionList).focus()
 
         def on_input_submitted(self, event: Input.Submitted) -> None:
-            """Submit the answer when the user presses Enter."""
+            """Submit free-text answer when the user presses Enter."""
+            if self._mode != "text":
+                return
             answer = event.value.strip()
             if answer:
-                self.app._submit_question_answer(answer)  # type: ignore[attr-defined]
+                self.dismiss(answer)
 
-        def on_key(self, event: events.Key) -> None:
-            """Escape cancels the question (rejects the task)."""
-            if event.key == "escape":
-                self.app._cancel_question()  # type: ignore[attr-defined]
-                event.prevent_default()
+        def on_select_changed(self, event: Select.Changed) -> None:
+            """Auto-submit when a single-select option is chosen."""
+            if self._mode != "single_select":
+                return
+            if event.value is not None and event.value != Select.BLANK:
+                self.dismiss(str(event.value))
+
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            """Submit multi-select when the Submit button is pressed."""
+            if event.button.id != "question-submit-btn":
+                return
+            try:
+                sel_list = self.query_one("#question-selection-list", SelectionList)
+                selected = list(sel_list.selected)
+                if selected:
+                    self.dismiss(", ".join(str(v) for v in selected))
+                else:
+                    self.notify(
+                        "Select at least one option", severity="warning", timeout=2,
+                    )
+            except Exception:
+                pass
+
+        def action_cancel(self) -> None:
+            """Escape — dismiss without answering."""
+            self.dismiss(None)
 
     class TaskCreateModal(Widget):
         """Modal widget for creating new tasks with pipeline selection and description input."""
@@ -1529,7 +1666,7 @@ def _get_textual_app() -> type:
             Binding("r", "reject_task", "Reject", show=True),
             Binding("c", "clean_task", "Clean", show=True),
             Binding("l", "toggle_logs", "Logs", show=True),
-            Binding("escape", "dismiss_modal", "Close", show=False, priority=True),
+            Binding("escape", "dismiss_modal", "Close", show=False),
             Binding("q", "quit_app", "Quit", show=True),
         ]
 
@@ -1583,13 +1720,16 @@ def _get_textual_app() -> type:
             yield Horizontal(id="task-area")
             yield TaskDetailView(id="detail-view")
             yield LogPanel(id="log-panel")
-            yield QuestionBar(id="question-bar")
             yield TaskCreateModal(id="create-modal")
             yield Footer()
 
         def poll_db(self) -> None:
             """Query SQLite for current tasks/stage_runs; refresh widgets."""
             if self._conn is None:
+                return
+            # Skip DOM updates when a modal screen is active — the dashboard
+            # widgets aren't in the modal's DOM, so queries would fail.
+            if isinstance(self.screen, ModalScreen):
                 return
             try:
                 tasks = self._conn.execute(
@@ -1613,16 +1753,25 @@ def _get_textual_app() -> type:
                     # Check for a pending agent question on paused tasks.
                     pending_question: str | None = None
                     pending_question_id: int | None = None
+                    pending_question_meta: dict | None = None
                     if t["status"] == "paused":
                         q_row = self._conn.execute(
-                            """SELECT id, question FROM agent_questions
+                            """SELECT id, question, question_meta
+                               FROM agent_questions
                                WHERE task_id = ? AND status = 'pending'
-                               ORDER BY id DESC LIMIT 1""",
+                               ORDER BY id LIMIT 1""",
                             (t["id"],),
                         ).fetchone()
                         if q_row:
                             pending_question_id = q_row["id"]
                             pending_question = q_row["question"]
+                            raw_meta = q_row["question_meta"]
+                            if raw_meta:
+                                import json as _json
+                                try:
+                                    pending_question_meta = _json.loads(raw_meta)
+                                except (ValueError, TypeError):
+                                    pass
 
                     result.append(
                         {
@@ -1635,6 +1784,7 @@ def _get_textual_app() -> type:
                             "activity": activity,
                             "pending_question": pending_question,
                             "pending_question_id": pending_question_id,
+                            "pending_question_meta": pending_question_meta,
                         }
                     )
                 self._task_data = result
@@ -1848,9 +1998,9 @@ def _get_textual_app() -> type:
         def action_approve_task(self) -> None:
             """A -- approve the focused paused task.
 
-            If the task has a pending agent question, opens the QuestionBar so
-            the user can type an answer.  Otherwise approves directly by writing
-            ``status='queued'`` to SQLite.
+            If the task has a pending agent question, pushes a QuestionScreen
+            modal so the user can type an answer.  Otherwise approves directly
+            by writing ``status='queued'`` to SQLite.
             """
             if not self._task_data:
                 return
@@ -1861,14 +2011,17 @@ def _get_textual_app() -> type:
                     f"Task {task['id']} is not paused (status: {task['status']})", timeout=3
                 )
                 return
-            # If there is a pending question, show the question input bar.
+            # If there is a pending question, push the question modal.
             q_id = task.get("pending_question_id")
             q_text = task.get("pending_question")
+            q_meta = task.get("pending_question_meta")
             if q_id is not None and q_text:
                 self._answering_question_id = q_id
                 self._answering_task_id = task["id"]
-                question_bar = self.query_one("#question-bar", QuestionBar)
-                question_bar.show_question(q_text)
+                self.push_screen(
+                    QuestionScreen(q_text, meta=q_meta),
+                    callback=self._on_question_dismissed,
+                )
                 return
             # No pending question — plain approval.
             try:
@@ -1885,9 +2038,21 @@ def _get_textual_app() -> type:
             except Exception as exc:
                 self.notify(f"Approve failed: {exc}", severity="error", timeout=0)
 
-        def _submit_question_answer(self, answer: str) -> None:
-            """Write *answer* to the pending agent_questions row and resume the task."""
+        def _on_question_dismissed(self, answer: str | None) -> None:
+            """Callback when QuestionScreen is dismissed.
+
+            *answer* is the user's response, or ``None`` if they pressed Escape.
+            When multiple questions are pending for a task, only the answered
+            question is marked.  The task is set to ``'queued'`` only after the
+            **last** pending question has been answered so the user can cycle
+            through all questions before the pipeline resumes.
+            """
             if self._answering_question_id is None or self._answering_task_id is None:
+                return
+            if answer is None:
+                # User cancelled — just clear state, don't reject.
+                self._answering_question_id = None
+                self._answering_task_id = None
                 return
             try:
                 conn = make_connection(self._db_path)
@@ -1899,31 +2064,37 @@ def _get_textual_app() -> type:
                         "WHERE id = ?",
                         (answer, self._answering_question_id),
                     )
-                    conn.execute(
-                        "UPDATE tasks SET status = 'queued', "
-                        "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    # Only resume the task when no more pending questions remain.
+                    remaining = conn.execute(
+                        "SELECT COUNT(*) AS cnt FROM agent_questions "
+                        "WHERE task_id = ? AND status = 'pending'",
                         (self._answering_task_id,),
-                    )
-                    conn.commit()
+                    ).fetchone()
+                    if remaining and remaining["cnt"] > 0:
+                        conn.commit()
+                        self.notify(
+                            f"Answer saved — {remaining['cnt']} question(s) remaining. "
+                            f"Press 'a' to answer the next one.",
+                            timeout=3,
+                        )
+                    else:
+                        conn.execute(
+                            "UPDATE tasks SET status = 'queued', "
+                            "updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                            (self._answering_task_id,),
+                        )
+                        conn.commit()
+                        self.notify(
+                            f"All questions answered for task {self._answering_task_id}",
+                            timeout=2,
+                        )
                 finally:
                     conn.close()
-                self.notify(
-                    f"Answer submitted for task {self._answering_task_id}", timeout=2
-                )
             except Exception as exc:
                 self.notify(f"Submit failed: {exc}", severity="error", timeout=0)
             finally:
-                question_bar = self.query_one("#question-bar", QuestionBar)
-                question_bar.hide_question()
                 self._answering_question_id = None
                 self._answering_task_id = None
-
-        def _cancel_question(self) -> None:
-            """Dismiss the QuestionBar without answering (does not reject the task)."""
-            question_bar = self.query_one("#question-bar", QuestionBar)
-            question_bar.hide_question()
-            self._answering_question_id = None
-            self._answering_task_id = None
 
         def action_reject_task(self) -> None:
             """R -- reject/mark the focused task as failed."""
@@ -2050,11 +2221,9 @@ def _get_textual_app() -> type:
             select_widget.focus()
 
         def action_dismiss_modal(self) -> None:
-            """Escape -- close the detail view, question bar, or modal."""
+            """Escape -- close the detail view or modal."""
             if self._detail_mode:
                 self._close_detail()
-            elif self._answering_question_id is not None:
-                self._cancel_question()
             elif self._create_visible:
                 modal = self.query_one("#create-modal", TaskCreateModal)
                 modal.remove_class("visible-create")

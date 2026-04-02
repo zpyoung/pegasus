@@ -1891,3 +1891,363 @@ class TestTaskDetailView:
             app._close_detail()
             await pilot.pause(0.1)
             assert app._detail_log_len == 0
+
+
+# ---------------------------------------------------------------------------
+# TUI — Multi-question answer flow
+# ---------------------------------------------------------------------------
+
+
+def _insert_agent_question(
+    db_path: Path,
+    task_id: str,
+    stage_id: str,
+    stage_index: int,
+    question: str,
+    status: str = "pending",
+) -> int:
+    """Insert an agent_questions row and return its rowid."""
+    conn = make_connection(db_path)
+    cursor = conn.execute(
+        "INSERT INTO agent_questions "
+        "(task_id, stage_id, stage_index, question, status) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (task_id, stage_id, stage_index, question, status),
+    )
+    conn.commit()
+    rowid = cursor.lastrowid
+    conn.close()
+    return rowid  # type: ignore[return-value]
+
+
+class TestMultiQuestionAnswerFlow:
+    """Tests for answering multiple agent questions before a task resumes.
+
+    These tests invoke ``_submit_question_answer`` directly on the app
+    instance to avoid flaky UI-level timing issues with the QuestionBar
+    input widget.
+    """
+
+    @pytest.mark.asyncio
+    async def test_answer_with_remaining_keeps_task_paused(self, tmp_path: Path) -> None:
+        """When more pending questions remain, answering one keeps the task paused."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "mq-1"
+        _insert_task(db_path, task_id, status="paused")
+        q1_id = _insert_agent_question(db_path, task_id, "plan", 0, "Q1?")
+        _insert_agent_question(db_path, task_id, "plan", 0, "Q2?")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            # Simulate answering Q1 by directly calling the callback.
+            app._answering_question_id = q1_id
+            app._answering_task_id = task_id
+            app._on_question_dismissed("Answer 1")
+            await pilot.pause(0.1)
+
+        # Task should still be paused (Q2 is still pending).
+        conn = make_connection(db_path, read_only=True)
+        task_row = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        questions = conn.execute(
+            "SELECT status FROM agent_questions WHERE task_id = ? ORDER BY id",
+            (task_id,),
+        ).fetchall()
+        conn.close()
+
+        assert task_row["status"] == "paused"
+        assert questions[0]["status"] == "answered"
+        assert questions[1]["status"] == "pending"
+
+    @pytest.mark.asyncio
+    async def test_answer_last_question_sets_task_queued(self, tmp_path: Path) -> None:
+        """When the last pending question is answered, the task transitions to queued."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "mq-2"
+        _insert_task(db_path, task_id, status="paused")
+        q_id = _insert_agent_question(db_path, task_id, "plan", 0, "Only question?")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            app._answering_question_id = q_id
+            app._answering_task_id = task_id
+            app._on_question_dismissed("Yes")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        task_row = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        q_row = conn.execute(
+            "SELECT status, answer FROM agent_questions WHERE task_id = ?", (task_id,),
+        ).fetchone()
+        conn.close()
+
+        assert task_row["status"] == "queued"
+        assert q_row["status"] == "answered"
+        assert q_row["answer"] == "Yes"
+
+    @pytest.mark.asyncio
+    async def test_approve_shows_question_screen_for_pending_question(
+        self, tmp_path: Path,
+    ) -> None:
+        """Pressing 'a' on a paused task with a pending question should
+        push a QuestionScreen instead of directly approving."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "mq-3"
+        _insert_task(db_path, task_id, status="paused")
+        _insert_agent_question(db_path, task_id, "plan", 0, "What framework?")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")
+            await pilot.pause(0.2)
+            # A QuestionScreen should be the active screen.
+            assert app.screen.__class__.__name__ == "QuestionScreen", (
+                "QuestionScreen should be pushed after pressing 'a' with pending question"
+            )
+
+        # Task should still be paused — not approved.
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        conn.close()
+        assert row["status"] == "paused"
+
+
+# ---------------------------------------------------------------------------
+# TUI — QuestionBar choice widget modes
+# ---------------------------------------------------------------------------
+
+
+def _insert_agent_question_with_meta(
+    db_path: Path,
+    task_id: str,
+    stage_id: str,
+    stage_index: int,
+    question: str,
+    meta: dict | None = None,
+    status: str = "pending",
+) -> int:
+    """Insert an agent_questions row with optional JSON meta."""
+    import json
+    conn = make_connection(db_path)
+    meta_json = json.dumps(meta) if meta else None
+    cursor = conn.execute(
+        "INSERT INTO agent_questions "
+        "(task_id, stage_id, stage_index, question, question_meta, status) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (task_id, stage_id, stage_index, question, meta_json, status),
+    )
+    conn.commit()
+    rowid = cursor.lastrowid
+    conn.close()
+    return rowid  # type: ignore[return-value]
+
+
+class TestQuestionScreenChoiceWidgets:
+    """Tests for QuestionScreen rendering different widget types based on meta."""
+
+    @pytest.mark.asyncio
+    async def test_free_text_question_shows_input(self, tmp_path: Path) -> None:
+        """No meta → QuestionScreen mounts an Input widget."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-text"
+        _insert_task(db_path, task_id, status="paused")
+        _insert_agent_question(db_path, task_id, "plan", 0, "Free text question?")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")
+            await pilot.pause(0.3)
+            # Should have an Input widget on the QuestionScreen.
+            inputs = app.screen.query("#question-input")
+            assert len(inputs) == 1, "Free-text question should show an Input widget"
+
+    @pytest.mark.asyncio
+    async def test_free_text_input_accepts_typing_and_submits(self, tmp_path: Path) -> None:
+        """Typing into the QuestionScreen Input should accumulate text,
+        and pressing Enter should store the answer in the database."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-type"
+        _insert_task(db_path, task_id, status="paused")
+        q_id = _insert_agent_question(db_path, task_id, "plan", 0, "What language?")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Input
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")  # Open QuestionScreen
+            await pilot.pause(0.3)
+
+            # Type characters into the focused Input.
+            await pilot.press("P", "y", "t", "h", "o", "n")
+            await pilot.pause(0.1)
+            inp = app.screen.query_one("#question-input", Input)
+            assert inp.value == "Python", f"Input should contain 'Python', got {inp.value!r}"
+
+            # Submit with Enter.
+            await pilot.press("enter")
+            await pilot.pause(0.2)
+
+        # Verify answer was stored in the database.
+        conn = make_connection(db_path, read_only=True)
+        q_row = conn.execute(
+            "SELECT answer, status FROM agent_questions WHERE id = ?", (q_id,),
+        ).fetchone()
+        conn.close()
+        assert q_row["status"] == "answered"
+        assert q_row["answer"] == "Python"
+
+    @pytest.mark.asyncio
+    async def test_single_select_question_shows_select(self, tmp_path: Path) -> None:
+        """single_select meta → QuestionScreen mounts a Select widget."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-single"
+        _insert_task(db_path, task_id, status="paused")
+        meta = {
+            "type": "single_select",
+            "options": [
+                {"label": "PostgreSQL", "description": "Relational DB"},
+                {"label": "MongoDB", "description": "Document DB"},
+            ],
+        }
+        _insert_agent_question_with_meta(
+            db_path, task_id, "plan", 0, "Which DB?", meta=meta,
+        )
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")
+            await pilot.pause(0.3)
+            selects = app.screen.query("#question-select")
+            assert len(selects) == 1, "Single-select question should show a Select widget"
+            # No Input widget should exist for single-select.
+            inputs = app.screen.query("#question-input")
+            assert len(inputs) == 0, "Input should not exist for single-select"
+
+    @pytest.mark.asyncio
+    async def test_multi_select_question_shows_selection_list(
+        self, tmp_path: Path,
+    ) -> None:
+        """multi_select meta → QuestionScreen mounts a SelectionList + Submit button."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-multi"
+        _insert_task(db_path, task_id, status="paused")
+        meta = {
+            "type": "multi_select",
+            "options": [
+                {"label": "Unit tests", "description": ""},
+                {"label": "Integration tests", "description": ""},
+                {"label": "E2E tests", "description": ""},
+            ],
+        }
+        _insert_agent_question_with_meta(
+            db_path, task_id, "plan", 0, "Which test types?", meta=meta,
+        )
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("a")
+            await pilot.pause(0.3)
+            sel_lists = app.screen.query("#question-selection-list")
+            assert len(sel_lists) == 1, "Multi-select should show a SelectionList"
+            submit_btns = app.screen.query("#question-submit-btn")
+            assert len(submit_btns) == 1, "Multi-select should show a Submit button"
+
+    @pytest.mark.asyncio
+    async def test_single_select_submit_stores_label(self, tmp_path: Path) -> None:
+        """Selecting an option in single-select auto-submits the label as answer."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-ss-submit"
+        _insert_task(db_path, task_id, status="paused")
+        meta = {
+            "type": "single_select",
+            "options": [
+                {"label": "Option A", "description": ""},
+                {"label": "Option B", "description": ""},
+            ],
+        }
+        q_id = _insert_agent_question_with_meta(
+            db_path, task_id, "plan", 0, "Pick one?", meta=meta,
+        )
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            # Directly call _on_question_dismissed to simulate selection.
+            app._answering_question_id = q_id
+            app._answering_task_id = task_id
+            app._on_question_dismissed("Option A")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        q_row = conn.execute(
+            "SELECT answer, status FROM agent_questions WHERE id = ?", (q_id,),
+        ).fetchone()
+        conn.close()
+        assert q_row["status"] == "answered"
+        assert q_row["answer"] == "Option A"
+
+    @pytest.mark.asyncio
+    async def test_multi_select_submit_stores_joined_labels(
+        self, tmp_path: Path,
+    ) -> None:
+        """Multi-select answer is comma-joined labels."""
+        _, db_path = _make_tui_project(tmp_path)
+        task_id = "qw-ms-submit"
+        _insert_task(db_path, task_id, status="paused")
+        meta = {
+            "type": "multi_select",
+            "options": [
+                {"label": "Unit", "description": ""},
+                {"label": "E2E", "description": ""},
+            ],
+        }
+        q_id = _insert_agent_question_with_meta(
+            db_path, task_id, "plan", 0, "Types?", meta=meta,
+        )
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            app._answering_question_id = q_id
+            app._answering_task_id = task_id
+            app._on_question_dismissed("Unit, E2E")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        q_row = conn.execute(
+            "SELECT answer FROM agent_questions WHERE id = ?", (q_id,),
+        ).fetchone()
+        conn.close()
+        assert q_row["answer"] == "Unit, E2E"

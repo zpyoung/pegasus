@@ -1104,6 +1104,7 @@ def _make_executor(
     heartbeat_interval: float = 0.1,
     poll_interval: float = 0.05,
     on_approval_needed: Any = None,
+    on_question_asked: Any = None,
 ) -> tuple[PipelineExecutor, Path]:
     """Create a PipelineExecutor with a tmp SQLite db, returning (executor, db_path)."""
     db_path = tmp_path / "pegasus.db"
@@ -1114,6 +1115,7 @@ def _make_executor(
         heartbeat_interval=heartbeat_interval,
         poll_interval=poll_interval,
         on_approval_needed=on_approval_needed,
+        on_question_asked=on_question_asked,
     )
     return executor, db_path
 
@@ -1942,3 +1944,358 @@ class TestPipelineExecutorAutoCommit:
         result = _run(executor.run_task("t-ac-3", pl_name, "test per-stage"))
         assert result is True
         assert committed_stages == ["implement"]
+
+
+# ---------------------------------------------------------------------------
+# PipelineExecutor — AskUserQuestion detection
+# ---------------------------------------------------------------------------
+
+
+def _get_agent_questions(db_path: Path, task_id: str) -> list[sqlite3.Row]:
+    """Return all agent_questions rows for *task_id*, ordered by id."""
+    conn = make_connection(db_path, read_only=True)
+    rows = conn.execute(
+        "SELECT * FROM agent_questions WHERE task_id = ? ORDER BY id",
+        (task_id,),
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+class TestAskUserQuestionDetection:
+    """Tests for detecting AskUserQuestion tool calls during stage execution."""
+
+    def test_ask_user_question_inserts_agent_questions(self, tmp_path: Path) -> None:
+        """When the agent uses AskUserQuestion, questions are inserted into
+        the agent_questions table and the task pauses for answers."""
+        stages = [
+            {"id": "plan", "name": "Plan", "prompt": "Plan the work."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        runner = FakeAgentRunner(
+            messages=[
+                AgentMessage(content="Let me ask some questions.", cost=0.01),
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={"question": "What framework do you use?"},
+                ),
+                AgentMessage(content="I asked the question.", cost=0.01),
+                ResultMessage(
+                    output="Questions asked.",
+                    total_cost_usd=0.05,
+                    session_id="fake-q-session",
+                ),
+            ]
+        )
+
+        approvals: list[tuple[str, str]] = []
+
+        async def approve(task_id: str, stage_id: str) -> bool:
+            approvals.append((task_id, stage_id))
+            return True
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve,
+        )
+        task_id = "ask-q-1"
+        result = _run(executor.run_task(task_id, pl_name, "test ask user"))
+
+        assert result is True
+        # The approval callback should have been triggered (agent questions auto-pause).
+        assert len(approvals) == 1
+        assert approvals[0][1] == "plan"
+
+        # Verify the question was inserted into agent_questions.
+        questions = _get_agent_questions(db_path, task_id)
+        assert len(questions) == 1
+        assert questions[0]["question"] == "What framework do you use?"
+        assert questions[0]["stage_id"] == "plan"
+        assert questions[0]["status"] == "pending"
+
+    def test_multiple_ask_user_questions_all_inserted(self, tmp_path: Path) -> None:
+        """Multiple AskUserQuestion calls in a stage produce multiple rows."""
+        stages = [
+            {"id": "plan", "name": "Plan", "prompt": "Plan."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        runner = FakeAgentRunner(
+            messages=[
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={"question": "Question 1?"},
+                ),
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={"question": "Question 2?"},
+                ),
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={"question": "Question 3?"},
+                ),
+                ResultMessage(
+                    output="done",
+                    total_cost_usd=0.05,
+                    session_id="fake-multi-q",
+                ),
+            ]
+        )
+
+        async def approve(task_id: str, stage_id: str) -> bool:
+            return True
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve,
+        )
+        task_id = "ask-q-multi"
+        _run(executor.run_task(task_id, pl_name, "multi-question test"))
+
+        questions = _get_agent_questions(db_path, task_id)
+        assert len(questions) == 3
+        assert questions[0]["question"] == "Question 1?"
+        assert questions[1]["question"] == "Question 2?"
+        assert questions[2]["question"] == "Question 3?"
+
+    def test_no_ask_user_question_no_extra_pause(self, tmp_path: Path) -> None:
+        """When no AskUserQuestion is used and no requires_approval, the
+        stage does not pause."""
+        stages = [
+            {"id": "impl", "name": "Impl", "prompt": "Implement."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+        runner = FakeAgentRunner()
+
+        approvals: list[tuple[str, str]] = []
+
+        async def approve(task_id: str, stage_id: str) -> bool:
+            approvals.append((task_id, stage_id))
+            return True
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve,
+        )
+        task_id = "no-q-1"
+        result = _run(executor.run_task(task_id, pl_name, "no questions"))
+
+        assert result is True
+        assert len(approvals) == 0
+        assert _get_agent_questions(db_path, task_id) == []
+
+    def test_ask_user_question_answers_available_to_next_stage(
+        self, tmp_path: Path,
+    ) -> None:
+        """After questions are answered and the pipeline resumes, answers
+        are available in question_responses for subsequent stages."""
+        stages = [
+            {"id": "plan", "name": "Plan", "prompt": "Plan."},
+            {"id": "implement", "name": "Implement", "prompt": "Implement using {{stages.plan.question_response}}"},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        runner = FakeAgentRunner(
+            messages=[
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={"question": "Which DB?"},
+                ),
+                ResultMessage(
+                    output="done",
+                    total_cost_usd=0.05,
+                    session_id="fake-qa-session",
+                ),
+            ]
+        )
+
+        call_count = [0]
+
+        async def approve_and_answer(task_id: str, stage_id: str) -> bool:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # Simulate answering the question before approving.
+                conn = make_connection(db_path)
+                conn.execute(
+                    "UPDATE agent_questions SET status = 'answered', "
+                    "answer = 'PostgreSQL' WHERE task_id = ? AND status = 'pending'",
+                    (task_id,),
+                )
+                conn.commit()
+                conn.close()
+            return True
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve_and_answer,
+        )
+        task_id = "ask-qa-1"
+        result = _run(executor.run_task(task_id, pl_name, "test qa flow"))
+
+        assert result is True
+        # The second stage's prompt should have the answer resolved.
+        # runner.run_calls[1] is the implement stage call.
+        assert len(runner.run_calls) == 2
+        assert "Q: Which DB?\nA: PostgreSQL" in runner.run_calls[1][0]
+
+    def test_structured_questions_payload(self, tmp_path: Path) -> None:
+        """The SDK sends ``{"questions": [{"question": "...", "header": "...",
+        "options": [...]}]}`` — each question in the array should become a
+        separate ``agent_questions`` row with readable text."""
+        stages = [
+            {"id": "plan", "name": "Plan", "prompt": "Plan."},
+        ]
+        project_dir, pl_name = _make_project_with_git(tmp_path, stages=stages)
+
+        runner = FakeAgentRunner(
+            messages=[
+                ToolUseMessage(
+                    tool_name="AskUserQuestion",
+                    tool_input={
+                        "questions": [
+                            {
+                                "question": "What reset scope?",
+                                "header": "Reset scope",
+                                "options": [
+                                    {"label": "Full reset", "description": "Delete worktree"},
+                                    {"label": "Soft reset", "description": "Keep worktree"},
+                                ],
+                            },
+                            {
+                                "question": "Which branch?",
+                                "header": "Branch",
+                            },
+                        ],
+                    },
+                ),
+                ResultMessage(
+                    output="done",
+                    total_cost_usd=0.05,
+                    session_id="fake-structured",
+                ),
+            ]
+        )
+
+        async def approve(task_id: str, stage_id: str) -> bool:
+            return True
+
+        executor, db_path = _make_executor(
+            tmp_path, project_dir, runner, on_approval_needed=approve,
+        )
+        task_id = "ask-structured"
+        _run(executor.run_task(task_id, pl_name, "structured questions"))
+
+        questions = _get_agent_questions(db_path, task_id)
+        assert len(questions) == 2
+        # First question should include header, text, and options.
+        q1 = questions[0]["question"]
+        assert "[Reset scope]" in q1
+        assert "What reset scope?" in q1
+        assert "Full reset: Delete worktree" in q1
+        assert "Soft reset: Keep worktree" in q1
+        # First question should have structured meta with options.
+        import json
+        meta1 = json.loads(questions[0]["question_meta"])
+        assert meta1["type"] == "single_select"
+        assert len(meta1["options"]) == 2
+        assert meta1["options"][0]["label"] == "Full reset"
+
+        # Second question: header + text, no options → no meta.
+        q2 = questions[1]["question"]
+        assert "[Branch]" in q2
+        assert "Which branch?" in q2
+        assert questions[1]["question_meta"] is None
+
+
+# ---------------------------------------------------------------------------
+# _extract_ask_user_questions unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestExtractAskUserQuestions:
+    """Unit tests for the question extraction helper."""
+
+    def test_simple_form(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({"question": "What language?"})
+        assert len(result) == 1
+        assert result[0].text == "What language?"
+        assert result[0].meta is None
+
+    def test_structured_form_no_options(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({
+            "questions": [
+                {"question": "Q1?", "header": "H1"},
+                {"question": "Q2?"},
+            ],
+        })
+        assert len(result) == 2
+        assert "[H1]" in result[0].text
+        assert "Q1?" in result[0].text
+        assert result[0].meta is None  # no options → no meta
+        assert "Q2?" in result[1].text
+
+    def test_structured_with_options_returns_meta(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({
+            "questions": [
+                {
+                    "question": "Pick one?",
+                    "options": [
+                        {"label": "A", "description": "Option A"},
+                        {"label": "B"},
+                    ],
+                },
+            ],
+        })
+        assert len(result) == 1
+        assert "Pick one?" in result[0].text
+        assert "A: Option A" in result[0].text
+        # Meta should carry structured options for the TUI.
+        assert result[0].meta is not None
+        assert result[0].meta["type"] == "single_select"
+        assert len(result[0].meta["options"]) == 2
+        assert result[0].meta["options"][0]["label"] == "A"
+
+    def test_multi_select_flag(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({
+            "questions": [
+                {
+                    "question": "Pick many?",
+                    "multiple": True,
+                    "options": [
+                        {"label": "X"},
+                        {"label": "Y"},
+                    ],
+                },
+            ],
+        })
+        assert len(result) == 1
+        assert result[0].meta is not None
+        assert result[0].meta["type"] == "multi_select"
+
+    def test_multi_select_type_field(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({
+            "questions": [
+                {
+                    "question": "Pick many?",
+                    "type": "multi_select",
+                    "options": [{"label": "A"}, {"label": "B"}],
+                },
+            ],
+        })
+        assert result[0].meta is not None
+        assert result[0].meta["type"] == "multi_select"
+
+    def test_fallback_on_unknown_shape(self) -> None:
+        from pegasus.runner import _extract_ask_user_questions
+
+        result = _extract_ask_user_questions({"unexpected_key": 42})
+        assert len(result) == 1
+        assert "unexpected_key" in result[0].text
+        assert result[0].meta is None

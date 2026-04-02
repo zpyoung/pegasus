@@ -797,15 +797,16 @@ CREATE TABLE IF NOT EXISTS worktrees (
 );
 
 CREATE TABLE IF NOT EXISTS agent_questions (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id      TEXT REFERENCES tasks(id),
-    stage_id     TEXT NOT NULL,
-    stage_index  INTEGER NOT NULL,
-    question     TEXT NOT NULL,
-    answer       TEXT,
-    asked_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-    answered_at  DATETIME,
-    status       TEXT NOT NULL DEFAULT 'pending'
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id        TEXT REFERENCES tasks(id),
+    stage_id       TEXT NOT NULL,
+    stage_index    INTEGER NOT NULL,
+    question       TEXT NOT NULL,
+    question_meta  TEXT,
+    answer         TEXT,
+    asked_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+    answered_at    DATETIME,
+    status         TEXT NOT NULL DEFAULT 'pending'
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -874,20 +875,28 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
     # Migration: add agent_questions table (added in schema v2).
     conn.execute(
         """CREATE TABLE IF NOT EXISTS agent_questions (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_id      TEXT REFERENCES tasks(id),
-            stage_id     TEXT NOT NULL,
-            stage_index  INTEGER NOT NULL,
-            question     TEXT NOT NULL,
-            answer       TEXT,
-            asked_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
-            answered_at  DATETIME,
-            status       TEXT NOT NULL DEFAULT 'pending'
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id        TEXT REFERENCES tasks(id),
+            stage_id       TEXT NOT NULL,
+            stage_index    INTEGER NOT NULL,
+            question       TEXT NOT NULL,
+            question_meta  TEXT,
+            answer         TEXT,
+            asked_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+            answered_at    DATETIME,
+            status         TEXT NOT NULL DEFAULT 'pending'
         )"""
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_agent_questions_task ON agent_questions(task_id)"
     )
+
+    # Migration: add question_meta column to agent_questions.
+    aq_cols = {
+        row[1] for row in conn.execute("PRAGMA table_info(agent_questions)").fetchall()
+    }
+    if "question_meta" not in aq_cols:
+        conn.execute("ALTER TABLE agent_questions ADD COLUMN question_meta TEXT")
 
 
 def init_db(conn: sqlite3.Connection) -> None:

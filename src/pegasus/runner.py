@@ -224,10 +224,25 @@ class ClaudeAgentRunner:
                     if msg_type == "AssistantMessage":
                         text = ""
                         for block in getattr(sdk_message, "content", []):
-                            if hasattr(block, "text"):
-                                text += block.text
-                        cost = getattr(sdk_message, "total_cost_usd", 0.0) or 0.0
-                        yield AgentMessage(content=text, cost=cost)
+                            block_type = type(block).__name__
+                            if block_type == "TextBlock":
+                                text += getattr(block, "text", "")
+                            elif block_type == "ToolUseBlock":
+                                yield ToolUseMessage(
+                                    tool_name=getattr(block, "name", ""),
+                                    tool_input=getattr(block, "input", {}),
+                                )
+                            elif block_type == "ToolResultBlock":
+                                raw = getattr(block, "content", None)
+                                tr_text = raw if isinstance(raw, str) else str(raw) if raw else None
+                                yield ToolResultMessage(
+                                    tool_use_id=getattr(block, "tool_use_id", ""),
+                                    content=tr_text,
+                                    is_error=bool(getattr(block, "is_error", False)),
+                                )
+                        if text:
+                            cost = getattr(sdk_message, "total_cost_usd", 0.0) or 0.0
+                            yield AgentMessage(content=text, cost=cost)
                     elif msg_type == "ToolUseBlock":
                         yield ToolUseMessage(
                             tool_name=getattr(sdk_message, "name", ""),
@@ -1118,6 +1133,97 @@ class RateLimitError(Exception):
 
 
 # ---------------------------------------------------------------------------
+# AskUserQuestion extraction
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ExtractedQuestion:
+    """A question extracted from an ``AskUserQuestion`` tool call."""
+
+    text: str
+    """Human-readable question text (includes header/options for display)."""
+    meta: dict[str, Any] | None = None
+    """Structured metadata for the TUI (type, options).  ``None`` for plain
+    free-text questions."""
+
+
+def _extract_ask_user_questions(tool_input: dict[str, Any]) -> list[ExtractedQuestion]:
+    """Extract questions from an ``AskUserQuestion`` tool call.
+
+    The SDK emits several payload shapes:
+
+    * ``{"question": "..."}`` — single free-text question.
+    * ``{"questions": [{"question": "...", "header": "...", "options": [...]}]}``
+      — structured multi-choice form.
+
+    For structured questions with options the returned ``meta`` dict contains:
+
+    * ``type``    — ``"single_select"`` or ``"multi_select"``
+    * ``options`` — ``[{"label": "...", "description": "..."}, ...]``
+
+    The ``text`` field always contains a human-readable rendering suitable for
+    logging even when ``meta`` is present.
+    """
+    results: list[ExtractedQuestion] = []
+
+    # Simple form: {"question": "..."}
+    if "question" in tool_input and isinstance(tool_input["question"], str):
+        results.append(ExtractedQuestion(text=tool_input["question"]))
+        return results
+
+    # Structured form: {"questions": [...]}
+    questions_list = tool_input.get("questions")
+    if isinstance(questions_list, list):
+        for item in questions_list:
+            if isinstance(item, dict):
+                parts: list[str] = []
+                header = item.get("header")
+                if header:
+                    parts.append(f"[{header}]")
+                q_text = item.get("question", "")
+                if q_text:
+                    parts.append(q_text)
+                options = item.get("options")
+                meta: dict[str, Any] | None = None
+                if isinstance(options, list) and options:
+                    # Determine select type.
+                    is_multi = item.get("type") == "multi_select" or item.get("multiple") is True
+                    meta = {
+                        "type": "multi_select" if is_multi else "single_select",
+                        "options": [
+                            {
+                                "label": opt.get("label", ""),
+                                "description": opt.get("description", ""),
+                            }
+                            for opt in options
+                            if isinstance(opt, dict)
+                        ],
+                    }
+                    # Append readable option list to text.
+                    for opt in options:
+                        if isinstance(opt, dict):
+                            label = opt.get("label", "")
+                            desc = opt.get("description", "")
+                            if label and desc:
+                                parts.append(f"  - {label}: {desc}")
+                            elif label:
+                                parts.append(f"  - {label}")
+                if parts:
+                    results.append(ExtractedQuestion(
+                        text="\n".join(parts), meta=meta,
+                    ))
+            elif isinstance(item, str):
+                results.append(ExtractedQuestion(text=item))
+
+    # Fallback: store the raw dict if nothing was extracted.
+    if not results:
+        results.append(ExtractedQuestion(text=str(tool_input)))
+
+    return results
+
+
+# ---------------------------------------------------------------------------
 # PipelineExecutor
 # ---------------------------------------------------------------------------
 
@@ -1479,13 +1585,15 @@ class PipelineExecutor:
         stage_id: str,
         stage_index: int,
         question: str,
+        question_meta: dict[str, Any] | None = None,
     ) -> int:
         """Insert an ``agent_questions`` row and return its rowid."""
+        meta_json = json.dumps(question_meta) if question_meta else None
         cursor = conn.execute(
             "INSERT INTO agent_questions "
-            "(task_id, stage_id, stage_index, question, status) "
-            "VALUES (?, ?, ?, ?, 'pending')",
-            (task_id, stage_id, stage_index, question),
+            "(task_id, stage_id, stage_index, question, question_meta, status) "
+            "VALUES (?, ?, ?, ?, ?, 'pending')",
+            (task_id, stage_id, stage_index, question, meta_json),
         )
         conn.commit()
         return cursor.lastrowid  # type: ignore[return-value]
@@ -1726,8 +1834,16 @@ class PipelineExecutor:
             content = msg.content[:2000] + ("..." if len(msg.content) > 2000 else "")
             self._log(f"[agent] {content}")
 
+        # Collect AskUserQuestion tool calls during stage execution so they
+        # can be inserted into ``agent_questions`` after the stage completes.
+        _collected_questions: list[ExtractedQuestion] = []
+
         def _on_tool_use(msg: ToolUseMessage) -> None:
             self._log(f"[tool] {msg.tool_name}({json.dumps(msg.tool_input)[:200]})")
+            if msg.tool_name == "AskUserQuestion":
+                _collected_questions.extend(
+                    _extract_ask_user_questions(msg.tool_input)
+                )
 
         def _on_tool_result(msg: ToolResultMessage) -> None:
             prefix = "[tool-error]" if msg.is_error else "[tool-result]"
@@ -1901,16 +2017,45 @@ class PipelineExecutor:
                     else:
                         self._log(f"No changes to commit after stage '{stage.name}'")
 
+                # --- Post-stage agent questions ---
+                # If the agent used AskUserQuestion during this stage,
+                # insert each question into ``agent_questions`` so the TUI
+                # can present them to the user before continuing.
+                has_agent_questions = bool(_collected_questions)
+                if has_agent_questions:
+                    for eq in _collected_questions:
+                        self._insert_question(
+                            conn, task_id, stage.id, stage_index,
+                            eq.text, eq.meta,
+                        )
+                    self._log(
+                        f"Agent asked {len(_collected_questions)} question(s) "
+                        f"during stage '{stage.name}'"
+                    )
+                    _collected_questions.clear()
+
                 # --- Post-stage approval gate ---
                 # Pause after the stage completes so the user can review
                 # the output before the next stage begins.
-                if requires_approval:
+                # Also pause when the agent asked questions, even if the
+                # stage does not normally require approval.
+                if requires_approval or has_agent_questions:
                     self._mark_task_status(conn, task_id, "paused")
-                    self._log(f"Stage '{stage.name}' completed — approval required before next stage.")
-                    self._send_notification(
-                        "Pegasus — Approval Required",
-                        f"Stage '{stage.name}' done. Approve to continue: {description}",
-                    )
+                    if has_agent_questions:
+                        self._log(
+                            f"Stage '{stage.name}' completed — "
+                            f"answering agent questions required before next stage."
+                        )
+                        self._send_notification(
+                            "Pegasus — Questions",
+                            f"Stage '{stage.name}' needs answers: {description}",
+                        )
+                    else:
+                        self._log(f"Stage '{stage.name}' completed — approval required before next stage.")
+                        self._send_notification(
+                            "Pegasus — Approval Required",
+                            f"Stage '{stage.name}' done. Approve to continue: {description}",
+                        )
                     if self._on_approval_needed is not None:
                         approved = await self._on_approval_needed(task_id, stage.id)
                     else:
@@ -1923,6 +2068,35 @@ class PipelineExecutor:
                         )
                         self._mark_task_status(conn, task_id, "failed")
                         return False
+                    # Load any question answers into question_responses so
+                    # subsequent stages can reference them via
+                    # {{stages.X.question_response}}.
+                    if has_agent_questions:
+                        answers_conn = make_connection(self.db_path, read_only=True)
+                        try:
+                            for row in answers_conn.execute(
+                                "SELECT stage_id, question, answer "
+                                "FROM agent_questions "
+                                "WHERE task_id = ? AND status = 'answered' "
+                                "ORDER BY id",
+                                (task_id,),
+                            ).fetchall():
+                                if row["answer"] is None:
+                                    continue
+                                qa = (
+                                    f"Q: {row['question']}\nA: {row['answer']}"
+                                    if row["question"]
+                                    else row["answer"]
+                                )
+                                existing = question_responses.get(row["stage_id"], "")
+                                if existing:
+                                    question_responses[row["stage_id"]] = (
+                                        f"{existing}\n\n{qa}"
+                                    )
+                                else:
+                                    question_responses[row["stage_id"]] = qa
+                        finally:
+                            answers_conn.close()
                     self._mark_task_status(conn, task_id, "running")
                     self._log(f"Stage '{stage.name}' approved — continuing to next stage.")
 
@@ -2028,15 +2202,25 @@ class PipelineExecutor:
             }
 
             # Reload question responses from previously answered questions.
-            question_responses: dict[str, str] = {
-                row["stage_id"]: row["answer"]
-                for row in conn.execute(
-                    "SELECT stage_id, answer FROM agent_questions "
-                    "WHERE task_id = ? AND status = 'answered'",
-                    (task_id,),
-                ).fetchall()
-                if row["answer"] is not None
-            }
+            # Multiple questions per stage are concatenated as Q&A pairs.
+            question_responses: dict[str, str] = {}
+            for row in conn.execute(
+                "SELECT stage_id, question, answer FROM agent_questions "
+                "WHERE task_id = ? AND status = 'answered' ORDER BY id",
+                (task_id,),
+            ).fetchall():
+                if row["answer"] is None:
+                    continue
+                qa_pair = (
+                    f"Q: {row['question']}\nA: {row['answer']}"
+                    if row["question"]
+                    else row["answer"]
+                )
+                existing = question_responses.get(row["stage_id"], "")
+                if existing:
+                    question_responses[row["stage_id"]] = f"{existing}\n\n{qa_pair}"
+                else:
+                    question_responses[row["stage_id"]] = qa_pair
 
             # Restore task to running state
             conn.execute(
@@ -2058,7 +2242,18 @@ class PipelineExecutor:
             self._heartbeat_loop(conn, task_id)
         )
 
-        engine = PegasusEngine(self.agent_runner, self.db_path)
+        # Collect AskUserQuestion tool calls during stage execution.
+        _collected_questions: list[ExtractedQuestion] = []
+
+        def _on_tool_use(msg: ToolUseMessage) -> None:
+            if msg.tool_name == "AskUserQuestion":
+                _collected_questions.extend(
+                    _extract_ask_user_questions(msg.tool_input)
+                )
+
+        engine = PegasusEngine(
+            self.agent_runner, self.db_path, on_tool_use=_on_tool_use,
+        )
         self._current_engine = engine
 
         try:
@@ -2178,13 +2373,29 @@ class PipelineExecutor:
                     else:
                         self._log(f"No changes to commit after stage '{stage.name}'")
 
+                # Post-stage agent questions
+                has_agent_questions = bool(_collected_questions)
+                if has_agent_questions:
+                    for eq in _collected_questions:
+                        self._insert_question(
+                            conn, task_id, stage.id, stage_index,
+                            eq.text, eq.meta,
+                        )
+                    _collected_questions.clear()
+
                 # Post-stage approval gate
-                if requires_approval:
+                if requires_approval or has_agent_questions:
                     self._mark_task_status(conn, task_id, "paused")
-                    self._send_notification(
-                        "Pegasus — Approval Required",
-                        f"Stage '{stage.name}' done. Approve to continue: {description}",
-                    )
+                    if has_agent_questions:
+                        self._send_notification(
+                            "Pegasus — Questions",
+                            f"Stage '{stage.name}' needs answers: {description}",
+                        )
+                    else:
+                        self._send_notification(
+                            "Pegasus — Approval Required",
+                            f"Stage '{stage.name}' done. Approve to continue: {description}",
+                        )
                     if self._on_approval_needed is not None:
                         approved = await self._on_approval_needed(task_id, stage.id)
                     else:
