@@ -37,6 +37,7 @@ from pegasus.models import (
     make_connection,
     resolve_auto_commit,
     resolve_stage_flags,
+    transition_merge_status,
     transition_task_state,
 )
 
@@ -1291,6 +1292,7 @@ class PipelineExecutor:
         description: str,
         worktree_path: str,
         branch: str,
+        base_branch: str | None = None,
     ) -> None:
         """Insert or update a task row in 'queued' state.
 
@@ -1301,11 +1303,12 @@ class PipelineExecutor:
             """
             INSERT OR REPLACE INTO tasks
                 (id, pipeline, description, status, worktree_path, branch,
-                 runner_pid, heartbeat_at)
+                 base_branch, runner_pid, heartbeat_at)
             VALUES
-                (?, ?, ?, 'queued', ?, ?, ?, CURRENT_TIMESTAMP)
+                (?, ?, ?, 'queued', ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
-            (task_id, pipeline_name, description, worktree_path, branch, os.getpid()),
+            (task_id, pipeline_name, description, worktree_path, branch,
+             base_branch, os.getpid()),
         )
         conn.commit()
 
@@ -1627,6 +1630,7 @@ class PipelineExecutor:
             setup_command=setup_command,
         )
         branch_name = f"pegasus/{task_id}-{self._worktree_manager._slug(description)}"
+        default_branch = self._worktree_manager.detect_default_branch(self.project_dir)
 
         # ------------------------------------------------------------------
         # 3. Insert task record
@@ -1640,6 +1644,7 @@ class PipelineExecutor:
                 description=description,
                 worktree_path=str(worktree_path),
                 branch=branch_name,
+                base_branch=default_branch,
             )
 
             # Record worktree in worktrees table
@@ -2165,3 +2170,346 @@ class PipelineExecutor:
             await asyncio.gather(heartbeat_task, return_exceptions=True)
             conn.close()
             self._current_engine = None
+
+
+# ---------------------------------------------------------------------------
+# MergeExecutor
+# ---------------------------------------------------------------------------
+
+
+class MergeExecutor:
+    """Orchestrates squash-merge of a task branch into the default branch.
+
+    Steps:
+    1. Verify main repo is clean
+    2. Read task data (branch, base_branch, worktree_path) from SQLite
+    3. git fetch origin
+    4. git checkout <default-branch>
+    5. git merge --ff-only origin/<default-branch>  (update local main)
+    6. git merge --squash <task-branch>
+    7. If conflicts: invoke Sonnet agent (up to 2 attempts)
+    8. git commit -m "feat(pegasus): <description> [task <id>]"
+    9. git tag pegasus/merged/<task-id>  (recovery tag)
+    10. WorktreeManager.cleanup_worktree(worktree_path, branch=branch)
+    11. Set merge_status='merged'
+
+    On failure at any step:
+    - git reset --hard HEAD  (abort squash-merge)
+    - git checkout <default-branch>  (ensure we're back on main)
+    - Set merge_status='conflict'
+    """
+
+    def __init__(
+        self,
+        db_path: str | os.PathLike[str],
+        agent_runner: AgentRunnerProtocol,
+        project_dir: str | os.PathLike[str],
+    ) -> None:
+        self.db_path = str(db_path)
+        self.agent_runner = agent_runner
+        self.project_dir = Path(project_dir)
+        self._worktree_manager = WorktreeManager()
+        self._log_file: Any | None = None
+
+    def _get_conn(self) -> sqlite3.Connection:
+        conn = make_connection(self.db_path, read_only=False)
+        init_db(conn)
+        return conn
+
+    def _open_log(self, task_id: str) -> Path:
+        """Open an append-only merge log file."""
+        log_dir = self.project_dir / ".pegasus" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"{task_id}.merge.log"
+        self._log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115
+        return log_path
+
+    def _log(self, line: str) -> None:
+        if self._log_file:
+            from datetime import datetime
+            ts = datetime.now().strftime("%H:%M:%S")
+            self._log_file.write(f"[{ts}] {line}\n")
+            self._log_file.flush()
+
+    def _close_log(self) -> None:
+        if self._log_file:
+            self._log_file.close()
+            self._log_file = None
+
+    def _run_git(
+        self,
+        args: list[str],
+        cwd: str | os.PathLike[str] | None = None,
+        check: bool = True,
+    ) -> subprocess.CompletedProcess[str]:
+        """Delegate to WorktreeManager._run_git."""
+        return WorktreeManager._run_git(
+            args, cwd=cwd or self.project_dir, check=check
+        )
+
+    def _attempt_squash_merge(self, branch: str) -> str:
+        """Run git merge --squash. Returns 'success', 'conflict', or 'empty'.
+
+        IMPORTANT: git merge --squash exits non-zero for BOTH conflicts and
+        other failures. Must parse stdout for 'CONFLICT' markers to distinguish.
+        Also: squash merge does NOT auto-commit — always follow with explicit
+        commit or explicit abort (git reset --hard HEAD, NOT git merge --abort).
+        """
+        result = self._run_git(["merge", "--squash", branch], check=False)
+        if result.returncode != 0:
+            if "CONFLICT" in result.stdout or "conflict" in result.stderr.lower():
+                return "conflict"
+            raise WorktreeError(f"squash merge failed: {result.stderr.strip()}")
+        # Check if there are actually changes to commit
+        status = self._run_git(["status", "--porcelain"], check=False)
+        if not status.stdout.strip():
+            return "empty"
+        return "success"
+
+    def _has_conflicts(self) -> bool:
+        """Check if there are unmerged paths after squash-merge attempt."""
+        result = self._run_git(
+            ["diff", "--name-only", "--diff-filter=U"], check=False
+        )
+        return bool(result.stdout.strip())
+
+    async def _resolve_conflicts(
+        self, task_id: str, description: str
+    ) -> bool:
+        """Invoke Sonnet agent to resolve merge conflicts. Up to 2 attempts."""
+        conflict_prompt = (
+            f"This git repository has merge conflicts after squash-merging "
+            f"a feature branch. The task was: {description}\n\n"
+            f"Resolve ALL merge conflicts in the working tree. "
+            f"After resolving, stage the fixed files with `git add`.\n\n"
+            f"Do NOT commit — just resolve conflicts and stage files."
+        )
+        for attempt in range(2):
+            self._log(f"Conflict resolution attempt {attempt + 1}/2")
+            engine = PegasusEngine(self.agent_runner, self.db_path)
+            success = await engine.run_stage(
+                task_id=task_id,
+                stage_id=f"merge-resolve-{attempt}",
+                stage_index=attempt,
+                prompt=conflict_prompt,
+                cwd=str(self.project_dir),
+                claude_flags={
+                    "model": "claude-sonnet-4-20250514",
+                    "permission_mode": "acceptEdits",
+                    "max_turns": 15,
+                },
+            )
+            if success and not self._has_conflicts():
+                self._log("Conflicts resolved successfully")
+                return True
+        self._log("Conflict resolution failed after 2 attempts")
+        return False
+
+    def _send_notification(self, title: str, message: str) -> None:
+        """Fire an OS-native desktop notification (best-effort)."""
+        try:
+            system = platform.system()
+            if system == "Darwin":
+                script = (
+                    f'display notification "{message}" with title "{title}"'
+                )
+                subprocess.run(
+                    ["osascript", "-e", script],
+                    capture_output=True,
+                    timeout=5,
+                )
+            elif system == "Linux":
+                subprocess.run(
+                    ["notify-send", title, message],
+                    capture_output=True,
+                    timeout=5,
+                )
+        except Exception:  # noqa: BLE001
+            logger.warning("desktop notification failed", exc_info=True)
+
+    async def merge_task(self, task_id: str) -> bool:
+        """Execute full merge flow. Returns True on success."""
+        log_path = self._open_log(task_id)
+        self._log(f"Starting merge for task {task_id}")
+        self._log(f"Log: {log_path}")
+
+        conn = self._get_conn()
+        try:
+            # 1. Read task data
+            row = conn.execute(
+                "SELECT branch, base_branch, worktree_path, description "
+                "FROM tasks WHERE id = ?",
+                (task_id,),
+            ).fetchone()
+            if row is None:
+                self._log(f"Task {task_id} not found")
+                return False
+
+            branch: str = row["branch"]
+            base_branch: str = row["base_branch"] or "main"
+            worktree_path: str | None = row["worktree_path"]
+            description: str = row["description"] or ""
+
+            self._log(f"Branch: {branch}")
+            self._log(f"Base branch: {base_branch}")
+
+            # 2. Verify main repo is clean
+            status_result = self._run_git(
+                ["status", "--porcelain"], check=False
+            )
+            if status_result.stdout.strip():
+                self._log("ERROR: Main repo working tree is dirty")
+                transition_merge_status(conn, task_id, "merging", "conflict")
+                self._send_notification(
+                    "Pegasus — Merge Failed",
+                    f"Main repo is dirty: {description}",
+                )
+                return False
+
+            # 3. Check for stale index.lock
+            lock_file = self.project_dir / ".git" / "index.lock"
+            if lock_file.exists():
+                self._log("ERROR: Stale .git/index.lock found")
+                transition_merge_status(conn, task_id, "merging", "conflict")
+                return False
+
+            # 4. Verify base_branch matches current default branch
+            detected = self._worktree_manager.detect_default_branch(
+                self.project_dir
+            )
+            if detected != base_branch:
+                self._log(
+                    f"ERROR: base_branch mismatch: task has '{base_branch}', "
+                    f"repo has '{detected}'"
+                )
+                transition_merge_status(conn, task_id, "merging", "conflict")
+                return False
+
+            # 5. git fetch origin
+            self._log("Fetching from origin...")
+            fetch_result = self._run_git(["fetch", "origin"], check=False)
+            if fetch_result.returncode != 0:
+                self._log(
+                    f"Warning: git fetch failed: {fetch_result.stderr.strip()}"
+                )
+                # Continue — merge can proceed with local state
+
+            # 6. git checkout <default-branch>
+            self._log(f"Checking out {base_branch}")
+            self._run_git(["checkout", base_branch])
+
+            # 7. git merge --ff-only origin/<default-branch>
+            ff_result = self._run_git(
+                ["merge", "--ff-only", f"origin/{base_branch}"], check=False
+            )
+            if ff_result.returncode != 0:
+                # May fail if no remote tracking or if diverged
+                if "diverged" in ff_result.stderr.lower():
+                    self._log(
+                        "ERROR: Local branch diverged from origin. "
+                        "Reconcile manually."
+                    )
+                    transition_merge_status(
+                        conn, task_id, "merging", "conflict"
+                    )
+                    self._send_notification(
+                        "Pegasus — Merge Failed",
+                        f"Branch diverged from origin: {description}",
+                    )
+                    return False
+                self._log(
+                    f"Warning: ff-only merge skipped: "
+                    f"{ff_result.stderr.strip()}"
+                )
+
+            # 8. git merge --squash <task-branch>
+            self._log(f"Squash-merging {branch}")
+            merge_result = self._attempt_squash_merge(branch)
+
+            if merge_result == "conflict":
+                self._log("Merge conflicts detected — invoking agent")
+                resolved = await self._resolve_conflicts(task_id, description)
+                if not resolved:
+                    self._log("Aborting merge — resetting to HEAD")
+                    self._run_git(["reset", "--hard", "HEAD"], check=False)
+                    self._run_git(["checkout", base_branch], check=False)
+                    transition_merge_status(
+                        conn, task_id, "merging", "conflict"
+                    )
+                    self._send_notification(
+                        "Pegasus — Merge Failed",
+                        f"Conflict resolution failed: {description}",
+                    )
+                    return False
+                merge_result = "success"
+
+            if merge_result == "empty":
+                self._log("No changes to merge (already up to date)")
+                transition_merge_status(conn, task_id, "merging", "merged")
+                self._send_notification(
+                    "Pegasus — Merge Complete",
+                    f"Already up to date: {description}",
+                )
+                return True
+
+            # 9. git commit
+            commit_msg = (
+                f"feat(pegasus): {description} [task {task_id}]"
+            )
+            self._log(f"Committing: {commit_msg}")
+            self._run_git(["commit", "-m", commit_msg])
+
+            # 10. git tag pegasus/merged/<task-id>
+            tag_name = f"pegasus/merged/{task_id}"
+            self._log(f"Creating recovery tag: {tag_name}")
+            self._run_git(
+                ["tag", tag_name, branch], check=False
+            )
+
+            # 11. Cleanup worktree + branch
+            if worktree_path and Path(worktree_path).exists():
+                self._log(f"Cleaning up worktree: {worktree_path}")
+                try:
+                    self._worktree_manager.cleanup_worktree(
+                        worktree_path,
+                        repo_dir=self.project_dir,
+                        branch=branch,
+                    )
+                except WorktreeError as exc:
+                    self._log(f"Warning: worktree cleanup failed: {exc}")
+
+            # Update worktrees table
+            conn.execute(
+                "DELETE FROM worktrees WHERE task_id = ?", (task_id,)
+            )
+            conn.commit()
+
+            # 12. Set merge_status='merged'
+            transition_merge_status(conn, task_id, "merging", "merged")
+            self._log("Merge completed successfully")
+            self._send_notification(
+                "Pegasus — Merge Complete",
+                f"Merged: {description}",
+            )
+            return True
+
+        except Exception as exc:
+            logger.exception("task=%s merge failed", task_id)
+            self._log(f"ERROR: {exc}")
+            # Abort: reset to clean state
+            try:
+                self._run_git(["reset", "--hard", "HEAD"], check=False)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                transition_merge_status(conn, task_id, "merging", "conflict")
+            except Exception:  # noqa: BLE001
+                pass
+            self._send_notification(
+                "Pegasus — Merge Failed",
+                f"Unexpected error: {description}",
+            )
+            return False
+        finally:
+            conn.close()
+            self._close_log()

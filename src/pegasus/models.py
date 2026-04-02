@@ -799,6 +799,57 @@ def init_db(conn: sqlite3.Connection) -> None:
 # ---------------------------------------------------------------------------
 
 
+def transition_merge_status(
+    conn: sqlite3.Connection,
+    task_id: str,
+    from_status: str | None,
+    to_status: str,
+) -> bool:
+    """Atomically transition ``merge_status`` for a task.
+
+    Uses ``BEGIN IMMEDIATE`` to acquire the write lock upfront.
+    ``from_status=None`` matches a ``NULL`` database value.
+
+    Args:
+        conn: An open writable ``sqlite3.Connection``.
+        task_id: The task ``id`` to update.
+        from_status: Expected current ``merge_status``; ``None`` matches SQL NULL.
+        to_status: The target ``merge_status`` to set.
+
+    Returns:
+        ``True`` if the transition succeeded, ``False`` if the task was not
+        found or its ``merge_status`` did not match *from_status*.
+    """
+    conn.execute("BEGIN IMMEDIATE")
+    row = conn.execute(
+        "SELECT merge_status FROM tasks WHERE id = ?", (task_id,)
+    ).fetchone()
+    if row is None:
+        conn.rollback()
+        return False
+    current = row["merge_status"]
+    if current != from_status:
+        conn.rollback()
+        return False
+    conn.execute(
+        "UPDATE tasks SET merge_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (to_status, task_id),
+    )
+    conn.commit()
+    return True
+
+
+def is_merge_in_progress(conn: sqlite3.Connection) -> str | None:
+    """Return the task_id of any task with ``merge_status='merging'``, or ``None``.
+
+    Used to enforce the single-merge lock: only one merge may run at a time.
+    """
+    row = conn.execute(
+        "SELECT id FROM tasks WHERE merge_status = 'merging' LIMIT 1"
+    ).fetchone()
+    return row["id"] if row else None
+
+
 def transition_task_state(
     conn: sqlite3.Connection,
     task_id: str,

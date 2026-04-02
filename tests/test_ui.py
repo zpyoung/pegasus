@@ -406,7 +406,9 @@ class TestStatusCommand:
         assert result.exit_code == 0, result.output
         assert "abc123" in result.output
         assert "bug-fix" in result.output
-        assert "Fix login" in result.output
+        # Rich table may wrap "Fix login" across two lines with the Merge column
+        assert "Fix" in result.output
+        assert "login" in result.output
 
     def test_status_shows_task_status(self, tmp_path: Path) -> None:
         project = _make_project(tmp_path)

@@ -33,7 +33,9 @@ from rich.text import Text
 
 from pegasus.models import (
     init_db,
+    is_merge_in_progress,
     make_connection,
+    transition_merge_status,
     validate_all_pipelines,
     validate_pipeline,
 )
@@ -246,6 +248,10 @@ def _status_icon(status: str) -> Text:
         "paused": "magenta",
         "completed": "green",
         "failed": "red",
+        "merged": "green",
+        "merging": "cyan",
+        "conflict": "red",
+        "unmerged": "dim",
     }
     color = colors.get(status, "white")
     return Text(status, style=f"bold {color}")
@@ -602,7 +608,8 @@ def status(task_id: str | None, project_dir: Path) -> None:
 def _status_all(conn: sqlite3.Connection) -> None:
     """List all tasks as a Rich table."""
     rows = conn.execute(
-        """SELECT id, pipeline, description, status, created_at, total_cost
+        """SELECT id, pipeline, description, status, merge_status,
+                  created_at, total_cost
            FROM tasks
            ORDER BY created_at DESC"""
     ).fetchall()
@@ -616,17 +623,21 @@ def _status_all(conn: sqlite3.Connection) -> None:
     table.add_column("Pipeline", style="magenta")
     table.add_column("Description")
     table.add_column("Status", no_wrap=True)
+    table.add_column("Merge", no_wrap=True)
     table.add_column("Created", no_wrap=True)
     table.add_column("Cost (USD)", justify="right")
 
     for row in rows:
         desc = (row["description"] or "")[:60]
         cost = f"${row['total_cost']:.4f}" if row["total_cost"] else "$0.0000"
+        merge = row["merge_status"] or ""
+        merge_cell = _status_icon(merge) if merge else Text("")
         table.add_row(
             row["id"],
             row["pipeline"],
             desc,
             _status_icon(row["status"]),
+            merge_cell,
             row["created_at"] or "",
             cost,
         )
@@ -978,6 +989,123 @@ def clean(task_id: str | None, project_dir: Path, dry_run: bool, force: bool) ->
 
 
 # ---------------------------------------------------------------------------
+# pegasus merge
+# ---------------------------------------------------------------------------
+
+
+@cli.command("merge")
+@click.argument("task_id")
+@click.option(
+    "--project-dir",
+    default=".",
+    show_default=True,
+    help="Project root directory.",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+)
+def merge(task_id: str, project_dir: Path) -> None:
+    """Merge a completed task's worktree branch into the default branch."""
+    project_dir = project_dir.resolve()
+    db_path = _get_db_path(project_dir)
+
+    if not db_path.exists():
+        console.print("[red]Error:[/red] No Pegasus database found. Run [bold]pegasus init[/bold] first.")
+        sys.exit(1)
+
+    conn = make_connection(db_path)
+    try:
+        # 1. Validate task eligibility
+        row = conn.execute(
+            "SELECT id, status, merge_status, worktree_path, branch, description "
+            "FROM tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+
+        if row is None:
+            console.print(f"[red]Error:[/red] Task '{task_id}' not found.")
+            sys.exit(1)
+
+        if row["status"] != "completed":
+            console.print(
+                f"[red]Error:[/red] Task '{task_id}' is in state '{row['status']}'. "
+                "Only completed tasks can be merged."
+            )
+            sys.exit(1)
+
+        merge_status = row["merge_status"]
+        if merge_status == "merging":
+            console.print(f"[red]Error:[/red] Task '{task_id}' is already being merged.")
+            sys.exit(1)
+        if merge_status == "merged":
+            console.print(f"[red]Error:[/red] Task '{task_id}' has already been merged.")
+            sys.exit(1)
+
+        if not row["worktree_path"] or not row["branch"]:
+            console.print(f"[red]Error:[/red] Task '{task_id}' has no worktree/branch info.")
+            sys.exit(1)
+
+        # 2. Check single-merge lock
+        merging_id = is_merge_in_progress(conn)
+        if merging_id:
+            console.print(
+                f"[red]Error:[/red] Another merge is in progress (task {merging_id}). "
+                "Wait for it to complete."
+            )
+            sys.exit(1)
+
+        # 3. Check main repo is clean
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
+                cwd=str(project_dir),
+                timeout=10,
+            )
+            if result.stdout.strip():
+                console.print(
+                    "[red]Error:[/red] Main repo working tree is dirty. "
+                    "Commit or stash your changes first."
+                )
+                sys.exit(1)
+        except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
+            console.print(f"[red]Error:[/red] Could not check git status: {exc}")
+            sys.exit(1)
+
+        # 4. Atomically set merge_status='merging'
+        if not transition_merge_status(conn, task_id, merge_status, "merging"):
+            console.print("[red]Error:[/red] Failed to acquire merge lock (status changed concurrently).")
+            sys.exit(1)
+
+    finally:
+        conn.close()
+
+    # 5. Spawn merge subprocess
+    console.print(f"[green]Merging task[/green] [bold]{task_id}[/bold]")
+    console.print(f"  Description: {row['description'] or '(none)'}")
+    console.print(f"  Branch:      {row['branch']}")
+
+    runner_cmd = [sys.executable, "-m", "pegasus._run_task", task_id, "--merge"]
+    env = dict(os.environ)
+    env["PEGASUS_PROJECT_DIR"] = str(project_dir)
+
+    try:
+        proc = subprocess.Popen(
+            runner_cmd,
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        console.print(f"  Merge PID:   {proc.pid}")
+    except Exception as exc:
+        console.print(f"[red]Error spawning merger:[/red] {exc}")
+        sys.exit(1)
+
+    console.print()
+    console.print(f"Monitor progress: [bold]pegasus status {task_id}[/bold]")
+
+
+# ---------------------------------------------------------------------------
 # TUI — Textual dashboard
 # ---------------------------------------------------------------------------
 
@@ -1047,6 +1175,7 @@ def _get_textual_app() -> type:
             stages: list,
             activity: str,
             pending_question: str | None = None,
+            merge_status: str | None = None,
         ) -> None:
             """Refresh the card's displayed content."""
             status_colors: dict[str, str] = {
@@ -1056,9 +1185,19 @@ def _get_textual_app() -> type:
                 "completed": "green",
                 "failed": "red",
             }
+            merge_colors: dict[str, str] = {
+                "merged": "green",
+                "merging": "cyan",
+                "conflict": "red",
+                "unmerged": "dim",
+            }
             color = status_colors.get(status, "white")
+            merge_badge = ""
+            if merge_status:
+                mc = merge_colors.get(merge_status, "white")
+                merge_badge = f" [{mc}]{merge_status}[/{mc}]"
             header_text = (
-                f"[bold {color}]{task_id}[/bold {color}] [{color}]{status}[/{color}]\n"
+                f"[bold {color}]{task_id}[/bold {color}] [{color}]{status}[/{color}]{merge_badge}\n"
                 f"[dim]{pipeline}[/dim]\n"
                 f"{description[:40]}"
             )
@@ -1291,6 +1430,7 @@ def _get_textual_app() -> type:
             Binding("tab", "focus_next_task", "Next task", show=True, priority=True),
             Binding("shift+tab", "focus_prev_task", "Prev task", show=False, priority=True),
             Binding("n", "create_task", "New task", show=True),
+            Binding("m", "merge_task", "Merge", show=True),
             Binding("a", "approve_task", "Approve", show=True),
             Binding("r", "reject_task", "Reject", show=True),
             Binding("l", "toggle_logs", "Logs", show=True),
@@ -1341,7 +1481,7 @@ def _get_textual_app() -> type:
                 return
             try:
                 tasks = self._conn.execute(
-                    """SELECT id, pipeline, description, status
+                    """SELECT id, pipeline, description, status, merge_status
                        FROM tasks
                        ORDER BY created_at DESC"""
                 ).fetchall()
@@ -1378,6 +1518,7 @@ def _get_textual_app() -> type:
                             "pipeline": t["pipeline"],
                             "description": t["description"] or "",
                             "status": t["status"],
+                            "merge_status": t["merge_status"],
                             "stages": list(stages),
                             "activity": activity,
                             "pending_question": pending_question,
@@ -1416,6 +1557,7 @@ def _get_textual_app() -> type:
                     stages=task["stages"],
                     activity=task["activity"],
                     pending_question=task.get("pending_question"),
+                    merge_status=task.get("merge_status"),
                 )
 
             # Remove extra cards
@@ -1473,6 +1615,83 @@ def _get_textual_app() -> type:
             cards[self._focused_idx].focus()
             if self._logs_visible:
                 self._refresh_logs()
+
+        def action_merge_task(self) -> None:
+            """M -- merge the focused completed task's branch into default branch."""
+            if not self._task_data:
+                return
+            idx = min(self._focused_idx, len(self._task_data) - 1)
+            task = self._task_data[idx]
+
+            # Validate eligibility
+            if task["status"] != "completed":
+                self.notify(
+                    f"Task {task['id']} is not completed (status: {task['status']})",
+                    timeout=3,
+                )
+                return
+
+            ms = task.get("merge_status")
+            if ms == "merging":
+                self.notify(f"Task {task['id']} is already being merged", timeout=3)
+                return
+            if ms == "merged":
+                self.notify(f"Task {task['id']} has already been merged", timeout=3)
+                return
+
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    # Single-merge lock
+                    merging_id = is_merge_in_progress(conn)
+                    if merging_id:
+                        self.notify(
+                            f"Another merge is in progress (task {merging_id})",
+                            severity="error",
+                            timeout=4,
+                        )
+                        return
+
+                    # Check main repo is clean
+                    result = subprocess.run(
+                        ["git", "status", "--porcelain"],
+                        capture_output=True,
+                        text=True,
+                        cwd=str(self._db_path.parent.parent),
+                        timeout=10,
+                    )
+                    if result.stdout.strip():
+                        self.notify(
+                            "Main repo working tree is dirty",
+                            severity="error",
+                            timeout=4,
+                        )
+                        return
+
+                    # Set merge_status='merging'
+                    if not transition_merge_status(conn, task["id"], ms, "merging"):
+                        self.notify("Failed to acquire merge lock", severity="error", timeout=4)
+                        return
+                finally:
+                    conn.close()
+
+                # Spawn merge subprocess
+                project_dir = self._db_path.parent.parent
+                runner_cmd = [sys.executable, "-m", "pegasus._run_task", task["id"], "--merge"]
+                env = dict(os.environ)
+                env["PEGASUS_PROJECT_DIR"] = str(project_dir)
+
+                proc = subprocess.Popen(
+                    runner_cmd,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                self.notify(f"Merge started for {task['id']} (PID: {proc.pid})", timeout=3)
+
+            except Exception as exc:
+                self.notify(f"Merge failed: {exc}", severity="error", timeout=4)
 
         def action_approve_task(self) -> None:
             """A -- approve the focused paused task.

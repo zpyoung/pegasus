@@ -28,6 +28,7 @@ def main() -> None:
 
     task_id = args[0]
     resume_mode = "--resume" in args
+    merge_mode = "--merge" in args
 
     project_dir_str = os.environ.get("PEGASUS_PROJECT_DIR")
     if not project_dir_str:
@@ -56,7 +57,16 @@ def main() -> None:
         project_dir=project_dir,
     )
 
-    if resume_mode:
+    if merge_mode:
+        from pegasus.runner import MergeExecutor  # noqa: PLC0415
+
+        merge_executor = MergeExecutor(
+            db_path=db_path,
+            agent_runner=agent_runner,
+            project_dir=project_dir,
+        )
+        asyncio.run(merge_executor.merge_task(task_id))
+    elif resume_mode:
         asyncio.run(executor.resume_task(task_id))
     else:
         # Read task data from SQLite (ui.py already inserted the row)
