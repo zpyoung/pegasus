@@ -17,6 +17,7 @@ subprocess.
 
 from __future__ import annotations
 
+import importlib.resources
 import os
 import secrets
 import sqlite3
@@ -142,99 +143,17 @@ def _detect_default_branch(project_dir: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Starter pipeline templates
+# Starter pipeline templates (loaded from package data)
 # ---------------------------------------------------------------------------
 
-_BUG_FIX_TEMPLATE = """\
-name: Bug Fix
-description: Analyze, patch, and verify a reported bug
 
-execution:
-  mode: session
-
-defaults:
-  model: claude-sonnet-4-20250514
-  max_turns: 10
-  permission_mode: plan
-
-stages:
-  - id: analyze
-    name: Root Cause Analysis
-    prompt: |
-      Analyze this bug in a {{project.language}} project:
-      {{task.description}}
-      Identify the root cause and list all affected files.
-    claude_flags:
-      model: claude-sonnet-4-20250514
-      permission_mode: plan
-      max_turns: 5
-
-  - id: implement
-    name: Apply Fix
-    prompt: |
-      Implement the fix for the bug you analyzed.
-      Be minimal and targeted — only change what is necessary.
-    claude_flags:
-      model: claude-sonnet-4-20250514
-      permission_mode: acceptEdits
-      max_turns: 10
-    requires_approval: true
-
-  - id: verify
-    name: Verify Fix
-    prompt: |
-      Verify the fix is correct by reviewing the changes.
-      Check for any regressions or unintended side effects.
-    claude_flags:
-      permission_mode: plan
-      max_turns: 5
-"""
-
-_FEATURE_TEMPLATE = """\
-name: Feature
-description: Plan, implement, and test a new feature
-
-execution:
-  mode: session
-
-defaults:
-  model: claude-sonnet-4-20250514
-  max_turns: 10
-  permission_mode: plan
-
-stages:
-  - id: plan
-    name: Feature Planning
-    prompt: |
-      Plan the implementation for this feature in a {{project.language}} project:
-      {{task.description}}
-      List all files to create/modify and the exact changes needed.
-    claude_flags:
-      model: claude-sonnet-4-20250514
-      permission_mode: plan
-      max_turns: 5
-    requires_approval: true
-
-  - id: implement
-    name: Implement Feature
-    prompt: |
-      Implement the feature according to the approved plan.
-      Follow the existing code style and patterns.
-    claude_flags:
-      model: claude-sonnet-4-20250514
-      permission_mode: acceptEdits
-      max_turns: 15
-    requires_approval: true
-
-  - id: review
-    name: Code Review
-    prompt: |
-      Review the implemented code for correctness, style, and potential issues.
-      Suggest any improvements.
-    claude_flags:
-      permission_mode: plan
-      max_turns: 5
-"""
+def _load_template(filename: str) -> str:
+    """Load a starter pipeline template from package data."""
+    return (
+        importlib.resources.files("pegasus")
+        .joinpath("templates", filename)
+        .read_text(encoding="utf-8")
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -439,10 +358,10 @@ def init(
         console.print(f"[yellow]Exists[/yellow]  {config_path.relative_to(project_dir)}")
 
     # --- Write starter pipeline templates ---
-    for name, content in [("bug-fix.yaml", _BUG_FIX_TEMPLATE), ("feature.yaml", _FEATURE_TEMPLATE)]:
+    for name in ["bug-fix.yaml", "feature.yaml"]:
         pipeline_path = pipelines_dir / name
         if not pipeline_path.exists():
-            pipeline_path.write_text(content, encoding="utf-8")
+            pipeline_path.write_text(_load_template(name), encoding="utf-8")
             console.print(f"[green]Created[/green] {pipeline_path.relative_to(project_dir)}")
         else:
             console.print(f"[yellow]Exists[/yellow]  {pipeline_path.relative_to(project_dir)}")

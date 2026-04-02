@@ -40,6 +40,7 @@ from pegasus.models import (
     transition_merge_status,
     transition_task_state,
 )
+from pegasus.prompts import MERGE_CONFLICT_RESOLUTION
 
 logger = logging.getLogger(__name__)
 
@@ -2340,27 +2341,8 @@ class MergeExecutor:
         """Invoke agent to resolve merge conflicts. Up to 2 attempts."""
         context = self._build_conflict_context(branch)
 
-        conflict_prompt = (
-            f"This git repository has merge conflicts after squash-merging "
-            f"a feature branch into the target branch.\n\n"
-            f"Task description: {description}\n"
-            f"Feature branch: {branch}\n\n"
-            f"{context}\n\n"
-            f"## Instructions\n\n"
-            f"1. Run `git diff --name-only --diff-filter=U` to list all "
-            f"conflicting files.\n"
-            f"2. For each conflicting file, read the file and find all "
-            f"conflict markers (<<<<<<< / ======= / >>>>>>>).\n"
-            f"3. Resolve each conflict by keeping changes from BOTH sides "
-            f"where they are additive (new functions, new fields, new imports). "
-            f"When both sides modified the same lines, integrate the changes "
-            f"so both features work together.\n"
-            f"4. After resolving all conflicts in a file, run "
-            f"`git add <file>` to stage it.\n"
-            f"5. After all files are resolved, verify there are no remaining "
-            f"conflict markers by searching for '<<<<<<' across the codebase.\n"
-            f"6. Run any available test commands to verify the merge is correct.\n\n"
-            f"Do NOT commit — just resolve conflicts and stage files."
+        conflict_prompt = MERGE_CONFLICT_RESOLUTION.format(
+            description=description, branch=branch, context=context,
         )
         for attempt in range(2):
             self._log(f"Conflict resolution attempt {attempt + 1}/2")
