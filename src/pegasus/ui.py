@@ -1588,6 +1588,19 @@ def _get_textual_app() -> type:
             log_panel = self.query_one("#log-panel", LogPanel)
             log_panel.show_logs(task_id, log_dir)
 
+        def on_focus(self, event: events.Focus) -> None:
+            """Sync _focused_idx when any TaskCard gains focus (click, tab, etc.)."""
+            widget = event.widget
+            if not isinstance(widget, TaskCard):
+                return
+            cards = list(self.query(TaskCard))
+            try:
+                self._focused_idx = cards.index(widget)
+                if self._logs_visible:
+                    self._refresh_logs()
+            except ValueError:
+                pass
+
         # ------------------------------------------------------------------
         # Key-action handlers
         # ------------------------------------------------------------------

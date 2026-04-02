@@ -1157,6 +1157,80 @@ class TestPegasusDashboardApp:
         assert row["status"] == "running"
 
     @pytest.mark.asyncio
+    async def test_approve_targets_selected_task_not_first(self, tmp_path: Path) -> None:
+        """Pressing A after tabbing to the second task should approve only that task."""
+        _, db_path = _make_tui_project(tmp_path)
+        # Insert two tasks; ORDER BY created_at DESC puts task-first at index 0.
+        conn = make_connection(db_path)
+        conn.execute(
+            "INSERT INTO tasks (id, pipeline, description, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("task-first", "bug-fix", "First", "running", "2026-01-02T00:00:00"),
+        )
+        conn.execute(
+            "INSERT INTO tasks (id, pipeline, description, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("task-second", "bug-fix", "Second", "paused", "2026-01-01T00:00:00"),
+        )
+        conn.commit()
+        conn.close()
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            # Tab once to move focus from task-first (idx 0) to task-second (idx 1)
+            await pilot.press("tab")
+            await pilot.pause(0.05)
+            await pilot.press("a")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        first = conn.execute("SELECT status FROM tasks WHERE id = 'task-first'").fetchone()
+        second = conn.execute("SELECT status FROM tasks WHERE id = 'task-second'").fetchone()
+        conn.close()
+        assert first["status"] == "running", "First task should be unchanged"
+        assert second["status"] == "queued", "Second (focused) task should be approved"
+
+    @pytest.mark.asyncio
+    async def test_reject_targets_selected_task_not_first(self, tmp_path: Path) -> None:
+        """Pressing R after tabbing to the second task should reject only that task."""
+        _, db_path = _make_tui_project(tmp_path)
+        conn = make_connection(db_path)
+        conn.execute(
+            "INSERT INTO tasks (id, pipeline, description, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("task-first", "bug-fix", "First", "running", "2026-01-02T00:00:00"),
+        )
+        conn.execute(
+            "INSERT INTO tasks (id, pipeline, description, status, created_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            ("task-second", "bug-fix", "Second", "paused", "2026-01-01T00:00:00"),
+        )
+        conn.commit()
+        conn.close()
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("tab")
+            await pilot.pause(0.05)
+            await pilot.press("r")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        first = conn.execute("SELECT status FROM tasks WHERE id = 'task-first'").fetchone()
+        second = conn.execute("SELECT status FROM tasks WHERE id = 'task-second'").fetchone()
+        conn.close()
+        assert first["status"] == "running", "First task should be unchanged"
+        assert second["status"] == "failed", "Second (focused) task should be rejected"
+
+    @pytest.mark.asyncio
     async def test_log_panel_reads_log_file(self, tmp_path: Path) -> None:
         """LogPanel.show_logs should read lines from the task's .log file."""
         _, db_path = _make_tui_project(tmp_path)
