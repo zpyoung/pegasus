@@ -940,7 +940,8 @@ def clean(task_id: str | None, project_dir: Path, dry_run: bool, force: bool) ->
                     except OSError:
                         pass
 
-            # Delete DB rows in FK-safe order: worktrees -> stage_runs -> tasks
+            # Delete DB rows in FK-safe order: agent_questions -> worktrees -> stage_runs -> tasks
+            conn.execute("DELETE FROM agent_questions WHERE task_id = ?", (tid,))
             conn.execute("DELETE FROM worktrees WHERE task_id = ?", (tid,))
             conn.execute("DELETE FROM stage_runs WHERE task_id = ?", (tid,))
             conn.execute("DELETE FROM tasks WHERE id = ?", (tid,))
@@ -1651,6 +1652,7 @@ def _get_textual_app() -> type:
             Binding("a", "approve_task", "Approve", show=True),
             Binding("r", "reject_task", "Reject", show=True),
             Binding("c", "clean_task", "Clean", show=True),
+            Binding("R", "restart_task", "Restart", show=True),
             Binding("l", "toggle_logs", "Logs", show=True),
             Binding("escape", "dismiss_modal", "Close", show=False),
             Binding("q", "quit_app", "Quit", show=True),
@@ -1715,7 +1717,7 @@ def _get_textual_app() -> type:
                 return
             # Skip DOM updates when a modal screen is active — the dashboard
             # widgets aren't in the modal's DOM, so queries would fail.
-            if isinstance(self.screen, ModalScreen):
+            if isinstance(self.screen, ModalScreen) or self._create_visible:
                 return
             try:
                 tasks = self._conn.execute(
@@ -2156,6 +2158,47 @@ def _get_textual_app() -> type:
             except Exception as exc:
                 self.notify(f"Reject failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
+        def action_restart_task(self) -> None:
+            """Shift+R -- restart the focused completed/failed task from scratch."""
+            task = self._focused_task()
+            if task is None:
+                return
+            if task["status"] not in ("completed", "failed"):
+                self.notify(
+                    f"Task {task['id']} cannot be restarted (status: {task['status']})", timeout=3
+                )
+                return
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    # Clear old stage runs, questions, and reset task to queued
+                    conn.execute("DELETE FROM agent_questions WHERE task_id = ?", (task["id"],))
+                    conn.execute("DELETE FROM stage_runs WHERE task_id = ?", (task["id"],))
+                    conn.execute(
+                        "UPDATE tasks SET status = 'queued', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                        (task["id"],),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                # Spawn subprocess to re-run the pipeline from scratch
+                project_dir = self._db_path.parent.parent
+                runner_cmd = [sys.executable, "-m", "pegasus._run_task", task["id"]]
+                env = dict(os.environ)
+                env["PEGASUS_PROJECT_DIR"] = str(project_dir)
+
+                proc = subprocess.Popen(
+                    runner_cmd,
+                    env=env,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                self.notify(f"Restarted task {task['id']} (PID: {proc.pid})", timeout=3)
+            except Exception as exc:
+                self.notify(f"Restart failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
+
         def action_clean_task(self) -> None:
             """C -- remove artifacts for the focused completed/failed task."""
             task = self._focused_task()
@@ -2202,7 +2245,8 @@ def _get_textual_app() -> type:
                             except OSError:
                                 pass
 
-                    # Delete DB rows in FK-safe order: worktrees -> stage_runs -> tasks
+                    # Delete DB rows in FK-safe order: agent_questions -> worktrees -> stage_runs -> tasks
+                    conn.execute("DELETE FROM agent_questions WHERE task_id = ?", (task["id"],))
                     conn.execute("DELETE FROM worktrees WHERE task_id = ?", (task["id"],))
                     conn.execute("DELETE FROM stage_runs WHERE task_id = ?", (task["id"],))
                     conn.execute("DELETE FROM tasks WHERE id = ?", (task["id"],))
