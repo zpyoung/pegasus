@@ -1153,10 +1153,11 @@ def _get_textual_app() -> type:
 
     from textual.app import App, ComposeResult
     from textual.binding import Binding
-    from textual.containers import Horizontal, Vertical
+    from textual.containers import Horizontal, Vertical, VerticalScroll
     from textual.widget import Widget
     from textual.widgets import Footer, Header, Input, Label, Static, Button, Select, TextArea
     from textual import events
+    from rich.text import Text as _RichText
 
     class TaskCard(Widget):
         """Widget showing one task: header, stage list, current activity."""
@@ -1418,6 +1419,107 @@ def _get_textual_app() -> type:
             # Create task (delegate to app)
             self.app._create_task_impl(pipeline, description)
 
+    class TaskDetailView(Widget):
+        """Full-screen detail panel for a single task.
+
+        Shows task metadata, all stage runs with timing/cost/error, and the
+        complete (scrollable) task log.  Hidden by default; shown by adding
+        the ``visible-detail`` CSS class.
+        """
+
+        DEFAULT_CSS = """
+        TaskDetailView {
+            height: 1fr;
+            display: none;
+        }
+        TaskDetailView.visible-detail {
+            display: block;
+        }
+        #detail-header {
+            height: auto;
+            padding: 1;
+            background: $surface;
+            border-bottom: solid $primary;
+        }
+        #detail-stages-scroll {
+            height: auto;
+            max-height: 12;
+            border-bottom: solid $surface;
+        }
+        #detail-stages {
+            height: auto;
+            padding: 0 1;
+        }
+        #detail-log-scroll {
+            height: 1fr;
+        }
+        #detail-log {
+            height: auto;
+            padding: 0 1;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            yield Static("", id="detail-header")
+            with VerticalScroll(id="detail-stages-scroll"):
+                yield Static("", id="detail-stages")
+            with VerticalScroll(id="detail-log-scroll"):
+                yield Static("", id="detail-log")
+
+        def update_header_stages(self, task_row: Any, stage_rows: list) -> None:
+            """Redraw task header and stage table from fresh SQLite rows."""
+            status_colors: dict[str, str] = {
+                "queued": "yellow",
+                "running": "cyan",
+                "paused": "magenta",
+                "completed": "green",
+                "failed": "red",
+            }
+            color = status_colors.get(task_row["status"], "white")
+            cost_str = (
+                f"${task_row['total_cost']:.4f}" if task_row["total_cost"] else "$0.0000"
+            )
+            header = (
+                f"[bold {color}]{task_row['id']}[/bold {color}]  "
+                f"[{color}]{task_row['status']}[/{color}]\n"
+                f"[bold]Pipeline:[/bold]  {task_row['pipeline']}\n"
+                f"[bold]Task:[/bold]      {task_row['description'] or '(no description)'}\n"
+                f"[bold]Cost:[/bold]      {cost_str}   "
+                f"[dim]created {task_row['created_at'] or ''}[/dim]"
+            )
+            self.query_one("#detail-header", Static).update(header)
+
+            stage_icons: dict[str, str] = {
+                "completed": "[bold green]✔[/bold green]",
+                "running": "[bold cyan]⟳[/bold cyan]",
+                "failed": "[bold red]✘[/bold red]",
+                "pending": "[dim]·[/dim]",
+                "skipped": "[dim]⊘[/dim]",
+            }
+            lines: list[str] = []
+            for s in stage_rows:
+                icon = stage_icons.get(s["status"], "[dim]?[/dim]")
+                timing = ""
+                if s["started_at"] and s["finished_at"]:
+                    timing = f"  [dim]{s['started_at']} → {s['finished_at']}[/dim]"
+                elif s["started_at"]:
+                    timing = f"  [dim]started {s['started_at']}[/dim]"
+                cost_s = f"  [dim]${s['cost']:.4f}[/dim]" if s["cost"] else ""
+                error_s = (
+                    f"\n    [bold red]{s['error']}[/bold red]" if s["error"] else ""
+                )
+                lines.append(f"  {icon} {s['stage_id']}{timing}{cost_s}{error_s}")
+            stages_text = "\n".join(lines) if lines else "[dim]No stages yet.[/dim]"
+            self.query_one("#detail-stages", Static).update(stages_text)
+
+        def update_log(self, log_content: str, scroll_bottom: bool = False) -> None:
+            """Replace the log panel content.  Uses rich.text.Text to avoid
+            treating log timestamps like ``[2024-01-01]`` as Rich markup."""
+            renderable = _RichText(log_content) if log_content else "[dim](no log file yet)[/dim]"
+            self.query_one("#detail-log", Static).update(renderable)
+            if scroll_bottom:
+                self.query_one("#detail-log-scroll", VerticalScroll).scroll_end(animate=False)
+
     class PegasusDashboard(App):
         """Textual TUI dashboard for Pegasus task monitoring.
 
@@ -1438,10 +1540,17 @@ def _get_textual_app() -> type:
         #log-panel {
             dock: bottom;
         }
+        PegasusDashboard.detail-mode #task-area {
+            display: none;
+        }
+        PegasusDashboard.detail-mode #log-panel {
+            display: none;
+        }
         """
 
         BINDINGS = [
             Binding("d", "toggle_view", "Dashboard", show=True),
+            Binding("enter", "open_detail", "Detail", show=True),
             Binding("tab", "focus_next_task", "Next task", show=True, priority=True),
             Binding("shift+tab", "focus_prev_task", "Prev task", show=False, priority=True),
             Binding("n", "create_task", "New task", show=True),
@@ -1460,6 +1569,9 @@ def _get_textual_app() -> type:
         _create_visible: bool = False
         _answering_question_id: int | None = None
         _answering_task_id: str | None = None
+        _detail_mode: bool = False
+        _detail_task_id: str | None = None
+        _detail_log_len: int = 0
 
         def __init__(self, db_path: Path, **kwargs: object) -> None:
             super().__init__(**kwargs)
@@ -1494,6 +1606,7 @@ def _get_textual_app() -> type:
         def compose(self) -> ComposeResult:
             yield Header()
             yield Horizontal(id="task-area")
+            yield TaskDetailView(id="detail-view")
             yield LogPanel(id="log-panel")
             yield QuestionBar(id="question-bar")
             yield TaskCreateModal(id="create-modal")
@@ -1550,9 +1663,12 @@ def _get_textual_app() -> type:
                         }
                     )
                 self._task_data = result
-                self._refresh_cards()
-                if self._logs_visible:
-                    self._refresh_logs()
+                if self._detail_mode:
+                    self._refresh_detail()
+                else:
+                    self._refresh_cards()
+                    if self._logs_visible:
+                        self._refresh_logs()
             except Exception as exc:
                 if not getattr(self, "_poll_error_shown", False):
                     self._poll_error_shown = True
@@ -1637,8 +1753,25 @@ def _get_textual_app() -> type:
         # ------------------------------------------------------------------
 
         def action_toggle_view(self) -> None:
-            """D -- toggle between dashboard and focus view (focus deferred to v0.2)."""
-            self.notify("Dashboard view active (focus view: v0.2)", timeout=2)
+            """D -- return to dashboard from detail view, or hint about Enter key."""
+            if self._detail_mode:
+                self._close_detail()
+            else:
+                self.notify("Press Enter on a task card to open the detail view.", timeout=2)
+
+        def action_open_detail(self) -> None:
+            """Enter -- open the full detail view for the currently focused task."""
+            if self._detail_mode or self._create_visible or not self._task_data:
+                return
+            idx = min(self._focused_idx, len(self._task_data) - 1)
+            task = self._task_data[idx]
+            self._detail_task_id = task["id"]
+            self._detail_log_len = 0
+            self._detail_mode = True
+            self.add_class("detail-mode")
+            detail = self.query_one("#detail-view", TaskDetailView)
+            detail.add_class("visible-detail")
+            self._refresh_detail()
 
         def action_focus_next_task(self) -> None:
             """Tab -- cycle focus forward through task cards."""
@@ -1909,7 +2042,9 @@ def _get_textual_app() -> type:
                 self.notify(f"Clean failed: {exc}", severity="error", timeout=4)
 
         def action_toggle_logs(self) -> None:
-            """L -- show/hide the log panel."""
+            """L -- show/hide the log panel (no-op in detail mode)."""
+            if self._detail_mode:
+                return
             self._logs_visible = not self._logs_visible
             log_panel = self.query_one("#log-panel", LogPanel)
             if self._logs_visible:
@@ -1940,11 +2075,12 @@ def _get_textual_app() -> type:
             select_widget.focus()
 
         def action_dismiss_modal(self) -> None:
-            """Escape -- hide any visible modal or question bar."""
-            if self._answering_question_id is not None:
+            """Escape -- close the detail view, question bar, or modal."""
+            if self._detail_mode:
+                self._close_detail()
+            elif self._answering_question_id is not None:
                 self._cancel_question()
-                return
-            if self._create_visible:
+            elif self._create_visible:
                 modal = self.query_one("#create-modal", TaskCreateModal)
                 modal.remove_class("visible-create")
                 self._create_visible = False
@@ -1952,6 +2088,58 @@ def _get_textual_app() -> type:
                 cards = list(self.query(TaskCard))
                 if cards:
                     cards[self._focused_idx].focus()
+
+        def _close_detail(self) -> None:
+            """Return from detail view to the dashboard view."""
+            self._detail_mode = False
+            self._detail_task_id = None
+            self._detail_log_len = 0
+            self.remove_class("detail-mode")
+            self.query_one("#detail-view", TaskDetailView).remove_class("visible-detail")
+            self._refresh_cards()
+
+        def _refresh_detail(self) -> None:
+            """Query the focused task's full data and update TaskDetailView."""
+            if not self._detail_mode or not self._detail_task_id or self._conn is None:
+                return
+            try:
+                task_row = self._conn.execute(
+                    """SELECT id, pipeline, description, status, total_cost,
+                              created_at, updated_at
+                       FROM tasks WHERE id = ?""",
+                    (self._detail_task_id,),
+                ).fetchone()
+                if task_row is None:
+                    return
+                stage_rows = self._conn.execute(
+                    """SELECT stage_id, stage_index, status,
+                              started_at, finished_at, cost, error
+                       FROM stage_runs
+                       WHERE task_id = ?
+                       ORDER BY stage_index ASC""",
+                    (self._detail_task_id,),
+                ).fetchall()
+
+                # Read full log file
+                log_dir = self._db_path.parent / "logs"
+                log_path = log_dir / f"{self._detail_task_id}.log"
+                log_content = ""
+                if log_path.exists():
+                    try:
+                        log_content = log_path.read_text(encoding="utf-8", errors="replace")
+                    except OSError:
+                        log_content = "(log unreadable)"
+
+                detail = self.query_one("#detail-view", TaskDetailView)
+                detail.update_header_stages(task_row, list(stage_rows))
+
+                # Only update log widget when content actually changed (avoid scroll reset)
+                if len(log_content) != self._detail_log_len:
+                    scroll_bottom = len(log_content) > self._detail_log_len
+                    self._detail_log_len = len(log_content)
+                    detail.update_log(log_content, scroll_bottom=scroll_bottom)
+            except Exception:
+                pass
 
         def _discover_pipelines(self) -> list[tuple[str, str]]:
             """Discover available pipeline files and return (name, display_name) tuples."""

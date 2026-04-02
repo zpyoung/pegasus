@@ -1394,3 +1394,500 @@ class TestTuiCommand:
     def test_tui_command_registered(self) -> None:
         """The 'tui' command must exist in the CLI group."""
         assert "tui" in cli.commands  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# Tests: TaskDetailView widget and PegasusDashboard detail mode
+# ---------------------------------------------------------------------------
+
+
+class _FakeRow(dict):
+    """sqlite3.Row-like dict for test fixtures."""
+
+    def __getitem__(self, key: str) -> Any:  # type: ignore[override]
+        return super().__getitem__(key)
+
+
+def _make_fake_task_row(
+    task_id: str = "abc123",
+    pipeline: str = "bug-fix",
+    description: str = "Test task",
+    status: str = "queued",
+    total_cost: float | None = None,
+    created_at: str = "2024-01-01 00:00:00",
+    updated_at: str | None = None,
+) -> _FakeRow:
+    return _FakeRow(
+        {
+            "id": task_id,
+            "pipeline": pipeline,
+            "description": description,
+            "status": status,
+            "total_cost": total_cost,
+            "created_at": created_at,
+            "updated_at": updated_at,
+        }
+    )
+
+
+def _make_fake_stage_row(
+    stage_id: str = "analyze",
+    stage_index: int = 0,
+    status: str = "pending",
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    cost: float = 0.0,
+    error: str | None = None,
+) -> _FakeRow:
+    return _FakeRow(
+        {
+            "stage_id": stage_id,
+            "stage_index": stage_index,
+            "status": status,
+            "started_at": started_at,
+            "finished_at": finished_at,
+            "cost": cost,
+            "error": error,
+        }
+    )
+
+
+class TestTaskDetailView:
+    """Unit and integration tests for TaskDetailView widget and detail mode."""
+
+    # ------------------------------------------------------------------
+    # Unit tests: TaskDetailView widget in isolation
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_renders_task_id(self, tmp_path: Path) -> None:
+        """update_header_stages should show the task ID in #detail-header."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "unitask1", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            # Locate the TaskDetailView and make it visible so we can update it
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            task_row = _make_fake_task_row(task_id="unitask1")
+            detail.update_header_stages(task_row, [])
+            await pilot.pause(0.1)
+            header_text = str(app.query_one("#detail-header", Static).render())
+            assert "unitask1" in header_text
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_renders_stages(self, tmp_path: Path) -> None:
+        """update_header_stages with stage rows should show stage IDs in #detail-stages."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "stunit", pipeline="bug-fix", status="running")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            task_row = _make_fake_task_row(task_id="stunit")
+            stage_rows = [
+                _make_fake_stage_row("analyze", 0, "completed"),
+                _make_fake_stage_row("implement", 1, "running"),
+            ]
+            detail.update_header_stages(task_row, stage_rows)
+            await pilot.pause(0.1)
+            stages_text = str(app.query_one("#detail-stages", Static).render())
+            assert "analyze" in stages_text
+            assert "implement" in stages_text
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_stage_icons_by_status(self, tmp_path: Path) -> None:
+        """Each stage status should produce the correct icon character."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "icontest", pipeline="bug-fix", status="running")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            task_row = _make_fake_task_row(task_id="icontest")
+
+            for status, expected_char in [
+                ("completed", "✔"),
+                ("running", "⟳"),
+                ("failed", "✘"),
+                ("pending", "·"),
+            ]:
+                stage_rows = [_make_fake_stage_row("s1", 0, status)]
+                detail.update_header_stages(task_row, stage_rows)
+                await pilot.pause(0.05)
+                stages_text = str(app.query_one("#detail-stages", Static).render())
+                assert expected_char in stages_text, (
+                    f"Expected '{expected_char}' for status '{status}', got: {stages_text!r}"
+                )
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_stage_shows_error(self, tmp_path: Path) -> None:
+        """When a stage has an error, it should appear in #detail-stages."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "errtest", pipeline="bug-fix", status="failed")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            task_row = _make_fake_task_row(task_id="errtest", status="failed")
+            stage_rows = [
+                _make_fake_stage_row("analyze", 0, "failed", error="Something went wrong")
+            ]
+            detail.update_header_stages(task_row, stage_rows)
+            await pilot.pause(0.1)
+            stages_text = str(app.query_one("#detail-stages", Static).render())
+            assert "Something went wrong" in stages_text
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_update_log_with_content(self, tmp_path: Path) -> None:
+        """update_log('content') should set #detail-log Static to that content."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "logunit", pipeline="bug-fix", status="running")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            detail.update_log("hello from the log")
+            await pilot.pause(0.1)
+            log_text = str(app.query_one("#detail-log", Static).render())
+            assert "hello from the log" in log_text
+
+    @pytest.mark.asyncio
+    async def test_taskdetailview_update_log_empty_shows_placeholder(
+        self, tmp_path: Path
+    ) -> None:
+        """update_log('') should show a placeholder message in #detail-log."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "logph", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            detail.add_class("visible-detail")
+            detail.update_log("")
+            await pilot.pause(0.1)
+            log_text = str(app.query_one("#detail-log", Static).render())
+            assert "no log" in log_text.lower() or "yet" in log_text.lower()
+
+    # ------------------------------------------------------------------
+    # Integration tests: Enter key / detail mode
+    # ------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_enter_opens_detail_mode(self, tmp_path: Path) -> None:
+        """Pressing Enter on a task card should set _detail_mode to True."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "dtask1", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            assert app._detail_mode is False
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+
+    @pytest.mark.asyncio
+    async def test_enter_sets_detail_task_id(self, tmp_path: Path) -> None:
+        """Pressing Enter should set _detail_task_id to the focused task's ID."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "mytask", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_task_id == "mytask"
+
+    @pytest.mark.asyncio
+    async def test_detail_view_shows_visible_detail_class(self, tmp_path: Path) -> None:
+        """After pressing Enter, TaskDetailView should have the 'visible-detail' class."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "vdtask", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            detail = app.query_one("#detail-view")
+            assert detail.has_class("visible-detail")
+
+    @pytest.mark.asyncio
+    async def test_detail_mode_hides_task_area(self, tmp_path: Path) -> None:
+        """After pressing Enter, the app should have the 'detail-mode' CSS class."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "dmtask", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app.has_class("detail-mode")
+
+    @pytest.mark.asyncio
+    async def test_escape_closes_detail_mode(self, tmp_path: Path) -> None:
+        """Pressing Escape while in detail mode should set _detail_mode to False."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "esctask", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+            await pilot.press("escape")
+            await pilot.pause(0.1)
+            assert app._detail_mode is False
+
+    @pytest.mark.asyncio
+    async def test_d_key_closes_detail_mode(self, tmp_path: Path) -> None:
+        """Pressing D while in detail mode should set _detail_mode to False."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "dtoggle", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+            await pilot.press("d")
+            await pilot.pause(0.1)
+            assert app._detail_mode is False
+
+    @pytest.mark.asyncio
+    async def test_escape_from_detail_returns_to_dashboard(self, tmp_path: Path) -> None:
+        """Pressing Escape from detail should remove the 'detail-mode' class from app."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "escback", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app.has_class("detail-mode")
+            await pilot.press("escape")
+            await pilot.pause(0.1)
+            assert not app.has_class("detail-mode")
+
+    @pytest.mark.asyncio
+    async def test_detail_view_shows_task_header_content(self, tmp_path: Path) -> None:
+        """After opening detail mode the task ID should appear in #detail-header."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "hdrtask", pipeline="bug-fix", description="header test", status="queued")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.4)  # Allow _refresh_detail to fire
+            header_text = str(app.query_one("#detail-header", Static).render())
+            assert "hdrtask" in header_text
+
+    @pytest.mark.asyncio
+    async def test_detail_view_shows_stage_content(self, tmp_path: Path) -> None:
+        """After opening detail, stage IDs should appear in #detail-stages."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "sgdetail", pipeline="bug-fix", status="running")
+        _insert_stage_run(db_path, "sgdetail", "analyze-stage", 0, status="completed")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.4)
+            stages_text = str(app.query_one("#detail-stages", Static).render())
+            assert "analyze-stage" in stages_text
+
+    @pytest.mark.asyncio
+    async def test_detail_view_shows_log_content(self, tmp_path: Path) -> None:
+        """After opening detail mode, the task log file content should appear in #detail-log."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "logtsk", pipeline="bug-fix", status="running")
+
+        log_dir = db_path.parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        (log_dir / "logtsk.log").write_text("unique-log-marker-xyz\n", encoding="utf-8")
+
+        from pegasus.ui import _get_textual_app
+        from textual.widgets import Static
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.4)
+            log_text = str(app.query_one("#detail-log", Static).render())
+            assert "unique-log-marker-xyz" in log_text
+
+    @pytest.mark.asyncio
+    async def test_enter_noop_with_no_tasks(self, tmp_path: Path) -> None:
+        """Pressing Enter with an empty DB should not enter detail mode."""
+        _, db_path = _make_tui_project(tmp_path)
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.3)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is False
+
+    @pytest.mark.asyncio
+    async def test_enter_noop_when_already_in_detail(self, tmp_path: Path) -> None:
+        """Pressing Enter again while already in detail mode should not crash."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "dup1", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+            # Press enter again — should remain in detail mode without error
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+
+    @pytest.mark.asyncio
+    async def test_l_noop_in_detail_mode(self, tmp_path: Path) -> None:
+        """Pressing L while in detail mode should NOT change _logs_visible."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "lnoop", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+            assert app._logs_visible is False
+            await pilot.press("l")
+            await pilot.pause(0.1)
+            assert app._logs_visible is False
+
+    @pytest.mark.asyncio
+    async def test_log_updates_when_file_grows(self, tmp_path: Path) -> None:
+        """When the log file grows, _detail_log_len should increase on next poll."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "growlog", pipeline="bug-fix", status="running")
+
+        log_dir = db_path.parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        log_file = log_dir / "growlog.log"
+        log_file.write_text("initial content\n", encoding="utf-8")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.4)
+            initial_log_len = app._detail_log_len
+            assert initial_log_len > 0
+            # Append more content to the log
+            log_file.write_text("initial content\nextra line appended\n", encoding="utf-8")
+            await pilot.pause(0.4)  # Wait for poll_db to pick up the change
+            assert app._detail_log_len > initial_log_len
+
+    @pytest.mark.asyncio
+    async def test_close_detail_resets_log_len(self, tmp_path: Path) -> None:
+        """_close_detail() should reset _detail_log_len to 0."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "clrlog", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("enter")
+            await pilot.pause(0.1)
+            assert app._detail_mode is True
+            # Artificially bump _detail_log_len as if a log was read
+            app._detail_log_len = 100
+            app._close_detail()
+            await pilot.pause(0.1)
+            assert app._detail_log_len == 0
