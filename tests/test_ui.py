@@ -1269,6 +1269,117 @@ class TestPegasusDashboardApp:
             # App should still be running, just with empty task data
             assert app._task_data == []
 
+    @pytest.mark.asyncio
+    async def test_clean_completed_task_removes_db_records(self, tmp_path: Path) -> None:
+        """Pressing C on a completed task should remove it and its stage_runs from SQLite."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "donetask", pipeline="bug-fix", status="completed")
+        _insert_stage_run(db_path, "donetask", "analyze", 0, status="completed")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)  # Let poll populate _task_data
+            await pilot.press("c")
+            await pilot.pause(0.2)
+
+        conn = make_connection(db_path, read_only=True)
+        task_count = conn.execute("SELECT COUNT(*) FROM tasks WHERE id = 'donetask'").fetchone()[0]
+        stage_count = conn.execute(
+            "SELECT COUNT(*) FROM stage_runs WHERE task_id = 'donetask'"
+        ).fetchone()[0]
+        conn.close()
+        assert task_count == 0
+        assert stage_count == 0
+
+    @pytest.mark.asyncio
+    async def test_clean_failed_task_removes_db_records(self, tmp_path: Path) -> None:
+        """Pressing C on a failed task should remove it from SQLite."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "failtask", pipeline="bug-fix", status="failed")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("c")
+            await pilot.pause(0.2)
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT id FROM tasks WHERE id = 'failtask'").fetchone()
+        conn.close()
+        assert row is None
+
+    @pytest.mark.asyncio
+    async def test_clean_non_cleanable_task_does_not_modify_db(self, tmp_path: Path) -> None:
+        """Pressing C on a running task should NOT remove or alter it."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "activetask", pipeline="bug-fix", status="running")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("c")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = 'activetask'").fetchone()
+        conn.close()
+        assert row is not None
+        assert row["status"] == "running"
+
+    @pytest.mark.asyncio
+    async def test_clean_task_removes_log_files(self, tmp_path: Path) -> None:
+        """Pressing C on a completed task should delete its .log and .stderr.log files."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "logtask2", pipeline="bug-fix", status="completed")
+
+        logs_dir = db_path.parent / "logs"
+        log_file = logs_dir / "logtask2.log"
+        stderr_file = logs_dir / "logtask2.stderr.log"
+        log_file.write_text("some output\n", encoding="utf-8")
+        stderr_file.write_text("some stderr\n", encoding="utf-8")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("c")
+            await pilot.pause(0.2)
+
+        assert not log_file.exists()
+        assert not stderr_file.exists()
+
+    @pytest.mark.asyncio
+    async def test_clean_queued_task_does_not_modify_db(self, tmp_path: Path) -> None:
+        """Pressing C on a queued task should NOT remove it."""
+        _, db_path = _make_tui_project(tmp_path)
+        _insert_task(db_path, "queuedtask", pipeline="bug-fix", status="queued")
+
+        from pegasus.ui import _get_textual_app
+
+        PegasusDashboard = _get_textual_app()
+        app = PegasusDashboard(db_path=db_path)
+        async with app.run_test(size=(120, 30)) as pilot:
+            await pilot.pause(0.4)
+            await pilot.press("c")
+            await pilot.pause(0.1)
+
+        conn = make_connection(db_path, read_only=True)
+        row = conn.execute("SELECT status FROM tasks WHERE id = 'queuedtask'").fetchone()
+        conn.close()
+        assert row is not None
+        assert row["status"] == "queued"
+
 
 class TestTuiCommand:
     """CLI-level tests for the pegasus tui command."""

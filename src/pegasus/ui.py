@@ -1448,6 +1448,7 @@ def _get_textual_app() -> type:
             Binding("m", "merge_task", "Merge", show=True),
             Binding("a", "approve_task", "Approve", show=True),
             Binding("r", "reject_task", "Reject", show=True),
+            Binding("c", "clean_task", "Clean", show=True),
             Binding("l", "toggle_logs", "Logs", show=True),
             Binding("escape", "dismiss_modal", "Close", show=False, priority=True),
             Binding("q", "quit_app", "Quit", show=True),
@@ -1840,6 +1841,72 @@ def _get_textual_app() -> type:
                 self.notify(f"Rejected task {task['id']}", timeout=2)
             except Exception as exc:
                 self.notify(f"Reject failed: {exc}", severity="error", timeout=4)
+
+        def action_clean_task(self) -> None:
+            """C -- remove artifacts for the focused completed/failed task."""
+            if not self._task_data:
+                return
+            idx = min(self._focused_idx, len(self._task_data) - 1)
+            task = self._task_data[idx]
+            if task["status"] not in ("completed", "failed"):
+                self.notify(
+                    f"Task {task['id']} cannot be cleaned (status: {task['status']})", timeout=3
+                )
+                return
+            try:
+                conn = make_connection(self._db_path)
+                try:
+                    row = conn.execute(
+                        "SELECT worktree_path, branch FROM tasks WHERE id = ?",
+                        (task["id"],),
+                    ).fetchone()
+                    if row is None:
+                        self.notify(
+                            f"Task {task['id']} not found in database.",
+                            severity="error",
+                            timeout=4,
+                        )
+                        return
+
+                    project_dir = self._db_path.parent.parent
+                    logs_dir = self._db_path.parent / "logs"
+
+                    # Remove worktree if present
+                    wt_path = row["worktree_path"]
+                    branch = row["branch"]
+                    warnings: list[str] = []
+                    if wt_path:
+                        err = _remove_worktree(wt_path, branch, project_dir)
+                        if err:
+                            warnings.append(err)
+
+                    # Delete log files
+                    for suffix in (".log", ".stderr.log"):
+                        log_file = logs_dir / f"{task['id']}{suffix}"
+                        if log_file.exists():
+                            try:
+                                log_file.unlink()
+                            except OSError:
+                                pass
+
+                    # Delete DB rows in FK-safe order: worktrees -> stage_runs -> tasks
+                    conn.execute("DELETE FROM worktrees WHERE task_id = ?", (task["id"],))
+                    conn.execute("DELETE FROM stage_runs WHERE task_id = ?", (task["id"],))
+                    conn.execute("DELETE FROM tasks WHERE id = ?", (task["id"],))
+                    conn.commit()
+                finally:
+                    conn.close()
+
+                if warnings:
+                    self.notify(
+                        f"Cleaned task {task['id']} (warnings: {'; '.join(warnings)})",
+                        severity="warning",
+                        timeout=5,
+                    )
+                else:
+                    self.notify(f"Cleaned task {task['id']}", timeout=2)
+            except Exception as exc:
+                self.notify(f"Clean failed: {exc}", severity="error", timeout=4)
 
         def action_toggle_logs(self) -> None:
             """L -- show/hide the log panel."""
