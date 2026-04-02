@@ -90,7 +90,7 @@ def _detect_language(project_dir: Path) -> str | None:
 
 
 def _detect_default_branch(project_dir: Path) -> str:
-    """Auto-detect the default git branch. Falls back to 'main'."""
+    """Auto-detect the default git branch. Falls back to 'main' or 'master'."""
     try:
         result = subprocess.run(
             ["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
@@ -103,7 +103,8 @@ def _detect_default_branch(project_dir: Path) -> str:
             branch = result.stdout.strip()
             if "/" in branch:
                 branch = branch.split("/", 1)[1]
-            return branch or "main"
+            if branch:
+                return branch
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         pass
 
@@ -120,6 +121,20 @@ def _detect_default_branch(project_dir: Path) -> str:
             branch = result.stdout.strip()
             if branch and branch != "HEAD":
                 return branch
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        pass
+
+    # Last resort: check if "master" exists, otherwise assume "main".
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--verify", "refs/heads/master"],
+            capture_output=True,
+            text=True,
+            cwd=str(project_dir),
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return "master"
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         pass
 

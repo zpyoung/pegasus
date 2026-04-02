@@ -471,7 +471,7 @@ class TestPegasusConfig:
         assert config.defaults.model == "claude-sonnet-4-20250514"
         assert config.defaults.max_turns == 10
         assert config.defaults.permission_mode == "plan"
-        assert config.git.default_branch == "main"
+        assert config.git.default_branch is None
         assert config.concurrency.max_tasks == 3
 
     def test_partial_config_preserves_defaults(self) -> None:
@@ -1161,7 +1161,7 @@ class TestLoadConfig:
         config = load_config(project_dir)
         assert config.project.language == "rust"
         assert config.defaults.max_turns == BUILT_IN_DEFAULTS["max_turns"]
-        assert config.git.default_branch == "main"  # built-in default preserved
+        assert config.git.default_branch is None  # not specified, auto-detect
 
     def test_all_three_layers_merge_correctly(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

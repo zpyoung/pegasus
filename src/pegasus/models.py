@@ -247,7 +247,7 @@ class GitConfig(BaseModel):
 
     model_config = {"extra": "forbid"}
 
-    default_branch: str = "main"
+    default_branch: str | None = None
     branch_prefix: str = "pegasus/"
     auto_cleanup: bool = True
 

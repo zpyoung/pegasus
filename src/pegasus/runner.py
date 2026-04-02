@@ -627,21 +627,32 @@ class WorktreeManager:
     # Public API
     # ------------------------------------------------------------------
 
-    def detect_default_branch(self, repo_dir: str | os.PathLike[str]) -> str:
+    def detect_default_branch(
+        self,
+        repo_dir: str | os.PathLike[str],
+        config_default: str | None = None,
+    ) -> str:
         """Return the default branch name for *repo_dir*.
 
         Strategy:
+        0. If *config_default* is set (from ``git.default_branch`` in
+           ``config.yaml``), use it directly.
         1. Try ``git symbolic-ref refs/remotes/origin/HEAD`` (fast, works with
            a remote).
         2. Fall back to the current HEAD branch name.
-        3. Fall back to ``"main"`` if the repo has no commits.
+        3. Fall back to ``"main"`` or ``"master"`` (whichever exists).
 
         Args:
-            repo_dir: Path to the git repository root.
+            repo_dir:       Path to the git repository root.
+            config_default: Explicit branch from project config.  When set,
+                            auto-detection is skipped entirely.
 
         Returns:
             Branch name string, e.g. ``"main"`` or ``"master"``.
         """
+        if config_default is not None:
+            return config_default
+
         # Try remote HEAD first (most reliable).
         result = self._run_git(
             ["symbolic-ref", "refs/remotes/origin/HEAD"],
@@ -664,7 +675,14 @@ class WorktreeManager:
             if branch:
                 return branch
 
-        # Last resort: assume "main".
+        # Last resort: check if "master" exists, otherwise assume "main".
+        result = self._run_git(
+            ["rev-parse", "--verify", "refs/heads/master"],
+            cwd=repo_dir,
+            check=False,
+        )
+        if result.returncode == 0:
+            return "master"
         return "main"
 
     def create_worktree(
@@ -674,23 +692,26 @@ class WorktreeManager:
         description: str,
         base_path: str | os.PathLike[str],
         setup_command: str | None = None,
+        default_branch: str | None = None,
     ) -> Path:
         """Create a new git worktree for *task_id*.
 
         Steps:
-        1. Detect the default branch.
+        1. Detect the default branch (or use *default_branch* if provided).
         2. Derive a branch name ``pegasus/<task-id>-<slug>``.
         3. Create the worktree directory under *base_path*.
         4. Run ``git worktree add <path> -b <branch> <default-branch>``.
         5. Optionally run *setup_command* inside the new worktree.
 
         Args:
-            repo_dir:      Path to the git repository root.
-            task_id:       Unique task identifier (used in branch name).
-            description:   Human-readable task description (slugified for branch name).
-            base_path:     Parent directory under which the worktree is created.
-            setup_command: Shell command to run inside the worktree after creation
-                           (e.g. ``"pip install -e ."``).
+            repo_dir:       Path to the git repository root.
+            task_id:        Unique task identifier (used in branch name).
+            description:    Human-readable task description (slugified for branch name).
+            base_path:      Parent directory under which the worktree is created.
+            setup_command:  Shell command to run inside the worktree after creation
+                            (e.g. ``"pip install -e ."``).
+            default_branch: Explicit base branch override from config.  When
+                            ``None``, the branch is auto-detected.
 
         Returns:
             Absolute ``Path`` to the newly created worktree directory.
@@ -703,7 +724,7 @@ class WorktreeManager:
         base_path = Path(base_path)
         base_path.mkdir(parents=True, exist_ok=True)
 
-        default_branch = self.detect_default_branch(repo_dir)
+        default_branch = self.detect_default_branch(repo_dir, config_default=default_branch)
         slug = self._slug(description)
         branch_name = f"pegasus/{task_id}-{slug}"
         worktree_path = base_path / f"{task_id}-{slug}"
@@ -1626,15 +1647,19 @@ class PipelineExecutor:
         # ------------------------------------------------------------------
         # 2. Create worktree
         # ------------------------------------------------------------------
+        config_branch = project_config.git.default_branch
         worktree_path = self._worktree_manager.create_worktree(
             repo_dir=self.project_dir,
             task_id=task_id,
             description=description,
             base_path=base_path,
             setup_command=setup_command,
+            default_branch=config_branch,
         )
         branch_name = f"pegasus/{task_id}-{self._worktree_manager._slug(description)}"
-        default_branch = self._worktree_manager.detect_default_branch(self.project_dir)
+        default_branch = self._worktree_manager.detect_default_branch(
+            self.project_dir, config_default=config_branch,
+        )
 
         # ------------------------------------------------------------------
         # 3. Insert task record
@@ -2378,8 +2403,10 @@ class MergeExecutor:
                 return False
 
             # 4. Verify base_branch matches current default branch
+            project_config = load_config(self.project_dir)
             detected = self._worktree_manager.detect_default_branch(
-                self.project_dir
+                self.project_dir,
+                config_default=project_config.git.default_branch,
             )
             if detected != base_branch:
                 self._log(

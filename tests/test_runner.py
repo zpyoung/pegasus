@@ -535,6 +535,14 @@ class TestDetectDefaultBranch:
         mgr = WorktreeManager()
         assert mgr.detect_default_branch(repo) == "master"
 
+    def test_config_default_overrides_detection(self, tmp_path: Path) -> None:
+        """When config_default is set, auto-detection is skipped."""
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        _init_git_repo(repo, branch="main")
+        mgr = WorktreeManager()
+        assert mgr.detect_default_branch(repo, config_default="develop") == "develop"
+
     def test_fallback_for_repo_with_remote_head(self, tmp_path: Path) -> None:
         """When remote HEAD is set, that branch name is returned."""
         origin = tmp_path / "origin"

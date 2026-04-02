@@ -10,7 +10,7 @@ git:
   branch_prefix: pegasus/
   auto_cleanup: true
 defaults:
-  model: claude-sonnet-4-20250514
+  model: sonnet
   max_turns: 10
   permission_mode: plan
   max_permission: acceptEdits
