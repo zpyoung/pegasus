@@ -2302,15 +2302,64 @@ class MergeExecutor:
         )
         return bool(result.stdout.strip())
 
+    def _build_conflict_context(self, branch: str) -> str:
+        """Gather context about the merge conflict for the resolution agent."""
+        parts: list[str] = []
+
+        # List conflicting files
+        unmerged = self._run_git(
+            ["diff", "--name-only", "--diff-filter=U"], check=False,
+        )
+        if unmerged.stdout.strip():
+            parts.append(
+                "Files with conflicts:\n"
+                + "\n".join(f"  - {f}" for f in unmerged.stdout.strip().splitlines())
+            )
+
+        # Show what the feature branch changed (diff stat)
+        diff_stat = self._run_git(
+            ["diff", "--stat", f"HEAD...{branch}"], check=False,
+        )
+        if diff_stat.stdout.strip():
+            parts.append(f"Feature branch diff summary:\n{diff_stat.stdout.strip()}")
+
+        # Show recent commits on main that may have caused the conflict
+        log_result = self._run_git(
+            ["log", "--oneline", "-10", "HEAD"], check=False,
+        )
+        if log_result.stdout.strip():
+            parts.append(
+                f"Recent commits on target branch:\n{log_result.stdout.strip()}"
+            )
+
+        return "\n\n".join(parts)
+
     async def _resolve_conflicts(
-        self, task_id: str, description: str
+        self, task_id: str, description: str, branch: str,
     ) -> bool:
-        """Invoke Sonnet agent to resolve merge conflicts. Up to 2 attempts."""
+        """Invoke agent to resolve merge conflicts. Up to 2 attempts."""
+        context = self._build_conflict_context(branch)
+
         conflict_prompt = (
             f"This git repository has merge conflicts after squash-merging "
-            f"a feature branch. The task was: {description}\n\n"
-            f"Resolve ALL merge conflicts in the working tree. "
-            f"After resolving, stage the fixed files with `git add`.\n\n"
+            f"a feature branch into the target branch.\n\n"
+            f"Task description: {description}\n"
+            f"Feature branch: {branch}\n\n"
+            f"{context}\n\n"
+            f"## Instructions\n\n"
+            f"1. Run `git diff --name-only --diff-filter=U` to list all "
+            f"conflicting files.\n"
+            f"2. For each conflicting file, read the file and find all "
+            f"conflict markers (<<<<<<< / ======= / >>>>>>>).\n"
+            f"3. Resolve each conflict by keeping changes from BOTH sides "
+            f"where they are additive (new functions, new fields, new imports). "
+            f"When both sides modified the same lines, integrate the changes "
+            f"so both features work together.\n"
+            f"4. After resolving all conflicts in a file, run "
+            f"`git add <file>` to stage it.\n"
+            f"5. After all files are resolved, verify there are no remaining "
+            f"conflict markers by searching for '<<<<<<' across the codebase.\n"
+            f"6. Run any available test commands to verify the merge is correct.\n\n"
             f"Do NOT commit — just resolve conflicts and stage files."
         )
         for attempt in range(2):
@@ -2324,8 +2373,8 @@ class MergeExecutor:
                 cwd=str(self.project_dir),
                 claude_flags={
                     "model": "claude-sonnet-4-20250514",
-                    "permission_mode": "acceptEdits",
-                    "max_turns": 15,
+                    "permission_mode": "bypassPermissions",
+                    "max_turns": 50,
                 },
             )
             if success and not self._has_conflicts():
@@ -2492,7 +2541,7 @@ class MergeExecutor:
 
             if merge_result == "conflict":
                 self._log("Merge conflicts detected — invoking agent")
-                resolved = await self._resolve_conflicts(task_id, description)
+                resolved = await self._resolve_conflicts(task_id, description, branch)
                 if not resolved:
                     self._log("Aborting merge — resetting to HEAD")
                     self._run_git(["reset", "--hard", "HEAD"], check=False)
