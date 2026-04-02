@@ -212,7 +212,7 @@ class TestStageConfig:
     def test_valid_minimal_stage(self) -> None:
         stage = StageConfig(id="analyze", name="Analyze", prompt="Do something.")
         assert stage.id == "analyze"
-        assert stage.requires_approval is False
+        assert stage.requires_approval is None
 
     def test_stage_with_flags(self) -> None:
         stage = StageConfig(
@@ -1210,7 +1210,7 @@ def _make_stage(
     permission_mode: str | None = None,
     max_turns: int | None = None,
     model: str | None = None,
-    requires_approval: bool = False,
+    requires_approval: bool | None = None,
 ) -> StageConfig:
     """Helper: build a minimal StageConfig with optional claude_flags."""
     flags = ClaudeFlags(
@@ -1319,8 +1319,8 @@ class TestResolveStageFlags:
     # --- Auto-require-approval tests ---
 
     def test_auto_require_approval_for_accept_edits(self) -> None:
-        """Stages with acceptEdits permission mode get requires_approval=True."""
-        stage = _make_stage(permission_mode="acceptEdits", requires_approval=False)
+        """Stages with acceptEdits permission mode get requires_approval=True when unspecified."""
+        stage = _make_stage(permission_mode="acceptEdits")
         project_config = parse_project_config_yaml(
             "defaults:\n  max_permission: acceptEdits\n"
         )
@@ -1329,7 +1329,7 @@ class TestResolveStageFlags:
 
     def test_auto_require_approval_not_set_for_plan_mode(self) -> None:
         """Plan-mode stages do NOT get auto-require-approval."""
-        stage = _make_stage(permission_mode="plan", requires_approval=False)
+        stage = _make_stage(permission_mode="plan")
         _, requires_approval = resolve_stage_flags(stage)
         assert requires_approval is False
 
@@ -1343,12 +1343,21 @@ class TestResolveStageFlags:
         """Even after clamping, if effective mode is acceptEdits, approval is required."""
         # Stage requests bypassPermissions, ceiling is acceptEdits.
         # Clamped to acceptEdits → auto-requires-approval.
-        stage = _make_stage(permission_mode="bypassPermissions", requires_approval=False)
+        stage = _make_stage(permission_mode="bypassPermissions")
         project_config = parse_project_config_yaml(
             "defaults:\n  max_permission: acceptEdits\n"
         )
         _, requires_approval = resolve_stage_flags(stage, None, project_config)
         assert requires_approval is True
+
+    def test_explicit_false_respected_for_write_mode(self) -> None:
+        """Explicit requires_approval=False is respected even for write modes."""
+        stage = _make_stage(permission_mode="acceptEdits", requires_approval=False)
+        project_config = parse_project_config_yaml(
+            "defaults:\n  max_permission: acceptEdits\n"
+        )
+        _, requires_approval = resolve_stage_flags(stage, None, project_config)
+        assert requires_approval is False
 
     def test_no_stage_flag_overrides_fall_through_to_pipeline(self) -> None:
         """With no stage flags set, pipeline defaults fill in."""

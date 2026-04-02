@@ -1125,6 +1125,8 @@ class PipelineExecutor:
                             YAML lookup and worktree base-path resolution).
         heartbeat_interval: Seconds between heartbeat writes (default 5; use 0.1
                             in tests).
+        poll_interval:      Seconds between SQLite polls for approval/answer
+                            changes (default 2; use 0.05 in tests).
         on_approval_needed: Optional async callback invoked when a stage requires
                             approval before it can proceed.  Receives
                             ``(task_id, stage_id)`` and must return ``True`` to
@@ -1141,6 +1143,7 @@ class PipelineExecutor:
         project_dir: str | os.PathLike[str],
         *,
         heartbeat_interval: float = 5.0,
+        poll_interval: float = 2.0,
         on_approval_needed: Callable[[str, str], Any] | None = None,
         on_question_asked: Callable[[str, str, str], Any] | None = None,
     ) -> None:
@@ -1148,6 +1151,7 @@ class PipelineExecutor:
         self.agent_runner = agent_runner
         self.project_dir = Path(project_dir)
         self.heartbeat_interval = heartbeat_interval
+        self.poll_interval = poll_interval
         self._on_approval_needed = on_approval_needed
         self._on_question_asked = on_question_asked
 
@@ -1528,7 +1532,7 @@ class PipelineExecutor:
         if self._on_question_asked is not None:
             answer = await self._on_question_asked(task_id, stage_id, question)
         else:
-            answer = await self._poll_for_question_answer(task_id, question_id)
+            answer = await self._poll_for_question_answer(task_id, question_id, self.poll_interval)
 
         if answer is not None:
             # Persist answer if callback mode (polling mode: TUI already wrote it).
@@ -1873,7 +1877,7 @@ class PipelineExecutor:
                     if self._on_approval_needed is not None:
                         approved = await self._on_approval_needed(task_id, stage.id)
                     else:
-                        approved = await self._poll_for_approval(task_id)
+                        approved = await self._poll_for_approval(task_id, self.poll_interval)
                     if not approved:
                         logger.info(
                             "task=%s stage=%s approval rejected — aborting",
@@ -2144,7 +2148,7 @@ class PipelineExecutor:
                     if self._on_approval_needed is not None:
                         approved = await self._on_approval_needed(task_id, stage.id)
                     else:
-                        approved = await self._poll_for_approval(task_id)
+                        approved = await self._poll_for_approval(task_id, self.poll_interval)
                     if not approved:
                         self._mark_task_status(conn, task_id, "failed")
                         return False

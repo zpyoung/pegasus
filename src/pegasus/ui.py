@@ -1592,24 +1592,29 @@ def _get_textual_app() -> type:
             tasks = self._task_data
             if not tasks:
                 return
-            idx = min(self._focused_idx, len(tasks) - 1)
+            idx = self._focused_task_index()
             task_id = tasks[idx]["id"]
             log_dir = self._db_path.parent / "logs"
             log_panel = self.query_one("#log-panel", LogPanel)
             log_panel.show_logs(task_id, log_dir)
 
-        def on_focus(self, event: events.Focus) -> None:
-            """Sync _focused_idx when any TaskCard gains focus (click, tab, etc.)."""
-            widget = event.widget
-            if not isinstance(widget, TaskCard):
-                return
-            cards = list(self.query(TaskCard))
-            try:
-                self._focused_idx = cards.index(widget)
-                if self._logs_visible:
-                    self._refresh_logs()
-            except ValueError:
-                pass
+        def _focused_task_index(self) -> int:
+            """Return the _task_data index of the currently focused TaskCard.
+
+            Checks the real Textual focus state first (handles click-to-focus),
+            falls back to _focused_idx (handles Tab cycling).
+            """
+            focused_widget = self.screen.focused
+            if isinstance(focused_widget, TaskCard):
+                cards = list(self.query(TaskCard))
+                try:
+                    idx = cards.index(focused_widget)
+                    if idx < len(self._task_data):
+                        self._focused_idx = idx
+                        return idx
+                except ValueError:
+                    pass
+            return min(self._focused_idx, max(0, len(self._task_data) - 1))
 
         # ------------------------------------------------------------------
         # Key-action handlers
@@ -1643,7 +1648,7 @@ def _get_textual_app() -> type:
             """M -- merge the focused completed task's branch into default branch."""
             if not self._task_data:
                 return
-            idx = min(self._focused_idx, len(self._task_data) - 1)
+            idx = self._focused_task_index()
             task = self._task_data[idx]
 
             # Validate eligibility
@@ -1725,7 +1730,7 @@ def _get_textual_app() -> type:
             """
             if not self._task_data:
                 return
-            idx = min(self._focused_idx, len(self._task_data) - 1)
+            idx = self._focused_task_index()
             task = self._task_data[idx]
             if task["status"] != "paused":
                 self.notify(
@@ -1800,7 +1805,7 @@ def _get_textual_app() -> type:
             """R -- reject/mark the focused task as failed."""
             if not self._task_data:
                 return
-            idx = min(self._focused_idx, len(self._task_data) - 1)
+            idx = self._focused_task_index()
             task = self._task_data[idx]
             if task["status"] not in ("paused", "running"):
                 self.notify(

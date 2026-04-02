@@ -54,6 +54,7 @@ def _init_git_repo(path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestInitThenValidate:
     """Full init -> validate flow in a fresh git repo."""
 
@@ -100,6 +101,7 @@ class TestInitThenValidate:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestInitThenRunDryRun:
     """Full init -> run --dry-run flow."""
 
@@ -256,6 +258,7 @@ class TestMainModuleRuns:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 class TestStatusEmpty:
     """Status command with no tasks should show a helpful empty-state message."""
 

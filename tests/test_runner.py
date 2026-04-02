@@ -1094,6 +1094,7 @@ def _make_executor(
     runner: FakeAgentRunner,
     *,
     heartbeat_interval: float = 0.1,
+    poll_interval: float = 0.05,
     on_approval_needed: Any = None,
 ) -> tuple[PipelineExecutor, Path]:
     """Create a PipelineExecutor with a tmp SQLite db, returning (executor, db_path)."""
@@ -1103,6 +1104,7 @@ def _make_executor(
         agent_runner=runner,
         project_dir=project_dir,
         heartbeat_interval=heartbeat_interval,
+        poll_interval=poll_interval,
         on_approval_needed=on_approval_needed,
     )
     return executor, db_path
@@ -1424,6 +1426,7 @@ class TestPipelineExecutorResumeTask:
             agent_runner=runner,
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
 
         # Run the full pipeline to create the worktree and insert task/stage rows
@@ -1447,6 +1450,7 @@ class TestPipelineExecutorResumeTask:
             agent_runner=runner2,
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
         result = _run(executor2.resume_task(task_id))
 
@@ -1468,6 +1472,7 @@ class TestPipelineExecutorResumeTask:
             agent_runner=FakeAgentRunner(),
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
         with pytest.raises(ValueError, match="not found"):
             _run(executor.resume_task("nonexistent-task"))
@@ -1489,6 +1494,7 @@ class TestPipelineExecutorResumeTask:
             agent_runner=FakeAgentRunner(),
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
         with pytest.raises(ValueError, match="cannot be resumed"):
             _run(executor.resume_task("exec-resume-bad"))
@@ -1516,7 +1522,7 @@ class TestPipelineExecutorHeartbeat:
                 self.run_calls.append((prompt, cwd))
 
                 async def _gen() -> Any:
-                    await asyncio.sleep(0.35)  # allow 3 heartbeats at 0.1s
+                    await asyncio.sleep(0.15)  # allow at least 1 heartbeat at 0.1s
                     yield ResultMessage(output="done", total_cost_usd=0.0, session_id="s")
 
                 return _gen()
@@ -1531,6 +1537,7 @@ class TestPipelineExecutorHeartbeat:
             agent_runner=runner,
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
 
         task_id = "exec-hb-1"
@@ -1585,6 +1592,7 @@ class TestPipelineExecutorRateLimitRetry:
             agent_runner=runner,
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
         # Override retry base delay to 0.01s (very fast for tests)
         # We achieve this via a minimal config: write a custom config.yaml
@@ -1643,6 +1651,7 @@ class TestPipelineExecutorRateLimitRetry:
             agent_runner=runner,
             project_dir=project_dir,
             heartbeat_interval=0.1,
+            poll_interval=0.05,
         )
 
         task_id = "exec-retry-2"

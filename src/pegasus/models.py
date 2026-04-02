@@ -115,7 +115,7 @@ class StageConfig(BaseModel):
     name: str = Field(..., min_length=1)
     prompt: str = Field(..., min_length=1)
     claude_flags: ClaudeFlags = Field(default_factory=ClaudeFlags)
-    requires_approval: bool = False
+    requires_approval: bool | None = None
     auto_commit: bool | None = None
     question: str | None = None
     """Optional question to ask the user *before* this stage runs.
@@ -556,8 +556,8 @@ def resolve_stage_flags(
 
     ``requires_approval`` is auto-set to ``True`` for any stage whose
     effective ``permission_mode`` is a write mode (``acceptEdits`` or
-    ``bypassPermissions``).  An explicit ``requires_approval=True`` on the
-    stage is always preserved; auto-set only upgrades ``False -> True``.
+    ``bypassPermissions``) **when not explicitly specified** (``None``).
+    An explicit ``True`` or ``False`` on the stage is always respected.
 
     Args:
         stage: The ``StageConfig`` whose flags to resolve.
@@ -628,8 +628,8 @@ def resolve_stage_flags(
 
     # --- Auto-require-approval for write stages ---
     requires_approval = stage.requires_approval
-    if resolved_flags.permission_mode in _WRITE_PERMISSION_MODES:
-        requires_approval = True
+    if requires_approval is None:
+        requires_approval = resolved_flags.permission_mode in _WRITE_PERMISSION_MODES
 
     return resolved_flags, requires_approval
 
