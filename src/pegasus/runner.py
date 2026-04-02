@@ -1432,6 +1432,7 @@ class PipelineExecutor:
         worktree_path: str,
         branch: str,
         base_branch: str | None = None,
+        inputs_json: str | None = None,
     ) -> None:
         """Insert or update a task row in 'queued' state.
 
@@ -1442,12 +1443,12 @@ class PipelineExecutor:
             """
             INSERT OR REPLACE INTO tasks
                 (id, pipeline, description, status, worktree_path, branch,
-                 base_branch, runner_pid, heartbeat_at)
+                 base_branch, runner_pid, heartbeat_at, inputs_json)
             VALUES
-                (?, ?, ?, 'queued', ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                (?, ?, ?, 'queued', ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
             """,
             (task_id, pipeline_name, description, worktree_path, branch,
-             base_branch, os.getpid()),
+             base_branch, os.getpid(), inputs_json),
         )
         conn.commit()
 
@@ -1793,6 +1794,7 @@ class PipelineExecutor:
                 worktree_path=str(worktree_path),
                 branch=branch_name,
                 base_branch=default_branch,
+                inputs_json=json.dumps(inputs) if inputs else None,
             )
 
             # Record worktree in worktrees table
