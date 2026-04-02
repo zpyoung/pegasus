@@ -1184,6 +1184,174 @@ def _get_textual_app() -> type:
                 activity_text = ""
             self.query_one("#card-activity", Static).update(activity_text)
 
+    class TaskListRow(Widget):
+        """Compact single-row widget for the vertical task list.
+
+        Replaces the wide ``TaskCard`` in the main dashboard layout, showing
+        task id/status, pipeline, description, and current activity in a
+        narrow left-column list.
+        """
+
+        DEFAULT_CSS = """
+        TaskListRow {
+            height: auto;
+            min-height: 3;
+            padding: 0 1;
+            border-bottom: solid $surface;
+        }
+        TaskListRow:focus {
+            background: $boost;
+            border-left: thick $accent;
+        }
+        """
+
+        can_focus = True
+
+        def compose(self) -> ComposeResult:
+            yield Static("", id="row-badge")
+            yield Static("", id="row-desc")
+            yield Static("", id="row-activity")
+
+        def update_data(
+            self,
+            task_id: str,
+            pipeline: str,
+            description: str,
+            status: str,
+            stages: list,
+            activity: str,
+            pending_question: str | None = None,
+            merge_status: str | None = None,
+        ) -> None:
+            """Refresh the row's displayed content."""
+            status_colors: dict[str, str] = {
+                "todo": "blue",
+                "queued": "yellow",
+                "running": "cyan",
+                "paused": "magenta",
+                "completed": "green",
+                "failed": "red",
+            }
+            color = status_colors.get(status, "white")
+            merge_badge = ""
+            if merge_status and merge_status not in ("unmerged",):
+                mc = {"merged": "green", "merging": "cyan", "conflict": "red"}.get(
+                    merge_status, "white"
+                )
+                merge_badge = f" [{mc}]{merge_status}[/{mc}]"
+            badge = (
+                f"[bold {color}]{task_id}[/bold {color}]"
+                f" [{color}]{status}[/{color}]{merge_badge}"
+                f"  [dim]{pipeline}[/dim]"
+            )
+            self.query_one("#row-badge", Static).update(badge)
+            self.query_one("#row-desc", Static).update(description[:50] or "[dim](no description)[/dim]")
+            if pending_question:
+                act = f"[bold yellow]?[/bold yellow] {pending_question[:40]}"
+            elif activity:
+                act = f"[dim]▶ {activity[:40]}[/dim]"
+            else:
+                act = ""
+            self.query_one("#row-activity", Static).update(act)
+
+    class QuickViewPanel(Widget):
+        """Right-side panel showing the selected task's stages and log tail.
+
+        Always visible in the main dashboard layout; updated whenever the
+        focused task changes.  Shows task header, stage list with status icons,
+        and the last ``_LOG_LINES`` lines from the task's log file.
+        """
+
+        _LOG_LINES = 12
+
+        DEFAULT_CSS = """
+        QuickViewPanel {
+            height: 1fr;
+            padding: 0 1;
+        }
+        #qv-placeholder {
+            height: auto;
+            padding: 1;
+            color: $text-muted;
+        }
+        #qv-header {
+            height: auto;
+            padding: 1 0;
+            border-bottom: solid $surface;
+        }
+        #qv-stages {
+            height: auto;
+            max-height: 10;
+            padding: 0 0 1 0;
+            border-bottom: solid $surface;
+        }
+        #qv-log-scroll {
+            height: 1fr;
+        }
+        #qv-log {
+            height: auto;
+            padding: 0 0;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            yield Static(
+                "[dim]Select a task to view details.[/dim]",
+                id="qv-placeholder",
+            )
+            yield Static("", id="qv-header")
+            yield Static("", id="qv-stages")
+            with VerticalScroll(id="qv-log-scroll"):
+                yield Static("", id="qv-log")
+
+        def clear(self) -> None:
+            """Reset to the empty placeholder state."""
+            self.query_one("#qv-placeholder", Static).update(
+                "[dim]Select a task to view details.[/dim]"
+            )
+            self.query_one("#qv-header", Static).update("")
+            self.query_one("#qv-stages", Static).update("")
+            self.query_one("#qv-log", Static).update("")
+
+        def update_task(self, task: dict, log_dir: Path) -> None:
+            """Refresh the panel with *task* data and log tail."""
+            self.query_one("#qv-placeholder", Static).update("")
+            # --- header ---
+            status_colors: dict[str, str] = {
+                "todo": "blue",
+                "queued": "yellow",
+                "running": "cyan",
+                "paused": "magenta",
+                "completed": "green",
+                "failed": "red",
+            }
+            color = status_colors.get(task["status"], "white")
+            header = (
+                f"[bold {color}]{task['id']}[/bold {color}]"
+                f"  [{color}]{task['status']}[/{color}]\n"
+                f"[bold]Pipeline:[/bold] {task['pipeline']}\n"
+                f"{task.get('description', '') or '[dim](no description)[/dim]'}"
+            )
+            self.query_one("#qv-header", Static).update(header)
+            # --- stages ---
+            self.query_one("#qv-stages", Static).update(
+                _build_stage_lines(task.get("stages", []))
+            )
+            # --- log tail ---
+            log_path = log_dir / f"{task['id']}.log"
+            log_text: str | _RichText
+            if log_path.exists():
+                try:
+                    text = log_path.read_text(encoding="utf-8", errors="replace")
+                    lines = text.splitlines()
+                    tail = "\n".join(lines[-self._LOG_LINES :]) if lines else "(empty log)"
+                    log_text = _RichText(tail)
+                except OSError:
+                    log_text = "[dim](log unreadable)[/dim]"
+            else:
+                log_text = "[dim](no log file yet)[/dim]"
+            self.query_one("#qv-log", Static).update(log_text)
+
     class LogPanel(Widget):
         """Widget that tails a task's log file (last 8 lines)."""
 
@@ -1628,13 +1796,20 @@ def _get_textual_app() -> type:
         PegasusDashboard {
             background: $background;
         }
-        #task-area {
+        #main-area {
             height: 1fr;
+        }
+        #task-list {
+            width: 36;
+            border-right: solid $surface;
+        }
+        #quickview {
+            width: 1fr;
         }
         #log-panel {
             dock: bottom;
         }
-        PegasusDashboard.detail-mode #task-area {
+        PegasusDashboard.detail-mode #main-area {
             display: none;
         }
         PegasusDashboard.detail-mode #log-panel {
@@ -1645,6 +1820,8 @@ def _get_textual_app() -> type:
         BINDINGS = [
             Binding("d", "toggle_view", "Dashboard", show=True),
             Binding("enter", "open_detail", "Detail", show=True),
+            Binding("up", "focus_prev_task", "Up", show=False, priority=True),
+            Binding("down", "focus_next_task", "Down", show=False, priority=True),
             Binding("tab", "focus_next_task", "Next task", show=True, priority=True),
             Binding("shift+tab", "focus_prev_task", "Prev task", show=False, priority=True),
             Binding("n", "create_task", "New task", show=True),
@@ -1705,7 +1882,10 @@ def _get_textual_app() -> type:
 
         def compose(self) -> ComposeResult:
             yield Header()
-            yield Horizontal(id="task-area")
+            with Horizontal(id="main-area"):
+                with Vertical(id="task-list"):
+                    pass
+                yield QuickViewPanel(id="quickview")
             yield TaskDetailView(id="detail-view")
             yield LogPanel(id="log-panel")
             yield TaskCreateModal(id="create-modal")
@@ -1780,6 +1960,7 @@ def _get_textual_app() -> type:
                     self._refresh_detail()
                 else:
                     self._refresh_cards()
+                    self._refresh_quickview()
                     if self._logs_visible:
                         self._refresh_logs()
             except Exception as exc:
@@ -1792,19 +1973,19 @@ def _get_textual_app() -> type:
         # ------------------------------------------------------------------
 
         def _refresh_cards(self) -> None:
-            """Sync TaskCards in #task-area to match current _task_data."""
-            area = self.query_one("#task-area", Horizontal)
+            """Sync TaskListRows in #task-list to match current _task_data."""
+            task_list = self.query_one("#task-list", Vertical)
             tasks = self._task_data
-            current_cards = list(self.query(TaskCard))
+            current_rows = list(self.query(TaskListRow))
 
-            # Update existing / create new cards
+            # Update existing / create new rows
             for i, task in enumerate(tasks):
-                if i < len(current_cards):
-                    card = current_cards[i]
+                if i < len(current_rows):
+                    row = current_rows[i]
                 else:
-                    card = TaskCard()
-                    area.mount(card)
-                card.update_data(
+                    row = TaskListRow()
+                    task_list.mount(row)
+                row.update_data(
                     task_id=task["id"],
                     pipeline=task["pipeline"],
                     description=task["description"],
@@ -1815,24 +1996,24 @@ def _get_textual_app() -> type:
                     merge_status=task.get("merge_status"),
                 )
 
-            # Remove extra cards
-            for card in current_cards[len(tasks) :]:
-                card.remove()
+            # Remove extra rows
+            for row in current_rows[len(tasks) :]:
+                row.remove()
 
-            # Ensure a card has focus when cards first appear or the
-            # previously focused card was removed.
+            # Ensure a row has focus when rows first appear or the
+            # previously focused row was removed.
             if tasks:
-                updated_cards = list(self.query(TaskCard))
+                updated_rows = list(self.query(TaskListRow))
                 focused = self.screen.focused
-                if not isinstance(focused, TaskCard) and updated_cards:
-                    safe_idx = min(self._focused_idx, len(updated_cards) - 1)
-                    updated_cards[safe_idx].focus()
+                if not isinstance(focused, TaskListRow) and updated_rows:
+                    safe_idx = min(self._focused_idx, len(updated_rows) - 1)
+                    updated_rows[safe_idx].focus()
 
             # Placeholder label when no tasks exist
             no_label_results = self.query("#no-tasks-label")
             no_label: Label | None = next(iter(no_label_results), None)
             if not tasks and no_label is None:
-                area.mount(
+                task_list.mount(
                     Label(
                         "No active tasks.  Run [bold]pegasus run[/bold] to start one.",
                         id="no-tasks-label",
@@ -1852,17 +2033,30 @@ def _get_textual_app() -> type:
             log_panel = self.query_one("#log-panel", LogPanel)
             log_panel.show_logs(task_id, log_dir)
 
+        def _refresh_quickview(self) -> None:
+            """Update the QuickViewPanel for the currently focused task."""
+            qv = self.query_one("#quickview", QuickViewPanel)
+            if self._detail_mode:
+                qv.clear()
+                return
+            task = self._focused_task()
+            if task is None:
+                qv.clear()
+                return
+            log_dir = self._db_path.parent / "logs"
+            qv.update_task(task, log_dir)
+
         def _focused_task_index(self) -> int:
-            """Return the _task_data index of the currently focused TaskCard.
+            """Return the _task_data index of the currently focused TaskListRow.
 
             Checks the real Textual focus state first (handles click-to-focus),
-            falls back to _focused_idx (handles Tab cycling).
+            falls back to _focused_idx (handles keyboard navigation).
             """
             focused_widget = self.screen.focused
-            if isinstance(focused_widget, TaskCard):
-                cards = list(self.query(TaskCard))
+            if isinstance(focused_widget, TaskListRow):
+                rows = list(self.query(TaskListRow))
                 try:
-                    idx = cards.index(focused_widget)
+                    idx = rows.index(focused_widget)
                     if idx < len(self._task_data):
                         self._focused_idx = idx
                         return idx
@@ -1913,22 +2107,24 @@ def _get_textual_app() -> type:
             self._refresh_detail()
 
         def action_focus_next_task(self) -> None:
-            """Tab -- cycle focus forward through task cards."""
-            cards = list(self.query(TaskCard))
-            if not cards:
+            """Tab/Down -- cycle focus forward through task list rows."""
+            rows = list(self.query(TaskListRow))
+            if not rows:
                 return
-            self._focused_idx = (self._focused_idx + 1) % len(cards)
-            cards[self._focused_idx].focus()
+            self._focused_idx = (self._focused_idx + 1) % len(rows)
+            rows[self._focused_idx].focus()
+            self._refresh_quickview()
             if self._logs_visible:
                 self._refresh_logs()
 
         def action_focus_prev_task(self) -> None:
-            """Shift+Tab -- cycle focus backward through task cards."""
-            cards = list(self.query(TaskCard))
-            if not cards:
+            """Shift+Tab/Up -- cycle focus backward through task list rows."""
+            rows = list(self.query(TaskListRow))
+            if not rows:
                 return
-            self._focused_idx = (self._focused_idx - 1) % len(cards)
-            cards[self._focused_idx].focus()
+            self._focused_idx = (self._focused_idx - 1) % len(rows)
+            rows[self._focused_idx].focus()
+            self._refresh_quickview()
             if self._logs_visible:
                 self._refresh_logs()
 
@@ -2306,10 +2502,11 @@ def _get_textual_app() -> type:
                 modal = self.query_one("#create-modal", TaskCreateModal)
                 modal.remove_class("visible-create")
                 self._create_visible = False
-                # Return focus to task area
-                cards = list(self.query(TaskCard))
-                if cards:
-                    cards[self._focused_idx].focus()
+                # Return focus to task list
+                rows = list(self.query(TaskListRow))
+                if rows:
+                    safe_idx = min(self._focused_idx, len(rows) - 1)
+                    rows[safe_idx].focus()
 
         def _close_detail(self) -> None:
             """Return from detail view to the dashboard view."""
@@ -2319,6 +2516,7 @@ def _get_textual_app() -> type:
             self.remove_class("detail-mode")
             self.query_one("#detail-view", TaskDetailView).remove_class("visible-detail")
             self._refresh_cards()
+            self._refresh_quickview()
 
         def _refresh_detail(self) -> None:
             """Query the focused task's full data and update TaskDetailView."""
