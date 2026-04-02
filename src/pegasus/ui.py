@@ -186,6 +186,7 @@ def _open_db_ro(project_dir: Path) -> sqlite3.Connection | None:
 def _status_icon(status: str) -> Text:
     """Return a Rich Text status badge with color."""
     colors = {
+        "todo": "blue",
         "queued": "yellow",
         "running": "cyan",
         "paused": "magenta",
@@ -455,7 +456,7 @@ def run(
     project_dir: Path,
     dry_run: bool,
 ) -> None:
-    """Create a task and spawn the pipeline runner as a subprocess."""
+    """Create a task in 'todo' status. Use 'pegasus start' to begin execution."""
     project_dir = project_dir.resolve()
     db_path = _get_db_path(project_dir)
 
@@ -517,16 +518,16 @@ def run(
             console.print(f"  Inputs:    {resolved_inputs}")
         console.print(f"  DB:        {db_path}")
         console.print()
-        console.print("Runner would be spawned as:")
-        console.print(f"  python3 -m pegasus._run_task {task_id}")
+        console.print("Task would be created in 'todo' status (not started automatically).")
+        console.print(f"  Use: pegasus start {task_id}")
         return
 
-    # Insert task row into SQLite
+    # Insert task row into SQLite (status='todo' — not started yet)
     conn = make_connection(db_path)
     try:
         conn.execute(
             """INSERT INTO tasks (id, pipeline, description, status, inputs_json)
-               VALUES (?, ?, ?, 'queued', ?)""",
+               VALUES (?, ?, ?, 'todo', ?)""",
             (task_id, pipeline, desc, inputs_json),
         )
         conn.commit()
@@ -538,27 +539,8 @@ def run(
     console.print(f"  Description: {desc}")
     if resolved_inputs:
         console.print(f"  Inputs:      {resolved_inputs}")
-
-    # Spawn the runner as a detached subprocess
-    runner_cmd = [sys.executable, "-m", "pegasus._run_task", task_id]
-    env = dict(os.environ)
-    env["PEGASUS_PROJECT_DIR"] = str(project_dir)
-
-    try:
-        proc = subprocess.Popen(
-            runner_cmd,
-            env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,  # detach from parent process group
-        )
-        console.print(f"  Runner PID:  {proc.pid}")
-    except Exception as exc:
-        console.print(f"[red]Error spawning runner:[/red] {exc}")
-        sys.exit(1)
-
     console.print()
-    console.print(f"Monitor progress: [bold]pegasus status {task_id}[/bold]")
+    console.print(f"Start task: [bold]pegasus start {task_id}[/bold]")
 
 
 # ---------------------------------------------------------------------------
@@ -891,7 +873,7 @@ def clean(task_id: str | None, project_dir: Path, dry_run: bool, force: bool) ->
                 console.print(f"[red]Error:[/red] Task '{task_id}' not found.")
                 sys.exit(1)
 
-            cleanable_states = {"completed", "failed"}
+            cleanable_states = {"todo", "completed", "failed"}
             if row["status"] not in cleanable_states:
                 console.print(
                     f"[red]Error:[/red] Task '{task_id}' is in state '{row['status']}' and cannot be cleaned."
@@ -903,11 +885,11 @@ def clean(task_id: str | None, project_dir: Path, dry_run: bool, force: bool) ->
         else:
             # Find all cleanable tasks
             tasks_to_clean = conn.execute(
-                "SELECT id, pipeline, description, status, worktree_path, branch FROM tasks WHERE status IN ('completed', 'failed')"
+                "SELECT id, pipeline, description, status, worktree_path, branch FROM tasks WHERE status IN ('todo', 'completed', 'failed')"
             ).fetchall()
 
         if not tasks_to_clean:
-            console.print("[yellow]No cleanable tasks found.[/yellow] Only completed and failed tasks can be cleaned.")
+            console.print("[yellow]No cleanable tasks found.[/yellow] Only todo, completed, and failed tasks can be cleaned.")
             return
 
         # Show what will be cleaned
