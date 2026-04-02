@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import importlib.resources
 import json
+import logging
 import os
 import secrets
 import sqlite3
@@ -45,6 +46,7 @@ from pegasus.models import (
 )
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Language auto-detection helpers
@@ -1374,12 +1376,12 @@ def _get_textual_app() -> type:
 
             # Validation
             if not pipeline:
-                self.app.notify("Please select a pipeline", severity="error", timeout=3)
+                self.app.notify("Please select a pipeline", severity="error", timeout=0)
                 select_widget.focus()
                 return
 
             if not description:
-                self.app.notify("Please enter a task description", severity="error", timeout=3)
+                self.app.notify("Please enter a task description", severity="error", timeout=0)
                 description_widget.focus()
                 return
 
@@ -1496,6 +1498,7 @@ def _get_textual_app() -> type:
 
         TITLE = "Pegasus Dashboard"
         SUB_TITLE = "Live task monitoring"
+        ALLOW_SELECT = True
 
         DEFAULT_CSS = """
         PegasusDashboard {
@@ -1554,7 +1557,12 @@ def _get_textual_app() -> type:
                 finally:
                     wr_conn.close()
             except Exception:
-                pass
+                logger.exception("Failed to run database migrations")
+                self.notify(
+                    "DB migration failed — tasks may not launch. See logs.",
+                    severity="error",
+                    timeout=0,
+                )
             try:
                 self._conn = make_connection(self._db_path, read_only=True)
             except Exception:
@@ -1639,7 +1647,7 @@ def _get_textual_app() -> type:
             except Exception as exc:
                 if not getattr(self, "_poll_error_shown", False):
                     self._poll_error_shown = True
-                    self.notify(f"DB poll error: {exc}", severity="error", timeout=5)
+                    self.notify(f"DB poll error: {exc}", severity="error", timeout=0)
 
         # ------------------------------------------------------------------
         # Internal refresh helpers
@@ -1792,7 +1800,7 @@ def _get_textual_app() -> type:
                         self.notify(
                             f"Another merge is in progress (task {merging_id})",
                             severity="error",
-                            timeout=4,
+                            timeout=0,
                         )
                         return
 
@@ -1808,13 +1816,13 @@ def _get_textual_app() -> type:
                         self.notify(
                             "Main repo working tree is dirty",
                             severity="error",
-                            timeout=4,
+                            timeout=0,
                         )
                         return
 
                     # Set merge_status='merging'
                     if not transition_merge_status(conn, task["id"], ms, "merging"):
-                        self.notify("Failed to acquire merge lock", severity="error", timeout=4)
+                        self.notify("Failed to acquire merge lock", severity="error", timeout=0)
                         return
                 finally:
                     conn.close()
@@ -1835,7 +1843,7 @@ def _get_textual_app() -> type:
                 self.notify(f"Merge started for {task['id']} (PID: {proc.pid})", timeout=3)
 
             except Exception as exc:
-                self.notify(f"Merge failed: {exc}", severity="error", timeout=4)
+                self.notify(f"Merge failed: {exc}", severity="error", timeout=0)
 
         def action_approve_task(self) -> None:
             """A -- approve the focused paused task.
@@ -1875,7 +1883,7 @@ def _get_textual_app() -> type:
                     conn.close()
                 self.notify(f"Approved task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Approve failed: {exc}", severity="error", timeout=4)
+                self.notify(f"Approve failed: {exc}", severity="error", timeout=0)
 
         def _submit_question_answer(self, answer: str) -> None:
             """Write *answer* to the pending agent_questions row and resume the task."""
@@ -1903,7 +1911,7 @@ def _get_textual_app() -> type:
                     f"Answer submitted for task {self._answering_task_id}", timeout=2
                 )
             except Exception as exc:
-                self.notify(f"Submit failed: {exc}", severity="error", timeout=4)
+                self.notify(f"Submit failed: {exc}", severity="error", timeout=0)
             finally:
                 question_bar = self.query_one("#question-bar", QuestionBar)
                 question_bar.hide_question()
@@ -1940,7 +1948,7 @@ def _get_textual_app() -> type:
                     conn.close()
                 self.notify(f"Rejected task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Reject failed: {exc}", severity="error", timeout=4)
+                self.notify(f"Reject failed: {exc}", severity="error", timeout=0)
 
         def action_clean_task(self) -> None:
             """C -- remove artifacts for the focused completed/failed task."""
@@ -1964,7 +1972,7 @@ def _get_textual_app() -> type:
                         self.notify(
                             f"Task {task['id']} not found in database.",
                             severity="error",
-                            timeout=4,
+                            timeout=0,
                         )
                         return
 
@@ -2006,7 +2014,7 @@ def _get_textual_app() -> type:
                 else:
                     self.notify(f"Cleaned task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Clean failed: {exc}", severity="error", timeout=4)
+                self.notify(f"Clean failed: {exc}", severity="error", timeout=0)
 
         def action_toggle_logs(self) -> None:
             """L -- show/hide the log panel (no-op in detail mode)."""
@@ -2027,7 +2035,7 @@ def _get_textual_app() -> type:
             # Populate pipeline options
             pipelines = self._discover_pipelines()
             if not pipelines:
-                self.notify("No pipelines found in .pegasus/pipelines/", severity="error", timeout=4)
+                self.notify("No pipelines found in .pegasus/pipelines/", severity="error", timeout=0)
                 return
 
             select_widget = modal.query_one("#pipeline-select", Select)
@@ -2142,7 +2150,7 @@ def _get_textual_app() -> type:
             pipeline_yml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yml"
 
             if not pipeline_yaml.exists() and not pipeline_yml.exists():
-                self.notify(f"Pipeline '{pipeline}' not found", severity="error", timeout=4)
+                self.notify(f"Pipeline '{pipeline}' not found", severity="error", timeout=0)
                 return
 
             try:
@@ -2178,7 +2186,7 @@ def _get_textual_app() -> type:
                 self.action_dismiss_modal()
 
             except Exception as exc:
-                self.notify(f"Task creation failed: {exc}", severity="error", timeout=5)
+                self.notify(f"Task creation failed: {exc}", severity="error", timeout=0)
 
         def action_quit_app(self) -> None:
             """Q -- quit TUI; tasks continue running as detached subprocesses."""
