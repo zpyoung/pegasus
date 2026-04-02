@@ -2469,6 +2469,23 @@ class MergeExecutor:
                     f"{ff_result.stderr.strip()}"
                 )
 
+            # 7b. Commit any uncommitted work in the worktree
+            if worktree_path and Path(worktree_path).exists():
+                wt_status = self._run_git(
+                    ["status", "--porcelain"], cwd=worktree_path, check=False,
+                )
+                if wt_status.stdout.strip():
+                    self._log(
+                        "Worktree has uncommitted changes — committing to "
+                        "task branch before merge"
+                    )
+                    self._run_git(["add", "-A"], cwd=worktree_path)
+                    self._run_git(
+                        ["commit", "-m",
+                         f"chore(pegasus): commit uncommitted work [{task_id}]"],
+                        cwd=worktree_path,
+                    )
+
             # 8. git merge --squash <task-branch>
             self._log(f"Squash-merging {branch}")
             merge_result = self._attempt_squash_merge(branch)
@@ -2492,26 +2509,20 @@ class MergeExecutor:
 
             if merge_result == "empty":
                 self._log("No changes to merge (already up to date)")
-                transition_merge_status(conn, task_id, "merging", "merged")
-                self._send_notification(
-                    "Pegasus — Merge Complete",
-                    f"Already up to date: {description}",
+            elif merge_result == "success":
+                # 9. git commit
+                commit_msg = (
+                    f"feat(pegasus): {description} [task {task_id}]"
                 )
-                return True
+                self._log(f"Committing: {commit_msg}")
+                self._run_git(["commit", "-m", commit_msg])
 
-            # 9. git commit
-            commit_msg = (
-                f"feat(pegasus): {description} [task {task_id}]"
-            )
-            self._log(f"Committing: {commit_msg}")
-            self._run_git(["commit", "-m", commit_msg])
-
-            # 10. git tag pegasus/merged/<task-id>
-            tag_name = f"pegasus/merged/{task_id}"
-            self._log(f"Creating recovery tag: {tag_name}")
-            self._run_git(
-                ["tag", tag_name, branch], check=False
-            )
+                # 10. git tag pegasus/merged/<task-id>
+                tag_name = f"pegasus/merged/{task_id}"
+                self._log(f"Creating recovery tag: {tag_name}")
+                self._run_git(
+                    ["tag", tag_name, branch], check=False
+                )
 
             # 11. Cleanup worktree + branch
             if worktree_path and Path(worktree_path).exists():
