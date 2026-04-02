@@ -70,11 +70,13 @@ def main() -> None:
         asyncio.run(executor.resume_task(task_id))
     else:
         # Read task data from SQLite (ui.py already inserted the row)
+        import json  # noqa: PLC0415
         from pegasus.models import make_connection  # noqa: PLC0415
 
         conn = make_connection(db_path, read_only=True)
         row = conn.execute(
-            "SELECT pipeline, description FROM tasks WHERE id = ?", (task_id,)
+            "SELECT pipeline, description, inputs_json FROM tasks WHERE id = ?",
+            (task_id,),
         ).fetchone()
         conn.close()
 
@@ -82,7 +84,21 @@ def main() -> None:
             print(f"Task {task_id} not found in database", file=sys.stderr)
             sys.exit(1)
 
-        asyncio.run(executor.run_task(task_id, row["pipeline"], row["description"] or ""))
+        task_inputs: dict = {}
+        if row["inputs_json"]:
+            try:
+                task_inputs = json.loads(row["inputs_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        asyncio.run(
+            executor.run_task(
+                task_id,
+                row["pipeline"],
+                row["description"] or "",
+                inputs=task_inputs or None,
+            )
+        )
 
 
 if __name__ == "__main__":

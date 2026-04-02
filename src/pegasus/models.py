@@ -55,6 +55,9 @@ MAX_STAGES: int = 10
 #: Maximum allowed max_turns per stage.
 MAX_TURNS_LIMIT: int = 100
 
+#: Valid pipeline input field types.
+VALID_INPUT_TYPES: frozenset[str] = frozenset({"string", "number", "boolean"})
+
 
 # ---------------------------------------------------------------------------
 # ClaudeFlags — per-stage flag overrides
@@ -177,6 +180,63 @@ class ExecutionConfig(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# PipelineInputField — one declared pipeline input
+# ---------------------------------------------------------------------------
+
+
+class PipelineInputField(BaseModel):
+    """Declaration of a single named input field for a pipeline.
+
+    Pipeline authors declare inputs under the ``inputs:`` key in their YAML:
+
+    .. code-block:: yaml
+
+        inputs:
+          description:
+            type: string
+            required: true
+            description: "What bug to fix"
+          ticket:
+            type: string
+            required: false
+            default: ""
+            description: "Jira/Linear ticket ID"
+
+    Users pass values at run time via ``pegasus run --input key=value``.
+    Stage prompts reference them as ``{{inputs.field_name}}``.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    type: Literal["string", "number", "boolean"] = "string"
+    description: str | None = None
+    required: bool = True
+    default: str | int | float | bool | None = None
+
+    @model_validator(mode="after")
+    def validate_default_matches_type(self) -> "PipelineInputField":
+        """Ensure the default value is compatible with the declared ``type``."""
+        if self.default is None:
+            return self
+        if self.type == "string" and not isinstance(self.default, str):
+            raise ValueError(
+                f"default value for type='string' must be a string, "
+                f"got {type(self.default).__name__}"
+            )
+        if self.type == "number" and not isinstance(self.default, (int, float)):
+            raise ValueError(
+                f"default value for type='number' must be int or float, "
+                f"got {type(self.default).__name__}"
+            )
+        if self.type == "boolean" and not isinstance(self.default, bool):
+            raise ValueError(
+                f"default value for type='boolean' must be bool, "
+                f"got {type(self.default).__name__}"
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
 # PipelineConfig — top-level pipeline YAML schema
 # ---------------------------------------------------------------------------
 
@@ -193,7 +253,22 @@ class PipelineConfig(BaseModel):
     description: str | None = None
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     defaults: PipelineDefaults = Field(default_factory=PipelineDefaults)
+    inputs: dict[str, PipelineInputField] = Field(default_factory=dict)
     stages: list[StageConfig] = Field(..., min_length=1)
+
+    @field_validator("inputs")
+    @classmethod
+    def validate_input_names(
+        cls, v: dict[str, PipelineInputField]
+    ) -> dict[str, PipelineInputField]:
+        """Validate that all input field names are valid identifiers."""
+        for name in v:
+            if not re.match(r"^[a-z][a-z0-9_]*$", name):
+                raise ValueError(
+                    f"Input field name '{name}' must start with a lowercase letter "
+                    "and contain only lowercase letters, digits, or underscores."
+                )
+        return v
 
     @field_validator("stages")
     @classmethod
@@ -696,7 +771,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     merge_status  TEXT,
     total_cost    REAL DEFAULT 0.0,
     runner_pid    INTEGER,
-    heartbeat_at  DATETIME
+    heartbeat_at  DATETIME,
+    inputs_json   TEXT
 );
 
 CREATE TABLE IF NOT EXISTS stage_runs (
@@ -778,13 +854,22 @@ def make_connection(db_path: str | Path, read_only: bool = False) -> sqlite3.Con
 
 
 def _migrate_db(conn: sqlite3.Connection) -> None:
-    """Apply incremental schema migrations for existing databases."""
+    """Apply incremental DDL migrations for existing databases.
+
+    Uses ``PRAGMA table_info`` to detect missing columns and adds them with
+    ``ALTER TABLE … ADD COLUMN`` so that databases created by earlier versions
+    of Pegasus continue to work without a full schema drop-and-recreate.
+    """
     # Detect existing columns in the tasks table.
     cols = {row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
 
     # Migration: add merge_status column (added in schema v2).
     if "merge_status" not in cols:
         conn.execute("ALTER TABLE tasks ADD COLUMN merge_status TEXT")
+
+    # Migration: add inputs_json column (added for pipeline input fields).
+    if "inputs_json" not in cols:
+        conn.execute("ALTER TABLE tasks ADD COLUMN inputs_json TEXT")
 
     # Migration: add agent_questions table (added in schema v2).
     conn.execute(
@@ -809,8 +894,8 @@ def init_db(conn: sqlite3.Connection) -> None:
     """Create all Pegasus tables and indexes if they do not already exist.
 
     Also inserts the current ``SCHEMA_VERSION`` row into ``schema_version``
-    (ignored if already present).  Runs migrations for databases created with
-    older schema versions.
+    (ignored if already present) and applies any outstanding schema migrations
+    for databases created by earlier Pegasus versions.
 
     Args:
         conn: An open ``sqlite3.Connection`` (writable, not ``mode=ro``).
@@ -918,6 +1003,81 @@ def transition_task_state(
 
 
 # ---------------------------------------------------------------------------
+# Pipeline input resolution
+# ---------------------------------------------------------------------------
+
+
+def resolve_pipeline_inputs(
+    declared: dict[str, "PipelineInputField"],
+    provided: dict[str, str],
+) -> tuple[dict[str, Any], list[str]]:
+    """Validate and coerce user-supplied input values against declared fields.
+
+    Checks that all required fields are present, applies defaults for optional
+    fields that were not provided, and coerces string CLI values to the
+    declared type (``number`` → ``int``/``float``, ``boolean`` → ``bool``).
+
+    Args:
+        declared: The ``inputs`` dict from a parsed ``PipelineConfig``.
+        provided: Raw string values supplied by the user (e.g. from
+            ``--input key=value`` CLI flags), keyed by field name.
+
+    Returns:
+        A ``(resolved, errors)`` tuple where ``resolved`` maps each input name
+        to its final typed value and ``errors`` is a list of human-readable
+        error strings (empty when validation passes).
+    """
+    errors: list[str] = []
+    resolved: dict[str, Any] = {}
+
+    for name, field in declared.items():
+        if name in provided:
+            raw_val = provided[name]
+            # Coerce to declared type
+            if field.type == "number":
+                try:
+                    resolved[name] = float(raw_val) if "." in raw_val else int(raw_val)
+                except ValueError:
+                    errors.append(
+                        f"Input '{name}': cannot convert '{raw_val}' to number."
+                    )
+                    continue
+            elif field.type == "boolean":
+                if raw_val.lower() in ("true", "1", "yes"):
+                    resolved[name] = True
+                elif raw_val.lower() in ("false", "0", "no"):
+                    resolved[name] = False
+                else:
+                    errors.append(
+                        f"Input '{name}': cannot convert '{raw_val}' to boolean "
+                        "(expected true/false/yes/no/1/0)."
+                    )
+                    continue
+            else:
+                resolved[name] = raw_val
+        elif field.default is not None:
+            resolved[name] = field.default
+        elif not field.required:
+            # Optional with no default — resolve to empty string for templates
+            resolved[name] = ""
+        else:
+            errors.append(
+                f"Required input '{name}' was not provided."
+                + (f" ({field.description})" if field.description else "")
+            )
+
+    # Report any unknown keys the user passed (not declared in the pipeline)
+    for name in provided:
+        if name not in declared:
+            errors.append(
+                f"Unknown input '{name}'. "
+                f"Declared inputs: {sorted(declared.keys()) or '(none)'}"
+            )
+
+    return resolved, errors
+
+
+# ---------------------------------------------------------------------------
 # Pipeline validation
 # ---------------------------------------------------------------------------
 
@@ -1003,7 +1163,9 @@ def _suggest_flag(unknown: str, max_distance: int = 3) -> str | None:
 
 
 #: Recognisable template variable namespaces in prompts.
-_KNOWN_TEMPLATE_NAMESPACES: frozenset[str] = frozenset({"stages", "task", "project", "stage"})
+_KNOWN_TEMPLATE_NAMESPACES: frozenset[str] = frozenset(
+    {"stages", "task", "project", "stage", "inputs"}
+)
 
 #: Regex matching any ``{{...}}`` template expression.
 _TEMPLATE_RE: re.Pattern[str] = re.compile(r"\{\{([^}]+)\}\}")
@@ -1012,6 +1174,9 @@ _TEMPLATE_RE: re.Pattern[str] = re.compile(r"\{\{([^}]+)\}\}")
 _STAGE_REF_RE: re.Pattern[str] = re.compile(
     r"\{\{stages\.([a-z][a-z0-9_-]*)\.(\w+)\}\}"
 )
+
+#: Regex matching pipeline input references: ``{{inputs.<name>}}``.
+_INPUT_REF_RE: re.Pattern[str] = re.compile(r"\{\{inputs\.([a-z][a-z0-9_]*)\}\}")
 
 
 def _format_pydantic_errors(exc: ValidationError, file_path: str | Path) -> list[PipelineValidationError]:
@@ -1153,6 +1318,12 @@ def validate_pipeline(
     if not isinstance(stages_raw, list):
         stages_raw = []
 
+    # Collect declared input field names for {{inputs.X}} validation.
+    inputs_section = raw.get("inputs", {})
+    declared_inputs: set[str] = (
+        set(inputs_section.keys()) if isinstance(inputs_section, dict) else set()
+    )
+
     # Build ordered list of stage IDs seen so far for forward-ref detection.
     # We iterate once over the raw stage list.
     seen_stage_ids: list[str] = []
@@ -1259,6 +1430,22 @@ def validate_pipeline(
                                 f"Unrecognised template namespace '{namespace}' "
                                 f"in '{{{{{{expr}}}}}}'.  "
                                 f"Known namespaces: {sorted(_KNOWN_TEMPLATE_NAMESPACES)}"
+                            ),
+                            file_path=file_path,
+                            location=stage_loc,
+                        )
+                    )
+
+            # --- 4d: Input field reference validity ---
+            # {{inputs.X}} references must name a declared input field.
+            for input_match in _INPUT_REF_RE.finditer(prompt):
+                input_name = input_match.group(1)
+                if input_name not in declared_inputs:
+                    errors.append(
+                        PipelineValidationError(
+                            message=(
+                                f"Undefined input reference '{{{{inputs.{input_name}}}}}'. "
+                                f"Declared inputs: {sorted(declared_inputs) or '(none)'}"
                             ),
                             file_path=file_path,
                             location=stage_loc,

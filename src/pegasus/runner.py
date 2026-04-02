@@ -1217,6 +1217,7 @@ class PipelineExecutor:
         stage_outputs: dict[str, str] | None = None,
         question_responses: dict[str, str] | None = None,
         current_stage_id: str | None = None,
+        inputs: dict[str, Any] | None = None,
     ) -> str:
         """Resolve ``{{…}}`` template variables in a stage prompt.
 
@@ -1227,9 +1228,11 @@ class PipelineExecutor:
         - ``{{stages.<id>.output}}`` — output of a previously completed stage
         - ``{{stages.<id>.question_response}}`` — answer to another stage's question
         - ``{{stage.question_response}}`` — answer to the *current* stage's question
+        - ``{{inputs.<name>}}``     — a named pipeline input value
         """
         outputs = stage_outputs or {}
         q_resp = question_responses or {}
+        resolved_inputs = inputs or {}
 
         def _replace(match: re.Match[str]) -> str:
             expr = match.group(1).strip()
@@ -1260,6 +1263,10 @@ class PipelineExecutor:
                 # Shorthand for the current stage's own question response.
                 if key == "question_response" and current_stage_id and current_stage_id in q_resp:
                     return q_resp[current_stage_id]
+                return match.group(0)
+            elif namespace == "inputs":
+                if key in resolved_inputs:
+                    return str(resolved_inputs[key])
                 return match.group(0)
             return match.group(0)
 
@@ -1602,6 +1609,7 @@ class PipelineExecutor:
         task_id: str,
         pipeline_name: str,
         description: str,
+        inputs: dict[str, Any] | None = None,
     ) -> bool:
         """Execute a full pipeline task from worktree creation to completion.
 
@@ -1627,6 +1635,8 @@ class PipelineExecutor:
                            extension) under ``.pegasus/pipelines/``.
             description:   Human-readable description of the task (used for
                            branch naming and SQLite).
+            inputs:        Resolved pipeline input values (keyed by field name).
+                           Used for ``{{inputs.X}}`` template substitution.
 
         Returns:
             ``True`` if all stages completed successfully, ``False`` otherwise.
@@ -1793,6 +1803,7 @@ class PipelineExecutor:
                     stage_outputs=stage_outputs,
                     question_responses=question_responses,
                     current_stage_id=stage.id,
+                    inputs=inputs,
                 )
 
                 # --- Rate-limit retry loop ---
@@ -1982,6 +1993,8 @@ class PipelineExecutor:
         pipeline_name: str = task_row["pipeline"]
         description: str = task_row["description"] or ""
         worktree_path_str: str | None = task_row["worktree_path"]
+        inputs_json_str: str | None = task_row["inputs_json"] if "inputs_json" in task_row.keys() else None
+        task_inputs: dict[str, Any] = json.loads(inputs_json_str) if inputs_json_str else {}
 
         if worktree_path_str is None:
             raise ValueError(f"Task '{task_id}' has no worktree_path — cannot resume")
@@ -2087,6 +2100,7 @@ class PipelineExecutor:
                     description=description,
                     question_responses=question_responses,
                     current_stage_id=stage.id,
+                    inputs=task_inputs,
                 )
 
                 stage_success = False

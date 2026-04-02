@@ -18,6 +18,7 @@ subprocess.
 from __future__ import annotations
 
 import importlib.resources
+import json
 import os
 import secrets
 import sqlite3
@@ -35,7 +36,9 @@ from rich.text import Text
 from pegasus.models import (
     init_db,
     is_merge_in_progress,
+    load_pipeline_config,
     make_connection,
+    resolve_pipeline_inputs,
     transition_merge_status,
     validate_all_pipelines,
     validate_pipeline,
@@ -423,7 +426,14 @@ def init(
 
 @cli.command("run")
 @click.option("--pipeline", required=True, help="Pipeline name (without .yaml extension).")
-@click.option("--desc", required=True, help="Task description.")
+@click.option("--desc", default="", show_default=False, help="Task description ({{task.description}}).")
+@click.option(
+    "--input",
+    "raw_inputs",
+    multiple=True,
+    metavar="KEY=VALUE",
+    help="Pipeline input as KEY=VALUE. Repeatable. Use for {{inputs.X}} template variables.",
+)
 @click.option(
     "--project-dir",
     default=".",
@@ -435,6 +445,7 @@ def init(
 def run(
     pipeline: str,
     desc: str,
+    raw_inputs: tuple[str, ...],
     project_dir: Path,
     dry_run: bool,
 ) -> None:
@@ -449,20 +460,55 @@ def run(
     # Verify the pipeline file exists
     pipeline_yaml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yaml"
     pipeline_yml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yml"
-    if not pipeline_yaml.exists() and not pipeline_yml.exists():
+    pipeline_path = pipeline_yaml if pipeline_yaml.exists() else (pipeline_yml if pipeline_yml.exists() else None)
+    if pipeline_path is None:
         console.print(f"[red]Error:[/red] Pipeline '{pipeline}' not found.")
         console.print(f"  Looked for: {pipeline_yaml}")
         console.print(f"  and:        {pipeline_yml}")
         sys.exit(1)
 
+    # Parse --input KEY=VALUE pairs
+    provided_inputs: dict[str, str] = {}
+    for raw in raw_inputs:
+        if "=" not in raw:
+            console.print(f"[red]Error:[/red] --input '{raw}' is not in KEY=VALUE format.")
+            sys.exit(1)
+        k, v = raw.split("=", 1)
+        k = k.strip()
+        if not k:
+            console.print(f"[red]Error:[/red] --input '{raw}' has an empty key.")
+            sys.exit(1)
+        provided_inputs[k] = v
+
+    # Validate inputs against the pipeline's declared input fields
+    pipeline_config = load_pipeline_config(pipeline_path)
+    resolved_inputs: dict[str, Any] = {}
+    if pipeline_config.inputs:
+        resolved_inputs, input_errors = resolve_pipeline_inputs(
+            pipeline_config.inputs, provided_inputs
+        )
+        if input_errors:
+            for err in input_errors:
+                console.print(f"[red]Input error:[/red] {err}")
+            sys.exit(1)
+    elif provided_inputs:
+        # Pipeline has no declared inputs but user passed --input flags
+        console.print(
+            "[yellow]Warning:[/yellow] Pipeline has no declared inputs; "
+            "--input flags are ignored."
+        )
+
     # Generate a short task ID (6 hex chars)
     task_id = secrets.token_hex(3)
+    inputs_json = json.dumps(resolved_inputs) if resolved_inputs else None
 
     if dry_run:
         console.print("[bold yellow]Dry run — no API calls will be made.[/bold yellow]")
         console.print(f"  Task ID:   {task_id}")
         console.print(f"  Pipeline:  {pipeline}")
         console.print(f"  Desc:      {desc}")
+        if resolved_inputs:
+            console.print(f"  Inputs:    {resolved_inputs}")
         console.print(f"  DB:        {db_path}")
         console.print()
         console.print("Runner would be spawned as:")
@@ -473,9 +519,9 @@ def run(
     conn = make_connection(db_path)
     try:
         conn.execute(
-            """INSERT INTO tasks (id, pipeline, description, status)
-               VALUES (?, ?, ?, 'queued')""",
-            (task_id, pipeline, desc),
+            """INSERT INTO tasks (id, pipeline, description, status, inputs_json)
+               VALUES (?, ?, ?, 'queued', ?)""",
+            (task_id, pipeline, desc, inputs_json),
         )
         conn.commit()
     finally:
@@ -484,6 +530,8 @@ def run(
     console.print(f"[green]Task created:[/green] [bold]{task_id}[/bold]")
     console.print(f"  Pipeline:    {pipeline}")
     console.print(f"  Description: {desc}")
+    if resolved_inputs:
+        console.print(f"  Inputs:      {resolved_inputs}")
 
     # Spawn the runner as a detached subprocess
     runner_cmd = [sys.executable, "-m", "pegasus._run_task", task_id]
