@@ -48,6 +48,10 @@ from pegasus.models import (
 console = Console()
 logger = logging.getLogger(__name__)
 
+# Textual 8.x: timeout=_ERROR_NOTIFY_TIMEOUT means "expire immediately" (never shown).
+# Use a long timeout for error notifications that should persist visibly.
+_ERROR_NOTIFY_TIMEOUT: float = 30.0
+
 # ---------------------------------------------------------------------------
 # Language auto-detection helpers
 # ---------------------------------------------------------------------------
@@ -1513,12 +1517,12 @@ def _get_textual_app() -> type:
 
             # Validation
             if not pipeline:
-                self.app.notify("Please select a pipeline", severity="error", timeout=0)
+                self.app.notify("Please select a pipeline", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
                 select_widget.focus()
                 return
 
             if not description:
-                self.app.notify("Please enter a task description", severity="error", timeout=0)
+                self.app.notify("Please enter a task description", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
                 description_widget.focus()
                 return
 
@@ -1698,7 +1702,7 @@ def _get_textual_app() -> type:
                 self.notify(
                     "DB migration failed — tasks may not launch. See logs.",
                     severity="error",
-                    timeout=0,
+                    timeout=_ERROR_NOTIFY_TIMEOUT,
                 )
             try:
                 self._conn = make_connection(self._db_path, read_only=True)
@@ -1797,7 +1801,7 @@ def _get_textual_app() -> type:
             except Exception as exc:
                 if not getattr(self, "_poll_error_shown", False):
                     self._poll_error_shown = True
-                    self.notify(f"DB poll error: {exc}", severity="error", timeout=0)
+                    self.notify(f"DB poll error: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         # ------------------------------------------------------------------
         # Internal refresh helpers
@@ -1986,7 +1990,7 @@ def _get_textual_app() -> type:
                         self.notify(
                             f"Another merge is in progress (task {merging_id})",
                             severity="error",
-                            timeout=0,
+                            timeout=_ERROR_NOTIFY_TIMEOUT,
                         )
                         return
 
@@ -2010,7 +2014,7 @@ def _get_textual_app() -> type:
                         self.notify(
                             f"Merge blocked: repo is dirty — {short}{extra}. Commit or stash first.",
                             severity="error",
-                            timeout=0,
+                            timeout=_ERROR_NOTIFY_TIMEOUT,
                         )
                         return
 
@@ -2021,7 +2025,7 @@ def _get_textual_app() -> type:
                     )
                     if not transition_merge_status(conn, task["id"], ms, "merging"):
                         logger.debug("action_merge_task: transition_merge_status returned False")
-                        self.notify("Failed to acquire merge lock", severity="error", timeout=0)
+                        self.notify("Failed to acquire merge lock", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
                         return
                 finally:
                     conn.close()
@@ -2044,7 +2048,7 @@ def _get_textual_app() -> type:
                 self.notify(f"Merge started for {task['id']} (PID: {proc.pid})", timeout=3)
 
             except Exception as exc:
-                self.notify(f"Merge failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Merge failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         def action_approve_task(self) -> None:
             """A -- approve the focused paused task.
@@ -2086,7 +2090,7 @@ def _get_textual_app() -> type:
                     conn.close()
                 self.notify(f"Approved task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Approve failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Approve failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         def _on_question_dismissed(self, answer: str | None) -> None:
             """Callback when QuestionScreen is dismissed.
@@ -2141,7 +2145,7 @@ def _get_textual_app() -> type:
                 finally:
                     conn.close()
             except Exception as exc:
-                self.notify(f"Submit failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Submit failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
             finally:
                 self._answering_question_id = None
                 self._answering_task_id = None
@@ -2168,7 +2172,7 @@ def _get_textual_app() -> type:
                     conn.close()
                 self.notify(f"Rejected task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Reject failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Reject failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         def action_clean_task(self) -> None:
             """C -- remove artifacts for the focused completed/failed task."""
@@ -2191,7 +2195,7 @@ def _get_textual_app() -> type:
                         self.notify(
                             f"Task {task['id']} not found in database.",
                             severity="error",
-                            timeout=0,
+                            timeout=_ERROR_NOTIFY_TIMEOUT,
                         )
                         return
 
@@ -2233,7 +2237,7 @@ def _get_textual_app() -> type:
                 else:
                     self.notify(f"Cleaned task {task['id']}", timeout=2)
             except Exception as exc:
-                self.notify(f"Clean failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Clean failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         def action_toggle_logs(self) -> None:
             """L -- show/hide the log panel (no-op in detail mode)."""
@@ -2254,7 +2258,7 @@ def _get_textual_app() -> type:
             # Populate pipeline options
             pipelines = self._discover_pipelines()
             if not pipelines:
-                self.notify("No pipelines found in .pegasus/pipelines/", severity="error", timeout=0)
+                self.notify("No pipelines found in .pegasus/pipelines/", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
                 return
 
             select_widget = modal.query_one("#pipeline-select", Select)
@@ -2367,7 +2371,7 @@ def _get_textual_app() -> type:
             pipeline_yml = project_dir / ".pegasus" / "pipelines" / f"{pipeline}.yml"
 
             if not pipeline_yaml.exists() and not pipeline_yml.exists():
-                self.notify(f"Pipeline '{pipeline}' not found", severity="error", timeout=0)
+                self.notify(f"Pipeline '{pipeline}' not found", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
                 return
 
             try:
@@ -2403,7 +2407,7 @@ def _get_textual_app() -> type:
                 self.action_dismiss_modal()
 
             except Exception as exc:
-                self.notify(f"Task creation failed: {exc}", severity="error", timeout=0)
+                self.notify(f"Task creation failed: {exc}", severity="error", timeout=_ERROR_NOTIFY_TIMEOUT)
 
         def action_quit_app(self) -> None:
             """Q -- quit TUI; tasks continue running as detached subprocesses."""
