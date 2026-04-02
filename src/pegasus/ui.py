@@ -1831,6 +1831,15 @@ def _get_textual_app() -> type:
             for card in current_cards[len(tasks) :]:
                 card.remove()
 
+            # Ensure a card has focus when cards first appear or the
+            # previously focused card was removed.
+            if tasks:
+                updated_cards = list(self.query(TaskCard))
+                focused = self.screen.focused
+                if not isinstance(focused, TaskCard) and updated_cards:
+                    safe_idx = min(self._focused_idx, len(updated_cards) - 1)
+                    updated_cards[safe_idx].focus()
+
             # Placeholder label when no tasks exist
             no_label_results = self.query("#no-tasks-label")
             no_label: Label | None = next(iter(no_label_results), None)
@@ -1872,6 +1881,23 @@ def _get_textual_app() -> type:
                 except ValueError:
                     pass
             return min(self._focused_idx, max(0, len(self._task_data) - 1))
+
+        def _focused_task(self) -> dict | None:
+            """Return the task dict for the currently relevant task.
+
+            In detail mode, returns the task matching ``_detail_task_id``.
+            Otherwise, returns the task at the focused card index.
+            Returns ``None`` if no task can be resolved.
+            """
+            if not self._task_data:
+                return None
+            if self._detail_mode and self._detail_task_id:
+                for t in self._task_data:
+                    if t["id"] == self._detail_task_id:
+                        return t
+                return None
+            idx = self._focused_task_index()
+            return self._task_data[idx]
 
         # ------------------------------------------------------------------
         # Key-action handlers
@@ -1920,13 +1946,20 @@ def _get_textual_app() -> type:
 
         def action_merge_task(self) -> None:
             """M -- merge the focused completed task's branch into default branch."""
-            if not self._task_data:
+            logger.debug("action_merge_task: triggered")
+            task = self._focused_task()
+            if task is None:
+                logger.debug("action_merge_task: _focused_task() returned None")
                 return
-            idx = self._focused_task_index()
-            task = self._task_data[idx]
+
+            logger.debug(
+                "action_merge_task: task=%s status=%s merge_status=%r",
+                task["id"], task["status"], task.get("merge_status"),
+            )
 
             # Validate eligibility
             if task["status"] != "completed":
+                logger.debug("action_merge_task: rejected — status is %s", task["status"])
                 self.notify(
                     f"Task {task['id']} is not completed (status: {task['status']})",
                     timeout=3,
@@ -1935,9 +1968,11 @@ def _get_textual_app() -> type:
 
             ms = task.get("merge_status")
             if ms == "merging":
+                logger.debug("action_merge_task: rejected — already merging")
                 self.notify(f"Task {task['id']} is already being merged", timeout=3)
                 return
             if ms == "merged":
+                logger.debug("action_merge_task: rejected — already merged")
                 self.notify(f"Task {task['id']} has already been merged", timeout=3)
                 return
 
@@ -1947,6 +1982,7 @@ def _get_textual_app() -> type:
                     # Single-merge lock
                     merging_id = is_merge_in_progress(conn)
                     if merging_id:
+                        logger.debug("action_merge_task: rejected — another merge in progress: %s", merging_id)
                         self.notify(
                             f"Another merge is in progress (task {merging_id})",
                             severity="error",
@@ -1962,16 +1998,29 @@ def _get_textual_app() -> type:
                         cwd=str(self._db_path.parent.parent),
                         timeout=10,
                     )
-                    if result.stdout.strip():
+                    dirty_files = result.stdout.strip()
+                    if dirty_files:
+                        logger.debug(
+                            "action_merge_task: rejected — dirty worktree: %s",
+                            dirty_files[:200],
+                        )
+                        short = dirty_files.splitlines()[0]
+                        n_files = len(dirty_files.splitlines())
+                        extra = f" (+{n_files - 1} more)" if n_files > 1 else ""
                         self.notify(
-                            "Main repo working tree is dirty",
+                            f"Merge blocked: repo is dirty — {short}{extra}. Commit or stash first.",
                             severity="error",
                             timeout=0,
                         )
                         return
 
                     # Set merge_status='merging'
+                    logger.debug(
+                        "action_merge_task: transition_merge_status(%s, from=%r, to='merging')",
+                        task["id"], ms,
+                    )
                     if not transition_merge_status(conn, task["id"], ms, "merging"):
+                        logger.debug("action_merge_task: transition_merge_status returned False")
                         self.notify("Failed to acquire merge lock", severity="error", timeout=0)
                         return
                 finally:
@@ -1982,6 +2031,7 @@ def _get_textual_app() -> type:
                 runner_cmd = [sys.executable, "-m", "pegasus._run_task", task["id"], "--merge"]
                 env = dict(os.environ)
                 env["PEGASUS_PROJECT_DIR"] = str(project_dir)
+                logger.debug("action_merge_task: spawning %s", runner_cmd)
 
                 proc = subprocess.Popen(
                     runner_cmd,
@@ -1990,6 +2040,7 @@ def _get_textual_app() -> type:
                     stderr=subprocess.DEVNULL,
                     start_new_session=True,
                 )
+                logger.debug("action_merge_task: merge subprocess PID=%d", proc.pid)
                 self.notify(f"Merge started for {task['id']} (PID: {proc.pid})", timeout=3)
 
             except Exception as exc:
@@ -2002,10 +2053,9 @@ def _get_textual_app() -> type:
             modal so the user can type an answer.  Otherwise approves directly
             by writing ``status='queued'`` to SQLite.
             """
-            if not self._task_data:
+            task = self._focused_task()
+            if task is None:
                 return
-            idx = self._focused_task_index()
-            task = self._task_data[idx]
             if task["status"] != "paused":
                 self.notify(
                     f"Task {task['id']} is not paused (status: {task['status']})", timeout=3
@@ -2098,10 +2148,9 @@ def _get_textual_app() -> type:
 
         def action_reject_task(self) -> None:
             """R -- reject/mark the focused task as failed."""
-            if not self._task_data:
+            task = self._focused_task()
+            if task is None:
                 return
-            idx = self._focused_task_index()
-            task = self._task_data[idx]
             if task["status"] not in ("paused", "running"):
                 self.notify(
                     f"Task {task['id']} cannot be rejected (status: {task['status']})", timeout=3
@@ -2123,10 +2172,9 @@ def _get_textual_app() -> type:
 
         def action_clean_task(self) -> None:
             """C -- remove artifacts for the focused completed/failed task."""
-            if not self._task_data:
+            task = self._focused_task()
+            if task is None:
                 return
-            idx = min(self._focused_idx, len(self._task_data) - 1)
-            task = self._task_data[idx]
             if task["status"] not in ("completed", "failed"):
                 self.notify(
                     f"Task {task['id']} cannot be cleaned (status: {task['status']})", timeout=3
@@ -2385,6 +2433,16 @@ def tui(project_dir: Path) -> None:
     if not db_path.exists():
         console.print("[red]Error:[/red] No Pegasus database found. Run [bold]pegasus init[/bold] first.")
         sys.exit(1)
+
+    # Enable debug logging to file with PEGASUS_LOG_LEVEL=DEBUG
+    log_level = os.environ.get("PEGASUS_LOG_LEVEL", "").upper()
+    if log_level:
+        log_file = db_path.parent / "logs" / "tui.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(log_file, mode="a")
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        logging.getLogger("pegasus").setLevel(getattr(logging, log_level, logging.DEBUG))
+        logging.getLogger("pegasus").addHandler(handler)
 
     PegasusDashboard = _get_textual_app()
     app = PegasusDashboard(db_path=db_path)

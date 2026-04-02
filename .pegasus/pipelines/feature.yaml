@@ -16,11 +16,11 @@ stages:
       Plan the implementation for this feature in a {{project.language}} project:
       {{task.description}}
       List all files to create/modify and the exact changes needed.
+      Use a web researcher to find any necessary information about libraries, APIs, or patterns to use.
       Ask the user at least 3 clarifying questions about the feature requirements before creating the plan.
     claude_flags:
       model: opus
       permission_mode: plan
-      max_turns: 5
     requires_approval: true
 
   - id: implement
@@ -31,14 +31,12 @@ stages:
     claude_flags:
       model: sonnet
       permission_mode: acceptEdits
-      max_turns: 15
     requires_approval: false
 
   - id: review
     name: Code Review
     prompt: |
       Review the implemented code for correctness, style, and potential issues.
-      Suggest any improvements.
+      Suggest any improvements. Use pal clink codex to assist with the review.
     claude_flags:
-      permission_mode: plan
-      max_turns: 5
+      permission_mode: acceptEdits

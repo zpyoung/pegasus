@@ -6,7 +6,6 @@ execution:
 
 defaults:
   model: sonnet
-  max_turns: 10
   permission_mode: plan
 
 stages:
@@ -27,7 +26,6 @@ stages:
     claude_flags:
       model: opus
       permission_mode: plan
-      max_turns: 10
     requires_approval: false
 
   - id: implement
@@ -40,7 +38,6 @@ stages:
     claude_flags:
       model: sonnet
       permission_mode: acceptEdits
-      max_turns: 30
     requires_approval: false
 
   - id: test
@@ -53,7 +50,6 @@ stages:
     claude_flags:
       model: sonnet
       permission_mode: acceptEdits
-      max_turns: 20
     requires_approval: false
 
   - id: review
@@ -63,7 +59,15 @@ stages:
       For each requirement (FR-### and NFR-###), verify it is correctly implemented and tested.
       Check that the architecture matches the design — correct components, interfaces, and data flow.
       Flag any deviations, missing requirements, or untested code paths.
+      Use pal clink codex to assist with the review.
     claude_flags:
-      model: opus
-      permission_mode: plan
-      max_turns: 10
+      permission_mode: acceptEdits
+
+  - id: apply_fixes
+    name: Apply Fixes
+    prompt: |
+      Given the review feedback, apply necessary fixes to ensure compliance with the design document.
+      Address any missing requirements, architectural deviations, or testing gaps identified in the review.
+      Use pal clink codex to assist with the fixes.
+    claude_flags:
+      permission_mode: acceptEdits
