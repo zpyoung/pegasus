@@ -1451,7 +1451,15 @@ def _get_textual_app() -> type:
             self._conn: _sqlite3.Connection | None = None
 
         def on_mount(self) -> None:
-            """Open read-only SQLite connection and start 100ms polling."""
+            """Run schema migrations, open read-only connection, start polling."""
+            try:
+                wr_conn = make_connection(self._db_path)
+                try:
+                    init_db(wr_conn)
+                finally:
+                    wr_conn.close()
+            except Exception:
+                pass
             try:
                 self._conn = make_connection(self._db_path, read_only=True)
             except Exception:
@@ -1529,8 +1537,10 @@ def _get_textual_app() -> type:
                 self._refresh_cards()
                 if self._logs_visible:
                     self._refresh_logs()
-            except Exception:
-                pass
+            except Exception as exc:
+                if not getattr(self, "_poll_error_shown", False):
+                    self._poll_error_shown = True
+                    self.notify(f"DB poll error: {exc}", severity="error", timeout=5)
 
         # ------------------------------------------------------------------
         # Internal refresh helpers

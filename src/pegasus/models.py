@@ -777,16 +777,46 @@ def make_connection(db_path: str | Path, read_only: bool = False) -> sqlite3.Con
 # ---------------------------------------------------------------------------
 
 
+def _migrate_db(conn: sqlite3.Connection) -> None:
+    """Apply incremental schema migrations for existing databases."""
+    # Detect existing columns in the tasks table.
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+
+    # Migration: add merge_status column (added in schema v2).
+    if "merge_status" not in cols:
+        conn.execute("ALTER TABLE tasks ADD COLUMN merge_status TEXT")
+
+    # Migration: add agent_questions table (added in schema v2).
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS agent_questions (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id      TEXT REFERENCES tasks(id),
+            stage_id     TEXT NOT NULL,
+            stage_index  INTEGER NOT NULL,
+            question     TEXT NOT NULL,
+            answer       TEXT,
+            asked_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+            answered_at  DATETIME,
+            status       TEXT NOT NULL DEFAULT 'pending'
+        )"""
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_agent_questions_task ON agent_questions(task_id)"
+    )
+
+
 def init_db(conn: sqlite3.Connection) -> None:
     """Create all Pegasus tables and indexes if they do not already exist.
 
     Also inserts the current ``SCHEMA_VERSION`` row into ``schema_version``
-    (ignored if already present).
+    (ignored if already present).  Runs migrations for databases created with
+    older schema versions.
 
     Args:
         conn: An open ``sqlite3.Connection`` (writable, not ``mode=ro``).
     """
     conn.executescript(_DDL)
+    _migrate_db(conn)
     conn.execute(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (?)",
         (SCHEMA_VERSION,),
