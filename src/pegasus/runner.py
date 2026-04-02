@@ -2416,7 +2416,23 @@ class MergeExecutor:
                 transition_merge_status(conn, task_id, "merging", "conflict")
                 return False
 
-            # 5. git fetch origin
+            # 5. Verify task branch exists
+            branch_check = self._run_git(
+                ["rev-parse", "--verify", f"refs/heads/{branch}"], check=False
+            )
+            if branch_check.returncode != 0:
+                self._log(
+                    f"ERROR: Task branch '{branch}' does not exist. "
+                    f"It may have been deleted or the worktree was cleaned up."
+                )
+                transition_merge_status(conn, task_id, "merging", "conflict")
+                self._send_notification(
+                    "Pegasus — Merge Failed",
+                    f"Branch missing: {description}",
+                )
+                return False
+
+            # 6. git fetch origin
             self._log("Fetching from origin...")
             fetch_result = self._run_git(["fetch", "origin"], check=False)
             if fetch_result.returncode != 0:
