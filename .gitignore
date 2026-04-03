@@ -20,6 +20,9 @@ venv/
 env/
 ENV/
 
+# Build caches
+.vite/
+
 # Testing & coverage
 .pytest_cache/
 .coverage
