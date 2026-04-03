@@ -10,7 +10,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { GitMerge, AlertTriangle, Trash2, Wrench, Sparkles, XCircle } from 'lucide-react';
+import {
+  GitMerge,
+  AlertTriangle,
+  Trash2,
+  Wrench,
+  Sparkles,
+  XCircle,
+  Layers,
+} from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
@@ -42,6 +50,7 @@ export function MergeWorktreeDialog({
   const [availableBranches, setAvailableBranches] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [deleteWorktreeAndBranch, setDeleteWorktreeAndBranch] = useState(false);
+  const [squash, setSquash] = useState(false);
   const [mergeConflict, setMergeConflict] = useState<MergeConflictInfo | null>(null);
 
   // Fetch available branches when dialog opens
@@ -79,6 +88,7 @@ export function MergeWorktreeDialog({
       setIsLoading(false);
       setTargetBranch('main');
       setDeleteWorktreeAndBranch(false);
+      setSquash(false);
       setMergeConflict(null);
     }
   }, [open]);
@@ -100,14 +110,15 @@ export function MergeWorktreeDialog({
         worktree.branch,
         worktree.path,
         targetBranch,
-        { deleteWorktreeAndBranch }
+        { deleteWorktreeAndBranch, squash }
       );
 
       if (result.success) {
-        const description = deleteWorktreeAndBranch
-          ? `Branch "${worktree.branch}" has been integrated into "${targetBranch}" and the worktree and branch were deleted`
-          : `Branch "${worktree.branch}" has been integrated into "${targetBranch}"`;
-        toast.success(`Branch integrated into ${targetBranch}`, { description });
+        const mode = squash ? 'squash-integrated' : 'integrated';
+        const parts = [`Branch "${worktree.branch}" has been ${mode} into "${targetBranch}"`];
+        if (squash) parts.push('All commits were condensed into a single commit.');
+        if (deleteWorktreeAndBranch) parts.push('The worktree and branch were deleted.');
+        toast.success(`Branch ${mode} into ${targetBranch}`, { description: parts.join(' ') });
         onIntegrated(worktree, deleteWorktreeAndBranch);
         onOpenChange(false);
       } else {
@@ -316,20 +327,47 @@ export function MergeWorktreeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center space-x-2 py-2">
-          <Checkbox
-            id="delete-worktree-branch"
-            checked={deleteWorktreeAndBranch}
-            onCheckedChange={(checked) => setDeleteWorktreeAndBranch(checked === true)}
-          />
-          <Label
-            htmlFor="delete-worktree-branch"
-            className="text-sm cursor-pointer flex items-center gap-1.5"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-destructive" />
-            Delete worktree and branch after integrating
-          </Label>
+        <div className="space-y-2 py-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="squash-commits"
+              checked={squash}
+              onCheckedChange={(checked) => setSquash(checked === true)}
+            />
+            <Label
+              htmlFor="squash-commits"
+              className="text-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <Layers className="w-3.5 h-3.5 text-blue-500" />
+              Squash commits into a single commit
+            </Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="delete-worktree-branch"
+              checked={deleteWorktreeAndBranch}
+              onCheckedChange={(checked) => setDeleteWorktreeAndBranch(checked === true)}
+            />
+            <Label
+              htmlFor="delete-worktree-branch"
+              className="text-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+              Delete worktree and branch after integrating
+            </Label>
+          </div>
         </div>
+
+        {squash && (
+          <div className="flex items-start gap-2 p-3 rounded-md bg-blue-500/10 border border-blue-500/20">
+            <Layers className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <span className="text-blue-500 text-sm">
+              All commits from this branch will be condensed into a single commit on the target
+              branch. Individual commit history will not be preserved.
+            </span>
+          </div>
+        )}
 
         {deleteWorktreeAndBranch && (
           <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20">
