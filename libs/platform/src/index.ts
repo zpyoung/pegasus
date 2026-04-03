@@ -30,6 +30,16 @@ export {
   getCredentialsPath,
   getProjectSettingsPath,
   ensureDataDir,
+  // Pipeline execution state paths
+  getPipelineStatePath,
+  getStageOutputsDir,
+  getStageOutputPath,
+  // Pipeline paths
+  getPipelinesDir,
+  getPipelineFilePath,
+  ensurePipelinesDir,
+  getUserPipelinesDir,
+  getUserPipelineFilePath,
   // Ideation paths
   getIdeationDir,
   getIdeasDir,

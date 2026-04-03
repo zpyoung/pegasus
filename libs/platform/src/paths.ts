@@ -11,6 +11,7 @@
 
 import * as secureFs from './secure-fs.js';
 import path from 'path';
+import os from 'os';
 
 /**
  * Get the pegasus data directory root for a project
@@ -345,6 +346,124 @@ export async function ensureIdeationDir(projectPath: string): Promise<string> {
   await secureFs.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
   await secureFs.mkdir(getIdeationDraftsDir(projectPath), { recursive: true });
   return ideationDir;
+}
+
+// ============================================================================
+// Pipeline Execution State Paths
+// ============================================================================
+
+/**
+ * Get the pipeline execution state file path for a feature
+ *
+ * Stores JSON metadata about pipeline stage completion for resumption support.
+ * Updated after each stage completes successfully, enabling the StageRunner
+ * to skip already-completed stages on resume.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param featureId - Feature identifier
+ * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/pipeline-state.json
+ */
+export function getPipelineStatePath(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDir(projectPath, featureId), 'pipeline-state.json');
+}
+
+/**
+ * Get the stage outputs directory for a feature
+ *
+ * Contains per-stage output snapshots for debugging and recovery.
+ * Each completed stage writes its accumulated context snapshot here.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param featureId - Feature identifier
+ * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/stage-outputs
+ */
+export function getStageOutputsDir(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDir(projectPath, featureId), 'stage-outputs');
+}
+
+/**
+ * Get the output file path for a specific pipeline stage
+ *
+ * Stores the accumulated context snapshot after a stage completes.
+ * Useful for debugging, auditing, and fine-grained recovery.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param featureId - Feature identifier
+ * @param stageId - Stage identifier
+ * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/stage-outputs/{stageId}.md
+ */
+export function getStageOutputPath(projectPath: string, featureId: string, stageId: string): string {
+  return path.join(getStageOutputsDir(projectPath, featureId), `${stageId}.md`);
+}
+
+// ============================================================================
+// Pipeline Paths
+// ============================================================================
+
+/**
+ * Get the pipelines directory for a project
+ *
+ * Contains YAML pipeline definition files (e.g., feature.yaml, bug-fix.yaml).
+ * Each file defines a multi-stage workflow with prompts, models, and approval gates.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/pipelines
+ */
+export function getPipelinesDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'pipelines');
+}
+
+/**
+ * Get the file path for a specific pipeline definition
+ *
+ * Each pipeline is stored as a YAML file named by its slug (e.g., "feature" → "feature.yaml").
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param pipelineSlug - Pipeline identifier slug (e.g., "feature", "bug-fix")
+ * @returns Absolute path to {projectPath}/.pegasus/pipelines/{pipelineSlug}.yaml
+ */
+export function getPipelineFilePath(projectPath: string, pipelineSlug: string): string {
+  return path.join(getPipelinesDir(projectPath), `${pipelineSlug}.yaml`);
+}
+
+/**
+ * Create the pipelines directory for a project if it doesn't exist
+ *
+ * Creates {projectPath}/.pegasus/pipelines/ for storing pipeline YAML definitions.
+ * Safe to call multiple times - uses recursive: true.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Promise resolving to the created pipelines directory path
+ */
+export async function ensurePipelinesDir(projectPath: string): Promise<string> {
+  const pipelinesDir = getPipelinesDir(projectPath);
+  await secureFs.mkdir(pipelinesDir, { recursive: true });
+  return pipelinesDir;
+}
+
+/**
+ * Get the user-level pipelines directory
+ *
+ * Contains YAML pipeline definitions shared across all projects.
+ * Located at `~/.pegasus/pipelines/` in the user's home directory.
+ *
+ * User-level pipelines serve as defaults that can be overridden by
+ * project-level pipelines with the same slug.
+ *
+ * @returns Absolute path to ~/.pegasus/pipelines
+ */
+export function getUserPipelinesDir(): string {
+  return path.join(os.homedir(), '.pegasus', 'pipelines');
+}
+
+/**
+ * Get the user-level file path for a specific pipeline definition
+ *
+ * @param pipelineSlug - Pipeline identifier slug (e.g., "feature", "bug-fix")
+ * @returns Absolute path to ~/.pegasus/pipelines/{pipelineSlug}.yaml
+ */
+export function getUserPipelineFilePath(pipelineSlug: string): string {
+  return path.join(getUserPipelinesDir(), `${pipelineSlug}.yaml`);
 }
 
 // ============================================================================

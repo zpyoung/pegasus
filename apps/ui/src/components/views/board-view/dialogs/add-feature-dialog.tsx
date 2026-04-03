@@ -1,5 +1,5 @@
 // @ts-nocheck - feature data building with conditional fields and model type inference
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,12 +16,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CategoryAutocomplete } from '@/components/ui/category-autocomplete';
 import { DependencySelector } from '@/components/ui/dependency-selector';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   DescriptionImageDropZone,
   FeatureImagePath as DescriptionImagePath,
   FeatureTextFilePath as DescriptionTextFilePath,
   ImagePreviewMap,
 } from '@/components/ui/description-image-dropzone';
-import { Play, Cpu, FolderKanban, Settings2 } from 'lucide-react';
+import { Play, Cpu, FolderKanban, Settings2, Workflow } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { cn, normalizeModelEntry } from '@/lib/utils';
@@ -47,6 +54,49 @@ import {
   formatAncestorContextForPrompt,
   type AncestorContext,
 } from '@pegasus/dependency-resolver';
+import { useDiscoverPipelines } from '@/hooks/queries/use-pipeline';
+
+/**
+ * Regex pattern to extract Handlebars variable references from a template string.
+ * Matches simple `{{variable.path}}` expressions.
+ */
+const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
+
+/**
+ * Extract `inputs.*` variable names from all stages' prompt templates in a pipeline.
+ * Returns deduplicated, sorted array of input variable names (without the `inputs.` prefix).
+ *
+ * @example
+ * extractPipelineInputVariables(stages) → ["target_module", "test_framework"]
+ */
+function extractPipelineInputVariables(
+  stages: Array<{ prompt: string }>
+): string[] {
+  const inputVars = new Set<string>();
+  for (const stage of stages) {
+    TEMPLATE_VARIABLE_REGEX.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = TEMPLATE_VARIABLE_REGEX.exec(stage.prompt)) !== null) {
+      const varPath = match[1];
+      if (varPath.startsWith('inputs.')) {
+        inputVars.add(varPath.slice('inputs.'.length));
+      }
+    }
+  }
+  return [...inputVars].sort();
+}
+
+/**
+ * Format a variable name into a human-readable label.
+ * Converts snake_case/kebab-case to Title Case.
+ *
+ * @example formatInputLabel("target_module") → "Target Module"
+ */
+function formatInputLabel(varName: string): string {
+  return varName
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 /**
  * Determines the default work mode based on global settings and current worktree selection.
@@ -93,6 +143,8 @@ type FeatureData = {
   dependencies?: string[];
   childDependencies?: string[]; // Feature IDs that should depend on this feature
   excludedPipelineSteps?: string[]; // Pipeline step IDs to skip for this feature
+  pipeline?: string; // Pipeline slug to use (e.g., "feature", "bug-fix")
+  pipelineInputs?: Record<string, string | number | boolean>; // User-provided input values for pipeline template variables
   workMode: WorkMode;
 };
 
@@ -206,6 +258,23 @@ export function AddFeatureDialog({
   // Pipeline exclusion state
   const [excludedPipelineSteps, setExcludedPipelineSteps] = useState<string[]>([]);
 
+  // YAML Pipeline selection state
+  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>('');
+  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string>>({});
+
+  // Discover available YAML pipelines
+  const { data: discoveredPipelines = [] } = useDiscoverPipelines(projectPath);
+
+  // Compute the selected pipeline and its required input variables
+  const selectedPipeline = useMemo(
+    () => discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
+    [discoveredPipelines, selectedPipelineSlug]
+  );
+  const pipelineInputVariables = useMemo(
+    () => (selectedPipeline ? extractPipelineInputVariables(selectedPipeline.config.stages) : []),
+    [selectedPipeline]
+  );
+
   // Get defaults from store
   const {
     defaultPlanningMode,
@@ -278,6 +347,10 @@ export function AddFeatureDialog({
 
       // Reset pipeline exclusions (all pipelines enabled by default)
       setExcludedPipelineSteps([]);
+
+      // Reset YAML pipeline selection
+      setSelectedPipelineSlug('');
+      setPipelineInputs({});
     }
   }, [
     open,
@@ -363,6 +436,17 @@ export function AddFeatureDialog({
           ? parentDependencies
           : undefined;
 
+    // Build pipeline inputs as Record<string, string | number | boolean>
+    // Only include non-empty input values
+    const finalPipelineInputs: Record<string, string | number | boolean> = {};
+    if (selectedPipelineSlug) {
+      for (const [key, value] of Object.entries(pipelineInputs)) {
+        if (value.trim()) {
+          finalPipelineInputs[key] = value;
+        }
+      }
+    }
+
     return {
       title,
       category: finalCategory,
@@ -382,6 +466,8 @@ export function AddFeatureDialog({
       dependencies: finalDependencies,
       childDependencies: childDependencies.length > 0 ? childDependencies : undefined,
       excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
+      pipeline: selectedPipelineSlug || undefined,
+      pipelineInputs: Object.keys(finalPipelineInputs).length > 0 ? finalPipelineInputs : undefined,
       workMode,
     };
   };
@@ -421,6 +507,8 @@ export function AddFeatureDialog({
     setParentDependencies([]);
     setChildDependencies([]);
     setExcludedPipelineSteps([]);
+    setSelectedPipelineSlug('');
+    setPipelineInputs({});
     onOpenChange(false);
   };
 
@@ -653,6 +741,96 @@ export function AddFeatureDialog({
               </div>
             </div>
           </div>
+
+          {/* Pipeline Selection Section - only show when pipelines are available */}
+          {discoveredPipelines.length > 0 && (
+            <div className={cardClass}>
+              <div className={sectionHeaderClass}>
+                <Workflow className="w-4 h-4 text-muted-foreground" />
+                <span>Pipeline</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Workflow Pipeline</Label>
+                <Select
+                  value={selectedPipelineSlug}
+                  onValueChange={(value) => {
+                    setSelectedPipelineSlug(value === '__none__' ? '' : value);
+                    // Reset inputs when pipeline changes
+                    setPipelineInputs({});
+                  }}
+                >
+                  <SelectTrigger data-testid="add-feature-pipeline-select">
+                    <SelectValue placeholder="Default (no pipeline)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      Default (no pipeline)
+                    </SelectItem>
+                    {discoveredPipelines.map((pipeline) => (
+                      <SelectItem
+                        key={pipeline.slug}
+                        value={pipeline.slug}
+                        description={
+                          <span className="text-xs text-muted-foreground">
+                            {pipeline.config.description} ({pipeline.stageCount} stage{pipeline.stageCount !== 1 ? 's' : ''})
+                          </span>
+                        }
+                      >
+                        {pipeline.config.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Show pipeline stages preview */}
+              {selectedPipeline && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPipeline.config.stages.map((stage, idx) => (
+                      <span
+                        key={stage.id}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted border border-border/50 text-muted-foreground"
+                      >
+                        <span className="text-[10px] font-mono opacity-60">{idx + 1}</span>
+                        {stage.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic input fields for pipeline template variables */}
+              {pipelineInputVariables.length > 0 && (
+                <div className="space-y-3 pt-1">
+                  <Label className="text-xs text-muted-foreground">Pipeline Inputs</Label>
+                  {pipelineInputVariables.map((varName) => (
+                    <div key={varName} className="space-y-1">
+                      <Label htmlFor={`pipeline-input-${varName}`} className="text-xs font-medium">
+                        {formatInputLabel(varName)}
+                      </Label>
+                      <Input
+                        id={`pipeline-input-${varName}`}
+                        value={pipelineInputs[varName] || ''}
+                        onChange={(e) =>
+                          setPipelineInputs((prev) => ({
+                            ...prev,
+                            [varName]: e.target.value,
+                          }))
+                        }
+                        placeholder={`Enter ${formatInputLabel(varName).toLowerCase()}...`}
+                        data-testid={`add-feature-pipeline-input-${varName}`}
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    These values will be available as template variables in the pipeline stages.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Organization Section */}
           <div className={cardClass}>

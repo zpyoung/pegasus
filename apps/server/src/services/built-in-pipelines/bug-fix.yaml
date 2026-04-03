@@ -1,0 +1,65 @@
+name: Bug Fix
+description: Analyze, patch, and verify a reported bug
+
+execution:
+  mode: session
+
+defaults:
+  model: sonnet
+  max_turns: 10
+  permission_mode: plan
+
+stages:
+  - id: analyze
+    name: Root Cause Analysis
+    prompt: |
+      Analyze this bug in a {{project.language}} project:
+
+      {{task.description}}
+
+      Steps:
+      1. Search the codebase for files related to the bug description.
+      2. Read the relevant source files and trace the code path that triggers the bug.
+      3. Identify the root cause — explain exactly what is wrong and why.
+      4. List all affected files and the specific lines/functions involved.
+      5. Propose a minimal fix strategy (what to change and why).
+
+      Do NOT make any code changes yet — analysis only.
+    claude_flags:
+      model: sonnet
+      permission_mode: plan
+      max_turns: 8
+
+  - id: implement
+    name: Apply Fix
+    prompt: |
+      Implement the fix for the bug you analyzed in the previous stage.
+
+      Guidelines:
+      - Be minimal and targeted — only change what is necessary to fix the bug.
+      - Do not refactor unrelated code.
+      - Follow the existing code style and patterns in the project.
+      - Add or update tests to cover the bug scenario if a test command is available.
+      {{#if project.test_command}}- Run tests with: {{project.test_command}}{{/if}}
+      {{#if project.lint_command}}- Run linter with: {{project.lint_command}}{{/if}}
+    claude_flags:
+      model: sonnet
+      permission_mode: acceptEdits
+      max_turns: 15
+    requires_approval: true
+
+  - id: verify
+    name: Verify Fix
+    prompt: |
+      Verify the fix is correct and complete:
+
+      1. Review all changes made in the previous stage.
+      2. Confirm the root cause identified in the analysis is addressed.
+      3. Check for any regressions or unintended side effects.
+      4. Verify edge cases are handled correctly.
+      {{#if project.test_command}}5. Run the test suite: {{project.test_command}}{{/if}}
+
+      If any issues are found, describe them clearly.
+    claude_flags:
+      permission_mode: plan
+      max_turns: 5

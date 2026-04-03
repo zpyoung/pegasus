@@ -156,6 +156,8 @@ export function useBoardActions({
       requirePlanApproval: boolean;
       dependencies?: string[];
       childDependencies?: string[]; // Feature IDs that should depend on this feature
+      pipeline?: string; // Pipeline slug to use (e.g., "feature", "bug-fix")
+      pipelineInputs?: Record<string, string | number | boolean>; // User-provided pipeline input values
       workMode?: 'current' | 'auto' | 'custom';
       initialStatus?: 'backlog' | 'in_progress'; // Skip backlog flash when creating & starting immediately
     }) => {

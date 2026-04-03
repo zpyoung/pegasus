@@ -227,6 +227,8 @@ export const queryKeys = {
   pipeline: {
     /** Pipeline config for a project */
     config: (projectPath: string) => ['pipeline', projectPath] as const,
+    /** Discovered YAML pipelines for a project */
+    discover: (projectPath: string) => ['pipeline', 'discover', projectPath] as const,
   },
 
   // ============================================

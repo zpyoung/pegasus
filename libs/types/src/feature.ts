@@ -96,6 +96,8 @@ export interface Feature {
   branchName?: string | null; // Name of the feature branch (undefined/null = use current worktree)
   skipTests?: boolean;
   excludedPipelineSteps?: string[]; // Array of pipeline step IDs to skip for this feature
+  pipeline?: string; // Pipeline slug to use for this feature (e.g., "feature", "bug-fix")
+  pipelineInputs?: Record<string, string | number | boolean>; // User-provided input values for pipeline declared inputs
   thinkingLevel?: ThinkingLevel;
   reasoningEffort?: ReasoningEffort;
   providerId?: string;
