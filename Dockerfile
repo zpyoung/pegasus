@@ -45,15 +45,17 @@ FROM base AS server-builder
 # Copy server-specific package.json
 COPY apps/server/package*.json ./apps/server/
 
-# Install dependencies (--ignore-scripts to skip husky/prepare, then rebuild native modules)
-RUN corepack enable pnpm && pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild node-pty
+# Install dependencies
+# --ignore-scripts skips husky/prepare, then explicitly run node-pty's install script to compile for linux
+RUN corepack enable pnpm && pnpm install --frozen-lockfile --ignore-scripts && \
+    cd node_modules/.pnpm/node-pty@*/node_modules/node-pty && npx node-gyp rebuild
 
 # Copy all source files
 COPY libs ./libs
 COPY apps/server ./apps/server
 
 # Build packages in dependency order, then build server
-RUN pnpm build:packages && pnpm --filter apps/server build
+RUN pnpm build:packages && pnpm --filter @pegasus/server build
 
 # =============================================================================
 # SERVER PRODUCTION STAGE
@@ -94,6 +96,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude CLI globally (available to all users via pnpm global bin)
+ENV PNPM_HOME="/usr/local/share/pnpm"
+ENV PATH="${PNPM_HOME}:${PATH}"
 RUN corepack enable pnpm && pnpm add -g @anthropic-ai/claude-code
 
 # Create non-root user with home directory BEFORE installing Cursor CLI
@@ -218,7 +222,7 @@ COPY apps/ui ./apps/ui
 ARG VITE_SERVER_URL=
 ENV VITE_SKIP_ELECTRON=true
 ENV VITE_SERVER_URL=${VITE_SERVER_URL}
-RUN pnpm build:packages && pnpm --filter apps/ui build
+RUN pnpm build:packages && pnpm --filter @pegasus/ui build
 
 # =============================================================================
 # UI PRODUCTION STAGE

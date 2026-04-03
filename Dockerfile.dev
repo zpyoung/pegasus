@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude CLI globally
+ENV PNPM_HOME="/usr/local/share/pnpm"
+ENV PATH="${PNPM_HOME}:${PATH}"
 RUN corepack enable pnpm && pnpm add -g @anthropic-ai/claude-code
 
 # Build arguments for user ID matching (allows matching host user for mounted volumes)
