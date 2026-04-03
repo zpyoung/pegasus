@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getHttpApiClient } from '@/lib/http-api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { STALE_TIMES } from '@/lib/query-client';
-import type { PipelineConfig } from '@pegasus/types';
+import type { PipelineConfig, DiscoveredPipeline } from '@pegasus/types';
 
 /**
  * Fetch pipeline config for a project
@@ -32,6 +32,37 @@ export function usePipelineConfig(projectPath: string | undefined) {
         throw new Error(result.error || 'Failed to fetch pipeline config');
       }
       return result.config ?? null;
+    },
+    enabled: !!projectPath,
+    staleTime: STALE_TIMES.SETTINGS,
+  });
+}
+
+/**
+ * Discover available YAML pipeline definitions for a project.
+ *
+ * Scans both user-level (~/.pegasus/pipelines/) and project-level
+ * ({projectPath}/.pegasus/pipelines/) directories for pipeline YAML files.
+ *
+ * @param projectPath - Path to the project
+ * @returns Query result with array of discovered pipelines
+ *
+ * @example
+ * ```tsx
+ * const { data: pipelines, isLoading } = useDiscoverPipelines(currentProject?.path);
+ * ```
+ */
+export function useDiscoverPipelines(projectPath: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.pipeline.discover(projectPath ?? ''),
+    queryFn: async (): Promise<DiscoveredPipeline[]> => {
+      if (!projectPath) throw new Error('No project path');
+      const api = getHttpApiClient();
+      const result = await api.pipeline.discoverPipelines(projectPath);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to discover pipelines');
+      }
+      return (result.pipelines as DiscoveredPipeline[]) ?? [];
     },
     enabled: !!projectPath,
     staleTime: STALE_TIMES.SETTINGS,

@@ -314,6 +314,24 @@ export type {
   FeatureStatusWithPipeline,
 } from './pipeline.js';
 export { isPipelineStatus } from './pipeline.js';
+export { PIPELINE_SUMMARY_SEPARATOR, PIPELINE_SUMMARY_HEADER_PREFIX } from './pipeline.js';
+
+// YAML Pipeline types (`.pegasus/pipelines/*.yaml` configuration)
+export type {
+  YamlClaudeFlags,
+  YamlStageConfig,
+  YamlExecutionConfig,
+  YamlPipelineDefaults,
+  YamlPipelineConfig,
+  ResolvedStage,
+  StageContext,
+  DiscoveredPipeline,
+  PipelineSource,
+  StageCompilationContext,
+  StageCompilationResult,
+  CompletedStageState,
+  PipelineExecutionState,
+} from './yaml-pipeline.js';
 
 // Port configuration
 export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from './ports.js';

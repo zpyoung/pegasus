@@ -29,6 +29,8 @@ import type {
 import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
 import type { SettingsService } from '../../../src/services/settings-service.js';
 import { pipelineService } from '../../../src/services/pipeline-service.js';
+import { loadPipeline, compilePipeline } from '../../../src/services/pipeline-compiler.js';
+import { StageRunner } from '../../../src/services/stage-runner.js';
 import * as secureFs from '../../../src/lib/secure-fs.js';
 import { getFeatureDir } from '@pegasus/platform';
 import {
@@ -47,6 +49,18 @@ vi.mock('../../../src/services/pipeline-service.js', () => ({
     isPipelineStatus: vi.fn(),
     getStepIdFromStatus: vi.fn(),
   },
+}));
+
+// Mock pipeline-compiler
+vi.mock('../../../src/services/pipeline-compiler.js', () => ({
+  loadPipeline: vi.fn(),
+  compilePipeline: vi.fn(),
+}));
+
+// Mock stage-runner
+const mockStageRunnerRun = vi.fn();
+vi.mock('../../../src/services/stage-runner.js', () => ({
+  StageRunner: vi.fn(),
 }));
 
 // Mock secureFs
@@ -2054,6 +2068,378 @@ describe('execution-service.ts', () => {
         .mocked(mockUpdateFeatureStatusFn)
         .mock.calls.filter((call) => call[2] === 'backlog');
       expect(backlogCalls.length).toBe(1);
+    });
+  });
+
+  describe('executeFeature - YAML pipeline execution branch', () => {
+    const createServiceWithMocks = () => {
+      return new ExecutionService(
+        mockEventBus,
+        mockConcurrencyManager,
+        mockWorktreeResolver,
+        mockSettingsService,
+        mockRunAgentFn,
+        mockExecutePipelineFn,
+        mockUpdateFeatureStatusFn,
+        mockLoadFeatureFn,
+        mockGetPlanningPromptPrefixFn,
+        mockSaveFeatureSummaryFn,
+        mockRecordLearningsFn,
+        mockContextExistsFn,
+        mockResumeFeatureFn,
+        mockTrackFailureFn,
+        mockSignalPauseFn,
+        mockRecordSuccessFn,
+        mockSaveExecutionStateFn,
+        mockLoadContextFilesFn
+      );
+    };
+
+    const pipelineFeature: Feature = {
+      ...testFeature,
+      pipeline: 'feature',
+      pipelineInputs: { target_module: 'auth' },
+    };
+
+    const yamlPipelineConfig = {
+      name: 'Feature',
+      description: 'Plan, implement, and test a feature',
+      defaults: { model: 'sonnet', max_turns: 10, permission_mode: 'plan' },
+      stages: [
+        { id: 'plan', name: 'Planning', prompt: 'Plan {{task.description}}' },
+        { id: 'implement', name: 'Implementation', prompt: 'Implement the plan' },
+      ],
+    };
+
+    const resolvedStages = [
+      { id: 'plan', name: 'Planning', prompt: 'Plan the feature', model: 'sonnet', permission_mode: 'plan', max_turns: 10, requires_approval: false },
+      { id: 'implement', name: 'Implementation', prompt: 'Implement the plan', model: 'sonnet', permission_mode: 'plan', max_turns: 10, requires_approval: false },
+    ];
+
+    beforeEach(() => {
+      vi.mocked(loadPipeline).mockResolvedValue(yamlPipelineConfig as any);
+      vi.mocked(compilePipeline).mockReturnValue(resolvedStages as any);
+
+      // Re-setup StageRunner mock after vi.clearAllMocks() in parent beforeEach.
+      // Must use a regular function (not arrow) because arrow functions cannot be constructors.
+      mockStageRunnerRun.mockResolvedValue({
+        success: true,
+        stagesCompleted: 2,
+        totalStages: 2,
+        accumulatedContext: 'Stage output context',
+        aborted: false,
+        stagesSkipped: 0,
+      });
+      vi.mocked(StageRunner).mockImplementation(function () {
+        return { run: mockStageRunnerRun };
+      } as any);
+    });
+
+    it('uses StageRunner when feature.pipeline is set', async () => {
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Should load and compile the YAML pipeline
+      expect(loadPipeline).toHaveBeenCalledWith('/test/project', 'feature');
+      expect(compilePipeline).toHaveBeenCalledWith(yamlPipelineConfig);
+
+      // Should create StageRunner and call run()
+      expect(StageRunner).toHaveBeenCalled();
+      expect(mockStageRunnerRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectPath: '/test/project',
+          featureId: 'feature-1',
+          feature: pipelineFeature,
+          stages: resolvedStages,
+          pipelineName: 'Feature',
+          pipelineDefaults: yamlPipelineConfig.defaults,
+          compilationContext: expect.objectContaining({
+            task: expect.objectContaining({
+              description: 'Test description',
+              title: 'Test Feature',
+            }),
+            inputs: { target_module: 'auth' },
+          }),
+        })
+      );
+    });
+
+    it('bypasses legacy agent execution when pipeline is set', async () => {
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Legacy runAgentFn should NOT be called directly (StageRunner calls it internally)
+      expect(mockRunAgentFn).not.toHaveBeenCalled();
+
+      // Legacy executePipelineFn should NOT be called
+      expect(mockExecutePipelineFn).not.toHaveBeenCalled();
+    });
+
+    it('bypasses legacy JSON pipeline when YAML pipeline is set', async () => {
+      // Even if there are legacy JSON pipeline steps configured, they should be skipped
+      vi.mocked(pipelineService.getPipelineConfig).mockResolvedValue({
+        version: 1,
+        steps: [{ id: 'step-1', name: 'Step 1', order: 1, instructions: 'Do step 1' }] as any,
+      });
+
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Legacy pipeline should NOT be called
+      expect(mockExecutePipelineFn).not.toHaveBeenCalled();
+    });
+
+    it('sets verified status on successful pipeline completion', async () => {
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'verified'
+      );
+      expect(mockRecordSuccessFn).toHaveBeenCalled();
+    });
+
+    it('sets waiting_approval when skipTests is true', async () => {
+      const pipelineFeatureSkipTests: Feature = {
+        ...pipelineFeature,
+        skipTests: true,
+      };
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeatureSkipTests);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'waiting_approval'
+      );
+    });
+
+    it('handles pipeline abort by throwing to outer catch block', async () => {
+      mockStageRunnerRun.mockResolvedValue({
+        success: false,
+        stagesCompleted: 1,
+        totalStages: 2,
+        accumulatedContext: '',
+        aborted: true,
+        error: 'Pipeline execution aborted',
+        failedStageId: 'implement',
+        stagesSkipped: 0,
+      });
+
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // The thrown error contains "aborted" which classifyError treats as an abort,
+      // so the abort handler sets status to 'interrupted'
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'interrupted'
+      );
+    });
+
+    it('handles pipeline failure by throwing to outer catch block', async () => {
+      mockStageRunnerRun.mockResolvedValue({
+        success: false,
+        stagesCompleted: 0,
+        totalStages: 2,
+        accumulatedContext: '',
+        aborted: false,
+        error: 'Stage "plan" failed: timeout',
+        failedStageId: 'plan',
+        stagesSkipped: 0,
+      });
+
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Should emit error event
+      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+        'auto_mode_error',
+        expect.objectContaining({
+          featureId: 'feature-1',
+        })
+      );
+
+      // Should set status to backlog (pipeline did not complete)
+      expect(mockUpdateFeatureStatusFn).toHaveBeenCalledWith(
+        '/test/project',
+        'feature-1',
+        'backlog'
+      );
+    });
+
+    it('skips legacy context resumption for pipeline features', async () => {
+      mockContextExistsFn = vi.fn().mockResolvedValue(true);
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Should NOT resume via legacy path even though context exists
+      expect(mockResumeFeatureFn).not.toHaveBeenCalled();
+
+      // Should use StageRunner instead (which has its own resumption)
+      expect(mockStageRunnerRun).toHaveBeenCalled();
+    });
+
+    it('falls back to legacy flow when feature.pipeline is not set', async () => {
+      // Regular feature without pipeline should use legacy flow
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(testFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Should use legacy flow
+      expect(mockRunAgentFn).toHaveBeenCalled();
+
+      // Should NOT use StageRunner
+      expect(mockStageRunnerRun).not.toHaveBeenCalled();
+    });
+
+    it('falls back to legacy flow when continuationPrompt is set', async () => {
+      // Pipeline feature with continuationPrompt should use legacy flow
+      // (e.g., from approved plan recursive call)
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1', false, false, undefined, {
+        continuationPrompt: 'Continue from approved plan',
+        _calledInternally: true,
+      });
+
+      // Should use legacy flow with continuation prompt
+      expect(mockRunAgentFn).toHaveBeenCalled();
+      const callArgs = mockRunAgentFn.mock.calls[0];
+      expect(callArgs[2]).toBe('Continue from approved plan');
+
+      // Should NOT use StageRunner
+      expect(mockStageRunnerRun).not.toHaveBeenCalled();
+    });
+
+    it('passes pipeline defaults from YAML config', async () => {
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      expect(mockStageRunnerRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pipelineDefaults: {
+            model: 'sonnet',
+            max_turns: 10,
+            permission_mode: 'plan',
+          },
+        })
+      );
+    });
+
+    it('handles pipeline with no defaults gracefully', async () => {
+      const configNoDefaults = { ...yamlPipelineConfig, defaults: undefined };
+      vi.mocked(loadPipeline).mockResolvedValue(configNoDefaults as any);
+
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      expect(mockStageRunnerRun).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pipelineDefaults: {},
+        })
+      );
+    });
+
+    it('releases running feature even when pipeline fails', async () => {
+      mockStageRunnerRun.mockResolvedValue({
+        success: false,
+        stagesCompleted: 0,
+        totalStages: 2,
+        accumulatedContext: '',
+        aborted: false,
+        error: 'Pipeline failed',
+        failedStageId: 'plan',
+        stagesSkipped: 0,
+      });
+
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      expect(mockConcurrencyManager.release).toHaveBeenCalledWith('feature-1', undefined);
+    });
+
+    it('emits feature_start and feature_complete events for pipeline', async () => {
+      mockLoadFeatureFn = vi.fn().mockResolvedValue(pipelineFeature);
+      const svc = createServiceWithMocks();
+
+      await svc.executeFeature('/test/project', 'feature-1', false, true);
+
+      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+        'auto_mode_feature_start',
+        expect.objectContaining({
+          featureId: 'feature-1',
+        })
+      );
+
+      expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
+        'auto_mode_feature_complete',
+        expect.objectContaining({
+          featureId: 'feature-1',
+          passes: true,
+        })
+      );
+    });
+
+    it('sets pipelineCompleted flag for error handling after successful pipeline', async () => {
+      // Pipeline succeeds, but then reading agent-output.md throws
+      mockStageRunnerRun.mockResolvedValue({
+        success: true,
+        stagesCompleted: 2,
+        totalStages: 2,
+        accumulatedContext: '',
+        aborted: false,
+        stagesSkipped: 0,
+      });
+
+      // Make loadFeature throw after pipeline to trigger the catch block
+      let loadCallCount = 0;
+      mockLoadFeatureFn = vi.fn().mockImplementation(() => {
+        loadCallCount++;
+        if (loadCallCount === 1) return pipelineFeature; // initial load
+        throw new Error('Unexpected error after pipeline');
+      });
+
+      const svc = createServiceWithMocks();
+      await svc.executeFeature('/test/project', 'feature-1');
+
+      // Should set to waiting_approval (not backlog) because pipeline completed
+      const waitingCalls = vi
+        .mocked(mockUpdateFeatureStatusFn)
+        .mock.calls.filter((call) => call[2] === 'waiting_approval');
+      expect(waitingCalls.length).toBeGreaterThan(0);
+
+      const backlogCalls = vi
+        .mocked(mockUpdateFeatureStatusFn)
+        .mock.calls.filter((call) => call[2] === 'backlog');
+      expect(backlogCalls.length).toBe(0);
     });
   });
 });

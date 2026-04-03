@@ -25,6 +25,9 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.2.32",
+    "@github/copilot-sdk": "0.1.16",
+    "@modelcontextprotocol/sdk": "1.25.2",
+    "@openai/codex-sdk": "^0.98.0",
     "@pegasus/dependency-resolver": "workspace:*",
     "@pegasus/git-utils": "workspace:*",
     "@pegasus/model-resolver": "workspace:*",
@@ -32,18 +35,17 @@
     "@pegasus/prompts": "workspace:*",
     "@pegasus/types": "workspace:*",
     "@pegasus/utils": "workspace:*",
-    "@github/copilot-sdk": "0.1.16",
-    "@modelcontextprotocol/sdk": "1.25.2",
-    "@openai/codex-sdk": "^0.98.0",
     "cookie": "^1.1.1",
     "cookie-parser": "1.4.7",
     "cors": "2.8.5",
     "dotenv": "17.2.3",
     "express": "5.2.1",
+    "handlebars": "^4.7.9",
     "morgan": "1.10.1",
     "node-pty": "1.1.0-beta41",
     "ws": "8.18.3",
-    "yaml": "2.7.0"
+    "yaml": "2.7.0",
+    "zod": "^3.24.1 || ^4.0.0"
   },
   "devDependencies": {
     "@playwright/test": "1.57.0",

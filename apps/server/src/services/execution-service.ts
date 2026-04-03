@@ -3,7 +3,7 @@
  */
 
 import path from 'path';
-import type { Feature } from '@pegasus/types';
+import type { Feature, StageCompilationContext } from '@pegasus/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@pegasus/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
 import { getFeatureDir } from '@pegasus/platform';
@@ -22,6 +22,9 @@ import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.j
 import type { WorktreeResolver } from './worktree-resolver.js';
 import type { SettingsService } from './settings-service.js';
 import { pipelineService } from './pipeline-service.js';
+import { loadPipeline, compilePipeline } from './pipeline-compiler.js';
+import { StageRunner } from './stage-runner.js';
+import type { StageRunAgentFn } from './stage-runner.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -216,7 +219,9 @@ ${feature.spec}
             { continuationPrompt, _calledInternally: true }
           );
         }
-        if (await this.contextExistsFn(projectPath, featureId)) {
+        // Skip legacy context-based resumption for YAML pipeline features.
+        // StageRunner handles its own resumption via persisted pipeline-state.json.
+        if (!feature.pipeline && await this.contextExistsFn(projectPath, featureId)) {
           return await this.resumeFeatureFn(projectPath, featureId, useWorktrees, true);
         }
       }
@@ -270,7 +275,6 @@ ${feature.spec}
         '[ExecutionService]'
       );
       const prompts = await getPromptCustomization(this.settingsService, '[ExecutionService]');
-      let prompt: string;
       const contextResult = await this.loadContextFilesFn({
         projectPath,
         fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
@@ -280,6 +284,110 @@ ${feature.spec}
         },
       });
       const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+
+      // ====================================================================
+      // YAML Pipeline Execution Branch
+      // ====================================================================
+      // When the feature specifies a YAML pipeline slug (feature.pipeline),
+      // bypass the legacy flow (agent + task retry + JSON pipeline) entirely
+      // and execute via StageRunner, which handles multi-stage YAML pipeline
+      // execution with built-in resumption, template variable resolution, and
+      // per-stage persistence.
+      //
+      // Guard: skip when continuationPrompt is set (recursive call from
+      // approved-plan flow — unlikely for pipeline features, but safe).
+      // ====================================================================
+      let usedYamlPipeline = false;
+
+      if (feature.pipeline && !options?.continuationPrompt) {
+        usedYamlPipeline = true;
+
+        logger.info(
+          `[executeFeature] Feature ${featureId} uses YAML pipeline "${feature.pipeline}". ` +
+            `Bypassing legacy flow and executing via StageRunner.`
+        );
+
+        // Load and compile the YAML pipeline definition
+        const yamlPipelineConfig = await loadPipeline(projectPath, feature.pipeline);
+        const resolvedStages = compilePipeline(yamlPipelineConfig);
+
+        // Build the stage compilation context for Handlebars template resolution.
+        // Provides task/project/input variables to stage prompt templates.
+        const compilationContext: StageCompilationContext = {
+          task: {
+            description: feature.description ?? '',
+            title: feature.title ?? '',
+          },
+          project: {},
+          inputs: feature.pipelineInputs,
+        };
+
+        // Enrich project context from project settings when available
+        if (this.settingsService) {
+          try {
+            const projectSettings = await this.settingsService.getProjectSettings(projectPath);
+            if (projectSettings.testCommand) {
+              compilationContext.project.test_command = projectSettings.testCommand;
+            }
+          } catch {
+            // Project settings may not exist — proceed with empty project context
+          }
+        }
+
+        // Resolve model for the running feature metadata
+        const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
+        tempRunningFeature.model = model;
+        tempRunningFeature.provider = ProviderFactory.getProviderNameForModel(model);
+
+        // Create StageRunner and execute all pipeline stages sequentially
+        const stageRunner = new StageRunner(
+          this.eventBus,
+          this.runAgentFn as StageRunAgentFn
+        );
+
+        const runResult = await stageRunner.run({
+          projectPath,
+          featureId,
+          feature,
+          stages: resolvedStages,
+          workDir,
+          worktreePath,
+          branchName: feature.branchName ?? null,
+          abortController,
+          pipelineDefaults: yamlPipelineConfig.defaults ?? {},
+          pipelineName: yamlPipelineConfig.name,
+          compilationContext,
+        });
+
+        logger.info(
+          `[executeFeature] YAML pipeline "${yamlPipelineConfig.name}" for feature ${featureId}: ` +
+            `${runResult.stagesCompleted}/${runResult.totalStages} stages completed` +
+            (runResult.stagesSkipped > 0 ? ` (${runResult.stagesSkipped} resumed)` : '') +
+            (runResult.aborted ? ' (aborted)' : '') +
+            (!runResult.success && !runResult.aborted ? ` (failed: ${runResult.error})` : '')
+        );
+
+        pipelineCompleted = runResult.success;
+
+        if (runResult.aborted) {
+          // Re-throw as an error so the outer catch block handles abort status
+          throw new Error('Pipeline execution aborted');
+        }
+
+        if (!runResult.success) {
+          throw new Error(
+            runResult.error ||
+              `Pipeline "${yamlPipelineConfig.name}" failed at stage "${runResult.failedStageId}"`
+          );
+        }
+      }
+
+      // ====================================================================
+      // Legacy Flow: prompt building, agent execution, task retry, JSON pipeline
+      // ====================================================================
+      // Skipped when a YAML pipeline was used (handled above).
+      if (!usedYamlPipeline) {
+      let prompt: string;
 
       if (options?.continuationPrompt) {
         prompt = options.continuationPrompt;
@@ -412,9 +520,9 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
 
-      const pipelineConfig = await pipelineService.getPipelineConfig(projectPath);
+      const legacyPipelineConfig = await pipelineService.getPipelineConfig(projectPath);
       const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
-      const sortedSteps = [...(pipelineConfig?.steps || [])]
+      const sortedSteps = [...(legacyPipelineConfig?.steps || [])]
         .sort((a, b) => a.order - b.order)
         .filter((step) => !excludedStepIds.has(step.id));
       if (sortedSteps.length > 0) {
@@ -439,6 +547,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
           return;
         }
       }
+      } // end legacy flow
 
       // Read agent output before determining final status.
       // CLI-based providers (Cursor, Codex, etc.) may exit quickly without doing

@@ -1,0 +1,75 @@
+name: Feature
+description: Plan, implement, and review a new feature
+
+execution:
+  mode: session
+
+defaults:
+  model: sonnet
+  max_turns: 10
+  permission_mode: plan
+
+stages:
+  - id: plan
+    name: Feature Planning
+    prompt: |
+      Plan the implementation for this feature in a {{project.language}} project:
+
+      {{task.description}}
+
+      Steps:
+      1. Analyze the existing codebase to understand the architecture and patterns.
+      2. Identify all files that need to be created or modified.
+      3. Design the implementation approach, considering:
+         - How it fits with existing code patterns and architecture
+         - What new dependencies (if any) are needed
+         - Edge cases and error handling
+      4. Create a detailed implementation plan listing:
+         - Each file to create/modify
+         - The specific changes needed in each file
+         - The order of implementation (dependency order)
+      5. Identify any potential risks or trade-offs.
+
+      Do NOT make any code changes yet — planning only.
+    claude_flags:
+      model: opus
+      permission_mode: plan
+      max_turns: 10
+    requires_approval: true
+
+  - id: implement
+    name: Implement Feature
+    prompt: |
+      Implement the feature according to the approved plan from the previous stage.
+
+      Guidelines:
+      - Follow the implementation plan exactly, in the specified order.
+      - Follow the existing code style and patterns in the project.
+      - Write clean, well-documented code with appropriate comments.
+      - Include error handling and input validation where appropriate.
+      - Add or update tests to cover the new functionality.
+      {{#if project.test_command}}- Run tests with: {{project.test_command}}{{/if}}
+      {{#if project.lint_command}}- Run linter with: {{project.lint_command}}{{/if}}
+    claude_flags:
+      model: sonnet
+      permission_mode: acceptEdits
+      max_turns: 20
+    requires_approval: false
+
+  - id: review
+    name: Code Review
+    prompt: |
+      Review the implemented code for quality and correctness:
+
+      1. Verify all planned changes were implemented correctly.
+      2. Check for code style consistency with the rest of the project.
+      3. Look for potential bugs, edge cases, or error handling gaps.
+      4. Verify tests adequately cover the new functionality.
+      5. Check for any security concerns or performance issues.
+      {{#if project.test_command}}6. Run the full test suite: {{project.test_command}}{{/if}}
+      {{#if project.lint_command}}7. Run the linter: {{project.lint_command}}{{/if}}
+
+      Suggest specific improvements if any issues are found.
+    claude_flags:
+      permission_mode: plan
+      max_turns: 8

@@ -1,0 +1,1 @@
+{"root":["./src/editor.ts","./src/index.ts","./src/node-finder.ts","./src/paths.ts","./src/rc-file-manager.ts","./src/rc-generator.ts","./src/secure-fs.ts","./src/security.ts","./src/subprocess.ts","./src/system-paths.ts","./src/terminal-theme-colors.ts","./src/terminal.ts","./src/wsl.ts","./src/config/ports.ts"],"version":"5.9.3"}

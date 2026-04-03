@@ -3299,6 +3299,46 @@ export class HttpApiClient implements ElectronAPI {
       stepIds: string[]
     ): Promise<{ success: boolean; error?: string }> =>
       this.post('/api/pipeline/steps/reorder', { projectPath, stepIds }),
+
+    /**
+     * Discover available YAML pipeline definitions for a project.
+     * Scans both user-level (~/.pegasus/pipelines/) and project-level
+     * ({projectPath}/.pegasus/pipelines/) directories.
+     */
+    discoverPipelines: (
+      projectPath: string
+    ): Promise<{
+      success: boolean;
+      pipelines?: Array<{
+        slug: string;
+        filePath: string;
+        config: {
+          name: string;
+          description: string;
+          execution?: { mode: 'session' };
+          defaults?: {
+            model?: string;
+            max_turns?: number;
+            permission_mode?: string;
+          };
+          stages: Array<{
+            id: string;
+            name: string;
+            prompt: string;
+            claude_flags?: {
+              model?: string;
+              permission_mode?: string;
+              max_turns?: number;
+            };
+            requires_approval?: boolean;
+          }>;
+        };
+        stageCount: number;
+        isBuiltIn: boolean;
+        source: 'project' | 'user';
+      }>;
+      error?: string;
+    }> => this.get(`/api/pipeline/discover?projectPath=${encodeURIComponent(projectPath)}`),
   };
 }
 

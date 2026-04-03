@@ -5,6 +5,7 @@
  * - Getting pipeline configuration
  * - Saving pipeline configuration
  * - Adding, updating, deleting, and reordering pipeline steps
+ * - Discovering available YAML pipeline definitions
  *
  * All endpoints use handler factories that receive the PipelineService instance.
  * Mounted at /api/pipeline in the main server.
@@ -19,6 +20,8 @@ import { createAddStepHandler } from './routes/add-step.js';
 import { createUpdateStepHandler } from './routes/update-step.js';
 import { createDeleteStepHandler } from './routes/delete-step.js';
 import { createReorderStepsHandler } from './routes/reorder-steps.js';
+import { createDiscoverPipelinesHandler } from './routes/discover-pipelines.js';
+import { createCopyTemplatesHandler } from './routes/copy-templates.js';
 
 /**
  * Create pipeline router with all endpoints
@@ -30,6 +33,8 @@ import { createReorderStepsHandler } from './routes/reorder-steps.js';
  * - POST /steps/update - Update an existing pipeline step
  * - POST /steps/delete - Delete a pipeline step
  * - POST /steps/reorder - Reorder pipeline steps
+ * - GET /discover - Discover available YAML pipeline definitions
+ * - POST /copy-templates - Copy built-in pipeline templates to project
  *
  * @param pipelineService - Instance of PipelineService for file I/O
  * @returns Express Router configured with all pipeline endpoints
@@ -71,6 +76,16 @@ export function createPipelineRoutes(pipelineService: PipelineService): Router {
     '/steps/reorder',
     validatePathParams('projectPath'),
     createReorderStepsHandler(pipelineService)
+  );
+
+  // YAML pipeline discovery
+  router.get('/discover', createDiscoverPipelinesHandler());
+
+  // Copy built-in pipeline templates to project
+  router.post(
+    '/copy-templates',
+    validatePathParams('projectPath'),
+    createCopyTemplatesHandler()
   );
 
   return router;
