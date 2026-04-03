@@ -1,0 +1,461 @@
+/**
+ * Pegasus Paths - Utilities for managing pegasus data storage
+ *
+ * Provides functions to construct paths for:
+ * - Project-level data stored in {projectPath}/.pegasus/
+ * - Global user data stored in app userData directory
+ *
+ * All returned paths are absolute and ready to use with fs module.
+ * Directory creation is handled separately by ensure* functions.
+ */
+
+import * as secureFs from './secure-fs.js';
+import path from 'path';
+
+/**
+ * Get the pegasus data directory root for a project
+ *
+ * All project-specific pegasus data is stored under {projectPath}/.pegasus/
+ * This directory is created when needed via ensurePegasusDir().
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus
+ */
+export function getPegasusDir(projectPath: string): string {
+  return path.join(projectPath, '.pegasus');
+}
+
+/**
+ * Get the features directory for a project
+ *
+ * Contains subdirectories for each feature, keyed by featureId.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/features
+ */
+export function getFeaturesDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'features');
+}
+
+/**
+ * Get the directory for a specific feature
+ *
+ * Contains feature-specific data like generated code, tests, and logs.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param featureId - Feature identifier
+ * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}
+ */
+export function getFeatureDir(projectPath: string, featureId: string): string {
+  return path.join(getFeaturesDir(projectPath), featureId);
+}
+
+/**
+ * Get the images directory for a feature
+ *
+ * Stores screenshots, diagrams, or other images related to the feature.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param featureId - Feature identifier
+ * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/images
+ */
+export function getFeatureImagesDir(projectPath: string, featureId: string): string {
+  return path.join(getFeatureDir(projectPath, featureId), 'images');
+}
+
+/**
+ * Get the board directory for a project
+ *
+ * Contains board-related data like background images and customization files.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/board
+ */
+export function getBoardDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'board');
+}
+
+/**
+ * Get the general images directory for a project
+ *
+ * Stores project-level images like background images or shared assets.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/images
+ */
+export function getImagesDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'images');
+}
+
+/**
+ * Get the context files directory for a project
+ *
+ * Stores user-uploaded context files for reference during generation.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/context
+ */
+export function getContextDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'context');
+}
+
+/**
+ * Get the worktrees metadata directory for a project
+ *
+ * Stores information about git worktrees associated with the project.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/worktrees
+ */
+export function getWorktreesDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'worktrees');
+}
+
+/**
+ * Get the validations directory for a project
+ *
+ * Stores GitHub issue validation results, organized by issue number.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/validations
+ */
+export function getValidationsDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'validations');
+}
+
+/**
+ * Get the directory for a specific issue validation
+ *
+ * Contains validation result and metadata for a GitHub issue.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param issueNumber - GitHub issue number
+ * @returns Absolute path to {projectPath}/.pegasus/validations/{issueNumber}
+ */
+export function getValidationDir(projectPath: string, issueNumber: number): string {
+  return path.join(getValidationsDir(projectPath), String(issueNumber));
+}
+
+/**
+ * Get the validation result file path for a GitHub issue
+ *
+ * Stores the JSON validation result including verdict, analysis, and metadata.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param issueNumber - GitHub issue number
+ * @returns Absolute path to {projectPath}/.pegasus/validations/{issueNumber}/validation.json
+ */
+export function getValidationPath(projectPath: string, issueNumber: number): string {
+  return path.join(getValidationDir(projectPath, issueNumber), 'validation.json');
+}
+
+/**
+ * Get the app spec file path for a project
+ *
+ * Stores the application specification document used for generation.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/app_spec.txt
+ */
+export function getAppSpecPath(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'app_spec.txt');
+}
+
+/**
+ * Get the notifications file path for a project
+ *
+ * Stores project-level notifications for feature status changes and operation completions.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/notifications.json
+ */
+export function getNotificationsPath(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'notifications.json');
+}
+
+/**
+ * Get the branch tracking file path for a project
+ *
+ * Stores JSON metadata about active git branches and worktrees.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/active-branches.json
+ */
+export function getBranchTrackingPath(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'active-branches.json');
+}
+
+/**
+ * Get the execution state file path for a project
+ *
+ * Stores JSON metadata about auto-mode execution state for recovery on restart.
+ * Tracks which features were running and auto-loop configuration.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/execution-state.json
+ */
+export function getExecutionStatePath(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'execution-state.json');
+}
+
+/**
+ * Create the pegasus directory structure for a project if it doesn't exist
+ *
+ * Creates {projectPath}/.pegasus with all subdirectories recursively.
+ * Safe to call multiple times - uses recursive: true.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Promise resolving to the created pegasus directory path
+ */
+export async function ensurePegasusDir(projectPath: string): Promise<string> {
+  const pegasusDir = getPegasusDir(projectPath);
+  await secureFs.mkdir(pegasusDir, { recursive: true });
+  return pegasusDir;
+}
+
+// ============================================================================
+// Ideation Paths
+// ============================================================================
+
+/**
+ * Get the ideation directory for a project
+ *
+ * Contains ideas, sessions, and drafts for brainstorming.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/ideation
+ */
+export function getIdeationDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'ideation');
+}
+
+/**
+ * Get the ideas directory for a project
+ *
+ * Contains subdirectories for each idea, keyed by ideaId.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas
+ */
+export function getIdeasDir(projectPath: string): string {
+  return path.join(getIdeationDir(projectPath), 'ideas');
+}
+
+/**
+ * Get the directory for a specific idea
+ *
+ * Contains idea metadata and attachments.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param ideaId - Idea identifier
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas/{ideaId}
+ */
+export function getIdeaDir(projectPath: string, ideaId: string): string {
+  return path.join(getIdeasDir(projectPath), ideaId);
+}
+
+/**
+ * Get the idea metadata file path
+ *
+ * Stores the idea JSON data.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param ideaId - Idea identifier
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas/{ideaId}/idea.json
+ */
+export function getIdeaPath(projectPath: string, ideaId: string): string {
+  return path.join(getIdeaDir(projectPath, ideaId), 'idea.json');
+}
+
+/**
+ * Get the idea attachments directory
+ *
+ * Stores images and other attachments for an idea.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param ideaId - Idea identifier
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas/{ideaId}/attachments
+ */
+export function getIdeaAttachmentsDir(projectPath: string, ideaId: string): string {
+  return path.join(getIdeaDir(projectPath, ideaId), 'attachments');
+}
+
+/**
+ * Get the ideation sessions directory for a project
+ *
+ * Contains conversation history for ideation sessions.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/sessions
+ */
+export function getIdeationSessionsDir(projectPath: string): string {
+  return path.join(getIdeationDir(projectPath), 'sessions');
+}
+
+/**
+ * Get the session file path for an ideation session
+ *
+ * Stores the session messages and metadata.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param sessionId - Session identifier
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/sessions/{sessionId}.json
+ */
+export function getIdeationSessionPath(projectPath: string, sessionId: string): string {
+  return path.join(getIdeationSessionsDir(projectPath), `${sessionId}.json`);
+}
+
+/**
+ * Get the ideation drafts directory for a project
+ *
+ * Stores unsaved conversation drafts.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/drafts
+ */
+export function getIdeationDraftsDir(projectPath: string): string {
+  return path.join(getIdeationDir(projectPath), 'drafts');
+}
+
+/**
+ * Get the project analysis result file path
+ *
+ * Stores the cached project analysis result.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/ideation/analysis.json
+ */
+export function getIdeationAnalysisPath(projectPath: string): string {
+  return path.join(getIdeationDir(projectPath), 'analysis.json');
+}
+
+/**
+ * Create the ideation directory structure for a project if it doesn't exist
+ *
+ * Creates {projectPath}/.pegasus/ideation with all subdirectories.
+ * Safe to call multiple times - uses recursive: true.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Promise resolving to the created ideation directory path
+ */
+export async function ensureIdeationDir(projectPath: string): Promise<string> {
+  const ideationDir = getIdeationDir(projectPath);
+  await secureFs.mkdir(ideationDir, { recursive: true });
+  await secureFs.mkdir(getIdeasDir(projectPath), { recursive: true });
+  await secureFs.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
+  await secureFs.mkdir(getIdeationDraftsDir(projectPath), { recursive: true });
+  return ideationDir;
+}
+
+// ============================================================================
+// Event History Paths
+// ============================================================================
+
+/**
+ * Get the event history directory for a project
+ *
+ * Contains stored event records for debugging and replay.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/events
+ */
+export function getEventHistoryDir(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'events');
+}
+
+/**
+ * Get the event history index file path
+ *
+ * Stores an index of all events for quick listing without scanning directory.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/events/index.json
+ */
+export function getEventHistoryIndexPath(projectPath: string): string {
+  return path.join(getEventHistoryDir(projectPath), 'index.json');
+}
+
+/**
+ * Get the file path for a specific event
+ *
+ * @param projectPath - Absolute path to project directory
+ * @param eventId - Event identifier
+ * @returns Absolute path to {projectPath}/.pegasus/events/{eventId}.json
+ */
+export function getEventPath(projectPath: string, eventId: string): string {
+  return path.join(getEventHistoryDir(projectPath), `${eventId}.json`);
+}
+
+/**
+ * Create the event history directory for a project if it doesn't exist
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Promise resolving to the created events directory path
+ */
+export async function ensureEventHistoryDir(projectPath: string): Promise<string> {
+  const eventsDir = getEventHistoryDir(projectPath);
+  await secureFs.mkdir(eventsDir, { recursive: true });
+  return eventsDir;
+}
+
+// ============================================================================
+// Global Settings Paths (stored in DATA_DIR from app.getPath('userData'))
+// ============================================================================
+
+/**
+ * Get the global settings file path
+ *
+ * Stores user preferences, keyboard shortcuts, AI profiles, and project history.
+ * Located in the platform-specific userData directory.
+ *
+ * Default locations:
+ * - macOS: ~/Library/Application Support/pegasus
+ * - Windows: %APPDATA%\pegasus
+ * - Linux: ~/.config/pegasus
+ *
+ * @param dataDir - User data directory (from app.getPath('userData'))
+ * @returns Absolute path to {dataDir}/settings.json
+ */
+export function getGlobalSettingsPath(dataDir: string): string {
+  return path.join(dataDir, 'settings.json');
+}
+
+/**
+ * Get the credentials file path
+ *
+ * Stores sensitive API keys separately from other settings for security.
+ * Located in the platform-specific userData directory.
+ *
+ * @param dataDir - User data directory (from app.getPath('userData'))
+ * @returns Absolute path to {dataDir}/credentials.json
+ */
+export function getCredentialsPath(dataDir: string): string {
+  return path.join(dataDir, 'credentials.json');
+}
+
+/**
+ * Get the project settings file path
+ *
+ * Stores project-specific settings that override global settings.
+ * Located within the project's .pegasus directory.
+ *
+ * @param projectPath - Absolute path to project directory
+ * @returns Absolute path to {projectPath}/.pegasus/settings.json
+ */
+export function getProjectSettingsPath(projectPath: string): string {
+  return path.join(getPegasusDir(projectPath), 'settings.json');
+}
+
+/**
+ * Create the global data directory if it doesn't exist
+ *
+ * Creates the userData directory for storing global settings and credentials.
+ * Safe to call multiple times - uses recursive: true.
+ *
+ * @param dataDir - User data directory path to create
+ * @returns Promise resolving to the created data directory path
+ */
+export async function ensureDataDir(dataDir: string): Promise<string> {
+  await secureFs.mkdir(dataDir, { recursive: true });
+  return dataDir;
+}

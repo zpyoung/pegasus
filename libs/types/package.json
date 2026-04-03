@@ -1,0 +1,27 @@
+{
+  "name": "@pegasus/types",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared type definitions for Pegasus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "vitest"
+  },
+  "keywords": [
+    "pegasus",
+    "types"
+  ],
+  "author": "Pegasus Team",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.3",
+    "typescript": "5.9.3",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,979 @@
+/**
+ * Pegasus Backend Server
+ *
+ * Provides HTTP/WebSocket API for both web and Electron modes.
+ * In Electron mode, this server runs locally.
+ * In web mode, this server runs on a remote host.
+ */
+
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
+import cookie from 'cookie';
+import { WebSocketServer, WebSocket } from 'ws';
+import { createServer } from 'http';
+import dotenv from 'dotenv';
+
+import { createEventEmitter, type EventEmitter } from './lib/events.js';
+import { initAllowedPaths, getClaudeAuthIndicators } from '@pegasus/platform';
+import { createLogger, setLogLevel, LogLevel } from '@pegasus/utils';
+
+const logger = createLogger('Server');
+
+/**
+ * Map server log level string to LogLevel enum
+ */
+const LOG_LEVEL_MAP: Record<string, LogLevel> = {
+  error: LogLevel.ERROR,
+  warn: LogLevel.WARN,
+  info: LogLevel.INFO,
+  debug: LogLevel.DEBUG,
+};
+import { authMiddleware, validateWsConnectionToken, checkRawAuthentication } from './lib/auth.js';
+import { requireJsonContentType } from './middleware/require-json-content-type.js';
+import { createAuthRoutes } from './routes/auth/index.js';
+import { createFsRoutes } from './routes/fs/index.js';
+import { createHealthRoutes, createDetailedHandler } from './routes/health/index.js';
+import { createAgentRoutes } from './routes/agent/index.js';
+import { createSessionsRoutes } from './routes/sessions/index.js';
+import { createFeaturesRoutes } from './routes/features/index.js';
+import { createAutoModeRoutes } from './routes/auto-mode/index.js';
+import { createEnhancePromptRoutes } from './routes/enhance-prompt/index.js';
+import { createWorktreeRoutes } from './routes/worktree/index.js';
+import { createGitRoutes } from './routes/git/index.js';
+import { createSetupRoutes } from './routes/setup/index.js';
+import { createModelsRoutes } from './routes/models/index.js';
+import { createRunningAgentsRoutes } from './routes/running-agents/index.js';
+import { createWorkspaceRoutes } from './routes/workspace/index.js';
+import { createTemplatesRoutes } from './routes/templates/index.js';
+import {
+  createTerminalRoutes,
+  validateTerminalToken,
+  isTerminalEnabled,
+  isTerminalPasswordRequired,
+} from './routes/terminal/index.js';
+import { createSettingsRoutes } from './routes/settings/index.js';
+import { AgentService } from './services/agent-service.js';
+import { FeatureLoader } from './services/feature-loader.js';
+import { AutoModeServiceCompat } from './services/auto-mode/index.js';
+import { getTerminalService } from './services/terminal-service.js';
+import { SettingsService } from './services/settings-service.js';
+import { createSpecRegenerationRoutes } from './routes/app-spec/index.js';
+import { createClaudeRoutes } from './routes/claude/index.js';
+import { ClaudeUsageService } from './services/claude-usage-service.js';
+import { createCodexRoutes } from './routes/codex/index.js';
+import { CodexUsageService } from './services/codex-usage-service.js';
+import { CodexAppServerService } from './services/codex-app-server-service.js';
+import { CodexModelCacheService } from './services/codex-model-cache-service.js';
+import { createZaiRoutes } from './routes/zai/index.js';
+import { ZaiUsageService } from './services/zai-usage-service.js';
+import { createGeminiRoutes } from './routes/gemini/index.js';
+import { GeminiUsageService } from './services/gemini-usage-service.js';
+import { createGitHubRoutes } from './routes/github/index.js';
+import { createContextRoutes } from './routes/context/index.js';
+import { createBacklogPlanRoutes } from './routes/backlog-plan/index.js';
+import { cleanupStaleValidations } from './routes/github/routes/validation-common.js';
+import { createMCPRoutes } from './routes/mcp/index.js';
+import { MCPTestService } from './services/mcp-test-service.js';
+import { createPipelineRoutes } from './routes/pipeline/index.js';
+import { pipelineService } from './services/pipeline-service.js';
+import { createIdeationRoutes } from './routes/ideation/index.js';
+import { IdeationService } from './services/ideation-service.js';
+import { getDevServerService } from './services/dev-server-service.js';
+import { eventHookService } from './services/event-hook-service.js';
+import { createNotificationsRoutes } from './routes/notifications/index.js';
+import { getNotificationService } from './services/notification-service.js';
+import { createEventHistoryRoutes } from './routes/event-history/index.js';
+import { getEventHistoryService } from './services/event-history-service.js';
+import { getTestRunnerService } from './services/test-runner-service.js';
+import { createProjectsRoutes } from './routes/projects/index.js';
+
+// Load environment variables
+dotenv.config();
+
+const PORT = parseInt(process.env.PORT || '3008', 10);
+const HOST = process.env.HOST || '0.0.0.0';
+const HOSTNAME = process.env.HOSTNAME || 'localhost';
+const DATA_DIR = process.env.DATA_DIR || './data';
+logger.info('[SERVER_STARTUP] process.env.DATA_DIR:', process.env.DATA_DIR);
+logger.info('[SERVER_STARTUP] Resolved DATA_DIR:', DATA_DIR);
+logger.info('[SERVER_STARTUP] process.cwd():', process.cwd());
+const ENABLE_REQUEST_LOGGING_DEFAULT = process.env.ENABLE_REQUEST_LOGGING !== 'false'; // Default to true
+
+// Runtime-configurable request logging flag (can be changed via settings)
+let requestLoggingEnabled = ENABLE_REQUEST_LOGGING_DEFAULT;
+
+/**
+ * Enable or disable HTTP request logging at runtime
+ */
+export function setRequestLoggingEnabled(enabled: boolean): void {
+  requestLoggingEnabled = enabled;
+}
+
+/**
+ * Get current request logging state
+ */
+export function isRequestLoggingEnabled(): boolean {
+  return requestLoggingEnabled;
+}
+
+// Width for log box content (excluding borders)
+const BOX_CONTENT_WIDTH = 67;
+
+// Check for Claude authentication (async - runs in background)
+// The Claude Agent SDK can use either ANTHROPIC_API_KEY or Claude Code CLI authentication
+(async () => {
+  const hasAnthropicKey = !!process.env.ANTHROPIC_API_KEY;
+  const hasEnvOAuthToken = !!process.env.CLAUDE_CODE_OAUTH_TOKEN;
+
+  logger.debug('[CREDENTIAL_CHECK] Starting credential detection...');
+  logger.debug('[CREDENTIAL_CHECK] Environment variables:', {
+    hasAnthropicKey,
+    hasEnvOAuthToken,
+  });
+
+  if (hasAnthropicKey) {
+    logger.info('✓ ANTHROPIC_API_KEY detected');
+    return;
+  }
+
+  if (hasEnvOAuthToken) {
+    logger.info('✓ CLAUDE_CODE_OAUTH_TOKEN detected');
+    return;
+  }
+
+  // Check for Claude Code CLI authentication
+  // Store indicators outside the try block so we can use them in the warning message
+  let cliAuthIndicators: Awaited<ReturnType<typeof getClaudeAuthIndicators>> | null = null;
+
+  try {
+    cliAuthIndicators = await getClaudeAuthIndicators();
+    const indicators = cliAuthIndicators;
+
+    // Log detailed credential detection results
+    const { checks, ...indicatorSummary } = indicators;
+    logger.debug('[CREDENTIAL_CHECK] Claude CLI auth indicators:', indicatorSummary);
+
+    logger.debug('[CREDENTIAL_CHECK] File check details:', checks);
+
+    const hasCliAuth =
+      indicators.hasStatsCacheWithActivity ||
+      (indicators.hasSettingsFile && indicators.hasProjectsSessions) ||
+      (indicators.hasCredentialsFile &&
+        (indicators.credentials?.hasOAuthToken || indicators.credentials?.hasApiKey));
+
+    logger.debug('[CREDENTIAL_CHECK] Auth determination:', {
+      hasCliAuth,
+      reason: hasCliAuth
+        ? indicators.hasStatsCacheWithActivity
+          ? 'stats cache with activity'
+          : indicators.hasSettingsFile && indicators.hasProjectsSessions
+            ? 'settings file + project sessions'
+            : indicators.credentials?.hasOAuthToken
+              ? 'credentials file with OAuth token'
+              : 'credentials file with API key'
+        : 'no valid credentials found',
+    });
+
+    if (hasCliAuth) {
+      logger.info('✓ Claude Code CLI authentication detected');
+      return;
+    }
+  } catch (error) {
+    // Ignore errors checking CLI auth - will fall through to warning
+    logger.warn('Error checking for Claude Code CLI authentication:', error);
+  }
+
+  // No authentication found - show warning with paths that were checked
+  const wHeader = '⚠️  WARNING: No Claude authentication configured'.padEnd(BOX_CONTENT_WIDTH);
+  const w1 = 'The Claude Agent SDK requires authentication to function.'.padEnd(BOX_CONTENT_WIDTH);
+  const w2 = 'Options:'.padEnd(BOX_CONTENT_WIDTH);
+  const w3 = '1. Install Claude Code CLI and authenticate with subscription'.padEnd(
+    BOX_CONTENT_WIDTH
+  );
+  const w4 = '2. Set your Anthropic API key:'.padEnd(BOX_CONTENT_WIDTH);
+  const w5 = '   export ANTHROPIC_API_KEY="sk-ant-..."'.padEnd(BOX_CONTENT_WIDTH);
+  const w6 = '3. Use the setup wizard in Settings to configure authentication.'.padEnd(
+    BOX_CONTENT_WIDTH
+  );
+
+  // Build paths checked summary from the indicators (if available)
+  let pathsCheckedInfo = '';
+  if (cliAuthIndicators) {
+    const pathsChecked: string[] = [];
+
+    // Collect paths that were checked (paths are always populated strings)
+    pathsChecked.push(`Settings: ${cliAuthIndicators.checks.settingsFile.path}`);
+    pathsChecked.push(`Stats cache: ${cliAuthIndicators.checks.statsCache.path}`);
+    pathsChecked.push(`Projects dir: ${cliAuthIndicators.checks.projectsDir.path}`);
+    for (const credFile of cliAuthIndicators.checks.credentialFiles) {
+      pathsChecked.push(`Credentials: ${credFile.path}`);
+    }
+
+    if (pathsChecked.length > 0) {
+      pathsCheckedInfo = `
+║                                                                     ║
+║  ${'Paths checked:'.padEnd(BOX_CONTENT_WIDTH)}║
+${pathsChecked
+  .map((p) => {
+    const maxLen = BOX_CONTENT_WIDTH - 4;
+    const display = p.length > maxLen ? '...' + p.slice(-(maxLen - 3)) : p;
+    return `║    ${display.padEnd(maxLen)}  ║`;
+  })
+  .join('\n')}`;
+    }
+  }
+
+  logger.warn(`
+╔═════════════════════════════════════════════════════════════════════╗
+║  ${wHeader}║
+╠═════════════════════════════════════════════════════════════════════╣
+║                                                                     ║
+║  ${w1}║
+║                                                                     ║
+║  ${w2}║
+║  ${w3}║
+║  ${w4}║
+║  ${w5}║
+║  ${w6}║${pathsCheckedInfo}
+║                                                                     ║
+╚═════════════════════════════════════════════════════════════════════╝
+`);
+})();
+
+// Initialize security
+initAllowedPaths();
+
+// Create Express app
+const app = express();
+
+// Middleware
+// Custom colored logger showing only endpoint and status code (dynamically configurable)
+morgan.token('status-colored', (_req, res) => {
+  const status = res.statusCode;
+  if (status >= 500) return `\x1b[31m${status}\x1b[0m`; // Red for server errors
+  if (status >= 400) return `\x1b[33m${status}\x1b[0m`; // Yellow for client errors
+  if (status >= 300) return `\x1b[36m${status}\x1b[0m`; // Cyan for redirects
+  return `\x1b[32m${status}\x1b[0m`; // Green for success
+});
+
+app.use(
+  morgan(':method :url :status-colored', {
+    // Skip when request logging is disabled or for health check endpoints
+    skip: (req) =>
+      !requestLoggingEnabled ||
+      req.url === '/api/health' ||
+      req.url === '/api/auto-mode/context-exists',
+  })
+);
+// CORS configuration
+// When using credentials (cookies), origin cannot be '*'
+// We dynamically allow the requesting origin for local development
+
+// Check if origin is a local/private network address
+function isLocalOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '[::1]' ||
+      hostname === '0.0.0.0' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Electron)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // If CORS_ORIGIN is set, use it (can be comma-separated list)
+      const allowedOrigins = process.env.CORS_ORIGIN?.split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+      if (allowedOrigins && allowedOrigins.length > 0) {
+        if (allowedOrigins.includes('*')) {
+          callback(null, true);
+          return;
+        }
+        if (allowedOrigins.includes(origin)) {
+          callback(null, origin);
+          return;
+        }
+        // Fall through to local network check below
+      }
+
+      // Allow all localhost/loopback/private network origins (any port)
+      if (isLocalOrigin(origin)) {
+        callback(null, origin);
+        return;
+      }
+
+      // Reject other origins by default for security
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
+app.use(express.json({ limit: '50mb' }));
+app.use(cookieParser());
+
+// Create shared event emitter for streaming
+const events: EventEmitter = createEventEmitter();
+
+// Create services
+// Note: settingsService is created first so it can be injected into other services
+const settingsService = new SettingsService(DATA_DIR);
+const agentService = new AgentService(DATA_DIR, events, settingsService);
+const featureLoader = new FeatureLoader();
+
+// Auto-mode services: compatibility layer provides old interface while using new architecture
+const autoModeService = new AutoModeServiceCompat(events, settingsService, featureLoader);
+const claudeUsageService = new ClaudeUsageService();
+const codexAppServerService = new CodexAppServerService();
+const codexModelCacheService = new CodexModelCacheService(DATA_DIR, codexAppServerService);
+const codexUsageService = new CodexUsageService(codexAppServerService);
+const zaiUsageService = new ZaiUsageService();
+const geminiUsageService = new GeminiUsageService();
+const mcpTestService = new MCPTestService(settingsService);
+const ideationService = new IdeationService(events, settingsService, featureLoader);
+
+// Initialize DevServerService with event emitter for real-time log streaming
+const devServerService = getDevServerService();
+devServerService.initialize(DATA_DIR, events).catch((err) => {
+  logger.error('Failed to initialize DevServerService:', err);
+});
+
+// Initialize Notification Service with event emitter for real-time updates
+const notificationService = getNotificationService();
+notificationService.setEventEmitter(events);
+
+// Initialize Event History Service
+const eventHistoryService = getEventHistoryService();
+
+// Initialize Test Runner Service with event emitter for real-time test output streaming
+const testRunnerService = getTestRunnerService();
+testRunnerService.setEventEmitter(events);
+
+// Initialize Event Hook Service for custom event triggers (with history storage)
+eventHookService.initialize(events, settingsService, eventHistoryService, featureLoader);
+
+// Initialize services
+(async () => {
+  // Migrate settings from legacy Electron userData location if needed
+  // This handles users upgrading from versions that stored settings in ~/.config/Pegasus (Linux),
+  // ~/Library/Application Support/Pegasus (macOS), or %APPDATA%\Pegasus (Windows)
+  // to the new shared ./data directory
+  try {
+    const migrationResult = await settingsService.migrateFromLegacyElectronPath();
+    if (migrationResult.migrated) {
+      logger.info(`Settings migrated from legacy location: ${migrationResult.legacyPath}`);
+      logger.info(`Migrated files: ${migrationResult.migratedFiles.join(', ')}`);
+    }
+    if (migrationResult.errors.length > 0) {
+      logger.warn('Migration errors:', migrationResult.errors);
+    }
+  } catch (err) {
+    logger.warn('Failed to check for legacy settings migration:', err);
+  }
+
+  // Fetch global settings once and reuse for logging config and feature reconciliation
+  let globalSettings: Awaited<ReturnType<typeof settingsService.getGlobalSettings>> | null = null;
+  try {
+    globalSettings = await settingsService.getGlobalSettings();
+  } catch {
+    logger.warn('Failed to load global settings, using defaults');
+  }
+
+  // Apply logging settings from saved settings
+  if (globalSettings) {
+    try {
+      if (
+        globalSettings.serverLogLevel &&
+        LOG_LEVEL_MAP[globalSettings.serverLogLevel] !== undefined
+      ) {
+        setLogLevel(LOG_LEVEL_MAP[globalSettings.serverLogLevel]);
+        logger.info(`Server log level set to: ${globalSettings.serverLogLevel}`);
+      }
+      // Apply request logging setting (default true if not set)
+      const enableRequestLog = globalSettings.enableRequestLogging ?? true;
+      setRequestLoggingEnabled(enableRequestLog);
+      logger.info(`HTTP request logging: ${enableRequestLog ? 'enabled' : 'disabled'}`);
+    } catch {
+      logger.warn('Failed to apply logging settings, using defaults');
+    }
+  }
+
+  await agentService.initialize();
+  logger.info('Agent service initialized');
+
+  // Reconcile feature states on startup
+  // After any type of restart (clean, forced, crash), features may be stuck in
+  // transient states (in_progress, interrupted, pipeline_*) that don't match reality.
+  // Reconcile them back to resting states before the UI is served.
+  if (globalSettings) {
+    try {
+      if (globalSettings.projects && globalSettings.projects.length > 0) {
+        let totalReconciled = 0;
+        for (const project of globalSettings.projects) {
+          const count = await autoModeService.reconcileFeatureStates(project.path);
+          totalReconciled += count;
+        }
+        if (totalReconciled > 0) {
+          logger.info(
+            `[STARTUP] Reconciled ${totalReconciled} feature(s) across ${globalSettings.projects.length} project(s)`
+          );
+        } else {
+          logger.info('[STARTUP] Feature state reconciliation complete - no stale states found');
+        }
+
+        // Resume interrupted features in the background for all projects.
+        // This handles features stuck in transient states (in_progress, pipeline_*)
+        // or explicitly marked as interrupted. Running in background so it doesn't block startup.
+        for (const project of globalSettings.projects) {
+          autoModeService.resumeInterruptedFeatures(project.path).catch((err) => {
+            logger.warn(
+              `[STARTUP] Failed to resume interrupted features for ${project.path}:`,
+              err
+            );
+          });
+        }
+        logger.info('[STARTUP] Initiated background resume of interrupted features');
+      }
+    } catch (err) {
+      logger.warn('[STARTUP] Failed to reconcile feature states:', err);
+    }
+  }
+
+  // Bootstrap Codex model cache in background (don't block server startup)
+  void codexModelCacheService.getModels().catch((err) => {
+    logger.error('Failed to bootstrap Codex model cache:', err);
+  });
+})();
+
+// Run stale validation cleanup every hour to prevent memory leaks from crashed validations
+const VALIDATION_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+setInterval(() => {
+  const cleaned = cleanupStaleValidations();
+  if (cleaned > 0) {
+    logger.info(`Cleaned up ${cleaned} stale validation entries`);
+  }
+}, VALIDATION_CLEANUP_INTERVAL_MS);
+
+// Require Content-Type: application/json for all API POST/PUT/PATCH requests
+// This helps prevent CSRF and content-type confusion attacks
+app.use('/api', requireJsonContentType);
+
+// Mount API routes - health, auth, and setup are unauthenticated
+app.use('/api/health', createHealthRoutes());
+app.use('/api/auth', createAuthRoutes());
+app.use('/api/setup', createSetupRoutes());
+
+// Apply authentication to all other routes
+app.use('/api', authMiddleware);
+
+// Protected health endpoint with detailed info
+app.get('/api/health/detailed', createDetailedHandler());
+
+app.use('/api/fs', createFsRoutes(events));
+app.use('/api/agent', createAgentRoutes(agentService, events));
+app.use('/api/sessions', createSessionsRoutes(agentService));
+app.use(
+  '/api/features',
+  createFeaturesRoutes(featureLoader, settingsService, events, autoModeService)
+);
+app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
+app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
+app.use('/api/worktree', createWorktreeRoutes(events, settingsService, featureLoader));
+app.use('/api/git', createGitRoutes());
+app.use('/api/models', createModelsRoutes());
+app.use('/api/spec-regeneration', createSpecRegenerationRoutes(events, settingsService));
+app.use('/api/running-agents', createRunningAgentsRoutes(autoModeService));
+app.use('/api/workspace', createWorkspaceRoutes());
+app.use('/api/templates', createTemplatesRoutes());
+app.use('/api/terminal', createTerminalRoutes());
+app.use('/api/settings', createSettingsRoutes(settingsService));
+app.use('/api/claude', createClaudeRoutes(claudeUsageService));
+app.use('/api/codex', createCodexRoutes(codexUsageService, codexModelCacheService));
+app.use('/api/zai', createZaiRoutes(zaiUsageService, settingsService));
+app.use('/api/gemini', createGeminiRoutes(geminiUsageService, events));
+app.use('/api/github', createGitHubRoutes(events, settingsService));
+app.use('/api/context', createContextRoutes(settingsService));
+app.use('/api/backlog-plan', createBacklogPlanRoutes(events, settingsService));
+app.use('/api/mcp', createMCPRoutes(mcpTestService));
+app.use('/api/pipeline', createPipelineRoutes(pipelineService));
+app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
+app.use('/api/notifications', createNotificationsRoutes(notificationService));
+app.use('/api/event-history', createEventHistoryRoutes(eventHistoryService, settingsService));
+app.use(
+  '/api/projects',
+  createProjectsRoutes(featureLoader, autoModeService, settingsService, notificationService)
+);
+
+// Create HTTP server
+const server = createServer(app);
+
+// WebSocket servers using noServer mode for proper multi-path support
+const wss = new WebSocketServer({ noServer: true });
+const terminalWss = new WebSocketServer({ noServer: true });
+const terminalService = getTerminalService(settingsService);
+
+/**
+ * Authenticate WebSocket upgrade requests
+ * Checks for API key in header/query, session token in header/query, OR valid session cookie
+ */
+function authenticateWebSocket(request: import('http').IncomingMessage): boolean {
+  const url = new URL(request.url || '', `http://${request.headers.host}`);
+
+  // Convert URL search params to query object
+  const query: Record<string, string | undefined> = {};
+  url.searchParams.forEach((value, key) => {
+    query[key] = value;
+  });
+
+  // Parse cookies from header
+  const cookieHeader = request.headers.cookie;
+  const cookies = cookieHeader ? cookie.parse(cookieHeader) : {};
+
+  // Use shared authentication logic for standard auth methods
+  if (
+    checkRawAuthentication(
+      request.headers as Record<string, string | string[] | undefined>,
+      query,
+      cookies
+    )
+  ) {
+    return true;
+  }
+
+  // Additionally check for short-lived WebSocket connection token (WebSocket-specific)
+  const wsToken = url.searchParams.get('wsToken');
+  if (wsToken && validateWsConnectionToken(wsToken)) {
+    return true;
+  }
+
+  return false;
+}
+
+// Handle HTTP upgrade requests manually to route to correct WebSocket server
+server.on('upgrade', (request, socket, head) => {
+  const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
+
+  // Authenticate all WebSocket connections
+  if (!authenticateWebSocket(request)) {
+    logger.info('Authentication failed, rejecting connection');
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+
+  if (pathname === '/api/events') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  } else if (pathname === '/api/terminal/ws') {
+    terminalWss.handleUpgrade(request, socket, head, (ws) => {
+      terminalWss.emit('connection', ws, request);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+// Events WebSocket connection handler
+wss.on('connection', (ws: WebSocket) => {
+  logger.info('Client connected, ready state:', ws.readyState);
+
+  // Subscribe to all events and forward to this client
+  const unsubscribe = events.subscribe((type, payload) => {
+    // Use debug level for high-frequency events to avoid log spam
+    // that causes progressive memory growth and server slowdown
+    const isHighFrequency =
+      type === 'dev-server:output' || type === 'test-runner:output' || type === 'feature:progress';
+    const log = isHighFrequency ? logger.debug.bind(logger) : logger.info.bind(logger);
+
+    log('Event received:', {
+      type,
+      hasPayload: !!payload,
+      wsReadyState: ws.readyState,
+    });
+
+    if (ws.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ type, payload });
+      ws.send(message);
+    } else {
+      logger.warn('Cannot send event, WebSocket not open. ReadyState:', ws.readyState);
+    }
+  });
+
+  ws.on('close', () => {
+    logger.info('Client disconnected');
+    unsubscribe();
+  });
+
+  ws.on('error', (error) => {
+    logger.error('ERROR:', error);
+    unsubscribe();
+  });
+});
+
+// Track WebSocket connections per session
+const terminalConnections: Map<string, Set<WebSocket>> = new Map();
+// Track last resize dimensions per session to deduplicate resize messages
+const lastResizeDimensions: Map<string, { cols: number; rows: number }> = new Map();
+// Track last resize timestamp to rate-limit resize operations (prevents resize storm)
+const lastResizeTime: Map<string, number> = new Map();
+const RESIZE_MIN_INTERVAL_MS = 100; // Minimum 100ms between resize operations
+
+// Clean up resize tracking when sessions actually exit (not just when connections close)
+terminalService.onExit((sessionId) => {
+  lastResizeDimensions.delete(sessionId);
+  lastResizeTime.delete(sessionId);
+  terminalConnections.delete(sessionId);
+});
+
+// Terminal WebSocket connection handler
+terminalWss.on('connection', (ws: WebSocket, req: import('http').IncomingMessage) => {
+  // Parse URL to get session ID and token
+  const url = new URL(req.url || '', `http://${req.headers.host}`);
+  const sessionId = url.searchParams.get('sessionId');
+  const token = url.searchParams.get('token');
+
+  logger.info(`Connection attempt for session: ${sessionId}`);
+
+  // Check if terminal is enabled
+  if (!isTerminalEnabled()) {
+    logger.info('Terminal is disabled');
+    ws.close(4003, 'Terminal access is disabled');
+    return;
+  }
+
+  // Validate token if password is required
+  if (isTerminalPasswordRequired() && !validateTerminalToken(token || undefined)) {
+    logger.info('Invalid or missing token');
+    ws.close(4001, 'Authentication required');
+    return;
+  }
+
+  if (!sessionId) {
+    logger.info('No session ID provided');
+    ws.close(4002, 'Session ID required');
+    return;
+  }
+
+  // Check if session exists
+  const session = terminalService.getSession(sessionId);
+  if (!session) {
+    logger.warn(
+      `Terminal session ${sessionId} not found. ` +
+        `The session may have exited, been deleted, or was never created. ` +
+        `Active terminal sessions: ${terminalService.getSessionCount()}`
+    );
+    ws.close(
+      4004,
+      'Session not found. The terminal session may have expired or been closed. Please create a new terminal.'
+    );
+    return;
+  }
+
+  logger.info(`Client connected to session ${sessionId}`);
+
+  // Track this connection
+  if (!terminalConnections.has(sessionId)) {
+    terminalConnections.set(sessionId, new Set());
+  }
+  terminalConnections.get(sessionId)!.add(ws);
+
+  // Send initial connection success FIRST
+  ws.send(
+    JSON.stringify({
+      type: 'connected',
+      sessionId,
+      shell: session.shell,
+      cwd: session.cwd,
+    })
+  );
+
+  // Send scrollback buffer BEFORE subscribing to prevent race condition
+  // Also clear pending output buffer to prevent duplicates from throttled flush
+  const scrollback = terminalService.getScrollbackAndClearPending(sessionId);
+  if (scrollback && scrollback.length > 0) {
+    ws.send(
+      JSON.stringify({
+        type: 'scrollback',
+        data: scrollback,
+      })
+    );
+  }
+
+  // NOW subscribe to terminal data (after scrollback is sent)
+  const unsubscribeData = terminalService.onData((sid, data) => {
+    if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'data', data }));
+    }
+  });
+
+  // Subscribe to terminal exit
+  const unsubscribeExit = terminalService.onExit((sid, exitCode) => {
+    if (sid === sessionId && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'exit', exitCode }));
+      ws.close(1000, 'Session ended');
+    }
+  });
+
+  // Handle incoming messages
+  ws.on('message', (message) => {
+    try {
+      const msg = JSON.parse(message.toString());
+
+      switch (msg.type) {
+        case 'input':
+          // Validate input data type and length
+          if (typeof msg.data !== 'string') {
+            ws.send(JSON.stringify({ type: 'error', message: 'Invalid input type' }));
+            break;
+          }
+          // Limit input size to 1MB to prevent memory issues
+          if (msg.data.length > 1024 * 1024) {
+            ws.send(JSON.stringify({ type: 'error', message: 'Input too large' }));
+            break;
+          }
+          // Write user input to terminal
+          terminalService.write(sessionId, msg.data);
+          break;
+
+        case 'resize':
+          // Validate resize dimensions are positive integers within reasonable bounds
+          if (
+            typeof msg.cols !== 'number' ||
+            typeof msg.rows !== 'number' ||
+            !Number.isInteger(msg.cols) ||
+            !Number.isInteger(msg.rows) ||
+            msg.cols < 1 ||
+            msg.cols > 1000 ||
+            msg.rows < 1 ||
+            msg.rows > 500
+          ) {
+            break; // Silently ignore invalid resize requests
+          }
+          // Resize terminal with deduplication and rate limiting
+          if (msg.cols && msg.rows) {
+            const now = Date.now();
+            const lastTime = lastResizeTime.get(sessionId) || 0;
+            const lastDimensions = lastResizeDimensions.get(sessionId);
+
+            // Skip if resized too recently (prevents resize storm during splits)
+            if (now - lastTime < RESIZE_MIN_INTERVAL_MS) {
+              break;
+            }
+
+            // Check if dimensions are different from last resize
+            if (
+              !lastDimensions ||
+              lastDimensions.cols !== msg.cols ||
+              lastDimensions.rows !== msg.rows
+            ) {
+              // Only suppress output on subsequent resizes, not the first one
+              // The first resize happens on terminal open and we don't want to drop the initial prompt
+              const isFirstResize = !lastDimensions;
+              terminalService.resize(sessionId, msg.cols, msg.rows, !isFirstResize);
+              lastResizeDimensions.set(sessionId, {
+                cols: msg.cols,
+                rows: msg.rows,
+              });
+              lastResizeTime.set(sessionId, now);
+            }
+          }
+          break;
+
+        case 'ping':
+          // Respond to ping
+          ws.send(JSON.stringify({ type: 'pong' }));
+          break;
+
+        default:
+          logger.warn(`Unknown message type: ${msg.type}`);
+      }
+    } catch (error) {
+      logger.error('Error processing message:', error);
+    }
+  });
+
+  ws.on('close', () => {
+    logger.info(`Client disconnected from session ${sessionId}`);
+    unsubscribeData();
+    unsubscribeExit();
+
+    // Remove from connections tracking
+    const connections = terminalConnections.get(sessionId);
+    if (connections) {
+      connections.delete(ws);
+      if (connections.size === 0) {
+        terminalConnections.delete(sessionId);
+        // DON'T delete lastResizeDimensions/lastResizeTime here!
+        // The session still exists, and reconnecting clients need to know
+        // this isn't the "first resize" to prevent duplicate prompts.
+        // These get cleaned up when the session actually exits.
+      }
+    }
+  });
+
+  ws.on('error', (error) => {
+    logger.error(`Error on session ${sessionId}:`, error);
+    unsubscribeData();
+    unsubscribeExit();
+  });
+});
+
+// Start server with error handling for port conflicts
+const startServer = (port: number, host: string) => {
+  server.listen(port, host, () => {
+    const terminalStatus = isTerminalEnabled()
+      ? isTerminalPasswordRequired()
+        ? 'enabled (password protected)'
+        : 'enabled'
+      : 'disabled';
+
+    // Build URLs for display
+    const listenAddr = `${host}:${port}`;
+    const httpUrl = `http://${HOSTNAME}:${port}`;
+    const wsEventsUrl = `ws://${HOSTNAME}:${port}/api/events`;
+    const wsTerminalUrl = `ws://${HOSTNAME}:${port}/api/terminal/ws`;
+    const healthUrl = `http://${HOSTNAME}:${port}/api/health`;
+
+    const sHeader = '🚀 Pegasus Backend Server'.padEnd(BOX_CONTENT_WIDTH);
+    const s1 = `Listening:    ${listenAddr}`.padEnd(BOX_CONTENT_WIDTH);
+    const s2 = `HTTP API:     ${httpUrl}`.padEnd(BOX_CONTENT_WIDTH);
+    const s3 = `WebSocket:    ${wsEventsUrl}`.padEnd(BOX_CONTENT_WIDTH);
+    const s4 = `Terminal WS:  ${wsTerminalUrl}`.padEnd(BOX_CONTENT_WIDTH);
+    const s5 = `Health:       ${healthUrl}`.padEnd(BOX_CONTENT_WIDTH);
+    const s6 = `Terminal:     ${terminalStatus}`.padEnd(BOX_CONTENT_WIDTH);
+
+    logger.info(`
+╔═════════════════════════════════════════════════════════════════════╗
+║  ${sHeader}║
+╠═════════════════════════════════════════════════════════════════════╣
+║                                                                     ║
+║  ${s1}║
+║  ${s2}║
+║  ${s3}║
+║  ${s4}║
+║  ${s5}║
+║  ${s6}║
+║                                                                     ║
+╚═════════════════════════════════════════════════════════════════════╝
+`);
+  });
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      const portStr = port.toString();
+      const nextPortStr = (port + 1).toString();
+      const killCmd = `lsof -ti:${portStr} | xargs kill -9`;
+      const altCmd = `PORT=${nextPortStr} pnpm dev:server`;
+
+      const eHeader = `❌ ERROR: Port ${portStr} is already in use`.padEnd(BOX_CONTENT_WIDTH);
+      const e1 = 'Another process is using this port.'.padEnd(BOX_CONTENT_WIDTH);
+      const e2 = 'To fix this, try one of:'.padEnd(BOX_CONTENT_WIDTH);
+      const e3 = '1. Kill the process using the port:'.padEnd(BOX_CONTENT_WIDTH);
+      const e4 = `   ${killCmd}`.padEnd(BOX_CONTENT_WIDTH);
+      const e5 = '2. Use a different port:'.padEnd(BOX_CONTENT_WIDTH);
+      const e6 = `   ${altCmd}`.padEnd(BOX_CONTENT_WIDTH);
+      const e7 = '3. Use the init.sh script which handles this:'.padEnd(BOX_CONTENT_WIDTH);
+      const e8 = '   ./init.sh'.padEnd(BOX_CONTENT_WIDTH);
+
+      logger.error(`
+╔═════════════════════════════════════════════════════════════════════╗
+║  ${eHeader}║
+╠═════════════════════════════════════════════════════════════════════╣
+║                                                                     ║
+║  ${e1}║
+║                                                                     ║
+║  ${e2}║
+║                                                                     ║
+║  ${e3}║
+║  ${e4}║
+║                                                                     ║
+║  ${e5}║
+║  ${e6}║
+║                                                                     ║
+║  ${e7}║
+║  ${e8}║
+║                                                                     ║
+╚═════════════════════════════════════════════════════════════════════╝
+`);
+      process.exit(1);
+    } else {
+      logger.error('Error starting server:', error);
+      process.exit(1);
+    }
+  });
+};
+
+startServer(PORT, HOST);
+
+// Global error handlers to prevent crashes from uncaught errors
+process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
+  logger.error('Unhandled Promise Rejection:', {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  });
+  // Don't exit - log the error and continue running
+  // This prevents the server from crashing due to unhandled rejections
+});
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception:', {
+    message: error.message,
+    stack: error.stack,
+  });
+  // Exit on uncaught exceptions to prevent undefined behavior
+  // The process is in an unknown state after an uncaught exception
+  process.exit(1);
+});
+
+// Graceful shutdown timeout (30 seconds)
+const SHUTDOWN_TIMEOUT_MS = 30000;
+
+// Graceful shutdown helper
+const gracefulShutdown = async (signal: string) => {
+  logger.info(`${signal} received, shutting down...`);
+
+  // Set up a force-exit timeout to prevent hanging
+  const forceExitTimeout = setTimeout(() => {
+    logger.error(`Shutdown timed out after ${SHUTDOWN_TIMEOUT_MS}ms, forcing exit`);
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  // Mark all running features as interrupted before shutdown
+  // This ensures they can be resumed when the server restarts
+  // Note: markAllRunningFeaturesInterrupted handles errors internally and never rejects
+  await autoModeService.markAllRunningFeaturesInterrupted(`${signal} signal received`);
+
+  terminalService.cleanup();
+  server.close(() => {
+    clearTimeout(forceExitTimeout);
+    logger.info('Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => {
+  gracefulShutdown('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  gracefulShutdown('SIGINT');
+});

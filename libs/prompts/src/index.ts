@@ -1,0 +1,114 @@
+/**
+ * @pegasus/prompts
+ * AI prompt templates for Pegasus
+ */
+
+// Enhancement prompts
+export {
+  IMPROVE_SYSTEM_PROMPT,
+  TECHNICAL_SYSTEM_PROMPT,
+  SIMPLIFY_SYSTEM_PROMPT,
+  ACCEPTANCE_SYSTEM_PROMPT,
+  IMPROVE_EXAMPLES,
+  TECHNICAL_EXAMPLES,
+  SIMPLIFY_EXAMPLES,
+  ACCEPTANCE_EXAMPLES,
+  getEnhancementPrompt,
+  getSystemPrompt,
+  getExamples,
+  buildUserPrompt,
+  isValidEnhancementMode,
+  getAvailableEnhancementModes,
+} from './enhancement.js';
+
+// Re-export types from @pegasus/types
+export type { EnhancementMode, EnhancementExample } from '@pegasus/types';
+
+// Default prompts
+export {
+  DEFAULT_AUTO_MODE_PLANNING_LITE,
+  DEFAULT_AUTO_MODE_PLANNING_LITE_WITH_APPROVAL,
+  DEFAULT_AUTO_MODE_PLANNING_SPEC,
+  DEFAULT_AUTO_MODE_PLANNING_FULL,
+  DEFAULT_AUTO_MODE_FEATURE_PROMPT_TEMPLATE,
+  DEFAULT_AUTO_MODE_FOLLOW_UP_PROMPT_TEMPLATE,
+  DEFAULT_AUTO_MODE_CONTINUATION_PROMPT_TEMPLATE,
+  DEFAULT_AUTO_MODE_PIPELINE_STEP_PROMPT_TEMPLATE,
+  DEFAULT_AUTO_MODE_PROMPTS,
+  DEFAULT_AGENT_SYSTEM_PROMPT,
+  DEFAULT_AGENT_PROMPTS,
+  DEFAULT_BACKLOG_PLAN_SYSTEM_PROMPT,
+  DEFAULT_BACKLOG_PLAN_USER_PROMPT_TEMPLATE,
+  DEFAULT_BACKLOG_PLAN_PROMPTS,
+  DEFAULT_ENHANCEMENT_PROMPTS,
+  DEFAULT_COMMIT_MESSAGE_SYSTEM_PROMPT,
+  DEFAULT_COMMIT_MESSAGE_PROMPTS,
+  DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT,
+  DEFAULT_TITLE_GENERATION_PROMPTS,
+  DEFAULT_ISSUE_VALIDATION_SYSTEM_PROMPT,
+  DEFAULT_ISSUE_VALIDATION_PROMPTS,
+  DEFAULT_IDEATION_SYSTEM_PROMPT,
+  DEFAULT_SUGGESTIONS_SYSTEM_PROMPT,
+  DEFAULT_IDEATION_PROMPTS,
+  // App Spec prompts
+  DEFAULT_APP_SPEC_GENERATE_SYSTEM_PROMPT,
+  DEFAULT_APP_SPEC_STRUCTURED_INSTRUCTIONS,
+  DEFAULT_GENERATE_FEATURES_FROM_SPEC_PROMPT,
+  DEFAULT_APP_SPEC_PROMPTS,
+  // Context Description prompts
+  DEFAULT_DESCRIBE_FILE_PROMPT,
+  DEFAULT_DESCRIBE_IMAGE_PROMPT,
+  DEFAULT_CONTEXT_DESCRIPTION_PROMPTS,
+  // Suggestions prompts
+  DEFAULT_SUGGESTIONS_FEATURES_PROMPT,
+  DEFAULT_SUGGESTIONS_REFACTORING_PROMPT,
+  DEFAULT_SUGGESTIONS_SECURITY_PROMPT,
+  DEFAULT_SUGGESTIONS_PERFORMANCE_PROMPT,
+  DEFAULT_SUGGESTIONS_BASE_TEMPLATE,
+  DEFAULT_SUGGESTIONS_PROMPTS,
+  // Task Execution prompts
+  DEFAULT_TASK_PROMPT_TEMPLATE,
+  DEFAULT_IMPLEMENTATION_INSTRUCTIONS,
+  DEFAULT_PLAYWRIGHT_VERIFICATION_INSTRUCTIONS,
+  DEFAULT_LEARNING_EXTRACTION_SYSTEM_PROMPT,
+  DEFAULT_LEARNING_EXTRACTION_USER_TEMPLATE,
+  DEFAULT_PLAN_REVISION_TEMPLATE,
+  DEFAULT_CONTINUATION_AFTER_APPROVAL_TEMPLATE,
+  DEFAULT_RESUME_FEATURE_TEMPLATE,
+  DEFAULT_PROJECT_ANALYSIS_PROMPT,
+  DEFAULT_TASK_EXECUTION_PROMPTS,
+  DEFAULT_PROMPTS,
+} from './defaults.js';
+
+// Prompt merging utilities
+export {
+  mergeAutoModePrompts,
+  mergeAgentPrompts,
+  mergeBacklogPlanPrompts,
+  mergeEnhancementPrompts,
+  mergeCommitMessagePrompts,
+  mergeTitleGenerationPrompts,
+  mergeIssueValidationPrompts,
+  mergeIdeationPrompts,
+  mergeAppSpecPrompts,
+  mergeContextDescriptionPrompts,
+  mergeSuggestionsPrompts,
+  mergeTaskExecutionPrompts,
+  mergeAllPrompts,
+} from './merge.js';
+
+// Re-export resolved prompt types from @pegasus/types
+export type {
+  ResolvedAutoModePrompts,
+  ResolvedAgentPrompts,
+  ResolvedBacklogPlanPrompts,
+  ResolvedEnhancementPrompts,
+  ResolvedCommitMessagePrompts,
+  ResolvedTitleGenerationPrompts,
+  ResolvedIssueValidationPrompts,
+  ResolvedIdeationPrompts,
+  ResolvedAppSpecPrompts,
+  ResolvedContextDescriptionPrompts,
+  ResolvedSuggestionsPrompts,
+  ResolvedTaskExecutionPrompts,
+} from '@pegasus/types';

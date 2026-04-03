@@ -1,0 +1,47 @@
+services:
+  server:
+    volumes:
+      # Mount your workspace directory to /projects inside the container
+      # Example: mount your local /workspace to /projects inside the container
+      - /Users/webdevcody/Workspace/pegasus-workspace:/projects:rw
+
+      # ===== CLI Authentication (Optional) =====
+      # Mount host CLI credentials to avoid re-authenticating in container
+
+      # Claude CLI - mount your ~/.claude directory (Linux/Windows)
+      # This shares your 'claude login' OAuth session with the container
+      # - ~/.claude:/home/pegasus/.claude
+
+      # Cursor CLI - mount your ~/.cursor directory (Linux/Windows)
+      # This shares your 'cursor-agent login' OAuth session with the container
+      # - ~/.cursor:/home/pegasus/.cursor
+
+      # OpenCode CLI - mount your ~/.local/share/opencode directory
+      # This shares your 'opencode auth login' session with the container
+      # - ~/.local/share/opencode:/home/pegasus/.local/share/opencode
+      # - ~/.config/opencode:/home/pegasus/.config/opencode
+
+      # ===== Playwright Browser Cache (Optional) =====
+      # Playwright Chromium is PRE-INSTALLED in the Docker image for automated testing.
+      # Uncomment below to persist browser cache across container rebuilds (saves ~300MB download):
+      # - playwright-cache:/home/pegasus/.cache/ms-playwright
+      #
+      # To update Playwright browsers manually:
+      #   docker exec --user pegasus -w /app pegasus-server npx playwright install chromium
+    environment:
+      # Set root directory for all projects and file operations
+      # Users can only create/open projects within this directory
+      - ALLOWED_ROOT_DIRECTORY=/projects
+      - NODE_ENV=development
+
+      # ===== macOS Users =====
+      # On macOS, OAuth tokens are stored in SQLite databases, not plain files.
+      # Extract your Cursor token with: ./scripts/get-cursor-token.sh
+      # Then set it here or in your .env file:
+      # - CURSOR_API_KEY=${CURSOR_API_KEY:-}
+
+volumes:
+  # Playwright cache volume - optional, persists browser updates across container rebuilds
+  # Uncomment if you mounted the playwright-cache volume above
+  # playwright-cache:
+  #   name: pegasus-playwright-cache

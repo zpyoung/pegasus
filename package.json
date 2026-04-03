@@ -1,0 +1,80 @@
+{
+  "name": "pegasus",
+  "version": "1.0.0",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "postinstall": "node -e \"const fs=require('fs');if(process.platform==='darwin'){['darwin-arm64','darwin-x64'].forEach(a=>{const p='node_modules/node-pty/prebuilds/'+a+'/spawn-helper';if(fs.existsSync(p))fs.chmodSync(p,0o755)})}\"",
+    "dev": "node start-pegasus.mjs",
+    "start": "node start-pegasus.mjs --production",
+    "_dev:web": "pnpm --filter @pegasus/ui dev:web",
+    "_dev:electron": "pnpm --filter @pegasus/ui dev:electron",
+    "_dev:electron:debug": "pnpm --filter @pegasus/ui dev:electron:debug",
+    "_dev:electron:wsl": "pnpm --filter @pegasus/ui dev:electron:wsl",
+    "_dev:electron:wsl:gpu": "pnpm --filter @pegasus/ui dev:electron:wsl:gpu",
+    "_dev:server": "pnpm --filter @pegasus/server dev",
+    "dev:web": "pnpm run build:packages && pnpm run _dev:web",
+    "dev:electron": "pnpm run build:packages && pnpm run _dev:electron",
+    "dev:electron:debug": "pnpm run build:packages && pnpm run _dev:electron:debug",
+    "dev:electron:wsl": "pnpm run build:packages && pnpm run _dev:electron:wsl",
+    "dev:electron:wsl:gpu": "pnpm run build:packages && pnpm run _dev:electron:wsl:gpu",
+    "dev:server": "pnpm run build:packages && pnpm run _dev:server",
+    "dev:docker": "docker compose up",
+    "dev:docker:rebuild": "docker compose build --no-cache && docker compose up",
+    "dev:full": "pnpm run build:packages && concurrently \"pnpm run _dev:server\" \"pnpm run _dev:web\"",
+    "build": "pnpm run build:packages && pnpm --filter @pegasus/ui build",
+    "build:packages": "pnpm --filter @pegasus/types build && pnpm --filter @pegasus/platform build && pnpm --filter @pegasus/utils --filter @pegasus/spec-parser build && pnpm --filter @pegasus/prompts --filter @pegasus/model-resolver --filter @pegasus/dependency-resolver build && pnpm --filter @pegasus/git-utils build",
+    "build:server": "pnpm run build:packages && pnpm --filter @pegasus/server build",
+    "build:electron": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron",
+    "build:electron:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:dir",
+    "build:electron:win": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:win",
+    "build:electron:win:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:win:dir",
+    "build:electron:mac": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:mac",
+    "build:electron:mac:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:mac:dir",
+    "build:electron:linux": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:linux",
+    "build:electron:linux:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:linux:dir",
+    "lint": "pnpm --filter @pegasus/ui lint",
+    "lint:errors": "pnpm --filter @pegasus/ui lint -- --quiet",
+    "lint:server:errors": "pnpm --filter @pegasus/server lint -- --quiet",
+    "typecheck": "pnpm --filter @pegasus/ui typecheck",
+    "test": "pnpm --filter @pegasus/ui test",
+    "test:headed": "pnpm --filter @pegasus/ui test:headed",
+    "test:ui": "pnpm --filter @pegasus/ui test -- --ui",
+    "test:packages": "vitest run --project='!server'",
+    "test:server": "vitest run --project=server",
+    "test:server:coverage": "vitest run --project=server --coverage",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:all": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "rebuild": "rm -rf node_modules apps/*/node_modules libs/*/node_modules && pnpm install",
+    "prepare": "husky && pnpm run build:packages"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md,html,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "cross-spawn": "7.0.6",
+    "rehype-sanitize": "6.0.0",
+    "tree-kill": "1.2.2"
+  },
+  "devDependencies": {
+    "husky": "9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "3.7.4",
+    "vitest": "4.0.16"
+  },
+  "optionalDependencies": {
+    "dmg-license": "^1.0.11"
+  }
+}

@@ -1,0 +1,149 @@
+import { useEffect, useMemo, useRef } from 'react';
+import { getElectronAPI } from '@/lib/electron';
+import { createLogger } from '@pegasus/utils/logger';
+import type { Feature } from '@/store/app-store';
+
+const logger = createLogger('BoardEffects');
+
+interface UseBoardEffectsProps {
+  currentProject: { path: string; id: string; name?: string } | null;
+  specCreatingForProject: string | null;
+  setSpecCreatingForProject: (path: string | null) => void;
+  checkContextExists: (featureId: string) => Promise<boolean>;
+  features: Feature[];
+  isLoading: boolean;
+  featuresWithContext: Set<string>;
+  setFeaturesWithContext: (set: Set<string>) => void;
+}
+
+export function useBoardEffects({
+  currentProject,
+  specCreatingForProject,
+  setSpecCreatingForProject,
+  checkContextExists,
+  features,
+  isLoading,
+  featuresWithContext,
+  setFeaturesWithContext,
+}: UseBoardEffectsProps) {
+  // Keep a ref to the current featuresWithContext for use in event handlers
+  const featuresWithContextRef = useRef(featuresWithContext);
+  useEffect(() => {
+    featuresWithContextRef.current = featuresWithContext;
+  }, [featuresWithContext]);
+  // Make current project available globally for modal
+  useEffect(() => {
+    if (currentProject) {
+      window.__currentProject = currentProject;
+    }
+    return () => {
+      window.__currentProject = null;
+    };
+  }, [currentProject]);
+
+  // Subscribe to spec regeneration events to clear creating state on completion
+  useEffect(() => {
+    const api = getElectronAPI();
+    if (!api.specRegeneration) return;
+
+    const unsubscribe = api.specRegeneration.onEvent((event) => {
+      logger.info('Spec regeneration event:', event.type, 'for project:', event.projectPath);
+
+      if (event.projectPath !== specCreatingForProject) {
+        return;
+      }
+
+      if (event.type === 'spec_regeneration_complete') {
+        setSpecCreatingForProject(null);
+      } else if (event.type === 'spec_regeneration_error') {
+        setSpecCreatingForProject(null);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [specCreatingForProject, setSpecCreatingForProject]);
+
+  // Note: Running tasks sync is now handled by useAutoMode hook in BoardView
+  // which correctly handles worktree/branch scoping.
+
+  // Build a stable fingerprint of feature IDs + statuses so context checks
+  // only re-run when the set of features or their statuses actually change,
+  // not on every React Query refetch that produces a new array reference.
+  const featuresFingerprint = useMemo(() => {
+    return features
+      .map((f) => `${f.id}:${f.status}`)
+      .sort()
+      .join(',');
+  }, [features]);
+
+  // Keep a ref to the latest features array for use inside the effect
+  const featuresRef = useRef(features);
+  useEffect(() => {
+    featuresRef.current = features;
+  }, [features]);
+
+  // Check which features have context files
+  useEffect(() => {
+    const checkAllContexts = async () => {
+      const currentFeatures = featuresRef.current;
+      const featuresWithPotentialContext = currentFeatures.filter(
+        (f) =>
+          f.status === 'backlog' ||
+          f.status === 'merge_conflict' ||
+          f.status === 'ready' ||
+          f.status === 'interrupted' ||
+          f.status === 'in_progress' ||
+          f.status === 'waiting_approval' ||
+          f.status === 'verified' ||
+          (typeof f.status === 'string' && f.status.startsWith('pipeline_'))
+      );
+      const contextChecks = await Promise.all(
+        featuresWithPotentialContext.map(async (f) => ({
+          id: f.id,
+          hasContext: await checkContextExists(f.id),
+        }))
+      );
+
+      const newSet = new Set<string>();
+      contextChecks.forEach(({ id, hasContext }) => {
+        if (hasContext) {
+          newSet.add(id);
+        }
+      });
+
+      setFeaturesWithContext(newSet);
+    };
+
+    if (featuresFingerprint && !isLoading) {
+      checkAllContexts();
+    }
+  }, [featuresFingerprint, isLoading, checkContextExists, setFeaturesWithContext]);
+
+  // Re-check context when a feature stops, completes, or errors
+  // This ensures hasContext is updated even if the features array doesn't change
+  useEffect(() => {
+    const api = getElectronAPI();
+    if (!api?.autoMode) return;
+
+    const unsubscribe = api.autoMode.onEvent(async (event) => {
+      // When a feature stops (error/abort) or completes, re-check its context
+      if (
+        (event.type === 'auto_mode_error' || event.type === 'auto_mode_feature_complete') &&
+        event.featureId
+      ) {
+        const hasContext = await checkContextExists(event.featureId);
+        if (hasContext) {
+          const newSet = new Set(featuresWithContextRef.current);
+          newSet.add(event.featureId);
+          setFeaturesWithContext(newSet);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [checkContextExists, setFeaturesWithContext]);
+}

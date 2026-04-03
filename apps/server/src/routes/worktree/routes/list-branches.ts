@@ -1,0 +1,197 @@
+/**
+ * POST /list-branches endpoint - List all local branches and optionally remote branches
+ *
+ * Note: Git repository validation (isGitRepo, hasCommits) is handled by
+ * the requireValidWorktree middleware in index.ts
+ */
+
+import type { Request, Response } from 'express';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { getErrorMessage, logWorktreeError, execGitCommand } from '../common.js';
+import { getRemotesWithBranch } from '../../../services/worktree-service.js';
+
+const execFileAsync = promisify(execFile);
+
+interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  isRemote: boolean;
+}
+
+export function createListBranchesHandler() {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { worktreePath, includeRemote = false } = req.body as {
+        worktreePath: string;
+        includeRemote?: boolean;
+      };
+
+      if (!worktreePath) {
+        res.status(400).json({
+          success: false,
+          error: 'worktreePath required',
+        });
+        return;
+      }
+
+      // Get current branch (execGitCommand avoids spawning /bin/sh; works in sandboxed CI)
+      const currentBranchOutput = await execGitCommand(
+        ['rev-parse', '--abbrev-ref', 'HEAD'],
+        worktreePath
+      );
+      const currentBranch = currentBranchOutput.trim();
+
+      // List all local branches
+      const branchesOutput = await execGitCommand(
+        ['branch', '--format=%(refname:short)'],
+        worktreePath
+      );
+
+      const branches: BranchInfo[] = branchesOutput
+        .trim()
+        .split('\n')
+        .filter((b) => b.trim())
+        .map((name) => {
+          // Remove any surrounding quotes (Windows git may preserve them)
+          const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
+          return {
+            name: cleanName,
+            isCurrent: cleanName === currentBranch,
+            isRemote: false,
+          };
+        });
+
+      // Fetch remote branches if requested
+      if (includeRemote) {
+        try {
+          // Fetch latest remote refs (silently, don't fail if offline)
+          try {
+            await execGitCommand(['fetch', '--all', '--quiet'], worktreePath);
+          } catch {
+            // Ignore fetch errors - we'll use cached remote refs
+          }
+
+          // List remote branches
+          const remoteBranchesOutput = await execGitCommand(
+            ['branch', '-r', '--format=%(refname:short)'],
+            worktreePath
+          );
+
+          const localBranchNames = new Set(branches.map((b) => b.name));
+
+          remoteBranchesOutput
+            .trim()
+            .split('\n')
+            .filter((b) => b.trim())
+            .forEach((name) => {
+              // Remove any surrounding quotes
+              const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
+              // Skip HEAD pointers like "origin/HEAD"
+              if (cleanName.includes('/HEAD')) return;
+
+              // Skip bare remote names without a branch (e.g. "origin" by itself)
+              if (!cleanName.includes('/')) return;
+
+              // Only add remote branches if a branch with the exact same name isn't already
+              // in the list. This avoids duplicates if a local branch is named like a remote one.
+              // Note: We intentionally include remote branches even when a local branch with the
+              // same base name exists (e.g., show "origin/main" even if local "main" exists),
+              // since users need to select remote branches as PR base targets.
+              if (!localBranchNames.has(cleanName)) {
+                branches.push({
+                  name: cleanName, // Keep full name like "origin/main"
+                  isCurrent: false,
+                  isRemote: true,
+                });
+              }
+            });
+        } catch {
+          // Ignore errors fetching remote branches - return local branches only
+        }
+      }
+
+      // Check if any remotes are configured for this repository
+      let hasAnyRemotes = false;
+      try {
+        const remotesOutput = await execGitCommand(['remote'], worktreePath);
+        hasAnyRemotes = remotesOutput.trim().length > 0;
+      } catch {
+        // If git remote fails, assume no remotes
+        hasAnyRemotes = false;
+      }
+
+      // Get ahead/behind count for current branch and check if remote branch exists
+      let aheadCount = 0;
+      let behindCount = 0;
+      let hasRemoteBranch = false;
+      let trackingRemote: string | undefined;
+      // List of remote names that have a branch matching the current branch name
+      let remotesWithBranch: string[] = [];
+      try {
+        // First check if there's a remote tracking branch
+        const { stdout: upstreamOutput } = await execFileAsync(
+          'git',
+          ['rev-parse', '--abbrev-ref', `${currentBranch}@{upstream}`],
+          { cwd: worktreePath }
+        );
+
+        const upstreamRef = upstreamOutput.trim();
+        if (upstreamRef) {
+          hasRemoteBranch = true;
+          // Extract the remote name from the upstream ref (e.g. "origin/main" -> "origin")
+          const slashIndex = upstreamRef.indexOf('/');
+          if (slashIndex !== -1) {
+            trackingRemote = upstreamRef.slice(0, slashIndex);
+          }
+          const { stdout: aheadBehindOutput } = await execFileAsync(
+            'git',
+            ['rev-list', '--left-right', '--count', `${currentBranch}@{upstream}...HEAD`],
+            { cwd: worktreePath }
+          );
+          const [behind, ahead] = aheadBehindOutput.trim().split(/\s+/).map(Number);
+          aheadCount = ahead || 0;
+          behindCount = behind || 0;
+        }
+      } catch {
+        // No upstream branch set - check if the branch exists on any remote
+        try {
+          // Check if there's a matching branch on origin (most common remote)
+          const { stdout: remoteBranchOutput } = await execFileAsync(
+            'git',
+            ['ls-remote', '--heads', 'origin', currentBranch],
+            { cwd: worktreePath, timeout: 5000 }
+          );
+          hasRemoteBranch = remoteBranchOutput.trim().length > 0;
+        } catch {
+          // No remote branch found or origin doesn't exist
+          hasRemoteBranch = false;
+        }
+      }
+
+      // Check which remotes have a branch matching the current branch name.
+      // This helps the UI distinguish between "branch exists on tracking remote" vs
+      // "branch was pushed to a different remote" (e.g., pushed to 'upstream' but tracking 'origin').
+      // Use for-each-ref to check cached remote refs (already fetched above if includeRemote was true)
+      remotesWithBranch = await getRemotesWithBranch(worktreePath, currentBranch, hasAnyRemotes);
+
+      res.json({
+        success: true,
+        result: {
+          currentBranch,
+          branches,
+          aheadCount,
+          behindCount,
+          hasRemoteBranch,
+          hasAnyRemotes,
+          trackingRemote,
+          remotesWithBranch,
+        },
+      });
+    } catch (error) {
+      const worktreePath = req.body?.worktreePath;
+      logWorktreeError(error, 'List branches failed', worktreePath);
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+}

@@ -1,0 +1,513 @@
+// @ts-nocheck - GitHub issues view with issue selection and feature creation flow
+import { useState, useCallback, useMemo } from 'react';
+import { createLogger } from '@pegasus/utils/logger';
+import { CircleDot, RefreshCw, SearchX } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getElectronAPI, GitHubIssue, IssueValidationResult } from '@/lib/electron';
+import { useAppStore } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState } from '@/components/ui/error-state';
+import { cn, pathsEqual, generateUUID } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-media-query';
+import { toast } from 'sonner';
+import { queryKeys } from '@/lib/query-keys';
+import { useGithubIssues, useIssueValidation, useIssuesFilter } from './github-issues-view/hooks';
+import { IssueRow, IssueDetailPanel, IssuesListHeader } from './github-issues-view/components';
+import { ValidationDialog } from './github-issues-view/dialogs';
+import { AddFeatureDialog } from './board-view/dialogs';
+import { formatDate, getFeaturePriority } from './github-issues-view/utils';
+import { resolveModelString } from '@pegasus/model-resolver';
+import { useModelOverride } from '@/components/shared';
+import type {
+  ValidateIssueOptions,
+  IssuesFilterState,
+  IssuesStateFilter,
+} from './github-issues-view/types';
+import { DEFAULT_ISSUES_FILTER_STATE } from './github-issues-view/types';
+
+const logger = createLogger('GitHubIssuesView');
+
+export function GitHubIssuesView() {
+  const [selectedIssue, setSelectedIssue] = useState<GitHubIssue | null>(null);
+  const [validationResult, setValidationResult] = useState<IssueValidationResult | null>(null);
+  const [showValidationDialog, setShowValidationDialog] = useState(false);
+  const [showRevalidateConfirm, setShowRevalidateConfirm] = useState(false);
+  const [pendingRevalidateOptions, setPendingRevalidateOptions] =
+    useState<ValidateIssueOptions | null>(null);
+
+  // Add Feature dialog state
+  const [showAddFeatureDialog, setShowAddFeatureDialog] = useState(false);
+  const [createFeatureIssue, setCreateFeatureIssue] = useState<GitHubIssue | null>(null);
+
+  // Filter state
+  const [filterState, setFilterState] = useState<IssuesFilterState>(DEFAULT_ISSUES_FILTER_STATE);
+
+  const { currentProject, getCurrentWorktree, worktreesByProject, defaultSkipTests } =
+    useAppStore();
+  const queryClient = useQueryClient();
+
+  // Model override for validation
+  const validationModelOverride = useModelOverride({ phase: 'validationModel' });
+
+  const isMobile = useIsMobile();
+
+  const { openIssues, closedIssues, loading, refreshing, error, refresh } = useGithubIssues();
+
+  const { validatingIssues, cachedValidations, handleValidateIssue, handleViewCachedValidation } =
+    useIssueValidation({
+      selectedIssue,
+      showValidationDialog,
+      onValidationResultChange: setValidationResult,
+      onShowValidationDialogChange: setShowValidationDialog,
+    });
+
+  // Combine all issues for filtering
+  const allIssues = useMemo(() => [...openIssues, ...closedIssues], [openIssues, closedIssues]);
+
+  // Apply filter to issues - now returns matched issues directly for better performance
+  const filterResult = useIssuesFilter(allIssues, filterState, cachedValidations);
+
+  // Separate filtered issues by state - this is O(n) but now only done once
+  // since filterResult.matchedIssues already contains the filtered issues
+  const { filteredOpenIssues, filteredClosedIssues } = useMemo(() => {
+    const open: typeof openIssues = [];
+    const closed: typeof closedIssues = [];
+    for (const issue of filterResult.matchedIssues) {
+      if (issue.state.toLowerCase() === 'open') {
+        open.push(issue);
+      } else {
+        closed.push(issue);
+      }
+    }
+    return { filteredOpenIssues: open, filteredClosedIssues: closed };
+  }, [filterResult.matchedIssues]);
+
+  // Filter state change handlers
+  const handleStateFilterChange = useCallback((stateFilter: IssuesStateFilter) => {
+    setFilterState((prev) => ({ ...prev, stateFilter }));
+  }, []);
+
+  const handleLabelsChange = useCallback((selectedLabels: string[]) => {
+    setFilterState((prev) => ({ ...prev, selectedLabels }));
+  }, []);
+
+  // Clear all filters to default state
+  const handleClearFilters = useCallback(() => {
+    setFilterState(DEFAULT_ISSUES_FILTER_STATE);
+  }, []);
+
+  // Get current branch from selected worktree
+  const currentBranch = useMemo(() => {
+    if (!currentProject?.path) return '';
+    const currentWorktreeInfo = getCurrentWorktree(currentProject.path);
+    const worktrees = worktreesByProject[currentProject.path] ?? [];
+    const currentWorktreePath = currentWorktreeInfo?.path ?? null;
+
+    const selectedWorktree =
+      currentWorktreePath === null
+        ? worktrees.find((w) => w.isMain)
+        : worktrees.find((w) => !w.isMain && pathsEqual(w.path, currentWorktreePath));
+
+    return selectedWorktree?.branch || worktrees.find((w) => w.isMain)?.branch || '';
+  }, [currentProject?.path, getCurrentWorktree, worktreesByProject]);
+
+  const handleOpenInGitHub = useCallback((url: string) => {
+    const api = getElectronAPI();
+    api.openExternalLink(url);
+  }, []);
+
+  // Build a prefilled description from a GitHub issue for the feature dialog
+  const buildIssueDescription = useCallback(
+    (issue: GitHubIssue) => {
+      const parts = [
+        `**From GitHub Issue #${issue.number}**`,
+        '',
+        issue.body || 'No description provided.',
+      ];
+
+      // Include labels if present
+      if (issue.labels.length > 0) {
+        parts.push('', `**Labels:** ${issue.labels.map((l) => l.name).join(', ')}`);
+      }
+
+      // Include linked PRs info if present
+      if (issue.linkedPRs && issue.linkedPRs.length > 0) {
+        parts.push(
+          '',
+          '**Linked Pull Requests:**',
+          ...issue.linkedPRs.map((pr) => `- #${pr.number}: ${pr.title} (${pr.state})`)
+        );
+      }
+
+      // Include cached validation analysis if available
+      const cached = cachedValidations.get(issue.number);
+      if (cached?.result) {
+        const validation = cached.result;
+        parts.push('', '---', '', '**AI Validation Analysis:**', validation.reasoning);
+        if (validation.suggestedFix) {
+          parts.push('', `**Suggested Approach:**`, validation.suggestedFix);
+        }
+        if (validation.relatedFiles?.length) {
+          parts.push('', '**Related Files:**', ...validation.relatedFiles.map((f) => `- \`${f}\``));
+        }
+      }
+
+      return parts.join('\n');
+    },
+    [cachedValidations]
+  );
+
+  // Memoize the prefilled description to avoid recomputing on every render
+  const prefilledDescription = useMemo(
+    () => (createFeatureIssue ? buildIssueDescription(createFeatureIssue) : undefined),
+    [createFeatureIssue, buildIssueDescription]
+  );
+
+  // Open the Add Feature dialog with pre-filled data from a GitHub issue
+  const handleCreateFeature = useCallback((issue: GitHubIssue) => {
+    setCreateFeatureIssue(issue);
+    setShowAddFeatureDialog(true);
+  }, []);
+
+  // Handle feature creation from the AddFeatureDialog
+  const handleAddFeatureFromIssue = useCallback(
+    async (featureData: {
+      title: string;
+      category: string;
+      description: string;
+      priority: number;
+      model: string;
+      thinkingLevel: string;
+      reasoningEffort: string;
+      skipTests: boolean;
+      branchName: string;
+      planningMode: string;
+      requirePlanApproval: boolean;
+      excludedPipelineSteps?: string[];
+      workMode: string;
+      imagePaths?: Array<{ id: string; path: string; description?: string }>;
+      textFilePaths?: Array<{ id: string; path: string; description?: string }>;
+    }) => {
+      if (!currentProject?.path) {
+        toast.error('No project selected');
+        return;
+      }
+
+      try {
+        const api = getElectronAPI();
+        if (api.features?.create) {
+          const feature = {
+            id: `issue-${createFeatureIssue?.number || 'new'}-${generateUUID()}`,
+            title: featureData.title,
+            description: featureData.description,
+            category: featureData.category,
+            status: 'backlog' as const,
+            passes: false,
+            priority: featureData.priority,
+            model: featureData.model,
+            thinkingLevel: featureData.thinkingLevel,
+            reasoningEffort: featureData.reasoningEffort,
+            providerId: featureData.providerId,
+            skipTests: featureData.skipTests,
+            branchName: featureData.workMode === 'current' ? currentBranch : featureData.branchName,
+            planningMode: featureData.planningMode,
+            requirePlanApproval: featureData.requirePlanApproval,
+            dependencies: [],
+            excludedPipelineSteps: featureData.excludedPipelineSteps,
+            ...(featureData.imagePaths?.length ? { imagePaths: featureData.imagePaths } : {}),
+            ...(featureData.textFilePaths?.length
+              ? { textFilePaths: featureData.textFilePaths }
+              : {}),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          const result = await api.features.create(currentProject.path, feature);
+          if (result.success) {
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.features.all(currentProject.path),
+            });
+            toast.success(
+              `Created feature: ${featureData.title || featureData.description.slice(0, 50)}`
+            );
+            setShowAddFeatureDialog(false);
+            setCreateFeatureIssue(null);
+          } else {
+            toast.error(result.error || 'Failed to create feature');
+          }
+        }
+      } catch (err) {
+        logger.error('Create feature from issue error:', err);
+        toast.error(err instanceof Error ? err.message : 'Failed to create feature');
+      }
+    },
+    [currentProject?.path, currentBranch, queryClient, createFeatureIssue]
+  );
+
+  const handleConvertToTask = useCallback(
+    async (issue: GitHubIssue, validation: IssueValidationResult) => {
+      if (!currentProject?.path) {
+        toast.error('No project selected');
+        return;
+      }
+
+      try {
+        const api = getElectronAPI();
+        if (api.features?.create) {
+          // Build description from issue body + validation info
+          const parts = [
+            `**From GitHub Issue #${issue.number}**`,
+            '',
+            issue.body || 'No description provided.',
+            '',
+            '---',
+            '',
+            '**AI Validation Analysis:**',
+            validation.reasoning,
+          ];
+          if (validation.suggestedFix) {
+            parts.push('', `**Suggested Approach:**`, validation.suggestedFix);
+          }
+          if (validation.relatedFiles?.length) {
+            parts.push(
+              '',
+              '**Related Files:**',
+              ...validation.relatedFiles.map((f) => `- \`${f}\``)
+            );
+          }
+          const description = parts.join('\n');
+
+          const feature = {
+            id: `issue-${issue.number}-${generateUUID()}`,
+            title: issue.title,
+            description,
+            category: 'From GitHub',
+            status: 'backlog' as const,
+            passes: false,
+            priority: getFeaturePriority(validation.estimatedComplexity),
+            model: resolveModelString('opus'),
+            thinkingLevel: 'none' as const,
+            branchName: currentBranch,
+            planningMode: 'skip' as const,
+            requirePlanApproval: false,
+            dependencies: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          const result = await api.features.create(currentProject.path, feature);
+          if (result.success) {
+            // Invalidate React Query cache to sync UI
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.features.all(currentProject.path),
+            });
+            toast.success(`Created task: ${issue.title}`);
+          } else {
+            toast.error(result.error || 'Failed to create task');
+          }
+        }
+      } catch (err) {
+        logger.error('Convert to task error:', err);
+        toast.error(err instanceof Error ? err.message : 'Failed to create task');
+      }
+    },
+    [currentProject?.path, currentBranch, queryClient]
+  );
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error) {
+    return <ErrorState error={error} title="Failed to Load Issues" onRetry={refresh} />;
+  }
+
+  const totalIssues = filteredOpenIssues.length + filteredClosedIssues.length;
+  const totalUnfilteredIssues = openIssues.length + closedIssues.length;
+  const isFilteredEmpty =
+    totalIssues === 0 && totalUnfilteredIssues > 0 && filterResult.hasActiveFilter;
+
+  return (
+    <div className="flex-1 flex overflow-hidden">
+      {/* Issues List - hidden on mobile when an issue is selected */}
+      <div
+        className={cn(
+          'flex flex-col overflow-hidden border-r border-border',
+          selectedIssue ? 'w-80' : 'flex-1',
+          isMobile && selectedIssue && 'hidden'
+        )}
+      >
+        {/* Header */}
+        <IssuesListHeader
+          openCount={filteredOpenIssues.length}
+          closedCount={filteredClosedIssues.length}
+          totalOpenCount={openIssues.length}
+          totalClosedCount={closedIssues.length}
+          hasActiveFilter={filterResult.hasActiveFilter}
+          refreshing={refreshing}
+          onRefresh={refresh}
+          compact={!!selectedIssue}
+          filterProps={{
+            stateFilter: filterState.stateFilter,
+            selectedLabels: filterState.selectedLabels,
+            availableLabels: filterResult.availableLabels,
+            onStateFilterChange: handleStateFilterChange,
+            onLabelsChange: handleLabelsChange,
+          }}
+        />
+
+        {/* Issues List */}
+        <div className="flex-1 overflow-auto">
+          {totalIssues === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+              <div className="p-4 rounded-full bg-muted/50 mb-4">
+                {isFilteredEmpty ? (
+                  <SearchX className="h-8 w-8 text-muted-foreground" />
+                ) : (
+                  <CircleDot className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <h2 className="text-base font-medium mb-2">
+                {isFilteredEmpty ? 'No Matching Issues' : 'No Issues'}
+              </h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                {isFilteredEmpty
+                  ? 'No issues match your current filters.'
+                  : 'This repository has no issues yet.'}
+              </p>
+              {isFilteredEmpty && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="text-xs"
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {/* Open Issues */}
+              {filteredOpenIssues.map((issue) => (
+                <IssueRow
+                  key={issue.number}
+                  issue={issue}
+                  isSelected={selectedIssue?.number === issue.number}
+                  onClick={() => setSelectedIssue(issue)}
+                  onOpenExternal={() => handleOpenInGitHub(issue.url)}
+                  formatDate={formatDate}
+                  cachedValidation={cachedValidations.get(issue.number)}
+                  isValidating={validatingIssues.has(issue.number)}
+                />
+              ))}
+
+              {/* Closed Issues Section */}
+              {filteredClosedIssues.length > 0 && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 text-xs font-medium text-muted-foreground">
+                    Closed Issues ({filteredClosedIssues.length})
+                  </div>
+                  {filteredClosedIssues.map((issue) => (
+                    <IssueRow
+                      key={issue.number}
+                      issue={issue}
+                      isSelected={selectedIssue?.number === issue.number}
+                      onClick={() => setSelectedIssue(issue)}
+                      onOpenExternal={() => handleOpenInGitHub(issue.url)}
+                      formatDate={formatDate}
+                      cachedValidation={cachedValidations.get(issue.number)}
+                      isValidating={validatingIssues.has(issue.number)}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Issue Detail Panel */}
+      {selectedIssue && (
+        <IssueDetailPanel
+          issue={selectedIssue}
+          validatingIssues={validatingIssues}
+          cachedValidations={cachedValidations}
+          onValidateIssue={handleValidateIssue}
+          onViewCachedValidation={handleViewCachedValidation}
+          onOpenInGitHub={handleOpenInGitHub}
+          onClose={() => setSelectedIssue(null)}
+          onShowRevalidateConfirm={(options) => {
+            setPendingRevalidateOptions(options);
+            setShowRevalidateConfirm(true);
+          }}
+          onCreateFeature={handleCreateFeature}
+          formatDate={formatDate}
+          modelOverride={validationModelOverride}
+          isMobile={isMobile}
+        />
+      )}
+
+      {/* Validation Dialog */}
+      <ValidationDialog
+        open={showValidationDialog}
+        onOpenChange={setShowValidationDialog}
+        issue={selectedIssue}
+        validationResult={validationResult}
+        onConvertToTask={handleConvertToTask}
+      />
+
+      {/* Add Feature Dialog - opened from issue detail panel */}
+      <AddFeatureDialog
+        open={showAddFeatureDialog}
+        onOpenChange={(open) => {
+          setShowAddFeatureDialog(open);
+          if (!open) {
+            setCreateFeatureIssue(null);
+          }
+        }}
+        onAdd={handleAddFeatureFromIssue}
+        categorySuggestions={['From GitHub']}
+        branchSuggestions={[]}
+        defaultSkipTests={defaultSkipTests}
+        defaultBranch={currentBranch}
+        currentBranch={currentBranch || undefined}
+        isMaximized={false}
+        projectPath={currentProject?.path}
+        prefilledTitle={createFeatureIssue?.title}
+        prefilledDescription={prefilledDescription}
+        prefilledCategory="From GitHub"
+      />
+
+      {/* Revalidate Confirmation Dialog */}
+      <ConfirmDialog
+        open={showRevalidateConfirm}
+        onOpenChange={(open) => {
+          setShowRevalidateConfirm(open);
+          if (!open) {
+            setPendingRevalidateOptions(null);
+          }
+        }}
+        title="Re-validate Issue"
+        description={`Are you sure you want to re-validate issue #${selectedIssue?.number}? This will run a new AI analysis and replace the existing validation result.`}
+        icon={RefreshCw}
+        iconClassName="text-primary"
+        confirmText="Re-validate"
+        onConfirm={() => {
+          if (selectedIssue && pendingRevalidateOptions) {
+            logger.info('Revalidating with options:', {
+              commentsCount: pendingRevalidateOptions.comments?.length ?? 0,
+              linkedPRsCount: pendingRevalidateOptions.linkedPRs?.length ?? 0,
+            });
+            handleValidateIssue(selectedIssue, {
+              ...pendingRevalidateOptions,
+              forceRevalidate: true,
+            });
+          }
+        }}
+      />
+    </div>
+  );
+}

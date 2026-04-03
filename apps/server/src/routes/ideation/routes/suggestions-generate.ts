@@ -1,0 +1,63 @@
+/**
+ * Generate suggestions route - Returns structured AI suggestions for a prompt
+ */
+
+import type { Request, Response } from 'express';
+import type { IdeationService } from '../../../services/ideation-service.js';
+import type { IdeationContextSources } from '@pegasus/types';
+import { createLogger } from '@pegasus/utils';
+import { getErrorMessage, logError } from '../common.js';
+
+const logger = createLogger('ideation:suggestions-generate');
+
+/**
+ * Creates an Express route handler for generating AI-powered ideation suggestions.
+ * Accepts a prompt, category, and optional context sources configuration,
+ * then returns structured suggestions that can be added to the board.
+ */
+export function createSuggestionsGenerateHandler(ideationService: IdeationService) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { projectPath, promptId, category, count, contextSources } = req.body;
+
+      if (!projectPath) {
+        res.status(400).json({ success: false, error: 'projectPath is required' });
+        return;
+      }
+
+      if (!promptId) {
+        res.status(400).json({ success: false, error: 'promptId is required' });
+        return;
+      }
+
+      if (!category) {
+        res.status(400).json({ success: false, error: 'category is required' });
+        return;
+      }
+
+      // Default to 10 suggestions, allow 1-20
+      const suggestionCount = Math.min(Math.max(count || 10, 1), 20);
+
+      logger.info(`Generating ${suggestionCount} suggestions for prompt: ${promptId}`);
+
+      const suggestions = await ideationService.generateSuggestions(
+        projectPath,
+        promptId,
+        category,
+        suggestionCount,
+        contextSources as IdeationContextSources | undefined
+      );
+
+      res.json({
+        success: true,
+        suggestions,
+      });
+    } catch (error) {
+      logError(error, 'Failed to generate suggestions');
+      res.status(500).json({
+        success: false,
+        error: getErrorMessage(error),
+      });
+    }
+  };
+}

@@ -1,3 +1,5 @@
+node_modules/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -47,6 +49,16 @@ dmypy.json
 .pegasus/pegasus.db-wal
 .pegasus/pegasus.db-shm
 .pegasus/logs/
+.pegasus/categories.json
+.pegasus/events/
+.pegasus/memory/
+
+# Runtime data
+data/
+
+# Test artifacts
+test-results/
+test/
 
 # Nuitka build artifacts
 *.dist/

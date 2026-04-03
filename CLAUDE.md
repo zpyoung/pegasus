@@ -2,85 +2,175 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What This Is
+## Project Overview
 
-Pegasus orchestrates Claude Code through YAML-defined multi-stage pipelines, each running in an isolated git worktree. Define repeatable AI coding workflows as YAML, run them in parallel with a terminal dashboard.
+Pegasus is an autonomous AI development studio built as a pnpm workspace monorepo. It provides a Kanban-based workflow where AI agents (powered by Claude Agent SDK) implement features in isolated git worktrees.
 
-## Commands
+## Common Commands
 
 ```bash
-# Install (editable)
-pip3 install -e .
+# Development
+pnpm dev                 # Interactive launcher (choose web or electron)
+pnpm dev:web             # Web browser mode (localhost:3007)
+pnpm dev:electron        # Desktop app mode
+pnpm dev:electron:debug  # Desktop with DevTools open
 
-# Run tests
-python3 -m pytest tests/ -q
+# Building
+pnpm build               # Build web application
+pnpm build:packages      # Build all shared packages (required before other builds)
+pnpm build:electron      # Build desktop app for current platform
+pnpm build:server        # Build server only
 
-# Run a single test file
-python3 -m pytest tests/test_runner.py -v
+# Testing
+pnpm test                # E2E tests (Playwright, headless)
+pnpm test:headed         # E2E tests with browser visible
+pnpm test:server         # Server unit tests (Vitest)
+pnpm test:packages       # All shared package tests
+pnpm test:all            # All tests (packages + server)
 
-# Run a specific test
-python3 -m pytest tests/test_runner.py -k "test_approval_pauses"
+# Single test file
+pnpm test:server -- tests/unit/specific.test.ts
 
-# Lint
-ruff check src/
-
-# Type check
-mypy src/pegasus/
+# Linting and formatting
+pnpm lint                # ESLint
+pnpm format              # Prettier write
+pnpm format:check        # Prettier check
 ```
 
 ## Architecture
 
-### Critical Constraint: Zero Coupling Between UI and Runner
+### Monorepo Structure
 
 ```
-ui.py ──writes──→ SQLite ←──reads/writes── runner.py
-         │                                      ↑
-         └─ spawns subprocess ─→ _run_task.py ──┘
+pegasus/
+├── apps/
+│   ├── ui/           # React + Vite + Electron frontend (port 3007)
+│   └── server/       # Express + WebSocket backend (port 3008)
+└── libs/             # Shared packages (@pegasus/*)
+    ├── types/        # Core TypeScript definitions (no dependencies)
+    ├── utils/        # Logging, errors, image processing, context loading
+    ├── prompts/      # AI prompt templates
+    ├── platform/     # Path management, security, process spawning
+    ├── model-resolver/    # Claude model alias resolution
+    ├── dependency-resolver/  # Feature dependency ordering
+    └── git-utils/    # Git operations & worktree management
 ```
 
-- **`ui.py` NEVER imports `runner.py`**. All state flows through SQLite.
-- **`runner.py` NEVER imports `ui.py`**.
-- `_run_task.py` is the only module that imports `runner.py` — it's the subprocess bridge.
-- This allows any UI (CLI, TUI, web) to read the same database without touching runner code.
+### Package Dependency Chain
 
-### Module Dependency Graph
+Packages can only depend on packages above them:
 
 ```
-models.py ← runner.py ← _run_task.py (subprocess entry point)
-models.py ← ui.py      (CLI + TUI, spawns _run_task.py via Popen)
+@pegasus/types (no dependencies)
+    ↓
+@pegasus/utils, @pegasus/prompts, @pegasus/platform, @pegasus/model-resolver, @pegasus/dependency-resolver
+    ↓
+@pegasus/git-utils
+    ↓
+@pegasus/server, @pegasus/ui
 ```
 
-`models.py` has zero pegasus imports — it's the shared foundation (Pydantic schemas, SQLite, config loading).
+### Key Technologies
 
-### Module Roles
+- **Frontend**: React 19, Vite 7, Electron 39, TanStack Router, Zustand 5, Tailwind CSS 4
+- **Backend**: Express 5, WebSocket (ws), Claude Agent SDK, node-pty
+- **Testing**: Playwright (E2E), Vitest (unit)
 
-- **`models.py`** — Pydantic models for pipeline/config YAML, SQLite schema + connection factory (`make_connection`, `init_db`), layered config resolution (`resolve_stage_flags`), pipeline validation, permission ceiling logic
-- **`runner.py`** — `ClaudeAgentRunner` (SDK wrapper), `PegasusEngine` (stage execution + cost tracking), `WorktreeManager` (git worktree lifecycle), `PipelineExecutor` (top-level orchestrator: worktree creation → stage loop → approval gates → retry)
-- **`ui.py`** — Click CLI commands (`init`, `run`, `status`, `validate`, `resume`, `clean`, `tui`) and Textual TUI (`PegasusDashboard`, `TaskCard`, `LogPanel`, `TaskCreateModal`). All inside `_get_textual_app()` to defer Textual imports.
-- **`_run_task.py`** — Subprocess entry point: `python3 -m pegasus._run_task <task-id> [--resume]`. Reads `PEGASUS_PROJECT_DIR` env var, imports runner, executes pipeline.
+### Server Architecture
 
-### Key Design Patterns
+The server (`apps/server/src/`) follows a modular pattern:
 
-- **Protocol-based testing**: `AgentRunnerProtocol` + `FakeAgentRunner` in `tests/fakes.py` enables unit testing without the Claude SDK installed.
-- **Layered config resolution**: stage overrides > pipeline defaults > project config > built-in defaults, with a deny-wins permission ceiling (`max_permission`).
-- **Template variables**: `{{project.language}}`, `{{task.description}}`, `{{stages.X.output}}` resolved in `PipelineExecutor._resolve_prompt()`.
-- **Post-stage approval gates**: stages with `requires_approval: true` pause after completion; runner polls SQLite every 2s for TUI-driven approval.
-- **Session continuity**: `execution: mode: session` passes SDK `resume` parameter between stages so the agent retains conversation history.
+- `routes/` - Express route handlers organized by feature (agent, features, auto-mode, worktree, etc.)
+- `services/` - Business logic (AgentService, AutoModeService, FeatureLoader, TerminalService)
+- `providers/` - AI provider abstraction (currently Claude via Claude Agent SDK)
+- `lib/` - Utilities (events, auth, worktree metadata)
 
-### SQLite State Machine
+### Frontend Architecture
 
-Task states: `queued → running → paused → queued → running → completed` (or `→ failed` at any point). The TUI sets `paused → queued` (approve) or `paused → failed` (reject).
+The UI (`apps/ui/src/`) uses:
 
-### Test Structure
+- `routes/` - TanStack Router file-based routing
+- `components/views/` - Main view components (board, settings, terminal, etc.)
+- `store/` - Zustand stores with persistence (app-store.ts, setup-store.ts)
+- `hooks/` - Custom React hooks
+- `lib/` - Utilities and API client
 
-- **`tests/fakes.py`** — `FakeAgentRunner` test double, factory helpers (`make_fake_runner_with_tool_use`, `make_fake_runner_with_error`)
-- **`test_models.py`** — Pydantic validation, config resolution, permission ceiling, SQLite schema
-- **`test_runner.py`** — PegasusEngine, WorktreeManager, PipelineExecutor (approval gates, retry, heartbeat). Inline runner classes (e.g., `SlowRunner`) must accept `session_id: str | None = None` parameter.
-- **`test_ui.py`** — CLI commands via `CliRunner`, TUI widgets via `app.run_test()`. Uses `_make_project()`, `_insert_task()`, `_insert_stage_run()` helpers.
-- **`test_integration.py`** — End-to-end pipeline execution
+## Data Storage
 
-## Tool Config
+### Per-Project Data (`.pegasus/`)
 
-- **ruff**: line-length=100, src=["src"], py310 target
-- **mypy**: strict mode
-- **pytest**: asyncio_mode="auto", testpaths=["tests"]
+```
+.pegasus/
+├── features/              # Feature JSON files and images
+│   └── {featureId}/
+│       ├── feature.json
+│       ├── agent-output.md
+│       └── images/
+├── context/               # Context files for AI agents (CLAUDE.md, etc.)
+├── settings.json          # Project-specific settings
+├── spec.md               # Project specification
+└── analysis.json         # Project structure analysis
+```
+
+### Global Data (`DATA_DIR`, default `./data`)
+
+```
+data/
+├── settings.json          # Global settings, profiles, shortcuts
+├── credentials.json       # API keys
+├── sessions-metadata.json # Chat session metadata
+└── agent-sessions/        # Conversation histories
+```
+
+## Import Conventions
+
+Always import from shared packages, never from old paths:
+
+```typescript
+// ✅ Correct
+import type { Feature, ExecuteOptions } from '@pegasus/types';
+import { createLogger, classifyError } from '@pegasus/utils';
+import { getEnhancementPrompt } from '@pegasus/prompts';
+import { getFeatureDir, ensurePegasusDir } from '@pegasus/platform';
+import { resolveModelString } from '@pegasus/model-resolver';
+import { resolveDependencies } from '@pegasus/dependency-resolver';
+import { getGitRepositoryDiffs } from '@pegasus/git-utils';
+
+// ❌ Never import from old paths
+import { Feature } from '../services/feature-loader'; // Wrong
+import { createLogger } from '../lib/logger'; // Wrong
+```
+
+## Key Patterns
+
+### Event-Driven Architecture
+
+All server operations emit events that stream to the frontend via WebSocket. Events are created using `createEventEmitter()` from `lib/events.ts`.
+
+### Git Worktree Isolation
+
+Each feature executes in an isolated git worktree, created via `@pegasus/git-utils`. This protects the main branch during AI agent execution.
+
+### Context Files
+
+Project-specific rules are stored in `.pegasus/context/` and automatically loaded into agent prompts via `loadContextFiles()` from `@pegasus/utils`.
+
+### Model Resolution
+
+Use `resolveModelString()` from `@pegasus/model-resolver` to convert model aliases:
+
+- `haiku` → `claude-haiku-4-5`
+- `sonnet` → `claude-sonnet-4-20250514`
+- `opus` → `claude-opus-4-6`
+
+## Environment Variables
+
+- `ANTHROPIC_API_KEY` - Anthropic API key (or use Claude Code CLI auth)
+- `HOST` - Host to bind server to (default: 0.0.0.0)
+- `HOSTNAME` - Hostname for user-facing URLs (default: localhost)
+- `PORT` - Server port (default: 3008)
+- `DATA_DIR` - Data storage directory (default: ./data)
+- `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
+- `PEGASUS_MOCK_AGENT=true` - Enable mock agent mode for CI testing
+- `PEGASUS_AUTO_LOGIN=true` - Skip login prompt in development (disabled when NODE_ENV=production)
+- `VITE_HOSTNAME` - Hostname for frontend API URLs (default: localhost)

@@ -1,0 +1,70 @@
+/**
+ * POST /mkdir endpoint - Create directory
+ * Handles symlinks safely to avoid ELOOP errors
+ */
+
+import type { Request, Response } from 'express';
+import * as secureFs from '../../../lib/secure-fs.js';
+import path from 'path';
+import { PathNotAllowedError } from '@pegasus/platform';
+import { getErrorMessage, logError } from '../common.js';
+
+export function createMkdirHandler() {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { dirPath } = req.body as { dirPath: string };
+
+      if (!dirPath) {
+        res.status(400).json({ success: false, error: 'dirPath is required' });
+        return;
+      }
+
+      const resolvedPath = path.resolve(dirPath);
+
+      // Check if path already exists using lstat (doesn't follow symlinks)
+      try {
+        const stats = await secureFs.lstat(resolvedPath);
+        // Path exists - if it's a directory or symlink, consider it success
+        if (stats.isDirectory() || stats.isSymbolicLink()) {
+          res.json({ success: true });
+          return;
+        }
+        // It's a file - can't create directory
+        res.status(400).json({
+          success: false,
+          error: 'Path exists and is not a directory',
+        });
+        return;
+      } catch (statError: unknown) {
+        // ENOENT means path doesn't exist - we should create it
+        if ((statError as NodeJS.ErrnoException).code !== 'ENOENT') {
+          // Some other error (could be ELOOP in parent path)
+          throw statError;
+        }
+      }
+
+      // Path doesn't exist, create it
+      await secureFs.mkdir(resolvedPath, { recursive: true });
+
+      res.json({ success: true });
+    } catch (error: unknown) {
+      // Path not allowed - return 403 Forbidden
+      if (error instanceof PathNotAllowedError) {
+        res.status(403).json({ success: false, error: getErrorMessage(error) });
+        return;
+      }
+
+      // Handle ELOOP specifically
+      if ((error as NodeJS.ErrnoException).code === 'ELOOP') {
+        logError(error, 'Create directory failed - symlink loop detected');
+        res.status(400).json({
+          success: false,
+          error: 'Cannot create directory: symlink loop detected in path',
+        });
+        return;
+      }
+      logError(error, 'Create directory failed');
+      res.status(500).json({ success: false, error: getErrorMessage(error) });
+    }
+  };
+}

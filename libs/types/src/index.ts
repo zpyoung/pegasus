@@ -1,0 +1,400 @@
+/**
+ * @pegasus/types
+ * Shared type definitions for Pegasus
+ */
+
+// Provider types
+export type {
+  ProviderConfig,
+  ConversationMessage,
+  ExecuteOptions,
+  ContentBlock,
+  ProviderMessage,
+  InstallationStatus,
+  ValidationResult,
+  ModelDefinition,
+  McpServerConfig,
+  McpStdioServerConfig,
+  McpSSEServerConfig,
+  McpHttpServerConfig,
+  AgentDefinition,
+  ReasoningEffort,
+  // System prompt configuration for CLAUDE.md auto-loading
+  SystemPromptPreset,
+} from './provider.js';
+
+// Provider constants and utilities
+export {
+  DEFAULT_TIMEOUT_MS,
+  REASONING_TIMEOUT_MULTIPLIERS,
+  calculateReasoningTimeout,
+} from './provider.js';
+
+// Codex CLI types
+export type {
+  CodexSandboxMode,
+  CodexApprovalPolicy,
+  CodexCliConfig,
+  CodexAuthStatus,
+  // Event types for CLI event parsing
+  CodexEventType,
+  CodexItemType,
+  CodexEvent,
+} from './codex.js';
+export * from './codex-models.js';
+
+// Codex App-Server JSON-RPC types
+export type {
+  AppServerModelResponse,
+  AppServerModel,
+  AppServerReasoningEffort,
+  AppServerAccountResponse,
+  AppServerAccount,
+  AppServerRateLimitsResponse,
+  AppServerRateLimits,
+  AppServerRateLimitWindow,
+  JsonRpcRequest,
+  JsonRpcResponse,
+} from './codex-app-server.js';
+
+// Feature types
+export type {
+  Feature,
+  FeatureImagePath,
+  FeatureTextFilePath,
+  FeatureStatus,
+  DescriptionHistoryEntry,
+  FeatureExport,
+  FeatureImport,
+  FeatureImportResult,
+  ParsedTask,
+  PlanSpec,
+} from './feature.js';
+
+// Session types
+export type {
+  AgentSession,
+  SessionListItem,
+  CreateSessionParams,
+  UpdateSessionParams,
+} from './session.js';
+
+// Error types
+export type { ErrorType, ErrorInfo } from './error.js';
+
+// Image types
+export type { ImageData, ImageContentBlock } from './image.js';
+
+// Model types and constants
+export {
+  CLAUDE_MODEL_MAP,
+  CLAUDE_CANONICAL_MAP,
+  LEGACY_CLAUDE_ALIAS_MAP,
+  CODEX_MODEL_MAP,
+  CODEX_MODEL_IDS,
+  REASONING_CAPABLE_MODELS,
+  supportsReasoningEffort,
+  normalizeReasoningEffortForModel,
+  getAllCodexModelIds,
+  DEFAULT_MODELS,
+  type ClaudeCanonicalId,
+  type ModelAlias,
+  type CodexModelId,
+  type AgentModel,
+  type ModelId,
+} from './model.js';
+
+// Event types
+export type { EventType, EventCallback } from './event.js';
+
+// Spec types
+export type { SpecOutput } from './spec.js';
+export { specOutputSchema } from './spec.js';
+
+// Enhancement types
+export type { EnhancementMode, EnhancementExample } from './enhancement.js';
+
+// Prompt customization types
+export type {
+  CustomPrompt,
+  AutoModePrompts,
+  AgentPrompts,
+  BacklogPlanPrompts,
+  EnhancementPrompts,
+  CommitMessagePrompts,
+  TitleGenerationPrompts,
+  IssueValidationPrompts,
+  IdeationPrompts,
+  AppSpecPrompts,
+  ContextDescriptionPrompts,
+  SuggestionsPrompts,
+  TaskExecutionPrompts,
+  PromptCustomization,
+  ResolvedAutoModePrompts,
+  ResolvedAgentPrompts,
+  ResolvedBacklogPlanPrompts,
+  ResolvedEnhancementPrompts,
+  ResolvedCommitMessagePrompts,
+  ResolvedTitleGenerationPrompts,
+  ResolvedIssueValidationPrompts,
+  ResolvedIdeationPrompts,
+  ResolvedAppSpecPrompts,
+  ResolvedContextDescriptionPrompts,
+  ResolvedSuggestionsPrompts,
+  ResolvedTaskExecutionPrompts,
+} from './prompts.js';
+export { DEFAULT_PROMPT_CUSTOMIZATION } from './prompts.js';
+
+// Settings types and constants
+export type {
+  ThemeMode,
+  SidebarStyle,
+  PlanningMode,
+  ThinkingLevel,
+  ServerLogLevel,
+  ModelProvider,
+  PhaseModelEntry,
+  PhaseModelConfig,
+  PhaseModelKey,
+  KeyboardShortcuts,
+  MCPToolInfo,
+  MCPServerConfig,
+  ProjectRef,
+  TrashedProjectRef,
+  ChatSessionRef,
+  GlobalSettings,
+  Credentials,
+  BoardBackgroundSettings,
+  WorktreeInfo,
+  ProjectSettings,
+  // Event hook types
+  EventHookTrigger,
+  EventHookHttpMethod,
+  EventHookShellAction,
+  EventHookHttpAction,
+  EventHookNtfyAction,
+  EventHookAction,
+  EventHook,
+  EventHookContext,
+  // Ntfy notification types
+  NtfyAuthenticationType,
+  NtfyEndpointConfig,
+  // Feature template types
+  FeatureTemplate,
+  // Claude-compatible provider types (new)
+  ApiKeySource,
+  ClaudeCompatibleProviderType,
+  ClaudeModelAlias,
+  ProviderModel,
+  ClaudeCompatibleProvider,
+  ClaudeCompatibleProviderTemplate,
+  // Claude API profile types (deprecated)
+  ClaudeApiProfile,
+  ClaudeApiProfileTemplate,
+  // Terminal prompt theme type
+  TerminalPromptTheme,
+} from './settings.js';
+export {
+  DEFAULT_KEYBOARD_SHORTCUTS,
+  DEFAULT_PHASE_MODELS,
+  DEFAULT_GLOBAL_SETTINGS,
+  DEFAULT_CREDENTIALS,
+  DEFAULT_PROJECT_SETTINGS,
+  DEFAULT_MAX_CONCURRENCY,
+  SETTINGS_VERSION,
+  CREDENTIALS_VERSION,
+  PROJECT_SETTINGS_VERSION,
+  THINKING_TOKEN_BUDGET,
+  getThinkingTokenBudget,
+  isAdaptiveThinkingModel,
+  getThinkingLevelsForModel,
+  normalizeThinkingLevelForModel,
+  getDefaultThinkingLevel,
+  // Event hook constants
+  EVENT_HOOK_TRIGGER_LABELS,
+  // Feature template constants
+  DEFAULT_FEATURE_TEMPLATES,
+  // Claude-compatible provider templates (new)
+  CLAUDE_PROVIDER_TEMPLATES,
+  // Claude API profile constants (deprecated)
+  CLAUDE_API_PROFILE_TEMPLATES,
+} from './settings.js';
+
+// Model display constants
+export type { ModelOption, ThinkingLevelOption, ReasoningEffortOption } from './model-display.js';
+export {
+  CLAUDE_MODELS,
+  GEMINI_MODELS,
+  THINKING_LEVELS,
+  THINKING_LEVEL_LABELS,
+  REASONING_EFFORT_LEVELS,
+  REASONING_EFFORT_LABELS,
+  getModelDisplayName,
+} from './model-display.js';
+
+// Issue validation types
+export type {
+  IssueValidationVerdict,
+  IssueValidationConfidence,
+  IssueComplexity,
+  PRRecommendation,
+  PRAnalysis,
+  LinkedPRInfo,
+  IssueValidationInput,
+  IssueValidationRequest,
+  IssueValidationResult,
+  IssueValidationResponse,
+  IssueValidationErrorResponse,
+  IssueValidationEvent,
+  StoredValidation,
+  GitHubCommentAuthor,
+  GitHubComment,
+  IssueCommentsResult,
+} from './issue-validation.js';
+
+// Backlog plan types
+export type {
+  BacklogChange,
+  DependencyUpdate,
+  BacklogPlanResult,
+  BacklogPlanEvent,
+  BacklogPlanRequest,
+  BacklogPlanApplyResult,
+} from './backlog-plan.js';
+
+// Cursor types
+export * from './cursor-models.js';
+export * from './cursor-cli.js';
+
+// OpenCode types
+export * from './opencode-models.js';
+
+// Gemini types
+export * from './gemini-models.js';
+
+// Copilot types
+export * from './copilot-models.js';
+
+// Provider utilities
+export {
+  PROVIDER_PREFIXES,
+  isCursorModel,
+  isClaudeModel,
+  isCodexModel,
+  isOpencodeModel,
+  isGeminiModel,
+  isCopilotModel,
+  getModelProvider,
+  stripProviderPrefix,
+  addProviderPrefix,
+  getBareModelId,
+  normalizeModelString,
+  validateBareModelId,
+  supportsStructuredOutput,
+  PROVIDER_PREFIX_EXCEPTIONS,
+} from './provider-utils.js';
+
+// Model migration utilities
+export {
+  isLegacyCursorModelId,
+  isLegacyOpencodeModelId,
+  isLegacyClaudeAlias,
+  migrateModelId,
+  migrateCursorModelIds,
+  migrateOpencodeModelIds,
+  migratePhaseModelEntry,
+  getBareModelIdForCli,
+} from './model-migration.js';
+
+// Pipeline types
+export type {
+  PipelineStep,
+  PipelineConfig,
+  PipelineStatus,
+  FeatureStatusWithPipeline,
+} from './pipeline.js';
+export { isPipelineStatus } from './pipeline.js';
+
+// Port configuration
+export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from './ports.js';
+
+// Editor types
+export type { EditorInfo } from './editor.js';
+
+// Ideation types
+export type {
+  IdeaCategory,
+  IdeaStatus,
+  ImpactLevel,
+  EffortLevel,
+  IdeaAttachment,
+  Idea,
+  IdeationSessionStatus,
+  IdeationSession,
+  IdeationMessage,
+  IdeationSessionWithMessages,
+  PromptCategory,
+  IdeationPrompt,
+  AnalysisFileInfo,
+  AnalysisSuggestion,
+  ProjectAnalysisResult,
+  StartSessionOptions,
+  SendMessageOptions,
+  CreateIdeaInput,
+  UpdateIdeaInput,
+  ConvertToFeatureOptions,
+  IdeationEventType,
+  IdeationStreamEvent,
+  IdeationAnalysisEvent,
+  IdeationContextSources,
+} from './ideation.js';
+export { DEFAULT_IDEATION_CONTEXT_SOURCES } from './ideation.js';
+
+// Notification types
+export type { NotificationType, Notification, NotificationsFile } from './notification.js';
+export { NOTIFICATIONS_VERSION, DEFAULT_NOTIFICATIONS_FILE } from './notification.js';
+
+// Event history types
+export type {
+  StoredEvent,
+  StoredEventIndex,
+  StoredEventSummary,
+  EventHistoryFilter,
+  EventReplayResult,
+  EventReplayHookResult,
+} from './event-history.js';
+export { EVENT_HISTORY_VERSION, DEFAULT_EVENT_HISTORY_INDEX } from './event-history.js';
+
+// Worktree and PR types
+export type {
+  PRState,
+  WorktreePRInfo,
+  AddRemoteRequest,
+  AddRemoteResult,
+  AddRemoteResponse,
+  AddRemoteErrorResponse,
+  MergeStateInfo,
+} from './worktree.js';
+export { PR_STATES, validatePRState } from './worktree.js';
+
+// Terminal types
+export type { TerminalInfo } from './terminal.js';
+
+// Test runner types
+export type { TestRunnerInfo } from './test-runner.js';
+
+// Project overview types (multi-project dashboard)
+export type {
+  ProjectHealthStatus,
+  FeatureStatusCounts,
+  ProjectStatus,
+  AggregateFeatureCounts,
+  AggregateProjectCounts,
+  AggregateStatus,
+  ActivityType,
+  ActivitySeverity,
+  RecentActivity,
+  ActivityFeedOptions,
+  MultiProjectOverview,
+  ProjectOverviewError,
+} from './project-overview.js';

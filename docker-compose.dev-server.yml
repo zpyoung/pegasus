@@ -1,0 +1,106 @@
+# Pegasus Docker Compose - Server Only (Development Mode)
+# Runs only the backend API in a container for use with local Electron.
+#
+# Usage:
+#   docker compose -f docker-compose.dev-server.yml up
+#   Then run Electron locally which connects to http://localhost:3008
+#
+# This mode:
+#   - Runs only the backend server in a container
+#   - Mounts source code as volumes (live reload)
+#   - Server runs with tsx watch for TypeScript changes
+#   - Electron runs locally on host machine
+
+services:
+  # Development server (backend API only)
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        # Match container user to host user for mounted volume permissions
+        # Override with: UID=$(id -u) GID=$(id -g) docker-compose build
+        UID: ${UID:-1001}
+        GID: ${GID:-1001}
+    container_name: pegasus-dev-server-only
+    restart: unless-stopped
+    ports:
+      - '3008:3008'
+    environment:
+      # Optional - Anthropic API key
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # Optional - Claude CLI OAuth credentials
+      - CLAUDE_OAUTH_CREDENTIALS=${CLAUDE_OAUTH_CREDENTIALS:-}
+
+      # Optional - Cursor CLI OAuth token
+      - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
+
+      # Optional - authentication
+      - PEGASUS_API_KEY=${PEGASUS_API_KEY:-}
+
+      # Development settings
+      - NODE_ENV=development
+      - PORT=3008
+      - CORS_ORIGIN=http://localhost:3007
+      - HUSKY=0
+
+      # Optional - restrict to specific directory within container
+      - ALLOWED_ROOT_DIRECTORY=${ALLOWED_ROOT_DIRECTORY:-/projects}
+      - DATA_DIR=/data
+
+      # Internal - indicates containerized environment
+      - IS_CONTAINERIZED=true
+    volumes:
+      # Mount source code for live reload
+      - .:/app:cached
+
+      # Use named volume for node_modules to avoid platform conflicts
+      # This ensures native modules are built for the container's architecture
+      - pegasus-dev-node-modules:/app/node_modules
+
+      # IMPORTANT: Mount local ./data directory (not a Docker volume)
+      # This ensures Electron and web mode share the same data directory
+      # and projects opened in either mode are visible in both
+      - ./data:/data
+
+      # Persist CLI configurations
+      - pegasus-claude-config:/home/pegasus/.claude
+      - pegasus-cursor-config:/home/pegasus/.cursor
+
+      # Note: Workspace mount (/projects) comes from docker-compose.override.yml
+
+    # Install deps, build packages, then start server in watch mode
+    # Note: We override the entrypoint to handle permissions properly
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        # Install as root to avoid permission issues with named volumes
+        echo 'Installing dependencies...' &&
+        corepack enable pnpm &&
+        pnpm install --frozen-lockfile &&
+        echo 'Building shared packages...' &&
+        pnpm build:packages &&
+
+        # Fix permissions and start server as pegasus user
+        chown -R pegasus:pegasus /app/node_modules &&
+        echo 'Starting server in development mode...' &&
+        exec gosu pegasus pnpm _dev:server
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3008/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  pegasus-dev-node-modules:
+    name: pegasus-dev-node-modules
+    # Named volume for container-specific node_modules
+
+  pegasus-claude-config:
+    name: pegasus-claude-config
+
+  pegasus-cursor-config:
+    name: pegasus-cursor-config

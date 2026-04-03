@@ -1,0 +1,475 @@
+// @ts-nocheck - optional callback prop typing with feature status narrowing
+import { memo } from 'react';
+import { Feature } from '@/store/app-store';
+import { Button } from '@/components/ui/button';
+import {
+  Edit,
+  PlayCircle,
+  RotateCcw,
+  StopCircle,
+  CheckCircle2,
+  FileText,
+  Eye,
+  Wand2,
+  Archive,
+} from 'lucide-react';
+
+interface CardActionsProps {
+  feature: Feature;
+  isCurrentAutoTask: boolean;
+  /** Whether this feature is tracked as a running task (may be true even before status updates to in_progress) */
+  isRunningTask?: boolean;
+  hasContext?: boolean;
+  shortcutKey?: string;
+  isSelectionMode?: boolean;
+  onEdit: () => void;
+  onViewOutput?: () => void;
+  onVerify?: () => void;
+  onResume?: () => void;
+  onForceStop?: () => void;
+  onManualVerify?: () => void;
+  onFollowUp?: () => void;
+  onImplement?: () => void;
+  onComplete?: () => void;
+  onViewPlan?: () => void;
+  onApprovePlan?: () => void;
+}
+
+export const CardActions = memo(function CardActions({
+  feature,
+  isCurrentAutoTask,
+  isRunningTask = false,
+  hasContext = false,
+  shortcutKey,
+  isSelectionMode = false,
+  onEdit,
+  onViewOutput,
+  onVerify,
+  onResume,
+  onForceStop,
+  onManualVerify,
+  onFollowUp,
+  onImplement,
+  onComplete,
+  onViewPlan,
+  onApprovePlan,
+}: CardActionsProps) {
+  const showBacklogLogsButton = hasContext && !!onViewOutput;
+
+  // Hide all actions when in selection mode
+  if (isSelectionMode) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5 -mx-3 -mb-3 px-3 pb-3">
+      {isCurrentAutoTask && (
+        <>
+          {/* Approve Plan button - PRIORITY: shows even when agent is "running" (paused for approval) */}
+          {feature.planSpec?.status === 'generated' && onApprovePlan && (
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 min-w-0 h-7 text-[11px] bg-purple-600 hover:bg-purple-700 text-white animate-pulse"
+              onClick={(e) => {
+                e.stopPropagation();
+                onApprovePlan();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`approve-plan-running-${feature.id}`}
+            >
+              <FileText className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Approve Plan</span>
+            </Button>
+          )}
+          {onViewOutput && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewOutput();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`view-output-${feature.id}`}
+            >
+              <FileText className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Logs</span>
+              {shortcutKey && (
+                <span
+                  className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
+                  data-testid={`shortcut-key-${feature.id}`}
+                >
+                  {shortcutKey}
+                </span>
+              )}
+            </Button>
+          )}
+          {onForceStop && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 text-[11px] px-2 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onForceStop();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`force-stop-${feature.id}`}
+            >
+              <StopCircle className="w-3 h-3" />
+            </Button>
+          )}
+        </>
+      )}
+      {!isCurrentAutoTask &&
+        (feature.status === 'in_progress' ||
+          (typeof feature.status === 'string' && feature.status.startsWith('pipeline_'))) && (
+          <>
+            {/* When feature is in_progress with no error and onForceStop is available,
+                it means the agent is starting/running but hasn't been added to runningAutoTasks yet.
+                Show Stop button instead of Verify/Resume to avoid confusing UI during this race window. */}
+            {!feature.error && onForceStop ? (
+              <>
+                {onViewOutput && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 h-7 text-[11px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewOutput();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`view-output-${feature.id}`}
+                  >
+                    <FileText className="w-3 h-3 mr-1 shrink-0" />
+                    <span className="truncate">Logs</span>
+                    {shortcutKey && (
+                      <span
+                        className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
+                        data-testid={`shortcut-key-${feature.id}`}
+                      >
+                        {shortcutKey}
+                      </span>
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-7 text-[11px] px-2 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onForceStop();
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  data-testid={`force-stop-${feature.id}`}
+                >
+                  <StopCircle className="w-3 h-3" />
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Approve Plan button - shows when plan is generated and waiting for approval */}
+                {feature.planSpec?.status === 'generated' && onApprovePlan && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-7 text-[11px] bg-purple-600 hover:bg-purple-700 text-white animate-pulse"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onApprovePlan();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`approve-plan-${feature.id}`}
+                  >
+                    <FileText className="w-3 h-3 mr-1" />
+                    Approve Plan
+                  </Button>
+                )}
+                {feature.skipTests && onManualVerify ? (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-7 text-[11px]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onManualVerify();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`manual-verify-${feature.id}`}
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Verify
+                  </Button>
+                ) : onResume ? (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-7 text-[11px] bg-[var(--status-success)] hover:bg-[var(--status-success)]/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResume();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`resume-feature-${feature.id}`}
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Resume
+                  </Button>
+                ) : onVerify ? (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-7 text-[11px] bg-[var(--status-success)] hover:bg-[var(--status-success)]/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onVerify();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`verify-feature-${feature.id}`}
+                  >
+                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                    Verify
+                  </Button>
+                ) : null}
+                {onViewOutput && !feature.skipTests && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-7 text-[11px] px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewOutput();
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    data-testid={`view-output-${feature.id}`}
+                  >
+                    <FileText className="w-3 h-3" />
+                  </Button>
+                )}
+              </>
+            )}
+          </>
+        )}
+      {!isCurrentAutoTask && feature.status === 'verified' && (
+        <>
+          {/* Logs button */}
+          {onViewOutput && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-xs min-w-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewOutput();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`view-output-verified-${feature.id}`}
+            >
+              <FileText className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Logs</span>
+            </Button>
+          )}
+          {/* Complete button */}
+          {onComplete && (
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 h-7 text-xs min-w-0 bg-brand-500 hover:bg-brand-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                onComplete();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`complete-${feature.id}`}
+            >
+              <Archive className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Complete</span>
+            </Button>
+          )}
+        </>
+      )}
+      {!isCurrentAutoTask && feature.status === 'waiting_approval' && (
+        <>
+          {/* Refine prompt button */}
+          {onFollowUp && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-[11px] min-w-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFollowUp();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`follow-up-${feature.id}`}
+            >
+              <Wand2 className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Refine</span>
+            </Button>
+          )}
+          {/* Show Verify button if PR was created (changes are committed), otherwise show Mark as Verified button */}
+          {feature.prUrl && onManualVerify ? (
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 h-7 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onManualVerify();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`verify-${feature.id}`}
+            >
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Verify
+            </Button>
+          ) : onManualVerify ? (
+            <Button
+              variant="default"
+              size="sm"
+              className="flex-1 h-7 text-[11px]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onManualVerify();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`mark-as-verified-${feature.id}`}
+            >
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Mark as Verified
+            </Button>
+          ) : null}
+        </>
+      )}
+      {/* Running task with stale status: feature is tracked as running but status hasn't updated yet.
+          Show Logs/Stop controls instead of Make to avoid confusing UI. */}
+      {!isCurrentAutoTask &&
+        isRunningTask &&
+        (feature.status === 'backlog' ||
+          feature.status === 'merge_conflict' ||
+          feature.status === 'interrupted' ||
+          feature.status === 'ready') && (
+          <>
+            {onViewOutput && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-1 h-7 text-[11px]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewOutput();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-testid={`view-output-${feature.id}`}
+              >
+                <FileText className="w-3 h-3 mr-1 shrink-0" />
+                <span className="truncate">Logs</span>
+                {shortcutKey && (
+                  <span
+                    className="ml-1.5 px-1 py-0.5 text-[9px] font-mono rounded bg-foreground/10"
+                    data-testid={`shortcut-key-${feature.id}`}
+                  >
+                    {shortcutKey}
+                  </span>
+                )}
+              </Button>
+            )}
+            {onForceStop && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-[11px] px-2 shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onForceStop();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-testid={`force-stop-${feature.id}`}
+              >
+                <StopCircle className="w-3 h-3" />
+              </Button>
+            )}
+          </>
+        )}
+      {!isCurrentAutoTask &&
+        !isRunningTask &&
+        (feature.status === 'backlog' ||
+          feature.status === 'merge_conflict' ||
+          feature.status === 'interrupted' ||
+          feature.status === 'ready') && (
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`edit-backlog-${feature.id}`}
+            >
+              <Edit className="w-3 h-3 mr-1" />
+              Edit
+            </Button>
+            {showBacklogLogsButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewOutput();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-testid={`view-output-backlog-${feature.id}`}
+                title="View Logs"
+              >
+                <FileText className="w-3 h-3" />
+              </Button>
+            )}
+            {feature.planSpec?.content && onViewPlan && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewPlan();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-testid={`view-plan-${feature.id}`}
+                title="View Plan"
+              >
+                <Eye className="w-3 h-3" />
+              </Button>
+            )}
+            {onImplement && (
+              <Button
+                variant="default"
+                size="sm"
+                className="flex-1 h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onImplement();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                data-testid={`make-${feature.id}`}
+              >
+                {feature.status === 'merge_conflict' ? (
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                ) : (
+                  <PlayCircle className="w-3 h-3 mr-1" />
+                )}
+                {feature.status === 'merge_conflict' ? 'Restart' : 'Make'}
+              </Button>
+            )}
+          </>
+        )}
+    </div>
+  );
+});

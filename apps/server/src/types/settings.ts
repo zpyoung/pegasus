@@ -1,0 +1,49 @@
+/**
+ * Settings Types - Re-exported from @pegasus/types
+ *
+ * This file now re-exports settings types from the shared @pegasus/types package
+ * to maintain backward compatibility with existing imports in the server codebase.
+ */
+
+export type {
+  ThemeMode,
+  ModelAlias,
+  PlanningMode,
+  ThinkingLevel,
+  ModelProvider,
+  KeyboardShortcuts,
+  ProjectRef,
+  TrashedProjectRef,
+  ChatSessionRef,
+  GlobalSettings,
+  Credentials,
+  BoardBackgroundSettings,
+  WorktreeInfo,
+  ProjectSettings,
+  PhaseModelConfig,
+  PhaseModelKey,
+  PhaseModelEntry,
+  FeatureTemplate,
+  // Claude-compatible provider types
+  ApiKeySource,
+  ClaudeCompatibleProviderType,
+  ClaudeModelAlias,
+  ProviderModel,
+  ClaudeCompatibleProvider,
+  ClaudeCompatibleProviderTemplate,
+  // Legacy profile types (deprecated)
+  ClaudeApiProfile,
+  ClaudeApiProfileTemplate,
+} from '@pegasus/types';
+
+export {
+  DEFAULT_KEYBOARD_SHORTCUTS,
+  DEFAULT_GLOBAL_SETTINGS,
+  DEFAULT_CREDENTIALS,
+  DEFAULT_PROJECT_SETTINGS,
+  DEFAULT_PHASE_MODELS,
+  DEFAULT_FEATURE_TEMPLATES,
+  SETTINGS_VERSION,
+  CREDENTIALS_VERSION,
+  PROJECT_SETTINGS_VERSION,
+} from '@pegasus/types';

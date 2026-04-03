@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en" suppressHydrationWarning>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pegasus - Autonomous AI Development Studio</title>
+    <meta name="description" content="Build software autonomously with AI agents" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Pegasus" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/logo_larger.png" />
+    <!-- Performance: Preload critical assets with fetchpriority for faster First Contentful Paint -->
+    <link rel="preload" href="/logo.png" as="image" fetchpriority="high" />
+    <link
+      rel="preload"
+      href="/pegasus.svg"
+      as="image"
+      type="image/svg+xml"
+      fetchpriority="high"
+    />
+    <!-- Critical inline styles: prevent white/wrong-color flash on mobile PWA cold start -->
+    <!-- These styles are applied before any external CSS loads, eliminating FOUC -->
+    <style>
+      html {
+        background-color: #09090b;
+      }
+      @media (prefers-color-scheme: light) {
+        html:not([class]) {
+          background-color: #fff;
+        }
+      }
+      html.light,
+      html.cream,
+      html.solarizedlight,
+      html.github,
+      html.paper,
+      html.rose,
+      html.mint,
+      html.lavender,
+      html.sand,
+      html.sky,
+      html.peach,
+      html.snow,
+      html.sepia,
+      html.gruvboxlight,
+      html.nordlight,
+      html.blossom,
+      html.ayu-light,
+      html.onelight,
+      html.bluloco,
+      html.feather {
+        background-color: #fff;
+      }
+      html,
+      body {
+        margin: 0;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+      #app {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+      }
+      /* Inline app shell: shows logo + spinner while JS bundle downloads.
+         On slow mobile networks the bundle can take 2-5s; this eliminates
+         the blank screen and gives immediate visual feedback.
+         React's createRoot().render() replaces #app's innerHTML, removing this. */
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        gap: 24px;
+        opacity: 1;
+      }
+      .app-shell-logo {
+        width: 56px;
+        height: 56px;
+        opacity: 0.9;
+      }
+      /* Default (dark): light spinner + logo strokes */
+      .app-shell-spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-top-color: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        animation: shell-spin 0.8s linear infinite;
+      }
+      .app-shell-logo-stroke {
+        stroke: rgba(255, 255, 255, 0.7);
+      }
+      .app-shell-logo-bg {
+        fill: rgba(255, 255, 255, 0.08);
+      }
+      /* Light themes: dark spinner + logo strokes.
+         The theme script below sets data-theme-type="light" on <html> for any light
+         theme, so future theme additions only need to update the script — not CSS. */
+      html[data-theme-type='light'] .app-shell-spinner {
+        border-color: rgba(0, 0, 0, 0.08);
+        border-top-color: rgba(0, 0, 0, 0.4);
+      }
+      html[data-theme-type='light'] .app-shell-logo-stroke {
+        stroke: rgba(0, 0, 0, 0.55);
+      }
+      html[data-theme-type='light'] .app-shell-logo-bg {
+        fill: rgba(0, 0, 0, 0.06);
+      }
+      /* System light preference when no theme class is applied yet */
+      @media (prefers-color-scheme: light) {
+        html:not([class]) .app-shell-spinner {
+          border-color: rgba(0, 0, 0, 0.08);
+          border-top-color: rgba(0, 0, 0, 0.4);
+        }
+        html:not([class]) .app-shell-logo-stroke {
+          stroke: rgba(0, 0, 0, 0.55);
+        }
+        html:not([class]) .app-shell-logo-bg {
+          fill: rgba(0, 0, 0, 0.06);
+        }
+      }
+      @keyframes shell-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <script>
+      // Prevent theme flash - apply stored theme before React hydrates
+      (function () {
+        try {
+          // Primary key used by current builds for pre-React theme persistence.
+          var theme = localStorage.getItem('pegasus:theme');
+
+          // Backward compatibility: older builds stored theme in the Zustand blob.
+          if (!theme) {
+            var stored = localStorage.getItem('pegasus-storage');
+            if (stored) {
+              var data = JSON.parse(stored);
+              theme = data?.state?.theme || data?.theme || null;
+            }
+          }
+
+          // Light theme names — kept in sync with the background-color rule above.
+          // Adding a new light theme only requires updating this array.
+          var lightThemes = [
+            'light',
+            'cream',
+            'solarizedlight',
+            'github',
+            'paper',
+            'rose',
+            'mint',
+            'lavender',
+            'sand',
+            'sky',
+            'peach',
+            'snow',
+            'sepia',
+            'gruvboxlight',
+            'nordlight',
+            'blossom',
+            'ayu-light',
+            'onelight',
+            'bluloco',
+            'feather',
+          ];
+
+          if (theme && theme !== 'system') {
+            // Apply the stored theme class directly (covers 'light', 'dark', and
+            // all named themes like 'cream', 'nord', etc.)
+            document.documentElement.classList.add(theme);
+            if (lightThemes.indexOf(theme) !== -1) {
+              document.documentElement.setAttribute('data-theme-type', 'light');
+            }
+          } else if (
+            theme === 'system' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches
+          ) {
+            document.documentElement.classList.add('dark');
+          } else if (
+            theme === 'system' &&
+            window.matchMedia('(prefers-color-scheme: light)').matches
+          ) {
+            document.documentElement.setAttribute('data-theme-type', 'light');
+          }
+          // Detect PWA standalone mode early so CSS can apply reduced bottom safe-area
+          // before first paint, preventing a layout shift on notched devices.
+          if (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            navigator.standalone === true
+          ) {
+            document.documentElement.setAttribute('data-pwa', 'standalone');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="app">
+      <!-- Inline app shell: renders instantly while JS downloads on slow mobile networks.
+           React's createRoot().render() replaces this content automatically. -->
+      <div class="app-shell">
+        <svg
+          class="app-shell-logo"
+          viewBox="0 0 256 256"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <rect class="app-shell-logo-bg" x="16" y="16" width="224" height="224" rx="56" />
+          <g
+            class="app-shell-logo-stroke"
+            fill="none"
+            stroke-width="20"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M92 92 L52 128 L92 164" />
+            <path d="M144 72 L116 184" />
+            <path d="M164 92 L204 128 L164 164" />
+          </g>
+        </svg>
+        <div class="app-shell-spinner" role="status" aria-label="Loading…"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/renderer.tsx"></script>
+  </body>
+</html>

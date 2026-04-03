@@ -1,0 +1,225 @@
+import { useState, useCallback, useEffect } from 'react';
+import { useAppStore } from '@/store/app-store';
+import { useSetupStore } from '@/store/setup-store';
+import { CodexCliStatus } from '../cli-status/codex-cli-status';
+import { CodexSettings } from '../codex/codex-settings';
+import { CodexUsageSection } from '../codex/codex-usage-section';
+import { CodexModelConfiguration } from './codex-model-configuration';
+import { ProviderToggle } from './provider-toggle';
+import { getElectronAPI } from '@/lib/electron';
+import { createLogger } from '@pegasus/utils/logger';
+import type { CliStatus as SharedCliStatus } from '../shared/types';
+import type { CodexModelId } from '@pegasus/types';
+
+const logger = createLogger('CodexSettings');
+
+export function CodexSettingsTab() {
+  const {
+    codexAutoLoadAgents,
+    codexEnableWebSearch,
+    codexEnableImages,
+    enabledCodexModels,
+    codexDefaultModel,
+    setCodexAutoLoadAgents,
+    setCodexEnableWebSearch,
+    setCodexEnableImages,
+    setCodexDefaultModel,
+    toggleCodexModel,
+  } = useAppStore();
+
+  const {
+    codexAuthStatus,
+    codexCliStatus: setupCliStatus,
+    setCodexCliStatus,
+    setCodexAuthStatus,
+  } = useSetupStore();
+
+  const [isCheckingCodexCli, setIsCheckingCodexCli] = useState(false);
+  const [displayCliStatus, setDisplayCliStatus] = useState<SharedCliStatus | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const codexCliStatus: SharedCliStatus | null =
+    displayCliStatus ||
+    (setupCliStatus
+      ? {
+          success: true,
+          status: setupCliStatus.installed ? 'installed' : 'not_installed',
+          method: setupCliStatus.method,
+          version: setupCliStatus.version || undefined,
+          path: setupCliStatus.path || undefined,
+        }
+      : null);
+
+  // Load Codex CLI status and auth status on mount
+  useEffect(() => {
+    const checkCodexStatus = async () => {
+      const api = getElectronAPI();
+      // Check if getCodexStatus method exists on the API (may not be implemented yet)
+      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)?.getCodexStatus as
+        | (() => Promise<{
+            success: boolean;
+            installed: boolean;
+            version?: string;
+            path?: string;
+            recommendation?: string;
+            installCommands?: { npm?: string; macos?: string; windows?: string };
+            auth?: {
+              authenticated: boolean;
+              method: string;
+              hasApiKey?: boolean;
+            };
+          }>)
+        | undefined;
+      if (getCodexStatus) {
+        try {
+          const result = await getCodexStatus();
+          setDisplayCliStatus({
+            success: result.success,
+            status: result.installed ? 'installed' : 'not_installed',
+            method: result.auth?.method,
+            version: result.version,
+            path: result.path,
+            recommendation: result.recommendation,
+            installCommands: result.installCommands,
+          });
+          setCodexCliStatus({
+            installed: result.installed,
+            version: result.version ?? null,
+            path: result.path ?? null,
+            method: result.auth?.method || 'none',
+          });
+          if (result.auth) {
+            setCodexAuthStatus({
+              authenticated: result.auth.authenticated,
+              method: result.auth.method as
+                | 'cli_authenticated'
+                | 'api_key'
+                | 'api_key_env'
+                | 'none',
+              hasAuthFile: result.auth.method === 'cli_authenticated',
+              hasApiKey: result.auth.hasApiKey,
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to check Codex CLI status:', error);
+        }
+      }
+    };
+    checkCodexStatus();
+  }, [setCodexCliStatus, setCodexAuthStatus]);
+
+  const handleRefreshCodexCli = useCallback(async () => {
+    setIsCheckingCodexCli(true);
+    try {
+      const api = getElectronAPI();
+      // Check if getCodexStatus method exists on the API (may not be implemented yet)
+      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)?.getCodexStatus as
+        | (() => Promise<{
+            success: boolean;
+            installed: boolean;
+            version?: string;
+            path?: string;
+            recommendation?: string;
+            installCommands?: { npm?: string; macos?: string; windows?: string };
+            auth?: {
+              authenticated: boolean;
+              method: string;
+              hasApiKey?: boolean;
+            };
+          }>)
+        | undefined;
+      if (getCodexStatus) {
+        const result = await getCodexStatus();
+        setDisplayCliStatus({
+          success: result.success,
+          status: result.installed ? 'installed' : 'not_installed',
+          method: result.auth?.method,
+          version: result.version,
+          path: result.path,
+          recommendation: result.recommendation,
+          installCommands: result.installCommands,
+        });
+        setCodexCliStatus({
+          installed: result.installed,
+          version: result.version ?? null,
+          path: result.path ?? null,
+          method: result.auth?.method || 'none',
+        });
+        if (result.auth) {
+          setCodexAuthStatus({
+            authenticated: result.auth.authenticated,
+            method: result.auth.method as 'cli_authenticated' | 'api_key' | 'api_key_env' | 'none',
+            hasAuthFile: result.auth.method === 'cli_authenticated',
+            hasApiKey: result.auth.hasApiKey,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to refresh Codex CLI status:', error);
+    } finally {
+      setIsCheckingCodexCli(false);
+    }
+  }, [setCodexCliStatus, setCodexAuthStatus]);
+
+  const handleDefaultModelChange = useCallback(
+    (model: CodexModelId) => {
+      setIsSaving(true);
+      try {
+        setCodexDefaultModel(model);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [setCodexDefaultModel]
+  );
+
+  const handleModelToggle = useCallback(
+    (model: CodexModelId, enabled: boolean) => {
+      setIsSaving(true);
+      try {
+        toggleCodexModel(model, enabled);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [toggleCodexModel]
+  );
+
+  const showUsageTracking = codexAuthStatus?.authenticated ?? false;
+  const authStatusToDisplay = codexAuthStatus;
+
+  return (
+    <div className="space-y-6">
+      {/* Provider Visibility Toggle */}
+      <ProviderToggle provider="codex" providerLabel="Codex" />
+
+      <CodexCliStatus
+        status={codexCliStatus}
+        authStatus={authStatusToDisplay}
+        isChecking={isCheckingCodexCli}
+        onRefresh={handleRefreshCodexCli}
+      />
+
+      {showUsageTracking && <CodexUsageSection />}
+
+      <CodexModelConfiguration
+        enabledCodexModels={enabledCodexModels}
+        codexDefaultModel={codexDefaultModel}
+        isSaving={isSaving}
+        onDefaultModelChange={handleDefaultModelChange}
+        onModelToggle={handleModelToggle}
+      />
+
+      <CodexSettings
+        autoLoadCodexAgents={codexAutoLoadAgents}
+        codexEnableWebSearch={codexEnableWebSearch}
+        codexEnableImages={codexEnableImages}
+        onAutoLoadCodexAgentsChange={setCodexAutoLoadAgents}
+        onCodexEnableWebSearchChange={setCodexEnableWebSearch}
+        onCodexEnableImagesChange={setCodexEnableImages}
+      />
+    </div>
+  );
+}
+
+export default CodexSettingsTab;

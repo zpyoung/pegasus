@@ -1,0 +1,50 @@
+{
+  "name": "@pegasus/utils",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared utility functions for Pegasus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "default": "./dist/logger.js"
+    },
+    "./debounce": {
+      "types": "./dist/debounce.d.ts",
+      "default": "./dist/debounce.js"
+    },
+    "./error-handler": {
+      "types": "./dist/error-handler.d.ts",
+      "default": "./dist/error-handler.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "pegasus",
+    "utils"
+  ],
+  "author": "Pegasus Team",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "dependencies": {
+    "@pegasus/platform": "workspace:*",
+    "@pegasus/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.3",
+    "typescript": "5.9.3",
+    "vitest": "4.0.16"
+  }
+}

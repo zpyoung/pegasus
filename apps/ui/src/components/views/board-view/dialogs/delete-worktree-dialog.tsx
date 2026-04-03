@@ -1,0 +1,175 @@
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Trash2, AlertTriangle, FileWarning } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
+import { getElectronAPI } from '@/lib/electron';
+import { toast } from 'sonner';
+
+interface WorktreeInfo {
+  path: string;
+  branch: string;
+  isMain: boolean;
+  hasChanges?: boolean;
+  changedFilesCount?: number;
+}
+
+interface DeleteWorktreeDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  projectPath: string;
+  worktree: WorktreeInfo | null;
+  onDeleted: (deletedWorktree: WorktreeInfo, deletedBranch: boolean) => void;
+  /** Number of features assigned to this worktree's branch */
+  affectedFeatureCount?: number;
+  /** Default value for the "delete branch" checkbox */
+  defaultDeleteBranch?: boolean;
+}
+
+export function DeleteWorktreeDialog({
+  open,
+  onOpenChange,
+  projectPath,
+  worktree,
+  onDeleted,
+  affectedFeatureCount = 0,
+  defaultDeleteBranch = false,
+}: DeleteWorktreeDialogProps) {
+  const [deleteBranch, setDeleteBranch] = useState(defaultDeleteBranch);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Reset deleteBranch to default when dialog opens
+  useEffect(() => {
+    if (open) {
+      setDeleteBranch(defaultDeleteBranch);
+    }
+  }, [open, defaultDeleteBranch]);
+
+  const handleDelete = async () => {
+    if (!worktree) return;
+
+    setIsLoading(true);
+    try {
+      const api = getElectronAPI();
+      if (!api?.worktree?.delete) {
+        toast.error('Worktree API not available');
+        return;
+      }
+      const result = await api.worktree.delete(projectPath, worktree.path, deleteBranch);
+
+      if (result.success) {
+        toast.success(`Worktree deleted`, {
+          description: deleteBranch
+            ? `Branch "${worktree.branch}" was also deleted`
+            : `Branch "${worktree.branch}" was kept`,
+        });
+        // Close the dialog first, then notify the parent.
+        // This ensures the dialog unmounts before the parent
+        // triggers potentially heavy state updates (feature branch
+        // resets, worktree refresh), reducing concurrent re-renders
+        // that can cascade into React error #185.
+        onOpenChange(false);
+        setDeleteBranch(false);
+        try {
+          onDeleted(worktree, deleteBranch);
+        } catch (error) {
+          // Prevent errors in onDeleted from propagating to the error boundary
+          console.error('onDeleted callback failed:', error);
+        }
+      } else {
+        toast.error('Failed to delete worktree', {
+          description: result.error,
+        });
+      }
+    } catch (err) {
+      toast.error('Failed to delete worktree', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!worktree) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-destructive" />
+            Delete Worktree
+          </DialogTitle>
+          <DialogDescription className="space-y-3">
+            <span>
+              Are you sure you want to delete the worktree for branch{' '}
+              <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>?
+            </span>
+
+            {affectedFeatureCount > 0 && (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20 mt-2">
+                <FileWarning className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                <span className="text-orange-500 text-sm">
+                  {affectedFeatureCount} feature{affectedFeatureCount !== 1 ? 's' : ''}{' '}
+                  {affectedFeatureCount !== 1 ? 'are' : 'is'} assigned to this branch.{' '}
+                  {affectedFeatureCount !== 1 ? 'They' : 'It'} will be unassigned and moved to the
+                  main worktree.
+                </span>
+              </div>
+            )}
+
+            {worktree.hasChanges && (
+              <div className="flex items-start gap-2 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/20 mt-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <span className="text-yellow-500 text-sm">
+                  This worktree has {worktree.changedFilesCount} uncommitted change(s). These will
+                  be lost if you proceed.
+                </span>
+              </div>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center space-x-2 py-4">
+          <Checkbox
+            id="delete-branch"
+            checked={deleteBranch}
+            onCheckedChange={(checked) => setDeleteBranch(checked === true)}
+          />
+          <Label htmlFor="delete-branch" className="text-sm cursor-pointer">
+            Also delete the branch{' '}
+            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+          </Label>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

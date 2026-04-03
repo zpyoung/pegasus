@@ -1,0 +1,135 @@
+# Pegasus Docker Compose
+# Runs Pegasus in complete isolation from your host filesystem.
+# The container cannot access any files on your laptop - only Docker-managed volumes.
+#
+# Usage:
+#   docker-compose up -d
+#   Then open http://localhost:3007
+#
+# See docs/docker-isolation.md for full documentation.
+
+services:
+  # Frontend UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ui
+    container_name: pegasus-ui
+    restart: unless-stopped
+    ports:
+      - '3007:80'
+    depends_on:
+      - server
+
+  # Backend API Server
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+      args:
+        # Match container user to host user for mounted volume permissions
+        # Override with: UID=$(id -u) GID=$(id -g) docker-compose build
+        UID: ${UID:-1001}
+        GID: ${GID:-1001}
+    container_name: pegasus-server
+    restart: unless-stopped
+    ports:
+      - '3008:3008'
+    environment:
+      # Optional - Anthropic API key
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # Optional - Claude CLI OAuth credentials (for macOS users)
+      # Extract with: ./scripts/get-claude-token.sh
+      # This writes the OAuth tokens to ~/.claude/.credentials.json in the container
+      - CLAUDE_OAUTH_CREDENTIALS=${CLAUDE_OAUTH_CREDENTIALS:-}
+
+      # Optional - Cursor CLI OAuth token (extract from host with the command shown below)
+      # macOS: ./scripts/get-cursor-token.sh (extracts from Keychain)
+      # Linux: jq -r '.accessToken' ~/.config/cursor/auth.json
+      # Note: cursor-agent stores its OAuth tokens separately from Cursor IDE
+      - CURSOR_AUTH_TOKEN=${CURSOR_AUTH_TOKEN:-}
+
+      # Optional - authentication, one will generate if left blank
+      - PEGASUS_API_KEY=${PEGASUS_API_KEY:-}
+
+      # Optional - restrict to specific directory within container only
+      # Projects and files can only be created/accessed within this directory
+      # Paths are INSIDE the container, not on your host
+      # Default: /projects
+      - ALLOWED_ROOT_DIRECTORY=${ALLOWED_ROOT_DIRECTORY:-/projects}
+
+      # Optional - data directory for sessions, settings, etc. (container-only)
+      - DATA_DIR=/data
+
+      # Optional - CORS origin (default: auto-detect local network origins)
+      # With nginx proxying API requests, CORS is not needed for same-origin access.
+      # Set explicitly only if accessing the API from a different domain.
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
+
+      # Internal - indicates the API is running in a containerized sandbox environment
+      # This is used by the UI to determine if sandbox risk warnings should be shown
+      - IS_CONTAINERIZED=true
+    volumes:
+      # ONLY named volumes - these are isolated from your host filesystem
+      # This volume persists data between restarts but is container-managed
+      - pegasus-data:/data
+
+      # Persist Claude CLI OAuth session keys across container restarts
+      # This allows 'claude login' authentication to persist between restarts
+      - pegasus-claude-config:/home/pegasus/.claude
+
+      # Persist Cursor CLI configuration and authentication across container restarts
+      # This allows 'cursor-agent login' authentication to persist between restarts
+      - pegasus-cursor-config:/home/pegasus/.cursor
+
+      # Persist OpenCode CLI configuration and authentication across container restarts
+      # This allows 'opencode auth login' authentication to persist between restarts
+      - pegasus-opencode-data:/home/pegasus/.local/share/opencode
+
+      # Persist OpenCode user configuration across container restarts
+      - pegasus-opencode-config:/home/pegasus/.config/opencode
+
+      # Persist OpenCode cache directory (contains version file and other cache data)
+      - pegasus-opencode-cache:/home/pegasus/.cache/opencode
+
+      # NO host directory mounts - container cannot access your laptop files
+      # If you need to work on a project, create it INSIDE the container
+      # or use a separate docker-compose override file
+
+    # Security: Server runs as non-root user (already set in Dockerfile)
+    # Security: No privileged mode
+    # Security: No host network access
+    # Security: No host filesystem mounts
+
+volumes:
+  pegasus-data:
+    name: pegasus-data
+    # Named volume - completely isolated from host filesystem
+
+  pegasus-claude-config:
+    name: pegasus-claude-config
+    # Named volume for Claude CLI OAuth session keys and configuration
+    # Persists authentication across container restarts
+
+  pegasus-cursor-config:
+    name: pegasus-cursor-config
+    # Named volume for Cursor CLI configuration and authentication
+    # Persists cursor-agent login authentication across container restarts
+
+  pegasus-opencode-data:
+    name: pegasus-opencode-data
+    # Named volume for OpenCode CLI data and authentication (~/.local/share/opencode)
+    # Persists opencode auth login authentication across container restarts
+
+  pegasus-opencode-config:
+    name: pegasus-opencode-config
+    # Named volume for OpenCode user configuration (~/.config/opencode)
+    # Persists user configuration across container restarts
+
+  pegasus-opencode-cache:
+    name: pegasus-opencode-cache
+    # Named volume for OpenCode cache directory (~/.cache/opencode)
+    # Contains version file and other cached data
