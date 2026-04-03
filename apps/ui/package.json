@@ -129,17 +129,7 @@
     "zod": "^3.24.1 || ^4.0.0",
     "zustand": "5.0.9"
   },
-  "optionalDependencies": {
-    "lightningcss-darwin-arm64": "1.29.2",
-    "lightningcss-darwin-x64": "1.29.2",
-    "lightningcss-linux-arm-gnueabihf": "1.29.2",
-    "lightningcss-linux-arm64-gnu": "1.29.2",
-    "lightningcss-linux-arm64-musl": "1.29.2",
-    "lightningcss-linux-x64-gnu": "1.29.2",
-    "lightningcss-linux-x64-musl": "1.29.2",
-    "lightningcss-win32-arm64-msvc": "1.29.2",
-    "lightningcss-win32-x64-msvc": "1.29.2"
-  },
+  "optionalDependencies": {},
   "devDependencies": {
     "@electron/rebuild": "4.0.2",
     "@eslint/js": "9.0.0",
