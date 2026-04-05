@@ -1014,7 +1014,7 @@ build_for_production() {
     echo ""
 
     center_print "Building server..." "$C_YELLOW"
-    if ! pnpm --filter apps/server build; then
+    if ! pnpm --filter @pegasus/server build; then
         center_print "✗ Failed to build server" "$C_RED"
         exit 1
     fi
@@ -1022,7 +1022,7 @@ build_for_production() {
     echo ""
 
     center_print "Building UI..." "$C_YELLOW"
-    if ! pnpm --filter apps/ui build; then
+    if ! pnpm --filter @pegasus/ui build; then
         center_print "✗ Failed to build UI" "$C_RED"
         exit 1
     fi
@@ -1204,7 +1204,7 @@ case $MODE in
             # Production: run built server and UI preview concurrently
             echo ""
             center_print "Starting server on port $SERVER_PORT..." "$C_YELLOW"
-            pnpm --filter apps/server start &
+            pnpm --filter @pegasus/server start &
             SERVER_PID=$!
 
             # Wait for server to be healthy
@@ -1230,7 +1230,7 @@ case $MODE in
 
             # Start UI preview
             center_print "Starting UI preview on port $WEB_PORT..." "$C_YELLOW"
-            pnpm --filter apps/ui preview --port "$WEB_PORT"
+            pnpm --filter @pegasus/ui preview --port "$WEB_PORT"
 
             # Cleanup server on exit
             kill $SERVER_PID 2>/dev/null || true
