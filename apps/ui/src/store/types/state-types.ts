@@ -393,6 +393,10 @@ export interface AppState {
   // Always use dropdown layout regardless of worktree count (default: false)
   alwaysUseWorktreeDropdownByProject: Record<string, boolean>;
 
+  // Show all worktrees on board (per-project, keyed by project path)
+  // When true, the board shows features from all worktrees instead of filtering by selected worktree
+  showAllWorktreesByProject: Record<string, boolean>;
+
   // UI State (previously in localStorage, now synced via API)
   /** Whether worktree panel is collapsed in board view */
   worktreePanelCollapsed: boolean;
@@ -860,6 +864,10 @@ export interface AppActions {
   getWorktreeDropdownThreshold: (projectPath: string) => number;
   setAlwaysUseWorktreeDropdown: (projectPath: string, always: boolean) => void;
   getAlwaysUseWorktreeDropdown: (projectPath: string) => boolean;
+
+  // Show All Worktrees actions (per-project)
+  setShowAllWorktrees: (projectPath: string, showAll: boolean) => void;
+  getShowAllWorktrees: (projectPath: string) => boolean;
 
   // UI State actions (previously in localStorage, now synced via API)
   setWorktreePanelCollapsed: (collapsed: boolean) => void;

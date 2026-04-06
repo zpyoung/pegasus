@@ -87,6 +87,7 @@ interface UseBoardActionsProps {
   onWorktreeCreated?: () => void;
   onWorktreeAutoSelect?: (worktree: { path: string; branch: string }) => void;
   currentWorktreeBranch: string | null; // Branch name of the selected worktree for filtering
+  showAllWorktrees?: boolean; // When true, show/start features from all worktrees
   stopFeature: (featureId: string) => Promise<boolean>; // Passed from parent's useAutoMode to avoid duplicate subscription
 }
 
@@ -116,6 +117,7 @@ export function useBoardActions({
   onWorktreeCreated,
   onWorktreeAutoSelect,
   currentWorktreeBranch,
+  showAllWorktrees = false,
   stopFeature,
 }: UseBoardActionsProps) {
   // IMPORTANT: Use individual selectors instead of bare useAppStore() to prevent
@@ -965,10 +967,12 @@ export function useBoardActions({
       const branchLabel = featureBranch ?? 'primary worktree';
 
       // Check if the feature will be visible on the current worktree view
-      const willBeVisibleOnCurrentView = !featureBranch
-        ? !currentWorktreeBranch ||
-          (projectPath ? isPrimaryWorktreeBranch(projectPath, currentWorktreeBranch) : true)
-        : featureBranch === currentWorktreeBranch;
+      const willBeVisibleOnCurrentView =
+        showAllWorktrees ||
+        (!featureBranch
+          ? !currentWorktreeBranch ||
+            (projectPath ? isPrimaryWorktreeBranch(projectPath, currentWorktreeBranch) : true)
+          : featureBranch === currentWorktreeBranch);
 
       persistFeatureUpdate(feature.id, { status: 'verified' as const });
 
@@ -982,7 +986,7 @@ export function useBoardActions({
         });
       }
     },
-    [persistFeatureUpdate, currentWorktreeBranch, projectPath, isPrimaryWorktreeBranch]
+    [persistFeatureUpdate, currentWorktreeBranch, projectPath, isPrimaryWorktreeBranch, showAllWorktrees]
   );
 
   const handleViewOutput = useCallback(
@@ -1076,6 +1080,9 @@ export function useBoardActions({
     const backlogFeatures = features.filter((f) => {
       if (f.status !== 'backlog') return false;
 
+      // In all-worktrees mode, all backlog features are eligible regardless of branch
+      if (showAllWorktrees) return true;
+
       // Determine the feature's branch (default to primary branch if not set)
       const featureBranch = f.branchName || primaryBranch || 'main';
 
@@ -1157,6 +1164,7 @@ export function useBoardActions({
     runningAutoTasks,
     handleStartImplementation,
     currentWorktreeBranch,
+    showAllWorktrees,
     projectPath,
     isPrimaryWorktreeBranch,
     getPrimaryWorktreeBranch,

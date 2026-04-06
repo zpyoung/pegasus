@@ -108,12 +108,19 @@ export const KanbanCard = memo(function KanbanCard({
   onToggleSelect,
   selectionTarget = null,
 }: KanbanCardProps) {
-  const { useWorktrees, currentProject } = useAppStore(
-    useShallow((state) => ({
-      useWorktrees: state.useWorktrees,
-      currentProject: state.currentProject,
-    }))
-  );
+  const { useWorktrees, currentProject, showAllWorktreesByProject, getPrimaryWorktreeBranch } =
+    useAppStore(
+      useShallow((state) => ({
+        useWorktrees: state.useWorktrees,
+        currentProject: state.currentProject,
+        showAllWorktreesByProject: state.showAllWorktreesByProject,
+        getPrimaryWorktreeBranch: state.getPrimaryWorktreeBranch,
+      }))
+    );
+  const showAllWorktrees = currentProject?.path
+    ? (showAllWorktreesByProject[currentProject.path] ?? false)
+    : false;
+  const mainBranch = currentProject?.path ? getPrimaryWorktreeBranch(currentProject.path) : null;
   // A card should display as "actively running" if it's in the runningAutoTasks list
   // AND in an execution-compatible status. However, there's a race window where a feature
   // is tracked as running (in runningAutoTasks) but its disk/UI status hasn't caught up yet
@@ -294,7 +301,12 @@ export const KanbanCard = memo(function KanbanCard({
 
       <CardContent className="px-3 pt-0 pb-0">
         {/* Content Sections */}
-        <CardContentSections feature={feature} useWorktrees={useWorktrees} />
+        <CardContentSections
+          feature={feature}
+          useWorktrees={useWorktrees}
+          showAllWorktrees={showAllWorktrees}
+          mainBranch={mainBranch}
+        />
 
         {/* Agent Info Panel */}
         <AgentInfoPanel

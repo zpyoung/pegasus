@@ -41,6 +41,8 @@ interface BoardHeaderProps {
   // View toggle props
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  // The currently selected worktree branch (null = main) — used in the all-worktrees indicator
+  activeBranch?: string | null;
 }
 
 // Shared styles for header control containers
@@ -66,6 +68,7 @@ export function BoardHeader({
   onRefreshBoard,
   viewMode,
   onViewModeChange,
+  activeBranch,
 }: BoardHeaderProps) {
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
   const skipVerificationInAutoMode = useAppStore((state) => state.skipVerificationInAutoMode);
@@ -88,6 +91,11 @@ export function BoardHeader({
   const worktreePanelVisibleByProject = useAppStore((state) => state.worktreePanelVisibleByProject);
   const setWorktreePanelVisible = useAppStore((state) => state.setWorktreePanelVisible);
   const isWorktreePanelVisible = worktreePanelVisibleByProject[projectPath] ?? true;
+
+  // All-worktrees mode indicator (per-project)
+  const showAllWorktrees = useAppStore(
+    (state) => state.showAllWorktreesByProject[projectPath] ?? false
+  );
 
   const handleWorktreePanelToggle = useCallback(
     async (visible: boolean) => {
@@ -206,6 +214,14 @@ export function BoardHeader({
             >
               Worktree Bar
             </Label>
+            {showAllWorktrees && !isWorktreePanelVisible && (
+              <span
+                className="text-[10px] font-medium text-primary bg-primary/15 px-1.5 py-0.5 rounded whitespace-nowrap"
+                title={`All-worktrees mode active — showing every branch (active: ${activeBranch ?? 'main'})`}
+              >
+                All (active: {activeBranch ?? 'main'})
+              </span>
+            )}
             <Switch
               id="worktrees-toggle"
               checked={isWorktreePanelVisible}

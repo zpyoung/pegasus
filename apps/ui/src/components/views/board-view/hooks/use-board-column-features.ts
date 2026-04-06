@@ -159,6 +159,7 @@ interface UseBoardColumnFeaturesProps {
   currentWorktreeBranch: string | null; // Branch name of the selected worktree (null = main)
   projectPath: string | null; // Main project path (for main worktree)
   sortNewestCardOnTop?: boolean; // When true, sort cards by most recent (createdAt desc) in all columns
+  showAllWorktrees?: boolean; // When true, show features from all worktrees regardless of selected worktree
 }
 
 export function useBoardColumnFeatures({
@@ -170,6 +171,7 @@ export function useBoardColumnFeatures({
   currentWorktreeBranch,
   projectPath,
   sortNewestCardOnTop = false,
+  showAllWorktrees = false,
 }: UseBoardColumnFeaturesProps) {
   // Get recently completed features from store for race condition protection
   const recentlyCompletedFeatures = useAppStore((state) => state.recentlyCompletedFeatures);
@@ -257,7 +259,10 @@ export function useBoardColumnFeatures({
       const featureBranch = f.branchName;
 
       let matchesWorktree: boolean;
-      if (!featureBranch) {
+      if (showAllWorktrees) {
+        // All-worktrees mode: show features from every worktree simultaneously
+        matchesWorktree = true;
+      } else if (!featureBranch) {
         // No branch assigned - show only on primary worktree
         const isViewingPrimary = currentWorktreePath === null;
         matchesWorktree = isViewingPrimary;
@@ -457,6 +462,7 @@ export function useBoardColumnFeatures({
     projectPath,
     recentlyCompletedFeatures,
     sortNewestCardOnTop,
+    showAllWorktrees,
   ]);
 
   const getColumnFeatures = useCallback(

@@ -405,6 +405,7 @@ const initialState: AppState = {
   pinnedWorktreeBranchesByProject: {},
   worktreeDropdownThresholdByProject: {},
   alwaysUseWorktreeDropdownByProject: {},
+  showAllWorktreesByProject: {},
   worktreePanelCollapsed: false,
   lastProjectDir: '',
   recentFolders: [],
@@ -2828,6 +2829,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     })),
   getAlwaysUseWorktreeDropdown: (projectPath) =>
     get().alwaysUseWorktreeDropdownByProject[projectPath] ?? true,
+
+  // Show All Worktrees actions (per-project)
+  setShowAllWorktrees: (projectPath, showAll) =>
+    set((state) => ({
+      showAllWorktreesByProject: {
+        ...state.showAllWorktreesByProject,
+        [projectPath]: showAll,
+      },
+    })),
+  getShowAllWorktrees: (projectPath) =>
+    get().showAllWorktreesByProject[projectPath] ?? false,
 
   // UI State actions
   setWorktreePanelCollapsed: (collapsed) => set({ worktreePanelCollapsed: collapsed }),

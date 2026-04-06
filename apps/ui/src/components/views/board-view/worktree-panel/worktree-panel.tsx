@@ -141,6 +141,23 @@ export function WorktreePanel({
     features,
   });
 
+  // Show all worktrees toggle from store
+  const showAllWorktrees = useAppStore(
+    (state) => state.showAllWorktreesByProject[projectPath] ?? false
+  );
+  const setShowAllWorktrees = useAppStore((state) => state.setShowAllWorktrees);
+
+  const handleToggleAllWorktrees = useCallback(async () => {
+    const newValue = !showAllWorktrees;
+    setShowAllWorktrees(projectPath, newValue);
+    try {
+      const api = getHttpApiClient();
+      await api.settings.updateProject(projectPath, { showAllWorktrees: newValue });
+    } catch (error) {
+      console.error('Failed to persist showAllWorktrees setting:', error);
+    }
+  }, [projectPath, showAllWorktrees, setShowAllWorktrees]);
+
   // Pinned worktrees count from store
   const pinnedWorktreesCount = useAppStore(
     (state) => state.pinnedWorktreesCountByProject[projectPath] ?? 0
@@ -1079,6 +1096,17 @@ export function WorktreePanel({
           />
         )}
 
+        {/* All Worktrees toggle */}
+        <Button
+          variant={showAllWorktrees ? 'secondary' : 'ghost'}
+          size="sm"
+          className={`h-8 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={handleToggleAllWorktrees}
+          title={showAllWorktrees ? 'Showing all worktrees — click to filter' : 'Show all worktrees'}
+        >
+          All
+        </Button>
+
         {useWorktreesEnabled && (
           <>
             <Button
@@ -1499,6 +1527,17 @@ export function WorktreePanel({
           );
         })
       )}
+
+      {/* All Worktrees toggle - shows features from all worktrees simultaneously */}
+      <Button
+        variant={showAllWorktrees ? 'secondary' : 'ghost'}
+        size="sm"
+        className={`h-7 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        onClick={handleToggleAllWorktrees}
+        title={showAllWorktrees ? 'Showing features from all worktrees — click to filter by current worktree' : 'Show features from all worktrees'}
+      >
+        All
+      </Button>
 
       {/* Create and refresh buttons */}
       {useWorktreesEnabled && (

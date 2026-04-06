@@ -30,6 +30,7 @@ export function useProjectSettingsLoader() {
   const setPinnedWorktreesCount = useAppStore((state) => state.setPinnedWorktreesCount);
   const setWorktreeDropdownThreshold = useAppStore((state) => state.setWorktreeDropdownThreshold);
   const setAlwaysUseWorktreeDropdown = useAppStore((state) => state.setAlwaysUseWorktreeDropdown);
+  const setShowAllWorktrees = useAppStore((state) => state.setShowAllWorktrees);
 
   const appliedProjectRef = useRef<{ path: string; dataUpdatedAt: number } | null>(null);
 
@@ -122,6 +123,10 @@ export function useProjectSettingsLoader() {
       setAlwaysUseWorktreeDropdown(projectPath, settings.alwaysUseWorktreeDropdown);
     }
 
+    if (settings.showAllWorktrees !== undefined) {
+      setShowAllWorktrees(projectPath, settings.showAllWorktrees);
+    }
+
     // Apply activeClaudeApiProfileId and phaseModelOverrides if present
     // These are stored directly on the project, so we need to update both
     // currentProject AND the projects array to keep them in sync
@@ -193,5 +198,6 @@ export function useProjectSettingsLoader() {
     setPinnedWorktreesCount,
     setWorktreeDropdownThreshold,
     setAlwaysUseWorktreeDropdown,
+    setShowAllWorktrees,
   ]);
 }

@@ -1675,6 +1675,11 @@ export interface ProjectSettings {
    * Overrides the dropdown threshold. Default: true.
    */
   alwaysUseWorktreeDropdown?: boolean;
+  /**
+   * When true, the board shows features from ALL worktrees simultaneously instead of
+   * filtering to the currently selected worktree. Default: false.
+   */
+  showAllWorktrees?: boolean;
 
   // Session Tracking
   /** Last chat session selected in this project */
