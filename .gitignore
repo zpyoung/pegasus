@@ -56,6 +56,12 @@ dmypy.json
 .pegasus/categories.json
 .pegasus/events/
 .pegasus/memory/
+.pegasus/features/
+.pegasus/images/
+.pegasus/settings.json
+.pegasus/settings.json.*
+.pegasus/active-branches.json
+.pegasus/notifications.json
 
 # Runtime data
 data/
