@@ -33,6 +33,27 @@ const REQUIRED_STRUCTURE: {
 };
 
 /**
+ * Lines that should be in .gitignore for the .pegasus directory.
+ * Tracked items (config.yaml, pipelines/, context/) are NOT listed here.
+ */
+const PEGASUS_GITIGNORE_ENTRIES = [
+  '# Pegasus runtime files',
+  '.pegasus/pegasus.db',
+  '.pegasus/pegasus.db-wal',
+  '.pegasus/pegasus.db-shm',
+  '.pegasus/logs/',
+  '.pegasus/categories.json',
+  '.pegasus/events/',
+  '.pegasus/memory/',
+  '.pegasus/features/',
+  '.pegasus/images/',
+  '.pegasus/settings.json',
+  '.pegasus/settings.json.*',
+  '.pegasus/active-branches.json',
+  '.pegasus/notifications.json',
+];
+
+/**
  * Initializes the .pegasus directory structure for a project
  *
  * @param projectPath - The root path of the project
@@ -117,6 +138,9 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
       })
     );
 
+    // Ensure .gitignore has pegasus entries
+    await ensureGitignoreEntries(projectPath, api);
+
     // Determine if this is a new project (no files needed to be created since features/ is empty by default)
     const isNewProject = createdFiles.length === 0 && existingFiles.length === 0;
 
@@ -133,6 +157,40 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
       isNewProject: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
+  }
+}
+
+/**
+ * Ensures .gitignore contains the required .pegasus ignore entries.
+ * Appends missing entries without duplicating existing ones.
+ */
+async function ensureGitignoreEntries(
+  projectPath: string,
+  api: ReturnType<typeof getElectronAPI>
+): Promise<void> {
+  const gitignorePath = `${projectPath}/.gitignore`;
+
+  try {
+    let content = '';
+    const exists = await api.exists(gitignorePath);
+    if (exists) {
+      const result = await api.readFile(gitignorePath);
+      content = result.content || '';
+    }
+
+    const existingLines = new Set(content.split('\n').map((line) => line.trim()));
+    const missing = PEGASUS_GITIGNORE_ENTRIES.filter((entry) => !existingLines.has(entry));
+
+    if (missing.length === 0) {
+      return;
+    }
+
+    const suffix = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+    const block = missing.join('\n') + '\n';
+    await api.writeFile(gitignorePath, content + suffix + block);
+    logger.info(`Added ${missing.length} entries to .gitignore`);
+  } catch (error) {
+    logger.warn('Failed to update .gitignore:', error);
   }
 }
 
