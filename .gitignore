@@ -63,6 +63,7 @@ dmypy.json
 .pegasus/active-branches.json
 .pegasus/notifications.json
 .pegasus/worktrees/
+.worktrees/
 
 # Runtime data
 data/
