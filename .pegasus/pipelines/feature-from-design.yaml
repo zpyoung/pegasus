@@ -8,17 +8,22 @@ defaults:
   model: sonnet
   permission_mode: plan
 
+inputs:
+  design_doc_path:
+    type: string
+    required: true
+    description: Path to the design document to implement (e.g. .ai_tasks/feature-x.design.md)
+
 stages:
   - id: read-design
     name: Read Design Document
     prompt: |
-      Read the design document specified below and create a detailed implementation plan.
-      The design doc path is given in the task description.
+      Read the design document at `{{inputs.design_doc_path}}` and create a detailed implementation plan.
 
       Task: {{task.description}}
 
       Steps:
-      1. Read the design document file specified in the task description.
+      1. Read `{{inputs.design_doc_path}}`.
       2. Extract all requirements (FR-### and NFR-###), architecture decisions, components, and testing strategy.
       3. Create a step-by-step implementation plan that maps each requirement to concrete code changes.
       4. List every file to create or modify, in dependency order.

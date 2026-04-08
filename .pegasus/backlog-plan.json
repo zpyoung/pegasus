@@ -1,0 +1,10 @@
+{
+  "savedAt": "2026-04-08T09:46:05.149Z",
+  "prompt": "When a pipeline is selected for a task, then the planning section of the task needs to be hidden. Also, if a pipeline has requires approval defined, then we need a way for the user to provide manual approval before the pipeline continues on to the next stage. ",
+  "model": "claude-opus-4-6",
+  "result": {
+    "changes": [],
+    "summary": "Failed to parse AI response",
+    "dependencyUpdates": []
+  }
+}
