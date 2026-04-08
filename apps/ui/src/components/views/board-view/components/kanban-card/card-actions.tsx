@@ -13,6 +13,7 @@ import {
   Wand2,
   Archive,
   MessageSquare,
+  GitCommit,
 } from 'lucide-react';
 
 interface CardActionsProps {
@@ -35,6 +36,7 @@ interface CardActionsProps {
   onViewPlan?: () => void;
   onApprovePlan?: () => void;
   onAnswerQuestion?: () => void;
+  onCommitChanges?: () => void;
 }
 
 export const CardActions = memo(function CardActions({
@@ -56,6 +58,7 @@ export const CardActions = memo(function CardActions({
   onViewPlan,
   onApprovePlan,
   onAnswerQuestion,
+  onCommitChanges,
 }: CardActionsProps) {
   const showBacklogLogsButton = hasContext && !!onViewOutput;
 
@@ -293,6 +296,23 @@ export const CardActions = memo(function CardActions({
               <span className="truncate">Logs</span>
             </Button>
           )}
+          {/* Commit changes button */}
+          {onCommitChanges && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-xs min-w-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCommitChanges();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`commit-changes-${feature.id}`}
+            >
+              <GitCommit className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Commit</span>
+            </Button>
+          )}
           {/* Complete button */}
           {onComplete && (
             <Button
@@ -329,6 +349,23 @@ export const CardActions = memo(function CardActions({
             >
               <Wand2 className="w-3 h-3 mr-1 shrink-0" />
               <span className="truncate">Refine</span>
+            </Button>
+          )}
+          {/* Commit changes button */}
+          {onCommitChanges && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1 h-7 text-[11px] min-w-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCommitChanges();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              data-testid={`commit-changes-${feature.id}`}
+            >
+              <GitCommit className="w-3 h-3 mr-1 shrink-0" />
+              <span className="truncate">Commit</span>
             </Button>
           )}
           {/* Show Verify button if PR was created (changes are committed), otherwise show Mark as Verified button */}

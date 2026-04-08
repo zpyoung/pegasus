@@ -60,6 +60,7 @@ interface KanbanBoardProps {
   onDuplicate?: (feature: Feature) => void;
   onDuplicateAsChild?: (feature: Feature) => void;
   onDuplicateAsChildMultiple?: (feature: Feature) => void;
+  onCommitChanges?: (feature: Feature) => void;
   featuresWithContext: Set<string>;
   runningAutoTasks: string[];
   onArchiveAllVerified: () => void;
@@ -309,6 +310,7 @@ export const KanbanBoard = memo(function KanbanBoard({
   onDuplicate,
   onDuplicateAsChild,
   onDuplicateAsChildMultiple,
+  onCommitChanges,
   featuresWithContext,
   runningAutoTasks,
   onArchiveAllVerified,
@@ -615,6 +617,11 @@ export const KanbanBoard = memo(function KanbanBoard({
                                           ? () => onDuplicateAsChildMultiple(feature)
                                           : undefined
                                       }
+                                      onCommitChanges={
+                                        onCommitChanges
+                                          ? () => onCommitChanges(feature)
+                                          : undefined
+                                      }
                                       hasContext={featuresWithContext.has(feature.id)}
                                       isCurrentAutoTask={runningAutoTasks.includes(feature.id)}
                                       shortcutKey={shortcutKey}
@@ -663,6 +670,11 @@ export const KanbanBoard = memo(function KanbanBoard({
                                 onDuplicateAsChildMultiple={
                                   onDuplicateAsChildMultiple
                                     ? () => onDuplicateAsChildMultiple(feature)
+                                    : undefined
+                                }
+                                onCommitChanges={
+                                  onCommitChanges
+                                    ? () => onCommitChanges(feature)
                                     : undefined
                                 }
                                 hasContext={featuresWithContext.has(feature.id)}

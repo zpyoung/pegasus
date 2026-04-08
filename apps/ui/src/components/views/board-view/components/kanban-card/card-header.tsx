@@ -31,6 +31,7 @@ import { formatModelName, DEFAULT_MODEL } from '@/lib/agent-context-parser';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { getProviderIconForModel } from '@/components/ui/provider-icon';
 import { useAppStore } from '@/store/app-store';
+import { TaskIdCopy } from '../task-id-copy';
 
 function DuplicateMenuItems({
   onDuplicate,
@@ -507,6 +508,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
           </div>
         )}
         <div className="flex-1 min-w-0 overflow-hidden">
+          <TaskIdCopy taskId={feature.id} className="mb-2" />
           {feature.titleGenerating && !feature.title ? (
             <div className="flex items-center gap-1.5 mb-1">
               <Spinner size="xs" />

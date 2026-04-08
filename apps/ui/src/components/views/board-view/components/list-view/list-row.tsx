@@ -6,6 +6,7 @@ import { AlertCircle, Lock, Hand, Sparkles, FileText, FileCheck } from 'lucide-r
 import type { Feature } from '@/store/app-store';
 import { RowActions, type RowActionHandlers } from './row-actions';
 import { getColumnWidth, getColumnAlign } from './list-header';
+import { TaskIdCopy } from '../task-id-copy';
 
 export interface ListRowProps {
   /** The feature to display */
@@ -245,6 +246,9 @@ export const ListRow = memo(function ListRow({
       if ((e.target as HTMLElement).closest('input[type="checkbox"]')) {
         return;
       }
+      if ((e.target as HTMLElement).closest('[data-testid^="copy-task-id-"]')) {
+        return;
+      }
       onClick?.();
     },
     [onClick]
@@ -335,6 +339,7 @@ export const ListRow = memo(function ListRow({
               {feature.description}
             </p>
           )}
+          <TaskIdCopy taskId={feature.id} compact className="mt-1" />
         </div>
       </div>
 

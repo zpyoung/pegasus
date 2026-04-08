@@ -12,6 +12,7 @@ import {
   Wand2,
   Archive,
   GitBranch,
+  GitCommit,
   GitFork,
   ExternalLink,
   Copy,
@@ -54,6 +55,7 @@ export interface RowActionHandlers {
   onDuplicate?: () => void;
   onDuplicateAsChild?: () => void;
   onDuplicateAsChildMultiple?: () => void;
+  onCommitChanges?: () => void;
 }
 
 export interface RowActionsProps {
@@ -692,6 +694,13 @@ export const RowActions = memo(function RowActions({
               {handlers.onFollowUp && (
                 <MenuItem icon={Wand2} label="Refine" onClick={withClose(handlers.onFollowUp)} />
               )}
+              {handlers.onCommitChanges && (
+                <MenuItem
+                  icon={GitCommit}
+                  label="Commit changes"
+                  onClick={withClose(handlers.onCommitChanges)}
+                />
+              )}
               {feature.prUrl && (
                 <MenuItem
                   icon={ExternalLink}
@@ -765,6 +774,13 @@ export const RowActions = memo(function RowActions({
                   icon={FileText}
                   label="View Logs"
                   onClick={withClose(handlers.onViewOutput)}
+                />
+              )}
+              {handlers.onCommitChanges && (
+                <MenuItem
+                  icon={GitCommit}
+                  label="Commit changes"
+                  onClick={withClose(handlers.onCommitChanges)}
                 />
               )}
               {feature.prUrl && (
@@ -928,6 +944,7 @@ export function createRowActionHandlers(
     duplicate?: (id: string) => void;
     duplicateAsChild?: (id: string) => void;
     duplicateAsChildMultiple?: (id: string) => void;
+    commitChanges?: (id: string) => void;
   }
 ): RowActionHandlers {
   return {
@@ -951,6 +968,9 @@ export function createRowActionHandlers(
       : undefined,
     onDuplicateAsChildMultiple: actions.duplicateAsChildMultiple
       ? () => actions.duplicateAsChildMultiple!(featureId)
+      : undefined,
+    onCommitChanges: actions.commitChanges
+      ? () => actions.commitChanges!(featureId)
       : undefined,
   };
 }

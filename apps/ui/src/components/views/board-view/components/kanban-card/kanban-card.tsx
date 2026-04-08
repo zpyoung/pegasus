@@ -56,6 +56,7 @@ interface KanbanCardProps {
   onDuplicate?: () => void;
   onDuplicateAsChild?: () => void;
   onDuplicateAsChildMultiple?: () => void;
+  onCommitChanges?: () => void;
   hasContext?: boolean;
   isCurrentAutoTask?: boolean;
   shortcutKey?: string;
@@ -94,6 +95,7 @@ export const KanbanCard = memo(function KanbanCard({
   onDuplicate,
   onDuplicateAsChild,
   onDuplicateAsChildMultiple,
+  onCommitChanges,
   hasContext,
   isCurrentAutoTask,
   shortcutKey,
@@ -344,6 +346,7 @@ export const KanbanCard = memo(function KanbanCard({
           onViewPlan={onViewPlan}
           onApprovePlan={onApprovePlan}
           onAnswerQuestion={onAnswerQuestion}
+          onCommitChanges={onCommitChanges}
         />
       </CardContent>
     </Card>

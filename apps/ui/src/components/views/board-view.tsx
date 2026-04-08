@@ -968,6 +968,24 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     stopFeature: autoMode.stopFeature,
   });
 
+  // Handler for opening the commit dialog from a task card
+  const handleCommitChanges = useCallback(
+    (feature: Feature) => {
+      if (!feature.branchName) {
+        toast.error('No branch associated with this task');
+        return;
+      }
+      const matchingWorktree = worktrees.find((w) => w.branch === feature.branchName);
+      if (!matchingWorktree) {
+        toast.error('No worktree found for this task\'s branch');
+        return;
+      }
+      setSelectedWorktreeForAction(matchingWorktree);
+      setShowCommitWorktreeDialog(true);
+    },
+    [worktrees]
+  );
+
   // Handler for bulk updating multiple features
   const handleBulkUpdate = useCallback(
     async (updates: Partial<Feature>, workMode: 'current' | 'auto' | 'custom') => {
@@ -2089,6 +2107,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                   onDuplicate: (feature) => handleDuplicateFeature(feature, false),
                   onDuplicateAsChild: (feature) => handleDuplicateFeature(feature, true),
                   onDuplicateAsChildMultiple: (feature) => setDuplicateMultipleFeature(feature),
+                  onCommitChanges: handleCommitChanges,
                 }}
                 runningAutoTasks={runningAutoTasksAllWorktrees}
                 pipelineConfig={pipelineConfig}
@@ -2139,6 +2158,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                 onDuplicate={(feature) => handleDuplicateFeature(feature, false)}
                 onDuplicateAsChild={(feature) => handleDuplicateFeature(feature, true)}
                 onDuplicateAsChildMultiple={(feature) => setDuplicateMultipleFeature(feature)}
+                onCommitChanges={handleCommitChanges}
                 featuresWithContext={featuresWithContext}
                 runningAutoTasks={runningAutoTasksAllWorktrees}
                 onArchiveAllVerified={() => setShowArchiveAllVerifiedDialog(true)}
@@ -2560,7 +2580,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       {/* Commit Worktree Dialog */}
       <CommitWorktreeDialog
         open={showCommitWorktreeDialog}
-        onOpenChange={setShowCommitWorktreeDialog}
+        onOpenChange={(open) => {
+          setShowCommitWorktreeDialog(open);
+          if (!open) setSelectedWorktreeForAction(null);
+        }}
         worktree={selectedWorktreeForAction}
         onCommitted={() => {
           setWorktreeRefreshKey((k) => k + 1);
