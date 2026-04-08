@@ -904,6 +904,13 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     ? (showAllWorktreesByProject[currentProject.path] ?? false)
     : false;
 
+  // When the worktree panel/bar is hidden, always show tasks from all worktrees
+  // so users can see the full board regardless of worktree filtering.
+  const isWorktreePanelVisible = currentProject?.path
+    ? (worktreePanelVisibleByProject[currentProject.path] ?? true)
+    : true;
+  const effectiveShowAllWorktrees = showAllWorktrees || !isWorktreePanelVisible;
+
   // Extract all action handlers into a hook
   const {
     handleAddFeature,
@@ -951,7 +958,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     onWorktreeCreated: () => setWorktreeRefreshKey((k) => k + 1),
     onWorktreeAutoSelect: addAndSelectWorktree,
     currentWorktreeBranch,
-    showAllWorktrees,
+    showAllWorktrees: effectiveShowAllWorktrees,
     stopFeature: autoMode.stopFeature,
   });
 
@@ -1110,7 +1117,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         if (f.status !== 'backlog') return false;
 
         // In all-worktrees mode, every backlog feature is selectable regardless of branch
-        if (showAllWorktrees) return true;
+        if (effectiveShowAllWorktrees) return true;
 
         // Filter by current worktree branch
         const featureBranch = f.branchName;
@@ -1134,7 +1141,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     currentWorktreeBranch,
     currentProject?.path,
     isPrimaryWorktreeBranch,
-    showAllWorktrees,
+    effectiveShowAllWorktrees,
   ]);
 
   // Get waiting_approval feature IDs in current branch for "Select All"
@@ -1145,7 +1152,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         if (f.status !== 'waiting_approval') return false;
 
         // In all-worktrees mode, every waiting_approval feature is selectable regardless of branch
-        if (showAllWorktrees) return true;
+        if (effectiveShowAllWorktrees) return true;
 
         // Filter by current worktree branch
         const featureBranch = f.branchName;
@@ -1169,7 +1176,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     currentWorktreeBranch,
     currentProject?.path,
     isPrimaryWorktreeBranch,
-    showAllWorktrees,
+    effectiveShowAllWorktrees,
   ]);
 
   // Handler for bulk verifying multiple features
@@ -1698,7 +1705,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     currentWorktreeBranch,
     projectPath: currentProject?.path || null,
     sortNewestCardOnTop: defaultSortNewestCardOnTop,
-    showAllWorktrees,
+    showAllWorktrees: effectiveShowAllWorktrees,
   });
 
   // Build columnFeaturesMap for ListView

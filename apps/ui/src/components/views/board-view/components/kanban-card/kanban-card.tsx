@@ -108,18 +108,23 @@ export const KanbanCard = memo(function KanbanCard({
   onToggleSelect,
   selectionTarget = null,
 }: KanbanCardProps) {
-  const { useWorktrees, currentProject, showAllWorktreesByProject, getPrimaryWorktreeBranch } =
+  const { useWorktrees, currentProject, showAllWorktreesByProject, worktreePanelVisibleByProject, getPrimaryWorktreeBranch } =
     useAppStore(
       useShallow((state) => ({
         useWorktrees: state.useWorktrees,
         currentProject: state.currentProject,
         showAllWorktreesByProject: state.showAllWorktreesByProject,
+        worktreePanelVisibleByProject: state.worktreePanelVisibleByProject,
         getPrimaryWorktreeBranch: state.getPrimaryWorktreeBranch,
       }))
     );
-  const showAllWorktrees = currentProject?.path
+  const rawShowAllWorktrees = currentProject?.path
     ? (showAllWorktreesByProject[currentProject.path] ?? false)
     : false;
+  const isWorktreePanelVisible = currentProject?.path
+    ? (worktreePanelVisibleByProject[currentProject.path] ?? true)
+    : true;
+  const showAllWorktrees = rawShowAllWorktrees || !isWorktreePanelVisible;
   const mainBranch = currentProject?.path ? getPrimaryWorktreeBranch(currentProject.path) : null;
   // A card should display as "actively running" if it's in the runningAutoTasks list
   // AND in an execution-compatible status. However, there's a race window where a feature
