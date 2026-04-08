@@ -26,6 +26,7 @@
 
 import path from 'path';
 import type {
+  AgentQuestion,
   CompletedStageState,
   Feature,
   PipelineExecutionState,
@@ -42,7 +43,10 @@ import {
 } from '@pegasus/platform';
 import * as secureFs from '../lib/secure-fs.js';
 import { compileStage } from './pipeline-compiler.js';
+import { PauseExecutionError } from './pause-execution-error.js';
+import { formatAnsweredAgentQuestions } from './question-service.js';
 import type { TypedEventBus } from './typed-event-bus.js';
+import type { QuestionService } from './question-service.js';
 
 const logger = createLogger('StageRunner');
 
@@ -176,7 +180,8 @@ export interface StageRunResult {
 export class StageRunner {
   constructor(
     private eventBus: TypedEventBus,
-    private runAgentFn: StageRunAgentFn
+    private runAgentFn: StageRunAgentFn,
+    private questionService?: QuestionService
   ) {}
 
   // ==========================================================================
@@ -464,6 +469,21 @@ export class StageRunner {
           : '')
     );
 
+    // Build stages context from existing question answers in feature.questionState.
+    // This populates {{stages.<stageId>.question_response}} template variables for
+    // subsequent stage prompt compilation.
+    const stagesContext: Record<string, { question_response?: string; question_responses?: string }> = {};
+    if (feature.questionState?.questions) {
+      for (const q of feature.questionState.questions) {
+        if (q.status === 'answered' && q.answer !== undefined) {
+          stagesContext[q.stageId] = {
+            question_response: q.answer,
+            question_responses: q.answer,
+          };
+        }
+      }
+    }
+
     // Load any existing context from agent-output.md for the contextPath reference
     const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
 
@@ -487,10 +507,44 @@ export class StageRunner {
         };
       }
 
+      // Check for pre-stage YAML question. If the stage defines a question and
+      // no answer has been recorded yet, ask it and pause execution.
+      if (stage.question && this.questionService) {
+        const existingResponse = stagesContext[stage.id];
+        if (!existingResponse?.question_response) {
+          // Build the question options from shorthand string array (if provided)
+          const options = stage.question_meta?.options?.map((label) => ({ label })) ?? undefined;
+
+          const agentQuestion: AgentQuestion = {
+            id: crypto.randomUUID(),
+            stageId: stage.id,
+            question: stage.question,
+            type: stage.question_meta?.type ?? 'free-text',
+            options,
+            status: 'pending',
+            askedAt: new Date().toISOString(),
+            source: 'yaml',
+          };
+
+          logger.info(
+            `Stage "${stage.id}" requires user input before execution. ` +
+              `Asking question for feature ${featureId}.`
+          );
+
+          await this.questionService.askQuestion(projectPath, featureId, [agentQuestion]);
+          throw new PauseExecutionError(featureId, 'question');
+        }
+
+        logger.info(
+          `Stage "${stage.id}" question already answered for feature ${featureId}. Proceeding.`
+        );
+      }
+
       // Compile stage prompt with current accumulated context
       const stageCompilationContext: StageCompilationContext = {
         ...compilationContext,
         previous_context: accumulatedContext,
+        stages: stagesContext,
       };
 
       const compilationResult = compileStage(stage, stageCompilationContext);
@@ -562,6 +616,17 @@ export class StageRunner {
           }
         );
       } catch (error) {
+        // PauseExecutionError signals an intentional pause (the agent asked
+        // the user a question, or a YAML pre-stage question fired). It MUST
+        // propagate up to ExecutionService unchanged so the catch block
+        // there can transition the feature to `waiting_question`. We check
+        // this BEFORE the abort-signal check below because the question
+        // pause path used to also abort the controller, which made
+        // `signal.aborted === true` look identical to a user-initiated stop.
+        if (error instanceof PauseExecutionError) {
+          throw error;
+        }
+
         const errorMessage = (error as Error).message || 'Unknown error';
 
         // Check if the error was caused by an abort
@@ -726,6 +791,18 @@ export class StageRunner {
     if (previousContext) {
       parts.push('### Previous Work');
       parts.push(previousContext);
+      parts.push('');
+    }
+
+    // When the agent paused mid-stage for an AskUserQuestion call and was
+    // resumed after the user answered, inject the prior Q&A so the agent has
+    // the answer in its new conversation context. YAML pre-stage questions
+    // (`source === 'yaml'`) are intentionally skipped here because their
+    // answers are routed via `{{stages.<stageId>.question_response}}` in the
+    // compiled stage prompt template.
+    const qaBlock = formatAnsweredAgentQuestions(feature.questionState);
+    if (qaBlock) {
+      parts.push(qaBlock);
       parts.push('');
     }
 

@@ -11,6 +11,8 @@ import * as secureFs from '../lib/secure-fs.js';
 import { TypedEventBus } from './typed-event-bus.js';
 import { FeatureStateManager } from './feature-state-manager.js';
 import { PlanApprovalService } from './plan-approval-service.js';
+import { extractAndPauseForAskUserQuestion } from './question-service.js';
+import type { QuestionService } from './question-service.js';
 import type { SettingsService } from './settings-service.js';
 import {
   parseTasksFromSpec,
@@ -70,7 +72,8 @@ export class AgentExecutor {
     private eventBus: TypedEventBus,
     private featureStateManager: FeatureStateManager,
     private planApprovalService: PlanApprovalService,
-    private settingsService: SettingsService | null = null
+    private settingsService: SettingsService | null = null,
+    private questionService: QuestionService | null = null
   ) {}
 
   async execute(
@@ -306,6 +309,11 @@ export class AgentExecutor {
               responseText += `\n🔧 Tool: ${block.name}\n`;
               if (block.input) responseText += `Input: ${JSON.stringify(block.input, null, 2)}\n`;
               scheduleWrite();
+              // If the agent invoked AskUserQuestion, persist the question(s),
+              // abort the stream, and throw PauseExecutionError. The throw
+              // propagates out of the try/finally to ExecutionService, which
+              // transitions the feature to `waiting_question`.
+              await this.maybePauseForAskUserQuestion(options, block);
             }
           }
         } else if (msg.type === 'error') {
@@ -425,6 +433,26 @@ export class AgentExecutor {
     }
   }
 
+  /**
+   * Thin wrapper that hands the current execution context to
+   * `extractAndPauseForAskUserQuestion`. Lives on the class so the three
+   * `tool_use` call sites stay readable; all real logic is in the free
+   * function so it can be unit-tested directly.
+   */
+  private async maybePauseForAskUserQuestion(
+    options: AgentExecutionOptions,
+    block: { name?: string; input?: unknown }
+  ): Promise<void> {
+    return extractAndPauseForAskUserQuestion({
+      questionService: this.questionService,
+      block,
+      featureId: options.featureId,
+      projectPath: options.projectPath,
+      abortController: options.abortController,
+      featureStatus: options.status,
+    });
+  }
+
   private async executeTasksLoop(
     options: AgentExecutionOptions,
     tasks: ParsedTask[],
@@ -541,13 +569,16 @@ export class AgentExecutor {
                   branchName,
                   phaseNumber: pn,
                 });
-            } else if (b.type === 'tool_use')
+            } else if (b.type === 'tool_use') {
               this.eventBus.emitAutoModeEvent('auto_mode_tool', {
                 featureId,
                 branchName,
                 tool: b.name,
                 input: b.input,
               });
+              // Pause execution if the agent asks the user a question mid-task.
+              await this.maybePauseForAskUserQuestion(options, b);
+            }
           }
         } else if (msg.type === 'error') {
           const fallback = `Error during task ${task.id}`;
@@ -854,13 +885,16 @@ export class AgentExecutor {
               branchName,
               content: b.text,
             });
-          } else if (b.type === 'tool_use')
+          } else if (b.type === 'tool_use') {
             this.eventBus.emitAutoModeEvent('auto_mode_tool', {
               featureId,
               branchName,
               tool: b.name,
               input: b.input,
             });
+            // Pause execution if the agent asks the user a question mid-continuation.
+            await this.maybePauseForAskUserQuestion(options, b);
+          }
         }
       else if (msg.type === 'error') {
         const cleanedError =

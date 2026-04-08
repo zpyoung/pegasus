@@ -12,6 +12,7 @@ import {
   Eye,
   Wand2,
   Archive,
+  MessageSquare,
 } from 'lucide-react';
 
 interface CardActionsProps {
@@ -33,6 +34,7 @@ interface CardActionsProps {
   onComplete?: () => void;
   onViewPlan?: () => void;
   onApprovePlan?: () => void;
+  onAnswerQuestion?: () => void;
 }
 
 export const CardActions = memo(function CardActions({
@@ -53,6 +55,7 @@ export const CardActions = memo(function CardActions({
   onComplete,
   onViewPlan,
   onApprovePlan,
+  onAnswerQuestion,
 }: CardActionsProps) {
   const showBacklogLogsButton = hasContext && !!onViewOutput;
 
@@ -122,6 +125,23 @@ export const CardActions = memo(function CardActions({
             </Button>
           )}
         </>
+      )}
+      {/* Answer Question button — feature is paused waiting for user input */}
+      {feature.status === 'waiting_question' && onAnswerQuestion && (
+        <Button
+          variant="default"
+          size="sm"
+          className="flex-1 min-w-0 h-7 text-[11px] bg-amber-500 hover:bg-amber-600 text-white animate-pulse"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAnswerQuestion();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          data-testid={`answer-question-${feature.id}`}
+        >
+          <MessageSquare className="w-3 h-3 mr-1 shrink-0" />
+          <span className="truncate">Answer Question</span>
+        </Button>
       )}
       {!isCurrentAutoTask &&
         (feature.status === 'in_progress' ||

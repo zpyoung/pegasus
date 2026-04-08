@@ -469,14 +469,19 @@ Once authenticated, Pegasus will automatically detect and use your CLI credentia
 - 🔀 **Git Worktree Isolation** - Each feature executes in isolated git worktrees to protect your main branch
 - 📡 **Real-time Streaming** - Watch AI agents work in real-time with live tool usage, progress updates, and task completion
 - 🔄 **Follow-up Instructions** - Send additional instructions to running agents without stopping them
+- ❓ **Agent Question System** - Agents can pause mid-task to ask you clarifying questions and resume automatically once answered
+- 🧑‍💻 **Question Helper Chat** - While agents wait for answers, chat with a read-only helper sub-agent to explore the codebase (grep, read, glob) before responding
+- 📜 **YAML Pipelines** - Define multi-stage execution pipelines in YAML with Handlebars template variables, per-stage model overrides, and checkpoint-based resumption
+- 📥 **Pipeline Inputs** - Configure typed inputs (text, number, boolean) for pipelines that are available to agents via template variables
 
 ### AI & Planning
 
 - 🧠 **Multi-Model Support** - Choose from Claude Opus, Sonnet, and Haiku per feature
-- 💭 **Extended Thinking** - Enable thinking modes (none, medium, deep, ultra) for complex problem-solving
+- 💭 **Extended Thinking** - Configurable reasoning effort (none, medium, deep, ultra) for complex problem-solving with per-feature control
 - 📝 **Planning Modes** - Four planning levels: skip (direct implementation), lite (quick plan), spec (task breakdown), full (phased execution)
 - ✅ **Plan Approval** - Review and approve AI-generated plans before implementation begins
 - 📊 **Multi-Agent Task Execution** - Spec mode spawns dedicated agents per task for focused implementation
+- 🔌 **Multi-Provider Support** - Extensible provider system with six built-in providers: Claude (Anthropic), OpenAI Codex, GitHub Copilot, Cursor, Google Gemini, and OpenCode
 
 ### Project Management
 
@@ -494,6 +499,7 @@ Once authenticated, Pegasus will automatically detect and use your CLI credentia
 - 👤 **AI Profiles** - Create custom agent configurations with different prompts, models, and settings
 - 📜 **Session History** - Persistent chat sessions across restarts with full conversation history
 - 🔍 **Git Diff Viewer** - Review changes made by agents before approving
+- ✨ **Feature Enhancement** - AI-powered description improvement with modes: improve, technical, simplify, acceptance criteria, and UX review
 
 ### Developer Tools
 
@@ -512,6 +518,8 @@ Once authenticated, Pegasus will automatically detect and use your CLI credentia
 - 📊 **Usage Tracking** - Monitor Claude API usage with detailed metrics
 - 🔊 **Audio Notifications** - Optional completion sounds (mutable in settings)
 - 💾 **Auto-save** - All work automatically persisted to `.pegasus/` directory
+- 🔄 **Recovery & Resilience** - Automatic recovery of orphaned features on restart, pipeline checkpoint resumption, and question state persistence across restarts
+- 🧩 **MCP Extensibility** - Model Context Protocol SDK integration for extending agent capabilities with custom tools
 
 ## Tech Stack
 
@@ -539,6 +547,10 @@ Once authenticated, Pegasus will automatically detect and use your CLI credentia
 - **Claude Agent SDK** - AI agent integration (@anthropic-ai/claude-agent-sdk)
 - **WebSocket (ws)** - Real-time event streaming
 - **node-pty** - PTY terminal sessions
+- **Zod** - Schema validation for API and pipeline inputs
+- **Handlebars** - Template compilation for pipeline stage prompts
+- **YAML** - Pipeline definition parsing
+- **MCP SDK** - Model Context Protocol for agent extensibility
 
 ### Testing & Quality
 
@@ -557,6 +569,8 @@ Once authenticated, Pegasus will automatically detect and use your CLI credentia
 - **@pegasus/model-resolver** - Claude model alias resolution
 - **@pegasus/dependency-resolver** - Feature dependency ordering
 - **@pegasus/git-utils** - Git operations and worktree management
+- **@pegasus/spec-parser** - Specification parsing and analysis
+- **@pegasus/chat-ui** - Headless React chat UI components (messages, input, tool timeline, streaming)
 
 ## Available Views
 
@@ -591,7 +605,7 @@ All shortcuts are customizable in Settings. Default shortcuts:
 
 ### Monorepo Structure
 
-Pegasus is built as a pnpm workspace monorepo with two main applications and seven shared packages:
+Pegasus is built as a pnpm workspace monorepo with two main applications and nine shared packages:
 
 ```text
 pegasus/
@@ -605,27 +619,33 @@ pegasus/
     ├── platform/               # Path management, security
     ├── model-resolver/         # Claude model aliasing
     ├── dependency-resolver/    # Feature dependency ordering
-    └── git-utils/              # Git operations & worktree management
+    ├── git-utils/              # Git operations & worktree management
+    ├── spec-parser/            # Specification parsing and analysis
+    └── chat-ui/                # Headless React chat UI components
 ```
 
 ### How It Works
 
 1. **Feature Definition** - Users create feature cards on the Kanban board with descriptions, images, and configuration
 2. **Git Worktree Creation** - When a feature starts, a git worktree is created for isolated development
-3. **Agent Execution** - Claude Agent SDK executes in the worktree with full file system and command access
+3. **Agent Execution** - The selected AI agent (Claude, Codex, Copilot, etc.) executes in the worktree with full file system and command access
 4. **Real-time Streaming** - Agent output streams via WebSocket to the frontend for live monitoring
-5. **Plan Approval** (optional) - For spec/full planning modes, agents generate plans that require user approval
-6. **Multi-Agent Tasks** (spec mode) - Each task in the spec gets a dedicated agent for focused implementation
-7. **Verification** - Features move to "Waiting Approval" where changes can be reviewed via git diff
-8. **Integration** - After approval, changes can be committed and PRs created from the worktree
+5. **Agent Questions** - Agents can pause execution to ask clarifying questions; answers are persisted and execution auto-resumes
+6. **YAML Pipeline Execution** - For pipeline-configured features, stages execute sequentially with template variable resolution and checkpoint-based resumption
+7. **Plan Approval** (optional) - For spec/full planning modes, agents generate plans that require user approval
+8. **Multi-Agent Tasks** (spec mode) - Each task in the spec gets a dedicated agent for focused implementation
+9. **Verification** - Features move to "Waiting Approval" where changes can be reviewed via git diff
+10. **Integration** - After approval, changes can be committed and PRs created from the worktree
 
 ### Key Architectural Patterns
 
 - **Event-Driven Architecture** - All server operations emit events that stream to the frontend
-- **Provider Pattern** - Extensible AI provider system (currently Claude, designed for future providers)
+- **Provider Pattern** - Extensible AI provider system with a registration-based factory supporting Claude, Codex, Copilot, Cursor, Gemini, and OpenCode
 - **Service-Oriented Backend** - Modular services for agent management, features, terminals, settings
 - **State Management** - Zustand with persistence for frontend state across restarts
 - **File-Based Storage** - No database; features stored as JSON files in `.pegasus/` directory
+- **Checkpoint-Based Resumption** - YAML pipelines and question flows use JSON checkpoint files to resume from where they left off after restart
+- **Error Classification** - `PauseExecutionError` distinguishes intentional pauses (questions, approvals) from actual failures, preventing false error reporting
 
 ### Security & Isolation
 
@@ -646,10 +666,12 @@ Stored in `{projectPath}/.pegasus/`:
 .pegasus/
 ├── features/              # Feature JSON files and images
 │   └── {featureId}/
-│       ├── feature.json   # Feature metadata
-│       ├── agent-output.md # AI agent output log
-│       └── images/        # Attached images
+│       ├── feature.json        # Feature metadata and question state
+│       ├── agent-output.md     # AI agent output log
+│       ├── pipeline-state.json # YAML pipeline execution checkpoints
+│       └── images/             # Attached images
 ├── context/               # Context files for AI agents
+├── pipelines/             # User-defined YAML pipeline definitions
 ├── worktrees/             # Git worktree metadata
 ├── validations/           # GitHub issue validation results
 ├── ideation/              # Brainstorming and analysis data
@@ -704,10 +726,6 @@ data/
 Join the **Agentic Jumpstart** Discord to connect with other builders exploring **agentic coding**:
 
 👉 [Agentic Jumpstart Discord](https://discord.gg/jjem7aEDKU)
-
-## Project Status
-
-**This project is no longer actively maintained.** The codebase is provided as-is for those who wish to use, study, or fork it. No bug fixes, security updates, or new features are being developed. Community contributions may still be accepted, but there is no guarantee of review or merge.
 
 ## License
 

@@ -31,6 +31,18 @@ describe('sdk-options.ts', () => {
       expect(TOOL_PRESETS.fullAccess).toContain('Bash');
     });
 
+    it('should include AskUserQuestion in fullAccess so agents can pause for user input', async () => {
+      // Regression guard: without AskUserQuestion in the allowlist the Claude
+      // Agent SDK filters it out of the model's available tools, and the
+      // agent-question-system.design.md mid-execution pause path is dead.
+      // See apps/server/src/services/question-service.ts →
+      // extractAndPauseForAskUserQuestion, which only fires when the SDK
+      // actually emits the AskUserQuestion tool_use block.
+      const { TOOL_PRESETS } = await import('@/lib/sdk-options.js');
+      expect(TOOL_PRESETS.fullAccess).toContain('AskUserQuestion');
+      expect(TOOL_PRESETS.chat).toContain('AskUserQuestion');
+    });
+
     it('should export chat tools matching fullAccess', async () => {
       const { TOOL_PRESETS } = await import('@/lib/sdk-options.js');
       expect(TOOL_PRESETS.chat).toEqual(TOOL_PRESETS.fullAccess);

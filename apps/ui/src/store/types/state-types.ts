@@ -87,6 +87,8 @@ export interface AppState {
   lastSelectedSessionByProject: Record<string, string>; // projectPath -> sessionId
   // Agent model selection (per-session, keyed by sessionId)
   agentModelBySession: Record<string, PhaseModelEntry>; // sessionId -> model selection
+  // Helper chat model selection (per-feature, keyed by featureId)
+  helperModelByFeature: Record<string, PhaseModelEntry>; // featureId -> model selection
 
   // Theme
   theme: ThemeMode;
@@ -727,6 +729,9 @@ export interface AppActions {
   // Agent model selection actions
   setAgentModelForSession: (sessionId: string, model: PhaseModelEntry) => void;
   getAgentModelForSession: (sessionId: string) => PhaseModelEntry | null;
+  // Helper chat model selection actions (per-feature)
+  setHelperModelForFeature: (featureId: string, model: PhaseModelEntry) => void;
+  getHelperModelForFeature: (featureId: string) => PhaseModelEntry | null;
 
   // Board Background actions
   setBoardBackground: (projectPath: string, imagePath: string | null) => void;

@@ -20,6 +20,7 @@ import {
   filterClaudeMdFromContext,
 } from '../lib/settings-helpers.js';
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
+import { PauseExecutionError } from './pause-execution-error.js';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { FeatureStateManager } from './feature-state-manager.js';
 import type { AgentExecutor } from './agent-executor.js';
@@ -427,6 +428,17 @@ export class PipelineOrchestrator {
         });
       }
     } catch (error) {
+      // PauseExecutionError signals an intentional pause (the agent asked the
+      // user a question via AskUserQuestion). It must propagate up to
+      // ExecutionService.executeFeature's catch block so the feature
+      // transitions to `waiting_question`. We do NOT release the feature here
+      // because the outer caller's finally already handles release; rethrowing
+      // is the simplest way to keep the pause path identical to the legacy
+      // (non-resume) flow.
+      if (error instanceof PauseExecutionError) {
+        throw error;
+      }
+
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
         if (runningEntry.isAutoMode) {

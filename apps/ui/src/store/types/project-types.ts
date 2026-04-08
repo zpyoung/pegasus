@@ -2,6 +2,7 @@ import type {
   Feature as BaseFeature,
   FeatureImagePath,
   FeatureTextFilePath,
+  FeatureQuestionState,
   ThinkingLevel,
   ReasoningEffort,
   FeatureStatusWithPipeline,
@@ -46,6 +47,7 @@ export interface Feature extends Omit<
   reasoningEffort?: ReasoningEffort; // Explicit type to override BaseFeature's index signature
   providerId?: string; // Explicit type to override BaseFeature's index signature
   summary?: string; // Explicit type to override BaseFeature's index signature
+  questionState?: FeatureQuestionState; // Explicit type to override BaseFeature's index signature
 }
 
 // File tree node for project analysis

@@ -55,6 +55,7 @@ interface KanbanBoardProps {
   onImplement: (feature: Feature) => void;
   onViewPlan: (feature: Feature) => void;
   onApprovePlan: (feature: Feature) => void;
+  onAnswerQuestion?: (feature: Feature) => void;
   onSpawnTask?: (feature: Feature) => void;
   onDuplicate?: (feature: Feature) => void;
   onDuplicateAsChild?: (feature: Feature) => void;
@@ -303,6 +304,7 @@ export const KanbanBoard = memo(function KanbanBoard({
   onImplement,
   onViewPlan,
   onApprovePlan,
+  onAnswerQuestion,
   onSpawnTask,
   onDuplicate,
   onDuplicateAsChild,
@@ -604,6 +606,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                                       onImplement={() => onImplement(feature)}
                                       onViewPlan={() => onViewPlan(feature)}
                                       onApprovePlan={() => onApprovePlan(feature)}
+                                      onAnswerQuestion={onAnswerQuestion ? () => onAnswerQuestion(feature) : undefined}
                                       onSpawnTask={() => onSpawnTask?.(feature)}
                                       onDuplicate={() => onDuplicate?.(feature)}
                                       onDuplicateAsChild={() => onDuplicateAsChild?.(feature)}
@@ -653,6 +656,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                                 onImplement={() => onImplement(feature)}
                                 onViewPlan={() => onViewPlan(feature)}
                                 onApprovePlan={() => onApprovePlan(feature)}
+                                onAnswerQuestion={onAnswerQuestion ? () => onAnswerQuestion(feature) : undefined}
                                 onSpawnTask={() => onSpawnTask?.(feature)}
                                 onDuplicate={() => onDuplicate?.(feature)}
                                 onDuplicateAsChild={() => onDuplicateAsChild?.(feature)}

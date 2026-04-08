@@ -46,7 +46,9 @@ export type AutoModeEventType =
   | 'pipeline_test_failed'
   | 'pipeline_merge_conflict'
   | 'feature_status_changed'
-  | 'features_reconciled';
+  | 'features_reconciled'
+  | 'question_required'
+  | 'question_answered';
 
 /**
  * TypedEventBus wraps an EventEmitter to provide type-safe event emission

@@ -46,6 +46,48 @@ export interface YamlStageConfig {
   claude_flags?: YamlClaudeFlags;
   /** Whether this stage requires user approval before proceeding to the next stage */
   requires_approval?: boolean;
+  /** Pre-stage question asked to the user before execution begins */
+  question?: string;
+  /** Pre-stage question metadata (type, options) */
+  question_meta?: {
+    type?: import('./feature.js').QuestionType;
+    /** Shorthand: array of option label strings */
+    options?: string[];
+  };
+}
+
+/**
+ * Declares a single user-provided input field for a pipeline.
+ *
+ * Pipeline inputs allow pipeline authors to formally declare what information
+ * a user must provide before the pipeline can run. Values are made available
+ * as `{{inputs.<name>}}` template variables in stage prompts.
+ *
+ * @example
+ * ```yaml
+ * inputs:
+ *   target_module:
+ *     type: string
+ *     required: true
+ *     description: "The module to refactor (e.g. auth, payments)"
+ *   max_iterations:
+ *     type: number
+ *     default: 3
+ *     description: "Maximum retry attempts"
+ *   run_tests:
+ *     type: boolean
+ *     default: true
+ * ```
+ */
+export interface YamlPipelineInput {
+  /** The data type for this input field */
+  type: 'string' | 'number' | 'boolean';
+  /** Whether this input must be provided before the pipeline can run */
+  required?: boolean;
+  /** Default value applied when the user leaves the field empty */
+  default?: string | number | boolean;
+  /** Human-readable description shown as help text in the UI */
+  description?: string;
 }
 
 /**
@@ -109,6 +151,20 @@ export interface YamlPipelineConfig {
   execution?: YamlExecutionConfig;
   /** Default settings applied to stages that don't override them */
   defaults?: YamlPipelineDefaults;
+  /**
+   * Declared input fields that the user must provide when creating a task with this pipeline.
+   * Values are available as `{{inputs.<name>}}` template variables in stage prompts.
+   *
+   * @example
+   * ```yaml
+   * inputs:
+   *   target_module:
+   *     type: string
+   *     required: true
+   *     description: "Module to work on"
+   * ```
+   */
+  inputs?: Record<string, YamlPipelineInput>;
   /** Ordered list of stages in this pipeline */
   stages: YamlStageConfig[];
 }
@@ -137,6 +193,13 @@ export interface ResolvedStage {
   max_turns: number;
   /** Whether this stage requires user approval before proceeding */
   requires_approval: boolean;
+  /** Pre-stage question to ask the user before this stage executes */
+  question?: string;
+  /** Metadata for the pre-stage question (type and options) */
+  question_meta?: {
+    type?: import('./feature.js').QuestionType;
+    options?: string[];
+  };
 }
 
 /**
@@ -249,6 +312,12 @@ export interface StageCompilationContext {
   inputs?: Record<string, string | number | boolean>;
   /** Accumulated output/context from previous pipeline stages */
   previous_context?: string;
+  /**
+   * Per-stage question responses for template variable access.
+   * Access via `{{stages.<stageId>.question_response}}` (single) or
+   * `{{stages.<stageId>.question_responses}}` (formatted multi-question Q&A block).
+   */
+  stages?: Record<string, { question_response?: string; question_responses?: string }>;
 }
 
 /**

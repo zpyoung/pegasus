@@ -66,6 +66,7 @@ import {
   MergeRebaseDialog,
   QuickAddDialog,
   ChangePRNumberDialog,
+  QuestionDialog,
 } from './board-view/dialogs';
 import type { DependencyLinkType } from './board-view/dialogs';
 import { PipelineSettingsDialog } from './board-view/dialogs/pipeline-settings-dialog';
@@ -275,6 +276,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const [searchQuery, setSearchQuery] = useState('');
   // Plan approval loading state
   const [isPlanApprovalLoading, setIsPlanApprovalLoading] = useState(false);
+  // Question dialog state
+  const [questionFeature, setQuestionFeature] = useState<Feature | null>(null);
+  const [isQuestionLoading, setIsQuestionLoading] = useState(false);
+  // Pending auto-open: featureId from question_required event waiting for features to reload
+  const [pendingQuestionFeatureId, setPendingQuestionFeatureId] = useState<string | null>(null);
   // Derive spec creation state from store - check if current project is the one being created
   const isCreatingSpec = specCreatingForProject === currentProject?.path;
   const creatingSpecProjectPath = specCreatingForProject ?? undefined;
@@ -1857,6 +1863,68 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     [currentProject, setPendingPlanApproval]
   );
 
+  const handleOpenQuestionDialog = useCallback((feature: Feature) => {
+    setQuestionFeature(feature);
+  }, []);
+
+  // Auto-open QuestionDialog when question_required event is received (NFR-001).
+  // Sets a pending featureId; the next hookFeatures update will pick it up and open the dialog.
+  useEffect(() => {
+    const electronApi = getElectronAPI();
+    if (!electronApi?.autoMode) return;
+
+    const unsubscribe = electronApi.autoMode.onEvent((event) => {
+      if (event.type === 'question_required' && event.featureId) {
+        // Only auto-open if no dialog is already open
+        setPendingQuestionFeatureId((prev) => prev ?? event.featureId);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // When the feature list reloads and we have a pending auto-open, find the feature and open dialog.
+  useEffect(() => {
+    if (!pendingQuestionFeatureId || questionFeature) return;
+    const feature = hookFeatures.find(
+      (f) => f.id === pendingQuestionFeatureId && f.questionState?.questions?.length
+    );
+    if (feature) {
+      setQuestionFeature(feature);
+      setPendingQuestionFeatureId(null);
+    }
+  }, [hookFeatures, pendingQuestionFeatureId, questionFeature]);
+
+  /**
+   * Submit all answers from the question dialog sequentially.
+   * FR-004: The dialog collects all answers at once and passes them here as a batch.
+   */
+  const handleAnswerAllQuestions = useCallback(
+    async (answers: Array<{ questionId: string; answer: string }>) => {
+      if (!questionFeature || !currentProject) return;
+      const electronApi = getElectronAPI();
+      if (!electronApi?.autoMode?.answerQuestion) {
+        throw new Error('Answer question API not available');
+      }
+      setIsQuestionLoading(true);
+      try {
+        for (const { questionId, answer } of answers) {
+          await electronApi.autoMode.answerQuestion(
+            currentProject.path,
+            questionFeature.id,
+            questionId,
+            answer
+          );
+        }
+        setQuestionFeature(null);
+        await loadFeatures();
+      } finally {
+        setIsQuestionLoading(false);
+      }
+    },
+    [questionFeature, currentProject, loadFeatures]
+  );
+
   if (!currentProject) {
     return (
       <div className="flex-1 flex items-center justify-center" data-testid="board-view-no-project">
@@ -2013,6 +2081,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                   onComplete: handleCompleteFeature,
                   onViewPlan: (feature) => setViewPlanFeature(feature),
                   onApprovePlan: handleOpenApprovalDialog,
+                  onAnswerQuestion: handleOpenQuestionDialog,
                   onSpawnTask: (feature) => {
                     setSpawnParentFeature(feature);
                     setShowAddDialog(true);
@@ -2062,6 +2131,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                 onImplement={handleStartImplementation}
                 onViewPlan={(feature) => setViewPlanFeature(feature)}
                 onApprovePlan={handleOpenApprovalDialog}
+                onAnswerQuestion={handleOpenQuestionDialog}
                 onSpawnTask={(feature) => {
                   setSpawnParentFeature(feature);
                   setShowAddDialog(true);
@@ -2324,6 +2394,21 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         onApprove={handlePlanApprove}
         onReject={handlePlanReject}
         isLoading={isPlanApprovalLoading}
+      />
+
+      {/* Question Dialog */}
+      <QuestionDialog
+        open={questionFeature !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuestionFeature(null);
+          }
+        }}
+        feature={questionFeature}
+        questions={questionFeature?.questionState?.questions ?? []}
+        onSubmitAllAnswers={handleAnswerAllQuestions}
+        isLoading={isQuestionLoading}
+        projectPath={currentProject?.path}
       />
 
       {/* View Plan Dialog (read-only) */}

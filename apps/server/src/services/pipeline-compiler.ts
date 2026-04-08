@@ -84,6 +84,13 @@ export const stageConfigSchema = z
     prompt: z.string().min(1, 'Stage prompt must be a non-empty string'),
     claude_flags: claudeFlagsSchema.optional(),
     requires_approval: z.boolean().optional(),
+    question: z.string().min(1, 'Question must be a non-empty string').optional(),
+    question_meta: z
+      .object({
+        type: z.enum(['free-text', 'single-select', 'multi-select']).optional(),
+        options: z.array(z.string()).optional(),
+      })
+      .optional(),
   })
   .strict();
 
@@ -117,6 +124,21 @@ export const pipelineDefaultsSchema = z
   .strict();
 
 /**
+ * Schema for a single declared pipeline input field.
+ *
+ * Each input field declares its type, whether it is required, an optional
+ * default value, and an optional human-readable description for display in the UI.
+ */
+export const pipelineInputSchema = z
+  .object({
+    type: z.enum(['string', 'number', 'boolean']),
+    required: z.boolean().optional(),
+    default: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    description: z.string().optional(),
+  })
+  .strict();
+
+/**
  * Top-level schema for a complete YAML pipeline configuration file.
  *
  * Validates the entire structure including nested stages, ensuring:
@@ -131,6 +153,7 @@ export const yamlPipelineConfigSchema = z
     description: z.string().min(1, 'Pipeline description must be a non-empty string'),
     execution: executionConfigSchema.optional(),
     defaults: pipelineDefaultsSchema.optional(),
+    inputs: z.record(z.string(), pipelineInputSchema).optional(),
     stages: z
       .array(stageConfigSchema)
       .min(1, 'Pipeline must have at least one stage'),
@@ -327,6 +350,8 @@ export function compilePipeline(config: YamlPipelineConfig): ResolvedStage[] {
       stage.claude_flags?.permission_mode ?? defaults.permission_mode ?? DEFAULT_PERMISSION_MODE,
     max_turns: stage.claude_flags?.max_turns ?? defaults.max_turns ?? DEFAULT_MAX_TURNS,
     requires_approval: stage.requires_approval ?? false,
+    question: stage.question,
+    question_meta: stage.question_meta,
   }));
 }
 
@@ -496,6 +521,7 @@ export function compileStage(
     project: context.project,
     inputs: context.inputs ?? {},
     previous_context: context.previous_context ?? '',
+    stages: context.stages ?? {},
   };
 
   // Detect missing variables before compilation

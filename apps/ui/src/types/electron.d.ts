@@ -8,7 +8,7 @@ import type {
   ZaiUsageResponse,
   GeminiUsageResponse,
 } from '@/store/app-store';
-import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo } from '@pegasus/types';
+import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo, AgentQuestion } from '@pegasus/types';
 export type { MergeStateInfo } from '@pegasus/types';
 
 export interface ImageAttachment {
@@ -394,6 +394,20 @@ export type AutoModeEvent =
       reconciledCount: number;
       reconciledFeatureIds: string[];
       message: string;
+    }
+  | {
+      type: 'question_required';
+      featureId: string;
+      projectPath?: string;
+      branchName?: string | null;
+      questions: AgentQuestion[];
+    }
+  | {
+      type: 'question_answered';
+      featureId: string;
+      projectPath?: string;
+      questionId: string;
+      allAnswered: boolean;
     };
 
 export type SpecRegenerationEvent =

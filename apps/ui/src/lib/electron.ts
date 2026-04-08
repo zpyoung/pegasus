@@ -620,6 +620,12 @@ export interface AutoModeAPI {
     editedPlan?: string,
     feedback?: string
   ) => Promise<{ success: boolean; error?: string }>;
+  answerQuestion: (
+    projectPath: string,
+    featureId: string,
+    questionId: string,
+    answer: string
+  ) => Promise<{ success: boolean; allAnswered?: boolean; error?: string }>;
   resumeInterrupted: (
     projectPath: string
   ) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -3377,6 +3383,16 @@ function createMockAutoModeAPI(): AutoModeAPI {
         feedback,
       });
       return { success: true };
+    },
+
+    answerQuestion: async (
+      projectPath: string,
+      featureId: string,
+      questionId: string,
+      answer: string
+    ) => {
+      console.log('[Mock] Answer question:', { projectPath, featureId, questionId, answer });
+      return { success: true, allAnswered: true };
     },
 
     resumeInterrupted: async (projectPath: string) => {

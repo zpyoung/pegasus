@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@source "../../../libs/chat-ui/src";
 
 /* Dark themes */
 @custom-variant dark (&:is(.dark *));

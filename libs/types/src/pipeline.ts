@@ -37,6 +37,7 @@ export type FeatureStatusWithPipeline =
   | 'in_progress'
   | 'interrupted'
   | 'waiting_approval'
+  | 'waiting_question'
   | 'verified'
   | 'completed'
   | PipelineStatus;

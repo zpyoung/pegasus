@@ -1,0 +1,37 @@
+{
+  "name": "@pegasus/chat-ui",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Headless, transport-agnostic React chat UI primitives for Pegasus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "pegasus",
+    "chat",
+    "ui"
+  ],
+  "author": "Pegasus Team",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "5.9.3"
+  }
+}

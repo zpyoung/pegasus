@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Copy,
   Repeat,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export interface RowActionHandlers {
   onComplete?: () => void;
   onViewPlan?: () => void;
   onApprovePlan?: () => void;
+  onAnswerQuestion?: () => void;
   onSpawnTask?: () => void;
   onDuplicate?: () => void;
   onDuplicateAsChild?: () => void;
@@ -407,6 +409,14 @@ export const RowActions = memo(function RowActions({
                   icon={FileText}
                   label="Approve Plan"
                   onClick={withClose(handlers.onApprovePlan)}
+                  variant="warning"
+                />
+              )}
+              {feature.status === 'waiting_question' && handlers.onAnswerQuestion && (
+                <MenuItem
+                  icon={MessageSquare}
+                  label="Answer Question"
+                  onClick={withClose(handlers.onAnswerQuestion)}
                   variant="warning"
                 />
               )}
@@ -913,6 +923,7 @@ export function createRowActionHandlers(
     complete?: (id: string) => void;
     viewPlan?: (id: string) => void;
     approvePlan?: (id: string) => void;
+    answerQuestion?: (id: string) => void;
     spawnTask?: (id: string) => void;
     duplicate?: (id: string) => void;
     duplicateAsChild?: (id: string) => void;
@@ -932,6 +943,7 @@ export function createRowActionHandlers(
     onComplete: actions.complete ? () => actions.complete!(featureId) : undefined,
     onViewPlan: actions.viewPlan ? () => actions.viewPlan!(featureId) : undefined,
     onApprovePlan: actions.approvePlan ? () => actions.approvePlan!(featureId) : undefined,
+    onAnswerQuestion: actions.answerQuestion ? () => actions.answerQuestion!(featureId) : undefined,
     onSpawnTask: actions.spawnTask ? () => actions.spawnTask!(featureId) : undefined,
     onDuplicate: actions.duplicate ? () => actions.duplicate!(featureId) : undefined,
     onDuplicateAsChild: actions.duplicateAsChild

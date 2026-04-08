@@ -377,6 +377,11 @@ export function useBoardColumnFeatures({
         if (matchesWorktree) {
           map[status].push(f);
         }
+      } else if (status === 'waiting_question') {
+        // waiting_question: feature is paused awaiting user input — display in in_progress column
+        if (matchesWorktree) {
+          map.in_progress.push(f);
+        }
       } else if (status.startsWith('pipeline_')) {
         // Handle pipeline statuses - initialize array if needed
         if (matchesWorktree) {

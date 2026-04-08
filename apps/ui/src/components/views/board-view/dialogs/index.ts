@@ -12,6 +12,7 @@ export { EditFeatureDialog } from './edit-feature-dialog';
 export { FollowUpDialog, type FollowUpHistoryEntry } from './follow-up-dialog';
 export { MergeWorktreeDialog, type MergeConflictInfo } from './merge-worktree-dialog';
 export { PlanApprovalDialog } from './plan-approval-dialog';
+export { QuestionDialog } from './question-dialog';
 export { MassEditDialog } from './mass-edit-dialog';
 export { MergeRebaseDialog, type PullStrategy } from './merge-rebase-dialog';
 export { PushToRemoteDialog } from './push-to-remote-dialog';

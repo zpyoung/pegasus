@@ -43,6 +43,7 @@ export interface ListViewActionHandlers {
   onComplete?: (feature: Feature) => void;
   onViewPlan?: (feature: Feature) => void;
   onApprovePlan?: (feature: Feature) => void;
+  onAnswerQuestion?: (feature: Feature) => void;
   onSpawnTask?: (feature: Feature) => void;
   onDuplicate?: (feature: Feature) => void;
   onDuplicateAsChild?: (feature: Feature) => void;
@@ -365,6 +366,12 @@ export const ListView = memo(function ListView({
           ? (id) => {
               const f = allFeatures.find((f) => f.id === id);
               if (f) actionHandlers.onApprovePlan?.(f);
+            }
+          : undefined,
+        answerQuestion: actionHandlers.onAnswerQuestion
+          ? (id) => {
+              const f = allFeatures.find((f) => f.id === id);
+              if (f) actionHandlers.onAnswerQuestion?.(f);
             }
           : undefined,
         spawnTask: actionHandlers.onSpawnTask

@@ -368,8 +368,9 @@ export function useBoardActions({
         workMode?: 'current' | 'auto' | 'custom';
         dependencies?: string[];
         childDependencies?: string[]; // Feature IDs that should depend on this feature
-        pipeline?: string; // YAML pipeline slug
-        pipelineInputs?: Record<string, string | number | boolean>; // Pipeline template variable values
+        excludedPipelineSteps?: string[];
+        pipeline?: string;
+        pipelineInputs?: Record<string, string | number | boolean>;
       },
       descriptionHistorySource?: 'enhance' | 'edit',
       enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',

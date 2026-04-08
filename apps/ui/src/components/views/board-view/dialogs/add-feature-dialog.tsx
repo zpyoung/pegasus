@@ -260,20 +260,49 @@ export function AddFeatureDialog({
 
   // YAML Pipeline selection state
   const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>('');
-  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string>>({});
+  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string | boolean>>({});
 
   // Discover available YAML pipelines
   const { data: discoveredPipelines = [] } = useDiscoverPipelines(projectPath);
 
-  // Compute the selected pipeline and its required input variables
+  // Compute the selected pipeline
   const selectedPipeline = useMemo(
     () => discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
     [discoveredPipelines, selectedPipelineSlug]
   );
-  const pipelineInputVariables = useMemo(
-    () => (selectedPipeline ? extractPipelineInputVariables(selectedPipeline.config.stages) : []),
-    [selectedPipeline]
-  );
+
+  // Compute input field definitions: prefer formally declared inputs, fall back to dynamic extraction
+  const pipelineInputDefinitions = useMemo(() => {
+    if (!selectedPipeline) return [];
+    const declared = selectedPipeline.config.inputs;
+    if (declared && Object.keys(declared).length > 0) {
+      return Object.entries(declared).map(([name, input]) => ({
+        name,
+        type: input.type,
+        required: input.required ?? false,
+        default: input.default,
+        description: input.description,
+      }));
+    }
+    // Fall back to dynamically extracting {{inputs.X}} references from stage prompts
+    return extractPipelineInputVariables(selectedPipeline.config.stages).map((varName) => ({
+      name: varName,
+      type: 'string' as const,
+      required: false,
+      default: undefined,
+      description: undefined,
+    }));
+  }, [selectedPipeline]);
+
+  // Whether any required input fields are empty — blocks form submission when true
+  const hasMissingRequiredInputs = useMemo(() => {
+    return pipelineInputDefinitions.some((field) => {
+      if (!field.required) return false;
+      if (field.type === 'boolean') return false; // Checkboxes always have a value
+      const value = pipelineInputs[field.name];
+      return value === undefined || String(value).trim() === '';
+    });
+  }, [pipelineInputDefinitions, pipelineInputs]);
 
   // Get defaults from store
   const {
@@ -437,12 +466,28 @@ export function AddFeatureDialog({
           : undefined;
 
     // Build pipeline inputs as Record<string, string | number | boolean>
-    // Only include non-empty input values
+    // Apply type coercion based on declared input types
     const finalPipelineInputs: Record<string, string | number | boolean> = {};
     if (selectedPipelineSlug) {
-      for (const [key, value] of Object.entries(pipelineInputs)) {
-        if (value.trim()) {
-          finalPipelineInputs[key] = value;
+      for (const field of pipelineInputDefinitions) {
+        const rawValue = pipelineInputs[field.name];
+        if (field.type === 'boolean') {
+          finalPipelineInputs[field.name] = typeof rawValue === 'boolean' ? rawValue : (field.default ?? false);
+        } else if (field.type === 'number') {
+          const strValue = String(rawValue ?? '').trim();
+          if (strValue !== '') {
+            const numValue = Number(strValue);
+            finalPipelineInputs[field.name] = isNaN(numValue) ? strValue : numValue;
+          } else if (field.default !== undefined) {
+            finalPipelineInputs[field.name] = field.default;
+          }
+        } else {
+          const strValue = String(rawValue ?? '').trim();
+          if (strValue !== '') {
+            finalPipelineInputs[field.name] = strValue;
+          } else if (field.default !== undefined) {
+            finalPipelineInputs[field.name] = String(field.default);
+          }
         }
       }
     }
@@ -755,9 +800,28 @@ export function AddFeatureDialog({
                 <Select
                   value={selectedPipelineSlug}
                   onValueChange={(value) => {
-                    setSelectedPipelineSlug(value === '__none__' ? '' : value);
-                    // Reset inputs when pipeline changes
-                    setPipelineInputs({});
+                    const slug = value === '__none__' ? '' : value;
+                    setSelectedPipelineSlug(slug);
+                    // Reset inputs and pre-fill defaults when pipeline changes
+                    if (slug) {
+                      const pipeline = discoveredPipelines.find((p) => p.slug === slug);
+                      const declared = pipeline?.config.inputs;
+                      if (declared && Object.keys(declared).length > 0) {
+                        const defaults: Record<string, string | boolean> = {};
+                        for (const [name, input] of Object.entries(declared)) {
+                          if (input.type === 'boolean') {
+                            defaults[name] = typeof input.default === 'boolean' ? input.default : false;
+                          } else if (input.default !== undefined) {
+                            defaults[name] = String(input.default);
+                          }
+                        }
+                        setPipelineInputs(defaults);
+                      } else {
+                        setPipelineInputs({});
+                      }
+                    } else {
+                      setPipelineInputs({});
+                    }
                   }}
                 >
                   <SelectTrigger data-testid="add-feature-pipeline-select">
@@ -801,27 +865,87 @@ export function AddFeatureDialog({
                 </div>
               )}
 
-              {/* Dynamic input fields for pipeline template variables */}
-              {pipelineInputVariables.length > 0 && (
+              {/* Pipeline input fields - typed widgets for declared inputs, text fields for dynamic */}
+              {pipelineInputDefinitions.length > 0 && (
                 <div className="space-y-3 pt-1">
-                  <Label className="text-xs text-muted-foreground">Pipeline Inputs</Label>
-                  {pipelineInputVariables.map((varName) => (
-                    <div key={varName} className="space-y-1">
-                      <Label htmlFor={`pipeline-input-${varName}`} className="text-xs font-medium">
-                        {formatInputLabel(varName)}
-                      </Label>
-                      <Input
-                        id={`pipeline-input-${varName}`}
-                        value={pipelineInputs[varName] || ''}
-                        onChange={(e) =>
-                          setPipelineInputs((prev) => ({
-                            ...prev,
-                            [varName]: e.target.value,
-                          }))
-                        }
-                        placeholder={`Enter ${formatInputLabel(varName).toLowerCase()}...`}
-                        data-testid={`add-feature-pipeline-input-${varName}`}
-                      />
+                  <Label className="text-xs text-muted-foreground">
+                    Pipeline Inputs
+                    {pipelineInputDefinitions.some((f) => f.required) && (
+                      <span className="text-destructive ml-1">* required</span>
+                    )}
+                  </Label>
+                  {pipelineInputDefinitions.map((field) => (
+                    <div key={field.name} className="space-y-1">
+                      {field.type === 'boolean' ? (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`pipeline-input-${field.name}`}
+                            checked={
+                              typeof pipelineInputs[field.name] === 'boolean'
+                                ? pipelineInputs[field.name]
+                                : false
+                            }
+                            onCheckedChange={(checked) =>
+                              setPipelineInputs((prev) => ({
+                                ...prev,
+                                [field.name]: !!checked,
+                              }))
+                            }
+                            data-testid={`add-feature-pipeline-input-${field.name}`}
+                          />
+                          <Label
+                            htmlFor={`pipeline-input-${field.name}`}
+                            className="text-xs font-medium cursor-pointer"
+                          >
+                            {formatInputLabel(field.name)}
+                          </Label>
+                          {field.description && (
+                            <span className="text-xs text-muted-foreground">
+                              {field.description}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Label
+                              htmlFor={`pipeline-input-${field.name}`}
+                              className="text-xs font-medium"
+                            >
+                              {formatInputLabel(field.name)}
+                            </Label>
+                            {field.required && (
+                              <span className="text-xs text-destructive" aria-label="required">
+                                *
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            id={`pipeline-input-${field.name}`}
+                            type={field.type === 'number' ? 'number' : 'text'}
+                            value={
+                              typeof pipelineInputs[field.name] === 'string'
+                                ? pipelineInputs[field.name]
+                                : ''
+                            }
+                            onChange={(e) =>
+                              setPipelineInputs((prev) => ({
+                                ...prev,
+                                [field.name]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              field.default !== undefined
+                                ? String(field.default)
+                                : `Enter ${formatInputLabel(field.name).toLowerCase()}...`
+                            }
+                            data-testid={`add-feature-pipeline-input-${field.name}`}
+                          />
+                          {field.description && (
+                            <p className="text-xs text-muted-foreground">{field.description}</p>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">
@@ -927,7 +1051,7 @@ export function AddFeatureDialog({
               onClick={handleAddAndStart}
               variant="secondary"
               data-testid="confirm-add-and-start-feature"
-              disabled={workMode === 'custom' && !branchName.trim()}
+              disabled={(workMode === 'custom' && !branchName.trim()) || hasMissingRequiredInputs}
             >
               <Play className="w-4 h-4 mr-2" />
               Make
@@ -938,7 +1062,7 @@ export function AddFeatureDialog({
             hotkey={{ key: 'Enter', cmdCtrl: true }}
             hotkeyActive={open}
             data-testid="confirm-add-feature"
-            disabled={workMode === 'custom' && !branchName.trim()}
+            disabled={(workMode === 'custom' && !branchName.trim()) || hasMissingRequiredInputs}
           >
             {isSpawnMode ? 'Spawn Task' : 'Add Feature'}
           </HotkeyButton>

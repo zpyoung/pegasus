@@ -72,6 +72,11 @@ data/
 test-results/
 test/
 
+# Playwright
+.playwright-cli/
+playwright-report/
+.playwright/
+
 # Nuitka build artifacts
 *.dist/
 pegasus.bin

@@ -143,6 +143,15 @@ export const TOOL_PRESETS = {
     'TodoWrite',
     'Task',
     'Skill',
+    // AskUserQuestion lets the agent pause mid-execution and ask the user
+    // structured questions. AgentExecutor intercepts this tool_use block in
+    // the assistant stream (via extractAndPauseForAskUserQuestion), persists
+    // the question, and throws PauseExecutionError so the feature transitions
+    // to `waiting_question`. Without this in the allowlist the SDK filters
+    // the tool out of the model's available-tools list and the agent can
+    // never call it — execution then ends as a generic failure and the
+    // feature falls back to `backlog`.
+    'AskUserQuestion',
   ] as const,
 
   /** Tools for chat/interactive mode */
@@ -160,6 +169,8 @@ export const TOOL_PRESETS = {
     'TodoWrite',
     'Task',
     'Skill',
+    // Kept in sync with fullAccess (enforced by sdk-options.test.ts).
+    'AskUserQuestion',
   ] as const,
 } as const;
 

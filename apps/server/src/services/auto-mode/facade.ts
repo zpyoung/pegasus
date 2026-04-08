@@ -38,6 +38,7 @@ import { ConcurrencyManager } from '../concurrency-manager.js';
 import { WorktreeResolver } from '../worktree-resolver.js';
 import { FeatureStateManager } from '../feature-state-manager.js';
 import { PlanApprovalService } from '../plan-approval-service.js';
+import { QuestionService } from '../question-service.js';
 import { AutoLoopCoordinator, type AutoModeConfig } from '../auto-loop-coordinator.js';
 import { ExecutionService } from '../execution-service.js';
 import { RecoveryService } from '../recovery-service.js';
@@ -77,6 +78,7 @@ export class AutoModeServiceFacade {
     private readonly featureStateManager: FeatureStateManager,
     private readonly featureLoader: FeatureLoader,
     private readonly planApprovalService: PlanApprovalService,
+    private readonly questionService: QuestionService,
     private readonly autoLoopCoordinator: AutoLoopCoordinator,
     private readonly executionService: ExecutionService,
     private readonly recoveryService: RecoveryService,
@@ -181,11 +183,13 @@ export class AutoModeServiceFacade {
       featureStateManager,
       settingsService
     );
+    const questionService = new QuestionService(eventBus);
     const agentExecutor = new AgentExecutor(
       eventBus,
       featureStateManager,
       planApprovalService,
-      settingsService
+      settingsService,
+      questionService
     );
     const testRunnerService = new TestRunnerService();
 
@@ -523,7 +527,8 @@ export class AutoModeServiceFacade {
         );
       },
       (_pPath) => getFacade().saveExecutionState(),
-      loadContextFiles
+      loadContextFiles,
+      questionService
     );
 
     // RecoveryService
@@ -554,6 +559,7 @@ export class AutoModeServiceFacade {
       featureStateManager,
       featureLoader,
       planApprovalService,
+      questionService,
       autoLoopCoordinator,
       executionService,
       recoveryService,
@@ -660,11 +666,85 @@ export class AutoModeServiceFacade {
     try {
       // Cancel any pending plan approval for this feature
       this.cancelPlanApproval(featureId);
+      // Cancel any pending questions for this feature
+      await this.questionService.cancelQuestions(this.projectPath, featureId).catch(() => {
+        /* non-fatal */
+      });
       return await this.executionService.stopFeature(featureId);
     } catch (error) {
       this.handleFacadeError(error, 'stopFeature', featureId);
       throw error;
     }
+  }
+
+  /**
+   * Resolve a user's answer to an agent question.
+   *
+   * When this answer was the LAST pending question for the feature,
+   * questionService.resolveAnswer transitions the feature status to `ready`
+   * so that the AutoLoopCoordinator can re-pick it up. That works fine
+   * when auto-mode is currently running, but if the user manually started
+   * the feature (or auto-mode was stopped between the pause and the
+   * answer), the `ready` feature would sit in the Backlog column forever
+   * waiting for an auto-loop that doesn't exist.
+   *
+   * To match the resolvePlanApproval pattern, we also kick off
+   * executeFeature directly when allAnswered=true. The execution runs
+   * async so the HTTP response doesn't wait for it; errors are logged
+   * but not rethrown to avoid masking the successful answer.
+   *
+   * StageRunner's existing checkpoint resumption (pipeline-state.json)
+   * skips already-completed stages, and buildStagePrompt injects the
+   * answered Q&A back into the resumed stage prompt via
+   * formatAnsweredAgentQuestions, so no continuationPrompt is needed.
+   *
+   * @param featureId - The feature ID with the pending question
+   * @param questionId - The specific question ID being answered
+   * @param answer - The user's answer text
+   * @returns Whether all questions are now answered (feature will resume)
+   */
+  async resolveQuestion(
+    featureId: string,
+    questionId: string,
+    answer: string
+  ): Promise<{ allAnswered: boolean }> {
+    const result = await this.questionService.resolveAnswer(
+      this.projectPath,
+      featureId,
+      questionId,
+      answer
+    );
+
+    if (result.allAnswered) {
+      logger.info(
+        `[resolveQuestion] All questions answered for feature ${featureId} — ` +
+          `directly dispatching executeFeature so the user does not have to wait ` +
+          `for the auto-loop (which may not be running).`
+      );
+      // Fire-and-forget: don't await so the HTTP response returns immediately.
+      // Errors are caught and logged but not rethrown — the answer was already
+      // successfully persisted, and a failure here would only indicate a problem
+      // with the resumed run itself, which executeFeature surfaces via the
+      // auto_mode_error event stream.
+      this.executeFeature(featureId, true, false).catch((error) => {
+        logger.error(
+          `[resolveQuestion] Auto-resume failed for feature ${featureId}:`,
+          error
+        );
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Get pending questions for a feature (for UI polling / recovery).
+   *
+   * @param featureId - The feature ID to check
+   * @returns Pending questions, or null if none pending
+   */
+  async getPendingQuestions(featureId: string) {
+    return this.questionService.getPendingQuestions(this.projectPath, featureId);
   }
 
   /**

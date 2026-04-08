@@ -130,6 +130,31 @@ stages:
       Quickly plan: {{task.description}}
 `;
 
+/** Pipeline YAML with formally declared inputs section */
+const PIPELINE_WITH_INPUTS_YAML = `
+name: Custom Pipeline
+description: Pipeline with declared inputs
+execution:
+  mode: session
+inputs:
+  target_module:
+    type: string
+    required: true
+    description: Module to work on
+  max_retries:
+    type: number
+    default: 3
+    description: Number of retries
+  run_lint:
+    type: boolean
+    default: false
+stages:
+  - id: work
+    name: Do Work
+    prompt: |
+      Work on {{inputs.target_module}} with {{inputs.max_retries}} retries.
+`;
+
 /** A second pipeline (bug-fix) for testing multi-pipeline discovery */
 const BUG_FIX_PIPELINE_YAML = `
 name: Bug Fix
@@ -272,6 +297,29 @@ describe('pipeline-compiler.ts', () => {
       expect(config.name).toBe('Minimal');
       expect(config.stages).toHaveLength(1);
       expect(config.stages[0].id).toBe('step');
+    });
+
+    it('should load a pipeline with declared inputs', async () => {
+      vi.mocked(secureFs.readFile).mockResolvedValue(PIPELINE_WITH_INPUTS_YAML as any);
+
+      const config = await loadPipeline(PROJECT_PATH, 'custom');
+
+      expect(config.name).toBe('Custom Pipeline');
+      expect(config.inputs).toBeDefined();
+      expect(config.inputs!.target_module).toEqual({
+        type: 'string',
+        required: true,
+        description: 'Module to work on',
+      });
+      expect(config.inputs!.max_retries).toEqual({
+        type: 'number',
+        default: 3,
+        description: 'Number of retries',
+      });
+      expect(config.inputs!.run_lint).toEqual({
+        type: 'boolean',
+        default: false,
+      });
     });
 
     it('should throw when YAML parses to null', async () => {
@@ -709,6 +757,114 @@ stages:
         (e) => e.path.includes('stages') || e.path.includes('claude_flags') || e.path.includes('max_turns')
       );
       expect(hasNestedPath).toBe(true);
+    });
+
+    // ============================================================================
+    // Tests: inputs field
+    // ============================================================================
+
+    it('should accept a pipeline with a valid inputs section', () => {
+      const result = validatePipeline({
+        name: 'Inputs Test',
+        description: 'Pipeline with declared inputs',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Build {{inputs.target_module}}' }],
+        inputs: {
+          target_module: { type: 'string', required: true, description: 'Module to build' },
+        },
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.config!.inputs).toBeDefined();
+      expect(result.config!.inputs!.target_module.type).toBe('string');
+      expect(result.config!.inputs!.target_module.required).toBe(true);
+      expect(result.config!.inputs!.target_module.description).toBe('Module to build');
+    });
+
+    it('should accept all three input types: string, number, boolean', () => {
+      const result = validatePipeline({
+        name: 'All Types',
+        description: 'Tests all input types',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+        inputs: {
+          name: { type: 'string' },
+          count: { type: 'number' },
+          flag: { type: 'boolean' },
+        },
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.config!.inputs!.name.type).toBe('string');
+      expect(result.config!.inputs!.count.type).toBe('number');
+      expect(result.config!.inputs!.flag.type).toBe('boolean');
+    });
+
+    it('should accept inputs with default values of matching types', () => {
+      const result = validatePipeline({
+        name: 'Defaults Test',
+        description: 'Inputs with defaults',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+        inputs: {
+          name: { type: 'string', default: 'my-module' },
+          count: { type: 'number', default: 3 },
+          flag: { type: 'boolean', default: true },
+        },
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.config!.inputs!.name.default).toBe('my-module');
+      expect(result.config!.inputs!.count.default).toBe(3);
+      expect(result.config!.inputs!.flag.default).toBe(true);
+    });
+
+    it('should accept an empty inputs object', () => {
+      const result = validatePipeline({
+        name: 'Empty Inputs',
+        description: 'No inputs declared',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+        inputs: {},
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.config!.inputs).toEqual({});
+    });
+
+    it('should accept a pipeline without an inputs section', () => {
+      const result = validatePipeline({
+        name: 'No Inputs',
+        description: 'Pipeline without inputs',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+      });
+
+      expect(result.valid).toBe(true);
+      expect(result.config!.inputs).toBeUndefined();
+    });
+
+    it('should reject an invalid input type', () => {
+      const result = validatePipeline({
+        name: 'Bad Input Type',
+        description: 'Invalid input type',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+        inputs: {
+          myInput: { type: 'text' }, // 'text' is not valid
+        },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should reject an input with unknown fields (strict mode)', () => {
+      const result = validatePipeline({
+        name: 'Bad Input Fields',
+        description: 'Input with unknown field',
+        stages: [{ id: 'step', name: 'Step', prompt: 'Do thing' }],
+        inputs: {
+          myInput: { type: 'string', min_length: 3 }, // min_length not allowed
+        },
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
     });
   });
 

@@ -69,6 +69,10 @@ export type {
   FeatureImportResult,
   ParsedTask,
   PlanSpec,
+  QuestionType,
+  QuestionOption,
+  AgentQuestion,
+  FeatureQuestionState,
 } from './feature.js';
 
 // Session types
@@ -106,6 +110,9 @@ export {
 
 // Event types
 export type { EventType, EventCallback } from './event.js';
+
+// Helper chat types
+export type { HelperChatPayload, HelperChatEvent } from './helper-chat.js';
 
 // Spec types
 export type { SpecOutput } from './spec.js';
@@ -322,6 +329,7 @@ export type {
   YamlStageConfig,
   YamlExecutionConfig,
   YamlPipelineDefaults,
+  YamlPipelineInput,
   YamlPipelineConfig,
   ResolvedStage,
   StageContext,

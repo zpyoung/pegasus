@@ -40,6 +40,7 @@
     "dev:electron:wsl:gpu": "cross-env MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA vite"
   },
   "dependencies": {
+    "@pegasus/chat-ui": "workspace:*",
     "@pegasus/dependency-resolver": "workspace:*",
     "@pegasus/spec-parser": "workspace:*",
     "@pegasus/types": "workspace:*",

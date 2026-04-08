@@ -95,6 +95,7 @@ export function useBoardEffects({
           f.status === 'ready' ||
           f.status === 'interrupted' ||
           f.status === 'in_progress' ||
+          f.status === 'waiting_question' ||
           f.status === 'waiting_approval' ||
           f.status === 'verified' ||
           (typeof f.status === 'string' && f.status.startsWith('pipeline_'))

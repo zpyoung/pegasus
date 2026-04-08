@@ -213,6 +213,21 @@ export class AutoModeServiceCompat {
     return facade.resolvePlanApproval(featureId, approved, editedPlan, feedback);
   }
 
+  async resolveQuestion(
+    projectPath: string,
+    featureId: string,
+    questionId: string,
+    answer: string
+  ): Promise<{ allAnswered: boolean }> {
+    const facade = this.createFacade(projectPath);
+    return facade.resolveQuestion(featureId, questionId, answer);
+  }
+
+  async getPendingQuestions(projectPath: string, featureId: string) {
+    const facade = this.createFacade(projectPath);
+    return facade.getPendingQuestions(featureId);
+  }
+
   async resumeInterruptedFeatures(projectPath: string): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.resumeInterruptedFeatures();

@@ -1397,6 +1397,8 @@ export interface GlobalSettings {
   lastSelectedSessionByProject: Record<string, string>;
   /** Maps session ID -> persisted model selection for that session */
   agentModelBySession?: Record<string, PhaseModelEntry>;
+  /** Maps feature ID -> persisted helper chat model selection for that feature */
+  helperModelByFeature?: Record<string, PhaseModelEntry>;
 
   // Worktree Selection Tracking
   /** Maps project path -> last selected worktree (path + branch) for restoring on PWA reload */

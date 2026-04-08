@@ -119,6 +119,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'projectHistoryIndex',
   'lastSelectedSessionByProject',
   'agentModelBySession',
+  'helperModelByFeature',
   'currentWorktreeByProject',
   // Codex CLI Settings
   'codexAutoLoadAgents',
@@ -192,6 +193,15 @@ function getSettingsFieldValue(
     const entries = Object.entries(map);
     if (entries.length <= MAX_ENTRIES) return map;
     // Keep the last MAX_ENTRIES entries (insertion-order approximation for recency)
+    return Object.fromEntries(entries.slice(-MAX_ENTRIES));
+  }
+  if (field === 'helperModelByFeature') {
+    // Same prune budget as agentModelBySession — one entry per feature that has
+    // opened the helper chat. Prevents unbounded settings.json growth.
+    const map = appState.helperModelByFeature as Record<string, unknown>;
+    const MAX_ENTRIES = 50;
+    const entries = Object.entries(map);
+    if (entries.length <= MAX_ENTRIES) return map;
     return Object.fromEntries(entries.slice(-MAX_ENTRIES));
   }
   return appState[field as keyof typeof appState];
@@ -864,6 +874,16 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
             )
           )
         : currentAppState.agentModelBySession,
+      helperModelByFeature: serverSettings.helperModelByFeature
+        ? Object.fromEntries(
+            Object.entries(serverSettings.helperModelByFeature as Record<string, unknown>).map(
+              ([featureId, entry]) => [
+                featureId,
+                migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
+              ]
+            )
+          )
+        : currentAppState.helperModelByFeature,
       // Restore all valid worktree selections (both main branch and feature worktrees).
       // The validation effect in use-worktrees.ts handles deleted worktrees gracefully.
       currentWorktreeByProject: sanitizeWorktreeByProject(

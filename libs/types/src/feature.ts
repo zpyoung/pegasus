@@ -5,6 +5,44 @@
 import type { PlanningMode, ThinkingLevel } from './settings.js';
 import type { ReasoningEffort } from './provider.js';
 
+/** Question types supported by the agent question system */
+export type QuestionType = 'free-text' | 'single-select' | 'multi-select';
+
+/** A single question option for select types */
+export interface QuestionOption {
+  label: string;
+  description?: string;
+}
+
+/** A structured question from the agent to the user */
+export interface AgentQuestion {
+  id: string;
+  stageId: string;
+  question: string;
+  type: QuestionType;
+  options?: QuestionOption[];
+  header?: string;
+  answer?: string;
+  status: 'pending' | 'answered';
+  askedAt: string;
+  answeredAt?: string;
+  /**
+   * Where this question originated.
+   * - 'yaml': declared on a YAML pipeline stage's `question:` field — answers are
+   *   surfaced via `{{stages.<stageId>.question_response}}` in the stage prompt.
+   * - 'agent': asked by the agent mid-execution via the SDK's AskUserQuestion tool —
+   *   answers are injected as a "Previous User Q&A" block in the resume prompt.
+   * Defaults to 'yaml' when omitted (for backward compatibility with existing data).
+   */
+  source?: 'yaml' | 'agent';
+}
+
+/** Question state persisted on the Feature object */
+export interface FeatureQuestionState {
+  questions: AgentQuestion[];
+  status: 'pending' | 'answered' | 'cancelled';
+}
+
 /**
  * A single entry in the description history
  */
@@ -109,6 +147,7 @@ export interface Feature {
   createdAt?: string; // ISO timestamp when feature was created
   startedAt?: string;
   descriptionHistory?: DescriptionHistoryEntry[]; // History of description changes
+  questionState?: FeatureQuestionState; // Pending agent questions (set during waiting_question status)
   [key: string]: unknown; // Keep catch-all for extensibility
 }
 

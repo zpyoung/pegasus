@@ -94,6 +94,7 @@ export type EventType =
   | 'switch:error'
   | 'notification:created'
   | 'worktree:deleted'
-  | 'feature:migrated';
+  | 'feature:migrated'
+  | 'helper_chat_event';
 
 export type EventCallback = (type: EventType, payload: unknown) => void;

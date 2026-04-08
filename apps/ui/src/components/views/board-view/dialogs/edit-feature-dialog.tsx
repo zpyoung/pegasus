@@ -49,11 +49,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { DependencyTreeDialog } from './dependency-tree-dialog';
 import { useDiscoverPipelines } from '@/hooks/queries/use-pipeline';
 
+/**
+ * Regex pattern to extract Handlebars variable references from a template string.
+ * Matches simple `{{variable.path}}` expressions.
+ */
 const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
 
-function extractPipelineInputVariables(
-  stages: Array<{ prompt: string }>
-): string[] {
+/**
+ * Extract `inputs.*` variable names from all stages' prompt templates in a pipeline.
+ * Returns deduplicated, sorted array of input variable names (without the `inputs.` prefix).
+ */
+function extractPipelineInputVariables(stages: Array<{ prompt: string }>): string[] {
   const inputVars = new Set<string>();
   for (const stage of stages) {
     TEMPLATE_VARIABLE_REGEX.lastIndex = 0;
@@ -68,10 +74,27 @@ function extractPipelineInputVariables(
   return [...inputVars].sort();
 }
 
+/**
+ * Format a variable name into a human-readable label.
+ * Converts snake_case/kebab-case to Title Case.
+ */
 function formatInputLabel(varName: string): string {
-  return varName
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return varName.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Convert a feature's stored pipelineInputs (string | number | boolean values)
+ * to the form-state shape (string | boolean), so number inputs render as text.
+ */
+function pipelineInputsToFormState(
+  inputs: Record<string, string | number | boolean> | undefined
+): Record<string, string | boolean> {
+  if (!inputs) return {};
+  const out: Record<string, string | boolean> = {};
+  for (const [key, value] of Object.entries(inputs)) {
+    out[key] = typeof value === 'boolean' ? value : String(value);
+  }
+  return out;
 }
 
 interface EditFeatureDialogProps {
@@ -97,8 +120,8 @@ interface EditFeatureDialogProps {
       dependencies?: string[];
       childDependencies?: string[]; // Feature IDs that should depend on this feature
       excludedPipelineSteps?: string[]; // Pipeline step IDs to skip for this feature
-      pipeline?: string; // YAML pipeline slug
-      pipelineInputs?: Record<string, string | number | boolean>; // Pipeline template variable values
+      pipeline?: string; // Pipeline slug to use (e.g., "feature", "bug-fix")
+      pipelineInputs?: Record<string, string | number | boolean>; // Pipeline template input values
     },
     descriptionHistorySource?: 'enhance' | 'edit',
     enhancementMode?: EnhancementMode,
@@ -186,34 +209,42 @@ export function EditFeatureDialog({
   );
 
   // YAML Pipeline selection state
-  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>(
-    feature?.pipeline ?? ''
-  );
-  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string>>(
-    () => {
-      // Convert stored values (which may be number/boolean) to strings for form state
-      const inputs: Record<string, string> = {};
-      if (feature?.pipelineInputs) {
-        for (const [key, value] of Object.entries(feature.pipelineInputs)) {
-          inputs[key] = String(value);
-        }
-      }
-      return inputs;
-    }
+  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>(feature?.pipeline ?? '');
+  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string | boolean>>(() =>
+    pipelineInputsToFormState(feature?.pipelineInputs)
   );
 
   // Discover available YAML pipelines
   const { data: discoveredPipelines = [] } = useDiscoverPipelines(projectPath);
 
-  // Compute the selected pipeline and its required input variables
+  // Compute the selected pipeline
   const selectedPipeline = useMemo(
     () => discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
     [discoveredPipelines, selectedPipelineSlug]
   );
-  const pipelineInputVariables = useMemo(
-    () => (selectedPipeline ? extractPipelineInputVariables(selectedPipeline.config.stages) : []),
-    [selectedPipeline]
-  );
+
+  // Compute input field definitions: prefer formally declared inputs, fall back to dynamic extraction
+  const pipelineInputDefinitions = useMemo(() => {
+    if (!selectedPipeline) return [];
+    const declared = selectedPipeline.config.inputs;
+    if (declared && Object.keys(declared).length > 0) {
+      return Object.entries(declared).map(([name, input]) => ({
+        name,
+        type: input.type,
+        required: input.required ?? false,
+        default: input.default,
+        description: input.description,
+      }));
+    }
+    // Fall back to dynamically extracting {{inputs.X}} references from stage prompts
+    return extractPipelineInputVariables(selectedPipeline.config.stages).map((varName) => ({
+      name: varName,
+      type: 'string' as const,
+      required: false,
+      default: undefined,
+      description: undefined,
+    }));
+  }, [selectedPipeline]);
 
   useEffect(() => {
     setEditingFeature(feature);
@@ -245,15 +276,9 @@ export function EditFeatureDialog({
       setOriginalChildDependencies(childDeps);
       // Reset pipeline exclusion state
       setExcludedPipelineSteps(feature.excludedPipelineSteps ?? []);
-      // Reset YAML pipeline selection state
+      // Reset YAML pipeline selection from feature
       setSelectedPipelineSlug(feature.pipeline ?? '');
-      const inputs: Record<string, string> = {};
-      if (feature.pipelineInputs) {
-        for (const [key, value] of Object.entries(feature.pipelineInputs)) {
-          inputs[key] = String(value);
-        }
-      }
-      setPipelineInputs(inputs);
+      setPipelineInputs(pipelineInputsToFormState(feature.pipelineInputs));
     } else {
       setEditFeaturePreviewMap(new Map());
       setDescriptionChangeSource(null);
@@ -303,6 +328,34 @@ export function EditFeatureDialog({
       childDependencies.some((id) => !originalChildDependencies.includes(id)) ||
       originalChildDependencies.some((id) => !childDependencies.includes(id));
 
+    // Build pipeline inputs as Record<string, string | number | boolean>
+    // Apply type coercion based on declared input types
+    const finalPipelineInputs: Record<string, string | number | boolean> = {};
+    if (selectedPipelineSlug) {
+      for (const field of pipelineInputDefinitions) {
+        const rawValue = pipelineInputs[field.name];
+        if (field.type === 'boolean') {
+          finalPipelineInputs[field.name] =
+            typeof rawValue === 'boolean' ? rawValue : (field.default ?? false);
+        } else if (field.type === 'number') {
+          const strValue = String(rawValue ?? '').trim();
+          if (strValue !== '') {
+            const numValue = Number(strValue);
+            finalPipelineInputs[field.name] = isNaN(numValue) ? strValue : numValue;
+          } else if (field.default !== undefined) {
+            finalPipelineInputs[field.name] = field.default;
+          }
+        } else {
+          const strValue = String(rawValue ?? '').trim();
+          if (strValue !== '') {
+            finalPipelineInputs[field.name] = strValue;
+          } else if (field.default !== undefined) {
+            finalPipelineInputs[field.name] = String(field.default);
+          }
+        }
+      }
+    }
+
     const updates = {
       title: editingFeature.title ?? '',
       category: editingFeature.category,
@@ -323,11 +376,8 @@ export function EditFeatureDialog({
       childDependencies: childDepsChanged ? childDependencies : undefined,
       excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
       pipeline: selectedPipelineSlug || undefined,
-      pipelineInputs: Object.keys(pipelineInputs).length > 0
-        ? Object.fromEntries(
-            Object.entries(pipelineInputs).filter(([, v]) => v !== '')
-          )
-        : undefined,
+      pipelineInputs:
+        Object.keys(finalPipelineInputs).length > 0 ? finalPipelineInputs : undefined,
     };
 
     // Determine if description changed and what source to use
@@ -600,24 +650,44 @@ export function EditFeatureDialog({
                 <Select
                   value={selectedPipelineSlug || '__none__'}
                   onValueChange={(value) => {
-                    setSelectedPipelineSlug(value === '__none__' ? '' : value);
-                    setPipelineInputs({});
+                    const slug = value === '__none__' ? '' : value;
+                    setSelectedPipelineSlug(slug);
+                    // Reset inputs and pre-fill defaults when pipeline changes
+                    if (slug) {
+                      const pipeline = discoveredPipelines.find((p) => p.slug === slug);
+                      const declared = pipeline?.config.inputs;
+                      if (declared && Object.keys(declared).length > 0) {
+                        const defaults: Record<string, string | boolean> = {};
+                        for (const [name, input] of Object.entries(declared)) {
+                          if (input.type === 'boolean') {
+                            defaults[name] =
+                              typeof input.default === 'boolean' ? input.default : false;
+                          } else if (input.default !== undefined) {
+                            defaults[name] = String(input.default);
+                          }
+                        }
+                        setPipelineInputs(defaults);
+                      } else {
+                        setPipelineInputs({});
+                      }
+                    } else {
+                      setPipelineInputs({});
+                    }
                   }}
                 >
                   <SelectTrigger data-testid="edit-feature-pipeline-select">
                     <SelectValue placeholder="Default (no pipeline)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">
-                      Default (no pipeline)
-                    </SelectItem>
+                    <SelectItem value="__none__">Default (no pipeline)</SelectItem>
                     {discoveredPipelines.map((pipeline) => (
                       <SelectItem
                         key={pipeline.slug}
                         value={pipeline.slug}
                         description={
                           <span className="text-xs text-muted-foreground">
-                            {pipeline.config.description} ({pipeline.stageCount} stage{pipeline.stageCount !== 1 ? 's' : ''})
+                            {pipeline.config.description} ({pipeline.stageCount} stage
+                            {pipeline.stageCount !== 1 ? 's' : ''})
                           </span>
                         }
                       >
@@ -628,6 +698,7 @@ export function EditFeatureDialog({
                 </Select>
               </div>
 
+              {/* Show pipeline stages preview */}
               {selectedPipeline && (
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-1.5">
@@ -644,26 +715,87 @@ export function EditFeatureDialog({
                 </div>
               )}
 
-              {pipelineInputVariables.length > 0 && (
+              {/* Pipeline input fields - typed widgets for declared inputs, text fields for dynamic */}
+              {pipelineInputDefinitions.length > 0 && (
                 <div className="space-y-3 pt-1">
-                  <Label className="text-xs text-muted-foreground">Pipeline Inputs</Label>
-                  {pipelineInputVariables.map((varName) => (
-                    <div key={varName} className="space-y-1">
-                      <Label htmlFor={`edit-pipeline-input-${varName}`} className="text-xs font-medium">
-                        {formatInputLabel(varName)}
-                      </Label>
-                      <Input
-                        id={`edit-pipeline-input-${varName}`}
-                        value={pipelineInputs[varName] || ''}
-                        onChange={(e) =>
-                          setPipelineInputs((prev) => ({
-                            ...prev,
-                            [varName]: e.target.value,
-                          }))
-                        }
-                        placeholder={`Enter ${formatInputLabel(varName).toLowerCase()}...`}
-                        data-testid={`edit-feature-pipeline-input-${varName}`}
-                      />
+                  <Label className="text-xs text-muted-foreground">
+                    Pipeline Inputs
+                    {pipelineInputDefinitions.some((f) => f.required) && (
+                      <span className="text-destructive ml-1">* required</span>
+                    )}
+                  </Label>
+                  {pipelineInputDefinitions.map((field) => (
+                    <div key={field.name} className="space-y-1">
+                      {field.type === 'boolean' ? (
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`edit-pipeline-input-${field.name}`}
+                            checked={
+                              typeof pipelineInputs[field.name] === 'boolean'
+                                ? pipelineInputs[field.name]
+                                : false
+                            }
+                            onCheckedChange={(checked) =>
+                              setPipelineInputs((prev) => ({
+                                ...prev,
+                                [field.name]: !!checked,
+                              }))
+                            }
+                            data-testid={`edit-feature-pipeline-input-${field.name}`}
+                          />
+                          <Label
+                            htmlFor={`edit-pipeline-input-${field.name}`}
+                            className="text-xs font-medium cursor-pointer"
+                          >
+                            {formatInputLabel(field.name)}
+                          </Label>
+                          {field.description && (
+                            <span className="text-xs text-muted-foreground">
+                              {field.description}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Label
+                              htmlFor={`edit-pipeline-input-${field.name}`}
+                              className="text-xs font-medium"
+                            >
+                              {formatInputLabel(field.name)}
+                            </Label>
+                            {field.required && (
+                              <span className="text-xs text-destructive" aria-label="required">
+                                *
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            id={`edit-pipeline-input-${field.name}`}
+                            type={field.type === 'number' ? 'number' : 'text'}
+                            value={
+                              typeof pipelineInputs[field.name] === 'string'
+                                ? pipelineInputs[field.name]
+                                : ''
+                            }
+                            onChange={(e) =>
+                              setPipelineInputs((prev) => ({
+                                ...prev,
+                                [field.name]: e.target.value,
+                              }))
+                            }
+                            placeholder={
+                              field.default !== undefined
+                                ? String(field.default)
+                                : `Enter ${formatInputLabel(field.name).toLowerCase()}...`
+                            }
+                            data-testid={`edit-feature-pipeline-input-${field.name}`}
+                          />
+                          {field.description && (
+                            <p className="text-xs text-muted-foreground">{field.description}</p>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">

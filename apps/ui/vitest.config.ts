@@ -24,6 +24,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       '@pegasus/ui': path.resolve(__dirname, './src'),
       '@pegasus/types': path.resolve(__dirname, '../../libs/types/src/index.ts'),
+      '@pegasus/chat-ui': path.resolve(__dirname, '../../libs/chat-ui/src/index.ts'),
     },
   },
 });

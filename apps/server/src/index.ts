@@ -88,6 +88,8 @@ import { createEventHistoryRoutes } from './routes/event-history/index.js';
 import { getEventHistoryService } from './services/event-history-service.js';
 import { getTestRunnerService } from './services/test-runner-service.js';
 import { createProjectsRoutes } from './routes/projects/index.js';
+import { QuestionHelperService } from './services/question-helper-service.js';
+import { createQuestionHelperRoutes } from './routes/question-helper/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -349,6 +351,7 @@ const zaiUsageService = new ZaiUsageService();
 const geminiUsageService = new GeminiUsageService();
 const mcpTestService = new MCPTestService(settingsService);
 const ideationService = new IdeationService(events, settingsService, featureLoader);
+const questionHelperService = new QuestionHelperService(settingsService, events, featureLoader);
 
 // Initialize DevServerService with event emitter for real-time log streaming
 const devServerService = getDevServerService();
@@ -521,6 +524,7 @@ app.use(
   '/api/projects',
   createProjectsRoutes(featureLoader, autoModeService, settingsService, notificationService)
 );
+app.use('/api/question-helper', createQuestionHelperRoutes(questionHelperService));
 
 // Create HTTP server
 const server = createServer(app);

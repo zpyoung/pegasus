@@ -51,6 +51,7 @@ interface KanbanCardProps {
   onComplete?: () => void;
   onViewPlan?: () => void;
   onApprovePlan?: () => void;
+  onAnswerQuestion?: () => void;
   onSpawnTask?: () => void;
   onDuplicate?: () => void;
   onDuplicateAsChild?: () => void;
@@ -88,6 +89,7 @@ export const KanbanCard = memo(function KanbanCard({
   onComplete,
   onViewPlan,
   onApprovePlan,
+  onAnswerQuestion,
   onSpawnTask,
   onDuplicate,
   onDuplicateAsChild,
@@ -341,6 +343,7 @@ export const KanbanCard = memo(function KanbanCard({
           onComplete={onComplete}
           onViewPlan={onViewPlan}
           onApprovePlan={onApprovePlan}
+          onAnswerQuestion={onAnswerQuestion}
         />
       </CardContent>
     </Card>

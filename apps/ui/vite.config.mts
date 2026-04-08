@@ -188,10 +188,11 @@ function mobilePreloadOptimizer(): Plugin {
 }
 
 export default defineConfig(({ command }) => {
+  const isDev = command === 'serve';
   // Only skip electron plugin during dev server in CI (no display available for Electron)
   // Always include it during build - we need dist-electron/main.js for electron-builder
   const skipElectron =
-    command === 'serve' && (process.env.CI === 'true' || process.env.VITE_SKIP_ELECTRON === 'true');
+    isDev && (process.env.CI === 'true' || process.env.VITE_SKIP_ELECTRON === 'true');
 
   return {
     plugins: [
@@ -246,6 +247,22 @@ export default defineConfig(({ command }) => {
     resolve: {
       alias: [
         { find: '@', replacement: path.resolve(__dirname, './src') },
+        // Dev-only: serve @pegasus/chat-ui from its TypeScript source so
+        // edits to libs/chat-ui/src/**/*.tsx trigger native Vite HMR instead
+        // of being frozen behind the prebundle cache in node_modules/.vite.
+        // In production builds this alias is absent, so the pnpm workspace
+        // resolver picks up libs/chat-ui/package.json -> dist/index.js as
+        // before. The React-single-instance concern that previously required
+        // prebundling is handled by the explicit react/react-dom aliases
+        // below plus `dedupe: ['react', 'react-dom', ...]`.
+        ...(isDev
+          ? [
+              {
+                find: '@pegasus/chat-ui',
+                replacement: path.resolve(__dirname, '../../libs/chat-ui/src/index.ts'),
+              },
+            ]
+          : []),
         // Force ALL React imports (including from nested deps like zustand@4 inside
         // @xyflow/react) to resolve to a single copy.
         // Explicit subpath aliases must come BEFORE the broad regex so Vite's
@@ -364,6 +381,11 @@ export default defineConfig(({ command }) => {
       // the same React instance as the rest of the app. The nested zustand@4 inside
       // @xyflow/react uses use-sync-external-store/shim/with-selector which does
       // require('react') — both the base and subpath must be included here.
+      //
+      // Note: @pegasus/chat-ui used to be listed here to solve a duplicate-React
+      // problem, but it's now aliased to its TypeScript source in dev mode
+      // (see resolve.alias above), which sidesteps prebundling entirely and
+      // enables native HMR on chat-ui source edits.
       include: [
         'react',
         'react-dom',

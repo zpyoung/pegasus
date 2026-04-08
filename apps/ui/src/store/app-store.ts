@@ -278,6 +278,7 @@ const initialState: AppState = {
   mobileSidebarHidden: false,
   lastSelectedSessionByProject: {},
   agentModelBySession: {},
+  helperModelByFeature: {},
   theme: getStoredTheme() || 'dark',
   fontFamilySans: getStoredFontSans(),
   fontFamilyMono: getStoredFontMono(),
@@ -1770,6 +1771,16 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     })),
   getAgentModelForSession: (sessionId) => get().agentModelBySession[sessionId] ?? null,
+
+  // Helper chat model selection actions (per-feature)
+  setHelperModelForFeature: (featureId, model) =>
+    set((state) => ({
+      helperModelByFeature: {
+        ...state.helperModelByFeature,
+        [featureId]: model,
+      },
+    })),
+  getHelperModelForFeature: (featureId) => get().helperModelByFeature[featureId] ?? null,
 
   // Board Background actions
   setBoardBackground: (projectPath, imagePath) =>

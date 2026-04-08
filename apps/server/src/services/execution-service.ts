@@ -17,6 +17,8 @@ import {
 } from '../lib/settings-helpers.js';
 import { validateWorkingDirectory } from '../lib/sdk-options.js';
 import { extractSummary } from './spec-parser.js';
+import { PauseExecutionError } from './pause-execution-error.js';
+import { formatAnsweredAgentQuestions } from './question-service.js';
 import type { TypedEventBus } from './typed-event-bus.js';
 import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
 import type { WorktreeResolver } from './worktree-resolver.js';
@@ -25,6 +27,7 @@ import { pipelineService } from './pipeline-service.js';
 import { loadPipeline, compilePipeline } from './pipeline-compiler.js';
 import { StageRunner } from './stage-runner.js';
 import type { StageRunAgentFn } from './stage-runner.js';
+import type { QuestionService } from './question-service.js';
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -89,7 +92,8 @@ export class ExecutionService {
     private signalPauseFn: SignalPauseFn,
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
-    private loadContextFilesFn: LoadContextFilesFn
+    private loadContextFilesFn: LoadContextFilesFn,
+    private questionService?: QuestionService
   ) {}
 
   private acquireRunningFeature(options: {
@@ -145,6 +149,15 @@ ${feature.spec}
         })
         .join('\n');
       prompt += `\n**Context Images Attached:**\n${feature.imagePaths.length} image(s) attached:\n${imagesList}\n`;
+    }
+
+    // When the feature is being resumed after the agent paused for a user question
+    // (via AskUserQuestion), inject the prior Q&A so the agent has the answer in
+    // its new conversation context. Returns empty string when there are no
+    // agent-asked answered questions, so this is a no-op for first runs.
+    const qaBlock = formatAnsweredAgentQuestions(feature.questionState);
+    if (qaBlock) {
+      prompt += `\n${qaBlock}`;
     }
 
     return prompt;
@@ -342,7 +355,8 @@ ${feature.spec}
         // Create StageRunner and execute all pipeline stages sequentially
         const stageRunner = new StageRunner(
           this.eventBus,
-          this.runAgentFn as StageRunAgentFn
+          this.runAgentFn as StageRunAgentFn,
+          this.questionService
         );
 
         const runResult = await stageRunner.run({
@@ -636,6 +650,14 @@ Please continue from where you left off and complete all remaining tasks. Use th
         });
       }
     } catch (error) {
+      // PauseExecutionError signals an intentional pause (question asked or approval needed).
+      // This is not a failure — release resources and set status to waiting_question.
+      if (error instanceof PauseExecutionError) {
+        logger.info(`Feature ${featureId} paused for ${error.reason} — setting waiting_question`);
+        await this.updateFeatureStatusFn(projectPath, featureId, 'waiting_question');
+        // Fall through to finally block (resource release). Do not track failure or emit error.
+        return;
+      }
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
         await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');

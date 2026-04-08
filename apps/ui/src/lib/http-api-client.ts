@@ -602,7 +602,8 @@ type EventType =
   | 'test-runner:started'
   | 'test-runner:output'
   | 'test-runner:completed'
-  | 'notification:created';
+  | 'notification:created'
+  | 'helper_chat_event';
 
 /**
  * Dev server log event payloads for WebSocket streaming
@@ -2219,6 +2220,18 @@ export class HttpApiClient implements ElectronAPI {
         editedPlan,
         feedback,
       }),
+    answerQuestion: (
+      projectPath: string,
+      featureId: string,
+      questionId: string,
+      answer: string
+    ) =>
+      this.post('/api/auto-mode/answer-question', {
+        projectPath,
+        featureId,
+        questionId,
+        answer,
+      }),
     resumeInterrupted: (projectPath: string) =>
       this.post('/api/auto-mode/resume-interrupted', { projectPath }),
     onEvent: (callback: (event: AutoModeEvent) => void) => {
@@ -3339,6 +3352,37 @@ export class HttpApiClient implements ElectronAPI {
       }>;
       error?: string;
     }> => this.get(`/api/pipeline/discover?projectPath=${encodeURIComponent(projectPath)}`),
+  };
+
+  // Question Helper API — ephemeral read-only sub-agent chat for paused features
+  questionHelper = {
+    sendMessage: (
+      featureId: string,
+      message: string,
+      projectPath: string,
+      modelEntry?: { model: string; thinkingLevel?: string; providerId?: string }
+    ): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/question-helper/send-message', {
+        featureId,
+        message,
+        projectPath,
+        ...(modelEntry ? { modelEntry } : {}),
+      }),
+
+    endSession: (featureId: string): Promise<{ success: boolean; error?: string }> =>
+      this.post('/api/question-helper/end-session', { featureId }),
+
+    getHistory: (featureId: string): Promise<{
+      success: boolean;
+      history?: Array<{ role: string; content: string }>;
+      error?: string;
+    }> => this.get(`/api/question-helper/history/${encodeURIComponent(featureId)}`),
+
+    onHelperChatEvent: (
+      callback: (event: { featureId: string; payload: unknown }) => void
+    ): (() => void) => {
+      return this.subscribeToEvent('helper_chat_event', callback as EventCallback);
+    },
   };
 }
 
