@@ -291,9 +291,10 @@ export {
   type AnthropicModelId,
   type OpenaiModelId,
   type GoogleModelId,
-  type CopilotModelId as CopilotRegistryModelId,
-  type CursorModelId as CursorRegistryModelId,
-  type ModelId as RegistryModelId,
+  type CopilotRegistryModelId,
+  type CursorRegistryModelId,
+  type OpencodeRegistryModelId,
+  type RegistryModelId,
 } from './model-registry.gen.js';
 
 // Model capabilities (generated — run `pnpm sync-models` to update)
