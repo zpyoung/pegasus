@@ -115,38 +115,19 @@ export class ExecutionService {
   }
 
   /**
-   * Capture a map of uncommitted file paths to their content hashes.
-   * Content hashing lets us detect when an already-modified file gets further
-   * modified by the agent, and correctly ignores pre-existing untracked files
-   * whose content didn't change.
+   * Capture the set of uncommitted file paths in a working directory.
+   * Used to compute which files the agent modified by diffing before/after snapshots.
    */
-  private async captureFileStates(workDir: string): Promise<Map<string, string>> {
+  private async captureUncommittedFiles(workDir: string): Promise<Set<string>> {
     try {
       const { stdout } = await execFileAsync('git', ['status', '--porcelain'], {
         cwd: workDir,
         maxBuffer: 10 * 1024 * 1024,
       });
       const files = parseGitStatus(stdout);
-      const states = new Map<string, string>();
-      for (const f of files) {
-        if (f.status === 'D') {
-          states.set(f.path, 'DELETED');
-        } else {
-          try {
-            const { stdout: hash } = await execFileAsync(
-              'git',
-              ['hash-object', f.path],
-              { cwd: workDir }
-            );
-            states.set(f.path, hash.trim());
-          } catch {
-            states.set(f.path, 'UNREADABLE');
-          }
-        }
-      }
-      return states;
+      return new Set(files.map((f) => f.path));
     } catch {
-      return new Map();
+      return new Set();
     }
   }
 
@@ -294,8 +275,8 @@ ${feature.spec}
       const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
       validateWorkingDirectory(workDir);
 
-      // Capture baseline file states (path → content hash) before agent execution
-      const baselineStates = await this.captureFileStates(workDir);
+      // Capture baseline uncommitted files before agent execution
+      const baselineFiles = await this.captureUncommittedFiles(workDir);
 
       tempRunningFeature.worktreePath = worktreePath;
       tempRunningFeature.branchName = branchName ?? null;
@@ -608,25 +589,15 @@ Please continue from where you left off and complete all remaining tasks. Use th
       }
       } // end legacy flow
 
-      // Compute agent-modified files by comparing content hashes before/after
+      // Compute agent-modified files by diffing before/after uncommitted files
       try {
-        const postStates = await this.captureFileStates(workDir);
+        const postFiles = await this.captureUncommittedFiles(workDir);
         const agentModifiedFiles: string[] = [];
-        // Files in post with new or changed content
-        for (const [filePath, hash] of postStates) {
-          if (!baselineStates.has(filePath)) {
-            // New file — agent created it
-            agentModifiedFiles.push(filePath);
-          } else if (baselineStates.get(filePath) !== hash) {
-            // Existing file with different content — agent modified it
-            agentModifiedFiles.push(filePath);
-          }
+        for (const f of postFiles) {
+          if (!baselineFiles.has(f)) agentModifiedFiles.push(f);
         }
-        // Files in baseline but not in post — agent deleted/committed them
-        for (const [filePath] of baselineStates) {
-          if (!postStates.has(filePath)) {
-            agentModifiedFiles.push(filePath);
-          }
+        for (const f of baselineFiles) {
+          if (!postFiles.has(f)) agentModifiedFiles.push(f);
         }
         if (agentModifiedFiles.length > 0) {
           const currentFeature = await this.loadFeatureFn(projectPath, featureId);
