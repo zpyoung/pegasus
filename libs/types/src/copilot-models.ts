@@ -8,7 +8,7 @@
  * for UI consistency and offline use.
  */
 
-import type { CopilotModelId as CopilotRegistryModelId } from './model-registry.gen.js';
+import type { CopilotRegistryModelId } from './model-registry.gen.js';
 
 /**
  * Copilot model configuration
