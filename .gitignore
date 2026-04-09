@@ -48,21 +48,13 @@ dmypy.json
 *.swo
 *~
 
-# Pegasus runtime files (project-level)
-.pegasus/pegasus.db
-.pegasus/pegasus.db-wal
-.pegasus/pegasus.db-shm
-.pegasus/logs/
-.pegasus/categories.json
-.pegasus/events/
-.pegasus/memory/
-.pegasus/features/
-.pegasus/images/
-.pegasus/settings.json
-.pegasus/settings.json.*
-.pegasus/active-branches.json
-.pegasus/notifications.json
-.pegasus/worktrees/
+# Pegasus — ignore everything, then whitelist definitions
+.pegasus/*
+!.pegasus/config.yaml
+!.pegasus/context/
+!.pegasus/pipelines/
+!.pegasus/backlog-plan.json
+!.pegasus/worktree-init.sh
 .worktrees/
 
 # Runtime data
