@@ -71,6 +71,7 @@ import {
   type FileTreeNode,
   type ProjectAnalysis,
   // State types
+  type InitScriptOutputChunk,
   type InitScriptState,
   type AutoModeActivity,
   type AppState,
@@ -159,6 +160,7 @@ export type {
   Feature,
   FileTreeNode,
   ProjectAnalysis,
+  InitScriptOutputChunk,
   InitScriptState,
   AutoModeActivity,
   AppState,
@@ -3074,15 +3076,13 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     }));
   },
-  appendInitScriptOutput: (projectPath, branch, content) => {
+  appendInitScriptOutput: (projectPath, branch, chunk) => {
     const key = `${projectPath}::${branch}`;
     set((s) => {
       const current = s.initScriptState[key];
       if (!current) return s;
-      // Split content by newlines and add each line
-      const newLines = content.split('\n').filter((line) => line.length > 0);
-      const combinedOutput = [...current.output, ...newLines];
-      // Limit to MAX_INIT_OUTPUT_LINES
+      const combinedOutput = [...current.output, chunk];
+      // Limit stored output chunks to prevent unbounded memory growth
       const limitedOutput = combinedOutput.slice(-MAX_INIT_OUTPUT_LINES);
       return {
         initScriptState: {

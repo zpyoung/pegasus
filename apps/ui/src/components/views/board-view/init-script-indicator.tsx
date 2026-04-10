@@ -2,7 +2,11 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Terminal, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { useAppStore, type InitScriptState } from '@/store/app-store';
+import {
+  useAppStore,
+  type InitScriptState,
+  type InitScriptOutputChunk,
+} from '@/store/app-store';
 import { AnsiOutput } from '@/components/ui/ansi-output';
 
 interface InitScriptIndicatorProps {
@@ -17,6 +21,28 @@ interface SingleIndicatorProps {
   autoDismiss: boolean; // Whether to auto-dismiss after completion
 }
 
+interface OutputSection {
+  type: InitScriptOutputChunk['type'];
+  text: string;
+}
+
+function groupOutputSections(output: InitScriptOutputChunk[]): OutputSection[] {
+  return output.reduce<OutputSection[]>((sections, chunk) => {
+    const previousSection = sections[sections.length - 1];
+
+    if (previousSection && previousSection.type === chunk.type) {
+      previousSection.text += chunk.content;
+      return sections;
+    }
+
+    sections.push({
+      type: chunk.type,
+      text: chunk.content,
+    });
+    return sections;
+  }, []);
+}
+
 function SingleIndicator({
   stateKey,
   state,
@@ -28,6 +54,7 @@ function SingleIndicator({
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const { status, output, branch, error } = state;
+  const outputSections = groupOutputSections(output);
 
   // Auto-scroll to bottom when new output arrives
   useEffect(() => {
@@ -107,9 +134,36 @@ function SingleIndicator({
       {/* Logs (collapsible) */}
       {showLogs && (
         <div className="border-t border-border/50">
-          <div className="p-3 max-h-[300px] overflow-y-auto">
+          <div className="max-h-[360px] overflow-auto p-3">
             {output.length > 0 ? (
-              <AnsiOutput text={output.join('')} />
+              <div className="space-y-3">
+                {outputSections.map((section, index) => (
+                  <div
+                    key={`${section.type}-${index}`}
+                    className={cn(
+                      'overflow-hidden rounded-md border',
+                      section.type === 'stderr'
+                        ? 'border-red-500/30 bg-red-500/5'
+                        : 'border-border/60 bg-muted/30'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'border-b px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.2em]',
+                        section.type === 'stderr'
+                          ? 'border-red-500/20 text-red-500'
+                          : 'border-border/50 text-muted-foreground'
+                      )}
+                    >
+                      {section.type}
+                    </div>
+                    <AnsiOutput
+                      text={section.text}
+                      className="max-w-full overflow-x-auto p-2 text-[11px] leading-5"
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="text-xs text-muted-foreground/60 text-center py-2">
                 {status === 'running' ? 'Waiting for output...' : 'No output'}

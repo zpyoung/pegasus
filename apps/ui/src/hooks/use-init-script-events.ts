@@ -60,7 +60,10 @@ export function useInitScriptEvents(projectPath: string | null) {
         }
         case 'worktree:init-output': {
           const outputPayload = payload as InitScriptOutputPayload;
-          appendInitScriptOutput(projectPath, outputPayload.branch, outputPayload.content);
+          appendInitScriptOutput(projectPath, outputPayload.branch, {
+            type: outputPayload.type,
+            content: outputPayload.content,
+          });
           break;
         }
         case 'worktree:init-completed': {

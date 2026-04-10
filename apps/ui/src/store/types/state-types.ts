@@ -41,10 +41,15 @@ import type { Feature, ProjectAnalysis } from './project-types';
 import type { ClaudeUsage, CodexUsage, ZaiUsage, GeminiUsage } from './usage-types';
 
 /** State for worktree init script execution */
+export interface InitScriptOutputChunk {
+  type: 'stdout' | 'stderr';
+  content: string;
+}
+
 export interface InitScriptState {
   status: 'idle' | 'running' | 'success' | 'failed';
   branch: string;
-  output: string[];
+  output: InitScriptOutputChunk[];
   error?: string;
 }
 
@@ -937,7 +942,11 @@ export interface AppActions {
     branch: string,
     state: Partial<InitScriptState>
   ) => void;
-  appendInitScriptOutput: (projectPath: string, branch: string, content: string) => void;
+  appendInitScriptOutput: (
+    projectPath: string,
+    branch: string,
+    chunk: InitScriptOutputChunk
+  ) => void;
   clearInitScriptState: (projectPath: string, branch: string) => void;
   getInitScriptState: (projectPath: string, branch: string) => InitScriptState | null;
   getInitScriptStatesForProject: (
