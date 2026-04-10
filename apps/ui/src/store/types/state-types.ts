@@ -95,6 +95,11 @@ export interface AppState {
   // the selection is saved here so it's remembered across sessions.
   lastUsedPhaseOverrides: Partial<Record<PhaseModelKey, PhaseModelEntry>>;
 
+  // Last-used phase model overrides (persisted ad-hoc selections from dialogs)
+  // When a user picks a model override in a dialog (commit, PR, enhance, etc.),
+  // the selection is saved here so it's remembered across sessions.
+  lastUsedPhaseOverrides: Partial<Record<PhaseModelKey, PhaseModelEntry>>;
+
   // Theme
   theme: ThemeMode;
 
@@ -737,6 +742,11 @@ export interface AppActions {
   // Helper chat model selection actions (per-feature)
   setHelperModelForFeature: (featureId: string, model: PhaseModelEntry) => void;
   getHelperModelForFeature: (featureId: string) => PhaseModelEntry | null;
+
+  // Last-used phase model override actions
+  setLastUsedPhaseOverride: (phase: PhaseModelKey, entry: PhaseModelEntry) => void;
+  clearLastUsedPhaseOverride: (phase: PhaseModelKey) => void;
+  getLastUsedPhaseOverride: (phase: PhaseModelKey) => PhaseModelEntry | null;
 
   // Last-used phase model override actions
   setLastUsedPhaseOverride: (phase: PhaseModelKey, entry: PhaseModelEntry) => void;

@@ -120,7 +120,6 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'projectHistoryIndex',
   'lastSelectedSessionByProject',
   'agentModelBySession',
-  'helperModelByFeature',
   'lastUsedPhaseOverrides',
   'currentWorktreeByProject',
   // Codex CLI Settings
@@ -876,16 +875,6 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
             )
           )
         : currentAppState.agentModelBySession,
-      helperModelByFeature: serverSettings.helperModelByFeature
-        ? Object.fromEntries(
-            Object.entries(serverSettings.helperModelByFeature as Record<string, unknown>).map(
-              ([featureId, entry]) => [
-                featureId,
-                migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
-              ]
-            )
-          )
-        : currentAppState.helperModelByFeature,
       // Hydrate last-used phase model overrides (persisted ad-hoc selections from dialogs)
       lastUsedPhaseOverrides: serverSettings.lastUsedPhaseOverrides
         ? Object.fromEntries(

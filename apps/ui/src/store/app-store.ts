@@ -278,7 +278,6 @@ const initialState: AppState = {
   mobileSidebarHidden: false,
   lastSelectedSessionByProject: {},
   agentModelBySession: {},
-  helperModelByFeature: {},
   lastUsedPhaseOverrides: {},
   theme: getStoredTheme() || 'dark',
   fontFamilySans: getStoredFontSans(),
@@ -1772,16 +1771,6 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     })),
   getAgentModelForSession: (sessionId) => get().agentModelBySession[sessionId] ?? null,
-
-  // Helper chat model selection actions (per-feature)
-  setHelperModelForFeature: (featureId, model) =>
-    set((state) => ({
-      helperModelByFeature: {
-        ...state.helperModelByFeature,
-        [featureId]: model,
-      },
-    })),
-  getHelperModelForFeature: (featureId) => get().helperModelByFeature[featureId] ?? null,
 
   // Last-used phase model override actions
   setLastUsedPhaseOverride: (phase, entry) =>
