@@ -883,6 +883,78 @@ describe('dev-server-service.ts', () => {
       expect(serverInfo?.url).toBe('http://localhost:4200/');
       expect(serverInfo?.urlDetected).toBe(true);
     });
+
+    it('should detect Pegasus --auto port format', async () => {
+      vi.mocked(secureFs.access).mockResolvedValue(undefined);
+
+      const mockProcess = createMockProcess();
+      vi.mocked(spawn).mockReturnValue(mockProcess as any);
+
+      const { getDevServerService } = await import('@/services/dev-server-service.js');
+      const service = getDevServerService();
+
+      await service.startDevServer(testDir, testDir);
+
+      // start-pegasus.sh --auto output when default port is in use
+      mockProcess.stdout.emit(
+        'data',
+        Buffer.from('✓ Auto-selected available ports: Web=3009, Server=3010\n')
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const serverInfo = service.getServerInfo(testDir);
+      expect(serverInfo?.url).toBe('http://localhost:3009');
+      expect(serverInfo?.urlDetected).toBe(true);
+    });
+
+    it('should detect Pegasus interactive port format', async () => {
+      vi.mocked(secureFs.access).mockResolvedValue(undefined);
+
+      const mockProcess = createMockProcess();
+      vi.mocked(spawn).mockReturnValue(mockProcess as any);
+
+      const { getDevServerService } = await import('@/services/dev-server-service.js');
+      const service = getDevServerService();
+
+      await service.startDevServer(testDir, testDir);
+
+      // start-pegasus.sh interactive mode output
+      mockProcess.stdout.emit(
+        'data',
+        Buffer.from('  Web: 3009  |  Server: 3010\n')
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const serverInfo = service.getServerInfo(testDir);
+      expect(serverInfo?.url).toBe('http://localhost:3009');
+      expect(serverInfo?.urlDetected).toBe(true);
+    });
+
+    it('should detect Pegasus custom port format', async () => {
+      vi.mocked(secureFs.access).mockResolvedValue(undefined);
+
+      const mockProcess = createMockProcess();
+      vi.mocked(spawn).mockReturnValue(mockProcess as any);
+
+      const { getDevServerService } = await import('@/services/dev-server-service.js');
+      const service = getDevServerService();
+
+      await service.startDevServer(testDir, testDir);
+
+      // start-pegasus.sh custom port selection output
+      mockProcess.stdout.emit(
+        'data',
+        Buffer.from('Using ports: Web=4000, Server=4001\n')
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const serverInfo = service.getServerInfo(testDir);
+      expect(serverInfo?.url).toBe('http://localhost:4000');
+      expect(serverInfo?.urlDetected).toBe(true);
+    });
   });
 });
 

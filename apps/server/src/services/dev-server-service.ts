@@ -76,6 +76,14 @@ const URL_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
 // when a full URL is not present in the output.
 // Defined once at module level to avoid reallocation on every call to detectUrlFromOutput.
 const PORT_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
+  // Pegasus start-pegasus.sh auto-port selection:
+  //   "✓ Auto-selected available ports: Web=3009, Server=3010"
+  //   "Using ports: Web=3009, Server=3010"
+  //   "Web: 3009  |  Server: 3010" (interactive mode)
+  {
+    pattern: /Web[=:\s]+(\d{4,5})/i,
+    description: 'Pegasus auto-selected port format',
+  },
   // "listening on port 3000", "server on port 3000", "started on port 3000"
   {
     pattern: /(?:listening|running|started|serving|available)\s+on\s+port\s+(\d+)/i,
