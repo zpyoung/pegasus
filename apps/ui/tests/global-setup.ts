@@ -108,10 +108,10 @@ async function authenticateAndSaveState(_config: FullConfig) {
       );
     }
 
-    // Set the session cookie
+    // Set the session cookie (name includes server port for multi-instance isolation)
     await context.addCookies([
       {
-        name: 'pegasus_session',
+        name: `pegasus_session_${TEST_SERVER_PORT}`,
         value: response.token,
         domain: '127.0.0.1',
         path: '/',

@@ -124,6 +124,11 @@ export function createAuthRoutes(): Router {
   router.get('/status', async (req, res) => {
     let authenticated = isRequestAuthenticated(req);
 
+    // Clear legacy non-port-scoped cookie if present (migrating to port-scoped names)
+    if (req.cookies?.['pegasus_session']) {
+      res.cookie('pegasus_session', '', { ...getSessionCookieOptions(), maxAge: 0, expires: new Date(0) });
+    }
+
     // Auto-login for development: create session automatically if enabled
     // Only works in non-production environments as a safeguard
     if (

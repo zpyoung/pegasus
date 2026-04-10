@@ -85,3 +85,16 @@ pegasus.onefile-build/
 .env.*
 !.env.example
 # Pegasus runtime files
+.pegasus/pegasus.db
+.pegasus/pegasus.db-wal
+.pegasus/pegasus.db-shm
+.pegasus/logs/
+.pegasus/categories.json
+.pegasus/events/
+.pegasus/memory/
+.pegasus/features/
+.pegasus/images/
+.pegasus/settings.json
+.pegasus/settings.json.*
+.pegasus/active-branches.json
+.pegasus/notifications.json

@@ -1320,7 +1320,7 @@ export class SettingsService {
       'sessions-metadata.json',
       'agent-sessions',
       '.api-key',
-      '.sessions',
+      '.sessions', // Legacy non-port-scoped sessions file
     ];
 
     for (const item of itemsToMigrate) {

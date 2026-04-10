@@ -334,10 +334,11 @@ export async function authenticateWithApiKey(page: Page, apiKey: string): Promis
 
     if (response?.success && response.token) {
       // Manually set the cookie in the browser context
-      // The server sets a cookie named 'pegasus_session' (see SESSION_COOKIE_NAME in auth.ts)
+      // Cookie name includes the server port for multi-instance isolation (see SESSION_COOKIE_NAME in auth.ts)
+      const serverPort = process.env.TEST_SERVER_PORT || '3108';
       await page.context().addCookies([
         {
-          name: 'pegasus_session',
+          name: `pegasus_session_${serverPort}`,
           value: response.token,
           domain: '127.0.0.1',
           path: '/',

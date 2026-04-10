@@ -17,9 +17,12 @@ import { createLogger } from '@pegasus/utils';
 const logger = createLogger('Auth');
 
 const DATA_DIR = process.env.DATA_DIR || './data';
+const SERVER_PORT = process.env.PORT || '3008';
 const API_KEY_FILE = path.join(DATA_DIR, '.api-key');
-const SESSIONS_FILE = path.join(DATA_DIR, '.sessions');
-const SESSION_COOKIE_NAME = 'pegasus_session';
+const SESSIONS_FILE = path.join(DATA_DIR, `.sessions-${SERVER_PORT}`);
+// Cookie name includes the server port so multiple Pegasus instances on the same
+// hostname don't overwrite each other's cookies (HTTP cookies are not port-scoped).
+const SESSION_COOKIE_NAME = `pegasus_session_${SERVER_PORT}`;
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const WS_TOKEN_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes for WebSocket connection tokens
 

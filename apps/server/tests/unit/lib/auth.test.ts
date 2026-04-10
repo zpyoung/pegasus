@@ -306,7 +306,9 @@ describe('auth.ts', () => {
       const { getSessionCookieName } = await import('@/lib/auth.js');
       const name = getSessionCookieName();
 
-      expect(name).toBe('pegasus_session');
+      // Cookie name includes the server port for multi-instance isolation
+      const expectedPort = process.env.PORT || '3008';
+      expect(name).toBe(`pegasus_session_${expectedPort}`);
     });
   });
 
