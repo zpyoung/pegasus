@@ -31,6 +31,8 @@ import { KanbanColumn } from '../board-view/components/kanban-column';
 import { useBoardBackground } from '../board-view/hooks/use-board-background';
 import { IdeaCard } from './idea-card';
 import { PromoteModal } from './promote-modal';
+import { GenerationJobsIndicator } from './generation-jobs-indicator';
+import { PromptCommandPopover } from './prompt-command-popover';
 import { useIdeas } from './hooks/use-ideas';
 import { useConvertIdea } from './hooks/use-convert-idea';
 import type { Idea, IdeaStatus, UpdateIdeaInput, ConvertToFeatureOptions } from '@pegasus/types';
@@ -269,6 +271,10 @@ export function IdeaBoard() {
         <span className="text-sm text-muted-foreground ml-1">
           {ideas.length} idea{ideas.length !== 1 ? 's' : ''}
         </span>
+        <div className="ml-auto flex items-center gap-2">
+          <GenerationJobsIndicator />
+          <PromptCommandPopover />
+        </div>
       </div>
 
       {/* Kanban columns */}
