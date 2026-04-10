@@ -1456,8 +1456,22 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         description = `Resolve cherry-pick conflicts when cherry-picking commits from "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}". The cherry-pick was attempted but encountered conflicts that need to be resolved manually. Cherry-pick the commits again using "git cherry-pick <commit-hashes>", resolve any conflicts, then use "git cherry-pick --continue" after fixing each conflict. After completing the cherry-pick, ensure the code compiles and tests pass.${conflictFilesInfo}`;
         title = `Resolve Cherry-Pick Conflicts: ${conflictInfo.sourceBranch} → ${conflictInfo.targetBranch}`;
       } else {
-        description = `Resolve merge conflicts when merging "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}". The merge was started but encountered conflicts that need to be resolved manually. After resolving all conflicts, ensure the code compiles and tests pass, then complete the merge by committing the resolved changes.${conflictFilesInfo}`;
-        title = `Resolve Merge Conflicts: ${conflictInfo.sourceBranch} → ${conflictInfo.targetBranch}`;
+        // The merge was aborted after conflict detection, so the AI agent must
+        // redo the merge, resolve conflicts, and commit the result.
+        const mergeCmd = conflictInfo.squash
+          ? `git merge --squash ${conflictInfo.sourceBranch}`
+          : `git merge ${conflictInfo.sourceBranch}`;
+        const commitNote = conflictInfo.squash
+          ? ' Since this is a squash merge, after resolving conflicts run `git add .` then `git commit` with an appropriate message.'
+          : ' After resolving conflicts, run `git add .` then `git commit` (git will use the merge commit message).';
+
+        let cleanupNote = '';
+        if (conflictInfo.deleteSourceWorktreeAndBranch && conflictInfo.sourceWorktreePath) {
+          cleanupNote = `\n\nAfter the merge is committed successfully, clean up the source branch:\n1. \`git worktree remove ${conflictInfo.sourceWorktreePath} --force\`\n2. \`git branch -D ${conflictInfo.sourceBranch}\``;
+        }
+
+        description = `Merge "${conflictInfo.sourceBranch}" into "${conflictInfo.targetBranch}" and resolve any conflicts. Run \`${mergeCmd}\` to start the merge. This will produce conflicts that need to be resolved.${commitNote} After committing, ensure the code compiles and tests pass.${conflictFilesInfo}${cleanupNote}`;
+        title = `Merge & Resolve Conflicts: ${conflictInfo.sourceBranch} → ${conflictInfo.targetBranch}`;
       }
 
       const featureData = {

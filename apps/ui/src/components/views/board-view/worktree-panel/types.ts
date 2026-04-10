@@ -92,6 +92,12 @@ export interface MergeConflictInfo {
   conflictFiles?: string[];
   /** Type of operation that caused the conflict */
   operationType?: 'merge' | 'rebase' | 'cherry-pick';
+  /** Whether to squash commits when merging */
+  squash?: boolean;
+  /** Whether to delete the source worktree and branch after successful merge */
+  deleteSourceWorktreeAndBranch?: boolean;
+  /** Path to the source branch's worktree (needed for cleanup) */
+  sourceWorktreePath?: string;
 }
 
 export interface BranchSwitchConflictInfo {

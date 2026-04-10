@@ -64,15 +64,10 @@ export function MergeWorktreeDialog({
           .then((result) => {
             if (result.success && result.result?.branches) {
               // Filter out the source branch (can't merge into itself) and remote branches
-              const localBranches = result.result.branches
-                .filter((b: BranchInfo) => !b.isRemote && b.name !== worktree.branch);
-              setAvailableBranches(localBranches.map((b: BranchInfo) => b.name));
-
-              // Default to the currently checked-out branch instead of hardcoding 'main'
-              const currentBranch = localBranches.find((b: BranchInfo) => b.isCurrent);
-              if (currentBranch) {
-                setTargetBranch(currentBranch.name);
-              }
+              const branches = result.result.branches
+                .filter((b: BranchInfo) => !b.isRemote && b.name !== worktree.branch)
+                .map((b: BranchInfo) => b.name);
+              setAvailableBranches(branches);
             }
           })
           .catch((err) => {
@@ -136,13 +131,17 @@ export function MergeWorktreeDialog({
           result.hasConflicts;
 
         if (hasConflicts) {
-          // Set merge conflict state to show the conflict resolution UI
+          // Set merge conflict state to show the conflict resolution UI.
+          // Include merge options so the AI task can complete the full merge.
           setMergeConflict({
             sourceBranch: worktree.branch,
             targetBranch: targetBranch,
-            targetWorktreePath: projectPath, // The merge happens in the target branch's worktree
+            targetWorktreePath: projectPath,
             conflictFiles: result.conflictFiles || [],
             operationType: 'merge',
+            squash,
+            deleteSourceWorktreeAndBranch: deleteWorktreeAndBranch,
+            sourceWorktreePath: worktree.path,
           });
           toast.error('Integrate conflicts detected', {
             description: 'Choose how to resolve the conflicts below.',
@@ -168,6 +167,9 @@ export function MergeWorktreeDialog({
           targetWorktreePath: projectPath,
           conflictFiles: [],
           operationType: 'merge',
+          squash,
+          deleteSourceWorktreeAndBranch: deleteWorktreeAndBranch,
+          sourceWorktreePath: worktree.path,
         });
         toast.error('Integrate conflicts detected', {
           description: 'Choose how to resolve the conflicts below.',

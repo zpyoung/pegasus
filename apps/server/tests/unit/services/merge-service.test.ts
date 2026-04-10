@@ -31,10 +31,27 @@ describe('merge-service', () => {
     once: vi.fn(),
   };
 
+  // Default porcelain output: projectPath has 'main' checked out
+  const defaultWorktreeList = [
+    `worktree ${projectPath}`,
+    'HEAD abc1234',
+    'branch refs/heads/main',
+    '',
+    `worktree ${worktreePath}`,
+    'HEAD def5678',
+    `branch refs/heads/${branchName}`,
+    '',
+  ].join('\n');
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: all git commands succeed
-    mockExecGitCommand.mockResolvedValue('');
+    // Default: all git commands succeed; worktree list returns realistic output
+    mockExecGitCommand.mockImplementation((args: string[]) => {
+      if (args[0] === 'worktree' && args[1] === 'list') {
+        return Promise.resolve(defaultWorktreeList);
+      }
+      return Promise.resolve('');
+    });
   });
 
   describe('standard merge (non-squash)', () => {
@@ -201,6 +218,9 @@ describe('merge-service', () => {
           if (args[0] === 'rev-parse' && args[2] === branchName) {
             throw new Error('not a valid ref');
           }
+          if (args[0] === 'worktree' && args[1] === 'list') {
+            return Promise.resolve(defaultWorktreeList);
+          }
           return Promise.resolve('');
         }
       );
@@ -220,7 +240,10 @@ describe('merge-service', () => {
     it('detects conflicts from merge output', async () => {
       mockExecGitCommand.mockImplementation(
         (args: string[]) => {
-          if (args[0] === 'merge') {
+          if (args[0] === 'worktree' && args[1] === 'list') {
+            return Promise.resolve(defaultWorktreeList);
+          }
+          if (args[0] === 'merge' && args[1] !== '--abort') {
             const err = new Error('CONFLICT (content): Merge conflict in file.ts');
             (err as Record<string, unknown>).stdout = 'CONFLICT (content): Merge conflict in file.ts';
             throw err;
@@ -288,10 +311,12 @@ describe('merge-service', () => {
       expect(result.success).toBe(true);
       expect(result.deleted).toBeUndefined();
 
-      const worktreeCalls = mockExecGitCommand.mock.calls.filter(
-        (call: unknown[]) => Array.isArray(call[0]) && call[0][0] === 'worktree'
+      // worktree list is always called to find the target branch;
+      // verify no worktree *removal* commands were issued
+      const worktreeRemoveCalls = mockExecGitCommand.mock.calls.filter(
+        (call: unknown[]) => Array.isArray(call[0]) && call[0][0] === 'worktree' && call[0][1] === 'remove'
       );
-      expect(worktreeCalls).toHaveLength(0);
+      expect(worktreeRemoveCalls).toHaveLength(0);
     });
   });
 
