@@ -406,6 +406,14 @@ export function AddFeatureDialog({
     }
   }, [planningMode]);
 
+  // When a YAML pipeline is selected, planning is handled by the pipeline - reset to skip
+  useEffect(() => {
+    if (selectedPipelineSlug) {
+      setPlanningMode('skip');
+      setRequirePlanApproval(false);
+    }
+  }, [selectedPipelineSlug]);
+
   const handleModelChange = (entry: PhaseModelEntry) => {
     const modelId = typeof entry.model === 'string' ? entry.model : '';
     const normalizedThinkingLevel = normalizeThinkingLevelForModel(modelId, entry.thinkingLevel);
@@ -735,16 +743,18 @@ export function AddFeatureDialog({
               />
             </div>
 
-            <div className="grid gap-3 grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Planning</Label>
-                <PlanningModeSelect
-                  mode={planningMode}
-                  onModeChange={setPlanningMode}
-                  testIdPrefix="add-feature-planning"
-                  compact
-                />
-              </div>
+            <div className={cn('grid gap-3', selectedPipelineSlug ? 'grid-cols-1' : 'grid-cols-2')}>
+              {!selectedPipelineSlug && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Planning</Label>
+                  <PlanningModeSelect
+                    mode={planningMode}
+                    onModeChange={setPlanningMode}
+                    testIdPrefix="add-feature-planning"
+                    compact
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Options</Label>
                 <div className="flex flex-col gap-2 pt-1">
@@ -762,26 +772,28 @@ export function AddFeatureDialog({
                       Run tests
                     </Label>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="add-feature-require-approval"
-                      checked={requirePlanApproval}
-                      onCheckedChange={(checked) => setRequirePlanApproval(!!checked)}
-                      disabled={planningMode === 'skip'}
-                      data-testid="add-feature-planning-require-approval-checkbox"
-                    />
-                    <Label
-                      htmlFor="add-feature-require-approval"
-                      className={cn(
-                        'text-xs font-normal',
-                        planningMode === 'skip'
-                          ? 'cursor-not-allowed text-muted-foreground'
-                          : 'cursor-pointer'
-                      )}
-                    >
-                      Require approval
-                    </Label>
-                  </div>
+                  {!selectedPipelineSlug && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="add-feature-require-approval"
+                        checked={requirePlanApproval}
+                        onCheckedChange={(checked) => setRequirePlanApproval(!!checked)}
+                        disabled={planningMode === 'skip'}
+                        data-testid="add-feature-planning-require-approval-checkbox"
+                      />
+                      <Label
+                        htmlFor="add-feature-require-approval"
+                        className={cn(
+                          'text-xs font-normal',
+                          planningMode === 'skip'
+                            ? 'cursor-not-allowed text-muted-foreground'
+                            : 'cursor-pointer'
+                        )}
+                      >
+                        Require approval
+                      </Label>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
