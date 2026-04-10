@@ -289,7 +289,15 @@ export default defineConfig(({ command }) => {
     server: {
       host: process.env.HOST || '0.0.0.0',
       port: parseInt(process.env.PEGASUS_WEB_PORT || '3007', 10),
+      strictPort: false,
       allowedHosts: true,
+      // Allow cross-origin requests from any localhost port so that:
+      // 1. Stale cached pages (e.g. from port 3007) can load modules when Vite
+      //    auto-increments to a higher port (3009, 3011, etc.)
+      // 2. Multiple Pegasus instances on different port pairs coexist
+      cors: {
+        origin: /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/,
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:' + (process.env.PEGASUS_SERVER_PORT ?? '3008'),
