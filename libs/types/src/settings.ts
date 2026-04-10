@@ -1412,18 +1412,6 @@ export interface GlobalSettings {
    */
   lastUsedPhaseOverrides?: Partial<Record<PhaseModelKey, PhaseModelEntry>>;
 
-  // Last-Used Phase Model Overrides (ad-hoc model selections from dialogs)
-  /**
-   * Persists the last model override selected in each phase's dialog/UI.
-   * When a user selects a different model in the ModelOverrideTrigger
-   * (e.g., in the commit dialog or PR dialog), that selection is saved here
-   * so it's remembered across sessions.
-   *
-   * Keys are PhaseModelKey names (e.g., 'commitMessageModel'), values are
-   * the last-used PhaseModelEntry. Phases not present use the global default.
-   */
-  lastUsedPhaseOverrides?: Partial<Record<PhaseModelKey, PhaseModelEntry>>;
-
   // Worktree Selection Tracking
   /** Maps project path -> last selected worktree (path + branch) for restoring on PWA reload */
   currentWorktreeByProject?: Record<string, { path: string | null; branch: string }>;
