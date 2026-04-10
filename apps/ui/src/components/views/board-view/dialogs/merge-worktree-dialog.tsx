@@ -64,10 +64,15 @@ export function MergeWorktreeDialog({
           .then((result) => {
             if (result.success && result.result?.branches) {
               // Filter out the source branch (can't merge into itself) and remote branches
-              const branches = result.result.branches
-                .filter((b: BranchInfo) => !b.isRemote && b.name !== worktree.branch)
-                .map((b: BranchInfo) => b.name);
-              setAvailableBranches(branches);
+              const localBranches = result.result.branches
+                .filter((b: BranchInfo) => !b.isRemote && b.name !== worktree.branch);
+              setAvailableBranches(localBranches.map((b: BranchInfo) => b.name));
+
+              // Default to the currently checked-out branch instead of hardcoding 'main'
+              const currentBranch = localBranches.find((b: BranchInfo) => b.isCurrent);
+              if (currentBranch) {
+                setTargetBranch(currentBranch.name);
+              }
             }
           })
           .catch((err) => {
