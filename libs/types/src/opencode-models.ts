@@ -1,13 +1,12 @@
-import type { OpencodeRegistryModelId } from './model-registry.gen.js';
-
 /**
- * OpenCode Model IDs — derived from the generated model registry (run `pnpm sync-models` to update)
- * Models available via OpenCode CLI (opencode models command)
+ * OpenCode Model IDs — discovered dynamically at server startup via `opencode models --verbose`.
+ * Unlike other providers, OpenCode models are system-dependent (local CLI auth + config)
+ * and are NOT part of the static sync-models registry.
  *
  * All OpenCode model IDs use 'opencode-' prefix for consistent provider routing.
  * This prevents naming collisions and ensures clear provider attribution.
  */
-export type OpencodeModelId = OpencodeRegistryModelId;
+export type OpencodeModelId = `opencode-${string}`;
 
 /**
  * Legacy OpenCode model IDs (with slash format) for migration support

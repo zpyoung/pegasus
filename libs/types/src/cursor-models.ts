@@ -1,8 +1,8 @@
-import type { CursorRegistryModelId } from './model-registry.gen.js';
+import type { CursorModelId as CursorRegistryModelId } from './model-registry.gen.js';
 
 /**
- * Cursor CLI Model IDs — derived from the generated model registry (run `pnpm sync-models` to update)
- * Reference: https://cursor.com/docs
+ * Cursor Model IDs — derived from the generated model registry (run `pnpm sync-models` to update)
+ * Reference: https://cursor.com/docs/models-and-pricing
  *
  * All Cursor model IDs use 'cursor-' prefix for consistent provider routing.
  * This prevents naming collisions (e.g., cursor-gpt-5.2-codex vs codex-gpt-5.2-codex).

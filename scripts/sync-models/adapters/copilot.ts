@@ -1,56 +1,47 @@
 /**
- * GitHub Copilot provider adapter
- * Queries the GitHub Copilot models API using GITHUB_TOKEN
+ * GitHub Models provider adapter
+ * Queries the GitHub Models catalog API
+ * Reference: https://docs.github.com/en/rest/models/catalog?apiVersion=2026-03-10
  */
 
 import type { ProviderAdapter, ModelEntry } from '../types.js';
 
-interface CopilotModel {
+interface GitHubModel {
   id: string;
-  name?: string;
-  vendor?: string;
+  name: string;
+  registry?: string;
+  publisher?: string;
+  summary?: string;
+  rate_limit_tier?: string;
+  html_url?: string;
   version?: string;
-  family?: string;
-  capabilities?: {
-    type?: string;
-    tokenizer?: string;
-    supports?: {
-      tool_calls?: boolean;
-      parallel_tool_calls?: boolean;
-      dimensions?: boolean;
-      streaming?: boolean;
-    };
-    limits?: {
-      max_context_window_tokens?: number;
-      max_output_tokens?: number;
-      max_prompt_tokens?: number;
-      max_inputs?: number;
-    };
+  capabilities?: string[];
+  limits?: {
+    max_input_tokens?: number;
+    max_output_tokens?: number;
   };
-  is_chat_default?: boolean;
+  tags?: string[];
+  supported_input_modalities?: string[];
+  supported_output_modalities?: string[];
 }
 
-interface CopilotModelsResponse {
-  models?: CopilotModel[];
-  data?: CopilotModel[];
-}
-
-function mapCopilotModel(m: CopilotModel): ModelEntry {
-  // Apply copilot- prefix for Pegasus routing
+function mapGitHubModel(m: GitHubModel): ModelEntry {
   const id = m.id.startsWith('copilot-') ? m.id : `copilot-${m.id}`;
-  const name = m.name ?? formatDisplayName(m.id);
+  const name = m.name || formatDisplayName(m.id);
+
+  const inputModalities = m.supported_input_modalities ?? [];
+  const capabilities = m.capabilities ?? [];
 
   return {
     id,
     name,
     provider: 'copilot',
-    contextWindow: m.capabilities?.limits?.max_context_window_tokens,
-    maxOutputTokens: m.capabilities?.limits?.max_output_tokens,
-    supportsVision: true,
-    supportsTools: m.capabilities?.supports?.tool_calls ?? true,
-    reasoningCapable: false,
+    contextWindow: m.limits?.max_input_tokens,
+    maxOutputTokens: m.limits?.max_output_tokens,
+    supportsVision: inputModalities.includes('image'),
+    supportsTools: capabilities.includes('tool_calls') || capabilities.includes('tools'),
+    reasoningCapable: capabilities.includes('reasoning'),
     stabilityTier: 'ga',
-    defaultFor: m.is_chat_default ? 'copilot' : undefined,
   };
 }
 
@@ -71,27 +62,24 @@ export const copilotAdapter: ProviderAdapter = {
       throw new Error('GITHUB_TOKEN environment variable is not set');
     }
 
-    const response = await fetch(
-      'https://api.githubcopilot.com/models',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await fetch('https://models.github.ai/catalog/models', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`Copilot API error: ${response.status} ${response.statusText}`);
+      throw new Error(`GitHub Models API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = (await response.json()) as CopilotModelsResponse;
-    const models = data.models ?? data.data ?? [];
+    const models = (await response.json()) as GitHubModel[];
 
-    if (models.length === 0) {
-      throw new Error('Copilot API returned empty model list (possible auth failure)');
+    if (!Array.isArray(models) || models.length === 0) {
+      throw new Error('GitHub Models API returned empty or invalid response');
     }
 
-    return models.map(mapCopilotModel);
+    return models.map(mapGitHubModel);
   },
 };

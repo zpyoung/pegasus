@@ -1,71 +1,351 @@
 /**
- * Cursor CLI provider adapter (local-only tier)
- * Runs `cursor models list --json` using local CLI auth state
+ * Cursor provider adapter (static tier)
+ *
+ * Cursor has no public model-listing API or CLI command, so this adapter
+ * maintains a hand-curated model list sourced from their pricing page.
+ *
+ * ── How to update ──────────────────────────────────────────────────────
+ * 1. Open https://cursor.com/docs/models-and-pricing#premium-routing
+ * 2. Click "Show more models" to expand the full list
+ * 3. Compare the page against CURSOR_MODELS below — add/remove/update entries
+ * 4. Set pricing from the Input / Output columns (per 1M tokens)
+ * 5. Update the "Last updated" date below
+ * 6. Run `pnpm sync-models` to regenerate the registry
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * Last updated: 2026-04-10
  */
 
-import { execFileSync } from 'node:child_process';
 import type { ProviderAdapter, ModelEntry } from '../types.js';
 
-interface CursorModel {
-  id?: string;
-  name?: string;
-  label?: string;
-  description?: string;
-  hasThinking?: boolean;
-  supportsVision?: boolean;
-}
-
-function mapCursorModel(m: CursorModel): ModelEntry {
-  const bareId = m.id ?? m.name ?? '';
-  // Apply cursor- prefix for Pegasus routing if not already prefixed
-  const id = bareId.startsWith('cursor-') ? bareId : `cursor-${bareId}`;
-  const name = m.label ?? m.name ?? formatDisplayName(bareId);
-
-  return {
-    id,
-    name,
+/** Static model list — see update instructions above. */
+const CURSOR_MODELS: ModelEntry[] = [
+  // ── Anthropic Claude ────────────────────────────────────────────────
+  {
+    id: 'cursor-sonnet-4',
+    name: 'Claude 4 Sonnet',
     provider: 'cursor',
-    supportsVision: m.supportsVision ?? false,
-    supportsThinking: m.hasThinking ?? false,
+    supportsVision: true,
+    supportsThinking: false,
     reasoningCapable: false,
     stabilityTier: 'ga',
-  };
-}
+    pricing: { inputPerMToken: 3, outputPerMToken: 15 },
+  },
+  {
+    id: 'cursor-sonnet-4-1m',
+    name: 'Claude 4 Sonnet 1M',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 6, outputPerMToken: 22.5 },
+  },
+  {
+    id: 'cursor-haiku-4.5',
+    name: 'Claude 4.5 Haiku',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1, outputPerMToken: 5 },
+  },
+  {
+    id: 'cursor-opus-4.5',
+    name: 'Claude 4.5 Opus',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 5, outputPerMToken: 25 },
+  },
+  {
+    id: 'cursor-sonnet-4.5',
+    name: 'Claude 4.5 Sonnet',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 3, outputPerMToken: 15 },
+  },
+  {
+    id: 'cursor-opus-4.6',
+    name: 'Claude 4.6 Opus',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: true,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 5, outputPerMToken: 25 },
+  },
+  {
+    id: 'cursor-opus-4.6-fast',
+    name: 'Claude 4.6 Opus (Fast mode)',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: true,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 30, outputPerMToken: 150 },
+  },
+  {
+    id: 'cursor-sonnet-4.6',
+    name: 'Claude 4.6 Sonnet',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: true,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 3, outputPerMToken: 15 },
+  },
 
-function formatDisplayName(id: string): string {
-  return id
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
+  // ── Cursor Composer ─────────────────────────────────────────────────
+  {
+    id: 'cursor-composer-1',
+    name: 'Composer 1',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.25, outputPerMToken: 10 },
+  },
+  {
+    id: 'cursor-composer-1.5',
+    name: 'Composer 1.5',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 3.5, outputPerMToken: 17.5 },
+  },
+  {
+    id: 'cursor-composer-2',
+    name: 'Composer 2',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.5, outputPerMToken: 2.5 },
+  },
+
+  // ── Google Gemini ───────────────────────────────────────────────────
+  {
+    id: 'cursor-gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: true,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.3, outputPerMToken: 2.5 },
+  },
+  {
+    id: 'cursor-gemini-3-flash',
+    name: 'Gemini 3 Flash',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.5, outputPerMToken: 3 },
+  },
+  {
+    id: 'cursor-gemini-3-pro',
+    name: 'Gemini 3 Pro',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 2, outputPerMToken: 12 },
+  },
+  {
+    id: 'cursor-gemini-3-pro-image-preview',
+    name: 'Gemini 3 Pro Image Preview',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'preview',
+    pricing: { inputPerMToken: 2, outputPerMToken: 12 },
+  },
+  {
+    id: 'cursor-gemini-3.1-pro',
+    name: 'Gemini 3.1 Pro',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 2, outputPerMToken: 12 },
+  },
+
+  // ── OpenAI GPT ──────────────────────────────────────────────────────
+  {
+    id: 'cursor-gpt-5',
+    name: 'GPT-5',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.25, outputPerMToken: 10 },
+  },
+  {
+    id: 'cursor-gpt-5-fast',
+    name: 'GPT-5 Fast',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 2.5, outputPerMToken: 20 },
+  },
+  {
+    id: 'cursor-gpt-5-mini',
+    name: 'GPT-5 Mini',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.25, outputPerMToken: 2 },
+  },
+  {
+    id: 'cursor-gpt-5-codex',
+    name: 'GPT-5-Codex',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.25, outputPerMToken: 10 },
+  },
+  {
+    id: 'cursor-gpt-5.1-codex',
+    name: 'GPT-5.1 Codex',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.25, outputPerMToken: 10 },
+  },
+  {
+    id: 'cursor-gpt-5.1-codex-max',
+    name: 'GPT-5.1 Codex Max',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.25, outputPerMToken: 10 },
+  },
+  {
+    id: 'cursor-gpt-5.1-codex-mini',
+    name: 'GPT-5.1 Codex Mini',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.25, outputPerMToken: 2 },
+  },
+  {
+    id: 'cursor-gpt-5.2',
+    name: 'GPT-5.2',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.75, outputPerMToken: 14 },
+  },
+  {
+    id: 'cursor-gpt-5.2-codex',
+    name: 'GPT-5.2 Codex',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.75, outputPerMToken: 14 },
+  },
+  {
+    id: 'cursor-gpt-5.3-codex',
+    name: 'GPT-5.3 Codex',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 1.75, outputPerMToken: 14 },
+  },
+  {
+    id: 'cursor-gpt-5.4',
+    name: 'GPT-5.4',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 2.5, outputPerMToken: 15 },
+  },
+  {
+    id: 'cursor-gpt-5.4-mini',
+    name: 'GPT-5.4 Mini',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.75, outputPerMToken: 4.5 },
+  },
+  {
+    id: 'cursor-gpt-5.4-nano',
+    name: 'GPT-5.4 Nano',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.2, outputPerMToken: 1.25 },
+  },
+
+  // ── Other providers ─────────────────────────────────────────────────
+  {
+    id: 'cursor-grok-4.20',
+    name: 'Grok 4.20',
+    provider: 'cursor',
+    supportsVision: true,
+    supportsThinking: false,
+    reasoningCapable: true,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 2, outputPerMToken: 6 },
+  },
+  {
+    id: 'cursor-kimi-k2.5',
+    name: 'Kimi K2.5',
+    provider: 'cursor',
+    supportsVision: false,
+    supportsThinking: false,
+    reasoningCapable: false,
+    stabilityTier: 'ga',
+    pricing: { inputPerMToken: 0.6, outputPerMToken: 3 },
+  },
+];
 
 export const cursorAdapter: ProviderAdapter = {
   name: 'cursor',
   tier: 'local',
 
   async fetchModels(): Promise<ModelEntry[]> {
-    let output: string;
-    try {
-      output = execFileSync('cursor', ['models', 'list', '--json'], {
-        encoding: 'utf-8',
-        timeout: 30_000,
-      });
-    } catch (err) {
-      throw new Error(`Failed to run cursor CLI: ${(err as Error).message}`);
-    }
-
-    let models: CursorModel[];
-    try {
-      const parsed = JSON.parse(output) as CursorModel[] | { models: CursorModel[] };
-      models = Array.isArray(parsed) ? parsed : parsed.models ?? [];
-    } catch {
-      throw new Error('cursor models list --json returned non-JSON output');
-    }
-
-    if (models.length === 0) {
-      throw new Error('cursor models list returned empty model list');
-    }
-
-    return models.map(mapCursorModel);
+    return CURSOR_MODELS;
   },
 };
