@@ -38,6 +38,7 @@ import {
   type GeminiModelId,
   type CopilotModelId,
   type PhaseModelEntry,
+  type PhaseModelKey,
 } from '@pegasus/types';
 
 const logger = createLogger('SettingsSync');
@@ -120,6 +121,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   'lastSelectedSessionByProject',
   'agentModelBySession',
   'helperModelByFeature',
+  'lastUsedPhaseOverrides',
   'currentWorktreeByProject',
   // Codex CLI Settings
   'codexAutoLoadAgents',
@@ -884,6 +886,17 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
             )
           )
         : currentAppState.helperModelByFeature,
+      // Hydrate last-used phase model overrides (persisted ad-hoc selections from dialogs)
+      lastUsedPhaseOverrides: serverSettings.lastUsedPhaseOverrides
+        ? Object.fromEntries(
+            Object.entries(
+              serverSettings.lastUsedPhaseOverrides as Record<string, unknown>
+            ).map(([phase, entry]) => [
+              phase as PhaseModelKey,
+              migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
+            ])
+          )
+        : currentAppState.lastUsedPhaseOverrides,
       // Restore all valid worktree selections (both main branch and feature worktrees).
       // The validation effect in use-worktrees.ts handles deleted worktrees gracefully.
       currentWorktreeByProject: sanitizeWorktreeByProject(

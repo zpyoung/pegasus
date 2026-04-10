@@ -16,28 +16,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type {
-  BacklogPlanResult,
-  BacklogChange,
-  ModelAlias,
-  CursorModelId,
-  PhaseModelEntry,
-} from '@pegasus/types';
+import type { BacklogPlanResult, BacklogChange } from '@pegasus/types';
 import { ModelOverrideTrigger } from '@/components/shared/model-override-trigger';
-import { useAppStore } from '@/store/app-store';
-
-/**
- * Normalize PhaseModelEntry or string to PhaseModelEntry
- */
-function normalizeEntry(entry: PhaseModelEntry | string | undefined | null): PhaseModelEntry {
-  if (!entry) {
-    return { model: 'claude-sonnet' as ModelAlias };
-  }
-  if (typeof entry === 'string') {
-    return { model: entry as ModelAlias | CursorModelId };
-  }
-  return entry;
-}
+import { useModelOverride } from '@/components/shared/use-model-override';
 
 interface BacklogPlanDialogProps {
   open: boolean;
@@ -71,9 +52,14 @@ export function BacklogPlanDialog({
   const [prompt, setPrompt] = useState('');
   const [expandedChanges, setExpandedChanges] = useState<Set<number>>(new Set());
   const [selectedChanges, setSelectedChanges] = useState<Set<number>>(new Set());
-  const [modelOverride, setModelOverride] = useState<PhaseModelEntry | null>(null);
 
-  const { phaseModels } = useAppStore();
+  // Use the shared model override hook (with automatic persistence)
+  const {
+    effectiveModelEntry,
+    effectiveModel,
+    isOverridden: isModelOverridden,
+    setOverride: setModelOverride,
+  } = useModelOverride({ phase: 'backlogPlanningModel' });
 
   // Set mode based on whether we have a pending result
   useEffect(() => {
@@ -106,13 +92,10 @@ export function BacklogPlanDialog({
     logger.debug('Starting backlog plan generation', {
       projectPath,
       promptLength: prompt.length,
-      hasModelOverride: Boolean(modelOverride),
+      hasModelOverride: isModelOverridden,
     });
     setIsGeneratingPlan(true);
 
-    // Use model override if set, otherwise use global default (extract model string from PhaseModelEntry)
-    const effectiveModelEntry = modelOverride || normalizeEntry(phaseModels.backlogPlanningModel);
-    const effectiveModel = effectiveModelEntry.model;
     const result = await api.backlogPlan.generate(
       projectPath,
       prompt,
@@ -143,8 +126,8 @@ export function BacklogPlanDialog({
     logger,
     projectPath,
     prompt,
-    modelOverride,
-    phaseModels,
+    effectiveModel,
+    isModelOverridden,
     setIsGeneratingPlan,
     onClose,
     currentBranch,
@@ -420,9 +403,6 @@ export function BacklogPlanDialog({
     }
   };
 
-  // Get effective model entry (override or global default)
-  const effectiveModelEntry = modelOverride || normalizeEntry(phaseModels.backlogPlanningModel);
-
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-2xl">
@@ -451,7 +431,7 @@ export function BacklogPlanDialog({
                   phase="backlogPlanningModel"
                   size="sm"
                   variant="button"
-                  isOverridden={modelOverride !== null}
+                  isOverridden={isModelOverridden}
                 />
               </div>
               <Button variant="outline" onClick={onClose}>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useAppStore } from '@/store/app-store';
 import type { ModelId, PhaseModelKey, PhaseModelEntry } from '@pegasus/types';
 import { DEFAULT_PHASE_MODELS } from '@pegasus/types';
@@ -46,7 +46,12 @@ function normalizeEntry(entry: PhaseModelEntry | string | undefined | null): Pha
  * Hook for managing model overrides per phase
  *
  * Provides a simple way to allow users to override the global phase model
- * for a specific run or context. Now supports PhaseModelEntry with thinking levels.
+ * for a specific run or context. Supports PhaseModelEntry with thinking levels.
+ *
+ * **Persistence:** All overrides are automatically persisted to the Zustand store
+ * (and synced to the server via the settings sync pipeline). When a component
+ * mounts, it hydrates from the last-used override if no explicit initialOverride
+ * is provided.
  *
  * @example
  * ```tsx
@@ -70,10 +75,22 @@ export function useModelOverride({
   phase,
   initialOverride = null,
 }: UseModelOverrideOptions): UseModelOverrideResult {
-  const { phaseModels } = useAppStore();
-  const [override, setOverrideState] = useState<PhaseModelEntry | null>(
-    initialOverride ? normalizeEntry(initialOverride) : null
-  );
+  const { phaseModels, lastUsedPhaseOverrides, setLastUsedPhaseOverride, clearLastUsedPhaseOverride } = useAppStore();
+
+  // Hydrate initial state: prefer explicit initialOverride, then persisted last-used, then null
+  const hydratedRef = useRef(false);
+  const [override, setOverrideState] = useState<PhaseModelEntry | null>(() => {
+    if (initialOverride) {
+      return normalizeEntry(initialOverride);
+    }
+    // Hydrate from persisted last-used override
+    const persisted = lastUsedPhaseOverrides[phase];
+    if (persisted) {
+      hydratedRef.current = true;
+      return normalizeEntry(persisted);
+    }
+    return null;
+  });
 
   // Normalize global default to PhaseModelEntry, with fallback to DEFAULT_PHASE_MODELS
   // This handles cases where settings haven't been migrated to include new phase models
@@ -89,13 +106,25 @@ export function useModelOverride({
 
   const isOverridden = override !== null;
 
-  const setOverride = useCallback((entry: PhaseModelEntry | null) => {
-    setOverrideState(entry ? normalizeEntry(entry) : null);
-  }, []);
+  const setOverride = useCallback(
+    (entry: PhaseModelEntry | null) => {
+      const normalized = entry ? normalizeEntry(entry) : null;
+      setOverrideState(normalized);
+
+      // Persist to store (which triggers settings sync to server)
+      if (normalized) {
+        setLastUsedPhaseOverride(phase, normalized);
+      } else {
+        clearLastUsedPhaseOverride(phase);
+      }
+    },
+    [phase, setLastUsedPhaseOverride, clearLastUsedPhaseOverride]
+  );
 
   const clearOverride = useCallback(() => {
     setOverrideState(null);
-  }, []);
+    clearLastUsedPhaseOverride(phase);
+  }, [phase, clearLastUsedPhaseOverride]);
 
   return {
     effectiveModelEntry,

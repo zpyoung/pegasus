@@ -279,6 +279,7 @@ const initialState: AppState = {
   lastSelectedSessionByProject: {},
   agentModelBySession: {},
   helperModelByFeature: {},
+  lastUsedPhaseOverrides: {},
   theme: getStoredTheme() || 'dark',
   fontFamilySans: getStoredFontSans(),
   fontFamilyMono: getStoredFontMono(),
@@ -1781,6 +1782,21 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     })),
   getHelperModelForFeature: (featureId) => get().helperModelByFeature[featureId] ?? null,
+
+  // Last-used phase model override actions
+  setLastUsedPhaseOverride: (phase, entry) =>
+    set((state) => ({
+      lastUsedPhaseOverrides: {
+        ...state.lastUsedPhaseOverrides,
+        [phase]: entry,
+      },
+    })),
+  clearLastUsedPhaseOverride: (phase) =>
+    set((state) => {
+      const { [phase]: _removed, ...remaining } = state.lastUsedPhaseOverrides;
+      return { lastUsedPhaseOverrides: remaining };
+    }),
+  getLastUsedPhaseOverride: (phase) => get().lastUsedPhaseOverrides[phase] ?? null,
 
   // Board Background actions
   setBoardBackground: (projectPath, imagePath) =>
