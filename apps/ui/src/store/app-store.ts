@@ -404,6 +404,7 @@ const initialState: AppState = {
   autoDismissInitScriptIndicatorByProject: {},
   useWorktreesByProject: {},
   worktreeCopyFilesByProject: {},
+  worktreeSymlinkFilesByProject: {},
   pinnedWorktreesCountByProject: {},
   pinnedWorktreeBranchesByProject: {},
   worktreeDropdownThresholdByProject: {},
@@ -2788,6 +2789,16 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       },
     })),
   getWorktreeCopyFiles: (projectPath) => get().worktreeCopyFilesByProject[projectPath] ?? [],
+
+  // Worktree Symlink Files actions
+  setWorktreeSymlinkFiles: (projectPath, files) =>
+    set((state) => ({
+      worktreeSymlinkFilesByProject: {
+        ...state.worktreeSymlinkFilesByProject,
+        [projectPath]: files,
+      },
+    })),
+  getWorktreeSymlinkFiles: (projectPath) => get().worktreeSymlinkFilesByProject[projectPath] ?? [],
 
   // Worktree Display Settings actions
   setPinnedWorktreesCount: (projectPath, count) =>

@@ -14,6 +14,7 @@ import {
   Trash2,
   PanelBottomClose,
   Copy,
+  Link,
   Plus,
   FolderOpen,
   LayoutGrid,
@@ -28,7 +29,7 @@ import { getHttpApiClient } from '@/lib/http-api-client';
 import type { Project } from '@/lib/electron';
 import { ProjectFileSelectorDialog } from '@/components/dialogs/project-file-selector-dialog';
 
-// Stable empty array reference to prevent unnecessary re-renders when no copy files are set
+// Stable empty array reference to prevent unnecessary re-renders when no files are set
 const EMPTY_FILES: string[] = [];
 
 interface WorktreePreferencesSectionProps {
@@ -67,6 +68,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
   const copyFiles = copyFilesFromStore ?? EMPTY_FILES;
   const setWorktreeCopyFiles = useAppStore((s) => s.setWorktreeCopyFiles);
 
+  // Use a stable empty array reference to prevent new array on every render when
+  // worktreeSymlinkFilesByProject[project.path] is undefined (not yet loaded).
+  const symlinkFilesFromStore = useAppStore((s) => s.worktreeSymlinkFilesByProject[project.path]);
+  const symlinkFiles = symlinkFilesFromStore ?? EMPTY_FILES;
+  const setWorktreeSymlinkFiles = useAppStore((s) => s.setWorktreeSymlinkFiles);
+
   // Worktree display settings
   const pinnedWorktreesCount = useAppStore((s) => s.getPinnedWorktreesCount(project.path));
   const setPinnedWorktreesCount = useAppStore((s) => s.setPinnedWorktreesCount);
@@ -84,6 +91,10 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
   // Copy files state
   const [newCopyFilePath, setNewCopyFilePath] = useState('');
   const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
+
+  // Symlink files state
+  const [newSymlinkFilePath, setNewSymlinkFilePath] = useState('');
+  const [symlinkFileSelectorOpen, setSymlinkFileSelectorOpen] = useState(false);
 
   // Ref for storing previous slider value for rollback on error
   const sliderPrevRef = useRef<number | null>(null);
@@ -125,6 +136,9 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
           if (response.settings.worktreeCopyFiles !== undefined) {
             setWorktreeCopyFiles(currentPath, response.settings.worktreeCopyFiles);
           }
+          if (response.settings.worktreeSymlinkFiles !== undefined) {
+            setWorktreeSymlinkFiles(currentPath, response.settings.worktreeSymlinkFiles);
+          }
           if (response.settings.pinnedWorktreesCount !== undefined) {
             setPinnedWorktreesCount(currentPath, response.settings.pinnedWorktreesCount);
           }
@@ -148,6 +162,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     setDefaultDeleteBranch,
     setAutoDismissInitScriptIndicator,
     setWorktreeCopyFiles,
+    setWorktreeSymlinkFiles,
     setPinnedWorktreesCount,
   ]);
 
@@ -351,6 +366,103 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       }
     },
     [project.path, copyFiles, setWorktreeCopyFiles]
+  );
+
+  // Add a new file path to symlink list
+  const handleAddSymlinkFile = useCallback(async () => {
+    const trimmed = newSymlinkFilePath.trim();
+    if (!trimmed) return;
+
+    // Normalize: remove leading ./ or /
+    const normalized = trimmed.replace(/^\.\//, '').replace(/^\//, '');
+    if (!normalized) return;
+
+    // Check for duplicates
+    if (symlinkFiles.includes(normalized)) {
+      toast.error('File already in list', {
+        description: `"${normalized}" is already configured for symlinking.`,
+      });
+      return;
+    }
+
+    const prevFiles = symlinkFiles;
+    const updatedFiles = [...symlinkFiles, normalized];
+    setWorktreeSymlinkFiles(project.path, updatedFiles);
+    setNewSymlinkFilePath('');
+
+    // Persist to server
+    try {
+      const httpClient = getHttpApiClient();
+      await httpClient.settings.updateProject(project.path, {
+        worktreeSymlinkFiles: updatedFiles,
+      });
+      toast.success('Symlink file added', {
+        description: `"${normalized}" will be symlinked to new worktrees.`,
+      });
+    } catch (error) {
+      // Rollback optimistic update on failure
+      setWorktreeSymlinkFiles(project.path, prevFiles);
+      setNewSymlinkFilePath(normalized);
+      console.error('Failed to persist worktreeSymlinkFiles:', error);
+      toast.error('Failed to save symlink files setting');
+    }
+  }, [project.path, newSymlinkFilePath, symlinkFiles, setWorktreeSymlinkFiles]);
+
+  // Remove a file path from symlink list
+  const handleRemoveSymlinkFile = useCallback(
+    async (filePath: string) => {
+      const prevFiles = symlinkFiles;
+      const updatedFiles = symlinkFiles.filter((f) => f !== filePath);
+      setWorktreeSymlinkFiles(project.path, updatedFiles);
+
+      // Persist to server
+      try {
+        const httpClient = getHttpApiClient();
+        await httpClient.settings.updateProject(project.path, {
+          worktreeSymlinkFiles: updatedFiles,
+        });
+        toast.success('Symlink file removed');
+      } catch (error) {
+        // Rollback optimistic update on failure
+        setWorktreeSymlinkFiles(project.path, prevFiles);
+        console.error('Failed to persist worktreeSymlinkFiles:', error);
+        toast.error('Failed to save symlink files setting');
+      }
+    },
+    [project.path, symlinkFiles, setWorktreeSymlinkFiles]
+  );
+
+  // Handle files selected from the file selector dialog for symlinks
+  const handleSymlinkFileSelectorSelect = useCallback(
+    async (paths: string[]) => {
+      // Filter out duplicates
+      const newPaths = paths.filter((p) => !symlinkFiles.includes(p));
+      if (newPaths.length === 0) {
+        toast.info('All selected files are already in the list');
+        return;
+      }
+
+      const prevFiles = symlinkFiles;
+      const updatedFiles = [...symlinkFiles, ...newPaths];
+      setWorktreeSymlinkFiles(project.path, updatedFiles);
+
+      // Persist to server
+      try {
+        const httpClient = getHttpApiClient();
+        await httpClient.settings.updateProject(project.path, {
+          worktreeSymlinkFiles: updatedFiles,
+        });
+        toast.success(`${newPaths.length} ${newPaths.length === 1 ? 'file' : 'files'} added`, {
+          description: newPaths.map((p) => `"${p}"`).join(', '),
+        });
+      } catch (error) {
+        // Rollback optimistic update on failure
+        setWorktreeSymlinkFiles(project.path, prevFiles);
+        console.error('Failed to persist worktreeSymlinkFiles:', error);
+        toast.error('Failed to save symlink files setting');
+      }
+    },
+    [project.path, symlinkFiles, setWorktreeSymlinkFiles]
   );
 
   return (
@@ -673,6 +785,92 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
             onSelect={handleFileSelectorSelect}
             projectPath={project.path}
             existingFiles={copyFiles}
+          />
+        </div>
+
+        {/* Separator */}
+        <div className="border-t border-border/30" />
+
+        {/* Symlink Files Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Link className="w-4 h-4 text-brand-500" />
+            <Label className="text-foreground font-medium">Symlink Files to Worktrees</Label>
+          </div>
+          <p className="text-xs text-muted-foreground/80 leading-relaxed">
+            Specify files or directories (relative to project root) to automatically symlink into
+            new worktrees. The symlink points back to the main project so changes are instantly
+            shared. Useful for untracked files like{' '}
+            <code className="font-mono text-foreground/60">.env</code> that should stay in sync
+            across all worktrees.
+          </p>
+
+          {/* Current symlink file list */}
+          {symlinkFiles.length > 0 && (
+            <div className="space-y-1.5">
+              {symlinkFiles.map((filePath) => (
+                <div
+                  key={filePath}
+                  className="flex items-center gap-2 group/item px-3 py-1.5 rounded-lg bg-accent/20 hover:bg-accent/40 transition-colors"
+                >
+                  <Link className="w-3.5 h-3.5 text-muted-foreground/60 flex-shrink-0" />
+                  <code className="font-mono text-sm text-foreground/80 flex-1 truncate">
+                    {filePath}
+                  </code>
+                  <button
+                    onClick={() => handleRemoveSymlinkFile(filePath)}
+                    className="p-0.5 rounded text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive transition-all flex-shrink-0"
+                    title={`Remove ${filePath}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add new symlink file input */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={newSymlinkFilePath}
+              onChange={(e) => setNewSymlinkFilePath(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddSymlinkFile();
+                }
+              }}
+              placeholder=".env, config/local.json, etc."
+              className="flex-1 h-8 text-sm font-mono"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddSymlinkFile}
+              disabled={!newSymlinkFilePath.trim()}
+              className="gap-1.5 h-8"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSymlinkFileSelectorOpen(true)}
+              className="gap-1.5 h-8"
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              Browse
+            </Button>
+          </div>
+
+          {/* File selector dialog for symlinks */}
+          <ProjectFileSelectorDialog
+            open={symlinkFileSelectorOpen}
+            onOpenChange={setSymlinkFileSelectorOpen}
+            onSelect={handleSymlinkFileSelectorSelect}
+            projectPath={project.path}
+            existingFiles={symlinkFiles}
           />
         </div>
 

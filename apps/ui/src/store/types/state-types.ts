@@ -399,6 +399,10 @@ export interface AppState {
   // List of relative file paths to copy from project root into new worktrees
   worktreeCopyFilesByProject: Record<string, string[]>;
 
+  // Worktree Symlink Files (per-project, keyed by project path)
+  // List of relative file paths to symlink from project root into new worktrees
+  worktreeSymlinkFilesByProject: Record<string, string[]>;
+
   // Worktree Display Settings (per-project, keyed by project path)
   // Number of worktrees always visible (pinned) without expanding a dropdown (default: 1)
   pinnedWorktreesCountByProject: Record<string, number>;
@@ -883,6 +887,10 @@ export interface AppActions {
   // Worktree Copy Files actions (per-project)
   setWorktreeCopyFiles: (projectPath: string, files: string[]) => void;
   getWorktreeCopyFiles: (projectPath: string) => string[];
+
+  // Worktree Symlink Files actions (per-project)
+  setWorktreeSymlinkFiles: (projectPath: string, files: string[]) => void;
+  getWorktreeSymlinkFiles: (projectPath: string) => string[];
 
   // Worktree Display Settings actions (per-project)
   setPinnedWorktreesCount: (projectPath: string, count: number) => void;

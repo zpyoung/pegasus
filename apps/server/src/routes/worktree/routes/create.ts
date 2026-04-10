@@ -304,6 +304,20 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
         logger.warn('Some configured files failed to copy to worktree:', copyErr);
       }
 
+      // Symlink configured files into the new worktree before responding
+      // Symlinks point back to the main project root so changes stay in sync
+      try {
+        await worktreeService.symlinkConfiguredFiles(
+          projectPath,
+          absoluteWorktreePath,
+          settingsService,
+          events
+        );
+      } catch (symlinkErr) {
+        // Log but don't fail worktree creation – files may be partially linked
+        logger.warn('Some configured files failed to symlink to worktree:', symlinkErr);
+      }
+
       // Respond immediately (non-blocking)
       res.json({
         success: true,

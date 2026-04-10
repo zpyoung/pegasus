@@ -74,6 +74,19 @@ export class CopyFilesError extends Error {
 }
 
 /**
+ * Error thrown when one or more symlink operations fail during
+ * `symlinkConfiguredFiles`.  The caller can inspect `failures` for details.
+ */
+export class SymlinkFilesError extends Error {
+  constructor(public readonly failures: Array<{ path: string; error: string }>) {
+    super(
+      `Failed to symlink ${failures.length} file(s): ${failures.map((f) => f.path).join(', ')}`
+    );
+    this.name = 'SymlinkFilesError';
+  }
+}
+
+/**
  * WorktreeService encapsulates file-system operations that run against
  * git worktrees (e.g. copying project-configured files into a new worktree).
  *
@@ -173,6 +186,131 @@ export class WorktreeService {
 
     if (failures.length > 0) {
       throw new CopyFilesError(failures);
+    }
+  }
+
+  /**
+   * Symlink files / directories listed in the project's `worktreeSymlinkFiles`
+   * setting from `projectPath` into `worktreePath`.
+   *
+   * Each symlink uses a **relative** target path so the project remains portable
+   * (i.e. moving the parent directory keeps the symlinks valid).
+   *
+   * If symlink creation fails for any reason other than the source being missing,
+   * the method falls back to copying the file and emits
+   * `worktree:symlink-files:fallback-copied` so the user is informed.
+   *
+   * Security: paths containing `..` segments or absolute paths are rejected.
+   *
+   * Events emitted via `emitter`:
+   * - `worktree:symlink-files:linked`         – symlink created successfully
+   * - `worktree:symlink-files:skipped`         – source file not found (ENOENT)
+   * - `worktree:symlink-files:fallback-copied` – symlink failed; file was copied instead
+   * - `worktree:symlink-files:failed`          – both symlink and fallback copy failed
+   *
+   * @throws {SymlinkFilesError} if any operation fails and the copy fallback also fails.
+   */
+  async symlinkConfiguredFiles(
+    projectPath: string,
+    worktreePath: string,
+    settingsService: SettingsService | undefined,
+    emitter: EventEmitter
+  ): Promise<void> {
+    if (!settingsService) return;
+
+    const projectSettings = await settingsService.getProjectSettings(projectPath);
+    const symlinkFiles = projectSettings.worktreeSymlinkFiles;
+
+    if (!symlinkFiles || symlinkFiles.length === 0) return;
+
+    const failures: Array<{ path: string; error: string }> = [];
+
+    for (const relativePath of symlinkFiles) {
+      // Security: prevent path traversal
+      const normalized = path.normalize(relativePath);
+      if (normalized === '' || normalized === '.') {
+        emitter.emit('worktree:symlink-files:skipped', {
+          path: relativePath,
+          reason: 'Suspicious path rejected (empty or current-dir)',
+        });
+        continue;
+      }
+      if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+        emitter.emit('worktree:symlink-files:skipped', {
+          path: relativePath,
+          reason: 'Suspicious path rejected (traversal or absolute)',
+        });
+        continue;
+      }
+
+      const sourcePath = path.join(projectPath, normalized);
+      const destPath = path.join(worktreePath, normalized);
+
+      try {
+        // Check if source exists (throws ENOENT if missing)
+        const stat = await fs.stat(sourcePath);
+
+        // Ensure destination directory exists
+        const destDir = path.dirname(destPath);
+        await fs.mkdir(destDir, { recursive: true });
+
+        // Remove any existing file/symlink at the destination
+        await fs.rm(destPath, { force: true, recursive: true });
+
+        // Compute a relative symlink target so the project stays portable
+        const symlinkTarget = path.relative(destDir, sourcePath);
+
+        try {
+          // Pass 'dir' type on Windows for directory symlinks; ignored on macOS/Linux
+          await fs.symlink(symlinkTarget, destPath, stat.isDirectory() ? 'dir' : 'file');
+          emitter.emit('worktree:symlink-files:linked', {
+            path: normalized,
+            target: symlinkTarget,
+            type: stat.isDirectory() ? 'directory' : 'file',
+          });
+        } catch (symlinkErr) {
+          // Symlink failed — fall back to copying
+          const symlinkErrMsg =
+            symlinkErr instanceof Error ? symlinkErr.message : String(symlinkErr);
+          try {
+            if (stat.isDirectory()) {
+              await fs.cp(sourcePath, destPath, { recursive: true, force: true });
+            } else {
+              await fs.copyFile(sourcePath, destPath);
+            }
+            emitter.emit('worktree:symlink-files:fallback-copied', {
+              path: normalized,
+              type: stat.isDirectory() ? 'directory' : 'file',
+              reason: `Symlink failed (${symlinkErrMsg}); copied instead`,
+            });
+          } catch (copyErr) {
+            const copyErrMsg = copyErr instanceof Error ? copyErr.message : String(copyErr);
+            emitter.emit('worktree:symlink-files:failed', {
+              path: normalized,
+              error: copyErrMsg,
+            });
+            failures.push({ path: normalized, error: copyErrMsg });
+          }
+        }
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+          emitter.emit('worktree:symlink-files:skipped', {
+            path: normalized,
+            reason: 'File not found in project root',
+          });
+        } else {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          emitter.emit('worktree:symlink-files:failed', {
+            path: normalized,
+            error: errorMessage,
+          });
+          failures.push({ path: normalized, error: errorMessage });
+        }
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new SymlinkFilesError(failures);
     }
   }
 }

@@ -1672,6 +1672,14 @@ export interface ProjectSettings {
    * Each entry is a relative path from the project root (e.g., ".env", ".env.local", "config/local.json").
    */
   worktreeCopyFiles?: string[];
+  /**
+   * List of file/directory paths (relative to project root) to symlink into new worktrees.
+   * The symlink in the worktree will point back to the file in the main project root,
+   * so changes to the file are immediately reflected across all worktrees.
+   * Useful for untracked files that should stay in sync, like .env, local config files, etc.
+   * Each entry is a relative path from the project root (e.g., ".env", "config/local.json").
+   */
+  worktreeSymlinkFiles?: string[];
 
   // Worktree Display Settings
   /**
