@@ -61,6 +61,7 @@ interface CommitWorktreeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   worktree: WorktreeInfo | null;
+  agentModifiedFiles?: string[];
   onCommitted: () => void;
 }
 
@@ -202,6 +203,7 @@ export function CommitWorktreeDialog({
   open,
   onOpenChange,
   worktree,
+  agentModifiedFiles,
   onCommitted,
 }: CommitWorktreeDialogProps) {
   const [message, setMessage] = useState('');
@@ -349,6 +351,15 @@ export function CommitWorktreeDialog({
                 if (stagedFiles.length > 0) {
                   // Also include untracked files that are staged (A status)
                   setSelectedFiles(new Set(stagedFiles.map((f) => f.path)));
+                } else if (agentModifiedFiles && agentModifiedFiles.length > 0) {
+                  // Pre-select only files the agent modified
+                  const agentFileSet = new Set(agentModifiedFiles);
+                  const matching = fileList.filter((f) => agentFileSet.has(f.path));
+                  setSelectedFiles(
+                    matching.length > 0
+                      ? new Set(matching.map((f) => f.path))
+                      : new Set(fileList.map((f) => f.path))
+                  );
                 } else {
                   setSelectedFiles(new Set(fileList.map((f) => f.path)));
                 }

@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Feature, useAppStore } from '@/store/app-store';
 import { useShallow } from 'zustand/react/shallow';
+import { getHttpApiClient } from '@/lib/http-api-client';
 import { CardBadges, PriorityBadges } from './card-badges';
 import { CardHeaderSection } from './card-header';
 import { CardContentSections } from './card-content-sections';
@@ -130,6 +131,32 @@ export const KanbanCard = memo(function KanbanCard({
     : true;
   const showAllWorktrees = rawShowAllWorktrees || !isWorktreePanelVisible;
   const mainBranch = currentProject?.path ? getPrimaryWorktreeBranch(currentProject.path) : null;
+
+  const handleBranchPillClick = useCallback((branchName: string) => {
+    const state = useAppStore.getState();
+    const projectPath = state.currentProject?.path;
+    if (!projectPath) return;
+
+    const worktrees = state.worktreesByProject[projectPath] ?? [];
+    const worktree = worktrees.find((w) => w.branch === branchName);
+    if (!worktree) return;
+
+    const currentWorktree = state.currentWorktreeByProject[projectPath];
+    const rawShowAll = state.showAllWorktreesByProject[projectPath] ?? false;
+
+    // No-op if already on this branch with All mode already off
+    if (!rawShowAll && currentWorktree?.path === worktree.path) return;
+
+    state.setCurrentWorktree(projectPath, worktree.path, worktree.branch);
+
+    if (rawShowAll) {
+      state.setShowAllWorktrees(projectPath, false);
+      getHttpApiClient()
+        .settings.updateProject(projectPath, { showAllWorktrees: false })
+        .catch(console.error);
+    }
+  }, []);
+
   // A card should display as "actively running" if it's in the runningAutoTasks list
   // AND in an execution-compatible status. However, there's a race window where a feature
   // is tracked as running (in runningAutoTasks) but its disk/UI status hasn't caught up yet
@@ -315,6 +342,7 @@ export const KanbanCard = memo(function KanbanCard({
           useWorktrees={useWorktrees}
           showAllWorktrees={showAllWorktrees}
           mainBranch={mainBranch}
+          onBranchPillClick={handleBranchPillClick}
         />
 
         {/* Agent Info Panel */}

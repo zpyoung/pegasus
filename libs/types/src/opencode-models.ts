@@ -1,17 +1,12 @@
 /**
- * OpenCode Model IDs
- * Models available via OpenCode CLI (opencode models command)
+ * OpenCode Model IDs — discovered dynamically at server startup via `opencode models --verbose`.
+ * Unlike other providers, OpenCode models are system-dependent (local CLI auth + config)
+ * and are NOT part of the static sync-models registry.
  *
  * All OpenCode model IDs use 'opencode-' prefix for consistent provider routing.
  * This prevents naming collisions and ensures clear provider attribution.
  */
-export type OpencodeModelId =
-  // OpenCode Free Tier Models
-  | 'opencode-big-pickle'
-  | 'opencode-glm-5-free'
-  | 'opencode-gpt-5-nano'
-  | 'opencode-kimi-k2.5-free'
-  | 'opencode-minimax-m2.5-free';
+export type OpencodeModelId = `opencode-${string}`;
 
 /**
  * Legacy OpenCode model IDs (with slash format) for migration support

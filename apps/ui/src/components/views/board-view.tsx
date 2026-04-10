@@ -103,6 +103,7 @@ import { SelectionActionBar, ListView } from './board-view/components';
 import { MassEditDialog, BranchConflictDialog } from './board-view/dialogs';
 import type { BranchConflictData } from './board-view/dialogs';
 import { InitScriptIndicator } from './board-view/init-script-indicator';
+import { RunningDevServersIndicator } from './board-view/running-dev-servers-indicator';
 import { useInitScriptEvents } from '@/hooks/use-init-script-events';
 import { usePipelineConfig } from '@/hooks/queries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -224,6 +225,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const [selectedWorktreeForAction, setSelectedWorktreeForAction] = useState<WorktreeInfo | null>(
     null
   );
+  const [commitFeatureFiles, setCommitFeatureFiles] = useState<string[] | undefined>();
   const [worktreeRefreshKey, setWorktreeRefreshKey] = useState(0);
 
   // Branch conflict dialog state (for branch switch and stash pop conflicts)
@@ -276,6 +278,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const [searchQuery, setSearchQuery] = useState('');
   // Plan approval loading state
   const [isPlanApprovalLoading, setIsPlanApprovalLoading] = useState(false);
+  const [isPlanRevisionInProgress, setIsPlanRevisionInProgress] = useState(false);
   // Question dialog state
   const [questionFeature, setQuestionFeature] = useState<Feature | null>(null);
   const [isQuestionLoading, setIsQuestionLoading] = useState(false);
@@ -981,6 +984,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         return;
       }
       setSelectedWorktreeForAction(matchingWorktree);
+      setCommitFeatureFiles(feature.agentModifiedFiles);
       setShowCommitWorktreeDialog(true);
     },
     [worktrees]
@@ -1749,6 +1753,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     return hookFeatures.find((f) => f.id === pendingPlanApproval.featureId) || null;
   }, [pendingPlanApproval, hookFeatures]);
 
+  // Clear revision-in-progress state when a new plan arrives (plan_approval_required re-fires).
+  // The plan_approval_required handler in use-auto-mode updates pendingPlanApproval with
+  // the newly generated plan content, so a content change while revision is pending means
+  // the revised plan is ready for review.
+  useEffect(() => {
+    if (isPlanRevisionInProgress && pendingPlanApproval?.planContent) {
+      setIsPlanRevisionInProgress(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPlanApproval?.planContent]);
+
   // Handle plan approval
   const handlePlanApprove = useCallback(
     async (editedPlan?: string) => {
@@ -1810,6 +1825,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (!pendingPlanApproval || !currentProject) return;
 
       const featureId = pendingPlanApproval.featureId;
+      const hasFeedback = !!feedback?.trim();
       setIsPlanApprovalLoading(true);
       try {
         const api = getElectronAPI();
@@ -1826,28 +1842,54 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         );
 
         if (result.success) {
-          // Immediately update local feature state
-          // Get current feature to preserve version
           const currentFeature = hookFeatures.find((f) => f.id === featureId);
-          updateFeature(featureId, {
-            status: 'backlog',
-            planSpec: {
-              status: 'rejected',
-              content: pendingPlanApproval.planContent,
-              version: currentFeature?.planSpec?.version || 1,
-              reviewedByUser: true,
-            },
-          });
+          if (hasFeedback) {
+            // Revision requested — keep dialog open in "revision in progress" state.
+            // The feature continues running on the server; a new plan_approval_required
+            // event will fire when the revised plan is ready.
+            updateFeature(featureId, {
+              planSpec: {
+                status: 'generating',
+                content: pendingPlanApproval.planContent,
+                version: (currentFeature?.planSpec?.version || 1) + 1,
+                reviewedByUser: true,
+              },
+            });
+            setIsPlanRevisionInProgress(true);
+            // Do NOT close the dialog — it will auto-update when plan_approval_required fires
+          } else {
+            // No feedback = user cancelled the feature
+            updateFeature(featureId, {
+              status: 'backlog',
+              planSpec: {
+                status: 'rejected',
+                content: pendingPlanApproval.planContent,
+                version: currentFeature?.planSpec?.version || 1,
+                reviewedByUser: true,
+              },
+            });
+            // Dialog closure is handled in the finally block
+          }
           // Reload features from server to ensure sync
           loadFeatures();
         } else {
           logger.error('Failed to reject plan:', result.error);
+          if (hasFeedback) {
+            toast.error('Failed to submit revision request. Please try again.');
+          }
         }
       } catch (error) {
         logger.error('Error rejecting plan:', error);
+        if (hasFeedback) {
+          toast.error('Failed to submit revision request. Please try again.');
+        }
       } finally {
         setIsPlanApprovalLoading(false);
-        setPendingPlanApproval(null);
+        // Only close the dialog here if we're not waiting for a revision.
+        // When hasFeedback=true, the dialog stays open until the revised plan arrives.
+        if (!hasFeedback) {
+          setPendingPlanApproval(null);
+        }
       }
     },
     [
@@ -2407,6 +2449,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         onOpenChange={(open) => {
           if (!open) {
             setPendingPlanApproval(null);
+            setIsPlanRevisionInProgress(false);
           }
         }}
         feature={pendingApprovalFeature}
@@ -2414,6 +2457,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         onApprove={handlePlanApprove}
         onReject={handlePlanReject}
         isLoading={isPlanApprovalLoading}
+        isRevising={isPlanRevisionInProgress}
       />
 
       {/* Question Dialog */}
@@ -2582,12 +2626,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         open={showCommitWorktreeDialog}
         onOpenChange={(open) => {
           setShowCommitWorktreeDialog(open);
-          if (!open) setSelectedWorktreeForAction(null);
+          if (!open) {
+            setSelectedWorktreeForAction(null);
+            setCommitFeatureFiles(undefined);
+          }
         }}
         worktree={selectedWorktreeForAction}
+        agentModifiedFiles={commitFeatureFiles}
         onCommitted={() => {
           setWorktreeRefreshKey((k) => k + 1);
           setSelectedWorktreeForAction(null);
+          setCommitFeatureFiles(undefined);
         }}
       />
 
@@ -2658,6 +2707,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       {getShowInitScriptIndicator(currentProject.path) && (
         <InitScriptIndicator projectPath={currentProject.path} />
       )}
+
+      {/* Running Dev Servers Indicator - persistent floating overlay showing all running dev servers */}
+      <RunningDevServersIndicator projectPath={currentProject.path} />
     </div>
   );
 }

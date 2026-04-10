@@ -20,15 +20,12 @@
 import {
   CLAUDE_MODEL_MAP,
   CLAUDE_CANONICAL_MAP,
-  CURSOR_MODEL_MAP,
-  CODEX_MODEL_MAP,
   DEFAULT_MODELS,
   PROVIDER_PREFIXES,
-  isCursorModel,
+  MODEL_ALIASES,
   isOpencodeModel,
   isCopilotModel,
   isGeminiModel,
-  stripProviderPrefix,
   migrateModelId,
   type PhaseModelEntry,
   type ThinkingLevel,
@@ -102,8 +99,16 @@ export function resolveModelString(
     return canonicalKey;
   }
 
+  // Registry alias lookup (MODEL_ALIASES from generated registry — FR-004 single canonical list)
+  // Covers both short aliases (haiku, sonnet, opus) and canonical IDs (claude-haiku, etc.)
+  const registryResolved = MODEL_ALIASES[canonicalKey];
+  if (registryResolved) {
+    console.log(`[ModelResolver] Resolved registry alias: "${canonicalKey}" -> "${registryResolved}"`);
+    return registryResolved;
+  }
+
   // Claude canonical ID (claude-haiku, claude-sonnet, claude-opus)
-  // Map to full model string
+  // Map to full model string (kept for backward compatibility)
   if (canonicalKey in CLAUDE_CANONICAL_MAP) {
     const resolved = CLAUDE_CANONICAL_MAP[canonicalKey as keyof typeof CLAUDE_CANONICAL_MAP];
     console.log(`[ModelResolver] Resolved Claude canonical ID: "${canonicalKey}" -> "${resolved}"`);

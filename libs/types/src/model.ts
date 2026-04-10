@@ -4,6 +4,8 @@
 import type { CursorModelId } from './cursor-models.js';
 import type { OpencodeModelId } from './opencode-models.js';
 import type { GeminiModelId } from './gemini-models.js';
+import { REASONING_CAPABLE_MODEL_IDS } from './model-capabilities.gen.js';
+import { PROVIDER_MODEL_MAP, DEFAULT_MODELS_REGISTRY } from './model-registry.gen.js';
 
 /**
  * Canonical Claude model IDs with provider prefix
@@ -76,23 +78,18 @@ export const CODEX_MODEL_MAP = {
   gpt5: 'codex-gpt-5',
 } as const;
 
-export const CODEX_MODEL_IDS = Object.values(CODEX_MODEL_MAP);
+/**
+ * All Codex model IDs — sourced from the generated model registry (run `pnpm sync-models` to update).
+ * This list is the canonical single source of truth for which Codex models are available.
+ */
+export const CODEX_MODEL_IDS: readonly string[] = PROVIDER_MODEL_MAP.openai;
 
 /**
  * Models that support reasoning effort configuration
  * These models can use reasoning.effort parameter
+ * Sourced from the generated model capabilities registry (run `pnpm sync-models` to update)
  */
-export const REASONING_CAPABLE_MODELS = new Set([
-  CODEX_MODEL_MAP.gpt53Codex,
-  CODEX_MODEL_MAP.gpt53CodexSpark,
-  CODEX_MODEL_MAP.gpt52Codex,
-  CODEX_MODEL_MAP.gpt51CodexMax,
-  CODEX_MODEL_MAP.gpt51Codex,
-  CODEX_MODEL_MAP.gpt5Codex,
-  CODEX_MODEL_MAP.gpt52,
-  CODEX_MODEL_MAP.gpt51,
-  CODEX_MODEL_MAP.gpt5,
-]);
+export const REASONING_CAPABLE_MODELS = REASONING_CAPABLE_MODEL_IDS;
 
 /**
  * Check if a model supports reasoning effort configuration
@@ -124,12 +121,13 @@ export function getAllCodexModelIds(): CodexModelId[] {
 
 /**
  * Default models per provider
- * Uses canonical prefixed IDs for consistent routing.
+ * Sourced from the generated model registry (run `pnpm sync-models` to update).
+ * Hand-tuned defaults live in libs/types/src/model-overrides.json.
  */
 export const DEFAULT_MODELS = {
-  claude: 'claude-opus-4-6',
-  cursor: 'cursor-auto', // Cursor's recommended default (with prefix)
-  codex: CODEX_MODEL_MAP.gpt53Codex, // GPT-5.3-Codex is the latest frontier agentic coding model
+  claude: DEFAULT_MODELS_REGISTRY.claude as string,
+  cursor: DEFAULT_MODELS_REGISTRY.cursor as string,
+  codex: DEFAULT_MODELS_REGISTRY.codex as string,
 } as const;
 
 export type ModelAlias = keyof typeof CLAUDE_MODEL_MAP;

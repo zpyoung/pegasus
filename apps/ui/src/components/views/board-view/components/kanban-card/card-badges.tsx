@@ -15,6 +15,7 @@ import {
 import { getBlockingDependencies } from '@pegasus/dependency-resolver';
 import { useShallow } from 'zustand/react/shallow';
 import { usePipelineConfig } from '@/hooks/queries/use-pipeline';
+import { TaskIdCopy } from '../task-id-copy';
 
 /** Uniform badge style for all card badges */
 const uniformBadgeClass =
@@ -157,18 +158,6 @@ export const PriorityBadges = memo(function PriorityBadges({
 
   const showPlanApproval = feature.planSpec?.status === 'generated';
 
-  const showBadges =
-    feature.priority ||
-    showManualVerification ||
-    isBlocked ||
-    isJustFinished ||
-    hasPipelineExclusions ||
-    showPlanApproval;
-
-  if (!showBadges) {
-    return null;
-  }
-
   return (
     <div className="absolute top-2 left-2 flex items-center gap-1">
       {/* Priority badge */}
@@ -203,6 +192,9 @@ export const PriorityBadges = memo(function PriorityBadges({
           </TooltipContent>
         </Tooltip>
       )}
+
+      {/* Task ID */}
+      <TaskIdCopy taskId={feature.id} compact className="max-w-[120px]" />
 
       {/* Manual verification badge */}
       {showManualVerification && (

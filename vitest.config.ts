@@ -11,6 +11,7 @@ export default defineConfig({
       'libs/*/vitest.config.ts',
       'apps/server/vitest.config.ts',
       'apps/ui/vitest.config.ts',
+      'scripts/sync-models/vitest.config.ts',
     ],
   },
 });

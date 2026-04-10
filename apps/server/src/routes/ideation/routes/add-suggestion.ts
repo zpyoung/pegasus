@@ -1,9 +1,9 @@
 /**
- * POST /add-suggestion - Add an analysis suggestion to the board as a feature
+ * POST /add-suggestion - Add an analysis suggestion to the idea board as a raw idea
  *
- * This endpoint converts an AnalysisSuggestion to a Feature using the
- * IdeationService's mapIdeaCategoryToFeatureCategory for consistent category mapping.
- * This ensures a single source of truth for the conversion logic.
+ * Redirected from creating Features directly to creating Ideas (status=raw),
+ * so AI-generated suggestions land in the Idea Board rather than going
+ * directly into Automode's eligible pool (ADR-003).
  */
 
 import type { Request, Response } from 'express';
@@ -14,7 +14,7 @@ import { getErrorMessage, logError } from '../common.js';
 
 export function createAddSuggestionHandler(
   ideationService: IdeationService,
-  featureLoader: FeatureLoader
+  _featureLoader: FeatureLoader
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -38,30 +38,20 @@ export function createAddSuggestionHandler(
         return;
       }
 
-      if (!suggestion.category) {
-        res.status(400).json({ success: false, error: 'suggestion.category is required' });
-        return;
-      }
-
       // Build description with rationale if provided
       const description = suggestion.rationale
         ? `${suggestion.description}\n\n**Rationale:** ${suggestion.rationale}`
-        : suggestion.description;
+        : suggestion.description ?? '';
 
-      // Use the service's category mapping for consistency
-      const featureCategory = ideationService.mapSuggestionCategoryToFeatureCategory(
-        suggestion.category
-      );
-
-      // Create the feature
-      const feature = await featureLoader.create(projectPath, {
+      // Create a raw idea instead of a feature (ADR-003: redirect AI output through Idea entity)
+      const idea = await ideationService.createIdea(projectPath, {
         title: suggestion.title,
         description,
-        category: featureCategory,
-        status: 'backlog',
+        category: suggestion.category,
+        status: 'raw',
       });
 
-      res.json({ success: true, featureId: feature.id });
+      res.json({ success: true, ideaId: idea.id });
     } catch (error) {
       logError(error, 'Add suggestion to board failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });

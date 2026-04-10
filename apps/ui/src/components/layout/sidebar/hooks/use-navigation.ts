@@ -41,6 +41,7 @@ interface UseNavigationProps {
     githubIssues: string;
     githubPrs: string;
     notifications: string;
+    quickAddIdea: string;
   };
   hideSpecEditor: boolean;
   hideContext: boolean;
@@ -317,6 +318,27 @@ export function useNavigation({
         action: () => navigate({ to: '/settings' }),
         description: 'Navigate to Global Settings',
       });
+
+      // Quick add idea — navigate to ideation and focus the input
+      if (shortcuts.quickAddIdea) {
+        shortcutsList.push({
+          key: shortcuts.quickAddIdea,
+          action: () => {
+            navigate({ to: '/ideation' as unknown as '/' });
+            // Focus the quick-add input after navigation renders
+            requestAnimationFrame(() => {
+              const input = document.querySelector<HTMLInputElement>(
+                '[data-testid="quick-add-input"]'
+              );
+              if (input) {
+                input.focus();
+                input.select();
+              }
+            });
+          },
+          description: 'Quick add idea',
+        });
+      }
     }
 
     return shortcutsList;

@@ -1,0 +1,409 @@
+{
+  "provider": "cursor",
+  "fetchedAt": "2026-04-10T11:00:51.350Z",
+  "models": [
+    {
+      "id": "cursor-sonnet-4",
+      "name": "Claude 4 Sonnet",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 3,
+        "outputPerMToken": 15
+      }
+    },
+    {
+      "id": "cursor-sonnet-4-1m",
+      "name": "Claude 4 Sonnet 1M",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 6,
+        "outputPerMToken": 22.5
+      }
+    },
+    {
+      "id": "cursor-haiku-4.5",
+      "name": "Claude 4.5 Haiku",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1,
+        "outputPerMToken": 5
+      }
+    },
+    {
+      "id": "cursor-opus-4.5",
+      "name": "Claude 4.5 Opus",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 5,
+        "outputPerMToken": 25
+      }
+    },
+    {
+      "id": "cursor-sonnet-4.5",
+      "name": "Claude 4.5 Sonnet",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 3,
+        "outputPerMToken": 15
+      }
+    },
+    {
+      "id": "cursor-opus-4.6",
+      "name": "Claude 4.6 Opus",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": true,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 5,
+        "outputPerMToken": 25
+      }
+    },
+    {
+      "id": "cursor-opus-4.6-fast",
+      "name": "Claude 4.6 Opus (Fast mode)",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": true,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 30,
+        "outputPerMToken": 150
+      }
+    },
+    {
+      "id": "cursor-sonnet-4.6",
+      "name": "Claude 4.6 Sonnet",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": true,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 3,
+        "outputPerMToken": 15
+      }
+    },
+    {
+      "id": "cursor-composer-1",
+      "name": "Composer 1",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.25,
+        "outputPerMToken": 10
+      }
+    },
+    {
+      "id": "cursor-composer-1.5",
+      "name": "Composer 1.5",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 3.5,
+        "outputPerMToken": 17.5
+      }
+    },
+    {
+      "id": "cursor-composer-2",
+      "name": "Composer 2",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.5,
+        "outputPerMToken": 2.5
+      }
+    },
+    {
+      "id": "cursor-gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": true,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.3,
+        "outputPerMToken": 2.5
+      }
+    },
+    {
+      "id": "cursor-gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.5,
+        "outputPerMToken": 3
+      }
+    },
+    {
+      "id": "cursor-gemini-3-pro",
+      "name": "Gemini 3 Pro",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 2,
+        "outputPerMToken": 12
+      }
+    },
+    {
+      "id": "cursor-gemini-3-pro-image-preview",
+      "name": "Gemini 3 Pro Image Preview",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "preview",
+      "pricing": {
+        "inputPerMToken": 2,
+        "outputPerMToken": 12
+      }
+    },
+    {
+      "id": "cursor-gemini-3.1-pro",
+      "name": "Gemini 3.1 Pro",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 2,
+        "outputPerMToken": 12
+      }
+    },
+    {
+      "id": "cursor-gpt-5",
+      "name": "GPT-5",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.25,
+        "outputPerMToken": 10
+      }
+    },
+    {
+      "id": "cursor-gpt-5-fast",
+      "name": "GPT-5 Fast",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 2.5,
+        "outputPerMToken": 20
+      }
+    },
+    {
+      "id": "cursor-gpt-5-mini",
+      "name": "GPT-5 Mini",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.25,
+        "outputPerMToken": 2
+      }
+    },
+    {
+      "id": "cursor-gpt-5-codex",
+      "name": "GPT-5-Codex",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.25,
+        "outputPerMToken": 10
+      }
+    },
+    {
+      "id": "cursor-gpt-5.1-codex",
+      "name": "GPT-5.1 Codex",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.25,
+        "outputPerMToken": 10
+      }
+    },
+    {
+      "id": "cursor-gpt-5.1-codex-max",
+      "name": "GPT-5.1 Codex Max",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.25,
+        "outputPerMToken": 10
+      }
+    },
+    {
+      "id": "cursor-gpt-5.1-codex-mini",
+      "name": "GPT-5.1 Codex Mini",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.25,
+        "outputPerMToken": 2
+      }
+    },
+    {
+      "id": "cursor-gpt-5.2",
+      "name": "GPT-5.2",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.75,
+        "outputPerMToken": 14
+      }
+    },
+    {
+      "id": "cursor-gpt-5.2-codex",
+      "name": "GPT-5.2 Codex",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.75,
+        "outputPerMToken": 14
+      }
+    },
+    {
+      "id": "cursor-gpt-5.3-codex",
+      "name": "GPT-5.3 Codex",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 1.75,
+        "outputPerMToken": 14
+      }
+    },
+    {
+      "id": "cursor-gpt-5.4",
+      "name": "GPT-5.4",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 2.5,
+        "outputPerMToken": 15
+      }
+    },
+    {
+      "id": "cursor-gpt-5.4-mini",
+      "name": "GPT-5.4 Mini",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.75,
+        "outputPerMToken": 4.5
+      }
+    },
+    {
+      "id": "cursor-gpt-5.4-nano",
+      "name": "GPT-5.4 Nano",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.2,
+        "outputPerMToken": 1.25
+      }
+    },
+    {
+      "id": "cursor-grok-4.20",
+      "name": "Grok 4.20",
+      "provider": "cursor",
+      "supportsVision": true,
+      "supportsThinking": false,
+      "reasoningCapable": true,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 2,
+        "outputPerMToken": 6
+      }
+    },
+    {
+      "id": "cursor-kimi-k2.5",
+      "name": "Kimi K2.5",
+      "provider": "cursor",
+      "supportsVision": false,
+      "supportsThinking": false,
+      "reasoningCapable": false,
+      "stabilityTier": "ga",
+      "pricing": {
+        "inputPerMToken": 0.6,
+        "outputPerMToken": 3
+      }
+    }
+  ]
+}

@@ -26,10 +26,10 @@ export function createIdeasCreateHandler(events: EventEmitter, ideationService: 
         return;
       }
 
-      if (!idea.title || !idea.description || !idea.category) {
+      if (!idea.title) {
         res.status(400).json({
           success: false,
-          error: 'idea must have title, description, and category',
+          error: 'idea must have a title',
         });
         return;
       }

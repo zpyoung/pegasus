@@ -368,8 +368,8 @@ export class IdeationService {
     const idea: Idea = {
       id: ideaId,
       title: input.title,
-      description: input.description,
-      category: input.category,
+      description: input.description ?? '',
+      category: input.category ?? 'feature',
       status: input.status || 'raw',
       impact: input.impact || 'medium',
       effort: input.effort || 'medium',
@@ -608,6 +608,14 @@ export class IdeationService {
     const idea = await this.getIdea(projectPath, ideaId);
     if (!idea) {
       throw new Error(`Idea ${ideaId} not found`);
+    }
+
+    if (idea.status !== 'ready') {
+      const err = new Error(
+        `Cannot convert idea: status must be 'ready', got '${idea.status}'`
+      ) as Error & { code: string };
+      err.code = 'IDEA_NOT_READY';
+      throw err;
     }
 
     // Build feature description from idea

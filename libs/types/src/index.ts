@@ -282,6 +282,33 @@ export * from './gemini-models.js';
 // Copilot types
 export * from './copilot-models.js';
 
+// Model registry (generated — run `pnpm sync-models` to update)
+export {
+  PROVIDER_MODEL_MAP,
+  MODEL_ALIASES,
+  PROVIDER_FOR_MODEL,
+  DEFAULT_MODELS_REGISTRY,
+  type AnthropicModelId,
+  type OpenaiModelId,
+  type GoogleModelId,
+  type CopilotModelId as CopilotRegistryModelId,
+  type CursorModelId as CursorRegistryModelId,
+  type ModelId as RegistryModelId,
+} from './model-registry.gen.js';
+
+// Model capabilities (generated — run `pnpm sync-models` to update)
+export {
+  REASONING_CAPABLE_MODEL_IDS,
+  VISION_CAPABLE_MODEL_IDS,
+  TOOL_CAPABLE_MODEL_IDS,
+  THINKING_CAPABLE_MODEL_IDS,
+  MODEL_CONTEXT_WINDOWS,
+  MODEL_MAX_OUTPUT_TOKENS,
+} from './model-capabilities.gen.js';
+
+// Model display names (generated — run `pnpm sync-models` to update)
+export { MODEL_DISPLAY_NAMES, getRegistryModelDisplayName } from './model-display.gen.js';
+
 // Provider utilities
 export {
   PROVIDER_PREFIXES,

@@ -1,0 +1,73 @@
+{
+  "_comment": "Hand-maintained display metadata overrides. Keys are model IDs. Values override fields from the generated registry.",
+  "claude-haiku-4-5-20251001": {
+    "name": "Claude Haiku",
+    "aliases": ["claude-haiku", "haiku"],
+    "stabilityTier": "ga"
+  },
+  "claude-sonnet-4-6": {
+    "name": "Claude Sonnet 4.6",
+    "aliases": ["claude-sonnet", "sonnet"],
+    "stabilityTier": "ga"
+  },
+  "claude-opus-4-6": {
+    "name": "Claude Opus 4.6",
+    "aliases": ["claude-opus", "opus"],
+    "defaultFor": "claude",
+    "stabilityTier": "ga"
+  },
+  "codex-gpt-5.3-codex": {
+    "name": "GPT-5.3-Codex",
+    "defaultFor": "codex",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5.3-codex-spark": {
+    "name": "GPT-5.3-Codex-Spark",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5.2-codex": {
+    "name": "GPT-5.2-Codex",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5.1-codex-max": {
+    "name": "GPT-5.1-Codex-Max",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5.1-codex-mini": {
+    "name": "GPT-5.1-Codex-Mini",
+    "reasoningCapable": false
+  },
+  "codex-gpt-5.1-codex": {
+    "name": "GPT-5.1-Codex",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5-codex": {
+    "name": "GPT-5-Codex",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5-codex-mini": {
+    "name": "GPT-5-Codex-Mini",
+    "reasoningCapable": false
+  },
+  "codex-gpt-5.2": {
+    "name": "GPT-5.2",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5.1": {
+    "name": "GPT-5.1",
+    "reasoningCapable": true
+  },
+  "codex-gpt-5": {
+    "name": "GPT-5",
+    "reasoningCapable": true
+  },
+  "gemini-2.5-flash": {
+    "defaultFor": "google"
+  },
+  "cursor-auto": {
+    "defaultFor": "cursor"
+  },
+  "copilot-claude-sonnet-4.6": {
+    "defaultFor": "copilot"
+  }
+}

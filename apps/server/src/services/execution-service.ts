@@ -3,10 +3,13 @@
  */
 
 import path from 'path';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import type { Feature, StageCompilationContext } from '@pegasus/types';
 import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@pegasus/utils';
 import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
 import { getFeatureDir } from '@pegasus/platform';
+import { parseGitStatus } from '@pegasus/git-utils';
 import { ProviderFactory } from '../providers/provider-factory.js';
 import * as secureFs from '../lib/secure-fs.js';
 import {
@@ -28,6 +31,8 @@ import { loadPipeline, compilePipeline } from './pipeline-compiler.js';
 import { StageRunner } from './stage-runner.js';
 import type { StageRunAgentFn } from './stage-runner.js';
 import type { QuestionService } from './question-service.js';
+
+const execFileAsync = promisify(execFile);
 
 // Re-export callback types from execution-types.ts for backward compatibility
 export type {
@@ -107,6 +112,42 @@ export class ExecutionService {
 
   private releaseRunningFeature(featureId: string, options?: { force?: boolean }): void {
     this.concurrencyManager.release(featureId, options);
+  }
+
+  /**
+   * Capture a map of uncommitted file paths to their content hashes.
+   * Content hashing lets us detect when an already-modified file gets further
+   * modified by the agent, and correctly ignores pre-existing untracked files
+   * whose content didn't change.
+   */
+  private async captureFileStates(workDir: string): Promise<Map<string, string>> {
+    try {
+      const { stdout } = await execFileAsync('git', ['status', '--porcelain'], {
+        cwd: workDir,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      const files = parseGitStatus(stdout);
+      const states = new Map<string, string>();
+      for (const f of files) {
+        if (f.status === 'D') {
+          states.set(f.path, 'DELETED');
+        } else {
+          try {
+            const { stdout: hash } = await execFileAsync(
+              'git',
+              ['hash-object', f.path],
+              { cwd: workDir }
+            );
+            states.set(f.path, hash.trim());
+          } catch {
+            states.set(f.path, 'UNREADABLE');
+          }
+        }
+      }
+      return states;
+    } catch {
+      return new Map();
+    }
   }
 
   private extractTitleFromDescription(description: string | undefined): string {
@@ -252,6 +293,10 @@ ${feature.spec}
       }
       const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
       validateWorkingDirectory(workDir);
+
+      // Capture baseline file states (path → content hash) before agent execution
+      const baselineStates = await this.captureFileStates(workDir);
+
       tempRunningFeature.worktreePath = worktreePath;
       tempRunningFeature.branchName = branchName ?? null;
       // Ensure status is in_progress (may already be set from the early update above,
@@ -562,6 +607,48 @@ Please continue from where you left off and complete all remaining tasks. Use th
         }
       }
       } // end legacy flow
+
+      // Compute agent-modified files by comparing content hashes before/after
+      try {
+        const postStates = await this.captureFileStates(workDir);
+        const agentModifiedFiles: string[] = [];
+        // Files in post with new or changed content
+        for (const [filePath, hash] of postStates) {
+          if (!baselineStates.has(filePath)) {
+            // New file — agent created it
+            agentModifiedFiles.push(filePath);
+          } else if (baselineStates.get(filePath) !== hash) {
+            // Existing file with different content — agent modified it
+            agentModifiedFiles.push(filePath);
+          }
+        }
+        // Files in baseline but not in post — agent deleted/committed them
+        for (const [filePath] of baselineStates) {
+          if (!postStates.has(filePath)) {
+            agentModifiedFiles.push(filePath);
+          }
+        }
+        if (agentModifiedFiles.length > 0) {
+          const currentFeature = await this.loadFeatureFn(projectPath, featureId);
+          if (currentFeature) {
+            currentFeature.agentModifiedFiles = agentModifiedFiles;
+            const featurePath = path.join(
+              getFeatureDir(projectPath, featureId),
+              'feature.json'
+            );
+            await secureFs.writeFile(
+              featurePath,
+              JSON.stringify(currentFeature, null, 2),
+              'utf-8'
+            );
+          }
+        }
+      } catch (err) {
+        logger.warn(
+          `[executeFeature] Failed to capture agent-modified files for ${featureId}:`,
+          err
+        );
+      }
 
       // Read agent output before determining final status.
       // CLI-based providers (Cursor, Codex, etc.) may exit quickly without doing

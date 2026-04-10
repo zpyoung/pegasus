@@ -5,6 +5,8 @@
  * Based on https://github.com/google-gemini/gemini-cli
  */
 
+import type { GoogleModelId as RegistryGeminiModelId } from './model-registry.gen.js';
+
 /**
  * Gemini model configuration
  */
@@ -64,9 +66,9 @@ export const GEMINI_MODEL_MAP = {
 } as const satisfies Record<string, GeminiModelConfig>;
 
 /**
- * Gemini model ID type (keys already have gemini- prefix)
+ * Gemini model ID type — derived from the generated model registry (run `pnpm sync-models` to update)
  */
-export type GeminiModelId = keyof typeof GEMINI_MODEL_MAP;
+export type GeminiModelId = RegistryGeminiModelId;
 
 /**
  * Get all Gemini model IDs

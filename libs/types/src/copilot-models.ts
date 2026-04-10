@@ -8,6 +8,8 @@
  * for UI consistency and offline use.
  */
 
+import type { CopilotModelId as CopilotRegistryModelId } from './model-registry.gen.js';
+
 /**
  * Copilot model configuration
  */
@@ -140,9 +142,9 @@ export const COPILOT_MODEL_MAP = {
 } as const satisfies Record<string, CopilotModelConfig>;
 
 /**
- * Copilot model ID type (keys have copilot- prefix)
+ * Copilot model ID type — derived from the generated model registry (run `pnpm sync-models` to update)
  */
-export type CopilotModelId = keyof typeof COPILOT_MODEL_MAP;
+export type CopilotModelId = CopilotRegistryModelId;
 
 /**
  * Get all Copilot model IDs
@@ -154,7 +156,7 @@ export function getAllCopilotModelIds(): CopilotModelId[] {
 /**
  * Default Copilot model
  */
-export const DEFAULT_COPILOT_MODEL: CopilotModelId = 'copilot-claude-sonnet-4.6';
+export const DEFAULT_COPILOT_MODEL: CopilotModelId = 'copilot-openai/gpt-5';
 
 /**
  * GitHub Copilot authentication status

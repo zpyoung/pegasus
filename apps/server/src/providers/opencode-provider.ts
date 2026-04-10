@@ -47,7 +47,7 @@ export interface OpenCodeAuthStatus {
 // =============================================================================
 
 /**
- * Model information from `opencode models` CLI output
+ * Model information from `opencode models --verbose` CLI output
  */
 export interface OpenCodeModelInfo {
   /** Full model ID (e.g., "copilot/claude-sonnet-4-5") */
@@ -58,6 +58,49 @@ export interface OpenCodeModelInfo {
   name: string;
   /** Display name for UI */
   displayName?: string;
+  /** Verbose metadata from `opencode models --verbose` JSON blocks */
+  verbose?: OpenCodeVerboseModel;
+}
+
+/**
+ * Structured model metadata from `opencode models --verbose` JSON output
+ */
+export interface OpenCodeVerboseModel {
+  id: string;
+  providerID: string;
+  name: string;
+  family?: string;
+  status?: string;
+  cost?: {
+    input: number;
+    output: number;
+    cache?: { read: number; write: number };
+  };
+  limit?: {
+    context?: number;
+    input?: number;
+    output?: number;
+  };
+  capabilities?: {
+    temperature?: boolean;
+    reasoning?: boolean;
+    attachment?: boolean;
+    toolcall?: boolean;
+    input?: {
+      text?: boolean;
+      audio?: boolean;
+      image?: boolean;
+      video?: boolean;
+      pdf?: boolean;
+    };
+    output?: {
+      text?: boolean;
+      audio?: boolean;
+      image?: boolean;
+      video?: boolean;
+      pdf?: boolean;
+    };
+  };
 }
 
 /**
@@ -1052,19 +1095,19 @@ export class OpencodeProvider extends CliProvider {
       if (this.detectedStrategy === 'npx') {
         // NPX strategy: execute npx with opencode-ai package
         command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-        args = ['opencode-ai@latest', 'models'];
+        args = ['opencode-ai@latest', 'models', '--verbose'];
         opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
       } else if (this.useWsl && this.wslCliPath) {
         // WSL strategy: execute via wsl.exe
         command = 'wsl.exe';
         args = this.wslDistribution
-          ? ['-d', this.wslDistribution, this.wslCliPath, 'models']
-          : [this.wslCliPath, 'models'];
+          ? ['-d', this.wslDistribution, this.wslCliPath, 'models', '--verbose']
+          : [this.wslCliPath, 'models', '--verbose'];
         opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
       } else {
         // Direct CLI execution
         command = this.cliPath;
-        args = ['models'];
+        args = ['models', '--verbose'];
         opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
       }
 
@@ -1087,57 +1130,87 @@ export class OpencodeProvider extends CliProvider {
   }
 
   /**
-   * Parse the output of `opencode models` command
+   * Parse the output of `opencode models --verbose` command
    *
-   * OpenCode CLI output format (one model per line):
-   * opencode/big-pickle
-   * opencode/glm-5-free
-   * anthropic/claude-3-5-haiku-20241022
-   * github-copilot/claude-3.5-sonnet
-   * ...
+   * Verbose output format — each model is a header line followed by a JSON block:
+   *   opencode/big-pickle
+   *   {
+   *     "id": "big-pickle",
+   *     "providerID": "opencode",
+   *     "name": "Big Pickle",
+   *     "limit": { "context": 200000, "output": 128000 },
+   *     "capabilities": { "reasoning": true, "toolcall": true, "input": { "image": false } },
+   *     ...
+   *   }
+   *   opencode/gpt-5-nano
+   *   { ... }
    */
   private parseModelsOutput(output: string): ModelDefinition[] {
-    // Parse line-based format (one model ID per line)
-    const lines = output.split('\n');
     const models: ModelDefinition[] = [];
 
-    // Regex to validate "provider/model-name" format
-    // Provider: lowercase letters, numbers, dots, hyphens
-    // Model name: non-whitespace (supports nested paths like openrouter/anthropic/claude)
-    const modelIdRegex = OPENCODE_MODEL_ID_PATTERN;
+    // Strip ANSI escape codes globally
+    const clean = output.replace(/\x1b\[[0-9;]*m/g, '');
 
-    for (const line of lines) {
-      // Remove ANSI escape codes if any
-      const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '').trim();
+    // Split into blocks: each block starts with a model ID line matching provider/model pattern
+    // followed by a JSON object. We use a regex to find all model ID header lines and
+    // extract the JSON block between consecutive headers.
+    const lines = clean.split('\n');
+    let currentModelId: string | null = null;
+    let jsonLines: string[] = [];
 
-      // Skip empty lines
-      if (!cleanLine) continue;
+    const flushModel = () => {
+      if (!currentModelId || jsonLines.length === 0) return;
 
-      // Validate format using regex for robustness
-      if (modelIdRegex.test(cleanLine)) {
-        const separatorIndex = cleanLine.indexOf(OPENCODE_MODEL_ID_SEPARATOR);
-        if (separatorIndex <= 0 || separatorIndex === cleanLine.length - 1) {
-          continue;
-        }
+      const jsonStr = jsonLines.join('\n').trim();
+      if (!jsonStr) return;
 
-        const provider = cleanLine.slice(0, separatorIndex);
-        const name = cleanLine.slice(separatorIndex + 1);
-
-        if (!OPENCODE_PROVIDER_PATTERN.test(provider) || !OPENCODE_MODEL_NAME_PATTERN.test(name)) {
-          continue;
-        }
+      try {
+        const verbose = JSON.parse(jsonStr) as OpenCodeVerboseModel;
+        const separatorIndex = currentModelId.indexOf(OPENCODE_MODEL_ID_SEPARATOR);
+        const provider = currentModelId.slice(0, separatorIndex);
+        const name = currentModelId.slice(separatorIndex + 1);
 
         models.push(
           this.modelInfoToDefinition({
-            id: cleanLine,
+            id: currentModelId,
             provider,
             name,
+            displayName: verbose.name,
+            verbose,
           })
         );
+      } catch {
+        // JSON parse failed — fall back to basic ID-only entry
+        opencodeLogger.debug(`Failed to parse verbose JSON for ${currentModelId}, using ID only`);
+        const separatorIndex = currentModelId.indexOf(OPENCODE_MODEL_ID_SEPARATOR);
+        if (separatorIndex > 0) {
+          const provider = currentModelId.slice(0, separatorIndex);
+          const name = currentModelId.slice(separatorIndex + 1);
+          models.push(this.modelInfoToDefinition({ id: currentModelId, provider, name }));
+        }
+      }
+    };
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Check if this line is a model ID header (provider/model-name format)
+      if (OPENCODE_MODEL_ID_PATTERN.test(trimmed) && !trimmed.startsWith('{') && !trimmed.startsWith('"')) {
+        // Flush previous model
+        flushModel();
+        currentModelId = trimmed;
+        jsonLines = [];
+      } else if (currentModelId) {
+        // Accumulate JSON lines for the current model
+        jsonLines.push(line);
       }
     }
 
-    opencodeLogger.debug(`Parsed ${models.length} models from CLI output`);
+    // Flush last model
+    flushModel();
+
+    opencodeLogger.debug(`Parsed ${models.length} models from CLI verbose output`);
     return models;
   }
 
@@ -1147,18 +1220,20 @@ export class OpencodeProvider extends CliProvider {
   private modelInfoToDefinition(model: OpenCodeModelInfo): ModelDefinition {
     const displayName = model.displayName || this.formatModelDisplayName(model);
     const tier = this.inferModelTier(model.id);
+    const v = model.verbose;
 
     return {
       id: model.id,
       name: displayName,
       modelString: model.id,
-      provider: model.provider, // Use the actual provider (github-copilot, google, etc.)
+      provider: model.provider,
       description: `${model.name} via ${this.formatProviderName(model.provider)}`,
-      supportsTools: true,
-      supportsVision: this.modelSupportsVision(model.id),
+      supportsTools: v?.capabilities?.toolcall ?? true,
+      supportsVision: v?.capabilities?.input?.image ?? this.modelSupportsVision(model.id),
       tier,
-      // Mark Claude Sonnet as default if available
       default: model.id.includes('claude-sonnet-4'),
+      ...(v?.limit?.context != null && { contextWindow: v.limit.context }),
+      ...(v?.limit?.output != null && { maxOutputTokens: v.limit.output }),
     };
   }
 

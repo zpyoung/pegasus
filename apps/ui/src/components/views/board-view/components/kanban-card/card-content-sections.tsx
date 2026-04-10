@@ -17,6 +17,7 @@ interface CardContentSectionsProps {
   useWorktrees: boolean;
   showAllWorktrees?: boolean;
   mainBranch?: string | null;
+  onBranchPillClick?: (branchName: string) => void;
 }
 
 export const CardContentSections = memo(function CardContentSections({
@@ -24,6 +25,7 @@ export const CardContentSections = memo(function CardContentSections({
   useWorktrees,
   showAllWorktrees = false,
   mainBranch,
+  onBranchPillClick,
 }: CardContentSectionsProps) {
   // In all-worktrees mode, show branch for every feature (normalizing null to mainBranch)
   const displayBranch = showAllWorktrees
@@ -39,13 +41,20 @@ export const CardContentSections = memo(function CardContentSections({
           // Pill badge with per-branch hash-to-hue coloring (all-worktrees mode)
           <div className="mb-2">
             <span
-              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium${onBranchPillClick ? ' cursor-pointer hover:brightness-125 transition-[filter]' : ''}`}
               style={{
                 backgroundColor: `hsl(${branchToHue(displayBranch ?? 'main')} 55% 20%)`,
                 color: `hsl(${branchToHue(displayBranch ?? 'main')} 80% 75%)`,
               }}
-              title={displayBranch}
+              title={onBranchPillClick ? `Filter board to: ${displayBranch}` : displayBranch}
               data-testid="branch-badge-pill"
+              {...(onBranchPillClick && {
+                role: 'button',
+                tabIndex: 0,
+                onClick: (e) => { e.stopPropagation(); onBranchPillClick(displayBranch ?? 'main'); },
+                onPointerDown: (e) => e.stopPropagation(),
+                onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBranchPillClick(displayBranch ?? 'main'); } },
+              })}
             >
               <GitBranch className="w-2.5 h-2.5 shrink-0" />
               <span className="font-mono truncate max-w-[120px]">{displayBranch}</span>

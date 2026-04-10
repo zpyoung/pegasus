@@ -70,6 +70,11 @@ export function createConvertHandler(
       // Return featureId as expected by the frontend API interface
       res.json({ success: true, featureId: feature.id });
     } catch (error) {
+      const code = (error as Error & { code?: string }).code;
+      if (code === 'IDEA_NOT_READY') {
+        res.status(422).json({ success: false, error: getErrorMessage(error) });
+        return;
+      }
       logError(error, 'Convert to feature failed');
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }

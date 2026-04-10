@@ -1,0 +1,51 @@
+name: Sync Model Registry
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # Sundays 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync models
+        run: pnpm sync-models --ci
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for changes
+        id: diff
+        run: git diff --quiet || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.SYNC_BOT_PAT }}
+          branch: chore/model-registry-sync
+          commit-message: 'chore: sync model registry'
+          title: 'chore(models): sync model registry'
+          body-path: /tmp/sync-models-summary.md
+          labels: model-sync,automated
+          delete-branch: true

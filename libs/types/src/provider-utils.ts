@@ -16,6 +16,20 @@ import {
 } from './opencode-models.js';
 import { GEMINI_MODEL_MAP } from './gemini-models.js';
 import { COPILOT_MODEL_MAP } from './copilot-models.js';
+import { PROVIDER_FOR_MODEL } from './model-registry.gen.js';
+
+/**
+ * Maps registry provider names to ModelProvider values.
+ * Registry uses canonical provider names; ModelProvider uses display names.
+ */
+const REGISTRY_TO_MODEL_PROVIDER: Record<string, ModelProvider> = {
+  anthropic: 'claude',
+  openai: 'codex',
+  google: 'gemini',
+  copilot: 'copilot',
+  cursor: 'cursor',
+  opencode: 'opencode',
+};
 
 /** Provider prefix constants */
 export const PROVIDER_PREFIXES = {
@@ -219,31 +233,45 @@ export function isOpencodeModel(model: string | undefined | null): boolean {
 /**
  * Get the provider for a model string
  *
+ * Resolution order (ADR-3 fail-closed):
+ * 1. Registry lookup via PROVIDER_FOR_MODEL (canonical IDs)
+ * 2. Prefix-based checks (dynamic OpenCode models, legacy formats)
+ * 3. Claude alias/pattern check (haiku/sonnet/opus aliases, claude- prefix)
+ * 4. Throw for unknown models — never silently defaults
+ *
  * @param model - Model string to check
- * @returns The provider type, defaults to 'claude' for unknown models
+ * @returns The provider type
+ * @throws Error for unknown/unregistered model IDs (ADR-3)
  */
 export function getModelProvider(model: string | undefined | null): ModelProvider {
-  // Check Copilot first since it has a unique prefix
-  if (isCopilotModel(model)) {
-    return 'copilot';
+  if (!model || typeof model !== 'string') {
+    throw new Error(`[getModelProvider] Invalid model: ${JSON.stringify(model)}`);
   }
-  // Check Gemini since it uses gemini- prefix
-  if (isGeminiModel(model)) {
-    return 'gemini';
+
+  // 1. Registry lookup (most accurate — covers all registered canonical IDs)
+  const registryProvider = PROVIDER_FOR_MODEL[model];
+  if (registryProvider) {
+    const mapped = REGISTRY_TO_MODEL_PROVIDER[registryProvider];
+    if (mapped) return mapped;
   }
-  // Check OpenCode next since it uses provider-prefixed formats that could conflict
-  if (isOpencodeModel(model)) {
-    return 'opencode';
-  }
-  // Check Codex before Cursor, since Cursor also supports gpt models
-  // but bare gpt-* should route to Codex
-  if (isCodexModel(model)) {
-    return 'codex';
-  }
-  if (isCursorModel(model)) {
-    return 'cursor';
-  }
-  return 'claude';
+
+  // 2. Prefix-based checks (handles dynamic OpenCode models like provider/model format,
+  //    legacy IDs, and any models not yet in the registry)
+  if (isCopilotModel(model)) return 'copilot';
+  if (isGeminiModel(model)) return 'gemini';
+  if (isOpencodeModel(model)) return 'opencode';
+  // Check Codex before Cursor: bare gpt-* routes to Codex, not Cursor
+  if (isCodexModel(model)) return 'codex';
+  if (isCursorModel(model)) return 'cursor';
+
+  // 3. Claude aliases and full model strings (haiku/sonnet/opus, claude- prefix)
+  if (isClaudeModel(model)) return 'claude';
+
+  // 4. Fail-closed: throw for unknown models (ADR-3)
+  throw new Error(
+    `[getModelProvider] Unknown model ID: "${model}". ` +
+      `Run "pnpm sync-models" to update the registry, or check the model ID is correct.`
+  );
 }
 
 /**

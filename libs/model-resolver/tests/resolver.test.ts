@@ -102,9 +102,9 @@ describe('model-resolver', () => {
       it('should log the resolution for aliases', () => {
         resolveModelString('sonnet');
 
-        // Legacy aliases get migrated and resolved via canonical map
+        // Legacy aliases get migrated then resolved via the generated registry alias map
         expect(consoleLogSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Resolved Claude canonical ID')
+          expect.stringContaining('Resolved registry alias')
         );
         expect(consoleLogSpy).toHaveBeenCalledWith(
           expect.stringContaining(CLAUDE_MODEL_MAP.sonnet)

@@ -1890,7 +1890,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   enhancementModel: 'sonnet', // Legacy alias still supported
   validationModel: 'opus', // Legacy alias still supported
   enabledCursorModels: getAllCursorModelIds(), // Returns prefixed IDs
-  cursorDefaultModel: 'cursor-auto', // Use canonical prefixed ID
+  cursorDefaultModel: 'cursor-sonnet-4.6', // Use canonical prefixed ID
   enabledOpencodeModels: getAllOpencodeModelIds(), // Returns prefixed IDs
   opencodeDefaultModel: DEFAULT_OPENCODE_MODEL, // Already prefixed
   enabledDynamicModelIds: [],

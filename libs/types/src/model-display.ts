@@ -11,6 +11,7 @@ import type { CursorModelId } from './cursor-models.js';
 import type { AgentModel, CodexModelId } from './model.js';
 import { CODEX_MODEL_MAP } from './model.js';
 import { GEMINI_MODEL_MAP, type GeminiModelId } from './gemini-models.js';
+import { MODEL_DISPLAY_NAMES } from './model-display.gen.js';
 
 /**
  * ModelOption - Display metadata for a model option in the UI
@@ -257,6 +258,11 @@ export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
  * ```
  */
 export function getModelDisplayName(model: ModelAlias | string): string {
+  // Registry lookup first (generated from sync-models — FR-004 single canonical list)
+  const registryName = MODEL_DISPLAY_NAMES[model];
+  if (registryName) return registryName;
+
+  // Legacy alias fallback for short names and patterns not in registry
   const displayNames: Record<string, string> = {
     haiku: 'Claude Haiku',
     sonnet: 'Claude Sonnet',
@@ -264,27 +270,13 @@ export function getModelDisplayName(model: ModelAlias | string): string {
     'claude-haiku': 'Claude Haiku',
     'claude-sonnet': 'Claude Sonnet',
     'claude-opus': 'Claude Opus',
-    'claude-sonnet-4-6': 'Claude Sonnet 4.6',
-    'claude-opus-4-6': 'Claude Opus 4.6',
-    [CODEX_MODEL_MAP.gpt53Codex]: 'GPT-5.3-Codex',
-    [CODEX_MODEL_MAP.gpt53CodexSpark]: 'GPT-5.3-Codex-Spark',
-    [CODEX_MODEL_MAP.gpt52Codex]: 'GPT-5.2-Codex',
-    [CODEX_MODEL_MAP.gpt51CodexMax]: 'GPT-5.1-Codex-Max',
-    [CODEX_MODEL_MAP.gpt51CodexMini]: 'GPT-5.1-Codex-Mini',
-    [CODEX_MODEL_MAP.gpt51Codex]: 'GPT-5.1-Codex',
-    [CODEX_MODEL_MAP.gpt5Codex]: 'GPT-5-Codex',
-    [CODEX_MODEL_MAP.gpt5CodexMini]: 'GPT-5-Codex-Mini',
-    [CODEX_MODEL_MAP.gpt52]: 'GPT-5.2',
-    [CODEX_MODEL_MAP.gpt51]: 'GPT-5.1',
-    [CODEX_MODEL_MAP.gpt5]: 'GPT-5',
   };
 
-  // Check direct match first
   if (model in displayNames) {
     return displayNames[model];
   }
 
-  // Check Gemini model map - IDs are like 'gemini-2.5-flash'
+  // Check Gemini model map for any models not yet in registry
   if (model in GEMINI_MODEL_MAP) {
     return GEMINI_MODEL_MAP[model as keyof typeof GEMINI_MODEL_MAP].label;
   }

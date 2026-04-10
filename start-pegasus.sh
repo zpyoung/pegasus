@@ -144,11 +144,13 @@ OPTIONS:
   --check-deps     Check dependencies before launching
   --no-history     Don't remember last choice
   --production     Run in production mode (builds first, faster React)
+  --auto           Auto-select available ports without prompting
 
 EXAMPLES:
   start-pegasus.sh              # Interactive menu (development)
   start-pegasus.sh --production # Interactive menu (production)
   start-pegasus.sh web          # Launch web mode directly (dev)
+  start-pegasus.sh web --auto   # Launch web mode, auto-select ports if busy
   start-pegasus.sh web --production  # Launch web mode (production)
   start-pegasus.sh electron     # Launch desktop app directly
   start-pegasus.sh docker       # Launch Docker dev container
@@ -207,6 +209,9 @@ parse_args() {
                 ;;
             --production)
                 PRODUCTION_MODE=true
+                ;;
+            --auto)
+                AUTO_PORTS=true
                 ;;
             web|electron|docker|docker-electron)
                 MODE="$1"
@@ -948,7 +953,11 @@ launch_sequence() {
     # Show port checking for modes that use local ports
     if [[ "$MODE" == "web" || "$MODE" == "electron" ]]; then
         center_print "Checking ports ${DEFAULT_WEB_PORT} and ${DEFAULT_SERVER_PORT}..." "$C_MUTE"
-        resolve_port_conflicts
+        if [ "${AUTO_PORTS:-false}" = true ]; then
+            check_ports
+        else
+            resolve_port_conflicts
+        fi
         echo ""
     fi
 

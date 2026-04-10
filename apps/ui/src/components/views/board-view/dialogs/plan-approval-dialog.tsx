@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Feature } from '@/store/app-store';
 import { Check, RefreshCw, Edit2, Eye } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import { cn } from '@/lib/utils';
 
 interface PlanApprovalDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ interface PlanApprovalDialogProps {
   onApprove: (editedPlan?: string) => void;
   onReject: (feedback?: string) => void;
   isLoading?: boolean;
+  isRevising?: boolean;
   viewOnly?: boolean;
 }
 
@@ -36,6 +38,7 @@ export function PlanApprovalDialog({
   onApprove,
   onReject,
   isLoading = false,
+  isRevising = false,
   viewOnly = false,
 }: PlanApprovalDialogProps) {
   const [isEditMode, setIsEditMode] = useState(false);
@@ -58,6 +61,14 @@ export function PlanApprovalDialog({
     }
   }, [open, planContent]);
 
+  // When revision completes and new plan arrives, reset feedback state
+  useEffect(() => {
+    if (!isRevising && open) {
+      setShowRejectFeedback(false);
+      setRejectFeedback('');
+    }
+  }, [isRevising, open]);
+
   const handleApprove = () => {
     // Only pass edited plan if it was modified
     const wasEdited = editedPlan !== planContent;
@@ -78,7 +89,7 @@ export function PlanApprovalDialog({
   };
 
   const handleClose = (open: boolean) => {
-    if (!open && !isLoading) {
+    if (!open && !isLoading && !isRevising) {
       onOpenChange(false);
     }
   };
@@ -121,6 +132,14 @@ export function PlanApprovalDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          {/* Revision in progress banner */}
+          {isRevising && (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
+              <Spinner size="sm" className="shrink-0" />
+              <span>AI is revising the plan based on your feedback&hellip;</span>
+            </div>
+          )}
+
           {/* Mode Toggle - Only show when not in viewOnly mode */}
           {!viewOnly && (
             <div className="flex items-center justify-between mb-3">
@@ -131,7 +150,7 @@ export function PlanApprovalDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditMode(!isEditMode)}
-                disabled={isLoading}
+                disabled={isLoading || isRevising}
               >
                 {isEditMode ? (
                   <>
@@ -149,7 +168,7 @@ export function PlanApprovalDialog({
           )}
 
           {/* Plan Content */}
-          <div className="flex-1 overflow-y-auto sm:max-h-[60vh] border border-border rounded-lg">
+          <div className={cn("flex-1 overflow-y-auto sm:max-h-[60vh] border border-border rounded-lg", isRevising && "opacity-40 pointer-events-none")}>
             {isEditMode && !viewOnly ? (
               <Textarea
                 value={editedPlan}
@@ -190,6 +209,11 @@ export function PlanApprovalDialog({
               className="w-full sm:w-auto"
             >
               Close
+            </Button>
+          ) : isRevising ? (
+            <Button variant="ghost" disabled className="w-full sm:w-auto">
+              <Spinner size="sm" className="mr-2" />
+              Revising plan&hellip;
             </Button>
           ) : showRejectFeedback ? (
             <>

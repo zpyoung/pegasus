@@ -101,6 +101,7 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
   // This is intentional as they are context-specific and only active in their respective views
   addFeature: 'N', // Only active in board view
   addContextFile: 'N', // Only active in context view
+  quickAddIdea: 'Shift+I', // Global shortcut for quick idea capture
   startNext: 'G', // Only active in board view
   newSession: 'N', // Only active in agent view
   openProject: 'O', // Global shortcut

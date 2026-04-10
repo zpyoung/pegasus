@@ -104,6 +104,7 @@ export interface KeyboardShortcuts {
   // Action shortcuts
   addFeature: string;
   addContextFile: string;
+  quickAddIdea: string;
   startNext: string;
   newSession: string;
   openProject: string;

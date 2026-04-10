@@ -165,12 +165,33 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 
 ## Environment Variables
 
-- `ANTHROPIC_API_KEY` - Anthropic API key (or use Claude Code CLI auth)
+### Server
+- `PORT` - Server port (default: 3008)
 - `HOST` - Host to bind server to (default: 0.0.0.0)
 - `HOSTNAME` - Hostname for user-facing URLs (default: localhost)
-- `PORT` - Server port (default: 3008)
 - `DATA_DIR` - Data storage directory (default: ./data)
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
-- `PEGASUS_MOCK_AGENT=true` - Enable mock agent mode for CI testing
-- `PEGASUS_AUTO_LOGIN=true` - Skip login prompt in development (disabled when NODE_ENV=production)
+- `ENABLE_REQUEST_LOGGING` - HTTP request logging (default: true, set `false` to disable)
+- `TERMINAL_MAX_SESSIONS` - Max terminal sessions (default: 1000)
+
+### Frontend
+- `PEGASUS_WEB_PORT` - Vite dev server port (default: 3007)
 - `VITE_HOSTNAME` - Hostname for frontend API URLs (default: localhost)
+
+### Auth & API Keys
+- `ANTHROPIC_API_KEY` - Anthropic API key (or use Claude Code CLI auth)
+- `ANTHROPIC_AUTH_TOKEN` - Anthropic OAuth token
+- `ANTHROPIC_BASE_URL` - Custom Anthropic API base URL
+- `CLAUDE_CODE_OAUTH_TOKEN` - Claude Code OAuth token
+- `GEMINI_API_KEY` - Google Gemini API key
+- `CURSOR_API_KEY` - Cursor API key
+- `GITHUB_TOKEN` - GitHub token (for Copilot provider)
+- `Z_AI_API_KEY` - Z.AI API key
+- `Z_AI_API_HOST` - Z.AI API host override
+
+### Debug & Development
+- `PEGASUS_AUTO_LOGIN=true` - Skip login prompt (disabled when NODE_ENV=production)
+- `PEGASUS_MOCK_AGENT=true` - Fake agent responses, no API calls (for UI testing)
+- `PEGASUS_DEBUG_RAW_OUTPUT=true` - Log raw agent output streams
+- `LOG_LEVEL` - Logger verbosity: error, warn, info, debug (default: info)
+- `CORS_ORIGIN` - Comma-separated allowed CORS origins

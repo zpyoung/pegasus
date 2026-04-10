@@ -167,8 +167,8 @@ export interface SendMessageOptions {
 
 export interface CreateIdeaInput {
   title: string;
-  description: string;
-  category: IdeaCategory;
+  description?: string;
+  category?: IdeaCategory;
   status?: IdeaStatus;
   impact?: ImpactLevel;
   effort?: EffortLevel;
