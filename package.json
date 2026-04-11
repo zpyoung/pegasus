@@ -33,6 +33,7 @@
     "build:packages": "pnpm --filter @pegasus/types build && pnpm --filter @pegasus/platform build && pnpm --filter @pegasus/utils --filter @pegasus/spec-parser build && pnpm --filter @pegasus/prompts --filter @pegasus/model-resolver --filter @pegasus/dependency-resolver build && pnpm --filter @pegasus/git-utils --filter @pegasus/chat-ui build",
     "build:server": "pnpm run build:packages && pnpm --filter @pegasus/server build",
     "build:electron": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron",
+    "build:electron:publish": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:publish",
     "build:electron:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:dir",
     "build:electron:win": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:win",
     "build:electron:win:dir": "pnpm run build:packages && pnpm --filter @pegasus/ui build:electron:win:dir",

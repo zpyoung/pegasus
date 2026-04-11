@@ -69,9 +69,21 @@ for (const pkgName of LOCAL_PACKAGES) {
     cpSync(join(srcDir, 'dist'), join(destDir, 'dist'), { recursive: true });
   }
 
-  // Copy package.json
+  // Copy + rewrite package.json: replace workspace:* with file: refs to
+  // sibling lib dirs, and drop devDependencies (not needed at runtime).
   if (existsSync(join(srcDir, 'package.json'))) {
-    cpSync(join(srcDir, 'package.json'), join(destDir, 'package.json'));
+    const libPkg = JSON.parse(readFileSync(join(srcDir, 'package.json'), 'utf-8'));
+    if (libPkg.dependencies) {
+      for (const depName of Object.keys(libPkg.dependencies)) {
+        if (LOCAL_PACKAGES.includes(depName)) {
+          const depDir = depName.replace('@pegasus/', '');
+          libPkg.dependencies[depName] = `file:../${depDir}`;
+        }
+      }
+    }
+    delete libPkg.devDependencies;
+    delete libPkg.scripts;
+    writeFileSync(join(destDir, 'package.json'), JSON.stringify(libPkg, null, 2));
   }
 
   console.log(`   ✓ ${pkgName}`);
@@ -101,8 +113,13 @@ const bundlePkg = {
 writeFileSync(join(BUNDLE_DIR, 'package.json'), JSON.stringify(bundlePkg, null, 2));
 
 // Step 6: Install production dependencies
+// --ignore-workspace prevents pnpm from climbing up to the parent workspace
+// (server-bundle sits under apps/ui/, so pnpm would otherwise install into the
+// workspace root instead of server-bundle/node_modules).
+// --config.node-linker=hoisted produces a flat node_modules tree that works
+// correctly when copied by electron-builder and for runtime resolution.
 console.log('📥 Installing server production dependencies...');
-execSync('pnpm install --prod', {
+execSync('pnpm install --prod --ignore-workspace --config.node-linker=hoisted', {
   cwd: BUNDLE_DIR,
   stdio: 'inherit',
 });

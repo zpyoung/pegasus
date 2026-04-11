@@ -32,6 +32,7 @@ import { createWindow } from './electron/windows/main-window';
 import { startStaticServer, stopStaticServer } from './electron/server/static-server';
 import { startServer, waitForServer, stopServer } from './electron/server/backend-server';
 import { registerAllHandlers } from './electron/ipc';
+import { initAutoUpdater } from './electron/auto-updater';
 
 const logger = createLogger('Electron');
 
@@ -203,6 +204,9 @@ async function handleAppReady(): Promise<void> {
 
     // Create window
     createWindow();
+
+    // Check for updates once the app is running (packaged mode only).
+    initAutoUpdater();
   } catch (error) {
     logger.error('Failed to start:', error);
 

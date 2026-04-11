@@ -7,7 +7,7 @@ import type { QuestionHelperService } from '../../../services/question-helper-se
 
 export function createGetHistoryHandler(helperService: QuestionHelperService) {
   return (req: Request, res: Response): void => {
-    const { featureId } = req.params;
+    const { featureId } = req.params as { featureId: string };
 
     if (!featureId) {
       res.status(400).json({ success: false, error: 'featureId is required' });
