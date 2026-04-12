@@ -12,7 +12,7 @@ This guide will help you get started with contributing to Pegasus. Please take a
 
 **You understand and agree that you will have no right to receive any royalties, compensation, or other financial benefits from any revenue, income, or commercial use generated from your contributed code or any derivative works thereof.** All contributions are made without expectation of payment or financial return.
 
-For complete details on contribution terms and rights assignment, please review [Section 5 (CONTRIBUTIONS AND RIGHTS ASSIGNMENT) of the LICENSE](LICENSE#5-contributions-and-rights-assignment).
+For complete details on the project license, please review the [LICENSE](LICENSE) file.
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@ For complete details on contribution terms and rights assignment, please review 
     - [Development Setup](#development-setup)
     - [Project Structure](#project-structure)
   - [Pull Request Process](#pull-request-process)
-    - [Branching Strategy (RC Branches)](#branching-strategy-rc-branches)
+    - [Branching Strategy](#branching-strategy)
     - [Branch Naming Convention](#branch-naming-convention)
     - [Commit Message Format](#commit-message-format)
     - [Submitting a Pull Request](#submitting-a-pull-request)
@@ -187,34 +187,26 @@ pegasus/
 
 This section covers everything you need to know about contributing changes through pull requests, from creating your branch to getting your code merged.
 
-### Branching Strategy (RC Branches)
+### Branching Strategy
 
-Pegasus uses **Release Candidate (RC) branches** for all development work. Understanding this workflow is essential before contributing.
-
-**How it works:**
-
-1. **All development happens on RC branches** - We maintain version-specific RC branches (e.g., `v0.10.0rc`, `v0.11.0rc`) where all active development occurs
-2. **RC branches are eventually merged to main** - Once an RC branch is stable and ready for release, it gets merged into `main`
-3. **Main branch is for releases only** - The `main` branch contains only released, stable code
+All development targets the `main` branch directly.
 
 **Before creating a PR:**
 
-1. **Check for the latest RC branch** - Before starting work, check the repository for the current RC branch:
+1. **Sync with upstream** - Fetch the latest changes from the upstream repository:
 
    ```bash
    git fetch upstream
-   git branch -r | grep rc
    ```
 
-2. **Base your work on the RC branch** - Create your feature branch from the latest RC branch, not from `main`:
+2. **Base your work on `main`** - Create your feature branch from the latest `main`:
 
    ```bash
-   # Find the latest RC branch (e.g., v0.11.0rc)
-   git checkout upstream/v0.11.0rc
+   git checkout upstream/main
    git checkout -b feature/your-feature-name
    ```
 
-3. **Target the RC branch in your PR** - When opening your pull request, set the base branch to the current RC branch, not `main`
+3. **Target `main` in your PR** - When opening your pull request, set the base branch to `main`
 
 **Example workflow:**
 
@@ -222,23 +214,17 @@ Pegasus uses **Release Candidate (RC) branches** for all development work. Under
 # 1. Fetch latest changes
 git fetch upstream
 
-# 2. Check for RC branches
-git branch -r | grep rc
-# Output: upstream/v0.11.0rc
+# 2. Create your branch from main
+git checkout -b feature/add-dark-mode upstream/main
 
-# 3. Create your branch from the RC
-git checkout -b feature/add-dark-mode upstream/v0.11.0rc
-
-# 4. Make your changes and commit
+# 3. Make your changes and commit
 git commit -m "feat: Add dark mode support"
 
-# 5. Push to your fork
+# 4. Push to your fork
 git push origin feature/add-dark-mode
 
-# 6. Open PR targeting the RC branch (v0.11.0rc), NOT main
+# 5. Open PR targeting main
 ```
-
-**Important:** PRs opened directly against `main` will be asked to retarget to the current RC branch.
 
 ### Branch Naming Convention
 
@@ -329,14 +315,14 @@ Follow these steps to submit your contribution:
 
 #### 1. Prepare Your Changes
 
-Ensure you've synced with the latest upstream changes from the RC branch:
+Ensure you've synced with the latest upstream changes:
 
 ```bash
 # Fetch latest changes from upstream
 git fetch upstream
 
-# Rebase your branch on the current RC branch (if needed)
-git rebase upstream/v0.11.0rc  # Use the current RC branch name
+# Rebase your branch on main (if needed)
+git rebase upstream/main
 ```
 
 #### 2. Run Pre-submission Checks
@@ -368,19 +354,19 @@ git push origin feature/your-feature-name
 
 1. Go to your fork on GitHub
 2. Click "Compare & pull request" for your branch
-3. **Important:** Set the base repository to `Pegasus-Org/pegasus` and the base branch to the **current RC branch** (e.g., `v0.11.0rc`), not `main`
+3. **Important:** Set the base repository to `Pegasus-Org/pegasus` and the base branch to `main`
 4. Fill out the PR template completely
 
 #### PR Requirements Checklist
 
 Your PR should include:
 
-- [ ] **Targets the current RC branch** (not `main`) - see [Branching Strategy](#branching-strategy-rc-branches)
+- [ ] **Targets the `main` branch** - see [Branching Strategy](#branching-strategy)
 - [ ] **Clear title** describing the change (use conventional commit format)
 - [ ] **Description** explaining what changed and why
 - [ ] **Link to related issue** (if applicable): `Closes #123` or `Fixes #456`
 - [ ] **All CI checks passing** (format, lint, build, tests)
-- [ ] **No merge conflicts** with the RC branch
+- [ ] **No merge conflicts** with `main`
 - [ ] **Tests included** for new functionality
 - [ ] **Documentation updated** if adding/changing public APIs
 

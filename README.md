@@ -2,14 +2,6 @@
   <img src="apps/ui/public/readme_logo.svg" alt="Pegasus Logo" height="80" />
 </p>
 
-> **[!TIP]**
->
-> **Learn more about Agentic Coding!**
->
-> Pegasus itself was built by a group of engineers using AI and agentic coding techniques to build features faster than ever. By leveraging tools like Cursor IDE and Claude Code CLI, the team orchestrated AI agents to implement complex functionality in days instead of weeks.
->
-> **Learn how:** Master these same techniques and workflows in the [Agentic Jumpstart course](https://agenticjumpstart.com/?utm=pegasus-gh).
-
 # Pegasus
 
 **Stop typing code. Start directing AI agents.**
@@ -60,8 +52,6 @@
 
 Pegasus is an autonomous AI development studio that transforms how you build software. Instead of manually writing every line of code, you describe features on a Kanban board and watch as AI agents powered by Claude Agent SDK automatically implement them. Built with React, Vite, Electron, and Express, Pegasus provides a complete workflow for managing AI agents through a desktop application (or web browser), with features like real-time streaming, git worktree isolation, plan approval, and multi-agent task execution.
 
-![Pegasus UI](https://i.imgur.com/jdwKydM.png)
-
 ## What Makes Pegasus Different?
 
 Traditional development tools help you write code. Pegasus helps you **orchestrate AI agents** to build entire features autonomously. Think of it as having a team of AI developers working for you—you define what needs to be built, and Pegasus handles the implementation.
@@ -82,20 +72,6 @@ Pegasus leverages the [Claude Agent SDK](https://www.npmjs.com/package/@anthropi
 
 The future of software development is **agentic coding**—where developers become architects directing AI agents rather than manual coders. Pegasus puts this future in your hands today, letting you experience what it's like to build software 10x faster with AI agents handling the implementation while you focus on architecture and business logic.
 
-## Community & Support
-
-Join the **Agentic Jumpstart** to connect with other builders exploring **agentic coding** and autonomous development workflows.
-
-In the Discord, you can:
-
-- 💬 Discuss agentic coding patterns and best practices
-- 🧠 Share ideas for AI-driven development workflows
-- 🛠️ Get help setting up or extending Pegasus
-- 🚀 Show off projects built with AI agents
-- 🤝 Collaborate with other developers and contributors
-
-👉 **Join the Discord:** [Agentic Jumpstart Discord](https://discord.gg/jjem7aEDKU)
-
 ---
 
 ## Getting Started
@@ -110,7 +86,7 @@ In the Discord, you can:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Pegasus-Org/pegasus.git
+git clone https://github.com/zpyoung/pegasus.git
 cd pegasus
 
 # 2. Install dependencies
@@ -721,12 +697,8 @@ data/
 - [Project Documentation](./docs/) - Architecture guides, patterns, and developer docs
 - [Shared Packages Guide](./docs/llm-shared-packages.md) - Using monorepo packages
 
-### Community
-
-Join the **Agentic Jumpstart** Discord to connect with other builders exploring **agentic coding**:
-
-👉 [Agentic Jumpstart Discord](https://discord.gg/jjem7aEDKU)
-
 ## License
 
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for the full text.
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. See [LICENSE](LICENSE) for the full text.
+
+This project is derived from [AutoMaker](https://github.com/AutoMaker-Org/automaker), which is licensed under the MIT License. See the [Third-Party Licenses](LICENSE#third-party-licenses) section of the LICENSE file for details.
