@@ -1,6 +1,13 @@
-import { useEffect, useState, useCallback, useMemo, useRef, startTransition } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  startTransition,
+} from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -10,13 +17,13 @@ import {
   pointerWithin,
   type CollisionDetection,
   type Collision,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 
 // Custom pointer sensor that ignores drag events from within dialogs
 class DialogAwarePointerSensor extends PointerSensor {
   static activators = [
     {
-      eventName: 'onPointerDown' as const,
+      eventName: "onPointerDown" as const,
       handler: ({ nativeEvent: event }: ReactPointerEvent) => {
         // Don't start drag if the event originated from inside a dialog
         if ((event.target as Element)?.closest?.('[role="dialog"]')) {
@@ -27,30 +34,35 @@ class DialogAwarePointerSensor extends PointerSensor {
     },
   ];
 }
-import { useAppStore, Feature, type ModelAlias, type ThinkingLevel } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
+import {
+  useAppStore,
+  Feature,
+  type ModelAlias,
+  type ThinkingLevel,
+} from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
 import type {
   BacklogPlanResult,
   FeatureStatusWithPipeline,
   FeatureTemplate,
   ReasoningEffort,
-} from '@pegasus/types';
-import { pathsEqual } from '@/lib/utils';
-import { initializeProject } from '@/lib/project-init';
-import { toast } from 'sonner';
+} from "@pegasus/types";
+import { pathsEqual } from "@/lib/utils";
+import { initializeProject } from "@/lib/project-init";
+import { toast } from "sonner";
 import {
   BoardBackgroundModal,
   PRCommentResolutionDialog,
   type PRCommentResolutionPRInfo,
-} from '@/components/dialogs';
-import { useShallow } from 'zustand/react/shallow';
-import { useAutoMode } from '@/hooks/use-auto-mode';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { useWindowState } from '@/hooks/use-window-state';
+} from "@/components/dialogs";
+import { useShallow } from "zustand/react/shallow";
+import { useAutoMode } from "@/hooks/use-auto-mode";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { useWindowState } from "@/hooks/use-window-state";
 // Board-view specific imports
-import { BoardHeader } from './board-view/board-header';
-import { KanbanBoard } from './board-view/kanban-board';
+import { BoardHeader } from "./board-view/board-header";
+import { KanbanBoard } from "./board-view/kanban-board";
 import {
   AddFeatureDialog,
   AgentOutputModal,
@@ -67,15 +79,15 @@ import {
   QuickAddDialog,
   ChangePRNumberDialog,
   QuestionDialog,
-} from './board-view/dialogs';
-import type { DependencyLinkType } from './board-view/dialogs';
-import { PipelineSettingsDialog } from './board-view/dialogs/pipeline-settings-dialog';
-import { CreateWorktreeDialog } from './board-view/dialogs/create-worktree-dialog';
-import { DeleteWorktreeDialog } from './board-view/dialogs/delete-worktree-dialog';
-import { CommitWorktreeDialog } from './board-view/dialogs/commit-worktree-dialog';
-import { CreatePRDialog } from './board-view/dialogs/create-pr-dialog';
-import { CreateBranchDialog } from './board-view/dialogs/create-branch-dialog';
-import { WorktreePanel } from './board-view/worktree-panel';
+} from "./board-view/dialogs";
+import type { DependencyLinkType } from "./board-view/dialogs";
+import { PipelineSettingsDialog } from "./board-view/dialogs/pipeline-settings-dialog";
+import { CreateWorktreeDialog } from "./board-view/dialogs/create-worktree-dialog";
+import { DeleteWorktreeDialog } from "./board-view/dialogs/delete-worktree-dialog";
+import { CommitWorktreeDialog } from "./board-view/dialogs/commit-worktree-dialog";
+import { CreatePRDialog } from "./board-view/dialogs/create-pr-dialog";
+import { CreateBranchDialog } from "./board-view/dialogs/create-branch-dialog";
+import { WorktreePanel } from "./board-view/worktree-panel";
 import type {
   PRInfo,
   WorktreeInfo,
@@ -83,9 +95,13 @@ import type {
   BranchSwitchConflictInfo,
   StashPopConflictInfo,
   StashApplyConflictInfo,
-} from './board-view/worktree-panel/types';
-import { BoardErrorBoundary } from './board-view/board-error-boundary';
-import { COLUMNS, getColumnsWithPipeline, isBacklogLikeStatus } from './board-view/constants';
+} from "./board-view/worktree-panel/types";
+import { BoardErrorBoundary } from "./board-view/board-error-boundary";
+import {
+  COLUMNS,
+  getColumnsWithPipeline,
+  isBacklogLikeStatus,
+} from "./board-view/constants";
 import {
   useBoardFeatures,
   useBoardDragDrop,
@@ -98,24 +114,26 @@ import {
   useFollowUpState,
   useSelectionMode,
   useListViewState,
-} from './board-view/hooks';
-import { SelectionActionBar, ListView } from './board-view/components';
-import { MassEditDialog, BranchConflictDialog } from './board-view/dialogs';
-import type { BranchConflictData } from './board-view/dialogs';
-import { InitScriptIndicator } from './board-view/init-script-indicator';
-import { RunningDevServersIndicator } from './board-view/running-dev-servers-indicator';
-import { useInitScriptEvents } from '@/hooks/use-init-script-events';
-import { usePipelineConfig } from '@/hooks/queries';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/query-keys';
-import { useAutoModeQueryInvalidation } from '@/hooks/use-query-invalidation';
-import { useUpdateGlobalSettings } from '@/hooks/mutations/use-settings-mutations';
-import { forceSyncSettingsToServer } from '@/hooks/use-settings-sync';
+} from "./board-view/hooks";
+import { SelectionActionBar, ListView } from "./board-view/components";
+import { MassEditDialog, BranchConflictDialog } from "./board-view/dialogs";
+import type { BranchConflictData } from "./board-view/dialogs";
+import { InitScriptIndicator } from "./board-view/init-script-indicator";
+import { RunningDevServersIndicator } from "./board-view/running-dev-servers-indicator";
+import { useInitScriptEvents } from "@/hooks/use-init-script-events";
+import { usePipelineConfig } from "@/hooks/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { useAutoModeQueryInvalidation } from "@/hooks/use-query-invalidation";
+import { useUpdateGlobalSettings } from "@/hooks/mutations/use-settings-mutations";
+import { forceSyncSettingsToServer } from "@/hooks/use-settings-sync";
 
 // Stable empty array to avoid infinite loop in selector
-const EMPTY_WORKTREES: ReturnType<ReturnType<typeof useAppStore.getState>['getWorktrees']> = [];
+const EMPTY_WORKTREES: ReturnType<
+  ReturnType<typeof useAppStore.getState>["getWorktrees"]
+> = [];
 
-const logger = createLogger('Board');
+const logger = createLogger("Board");
 
 interface BoardViewProps {
   /** Feature ID from URL parameter - if provided, opens output modal for this feature on load */
@@ -124,7 +142,10 @@ interface BoardViewProps {
   initialProjectPath?: string;
 }
 
-export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewProps) {
+export function BoardView({
+  initialFeatureId,
+  initialProjectPath,
+}: BoardViewProps) {
   const {
     currentProject,
     defaultSkipTests,
@@ -159,14 +180,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       getWorktrees: state.getWorktrees,
       setWorktrees: state.setWorktrees,
       planUseSelectedWorktreeBranch: state.planUseSelectedWorktreeBranch,
-      addFeatureUseSelectedWorktreeBranch: state.addFeatureUseSelectedWorktreeBranch,
+      addFeatureUseSelectedWorktreeBranch:
+        state.addFeatureUseSelectedWorktreeBranch,
       isPrimaryWorktreeBranch: state.isPrimaryWorktreeBranch,
       getPrimaryWorktreeBranch: state.getPrimaryWorktreeBranch,
       setPipelineConfig: state.setPipelineConfig,
       featureTemplates: state.featureTemplates,
       defaultSortNewestCardOnTop: state.defaultSortNewestCardOnTop,
       upsertAndSetCurrentProject: state.upsertAndSetCurrentProject,
-    }))
+    })),
   );
   // Also get keyboard shortcuts for the add feature shortcut
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
@@ -177,13 +199,21 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // Subscribe to auto mode events for React Query cache invalidation
   useAutoModeQueryInvalidation(currentProject?.path);
   // Subscribe to worktreePanelVisibleByProject to trigger re-renders when it changes
-  const worktreePanelVisibleByProject = useAppStore((state) => state.worktreePanelVisibleByProject);
+  const worktreePanelVisibleByProject = useAppStore(
+    (state) => state.worktreePanelVisibleByProject,
+  );
   // Subscribe to showAllWorktreesByProject for all-worktrees board view toggle
-  const showAllWorktreesByProject = useAppStore((state) => state.showAllWorktreesByProject);
+  const showAllWorktreesByProject = useAppStore(
+    (state) => state.showAllWorktreesByProject,
+  );
   // Subscribe to showInitScriptIndicatorByProject to trigger re-renders when it changes
   useAppStore((state) => state.showInitScriptIndicatorByProject);
-  const getShowInitScriptIndicator = useAppStore((state) => state.getShowInitScriptIndicator);
-  const getDefaultDeleteBranch = useAppStore((state) => state.getDefaultDeleteBranch);
+  const getShowInitScriptIndicator = useAppStore(
+    (state) => state.getShowInitScriptIndicator,
+  );
+  const getDefaultDeleteBranch = useAppStore(
+    (state) => state.getDefaultDeleteBranch,
+  );
   const {
     features: hookFeatures,
     isLoading,
@@ -197,44 +227,60 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const [isMounted, setIsMounted] = useState(false);
   const [showOutputModal, setShowOutputModal] = useState(false);
   const [outputFeature, setOutputFeature] = useState<Feature | null>(null);
-  const [featuresWithContext, setFeaturesWithContext] = useState<Set<string>>(new Set());
-  const [showArchiveAllVerifiedDialog, setShowArchiveAllVerifiedDialog] = useState(false);
-  const [showBoardBackgroundModal, setShowBoardBackgroundModal] = useState(false);
+  const [featuresWithContext, setFeaturesWithContext] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showArchiveAllVerifiedDialog, setShowArchiveAllVerifiedDialog] =
+    useState(false);
+  const [showBoardBackgroundModal, setShowBoardBackgroundModal] =
+    useState(false);
   const [showCompletedModal, setShowCompletedModal] = useState(false);
-  const [deleteCompletedFeature, setDeleteCompletedFeature] = useState<Feature | null>(null);
+  const [deleteCompletedFeature, setDeleteCompletedFeature] =
+    useState<Feature | null>(null);
   // State for viewing plan in read-only mode
   const [viewPlanFeature, setViewPlanFeature] = useState<Feature | null>(null);
 
   // State for spawn task mode
-  const [spawnParentFeature, setSpawnParentFeature] = useState<Feature | null>(null);
+  const [spawnParentFeature, setSpawnParentFeature] = useState<Feature | null>(
+    null,
+  );
 
   // State for duplicate as child multiple times dialog
-  const [duplicateMultipleFeature, setDuplicateMultipleFeature] = useState<Feature | null>(null);
+  const [duplicateMultipleFeature, setDuplicateMultipleFeature] =
+    useState<Feature | null>(null);
 
   // Worktree dialog states
-  const [showCreateWorktreeDialog, setShowCreateWorktreeDialog] = useState(false);
-  const [showDeleteWorktreeDialog, setShowDeleteWorktreeDialog] = useState(false);
-  const [showCommitWorktreeDialog, setShowCommitWorktreeDialog] = useState(false);
+  const [showCreateWorktreeDialog, setShowCreateWorktreeDialog] =
+    useState(false);
+  const [showDeleteWorktreeDialog, setShowDeleteWorktreeDialog] =
+    useState(false);
+  const [showCommitWorktreeDialog, setShowCommitWorktreeDialog] =
+    useState(false);
   const [showCreatePRDialog, setShowCreatePRDialog] = useState(false);
-  const [showChangePRNumberDialog, setShowChangePRNumberDialog] = useState(false);
+  const [showChangePRNumberDialog, setShowChangePRNumberDialog] =
+    useState(false);
   const [showCreateBranchDialog, setShowCreateBranchDialog] = useState(false);
   const [showMergeRebaseDialog, setShowMergeRebaseDialog] = useState(false);
   const [showPRCommentDialog, setShowPRCommentDialog] = useState(false);
   const [prCommentDialogPRInfo, setPRCommentDialogPRInfo] =
     useState<PRCommentResolutionPRInfo | null>(null);
-  const [selectedWorktreeForAction, setSelectedWorktreeForAction] = useState<WorktreeInfo | null>(
-    null
-  );
-  const [commitFeatureFiles, setCommitFeatureFiles] = useState<string[] | undefined>();
+  const [selectedWorktreeForAction, setSelectedWorktreeForAction] =
+    useState<WorktreeInfo | null>(null);
+  const [commitFeatureFiles, setCommitFeatureFiles] = useState<
+    string[] | undefined
+  >();
   const [worktreeRefreshKey, setWorktreeRefreshKey] = useState(0);
 
   // Branch conflict dialog state (for branch switch and stash pop conflicts)
-  const [branchConflictData, setBranchConflictData] = useState<BranchConflictData | null>(null);
-  const [showBranchConflictDialog, setShowBranchConflictDialog] = useState(false);
+  const [branchConflictData, setBranchConflictData] =
+    useState<BranchConflictData | null>(null);
+  const [showBranchConflictDialog, setShowBranchConflictDialog] =
+    useState(false);
 
   // Backlog plan dialog state
   const [showPlanDialog, setShowPlanDialog] = useState(false);
-  const [pendingBacklogPlan, setPendingBacklogPlan] = useState<BacklogPlanResult | null>(null);
+  const [pendingBacklogPlan, setPendingBacklogPlan] =
+    useState<BacklogPlanResult | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Pipeline settings dialog state
@@ -272,18 +318,22 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const [showMassEditDialog, setShowMassEditDialog] = useState(false);
 
   // View mode state (kanban vs list)
-  const { viewMode, setViewMode, isListView, sortConfig, setSortColumn } = useListViewState();
+  const { viewMode, setViewMode, isListView, sortConfig, setSortColumn } =
+    useListViewState();
 
   // Search filter for Kanban cards
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   // Plan approval loading state
   const [isPlanApprovalLoading, setIsPlanApprovalLoading] = useState(false);
-  const [isPlanRevisionInProgress, setIsPlanRevisionInProgress] = useState(false);
+  const [isPlanRevisionInProgress, setIsPlanRevisionInProgress] =
+    useState(false);
   // Question dialog state
   const [questionFeature, setQuestionFeature] = useState<Feature | null>(null);
   const [isQuestionLoading, setIsQuestionLoading] = useState(false);
   // Pending auto-open: featureId from question_required event waiting for features to reload
-  const [pendingQuestionFeatureId, setPendingQuestionFeatureId] = useState<string | null>(null);
+  const [pendingQuestionFeatureId, setPendingQuestionFeatureId] = useState<
+    string | null
+  >(null);
   // Derive spec creation state from store - check if current project is the one being created
   const isCreatingSpec = specCreatingForProject === currentProject?.path;
   const creatingSpecProjectPath = specCreatingForProject ?? undefined;
@@ -298,15 +348,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           return false;
         }
 
-        const result = await api.autoMode.contextExists(currentProject.path, featureId);
+        const result = await api.autoMode.contextExists(
+          currentProject.path,
+          featureId,
+        );
 
         return result.success && result.exists === true;
       } catch (error) {
-        logger.error('Error checking context:', error);
+        logger.error("Error checking context:", error);
         return false;
       }
     },
-    [currentProject]
+    [currentProject],
   );
 
   // Use board effects hook
@@ -326,12 +379,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // effect below will fire naturally once the project switch triggers a features reload.
   const handledProjectPathRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!initialProjectPath || handledProjectPathRef.current === initialProjectPath) {
+    if (
+      !initialProjectPath ||
+      handledProjectPathRef.current === initialProjectPath
+    ) {
       return;
     }
 
     // Check if we're already on the correct project
-    if (currentProject?.path && pathsEqual(currentProject.path, initialProjectPath)) {
+    if (
+      currentProject?.path &&
+      pathsEqual(currentProject.path, initialProjectPath)
+    ) {
       handledProjectPathRef.current = initialProjectPath;
       return;
     }
@@ -344,23 +403,26 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         if (!initResult.success) {
           logger.warn(
             `Deep link: failed to initialize project "${initialProjectPath}":`,
-            initResult.error
+            initResult.error,
           );
-          toast.error('Failed to open project from link', {
-            description: initResult.error || 'Unknown error',
+          toast.error("Failed to open project from link", {
+            description: initResult.error || "Unknown error",
           });
           return;
         }
 
         // Derive project name from path basename
         const projectName =
-          initialProjectPath.split(/[/\\]/).filter(Boolean).pop() || initialProjectPath;
-        logger.info(`Deep link: switching to project "${projectName}" at ${initialProjectPath}`);
+          initialProjectPath.split(/[/\\]/).filter(Boolean).pop() ||
+          initialProjectPath;
+        logger.info(
+          `Deep link: switching to project "${projectName}" at ${initialProjectPath}`,
+        );
         upsertAndSetCurrentProject(initialProjectPath, projectName);
       } catch (error) {
-        logger.error('Deep link: project switch failed:', error);
-        toast.error('Failed to switch project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Deep link: project switch failed:", error);
+        toast.error("Failed to switch project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     };
@@ -385,8 +447,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         currentProject?.path
           ? (s.worktreesByProject[currentProject.path] ?? EMPTY_WORKTREES)
           : EMPTY_WORKTREES,
-      [currentProject?.path]
-    )
+      [currentProject?.path],
+    ),
   );
 
   // Track how many render cycles we've waited for worktrees during a deep link.
@@ -420,9 +482,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     // avoids an indefinite wait that hangs the app on the loading screen.
     let resolvedWorktrees = deepLinkWorktrees;
     if (resolvedWorktrees.length === 0 && currentProject.path) {
-      const cachedData = queryClient.getQueryData(queryKeys.worktrees.all(currentProject.path)) as
-        | { worktrees?: WorktreeInfo[] }
-        | undefined;
+      const cachedData = queryClient.getQueryData(
+        queryKeys.worktrees.all(currentProject.path),
+      ) as { worktrees?: WorktreeInfo[] } | undefined;
       if (cachedData?.worktrees && cachedData.worktrees.length > 0) {
         resolvedWorktrees = cachedData.worktrees as typeof deepLinkWorktrees;
       }
@@ -439,7 +501,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       // Exceeded retry limit — proceed without worktree switch to avoid hanging
       logger.warn(
         `Deep link: worktrees not available after ${MAX_DEEP_LINK_RETRIES} retries, ` +
-          `opening feature ${initialFeatureId} without switching worktree`
+          `opening feature ${initialFeatureId} without switching worktree`,
       );
     }
 
@@ -449,33 +511,39 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     // mutation cascades through useAutoMode → refreshStatus → setAutoModeRunning,
     // which can trigger React error #185 on mobile Safari/PWA crash loops.
     if (feature.branchName && resolvedWorktrees.length > 0) {
-      const targetWorktree = resolvedWorktrees.find((w) => w.branch === feature.branchName);
+      const targetWorktree = resolvedWorktrees.find(
+        (w) => w.branch === feature.branchName,
+      );
       if (targetWorktree) {
-        const currentWt = useAppStore.getState().getCurrentWorktree(currentProject.path);
+        const currentWt = useAppStore
+          .getState()
+          .getCurrentWorktree(currentProject.path);
         const isAlreadySelected = targetWorktree.isMain
           ? currentWt?.path === null
           : currentWt?.path === targetWorktree.path;
         if (!isAlreadySelected) {
           logger.info(
-            `Deep link: switching to worktree "${targetWorktree.branch}" for feature ${initialFeatureId}`
+            `Deep link: switching to worktree "${targetWorktree.branch}" for feature ${initialFeatureId}`,
           );
           startTransition(() => {
             setCurrentWorktree(
               currentProject.path,
               targetWorktree.isMain ? null : targetWorktree.path,
-              targetWorktree.branch
+              targetWorktree.branch,
             );
           });
         }
       }
     } else if (!feature.branchName && resolvedWorktrees.length > 0) {
       // Feature has no branch - should be on the main worktree
-      const currentWt = useAppStore.getState().getCurrentWorktree(currentProject.path);
+      const currentWt = useAppStore
+        .getState()
+        .getCurrentWorktree(currentProject.path);
       if (currentWt?.path !== null && currentWt !== null) {
         const mainWorktree = resolvedWorktrees.find((w) => w.isMain);
         if (mainWorktree) {
           logger.info(
-            `Deep link: switching to main worktree for unassigned feature ${initialFeatureId}`
+            `Deep link: switching to main worktree for unassigned feature ${initialFeatureId}`,
           );
           startTransition(() => {
             setCurrentWorktree(currentProject.path, null, mainWorktree.branch);
@@ -484,7 +552,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       }
     }
 
-    logger.info(`Opening output modal for feature from URL: ${initialFeatureId}`);
+    logger.info(
+      `Opening output modal for feature from URL: ${initialFeatureId}`,
+    );
     setOutputFeature(feature);
     setShowOutputModal(true);
     handledFeatureIdRef.current = initialFeatureId;
@@ -512,7 +582,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           setPipelineConfig(currentProject.path, result.config);
         }
       } catch (error) {
-        logger.error('Failed to load pipeline config:', error);
+        logger.error("Failed to load pipeline config:", error);
       }
     };
 
@@ -537,12 +607,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
 
   // Get unique categories from existing features AND persisted categories for autocomplete suggestions
   const categorySuggestions = useMemo(() => {
-    const featureCategories = hookFeatures.map((f) => f.category).filter(Boolean);
+    const featureCategories = hookFeatures
+      .map((f) => f.category)
+      .filter(Boolean);
     // Merge feature categories with persisted categories
     const allCategories = [...featureCategories, ...persistedCategories];
     return [...new Set(allCategories)].sort();
@@ -576,7 +648,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           setBranchSuggestions(localBranches);
         }
       } catch (error) {
-        logger.error('Error fetching branches:', error);
+        logger.error("Error fetching branches:", error);
         setBranchSuggestions([]);
       }
     };
@@ -585,54 +657,67 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   }, [currentProject, worktreeRefreshKey]);
 
   // Custom collision detection that prioritizes specific drop targets (cards, worktrees) over columns
-  const collisionDetectionStrategy = useCallback((args: Parameters<CollisionDetection>[0]) => {
-    const pointerCollisions = pointerWithin(args);
+  const collisionDetectionStrategy = useCallback(
+    (args: Parameters<CollisionDetection>[0]) => {
+      const pointerCollisions = pointerWithin(args);
 
-    // Priority 1: Specific drop targets (cards for dependency links, worktrees)
-    // These need to be detected even if they are inside a column
-    const specificTargetCollisions = pointerCollisions.filter((collision: Collision) => {
-      const id = String(collision.id);
-      return id.startsWith('card-drop-') || id.startsWith('worktree-drop-');
-    });
+      // Priority 1: Specific drop targets (cards for dependency links, worktrees)
+      // These need to be detected even if they are inside a column
+      const specificTargetCollisions = pointerCollisions.filter(
+        (collision: Collision) => {
+          const id = String(collision.id);
+          return id.startsWith("card-drop-") || id.startsWith("worktree-drop-");
+        },
+      );
 
-    if (specificTargetCollisions.length > 0) {
-      return specificTargetCollisions;
-    }
-
-    // Priority 2: Columns (including column headers and pipeline columns)
-    const columnCollisions = pointerCollisions.filter((collision: Collision) => {
-      const colId = String(collision.id);
-      // Direct column ID match (e.g. 'backlog', 'in_progress')
-      if (COLUMNS.some((col) => col.id === colId)) return true;
-      // Column header droppable (e.g. 'column-header-backlog')
-      if (colId.startsWith('column-header-')) {
-        const baseId = colId.replace('column-header-', '');
-        return COLUMNS.some((col) => col.id === baseId) || baseId.startsWith('pipeline_');
+      if (specificTargetCollisions.length > 0) {
+        return specificTargetCollisions;
       }
-      // Pipeline column IDs (e.g. 'pipeline_tests')
-      if (colId.startsWith('pipeline_')) return true;
-      return false;
-    });
 
-    // If we found a column collision, use that
-    if (columnCollisions.length > 0) {
-      return columnCollisions;
-    }
+      // Priority 2: Columns (including column headers and pipeline columns)
+      const columnCollisions = pointerCollisions.filter(
+        (collision: Collision) => {
+          const colId = String(collision.id);
+          // Direct column ID match (e.g. 'backlog', 'in_progress')
+          if (COLUMNS.some((col) => col.id === colId)) return true;
+          // Column header droppable (e.g. 'column-header-backlog')
+          if (colId.startsWith("column-header-")) {
+            const baseId = colId.replace("column-header-", "");
+            return (
+              COLUMNS.some((col) => col.id === baseId) ||
+              baseId.startsWith("pipeline_")
+            );
+          }
+          // Pipeline column IDs (e.g. 'pipeline_tests')
+          if (colId.startsWith("pipeline_")) return true;
+          return false;
+        },
+      );
 
-    // Priority 3: Fallback to rectangle intersection
-    return rectIntersection(args);
-  }, []);
+      // If we found a column collision, use that
+      if (columnCollisions.length > 0) {
+        return columnCollisions;
+      }
+
+      // Priority 3: Fallback to rectangle intersection
+      return rectIntersection(args);
+    },
+    [],
+  );
 
   // Use persistence hook
-  const { persistFeatureCreate, persistFeatureUpdate, persistFeatureDelete } = useBoardPersistence({
-    currentProject,
-  });
+  const { persistFeatureCreate, persistFeatureUpdate, persistFeatureDelete } =
+    useBoardPersistence({
+      currentProject,
+    });
 
   // Shared helper: batch-reset branch assignment and persist for each affected feature.
   // Used when worktrees are deleted or branches are removed during merge.
   const batchResetBranchFeatures = useCallback(
     (branchName: string) => {
-      const affectedIds = hookFeatures.filter((f) => f.branchName === branchName).map((f) => f.id);
+      const affectedIds = hookFeatures
+        .filter((f) => f.branchName === branchName)
+        .map((f) => f.id);
       if (affectedIds.length === 0) return;
       const updates: Partial<Feature> = { branchName: undefined };
       batchUpdateFeatures(affectedIds, updates);
@@ -640,12 +725,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         persistFeatureUpdate(id, updates).catch((err: unknown) => {
           console.error(
             `[batchResetBranchFeatures] Failed to persist update for feature ${id}:`,
-            err
+            err,
           );
         });
       }
     },
-    [hookFeatures, batchUpdateFeatures, persistFeatureUpdate]
+    [hookFeatures, batchUpdateFeatures, persistFeatureUpdate],
   );
 
   // Memoize the removed worktrees handler to prevent infinite loops
@@ -655,7 +740,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         batchResetBranchFeatures(branch);
       }
     },
-    [batchResetBranchFeatures]
+    [batchResetBranchFeatures],
   );
 
   const currentProjectPath = currentProject?.path;
@@ -665,9 +750,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // switches trigger an immediate re-render and instant kanban/list re-filtering.
   const currentWorktreeInfo = useAppStore(
     useCallback(
-      (s) => (currentProjectPath ? (s.currentWorktreeByProject[currentProjectPath] ?? null) : null),
-      [currentProjectPath]
-    )
+      (s) =>
+        currentProjectPath
+          ? (s.currentWorktreeByProject[currentProjectPath] ?? null)
+          : null,
+      [currentProjectPath],
+    ),
   );
   const currentWorktreePath = currentWorktreeInfo?.path ?? null;
 
@@ -683,8 +771,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         currentProjectPath
           ? (s.worktreesByProject[currentProjectPath] ?? EMPTY_WORKTREES)
           : EMPTY_WORKTREES,
-      [currentProjectPath]
-    )
+      [currentProjectPath],
+    ),
   );
 
   // Get the branch for the currently selected worktree
@@ -704,7 +792,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       found = worktrees.find((w) => w.isMain);
     } else {
       // Specific worktree selected - find it by path
-      found = worktrees.find((w) => !w.isMain && pathsEqual(w.path, currentWorktreePath));
+      found = worktrees.find(
+        (w) => !w.isMain && pathsEqual(w.path, currentWorktreePath),
+      );
       // If the selected worktree no longer exists (e.g. just deleted),
       // fall back to main to prevent rendering with undefined worktree.
       // onDeleted will call setCurrentWorktree(…, null) to reset properly.
@@ -755,7 +845,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
     const projectPath = currentProject.path;
     const beforeFeatures = (
-      queryClient.getQueryData(queryKeys.features.all(projectPath)) as Feature[] | undefined
+      queryClient.getQueryData(queryKeys.features.all(projectPath)) as
+        | Feature[]
+        | undefined
     )?.length;
     const beforeWorktrees = (
       queryClient.getQueryData(queryKeys.worktrees.all(projectPath)) as
@@ -763,20 +855,28 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         | undefined
     )?.worktrees?.length;
     const beforeRunningAgents = (
-      queryClient.getQueryData(queryKeys.runningAgents.all()) as { count?: number } | undefined
+      queryClient.getQueryData(queryKeys.runningAgents.all()) as
+        | { count?: number }
+        | undefined
     )?.count;
     const beforeAutoModeRunning = autoMode.isRunning;
 
     try {
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: queryKeys.features.all(projectPath) }),
+        queryClient.refetchQueries({
+          queryKey: queryKeys.features.all(projectPath),
+        }),
         queryClient.refetchQueries({ queryKey: queryKeys.runningAgents.all() }),
-        queryClient.refetchQueries({ queryKey: queryKeys.worktrees.all(projectPath) }),
+        queryClient.refetchQueries({
+          queryKey: queryKeys.worktrees.all(projectPath),
+        }),
         autoMode.refreshStatus(),
       ]);
 
       const afterFeatures = (
-        queryClient.getQueryData(queryKeys.features.all(projectPath)) as Feature[] | undefined
+        queryClient.getQueryData(queryKeys.features.all(projectPath)) as
+          | Feature[]
+          | undefined
       )?.length;
       const afterWorktrees = (
         queryClient.getQueryData(queryKeys.worktrees.all(projectPath)) as
@@ -784,7 +884,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           | undefined
       )?.worktrees?.length;
       const afterRunningAgents = (
-        queryClient.getQueryData(queryKeys.runningAgents.all()) as { count?: number } | undefined
+        queryClient.getQueryData(queryKeys.runningAgents.all()) as
+          | { count?: number }
+          | undefined
       )?.count;
       const afterAutoModeRunning = autoMode.isRunning;
 
@@ -794,16 +896,22 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         beforeRunningAgents !== afterRunningAgents ||
         beforeAutoModeRunning !== afterAutoModeRunning
       ) {
-        logger.info('[Board] Refresh detected state mismatch', {
+        logger.info("[Board] Refresh detected state mismatch", {
           features: { before: beforeFeatures, after: afterFeatures },
           worktrees: { before: beforeWorktrees, after: afterWorktrees },
-          runningAgents: { before: beforeRunningAgents, after: afterRunningAgents },
-          autoModeRunning: { before: beforeAutoModeRunning, after: afterAutoModeRunning },
+          runningAgents: {
+            before: beforeRunningAgents,
+            after: afterRunningAgents,
+          },
+          autoModeRunning: {
+            before: beforeAutoModeRunning,
+            after: afterAutoModeRunning,
+          },
         });
       }
     } catch (error) {
-      logger.error('[Board] Failed to refresh board state:', error);
-      toast.error('Failed to refresh board state');
+      logger.error("[Board] Failed to refresh board state:", error);
+      toast.error("Failed to refresh board state");
     }
   }, [autoMode, currentProject, queryClient]);
   // Get runningTasks from the hook (scoped to current project/worktree)
@@ -811,9 +919,13 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // Get worktree-specific maxConcurrency from the hook
   const maxConcurrency = autoMode.maxConcurrency;
   // Get worktree-specific setter
-  const setMaxConcurrencyForWorktree = useAppStore((state) => state.setMaxConcurrencyForWorktree);
+  const setMaxConcurrencyForWorktree = useAppStore(
+    (state) => state.setMaxConcurrencyForWorktree,
+  );
   // Mutation to persist maxConcurrency to server settings
-  const updateGlobalSettings = useUpdateGlobalSettings({ showSuccessToast: false });
+  const updateGlobalSettings = useUpdateGlobalSettings({
+    showSuccessToast: false,
+  });
 
   // Get the current branch from the selected worktree (not from store which may be stale)
   const currentWorktreeBranch = selectedWorktree?.branch ?? null;
@@ -821,7 +933,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // Get the branch for the currently selected worktree (for defaulting new features)
   // Use the branch from selectedWorktree, or fall back to main worktree's branch
   const selectedWorktreeBranch =
-    currentWorktreeBranch || worktrees.find((w) => w.isMain)?.branch || 'main';
+    currentWorktreeBranch || worktrees.find((w) => w.isMain)?.branch || "main";
 
   // Aggregate running auto tasks across all worktrees for this project.
   // IMPORTANT: Use a derived selector with shallow equality instead of subscribing
@@ -834,7 +946,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (!currentProject?.id) return [] as string[];
       const prefix = `${currentProject.id}::`;
       const tasks: string[] = [];
-      for (const [key, worktreeState] of Object.entries(state.autoModeByWorktree)) {
+      for (const [key, worktreeState] of Object.entries(
+        state.autoModeByWorktree,
+      )) {
         if (key.startsWith(prefix) && worktreeState.runningTasks) {
           for (const task of worktreeState.runningTasks) {
             tasks.push(task);
@@ -842,7 +956,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         }
       }
       return tasks;
-    })
+    }),
   );
 
   // Get in-progress features for keyboard shortcuts (needed before actions hook)
@@ -850,23 +964,23 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const inProgressFeaturesForShortcuts = useMemo(() => {
     return hookFeatures.filter((f) => {
       const isRunning = runningAutoTasks.includes(f.id);
-      return isRunning || f.status === 'in_progress';
+      return isRunning || f.status === "in_progress";
     });
   }, [hookFeatures, runningAutoTasks]);
 
   // Calculate unarchived card counts per branch
   const branchCardCounts = useMemo(() => {
     // Use primary worktree branch as default for features without branchName
-    const primaryBranch = worktrees.find((w) => w.isMain)?.branch || 'main';
+    const primaryBranch = worktrees.find((w) => w.isMain)?.branch || "main";
     return hookFeatures.reduce(
       (counts, feature) => {
-        if (feature.status !== 'completed') {
+        if (feature.status !== "completed") {
           const branch = feature.branchName ?? primaryBranch;
           counts[branch] = (counts[branch] || 0) + 1;
         }
         return counts;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
   }, [hookFeatures, worktrees]);
 
@@ -877,7 +991,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const handleBoardRecover = useCallback(() => {
     if (!currentProject) return;
     const mainWorktree = worktrees.find((w) => w.isMain);
-    const mainBranch = mainWorktree?.branch || 'main';
+    const mainBranch = mainWorktree?.branch || "main";
     startTransition(() => {
       setCurrentWorktree(currentProject.path, null, mainBranch);
     });
@@ -889,7 +1003,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (!currentProject) return;
 
       const currentWorktrees = getWorktrees(currentProject.path);
-      const existingWorktree = currentWorktrees.find((w) => w.branch === worktreeResult.branch);
+      const existingWorktree = currentWorktrees.find(
+        (w) => w.branch === worktreeResult.branch,
+      );
 
       // Only add if it doesn't already exist (to avoid duplicates)
       if (!existingWorktree) {
@@ -900,12 +1016,19 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           isCurrent: false,
           hasWorktree: true,
         };
-        setWorktrees(currentProject.path, [...currentWorktrees, newWorktreeInfo]);
+        setWorktrees(currentProject.path, [
+          ...currentWorktrees,
+          newWorktreeInfo,
+        ]);
       }
       // Select the worktree (whether it existed or was just added)
-      setCurrentWorktree(currentProject.path, worktreeResult.path, worktreeResult.branch);
+      setCurrentWorktree(
+        currentProject.path,
+        worktreeResult.path,
+        worktreeResult.branch,
+      );
     },
-    [currentProject, getWorktrees, setWorktrees, setCurrentWorktree]
+    [currentProject, getWorktrees, setWorktrees, setCurrentWorktree],
   );
 
   // Derive showAllWorktrees for current project (used by useBoardActions and useBoardColumnFeatures)
@@ -975,24 +1098,29 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   const handleCommitChanges = useCallback(
     (feature: Feature) => {
       if (!feature.branchName) {
-        toast.error('No branch associated with this task');
+        toast.error("No branch associated with this task");
         return;
       }
-      const matchingWorktree = worktrees.find((w) => w.branch === feature.branchName);
+      const matchingWorktree = worktrees.find(
+        (w) => w.branch === feature.branchName,
+      );
       if (!matchingWorktree) {
-        toast.error('No worktree found for this task\'s branch');
+        toast.error("No worktree found for this task's branch");
         return;
       }
       setSelectedWorktreeForAction(matchingWorktree);
-      setCommitFeatureFiles(feature.agentModifiedFiles);
+      setCommitFeatureFiles(feature.agentModifiedFiles as string[] | undefined);
       setShowCommitWorktreeDialog(true);
     },
-    [worktrees]
+    [worktrees],
   );
 
   // Handler for bulk updating multiple features
   const handleBulkUpdate = useCallback(
-    async (updates: Partial<Feature>, workMode: 'current' | 'auto' | 'custom') => {
+    async (
+      updates: Partial<Feature>,
+      workMode: "current" | "auto" | "custom",
+    ) => {
       if (!currentProject || selectedFeatureIds.size === 0) return;
 
       try {
@@ -1002,13 +1130,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         // - 'custom': Use the provided branch name
         let finalBranchName: string | undefined;
 
-        if (workMode === 'current') {
+        if (workMode === "current") {
           // If a worktree is selected, use its branch; otherwise work on main (undefined = no branch assignment)
           finalBranchName = currentWorktreeBranch || undefined;
-        } else if (workMode === 'auto') {
+        } else if (workMode === "auto") {
           // Auto-generate a branch name based on primary branch (main/master) and timestamp
           // Always use primary branch to avoid nested feature/feature/... paths
-          const baseBranch = getPrimaryWorktreeBranch(currentProject.path) || 'main';
+          const baseBranch =
+            getPrimaryWorktreeBranch(currentProject.path) || "main";
           const timestamp = Date.now();
           const randomSuffix = Math.random().toString(36).substring(2, 6);
           finalBranchName = `feature/${baseBranch}-${timestamp}-${randomSuffix}`;
@@ -1018,19 +1147,19 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         }
 
         // Create worktree for 'auto' or 'custom' modes when we have a branch name
-        if ((workMode === 'auto' || workMode === 'custom') && finalBranchName) {
+        if ((workMode === "auto" || workMode === "custom") && finalBranchName) {
           try {
             const electronApi = getElectronAPI();
             if (electronApi?.worktree?.create) {
               const result = await electronApi.worktree.create(
                 currentProject.path,
-                finalBranchName
+                finalBranchName,
               );
               if (result.success && result.worktree) {
                 logger.info(
                   `Worktree for branch "${finalBranchName}" ${
-                    result.worktree?.isNew ? 'created' : 'already exists'
-                  }`
+                    result.worktree?.isNew ? "created" : "already exists"
+                  }`,
                 );
                 // Auto-select the worktree when creating/using it for bulk update
                 addAndSelectWorktree(result.worktree);
@@ -1039,18 +1168,19 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
               } else if (!result.success) {
                 logger.error(
                   `Failed to create worktree for branch "${finalBranchName}":`,
-                  result.error
+                  result.error,
                 );
-                toast.error('Failed to create worktree', {
-                  description: result.error || 'An error occurred',
+                toast.error("Failed to create worktree", {
+                  description: result.error || "An error occurred",
                 });
                 return; // Don't proceed with update if worktree creation failed
               }
             }
           } catch (error) {
-            logger.error('Error creating worktree:', error);
-            toast.error('Failed to create worktree', {
-              description: error instanceof Error ? error.message : 'An error occurred',
+            logger.error("Error creating worktree:", error);
+            toast.error("Failed to create worktree", {
+              description:
+                error instanceof Error ? error.message : "An error occurred",
             });
             return; // Don't proceed with update if worktree creation failed
           }
@@ -1064,7 +1194,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
         const api = getHttpApiClient();
         const featureIds = Array.from(selectedFeatureIds);
-        const result = await api.features.bulkUpdate(currentProject.path, featureIds, finalUpdates);
+        const result = await api.features.bulkUpdate(
+          currentProject.path,
+          featureIds,
+          finalUpdates,
+        );
 
         if (result.success) {
           // Invalidate React Query cache to refetch features with server-updated values
@@ -1072,13 +1206,13 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           toast.success(`Updated ${result.updatedCount} features`);
           exitSelectionMode();
         } else {
-          toast.error('Failed to update some features', {
+          toast.error("Failed to update some features", {
             description: `${result.failedCount} features failed to update`,
           });
         }
       } catch (error) {
-        logger.error('Bulk update failed:', error);
-        toast.error('Failed to update features');
+        logger.error("Bulk update failed:", error);
+        toast.error("Failed to update features");
       }
     },
     [
@@ -1090,7 +1224,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       addAndSelectWorktree,
       currentWorktreeBranch,
       setWorktreeRefreshKey,
-    ]
+    ],
   );
 
   // Handler for bulk deleting multiple features
@@ -1100,7 +1234,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     try {
       const api = getHttpApiClient();
       const featureIds = Array.from(selectedFeatureIds);
-      const result = await api.features.bulkDelete(currentProject.path, featureIds);
+      const result = await api.features.bulkDelete(
+        currentProject.path,
+        featureIds,
+      );
 
       const successfullyDeletedIds =
         result.results?.filter((r) => r.success).map((r) => r.featureId) ?? [];
@@ -1114,7 +1251,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       }
 
       if (result.failedCount && result.failedCount > 0) {
-        toast.error('Failed to delete some features', {
+        toast.error("Failed to delete some features", {
           description: `${result.failedCount} features failed to delete`,
         });
       }
@@ -1124,11 +1261,11 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         exitSelectionMode();
         loadFeatures();
       } else if (!result.success) {
-        toast.error('Failed to delete features', { description: result.error });
+        toast.error("Failed to delete features", { description: result.error });
       }
     } catch (error) {
-      logger.error('Bulk delete failed:', error);
-      toast.error('Failed to delete features');
+      logger.error("Bulk delete failed:", error);
+      toast.error("Failed to delete features");
     }
   }, [currentProject, selectedFeatureIds, exitSelectionMode, loadFeatures]);
 
@@ -1142,7 +1279,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     return hookFeatures
       .filter((f) => {
         // Only backlog features
-        if (f.status !== 'backlog') return false;
+        if (f.status !== "backlog") return false;
 
         // In all-worktrees mode, every backlog feature is selectable regardless of branch
         if (effectiveShowAllWorktrees) return true;
@@ -1177,7 +1314,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     return hookFeatures
       .filter((f) => {
         // Only waiting_approval features
-        if (f.status !== 'waiting_approval') return false;
+        if (f.status !== "waiting_approval") return false;
 
         // In all-worktrees mode, every waiting_approval feature is selectable regardless of branch
         if (effectiveShowAllWorktrees) return true;
@@ -1214,10 +1351,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     try {
       const api = getHttpApiClient();
       const featureIds = Array.from(selectedFeatureIds);
-      const updates = { status: 'verified' as const };
+      const updates = { status: "verified" as const };
 
       // Use bulk update API for efficient batch processing
-      const result = await api.features.bulkUpdate(currentProject.path, featureIds, updates);
+      const result = await api.features.bulkUpdate(
+        currentProject.path,
+        featureIds,
+        updates,
+      );
 
       if (result.success) {
         // Invalidate React Query cache to refetch features with server-updated values
@@ -1225,31 +1366,34 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         toast.success(`Verified ${result.updatedCount} features`);
         exitSelectionMode();
       } else {
-        toast.error('Failed to verify some features', {
+        toast.error("Failed to verify some features", {
           description: `${result.failedCount} features failed to verify`,
         });
       }
     } catch (error) {
-      logger.error('Bulk verify failed:', error);
-      toast.error('Failed to verify features');
+      logger.error("Bulk verify failed:", error);
+      toast.error("Failed to verify features");
     }
   }, [currentProject, selectedFeatureIds, loadFeatures, exitSelectionMode]);
 
   // Helper that creates a feature and immediately starts it (used by conflict handlers and the Make button)
   const handleAddAndStartFeature = useCallback(
-    async (featureData: Parameters<typeof handleAddFeature>[0]): Promise<string | null> => {
+    async (
+      featureData: Parameters<typeof handleAddFeature>[0],
+    ): Promise<string | null> => {
       let createdFeatureId: string | null = null;
       try {
         // Create feature directly with in_progress status to avoid brief backlog flash
         const createdFeature = await handleAddFeature({
           ...featureData,
-          initialStatus: 'in_progress',
+          initialStatus: "in_progress",
         });
         createdFeatureId = createdFeature?.id ?? null;
       } catch (error) {
-        logger.error('Failed to create feature:', error);
-        toast.error('Failed to create feature', {
-          description: error instanceof Error ? error.message : 'An error occurred',
+        logger.error("Failed to create feature:", error);
+        toast.error("Failed to create feature", {
+          description:
+            error instanceof Error ? error.message : "An error occurred",
         });
         return null;
       }
@@ -1263,21 +1407,30 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         try {
           await handleStartImplementation(newFeature);
         } catch (startError) {
-          logger.error('Failed to start implementation for feature:', startError);
-          toast.error('Failed to start feature implementation', {
-            description: startError instanceof Error ? startError.message : 'An error occurred',
+          logger.error(
+            "Failed to start implementation for feature:",
+            startError,
+          );
+          toast.error("Failed to start feature implementation", {
+            description:
+              startError instanceof Error
+                ? startError.message
+                : "An error occurred",
           });
         }
       } else {
-        logger.error('Could not find newly created feature to start it automatically.');
-        toast.error('Failed to auto-start feature', {
-          description: 'The feature was created but could not be started automatically.',
+        logger.error(
+          "Could not find newly created feature to start it automatically.",
+        );
+        toast.error("Failed to auto-start feature", {
+          description:
+            "The feature was created but could not be started automatically.",
         });
       }
 
       return createdFeatureId;
     },
-    [handleAddFeature, handleStartImplementation]
+    [handleAddFeature, handleStartImplementation],
   );
 
   // Handler for Quick Add - creates a feature with minimal data using defaults
@@ -1289,28 +1442,31 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel?: string;
         reasoningEffort?: string;
         providerId?: string;
-      }
+      },
     ) => {
       // Generate a title from the first line of the description
-      const title = description.split('\n')[0].substring(0, 100);
+      const title = description.split("\n")[0].substring(0, 100);
 
       await handleAddFeature({
         title,
         description,
-        category: '',
+        category: "",
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
         model: resolveModelString(modelEntry.model) as ModelAlias,
-        thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
+        thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || "none",
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch ?? '' : '',
+        branchName: addFeatureUseSelectedWorktreeBranch
+          ? (selectedWorktreeBranch ?? "")
+          : "",
         priority: 2,
-        planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
-        requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
+        planningMode: useAppStore.getState().defaultPlanningMode ?? "skip",
+        requirePlanApproval:
+          useAppStore.getState().defaultRequirePlanApproval ?? false,
         dependencies: [],
-        workMode: addFeatureUseSelectedWorktreeBranch ? 'custom' : 'current',
+        workMode: addFeatureUseSelectedWorktreeBranch ? "custom" : "current",
       });
     },
     [
@@ -1318,7 +1474,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       defaultSkipTests,
       addFeatureUseSelectedWorktreeBranch,
       selectedWorktreeBranch,
-    ]
+    ],
   );
 
   // Handler for Quick Add & Start - creates and immediately starts a feature
@@ -1330,29 +1486,32 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         thinkingLevel?: string;
         reasoningEffort?: string;
         providerId?: string;
-      }
+      },
     ) => {
       // Generate a title from the first line of the description
-      const title = description.split('\n')[0].substring(0, 100);
+      const title = description.split("\n")[0].substring(0, 100);
 
       await handleAddAndStartFeature({
         title,
         description,
-        category: '',
+        category: "",
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
         model: resolveModelString(modelEntry.model) as ModelAlias,
-        thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || 'none',
+        thinkingLevel: (modelEntry.thinkingLevel as ThinkingLevel) || "none",
         reasoningEffort: modelEntry.reasoningEffort as ReasoningEffort,
         providerId: modelEntry.providerId,
-        branchName: addFeatureUseSelectedWorktreeBranch ? selectedWorktreeBranch ?? '' : '',
+        branchName: addFeatureUseSelectedWorktreeBranch
+          ? (selectedWorktreeBranch ?? "")
+          : "",
         priority: 2,
-        planningMode: useAppStore.getState().defaultPlanningMode ?? 'skip',
-        requirePlanApproval: useAppStore.getState().defaultRequirePlanApproval ?? false,
+        planningMode: useAppStore.getState().defaultPlanningMode ?? "skip",
+        requirePlanApproval:
+          useAppStore.getState().defaultRequirePlanApproval ?? false,
         dependencies: [],
-        workMode: addFeatureUseSelectedWorktreeBranch ? 'custom' : 'current',
-        initialStatus: 'in_progress',
+        workMode: addFeatureUseSelectedWorktreeBranch ? "custom" : "current",
+        initialStatus: "in_progress",
       });
     },
     [
@@ -1360,57 +1519,60 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       defaultSkipTests,
       addFeatureUseSelectedWorktreeBranch,
       selectedWorktreeBranch,
-    ]
+    ],
   );
 
   // Handler for template selection - creates a feature from a template
   const handleTemplateSelect = useCallback(
     async (template: FeatureTemplate) => {
       const modelEntry = template.model ||
-        useAppStore.getState().defaultFeatureModel || { model: 'claude-opus' };
+        useAppStore.getState().defaultFeatureModel || { model: "claude-opus" };
 
       // Start the template immediately (same behavior as clicking "Make")
       await handleQuickAddAndStart(template.prompt, modelEntry);
     },
-    [handleQuickAddAndStart]
+    [handleQuickAddAndStart],
   );
 
   // Handler for managing PR comments - opens the PR Comment Resolution dialog
-  const handleAddressPRComments = useCallback((worktree: WorktreeInfo, prInfo: PRInfo) => {
-    setPRCommentDialogPRInfo({
-      number: prInfo.number,
-      title: prInfo.title,
-      // Pass the worktree's branch so features are created on the correct worktree
-      headRefName: worktree.branch,
-      // Pass the PR URL so features are created with prUrl set
-      url: prInfo.url,
-    });
-    setShowPRCommentDialog(true);
-  }, []);
+  const handleAddressPRComments = useCallback(
+    (worktree: WorktreeInfo, prInfo: PRInfo) => {
+      setPRCommentDialogPRInfo({
+        number: prInfo.number,
+        title: prInfo.title,
+        // Pass the worktree's branch so features are created on the correct worktree
+        headRefName: worktree.branch,
+        // Pass the PR URL so features are created with prUrl set
+        url: prInfo.url,
+      });
+      setShowPRCommentDialog(true);
+    },
+    [],
+  );
 
   // Handler for auto-addressing PR comments - immediately creates and starts a feature task
   const handleAutoAddressPRComments = useCallback(
     async (worktree: WorktreeInfo, prInfo: PRInfo) => {
       if (!prInfo.number) {
-        toast.error('Cannot address PR comments', {
-          description: 'No PR number available for this worktree.',
+        toast.error("Cannot address PR comments", {
+          description: "No PR number available for this worktree.",
         });
         return;
       }
 
       const featureData = {
         title: `Address PR #${prInfo.number} Review Comments`,
-        category: 'Maintenance',
+        category: "Maintenance",
         description: `Read the review requests on PR #${prInfo.number} and address any feedback the best you can.`,
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
-        model: resolveModelString('opus'),
-        thinkingLevel: 'none' as const,
+        model: resolveModelString("opus"),
+        thinkingLevel: "none" as const,
         branchName: worktree.branch,
-        workMode: 'custom' as const,
+        workMode: "custom" as const,
         priority: 1,
-        planningMode: 'skip' as const,
+        planningMode: "skip" as const,
         requirePlanApproval: false,
         dependencies: [],
       };
@@ -1423,11 +1585,16 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         try {
           await persistFeatureUpdate(createdFeatureId, { prUrl: prInfo.url });
         } catch (error) {
-          logger.error('Failed to persist PR URL on created feature:', error);
+          logger.error("Failed to persist PR URL on created feature:", error);
         }
       }
     },
-    [handleAddAndStartFeature, defaultSkipTests, updateFeature, persistFeatureUpdate]
+    [
+      handleAddAndStartFeature,
+      defaultSkipTests,
+      updateFeature,
+      persistFeatureUpdate,
+    ],
   );
 
   // Handler for resolving conflicts - opens dialog to select remote branch, then creates a feature
@@ -1439,12 +1606,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // Handler called when merge/rebase fails due to conflicts and user wants to create a feature to resolve them
   const handleCreateMergeConflictResolutionFeature = useCallback(
     async (conflictInfo: MergeConflictInfo) => {
-      const isRebase = conflictInfo.operationType === 'rebase';
-      const isCherryPick = conflictInfo.operationType === 'cherry-pick';
+      const isRebase = conflictInfo.operationType === "rebase";
+      const isCherryPick = conflictInfo.operationType === "cherry-pick";
       const conflictFilesInfo =
         conflictInfo.conflictFiles && conflictInfo.conflictFiles.length > 0
-          ? `\n\nConflicting files:\n${conflictInfo.conflictFiles.map((f) => `- ${f}`).join('\n')}`
-          : '';
+          ? `\n\nConflicting files:\n${conflictInfo.conflictFiles.map((f) => `- ${f}`).join("\n")}`
+          : "";
 
       let description: string;
       let title: string;
@@ -1462,11 +1629,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           ? `git merge --squash ${conflictInfo.sourceBranch}`
           : `git merge ${conflictInfo.sourceBranch}`;
         const commitNote = conflictInfo.squash
-          ? ' Since this is a squash merge, after resolving conflicts run `git add .` then `git commit` with an appropriate message.'
-          : ' After resolving conflicts, run `git add .` then `git commit` (git will use the merge commit message).';
+          ? " Since this is a squash merge, after resolving conflicts run `git add .` then `git commit` with an appropriate message."
+          : " After resolving conflicts, run `git add .` then `git commit` (git will use the merge commit message).";
 
-        let cleanupNote = '';
-        if (conflictInfo.deleteSourceWorktreeAndBranch && conflictInfo.sourceWorktreePath) {
+        let cleanupNote = "";
+        if (
+          conflictInfo.deleteSourceWorktreeAndBranch &&
+          conflictInfo.sourceWorktreePath
+        ) {
           cleanupNote = `\n\nAfter the merge is committed successfully, clean up the source branch:\n1. \`git worktree remove ${conflictInfo.sourceWorktreePath} --force\`\n2. \`git branch -D ${conflictInfo.sourceBranch}\``;
         }
 
@@ -1476,60 +1646,66 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
       const featureData = {
         title,
-        category: 'Maintenance',
+        category: "Maintenance",
         description,
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
-        model: resolveModelString('opus'),
-        thinkingLevel: 'none' as const,
+        model: resolveModelString("opus"),
+        thinkingLevel: "none" as const,
         branchName: conflictInfo.targetBranch,
-        workMode: 'custom' as const, // Use the target branch where conflicts need to be resolved
+        workMode: "custom" as const, // Use the target branch where conflicts need to be resolved
         priority: 1, // High priority for conflict resolution
-        planningMode: 'skip' as const,
+        planningMode: "skip" as const,
         requirePlanApproval: false,
       };
 
       await handleAddAndStartFeature(featureData);
     },
-    [handleAddAndStartFeature, defaultSkipTests]
+    [handleAddAndStartFeature, defaultSkipTests],
   );
 
   // Handler called when branch switch stash reapply causes merge conflicts.
   // Shows a dialog to let the user choose between manual or AI resolution.
-  const handleBranchSwitchConflict = useCallback((conflictInfo: BranchSwitchConflictInfo) => {
-    setBranchConflictData({ type: 'branch-switch', info: conflictInfo });
-    setShowBranchConflictDialog(true);
-  }, []);
+  const handleBranchSwitchConflict = useCallback(
+    (conflictInfo: BranchSwitchConflictInfo) => {
+      setBranchConflictData({ type: "branch-switch", info: conflictInfo });
+      setShowBranchConflictDialog(true);
+    },
+    [],
+  );
 
   // Handler called when checkout fails AND the stash-pop restoration produces merge conflicts.
   // Shows a dialog to let the user choose between manual or AI resolution.
-  const handleStashPopConflict = useCallback((conflictInfo: StashPopConflictInfo) => {
-    setBranchConflictData({ type: 'stash-pop', info: conflictInfo });
-    setShowBranchConflictDialog(true);
-  }, []);
+  const handleStashPopConflict = useCallback(
+    (conflictInfo: StashPopConflictInfo) => {
+      setBranchConflictData({ type: "stash-pop", info: conflictInfo });
+      setShowBranchConflictDialog(true);
+    },
+    [],
+  );
 
   // Handler called when the user selects "Resolve with AI" from the branch conflict dialog.
   // Creates and starts the AI-assisted conflict resolution feature task.
   const handleBranchConflictResolveWithAI = useCallback(
     async (conflictData: BranchConflictData) => {
-      if (conflictData.type === 'branch-switch') {
+      if (conflictData.type === "branch-switch") {
         const conflictInfo = conflictData.info;
         const description = `Resolve merge conflicts that occurred when switching from "${conflictInfo.previousBranch}" to "${conflictInfo.branchName}". Local changes were stashed before switching and reapplying them caused conflicts. Please resolve all merge conflicts, ensure the code compiles and tests pass.`;
 
         const featureData = {
           title: `Resolve Stash Conflicts: switch to ${conflictInfo.branchName}`,
-          category: 'Maintenance',
+          category: "Maintenance",
           description,
           images: [],
           imagePaths: [],
           skipTests: defaultSkipTests,
-          model: resolveModelString('opus'),
-          thinkingLevel: 'none' as const,
+          model: resolveModelString("opus"),
+          thinkingLevel: "none" as const,
           branchName: conflictInfo.branchName,
-          workMode: 'custom' as const,
+          workMode: "custom" as const,
           priority: 1,
-          planningMode: 'skip' as const,
+          planningMode: "skip" as const,
           requirePlanApproval: false,
         };
 
@@ -1545,62 +1721,63 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
         const featureData = {
           title: `Resolve Stash-Pop Conflicts: branch switch to ${conflictInfo.branchName}`,
-          category: 'Maintenance',
+          category: "Maintenance",
           description,
           images: [],
           imagePaths: [],
           skipTests: defaultSkipTests,
-          model: resolveModelString('opus'),
-          thinkingLevel: 'none' as const,
+          model: resolveModelString("opus"),
+          thinkingLevel: "none" as const,
           branchName: conflictInfo.branchName,
-          workMode: 'custom' as const,
+          workMode: "custom" as const,
           priority: 1,
-          planningMode: 'skip' as const,
+          planningMode: "skip" as const,
           requirePlanApproval: false,
         };
 
         await handleAddAndStartFeature(featureData);
       }
     },
-    [handleAddAndStartFeature, defaultSkipTests]
+    [handleAddAndStartFeature, defaultSkipTests],
   );
 
   // Handler called when stash apply/pop results in merge conflicts and user wants AI resolution
   const handleStashApplyConflict = useCallback(
     async (conflictInfo: StashApplyConflictInfo) => {
-      const operationLabel = conflictInfo.operation === 'pop' ? 'popping' : 'applying';
+      const operationLabel =
+        conflictInfo.operation === "pop" ? "popping" : "applying";
       const conflictFilesList =
         conflictInfo.conflictFiles.length > 0
-          ? `\n\nConflicted files:\n${conflictInfo.conflictFiles.map((f) => `- ${f}`).join('\n')}`
-          : '';
+          ? `\n\nConflicted files:\n${conflictInfo.conflictFiles.map((f) => `- ${f}`).join("\n")}`
+          : "";
 
       const description =
         `Resolve merge conflicts that occurred when ${operationLabel} stash "${conflictInfo.stashRef}" ` +
         `on branch "${conflictInfo.branchName}". ` +
-        `The stash was ${conflictInfo.operation === 'pop' ? 'popped' : 'applied'} but resulted in merge conflicts ` +
+        `The stash was ${conflictInfo.operation === "pop" ? "popped" : "applied"} but resulted in merge conflicts ` +
         `that need to be resolved. Please review all conflicted files, resolve the conflicts, ` +
         `ensure the code compiles and tests pass, then commit the resolved changes.` +
         conflictFilesList;
 
       const featureData = {
         title: `Resolve Stash Apply Conflicts: ${conflictInfo.stashRef} on ${conflictInfo.branchName}`,
-        category: 'Maintenance',
+        category: "Maintenance",
         description,
         images: [],
         imagePaths: [],
         skipTests: defaultSkipTests,
-        model: resolveModelString('opus'),
-        thinkingLevel: 'none' as const,
+        model: resolveModelString("opus"),
+        thinkingLevel: "none" as const,
         branchName: conflictInfo.branchName,
-        workMode: 'custom' as const,
+        workMode: "custom" as const,
         priority: 1, // High priority for conflict resolution
-        planningMode: 'skip' as const,
+        planningMode: "skip" as const,
         requirePlanApproval: false,
       };
 
       await handleAddAndStartFeature(featureData);
     },
-    [handleAddAndStartFeature, defaultSkipTests]
+    [handleAddAndStartFeature, defaultSkipTests],
   );
 
   // NOTE: Auto mode polling loop has been moved to the backend.
@@ -1613,22 +1790,28 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     if (!api?.backlogPlan) return;
 
     const unsubscribe = api.backlogPlan.onEvent((data: unknown) => {
-      const event = data as { type: string; result?: BacklogPlanResult; error?: string };
-      if (event.type === 'backlog_plan_complete') {
+      const event = data as {
+        type: string;
+        result?: BacklogPlanResult;
+        error?: string;
+      };
+      if (event.type === "backlog_plan_complete") {
         setIsGeneratingPlan(false);
         if (event.result && event.result.changes?.length > 0) {
           setPendingBacklogPlan(event.result);
-          toast.success('Plan ready! Click to review.', {
+          toast.success("Plan ready! Click to review.", {
             duration: 10000,
             action: {
-              label: 'Review',
+              label: "Review",
               onClick: () => setShowPlanDialog(true),
             },
           });
         } else {
-          toast.info('No changes generated. Try again with a different prompt.');
+          toast.info(
+            "No changes generated. Try again with a different prompt.",
+          );
         }
-      } else if (event.type === 'backlog_plan_error') {
+      } else if (event.type === "backlog_plan_error") {
         setIsGeneratingPlan(false);
         toast.error(`Plan generation failed: ${event.error}`);
       }
@@ -1695,15 +1878,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
       const { draggedFeature, targetFeature } = pendingDependencyLink;
 
-      if (linkType === 'parent') {
+      if (linkType === "parent") {
         // Dragged feature depends on target (target is parent)
         // Add targetFeature.id to draggedFeature.dependencies
         const currentDeps = draggedFeature.dependencies || [];
         if (!currentDeps.includes(targetFeature.id)) {
           const newDeps = [...currentDeps, targetFeature.id];
           updateFeature(draggedFeature.id, { dependencies: newDeps });
-          await persistFeatureUpdate(draggedFeature.id, { dependencies: newDeps });
-          toast.success('Dependency link created', {
+          await persistFeatureUpdate(draggedFeature.id, {
+            dependencies: newDeps,
+          });
+          toast.success("Dependency link created", {
             description: `"${draggedFeature.description.slice(0, 30)}..." now depends on "${targetFeature.description.slice(0, 30)}..."`,
           });
         }
@@ -1714,8 +1899,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         if (!currentDeps.includes(draggedFeature.id)) {
           const newDeps = [...currentDeps, draggedFeature.id];
           updateFeature(targetFeature.id, { dependencies: newDeps });
-          await persistFeatureUpdate(targetFeature.id, { dependencies: newDeps });
-          toast.success('Dependency link created', {
+          await persistFeatureUpdate(targetFeature.id, {
+            dependencies: newDeps,
+          });
+          toast.success("Dependency link created", {
             description: `"${targetFeature.description.slice(0, 30)}..." now depends on "${draggedFeature.description.slice(0, 30)}..."`,
           });
         }
@@ -1729,7 +1916,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       updateFeature,
       persistFeatureUpdate,
       clearPendingDependencyLink,
-    ]
+    ],
   );
 
   // Use background hook for visual settings (background image, opacity, etc.)
@@ -1756,7 +1943,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     const columns = getColumnsWithPipeline(pipelineConfig ?? null);
     const map: Record<string, typeof hookFeatures> = {};
     for (const column of columns) {
-      map[column.id] = getColumnFeatures(column.id as FeatureStatusWithPipeline);
+      map[column.id] = getColumnFeatures(
+        column.id as FeatureStatusWithPipeline,
+      );
     }
     return map;
   }, [pipelineConfig, getColumnFeatures]);
@@ -1764,7 +1953,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   // Find feature for pending plan approval
   const pendingApprovalFeature = useMemo(() => {
     if (!pendingPlanApproval) return null;
-    return hookFeatures.find((f) => f.id === pendingPlanApproval.featureId) || null;
+    return (
+      hookFeatures.find((f) => f.id === pendingPlanApproval.featureId) || null
+    );
   }, [pendingPlanApproval, hookFeatures]);
 
   // Clear revision-in-progress state when a new plan arrives (plan_approval_required re-fires).
@@ -1775,7 +1966,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     if (isPlanRevisionInProgress && pendingPlanApproval?.planContent) {
       setIsPlanRevisionInProgress(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingPlanApproval?.planContent]);
 
   // Handle plan approval
@@ -1788,14 +1979,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       try {
         const api = getElectronAPI();
         if (!api?.autoMode?.approvePlan) {
-          throw new Error('Plan approval API not available');
+          throw new Error("Plan approval API not available");
         }
 
         const result = await api.autoMode.approvePlan(
           pendingPlanApproval.projectPath,
           pendingPlanApproval.featureId,
           true,
-          editedPlan
+          editedPlan,
         );
 
         if (result.success) {
@@ -1804,7 +1995,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           const currentFeature = hookFeatures.find((f) => f.id === featureId);
           updateFeature(featureId, {
             planSpec: {
-              status: 'approved',
+              status: "approved",
               content: editedPlan || pendingPlanApproval.planContent,
               version: currentFeature?.planSpec?.version || 1,
               approvedAt: new Date().toISOString(),
@@ -1814,10 +2005,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           // Reload features from server to ensure sync
           loadFeatures();
         } else {
-          logger.error('Failed to approve plan:', result.error);
+          logger.error("Failed to approve plan:", result.error);
         }
       } catch (error) {
-        logger.error('Error approving plan:', error);
+        logger.error("Error approving plan:", error);
       } finally {
         setIsPlanApprovalLoading(false);
         setPendingPlanApproval(null);
@@ -1830,7 +2021,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       updateFeature,
       loadFeatures,
       hookFeatures,
-    ]
+    ],
   );
 
   // Handle plan rejection
@@ -1844,7 +2035,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       try {
         const api = getElectronAPI();
         if (!api?.autoMode?.approvePlan) {
-          throw new Error('Plan approval API not available');
+          throw new Error("Plan approval API not available");
         }
 
         const result = await api.autoMode.approvePlan(
@@ -1852,7 +2043,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           pendingPlanApproval.featureId,
           false,
           undefined,
-          feedback
+          feedback,
         );
 
         if (result.success) {
@@ -1863,7 +2054,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             // event will fire when the revised plan is ready.
             updateFeature(featureId, {
               planSpec: {
-                status: 'generating',
+                status: "generating",
                 content: pendingPlanApproval.planContent,
                 version: (currentFeature?.planSpec?.version || 1) + 1,
                 reviewedByUser: true,
@@ -1874,9 +2065,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           } else {
             // No feedback = user cancelled the feature
             updateFeature(featureId, {
-              status: 'backlog',
+              status: "backlog",
               planSpec: {
-                status: 'rejected',
+                status: "rejected",
                 content: pendingPlanApproval.planContent,
                 version: currentFeature?.planSpec?.version || 1,
                 reviewedByUser: true,
@@ -1887,15 +2078,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           // Reload features from server to ensure sync
           loadFeatures();
         } else {
-          logger.error('Failed to reject plan:', result.error);
+          logger.error("Failed to reject plan:", result.error);
           if (hasFeedback) {
-            toast.error('Failed to submit revision request. Please try again.');
+            toast.error("Failed to submit revision request. Please try again.");
           }
         }
       } catch (error) {
-        logger.error('Error rejecting plan:', error);
+        logger.error("Error rejecting plan:", error);
         if (hasFeedback) {
-          toast.error('Failed to submit revision request. Please try again.');
+          toast.error("Failed to submit revision request. Please try again.");
         }
       } finally {
         setIsPlanApprovalLoading(false);
@@ -1913,7 +2104,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       updateFeature,
       loadFeatures,
       hookFeatures,
-    ]
+    ],
   );
 
   // Handle opening approval dialog from feature card button
@@ -1923,8 +2114,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
       // Determine the planning mode for approval (skip should never have a plan requiring approval)
       const mode = feature.planningMode;
-      const approvalMode: 'lite' | 'spec' | 'full' =
-        mode === 'lite' || mode === 'spec' || mode === 'full' ? mode : 'spec';
+      const approvalMode: "lite" | "spec" | "full" =
+        mode === "lite" || mode === "spec" || mode === "full" ? mode : "spec";
 
       // Re-open the approval dialog with the feature's plan data
       setPendingPlanApproval({
@@ -1934,7 +2125,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         planningMode: approvalMode,
       });
     },
-    [currentProject, setPendingPlanApproval]
+    [currentProject, setPendingPlanApproval],
   );
 
   const handleOpenQuestionDialog = useCallback((feature: Feature) => {
@@ -1948,7 +2139,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
     if (!electronApi?.autoMode) return;
 
     const unsubscribe = electronApi.autoMode.onEvent((event) => {
-      if (event.type === 'question_required' && event.featureId) {
+      if (event.type === "question_required" && event.featureId) {
         // Only auto-open if no dialog is already open
         setPendingQuestionFeatureId((prev) => prev ?? event.featureId);
       }
@@ -1961,7 +2152,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
   useEffect(() => {
     if (!pendingQuestionFeatureId || questionFeature) return;
     const feature = hookFeatures.find(
-      (f) => f.id === pendingQuestionFeatureId && f.questionState?.questions?.length
+      (f) =>
+        f.id === pendingQuestionFeatureId && f.questionState?.questions?.length,
     );
     if (feature) {
       setQuestionFeature(feature);
@@ -1978,7 +2170,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
       if (!questionFeature || !currentProject) return;
       const electronApi = getElectronAPI();
       if (!electronApi?.autoMode?.answerQuestion) {
-        throw new Error('Answer question API not available');
+        throw new Error("Answer question API not available");
       }
       setIsQuestionLoading(true);
       try {
@@ -1987,7 +2179,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             currentProject.path,
             questionFeature.id,
             questionId,
-            answer
+            answer,
           );
         }
         setQuestionFeature(null);
@@ -1996,12 +2188,15 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         setIsQuestionLoading(false);
       }
     },
-    [questionFeature, currentProject, loadFeatures]
+    [questionFeature, currentProject, loadFeatures],
   );
 
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="board-view-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="board-view-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -2021,11 +2216,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           if (currentProject) {
             // If selectedWorktree is undefined or it's the main worktree, branchName will be null.
             // Otherwise, use the branch name.
-            const branchName = selectedWorktree?.isMain === false ? selectedWorktree.branch : null;
-            setMaxConcurrencyForWorktree(currentProject.id, branchName, newMaxConcurrency);
+            const branchName =
+              selectedWorktree?.isMain === false
+                ? selectedWorktree.branch
+                : null;
+            setMaxConcurrencyForWorktree(
+              currentProject.id,
+              branchName,
+              newMaxConcurrency,
+            );
 
             // Persist to server settings so capacity checks use the correct value
-            const worktreeKey = `${currentProject.id}::${branchName ?? '__main__'}`;
+            const worktreeKey = `${currentProject.id}::${branchName ?? "__main__"}`;
             updateGlobalSettings.mutate({
               autoModeByWorktree: {
                 [worktreeKey]: { maxConcurrency: newMaxConcurrency },
@@ -2037,7 +2239,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             // the backend without toggling isRunning off/on in the UI.
             if (autoMode.isRunning) {
               autoMode.restartWithConcurrency().catch((error) => {
-                logger.error('[AutoMode] Failed to restart with new concurrency:', error);
+                logger.error(
+                  "[AutoMode] Failed to restart with new concurrency:",
+                  error,
+                );
               });
             }
           }
@@ -2046,16 +2251,18 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         onAutoModeToggle={(enabled) => {
           if (enabled) {
             autoMode.start().catch((error) => {
-              logger.error('[AutoMode] Failed to start:', error);
-              toast.error('Failed to start auto mode', {
-                description: error instanceof Error ? error.message : 'Unknown error',
+              logger.error("[AutoMode] Failed to start:", error);
+              toast.error("Failed to start auto mode", {
+                description:
+                  error instanceof Error ? error.message : "Unknown error",
               });
             });
           } else {
             autoMode.stop().catch((error) => {
-              logger.error('[AutoMode] Failed to stop:', error);
-              toast.error('Failed to stop auto mode', {
-                description: error instanceof Error ? error.message : 'Unknown error',
+              logger.error("[AutoMode] Failed to stop:", error);
+              toast.error("Failed to stop auto mode", {
+                description:
+                  error instanceof Error ? error.message : "Unknown error",
               });
             });
           }
@@ -2115,7 +2322,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
               onAddressPRComments={handleAddressPRComments}
               onAutoAddressPRComments={handleAutoAddressPRComments}
               onResolveConflicts={handleResolveConflicts}
-              onCreateMergeConflictResolutionFeature={handleCreateMergeConflictResolutionFeature}
+              onCreateMergeConflictResolutionFeature={
+                handleCreateMergeConflictResolutionFeature
+              }
               onBranchSwitchConflict={handleBranchSwitchConflict}
               onStashPopConflict={handleStashPopConflict}
               onStashApplyConflict={handleStashApplyConflict}
@@ -2160,9 +2369,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                     setSpawnParentFeature(feature);
                     setShowAddDialog(true);
                   },
-                  onDuplicate: (feature) => handleDuplicateFeature(feature, false),
-                  onDuplicateAsChild: (feature) => handleDuplicateFeature(feature, true),
-                  onDuplicateAsChildMultiple: (feature) => setDuplicateMultipleFeature(feature),
+                  onDuplicate: (feature) =>
+                    handleDuplicateFeature(feature, false),
+                  onDuplicateAsChild: (feature) =>
+                    handleDuplicateFeature(feature, true),
+                  onDuplicateAsChildMultiple: (feature) =>
+                    setDuplicateMultipleFeature(feature),
                   onCommitChanges: handleCommitChanges,
                 }}
                 runningAutoTasks={runningAutoTasksAllWorktrees}
@@ -2177,7 +2389,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                 onRowClick={(feature) => {
                   // Running features should always show logs, even if status is
                   // stale (still 'backlog'/'ready'/'interrupted' during race window)
-                  const isRunning = runningAutoTasksAllWorktrees.includes(feature.id);
+                  const isRunning = runningAutoTasksAllWorktrees.includes(
+                    feature.id,
+                  );
                   if (isBacklogLikeStatus(feature.status) && !isRunning) {
                     setEditingFeature(feature);
                   } else {
@@ -2211,13 +2425,21 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                   setSpawnParentFeature(feature);
                   setShowAddDialog(true);
                 }}
-                onDuplicate={(feature) => handleDuplicateFeature(feature, false)}
-                onDuplicateAsChild={(feature) => handleDuplicateFeature(feature, true)}
-                onDuplicateAsChildMultiple={(feature) => setDuplicateMultipleFeature(feature)}
+                onDuplicate={(feature) =>
+                  handleDuplicateFeature(feature, false)
+                }
+                onDuplicateAsChild={(feature) =>
+                  handleDuplicateFeature(feature, true)
+                }
+                onDuplicateAsChildMultiple={(feature) =>
+                  setDuplicateMultipleFeature(feature)
+                }
                 onCommitChanges={handleCommitChanges}
                 featuresWithContext={featuresWithContext}
                 runningAutoTasks={runningAutoTasksAllWorktrees}
-                onArchiveAllVerified={() => setShowArchiveAllVerifiedDialog(true)}
+                onArchiveAllVerified={() =>
+                  setShowArchiveAllVerifiedDialog(true)
+                }
                 onAddFeature={() => setShowAddDialog(true)}
                 onQuickAdd={() => setShowQuickAddDialog(true)}
                 onTemplateSelect={handleTemplateSelect}
@@ -2246,22 +2468,36 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         <SelectionActionBar
           selectedCount={selectedCount}
           totalCount={
-            selectionTarget === 'waiting_approval'
+            selectionTarget === "waiting_approval"
               ? allSelectableWaitingApprovalFeatureIds.length
               : allSelectableFeatureIds.length
           }
-          onEdit={selectionTarget === 'backlog' ? () => setShowMassEditDialog(true) : undefined}
-          onDelete={selectionTarget === 'backlog' ? handleBulkDelete : undefined}
-          onVerify={selectionTarget === 'waiting_approval' ? handleBulkVerify : undefined}
+          onEdit={
+            selectionTarget === "backlog"
+              ? () => setShowMassEditDialog(true)
+              : undefined
+          }
+          onDelete={
+            selectionTarget === "backlog" ? handleBulkDelete : undefined
+          }
+          onVerify={
+            selectionTarget === "waiting_approval"
+              ? handleBulkVerify
+              : undefined
+          }
           onClear={clearSelection}
           onSelectAll={() =>
             selectAll(
-              selectionTarget === 'waiting_approval'
+              selectionTarget === "waiting_approval"
                 ? allSelectableWaitingApprovalFeatureIds
-                : allSelectableFeatureIds
+                : allSelectableFeatureIds,
             )
           }
-          mode={selectionTarget === 'waiting_approval' ? 'waiting_approval' : 'backlog'}
+          mode={
+            selectionTarget === "waiting_approval"
+              ? "waiting_approval"
+              : "backlog"
+          }
         />
       )}
 
@@ -2373,8 +2609,8 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           setShowOutputModal(false);
           handledFeatureIdRef.current = undefined;
         }}
-        featureDescription={outputFeature?.description || ''}
-        featureId={outputFeature?.id || ''}
+        featureDescription={outputFeature?.description || ""}
+        featureId={outputFeature?.id || ""}
         featureStatus={outputFeature?.status}
         onNumberKeyPress={handleOutputModalNumberKeyPress}
         branchName={outputFeature?.branchName}
@@ -2388,18 +2624,24 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         }}
         onConfirm={async (count) => {
           if (duplicateMultipleFeature) {
-            await handleDuplicateAsChildMultiple(duplicateMultipleFeature, count);
+            await handleDuplicateAsChildMultiple(
+              duplicateMultipleFeature,
+              count,
+            );
             setDuplicateMultipleFeature(null);
           }
         }}
-        featureTitle={duplicateMultipleFeature?.title || duplicateMultipleFeature?.description}
+        featureTitle={
+          duplicateMultipleFeature?.title ||
+          duplicateMultipleFeature?.description
+        }
       />
 
       {/* Archive All Verified Dialog */}
       <ArchiveAllVerifiedDialog
         open={showArchiveAllVerifiedDialog}
         onOpenChange={setShowArchiveAllVerifiedDialog}
-        verifiedCount={getColumnFeatures('verified').length}
+        verifiedCount={getColumnFeatures("verified").length}
         onConfirm={async () => {
           await handleArchiveAllVerified();
           setShowArchiveAllVerifiedDialog(false);
@@ -2414,9 +2656,12 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         pipelineConfig={pipelineConfig ?? null}
         onSave={async (config) => {
           const api = getHttpApiClient();
-          const result = await api.pipeline.saveConfig(currentProject.path, config);
+          const result = await api.pipeline.saveConfig(
+            currentProject.path,
+            config,
+          );
           if (!result.success) {
-            throw new Error(result.error || 'Failed to save pipeline config');
+            throw new Error(result.error || "Failed to save pipeline config");
           }
           // Invalidate React Query cache to refetch updated config
           queryClient.invalidateQueries({
@@ -2454,7 +2699,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         setPendingPlanResult={setPendingBacklogPlan}
         isGeneratingPlan={isGeneratingPlan}
         setIsGeneratingPlan={setIsGeneratingPlan}
-        currentBranch={planUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined}
+        currentBranch={
+          planUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined
+        }
       />
 
       {/* Plan Approval Dialog */}
@@ -2467,7 +2714,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           }
         }}
         feature={pendingApprovalFeature}
-        planContent={pendingPlanApproval?.planContent || ''}
+        planContent={pendingPlanApproval?.planContent || ""}
         onApprove={handlePlanApprove}
         onReject={handlePlanReject}
         isLoading={isPlanApprovalLoading}
@@ -2518,10 +2765,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
             isCurrent: false,
             hasWorktree: true,
           };
-          setWorktrees(currentProject.path, [...currentWorktrees, newWorktreeInfo]);
+          setWorktrees(currentProject.path, [
+            ...currentWorktrees,
+            newWorktreeInfo,
+          ]);
 
           // Now set the current worktree with both path and branch
-          setCurrentWorktree(currentProject.path, newWorktree.path, newWorktree.branch);
+          setCurrentWorktree(
+            currentProject.path,
+            newWorktree.path,
+            newWorktree.branch,
+          );
 
           // Trigger refresh to get full worktree details (hasChanges, etc.)
           setWorktreeRefreshKey((k) => k + 1);
@@ -2536,7 +2790,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         worktree={selectedWorktreeForAction}
         affectedFeatureCount={
           selectedWorktreeForAction
-            ? hookFeatures.filter((f) => f.branchName === selectedWorktreeForAction.branch).length
+            ? hookFeatures.filter(
+                (f) => f.branchName === selectedWorktreeForAction.branch,
+              ).length
             : 0
         }
         defaultDeleteBranch={getDefaultDeleteBranch(currentProject.path)}
@@ -2545,14 +2801,14 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           //    BEFORE removing from the list to ensure downstream hooks
           //    (useAutoMode, useBoardFeatures) see a valid worktree and
           //    never try to render the deleted worktree.
-          const mainBranch = worktrees.find((w) => w.isMain)?.branch || 'main';
+          const mainBranch = worktrees.find((w) => w.isMain)?.branch || "main";
           setCurrentWorktree(currentProject.path, null, mainBranch);
 
           // 2. Immediately remove the deleted worktree from the store's
           //    worktree list so the UI never renders a stale tab/dropdown
           //    item that can be clicked and cause a crash.
           const remainingWorktrees = worktrees.filter(
-            (w) => !pathsEqual(w.path, deletedWorktree.path)
+            (w) => !pathsEqual(w.path, deletedWorktree.path),
           );
           setWorktrees(currentProject.path, remainingWorktrees);
 
@@ -2571,16 +2827,17 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
                     worktrees: WorktreeInfo[];
                     removedWorktrees: Array<{ path: string; branch: string }>;
                   }
-                | undefined
+                | undefined,
             ) => {
               if (!old) return old;
               return {
                 ...old,
                 worktrees: old.worktrees.filter(
-                  (w: WorktreeInfo) => !pathsEqual(w.path, deletedWorktree.path)
+                  (w: WorktreeInfo) =>
+                    !pathsEqual(w.path, deletedWorktree.path),
                 ),
               };
-            }
+            },
           );
 
           // 4. Batch-reset features assigned to the deleted worktree in one
@@ -2612,7 +2869,7 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           forceSyncSettingsToServer().then((ok) => {
             if (!ok) {
               logger.warn(
-                'forceSyncSettingsToServer failed after worktree deletion; stale path may reappear on reload'
+                "forceSyncSettingsToServer failed after worktree deletion; stale path may reappear on reload",
               );
             }
           });
@@ -2624,7 +2881,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
         open={showMergeRebaseDialog}
         onOpenChange={setShowMergeRebaseDialog}
         worktree={selectedWorktreeForAction}
-        onCreateConflictResolutionFeature={handleCreateMergeConflictResolutionFeature}
+        onCreateConflictResolutionFeature={
+          handleCreateMergeConflictResolutionFeature
+        }
       />
 
       {/* Branch Switch / Stash Pop Conflict Dialog */}
@@ -2665,7 +2924,9 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
           // If a PR was created and we have the worktree branch, update all features on that branch with the PR URL
           if (prUrl && selectedWorktreeForAction?.branch) {
             const branchName = selectedWorktreeForAction.branch;
-            const featuresToUpdate = hookFeatures.filter((f) => f.branchName === branchName);
+            const featuresToUpdate = hookFeatures.filter(
+              (f) => f.branchName === branchName,
+            );
 
             // Update local state synchronously
             featuresToUpdate.forEach((feature) => {
@@ -2674,8 +2935,10 @@ export function BoardView({ initialFeatureId, initialProjectPath }: BoardViewPro
 
             // Persist changes asynchronously and in parallel
             Promise.all(
-              featuresToUpdate.map((feature) => persistFeatureUpdate(feature.id, { prUrl }))
-            ).catch((err) => logger.error('Error in handleMove:', err));
+              featuresToUpdate.map((feature) =>
+                persistFeatureUpdate(feature.id, { prUrl }),
+              ),
+            ).catch((err) => logger.error("Error in handleMove:", err));
           }
           setWorktreeRefreshKey((k) => k + 1);
           setSelectedWorktreeForAction(null);

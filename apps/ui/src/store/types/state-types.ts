@@ -1,4 +1,4 @@
-import type { Project, TrashedProject } from '@/lib/electron';
+import type { Project, TrashedProject } from "@/lib/electron";
 import type {
   ModelAlias,
   PlanningMode,
@@ -25,7 +25,7 @@ import type {
   ThinkingLevel,
   ReasoningEffort,
   FeatureTemplate,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 import type {
   ViewMode,
@@ -33,21 +33,30 @@ import type {
   BoardViewMode,
   KeyboardShortcuts,
   BackgroundSettings,
-} from './ui-types';
-import type { ApiKeys } from './settings-types';
-import type { ChatMessage, ChatSession } from './chat-types';
-import type { TerminalState, TerminalPanelContent, PersistedTerminalState } from './terminal-types';
-import type { Feature, ProjectAnalysis } from './project-types';
-import type { ClaudeUsage, CodexUsage, ZaiUsage, GeminiUsage } from './usage-types';
+} from "./ui-types";
+import type { ApiKeys } from "./settings-types";
+import type { ChatMessage, ChatSession } from "./chat-types";
+import type {
+  TerminalState,
+  TerminalPanelContent,
+  PersistedTerminalState,
+} from "./terminal-types";
+import type { Feature, ProjectAnalysis } from "./project-types";
+import type {
+  ClaudeUsage,
+  CodexUsage,
+  ZaiUsage,
+  GeminiUsage,
+} from "./usage-types";
 
 /** State for worktree init script execution */
 export interface InitScriptOutputChunk {
-  type: 'stdout' | 'stderr';
+  type: "stdout" | "stderr";
   content: string;
 }
 
 export interface InitScriptState {
-  status: 'idle' | 'running' | 'success' | 'failed';
+  status: "idle" | "running" | "success" | "failed";
   branch: string;
   output: InitScriptOutputChunk[];
   error?: string;
@@ -58,19 +67,19 @@ export interface AutoModeActivity {
   featureId: string;
   timestamp: Date;
   type:
-    | 'start'
-    | 'progress'
-    | 'tool'
-    | 'complete'
-    | 'error'
-    | 'planning'
-    | 'action'
-    | 'verification';
+    | "start"
+    | "progress"
+    | "tool"
+    | "complete"
+    | "error"
+    | "planning"
+    | "action"
+    | "verification";
   message: string;
   tool?: string;
   passes?: boolean;
-  phase?: 'planning' | 'action' | 'verification';
-  errorType?: 'authentication' | 'execution';
+  phase?: "planning" | "action" | "verification";
+  errorType?: "authentication" | "execution";
 }
 
 export interface AppState {
@@ -94,11 +103,6 @@ export interface AppState {
   agentModelBySession: Record<string, PhaseModelEntry>; // sessionId -> model selection
   // Helper chat model selection (per-feature, keyed by featureId)
   helperModelByFeature: Record<string, PhaseModelEntry>; // featureId -> model selection
-
-  // Last-used phase model overrides (persisted ad-hoc selections from dialogs)
-  // When a user picks a model override in a dialog (commit, PR, enhance, etc.),
-  // the selection is saved here so it's remembered across sessions.
-  lastUsedPhaseOverrides: Partial<Record<PhaseModelKey, PhaseModelEntry>>;
 
   // Last-used phase model overrides (persisted ad-hoc selections from dialogs)
   // When a user picks a model override in a dialog (commit, PR, enhance, etc.),
@@ -154,7 +158,7 @@ export interface AppState {
   enableDependencyBlocking: boolean; // When true, show blocked badges and warnings for features with incomplete dependencies (default: true)
   skipVerificationInAutoMode: boolean; // When true, auto-mode grabs features even if dependencies are not verified (only checks they're not running)
   enableAiCommitMessages: boolean; // When true, auto-generate commit messages using AI when opening commit dialog
-  mergePostAction: 'commit' | 'manual' | null; // User's preferred action after a clean merge (null = ask every time)
+  mergePostAction: "commit" | "manual" | null; // User's preferred action after a clean merge (null = ask every time)
   planUseSelectedWorktreeBranch: boolean; // When true, Plan dialog creates features on the currently selected worktree branch
   addFeatureUseSelectedWorktreeBranch: boolean; // When true, Add Feature dialog defaults to custom mode with selected worktree branch
 
@@ -163,7 +167,10 @@ export interface AppState {
 
   // User-managed Worktrees (per-project)
   // projectPath -> { path: worktreePath or null for main, branch: branch name }
-  currentWorktreeByProject: Record<string, { path: string | null; branch: string }>;
+  currentWorktreeByProject: Record<
+    string,
+    { path: string | null; branch: string }
+  >;
   worktreesByProject: Record<
     string,
     Array<{
@@ -221,8 +228,8 @@ export interface AppState {
   enabledCodexModels: CodexModelId[]; // Which Codex models are available in feature modal
   codexDefaultModel: CodexModelId; // Default Codex model selection
   codexAutoLoadAgents: boolean; // Auto-load .codex/AGENTS.md files
-  codexSandboxMode: 'read-only' | 'workspace-write' | 'danger-full-access'; // Sandbox policy
-  codexApprovalPolicy: 'untrusted' | 'on-failure' | 'on-request' | 'never'; // Approval policy
+  codexSandboxMode: "read-only" | "workspace-write" | "danger-full-access"; // Sandbox policy
+  codexApprovalPolicy: "untrusted" | "on-failure" | "on-request" | "never"; // Approval policy
   codexEnableWebSearch: boolean; // Enable web search capability
   codexEnableImages: boolean; // Enable image processing
   codexAdditionalDirs: string[]; // Additional directories with write access (--add-dir flags)
@@ -281,11 +288,11 @@ export interface AppState {
 
   // Skills Configuration
   enableSkills: boolean; // Enable Skills functionality (loads from .claude/skills/ directories)
-  skillsSources: Array<'user' | 'project'>; // Which directories to load Skills from
+  skillsSources: Array<"user" | "project">; // Which directories to load Skills from
 
   // Subagents Configuration
   enableSubagents: boolean; // Enable Custom Subagents functionality (loads from .claude/agents/ directories)
-  subagentsSources: Array<'user' | 'project'>; // Which directories to load Subagents from
+  subagentsSources: Array<"user" | "project">; // Which directories to load Subagents from
 
   // Prompt Customization
   promptCustomization: PromptCustomization; // Custom prompts for Auto Mode, Agent, Backlog Plan, Enhancement
@@ -337,7 +344,7 @@ export interface AppState {
     featureId: string;
     projectPath: string;
     planContent: string;
-    planningMode: 'lite' | 'spec' | 'full';
+    planningMode: "lite" | "spec" | "full";
   } | null;
 
   // Claude Usage Tracking
@@ -364,7 +371,7 @@ export interface AppState {
     description: string;
     hasThinking: boolean;
     supportsVision: boolean;
-    tier: 'premium' | 'standard' | 'basic';
+    tier: "premium" | "standard" | "basic";
     isDefault: boolean;
   }>;
   codexModelsLoading: boolean;
@@ -440,14 +447,21 @@ export interface AppActions {
   deleteTrashedProject: (projectId: string) => void;
   emptyTrash: () => void;
   setCurrentProject: (project: Project | null) => void;
-  upsertAndSetCurrentProject: (path: string, name: string, theme?: ThemeMode) => Project; // Upsert project by path and set as current
+  upsertAndSetCurrentProject: (
+    path: string,
+    name: string,
+    theme?: ThemeMode,
+  ) => Project; // Upsert project by path and set as current
   reorderProjects: (oldIndex: number, newIndex: number) => void;
   cyclePrevProject: () => void; // Cycle back through project history (Q)
   cycleNextProject: () => void; // Cycle forward through project history (E)
   clearProjectHistory: () => void; // Clear history, keeping only current project
   toggleProjectFavorite: (projectId: string) => void; // Toggle project favorite status
   setProjectIcon: (projectId: string, icon: string | null) => void; // Set project icon (null to clear)
-  setProjectCustomIcon: (projectId: string, customIconPath: string | null) => void; // Set custom project icon image path (null to clear)
+  setProjectCustomIcon: (
+    projectId: string,
+    customIconPath: string | null,
+  ) => void; // Set custom project icon image path (null to clear)
   setProjectName: (projectId: string, name: string) => void; // Update project name
 
   // View actions
@@ -476,20 +490,23 @@ export interface AppActions {
 
   // Claude API Profile actions (per-project override)
   /** @deprecated Use setProjectPhaseModelOverride instead */
-  setProjectClaudeApiProfile: (projectId: string, profileId: string | null | undefined) => void; // Set per-project Claude API profile (undefined = use global, null = direct API, string = specific profile)
+  setProjectClaudeApiProfile: (
+    projectId: string,
+    profileId: string | null | undefined,
+  ) => void; // Set per-project Claude API profile (undefined = use global, null = direct API, string = specific profile)
 
   // Project Phase Model Overrides
   setProjectPhaseModelOverride: (
     projectId: string,
     phase: PhaseModelKey,
-    entry: PhaseModelEntry | null // null = use global
+    entry: PhaseModelEntry | null, // null = use global
   ) => void;
   clearAllProjectPhaseModelOverrides: (projectId: string) => void;
 
   // Project Default Feature Model Override
   setProjectDefaultFeatureModel: (
     projectId: string,
-    entry: PhaseModelEntry | null // null = use global
+    entry: PhaseModelEntry | null, // null = use global
   ) => void;
 
   // Feature actions
@@ -497,9 +514,11 @@ export interface AppActions {
   updateFeature: (id: string, updates: Partial<Feature>) => void;
   /** Apply the same updates to multiple features in a single store mutation. */
   batchUpdateFeatures: (ids: string[], updates: Partial<Feature>) => void;
-  addFeature: (feature: Omit<Feature, 'id'> & Partial<Pick<Feature, 'id'>>) => Feature;
+  addFeature: (
+    feature: Omit<Feature, "id"> & Partial<Pick<Feature, "id">>,
+  ) => Feature;
   removeFeature: (id: string) => void;
-  moveFeature: (id: string, newStatus: Feature['status']) => void;
+  moveFeature: (id: string, newStatus: Feature["status"]) => void;
 
   // App spec actions
   setAppSpec: (spec: string) => void;
@@ -527,14 +546,22 @@ export interface AppActions {
     branchName: string | null,
     running: boolean,
     maxConcurrency?: number,
-    runningTasks?: string[]
+    runningTasks?: string[],
   ) => void;
-  addRunningTask: (projectId: string, branchName: string | null, taskId: string) => void;
-  removeRunningTask: (projectId: string, branchName: string | null, taskId: string) => void;
+  addRunningTask: (
+    projectId: string,
+    branchName: string | null,
+    taskId: string,
+  ) => void;
+  removeRunningTask: (
+    projectId: string,
+    branchName: string | null,
+    taskId: string,
+  ) => void;
   clearRunningTasks: (projectId: string, branchName: string | null) => void;
   getAutoModeState: (
     projectId: string,
-    branchName: string | null
+    branchName: string | null,
   ) => {
     isRunning: boolean;
     runningTasks: string[];
@@ -543,17 +570,22 @@ export interface AppActions {
   };
   /** Helper to generate worktree key from projectId and branchName */
   getWorktreeKey: (projectId: string, branchName: string | null) => string;
-  addAutoModeActivity: (activity: Omit<AutoModeActivity, 'id' | 'timestamp'>) => void;
+  addAutoModeActivity: (
+    activity: Omit<AutoModeActivity, "id" | "timestamp">,
+  ) => void;
   clearAutoModeActivity: () => void;
   // Recently completed features - prevents race condition with stale cache
   addRecentlyCompletedFeature: (featureId: string) => void;
   clearRecentlyCompletedFeatures: () => void;
   setMaxConcurrency: (max: number) => void; // Legacy: kept for backward compatibility
-  getMaxConcurrencyForWorktree: (projectId: string, branchName: string | null) => number;
+  getMaxConcurrencyForWorktree: (
+    projectId: string,
+    branchName: string | null,
+  ) => number;
   setMaxConcurrencyForWorktree: (
     projectId: string,
     branchName: string | null,
-    maxConcurrency: number
+    maxConcurrency: number,
   ) => void;
 
   // Kanban Card Settings actions
@@ -564,13 +596,17 @@ export interface AppActions {
   setEnableDependencyBlocking: (enabled: boolean) => void;
   setSkipVerificationInAutoMode: (enabled: boolean) => Promise<void>;
   setEnableAiCommitMessages: (enabled: boolean) => Promise<void>;
-  setMergePostAction: (action: 'commit' | 'manual' | null) => Promise<void>;
+  setMergePostAction: (action: "commit" | "manual" | null) => Promise<void>;
   setPlanUseSelectedWorktreeBranch: (enabled: boolean) => Promise<void>;
   setAddFeatureUseSelectedWorktreeBranch: (enabled: boolean) => Promise<void>;
 
   // Worktree Settings actions
   setUseWorktrees: (enabled: boolean) => void;
-  setCurrentWorktree: (projectPath: string, worktreePath: string | null, branch: string) => void;
+  setCurrentWorktree: (
+    projectPath: string,
+    worktreePath: string | null,
+    branch: string,
+  ) => void;
   setWorktrees: (
     projectPath: string,
     worktrees: Array<{
@@ -581,9 +617,11 @@ export interface AppActions {
       hasWorktree: boolean;
       hasChanges?: boolean;
       changedFilesCount?: number;
-    }>
+    }>,
   ) => void;
-  getCurrentWorktree: (projectPath: string) => { path: string | null; branch: string } | null;
+  getCurrentWorktree: (
+    projectPath: string,
+  ) => { path: string | null; branch: string } | null;
   getWorktrees: (projectPath: string) => Array<{
     path: string;
     branch: string;
@@ -624,7 +662,10 @@ export interface AppActions {
   setValidationModel: (model: ModelAlias) => void;
 
   // Phase Model actions
-  setPhaseModel: (phase: PhaseModelKey, entry: PhaseModelEntry) => Promise<void>;
+  setPhaseModel: (
+    phase: PhaseModelKey,
+    entry: PhaseModelEntry,
+  ) => Promise<void>;
   setPhaseModels: (models: Partial<PhaseModelConfig>) => Promise<void>;
   resetPhaseModels: () => Promise<void>;
   toggleFavoriteModel: (modelId: string) => void;
@@ -643,10 +684,10 @@ export interface AppActions {
   toggleCodexModel: (model: CodexModelId, enabled: boolean) => void;
   setCodexAutoLoadAgents: (enabled: boolean) => Promise<void>;
   setCodexSandboxMode: (
-    mode: 'read-only' | 'workspace-write' | 'danger-full-access'
+    mode: "read-only" | "workspace-write" | "danger-full-access",
   ) => Promise<void>;
   setCodexApprovalPolicy: (
-    policy: 'untrusted' | 'on-failure' | 'on-request' | 'never'
+    policy: "untrusted" | "on-failure" | "on-request" | "never",
   ) => Promise<void>;
   setCodexEnableWebSearch: (enabled: boolean) => Promise<void>;
   setCodexEnableImages: (enabled: boolean) => Promise<void>;
@@ -658,12 +699,20 @@ export interface AppActions {
   // setGeminiDefaultModel) to also return Promise<void> for consistent async persistence.
   setEnabledOpencodeModels: (models: OpencodeModelId[]) => void;
   setOpencodeDefaultModel: (model: OpencodeModelId) => Promise<void>;
-  toggleOpencodeModel: (model: OpencodeModelId, enabled: boolean) => Promise<void>;
+  toggleOpencodeModel: (
+    model: OpencodeModelId,
+    enabled: boolean,
+  ) => Promise<void>;
   setDynamicOpencodeModels: (models: ModelDefinition[]) => void;
   setEnabledDynamicModelIds: (ids: string[]) => Promise<void>;
   toggleDynamicModel: (modelId: string, enabled: boolean) => Promise<void>;
   setCachedOpencodeProviders: (
-    providers: Array<{ id: string; name: string; authenticated: boolean; authMethod?: string }>
+    providers: Array<{
+      id: string;
+      name: string;
+      authenticated: boolean;
+      authMethod?: string;
+    }>,
   ) => void;
 
   // Gemini CLI Settings actions
@@ -710,29 +759,39 @@ export interface AppActions {
   // Feature Template actions
   setFeatureTemplates: (templates: FeatureTemplate[]) => Promise<void>;
   addFeatureTemplate: (template: FeatureTemplate) => Promise<void>;
-  updateFeatureTemplate: (id: string, updates: Partial<FeatureTemplate>) => Promise<void>;
+  updateFeatureTemplate: (
+    id: string,
+    updates: Partial<FeatureTemplate>,
+  ) => Promise<void>;
   deleteFeatureTemplate: (id: string) => Promise<void>;
   reorderFeatureTemplates: (templateIds: string[]) => Promise<void>;
 
   // Claude-Compatible Provider actions (new system)
-  addClaudeCompatibleProvider: (provider: ClaudeCompatibleProvider) => Promise<void>;
+  addClaudeCompatibleProvider: (
+    provider: ClaudeCompatibleProvider,
+  ) => Promise<void>;
   updateClaudeCompatibleProvider: (
     id: string,
-    updates: Partial<ClaudeCompatibleProvider>
+    updates: Partial<ClaudeCompatibleProvider>,
   ) => Promise<void>;
   deleteClaudeCompatibleProvider: (id: string) => Promise<void>;
-  setClaudeCompatibleProviders: (providers: ClaudeCompatibleProvider[]) => Promise<void>;
+  setClaudeCompatibleProviders: (
+    providers: ClaudeCompatibleProvider[],
+  ) => Promise<void>;
   toggleClaudeCompatibleProviderEnabled: (id: string) => Promise<void>;
 
   // Claude API Profile actions (deprecated - kept for backward compatibility)
   addClaudeApiProfile: (profile: ClaudeApiProfile) => Promise<void>;
-  updateClaudeApiProfile: (id: string, updates: Partial<ClaudeApiProfile>) => Promise<void>;
+  updateClaudeApiProfile: (
+    id: string,
+    updates: Partial<ClaudeApiProfile>,
+  ) => Promise<void>;
   deleteClaudeApiProfile: (id: string) => Promise<void>;
   setActiveClaudeApiProfile: (id: string | null) => Promise<void>;
   setClaudeApiProfiles: (profiles: ClaudeApiProfile[]) => Promise<void>;
 
   // MCP Server actions
-  addMCPServer: (server: Omit<MCPServerConfig, 'id'>) => void;
+  addMCPServer: (server: Omit<MCPServerConfig, "id">) => void;
   updateMCPServer: (id: string, updates: Partial<MCPServerConfig>) => void;
   removeMCPServer: (id: string) => void;
   reorderMCPServers: (oldIndex: number, newIndex: number) => void;
@@ -743,7 +802,10 @@ export interface AppActions {
   clearAnalysis: () => void;
 
   // Agent Session actions
-  setLastSelectedSession: (projectPath: string, sessionId: string | null) => void;
+  setLastSelectedSession: (
+    projectPath: string,
+    sessionId: string | null,
+  ) => void;
   getLastSelectedSession: (projectPath: string) => string | null;
   // Agent model selection actions
   setAgentModelForSession: (sessionId: string, model: PhaseModelEntry) => void;
@@ -753,12 +815,10 @@ export interface AppActions {
   getHelperModelForFeature: (featureId: string) => PhaseModelEntry | null;
 
   // Last-used phase model override actions
-  setLastUsedPhaseOverride: (phase: PhaseModelKey, entry: PhaseModelEntry) => void;
-  clearLastUsedPhaseOverride: (phase: PhaseModelKey) => void;
-  getLastUsedPhaseOverride: (phase: PhaseModelKey) => PhaseModelEntry | null;
-
-  // Last-used phase model override actions
-  setLastUsedPhaseOverride: (phase: PhaseModelKey, entry: PhaseModelEntry) => void;
+  setLastUsedPhaseOverride: (
+    phase: PhaseModelKey,
+    entry: PhaseModelEntry,
+  ) => void;
   clearLastUsedPhaseOverride: (phase: PhaseModelKey) => void;
   getLastUsedPhaseOverride: (phase: PhaseModelKey) => PhaseModelEntry | null;
 
@@ -789,9 +849,9 @@ export interface AppActions {
   toggleTerminalMaximized: (sessionId: string) => void;
   addTerminalToLayout: (
     sessionId: string,
-    direction?: 'horizontal' | 'vertical',
+    direction?: "horizontal" | "vertical",
     targetSessionId?: string,
-    branchName?: string
+    branchName?: string,
   ) => void;
   removeTerminalFromLayout: (sessionId: string) => void;
   swapTerminals: (sessionId1: string, sessionId2: string) => void;
@@ -805,7 +865,7 @@ export interface AppActions {
   setTerminalLineHeight: (lineHeight: number) => void;
   setTerminalMaxSessions: (maxSessions: number) => void;
   setTerminalLastActiveProjectPath: (projectPath: string | null) => void;
-  setOpenTerminalMode: (mode: 'newTab' | 'split') => void;
+  setOpenTerminalMode: (mode: "newTab" | "split") => void;
   setTerminalBackgroundColor: (color: string | null) => void;
   setTerminalForegroundColor: (color: string | null) => void;
   addTerminalTab: (name?: string) => string;
@@ -813,21 +873,27 @@ export interface AppActions {
   setActiveTerminalTab: (tabId: string) => void;
   renameTerminalTab: (tabId: string, name: string) => void;
   reorderTerminalTabs: (fromTabId: string, toTabId: string) => void;
-  moveTerminalToTab: (sessionId: string, targetTabId: string | 'new') => void;
+  moveTerminalToTab: (sessionId: string, targetTabId: string | "new") => void;
   addTerminalToTab: (
     sessionId: string,
     tabId: string,
-    direction?: 'horizontal' | 'vertical',
-    branchName?: string
+    direction?: "horizontal" | "vertical",
+    branchName?: string,
   ) => void;
   setTerminalTabLayout: (
     tabId: string,
     layout: TerminalPanelContent,
-    activeSessionId?: string
+    activeSessionId?: string,
   ) => void;
-  updateTerminalPanelSizes: (tabId: string, panelKeys: string[], sizes: number[]) => void;
+  updateTerminalPanelSizes: (
+    tabId: string,
+    panelKeys: string[],
+    sizes: number[],
+  ) => void;
   saveTerminalLayout: (projectPath: string) => void;
-  getPersistedTerminalLayout: (projectPath: string) => PersistedTerminalState | null;
+  getPersistedTerminalLayout: (
+    projectPath: string,
+  ) => PersistedTerminalState | null;
   clearPersistedTerminalLayout: (projectPath: string) => void;
 
   // Spec Creation actions
@@ -844,8 +910,8 @@ export interface AppActions {
       featureId: string;
       projectPath: string;
       planContent: string;
-      planningMode: 'lite' | 'spec' | 'full';
-    } | null
+      planningMode: "lite" | "spec" | "full";
+    } | null,
   ) => void;
 
   // Pipeline actions
@@ -853,12 +919,12 @@ export interface AppActions {
   getPipelineConfig: (projectPath: string) => PipelineConfig | null;
   addPipelineStep: (
     projectPath: string,
-    step: Omit<PipelineStep, 'id' | 'createdAt' | 'updatedAt'>
+    step: Omit<PipelineStep, "id" | "createdAt" | "updatedAt">,
   ) => PipelineStep;
   updatePipelineStep: (
     projectPath: string,
     stepId: string,
-    updates: Partial<Omit<PipelineStep, 'id' | 'createdAt'>>
+    updates: Partial<Omit<PipelineStep, "id" | "createdAt">>,
   ) => void;
   deletePipelineStep: (projectPath: string, stepId: string) => void;
   reorderPipelineSteps: (projectPath: string, stepIds: string[]) => void;
@@ -876,11 +942,17 @@ export interface AppActions {
   getDefaultDeleteBranch: (projectPath: string) => boolean;
 
   // Auto-dismiss Init Script Indicator actions (per-project)
-  setAutoDismissInitScriptIndicator: (projectPath: string, autoDismiss: boolean) => void;
+  setAutoDismissInitScriptIndicator: (
+    projectPath: string,
+    autoDismiss: boolean,
+  ) => void;
   getAutoDismissInitScriptIndicator: (projectPath: string) => boolean;
 
   // Use Worktrees Override actions (per-project)
-  setProjectUseWorktrees: (projectPath: string, useWorktrees: boolean | null) => void; // null = use global
+  setProjectUseWorktrees: (
+    projectPath: string,
+    useWorktrees: boolean | null,
+  ) => void; // null = use global
   getProjectUseWorktrees: (projectPath: string) => boolean | undefined; // undefined = using global
   getEffectiveUseWorktrees: (projectPath: string) => boolean; // Returns actual value (project or global fallback)
 
@@ -897,8 +969,15 @@ export interface AppActions {
   getPinnedWorktreesCount: (projectPath: string) => number;
   setPinnedWorktreeBranches: (projectPath: string, branches: string[]) => void;
   getPinnedWorktreeBranches: (projectPath: string) => string[];
-  swapPinnedWorktreeBranch: (projectPath: string, slotIndex: number, newBranch: string) => void;
-  setWorktreeDropdownThreshold: (projectPath: string, threshold: number) => void;
+  swapPinnedWorktreeBranch: (
+    projectPath: string,
+    slotIndex: number,
+    newBranch: string,
+  ) => void;
+  setWorktreeDropdownThreshold: (
+    projectPath: string,
+    threshold: number,
+  ) => void;
   getWorktreeDropdownThreshold: (projectPath: string) => number;
   setAlwaysUseWorktreeDropdown: (projectPath: string, always: boolean) => void;
   getAlwaysUseWorktreeDropdown: (projectPath: string) => boolean;
@@ -936,9 +1015,9 @@ export interface AppActions {
       description: string;
       hasThinking: boolean;
       supportsVision: boolean;
-      tier: 'premium' | 'standard' | 'basic';
+      tier: "premium" | "standard" | "basic";
       isDefault: boolean;
-    }>
+    }>,
   ) => void;
 
   // OpenCode Models actions
@@ -948,17 +1027,20 @@ export interface AppActions {
   setInitScriptState: (
     projectPath: string,
     branch: string,
-    state: Partial<InitScriptState>
+    state: Partial<InitScriptState>,
   ) => void;
   appendInitScriptOutput: (
     projectPath: string,
     branch: string,
-    chunk: InitScriptOutputChunk
+    chunk: InitScriptOutputChunk,
   ) => void;
   clearInitScriptState: (projectPath: string, branch: string) => void;
-  getInitScriptState: (projectPath: string, branch: string) => InitScriptState | null;
+  getInitScriptState: (
+    projectPath: string,
+    branch: string,
+  ) => InitScriptState | null;
   getInitScriptStatesForProject: (
-    projectPath: string
+    projectPath: string,
   ) => Array<{ key: string; state: InitScriptState }>;
 
   // Reset

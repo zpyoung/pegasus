@@ -2,7 +2,7 @@ name: Sync Model Registry
 
 on:
   schedule:
-    - cron: '0 3 * * 0' # Sundays 03:00 UTC
+    - cron: "0 3 * * 0" # Sundays 03:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -34,6 +34,12 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify consumers compile after sync
+        run: |
+          pnpm run build:packages
+          pnpm tsc --noEmit -p apps/ui/tsconfig.json
+          pnpm tsc --noEmit -p apps/server/tsconfig.json
+
       - name: Check for changes
         id: diff
         run: git diff --quiet || echo "changed=true" >> $GITHUB_OUTPUT
@@ -44,8 +50,8 @@ jobs:
         with:
           token: ${{ secrets.SYNC_BOT_PAT }}
           branch: chore/model-registry-sync
-          commit-message: 'chore: sync model registry'
-          title: 'chore(models): sync model registry'
+          commit-message: "chore: sync model registry"
+          title: "chore(models): sync model registry"
           body-path: /tmp/sync-models-summary.md
           labels: model-sync,automated
           delete-branch: true

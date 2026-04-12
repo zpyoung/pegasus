@@ -11,15 +11,22 @@
  * The server's settings.json file is the single source of truth.
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getHttpApiClient, waitForApiKeyInit } from '@/lib/http-api-client';
-import { setItem } from '@/lib/storage';
-import { useAppStore, type ThemeMode, THEME_STORAGE_KEY } from '@/store/app-store';
-import { useSetupStore } from '@/store/setup-store';
-import { useAuthStore } from '@/store/auth-store';
-import { waitForMigrationComplete, resetMigrationState } from './use-settings-migration';
-import { sanitizeWorktreeByProject } from '@/lib/settings-utils';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getHttpApiClient, waitForApiKeyInit } from "@/lib/http-api-client";
+import { setItem } from "@/lib/storage";
+import {
+  useAppStore,
+  type ThemeMode,
+  THEME_STORAGE_KEY,
+} from "@/store/app-store";
+import { useSetupStore } from "@/store/setup-store";
+import { useAuthStore } from "@/store/auth-store";
+import {
+  waitForMigrationComplete,
+  resetMigrationState,
+} from "./use-settings-migration";
+import { sanitizeWorktreeByProject } from "@/lib/settings-utils";
 import {
   DEFAULT_OPENCODE_MODEL,
   DEFAULT_GEMINI_MODEL,
@@ -39,107 +46,112 @@ import {
   type CopilotModelId,
   type PhaseModelEntry,
   type PhaseModelKey,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
-const logger = createLogger('SettingsSync');
+const logger = createLogger("SettingsSync");
 
 // Debounce delay for syncing settings to server (ms)
 const SYNC_DEBOUNCE_MS = 1000;
 
 // Fields to sync to server (subset of AppState that should be persisted)
 const SETTINGS_FIELDS_TO_SYNC = [
-  'theme',
-  'fontFamilySans',
-  'fontFamilyMono',
-  'terminalFontFamily', // Maps to terminalState.fontFamily
-  'openTerminalMode', // Maps to terminalState.openTerminalMode
-  'terminalCustomBackgroundColor', // Maps to terminalState.customBackgroundColor
-  'terminalCustomForegroundColor', // Maps to terminalState.customForegroundColor
-  'sidebarOpen',
-  'sidebarStyle',
-  'collapsedNavSections',
-  'chatHistoryOpen',
-  'maxConcurrency',
-  'autoModeByWorktree', // Per-worktree auto mode settings (only maxConcurrency is persisted)
-  'defaultSkipTests',
-  'enableDependencyBlocking',
-  'skipVerificationInAutoMode',
-  'mergePostAction',
-  'useWorktrees',
-  'defaultPlanningMode',
-  'defaultRequirePlanApproval',
-  'defaultFeatureModel',
-  'muteDoneSound',
-  'disableSplashScreen',
-  'defaultSortNewestCardOnTop',
-  'serverLogLevel',
-  'enableRequestLogging',
-  'showQueryDevtools',
-  'enhancementModel',
-  'validationModel',
-  'phaseModels',
-  'defaultThinkingLevel',
-  'defaultReasoningEffort',
-  'enabledCursorModels',
-  'cursorDefaultModel',
-  'enabledOpencodeModels',
-  'opencodeDefaultModel',
-  'enabledGeminiModels',
-  'geminiDefaultModel',
-  'enabledCopilotModels',
-  'copilotDefaultModel',
-  'enabledDynamicModelIds',
-  'knownDynamicModelIds',
-  'disabledProviders',
-  'autoLoadClaudeMd',
-  'useClaudeCodeSystemPrompt',
-  'keyboardShortcuts',
-  'mcpServers',
-  'defaultEditorCommand',
-  'editorFontSize',
-  'editorFontFamily',
-  'editorAutoSave',
-  'editorAutoSaveDelay',
-  'defaultTerminalId',
-  'enableAiCommitMessages',
-  'enableSkills',
-  'skillsSources',
-  'enableSubagents',
-  'subagentsSources',
-  'promptCustomization',
-  'eventHooks',
-  'ntfyEndpoints',
-  'featureTemplates',
-  'claudeCompatibleProviders', // Claude-compatible provider configs - must persist to server
-  'claudeApiProfiles',
-  'activeClaudeApiProfileId',
-  'projects',
-  'trashedProjects',
-  'currentProjectId', // ID of currently open project
-  'projectHistory',
-  'projectHistoryIndex',
-  'lastSelectedSessionByProject',
-  'agentModelBySession',
-  'lastUsedPhaseOverrides',
-  'currentWorktreeByProject',
+  "theme",
+  "fontFamilySans",
+  "fontFamilyMono",
+  "terminalFontFamily", // Maps to terminalState.fontFamily
+  "openTerminalMode", // Maps to terminalState.openTerminalMode
+  "terminalCustomBackgroundColor", // Maps to terminalState.customBackgroundColor
+  "terminalCustomForegroundColor", // Maps to terminalState.customForegroundColor
+  "sidebarOpen",
+  "sidebarStyle",
+  "collapsedNavSections",
+  "chatHistoryOpen",
+  "maxConcurrency",
+  "autoModeByWorktree", // Per-worktree auto mode settings (only maxConcurrency is persisted)
+  "defaultSkipTests",
+  "enableDependencyBlocking",
+  "skipVerificationInAutoMode",
+  "mergePostAction",
+  "useWorktrees",
+  "defaultPlanningMode",
+  "defaultRequirePlanApproval",
+  "defaultFeatureModel",
+  "muteDoneSound",
+  "disableSplashScreen",
+  "defaultSortNewestCardOnTop",
+  "serverLogLevel",
+  "enableRequestLogging",
+  "showQueryDevtools",
+  "enhancementModel",
+  "validationModel",
+  "phaseModels",
+  "defaultThinkingLevel",
+  "defaultReasoningEffort",
+  "enabledCursorModels",
+  "cursorDefaultModel",
+  "enabledOpencodeModels",
+  "opencodeDefaultModel",
+  "enabledGeminiModels",
+  "geminiDefaultModel",
+  "enabledCopilotModels",
+  "copilotDefaultModel",
+  "enabledDynamicModelIds",
+  "knownDynamicModelIds",
+  "disabledProviders",
+  "autoLoadClaudeMd",
+  "useClaudeCodeSystemPrompt",
+  "keyboardShortcuts",
+  "mcpServers",
+  "defaultEditorCommand",
+  "editorFontSize",
+  "editorFontFamily",
+  "editorAutoSave",
+  "editorAutoSaveDelay",
+  "defaultTerminalId",
+  "enableAiCommitMessages",
+  "enableSkills",
+  "skillsSources",
+  "enableSubagents",
+  "subagentsSources",
+  "promptCustomization",
+  "eventHooks",
+  "ntfyEndpoints",
+  "featureTemplates",
+  "claudeCompatibleProviders", // Claude-compatible provider configs - must persist to server
+  "claudeApiProfiles",
+  "activeClaudeApiProfileId",
+  "projects",
+  "trashedProjects",
+  "currentProjectId", // ID of currently open project
+  "projectHistory",
+  "projectHistoryIndex",
+  "lastSelectedSessionByProject",
+  "agentModelBySession",
+  "helperModelByFeature",
+  "lastUsedPhaseOverrides",
+  "currentWorktreeByProject",
   // Codex CLI Settings
-  'codexAutoLoadAgents',
-  'codexSandboxMode',
-  'codexApprovalPolicy',
-  'codexEnableWebSearch',
-  'codexEnableImages',
-  'codexAdditionalDirs',
-  'codexThreadId',
+  "codexAutoLoadAgents",
+  "codexSandboxMode",
+  "codexApprovalPolicy",
+  "codexEnableWebSearch",
+  "codexEnableImages",
+  "codexAdditionalDirs",
+  "codexThreadId",
   // Max Turns Setting
-  'defaultMaxTurns',
+  "defaultMaxTurns",
   // UI State (previously in localStorage)
-  'worktreePanelCollapsed',
-  'lastProjectDir',
-  'recentFolders',
+  "worktreePanelCollapsed",
+  "lastProjectDir",
+  "recentFolders",
 ] as const;
 
 // Fields from setup store to sync
-const SETUP_FIELDS_TO_SYNC = ['isFirstRun', 'setupComplete', 'skipClaudeSetup'] as const;
+const SETUP_FIELDS_TO_SYNC = [
+  "isFirstRun",
+  "setupComplete",
+  "skipClaudeSetup",
+] as const;
 
 /**
  * Helper to extract a settings field value from app state
@@ -155,28 +167,30 @@ const SETUP_FIELDS_TO_SYNC = ['isFirstRun', 'setupComplete', 'skipClaudeSetup'] 
  */
 function getSettingsFieldValue(
   field: (typeof SETTINGS_FIELDS_TO_SYNC)[number],
-  appState: ReturnType<typeof useAppStore.getState>
+  appState: ReturnType<typeof useAppStore.getState>,
 ): unknown {
-  if (field === 'currentProjectId') {
+  if (field === "currentProjectId") {
     return appState.currentProject?.id ?? null;
   }
-  if (field === 'terminalFontFamily') {
+  if (field === "terminalFontFamily") {
     return appState.terminalState.fontFamily;
   }
-  if (field === 'openTerminalMode') {
+  if (field === "openTerminalMode") {
     return appState.terminalState.openTerminalMode;
   }
-  if (field === 'terminalCustomBackgroundColor') {
+  if (field === "terminalCustomBackgroundColor") {
     return appState.terminalState.customBackgroundColor;
   }
-  if (field === 'terminalCustomForegroundColor') {
+  if (field === "terminalCustomForegroundColor") {
     return appState.terminalState.customForegroundColor;
   }
-  if (field === 'autoModeByWorktree') {
+  if (field === "autoModeByWorktree") {
     // Only persist settings (maxConcurrency), not runtime state (isRunning, runningTasks)
     const autoModeByWorktree = appState.autoModeByWorktree;
-    const persistedSettings: Record<string, { maxConcurrency: number; branchName: string | null }> =
-      {};
+    const persistedSettings: Record<
+      string,
+      { maxConcurrency: number; branchName: string | null }
+    > = {};
     for (const [key, value] of Object.entries(autoModeByWorktree)) {
       persistedSettings[key] = {
         maxConcurrency: value.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
@@ -185,7 +199,7 @@ function getSettingsFieldValue(
     }
     return persistedSettings;
   }
-  if (field === 'agentModelBySession') {
+  if (field === "agentModelBySession") {
     // Cap to the 50 most-recently-inserted session entries to prevent unbounded growth.
     // agentModelBySession grows by one entry per agent session — without pruning this
     // will bloat settings.json, every debounced sync payload, and the localStorage cache.
@@ -196,7 +210,7 @@ function getSettingsFieldValue(
     // Keep the last MAX_ENTRIES entries (insertion-order approximation for recency)
     return Object.fromEntries(entries.slice(-MAX_ENTRIES));
   }
-  if (field === 'helperModelByFeature') {
+  if (field === "helperModelByFeature") {
     // Same prune budget as agentModelBySession — one entry per feature that has
     // opened the helper chat. Prevents unbounded settings.json growth.
     const map = appState.helperModelByFeature as Record<string, unknown>;
@@ -224,25 +238,32 @@ function getSettingsFieldValue(
 function hasSettingsFieldChanged(
   field: (typeof SETTINGS_FIELDS_TO_SYNC)[number],
   newState: ReturnType<typeof useAppStore.getState>,
-  prevState: ReturnType<typeof useAppStore.getState>
+  prevState: ReturnType<typeof useAppStore.getState>,
 ): boolean {
-  if (field === 'currentProjectId') {
+  if (field === "currentProjectId") {
     return newState.currentProject?.id !== prevState.currentProject?.id;
   }
-  if (field === 'terminalFontFamily') {
-    return newState.terminalState.fontFamily !== prevState.terminalState.fontFamily;
-  }
-  if (field === 'openTerminalMode') {
-    return newState.terminalState.openTerminalMode !== prevState.terminalState.openTerminalMode;
-  }
-  if (field === 'terminalCustomBackgroundColor') {
+  if (field === "terminalFontFamily") {
     return (
-      newState.terminalState.customBackgroundColor !== prevState.terminalState.customBackgroundColor
+      newState.terminalState.fontFamily !== prevState.terminalState.fontFamily
     );
   }
-  if (field === 'terminalCustomForegroundColor') {
+  if (field === "openTerminalMode") {
     return (
-      newState.terminalState.customForegroundColor !== prevState.terminalState.customForegroundColor
+      newState.terminalState.openTerminalMode !==
+      prevState.terminalState.openTerminalMode
+    );
+  }
+  if (field === "terminalCustomBackgroundColor") {
+    return (
+      newState.terminalState.customBackgroundColor !==
+      prevState.terminalState.customBackgroundColor
+    );
+  }
+  if (field === "terminalCustomForegroundColor") {
+    return (
+      newState.terminalState.customForegroundColor !==
+      prevState.terminalState.customForegroundColor
     );
   }
   const key = field as keyof typeof newState;
@@ -278,7 +299,7 @@ export function useSettingsSync(): SettingsSyncState {
   const settingsLoaded = useAuthStore((s) => s.settingsLoaded);
 
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSyncedRef = useRef<string>('');
+  const lastSyncedRef = useRef<string>("");
   const isInitializedRef = useRef(false);
 
   // If auth is lost (logout / session expired), immediately stop syncing and
@@ -291,7 +312,7 @@ export function useSettingsSync(): SettingsSyncState {
         clearTimeout(syncTimeoutRef.current);
         syncTimeoutRef.current = null;
       }
-      lastSyncedRef.current = '';
+      lastSyncedRef.current = "";
       isInitializedRef.current = false;
 
       // Reset migration state so next login properly waits for fresh hydration
@@ -307,14 +328,14 @@ export function useSettingsSync(): SettingsSyncState {
       // Never sync when not authenticated or settings not loaded
       // The settingsLoaded flag ensures we don't sync default empty state before hydration
       const auth = useAuthStore.getState();
-      logger.debug('[SYNC_CHECK] Auth state:', {
+      logger.debug("[SYNC_CHECK] Auth state:", {
         authChecked: auth.authChecked,
         isAuthenticated: auth.isAuthenticated,
         settingsLoaded: auth.settingsLoaded,
         projectsCount: useAppStore.getState().projects?.length ?? 0,
       });
       if (!auth.authChecked || !auth.isAuthenticated || !auth.settingsLoaded) {
-        logger.warn('[SYNC_SKIPPED] Not ready:', {
+        logger.warn("[SYNC_SKIPPED] Not ready:", {
           authChecked: auth.authChecked,
           isAuthenticated: auth.isAuthenticated,
           settingsLoaded: auth.settingsLoaded,
@@ -326,7 +347,7 @@ export function useSettingsSync(): SettingsSyncState {
       const api = getHttpApiClient();
       const appState = useAppStore.getState();
 
-      logger.info('[SYNC_START] Syncing to server:', {
+      logger.info("[SYNC_START] Syncing to server:", {
         projectsCount: appState.projects?.length ?? 0,
       });
 
@@ -345,12 +366,12 @@ export function useSettingsSync(): SettingsSyncState {
       // Create a hash of the updates to avoid redundant syncs
       const updateHash = JSON.stringify(updates);
       if (updateHash === lastSyncedRef.current) {
-        logger.debug('[SYNC_SKIP_IDENTICAL] No changes from last sync');
+        logger.debug("[SYNC_SKIP_IDENTICAL] No changes from last sync");
         setState((s) => ({ ...s, syncing: false }));
         return;
       }
 
-      logger.info('[SYNC_SEND] Sending settings update to server:', {
+      logger.info("[SYNC_SEND] Sending settings update to server:", {
         projects: Array.isArray(updates.projects) ? updates.projects.length : 0,
         trashedProjects: Array.isArray(updates.trashedProjects)
           ? updates.trashedProjects.length
@@ -358,24 +379,29 @@ export function useSettingsSync(): SettingsSyncState {
       });
 
       const result = await api.settings.updateGlobal(updates);
-      logger.info('[SYNC_RESPONSE] Server response:', { success: result.success });
+      logger.info("[SYNC_RESPONSE] Server response:", {
+        success: result.success,
+      });
       if (result.success) {
         lastSyncedRef.current = updateHash;
-        logger.debug('Settings synced to server');
+        logger.debug("Settings synced to server");
 
         // Update localStorage cache with synced settings to keep it fresh
         // This prevents stale data when switching between Electron and web modes
         try {
-          setItem('pegasus-settings-cache', JSON.stringify(updates));
-          logger.debug('Updated localStorage cache after sync');
+          setItem("pegasus-settings-cache", JSON.stringify(updates));
+          logger.debug("Updated localStorage cache after sync");
         } catch (storageError) {
-          logger.warn('Failed to update localStorage cache after sync:', storageError);
+          logger.warn(
+            "Failed to update localStorage cache after sync:",
+            storageError,
+          );
         }
       } else {
-        logger.error('Failed to sync settings:', result.error);
+        logger.error("Failed to sync settings:", result.error);
       }
     } catch (error) {
-      logger.error('Failed to sync settings to server:', error);
+      logger.error("Failed to sync settings to server:", error);
     } finally {
       setState((s) => ({ ...s, syncing: false }));
     }
@@ -407,7 +433,7 @@ export function useSettingsSync(): SettingsSyncState {
     // 2. User is authenticated
     // 3. Settings have been loaded from server (settingsLoaded flag)
     // This prevents syncing empty/default state before hydration completes.
-    logger.debug('useSettingsSync initialization check:', {
+    logger.debug("useSettingsSync initialization check:", {
       authChecked,
       isAuthenticated,
       settingsLoaded,
@@ -424,7 +450,9 @@ export function useSettingsSync(): SettingsSyncState {
 
         // CRITICAL: Wait for migration/hydration to complete before we start syncing
         // This is a backup to the settingsLoaded flag for extra safety
-        logger.info('Waiting for migration to complete before starting sync...');
+        logger.info(
+          "Waiting for migration to complete before starting sync...",
+        );
         await waitForMigrationComplete();
 
         // Wait for React to finish rendering after store hydration.
@@ -433,13 +461,15 @@ export function useSettingsSync(): SettingsSyncState {
         // have propagated through the React tree before we read state.
         await new Promise((resolve) => setTimeout(resolve, 50));
 
-        logger.info('Migration complete, initializing sync');
+        logger.info("Migration complete, initializing sync");
 
         // Read state - at this point React has processed the store update
         const appState = useAppStore.getState();
         const setupState = useSetupStore.getState();
 
-        logger.info('Initial state read:', { projectsCount: appState.projects?.length ?? 0 });
+        logger.info("Initial state read:", {
+          projectsCount: appState.projects?.length ?? 0,
+        });
 
         // Store the initial state hash to avoid immediate re-sync
         // (migration has already hydrated the store from server/localStorage)
@@ -452,13 +482,13 @@ export function useSettingsSync(): SettingsSyncState {
         }
         lastSyncedRef.current = JSON.stringify(updates);
 
-        logger.info('Settings sync initialized');
+        logger.info("Settings sync initialized");
         setState({ loaded: true, error: null, syncing: false });
       } catch (error) {
-        logger.error('Failed to initialize settings sync:', error);
+        logger.error("Failed to initialize settings sync:", error);
         setState({
           loaded: true,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
           syncing: false,
         });
       }
@@ -470,12 +500,13 @@ export function useSettingsSync(): SettingsSyncState {
 
   // Subscribe to store changes and sync to server
   useEffect(() => {
-    if (!state.loaded || !authChecked || !isAuthenticated || !settingsLoaded) return;
+    if (!state.loaded || !authChecked || !isAuthenticated || !settingsLoaded)
+      return;
 
     // Subscribe to app store changes
     const unsubscribeApp = useAppStore.subscribe((newState, prevState) => {
       const auth = useAuthStore.getState();
-      logger.debug('Store subscription fired:', {
+      logger.debug("Store subscription fired:", {
         prevProjects: prevState.projects?.length ?? 0,
         newProjects: newState.projects?.length ?? 0,
         authChecked: auth.authChecked,
@@ -486,21 +517,24 @@ export function useSettingsSync(): SettingsSyncState {
 
       // Don't sync if settings not loaded yet
       if (!auth.settingsLoaded) {
-        logger.debug('Store changed but settings not loaded, skipping sync');
+        logger.debug("Store changed but settings not loaded, skipping sync");
         return;
       }
 
       // If the current project changed, sync immediately so we can restore on next launch
       if (newState.currentProject?.id !== prevState.currentProject?.id) {
-        logger.debug('Current project changed, syncing immediately');
+        logger.debug("Current project changed, syncing immediately");
         syncNow();
         return;
       }
 
       // If the sort preference changed, sync immediately so it survives a page refresh
       // before the debounce timer fires (1s debounce would be lost on quick refresh).
-      if (newState.defaultSortNewestCardOnTop !== prevState.defaultSortNewestCardOnTop) {
-        logger.debug('defaultSortNewestCardOnTop changed, syncing immediately');
+      if (
+        newState.defaultSortNewestCardOnTop !==
+        prevState.defaultSortNewestCardOnTop
+      ) {
+        logger.debug("defaultSortNewestCardOnTop changed, syncing immediately");
         syncNow();
         return;
       }
@@ -517,15 +551,18 @@ export function useSettingsSync(): SettingsSyncState {
       if (newState.projects !== prevState.projects) {
         const prevIds = prevState.projects
           ?.map((p) => JSON.stringify([p.id, p.name, p.path]))
-          .join(',');
+          .join(",");
         const newIds = newState.projects
           ?.map((p) => JSON.stringify([p.id, p.name, p.path]))
-          .join(',');
+          .join(",");
         if (prevIds !== newIds) {
-          logger.info('[PROJECTS_CHANGED] Projects array changed, syncing immediately', {
-            prevCount: prevState.projects?.length ?? 0,
-            newCount: newState.projects?.length ?? 0,
-          });
+          logger.info(
+            "[PROJECTS_CHANGED] Projects array changed, syncing immediately",
+            {
+              prevCount: prevState.projects?.length ?? 0,
+              newCount: newState.projects?.length ?? 0,
+            },
+          );
           syncNow();
           // Don't return here — fall through so the general loop below can still
           // detect and schedule a debounced sync for other project-field mutations
@@ -534,7 +571,9 @@ export function useSettingsSync(): SettingsSyncState {
           // The projects array reference changed but id/name/path are identical.
           // This means nested project fields mutated (e.g. lastOpened, remotes).
           // Schedule a debounced sync so these mutations reach the server.
-          logger.debug('[PROJECTS_NESTED_CHANGE] Projects nested fields changed, scheduling sync');
+          logger.debug(
+            "[PROJECTS_NESTED_CHANGE] Projects nested fields changed, scheduling sync",
+          );
           scheduleSyncToServer();
         }
       }
@@ -542,7 +581,7 @@ export function useSettingsSync(): SettingsSyncState {
       // Check if any other synced field changed
       let changed = false;
       for (const field of SETTINGS_FIELDS_TO_SYNC) {
-        if (field === 'projects') continue; // Already handled above
+        if (field === "projects") continue; // Already handled above
         if (hasSettingsFieldChanged(field, newState, prevState)) {
           changed = true;
           break;
@@ -550,7 +589,7 @@ export function useSettingsSync(): SettingsSyncState {
       }
 
       if (changed) {
-        logger.debug('Store changed, scheduling sync');
+        logger.debug("Store changed, scheduling sync");
         scheduleSyncToServer();
       }
     });
@@ -579,11 +618,19 @@ export function useSettingsSync(): SettingsSyncState {
         clearTimeout(syncTimeoutRef.current);
       }
     };
-  }, [state.loaded, authChecked, isAuthenticated, settingsLoaded, scheduleSyncToServer, syncNow]);
+  }, [
+    state.loaded,
+    authChecked,
+    isAuthenticated,
+    settingsLoaded,
+    scheduleSyncToServer,
+    syncNow,
+  ]);
 
   // Best-effort flush on tab close / backgrounding
   useEffect(() => {
-    if (!state.loaded || !authChecked || !isAuthenticated || !settingsLoaded) return;
+    if (!state.loaded || !authChecked || !isAuthenticated || !settingsLoaded)
+      return;
 
     const handleBeforeUnload = () => {
       // Fire-and-forget; may not complete in all browsers, but helps in Electron/webview
@@ -591,17 +638,17 @@ export function useSettingsSync(): SettingsSyncState {
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === "hidden") {
         syncNow();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [state.loaded, authChecked, isAuthenticated, settingsLoaded, syncNow]);
 
@@ -630,15 +677,18 @@ export async function forceSyncSettingsToServer(): Promise<boolean> {
     // server response arrives still sees the latest state (e.g. after
     // deleting a worktree, the stale worktree path won't survive in cache).
     try {
-      setItem('pegasus-settings-cache', JSON.stringify(updates));
+      setItem("pegasus-settings-cache", JSON.stringify(updates));
     } catch (storageError) {
-      logger.warn('Failed to update localStorage cache during force sync:', storageError);
+      logger.warn(
+        "Failed to update localStorage cache during force sync:",
+        storageError,
+      );
     }
 
     const result = await api.settings.updateGlobal(updates);
     return result.success;
   } catch (error) {
-    logger.error('Failed to force sync settings:', error);
+    logger.error("Failed to force sync settings:", error);
     return false;
   }
 }
@@ -665,40 +715,48 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
 
     // Migrate Cursor default model
     const migratedCursorDefault = migrateCursorModelIds([
-      serverSettings.cursorDefaultModel ?? 'cursor-auto',
+      serverSettings.cursorDefaultModel ?? "cursor-auto",
     ])[0];
-    const sanitizedCursorDefault = validCursorModelIds.has(migratedCursorDefault)
+    const sanitizedCursorDefault = validCursorModelIds.has(
+      migratedCursorDefault,
+    )
       ? migratedCursorDefault
-      : ('cursor-auto' as CursorModelId);
+      : ("cursor-auto" as CursorModelId);
 
     // Migrate OpenCode models to canonical format
     const migratedOpencodeModels = migrateOpencodeModelIds(
-      serverSettings.enabledOpencodeModels ?? []
+      serverSettings.enabledOpencodeModels ?? [],
     );
     const validOpencodeModelIds = new Set(getAllOpencodeModelIds());
     const sanitizedEnabledOpencodeModels = migratedOpencodeModels.filter((id) =>
-      validOpencodeModelIds.has(id)
+      validOpencodeModelIds.has(id),
     );
 
     // Migrate OpenCode default model
     const migratedOpencodeDefault = migrateOpencodeModelIds([
       serverSettings.opencodeDefaultModel ?? DEFAULT_OPENCODE_MODEL,
     ])[0];
-    const sanitizedOpencodeDefaultModel = validOpencodeModelIds.has(migratedOpencodeDefault)
+    const sanitizedOpencodeDefaultModel = validOpencodeModelIds.has(
+      migratedOpencodeDefault,
+    )
       ? migratedOpencodeDefault
       : DEFAULT_OPENCODE_MODEL;
 
-    if (!sanitizedEnabledOpencodeModels.includes(sanitizedOpencodeDefaultModel)) {
+    if (
+      !sanitizedEnabledOpencodeModels.includes(sanitizedOpencodeDefaultModel)
+    ) {
       sanitizedEnabledOpencodeModels.push(sanitizedOpencodeDefaultModel);
     }
 
     // Sanitize Gemini models
     const validGeminiModelIds = new Set(getAllGeminiModelIds());
-    const sanitizedEnabledGeminiModels = (serverSettings.enabledGeminiModels ?? []).filter(
-      (id): id is GeminiModelId => validGeminiModelIds.has(id as GeminiModelId)
+    const sanitizedEnabledGeminiModels = (
+      serverSettings.enabledGeminiModels ?? []
+    ).filter((id): id is GeminiModelId =>
+      validGeminiModelIds.has(id as GeminiModelId),
     );
     const sanitizedGeminiDefaultModel = validGeminiModelIds.has(
-      serverSettings.geminiDefaultModel as GeminiModelId
+      serverSettings.geminiDefaultModel as GeminiModelId,
     )
       ? (serverSettings.geminiDefaultModel as GeminiModelId)
       : DEFAULT_GEMINI_MODEL;
@@ -709,11 +767,13 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
 
     // Sanitize Copilot models
     const validCopilotModelIds = new Set(getAllCopilotModelIds());
-    const sanitizedEnabledCopilotModels = (serverSettings.enabledCopilotModels ?? []).filter(
-      (id): id is CopilotModelId => validCopilotModelIds.has(id as CopilotModelId)
+    const sanitizedEnabledCopilotModels = (
+      serverSettings.enabledCopilotModels ?? []
+    ).filter((id): id is CopilotModelId =>
+      validCopilotModelIds.has(id as CopilotModelId),
     );
     const sanitizedCopilotDefaultModel = validCopilotModelIds.has(
-      serverSettings.copilotDefaultModel as CopilotModelId
+      serverSettings.copilotDefaultModel as CopilotModelId,
     )
       ? (serverSettings.copilotDefaultModel as CopilotModelId)
       : DEFAULT_COPILOT_MODEL;
@@ -723,46 +783,58 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
     }
 
     const persistedDynamicModelIds =
-      serverSettings.enabledDynamicModelIds ?? currentAppState.enabledDynamicModelIds;
+      serverSettings.enabledDynamicModelIds ??
+      currentAppState.enabledDynamicModelIds;
     const sanitizedDynamicModelIds = persistedDynamicModelIds.filter(
-      (modelId) => !modelId.startsWith('amazon-bedrock/')
+      (modelId) => !modelId.startsWith("amazon-bedrock/"),
     );
 
     const persistedKnownDynamicModelIds =
-      serverSettings.knownDynamicModelIds ?? currentAppState.knownDynamicModelIds;
+      serverSettings.knownDynamicModelIds ??
+      currentAppState.knownDynamicModelIds;
     const sanitizedKnownDynamicModelIds = persistedKnownDynamicModelIds.filter(
-      (modelId) => !modelId.startsWith('amazon-bedrock/')
+      (modelId) => !modelId.startsWith("amazon-bedrock/"),
     );
 
     // Migrate phase models to canonical format
     const migratedPhaseModels = serverSettings.phaseModels
       ? {
-          enhancementModel: migratePhaseModelEntry(serverSettings.phaseModels.enhancementModel),
+          enhancementModel: migratePhaseModelEntry(
+            serverSettings.phaseModels.enhancementModel,
+          ),
           fileDescriptionModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.fileDescriptionModel
+            serverSettings.phaseModels.fileDescriptionModel,
           ),
           imageDescriptionModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.imageDescriptionModel
+            serverSettings.phaseModels.imageDescriptionModel,
           ),
-          validationModel: migratePhaseModelEntry(serverSettings.phaseModels.validationModel),
+          validationModel: migratePhaseModelEntry(
+            serverSettings.phaseModels.validationModel,
+          ),
           specGenerationModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.specGenerationModel
+            serverSettings.phaseModels.specGenerationModel,
           ),
           featureGenerationModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.featureGenerationModel
+            serverSettings.phaseModels.featureGenerationModel,
           ),
           backlogPlanningModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.backlogPlanningModel
+            serverSettings.phaseModels.backlogPlanningModel,
           ),
           projectAnalysisModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.projectAnalysisModel
+            serverSettings.phaseModels.projectAnalysisModel,
           ),
-          ideationModel: migratePhaseModelEntry(serverSettings.phaseModels.ideationModel),
+          ideationModel: migratePhaseModelEntry(
+            serverSettings.phaseModels.ideationModel,
+          ),
           memoryExtractionModel: migratePhaseModelEntry(
-            serverSettings.phaseModels.memoryExtractionModel
+            serverSettings.phaseModels.memoryExtractionModel,
           ),
-          commitMessageModel: migratePhaseModelEntry(serverSettings.phaseModels.commitMessageModel),
-          prDescriptionModel: migratePhaseModelEntry(serverSettings.phaseModels.prDescriptionModel),
+          commitMessageModel: migratePhaseModelEntry(
+            serverSettings.phaseModels.commitMessageModel,
+          ),
+          prDescriptionModel: migratePhaseModelEntry(
+            serverSettings.phaseModels.prDescriptionModel,
+          ),
         }
       : undefined;
 
@@ -799,7 +871,7 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
     useAppStore.setState({
       theme: serverSettings.theme as unknown as ThemeMode,
       sidebarOpen: serverSettings.sidebarOpen,
-      sidebarStyle: serverSettings.sidebarStyle ?? 'unified',
+      sidebarStyle: serverSettings.sidebarStyle ?? "unified",
       collapsedNavSections: serverSettings.collapsedNavSections ?? {},
       chatHistoryOpen: serverSettings.chatHistoryOpen,
       maxConcurrency: serverSettings.maxConcurrency,
@@ -813,12 +885,13 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       defaultRequirePlanApproval: serverSettings.defaultRequirePlanApproval,
       defaultFeatureModel: serverSettings.defaultFeatureModel
         ? migratePhaseModelEntry(serverSettings.defaultFeatureModel)
-        : { model: 'claude-opus', thinkingLevel: 'adaptive' },
+        : { model: "claude-opus", thinkingLevel: "adaptive" },
       muteDoneSound: serverSettings.muteDoneSound,
       defaultMaxTurns: serverSettings.defaultMaxTurns ?? 10000,
       disableSplashScreen: serverSettings.disableSplashScreen ?? false,
-      defaultSortNewestCardOnTop: serverSettings.defaultSortNewestCardOnTop ?? false,
-      serverLogLevel: serverSettings.serverLogLevel ?? 'info',
+      defaultSortNewestCardOnTop:
+        serverSettings.defaultSortNewestCardOnTop ?? false,
+      serverLogLevel: serverSettings.serverLogLevel ?? "info",
       enableRequestLogging: serverSettings.enableRequestLogging ?? true,
       enhancementModel: serverSettings.enhancementModel,
       validationModel: serverSettings.validationModel,
@@ -826,8 +899,8 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
         ...DEFAULT_PHASE_MODELS,
         ...(migratedPhaseModels ?? serverSettings.phaseModels),
       },
-      defaultThinkingLevel: serverSettings.defaultThinkingLevel ?? 'adaptive',
-      defaultReasoningEffort: serverSettings.defaultReasoningEffort ?? 'none',
+      defaultThinkingLevel: serverSettings.defaultThinkingLevel ?? "adaptive",
+      defaultReasoningEffort: serverSettings.defaultReasoningEffort ?? "none",
       enabledCursorModels: allCursorModels, // Always use ALL cursor models
       cursorDefaultModel: sanitizedCursorDefault,
       enabledOpencodeModels: sanitizedEnabledOpencodeModels,
@@ -840,7 +913,8 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       knownDynamicModelIds: sanitizedKnownDynamicModelIds,
       disabledProviders: serverSettings.disabledProviders ?? [],
       autoLoadClaudeMd: serverSettings.autoLoadClaudeMd ?? true,
-      useClaudeCodeSystemPrompt: serverSettings.useClaudeCodeSystemPrompt ?? true,
+      useClaudeCodeSystemPrompt:
+        serverSettings.useClaudeCodeSystemPrompt ?? true,
       keyboardShortcuts: {
         ...currentAppState.keyboardShortcuts,
         ...(serverSettings.keyboardShortcuts as unknown as Partial<
@@ -850,7 +924,7 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       mcpServers: serverSettings.mcpServers,
       defaultEditorCommand: serverSettings.defaultEditorCommand ?? null,
       editorFontSize: serverSettings.editorFontSize ?? 13,
-      editorFontFamily: serverSettings.editorFontFamily ?? 'default',
+      editorFontFamily: serverSettings.editorFontFamily ?? "default",
       editorAutoSave: serverSettings.editorAutoSave ?? false,
       editorAutoSaveDelay: serverSettings.editorAutoSaveDelay ?? 1000,
       defaultTerminalId: serverSettings.defaultTerminalId ?? null,
@@ -867,33 +941,38 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       lastSelectedSessionByProject: serverSettings.lastSelectedSessionByProject,
       agentModelBySession: serverSettings.agentModelBySession
         ? Object.fromEntries(
-            Object.entries(serverSettings.agentModelBySession as Record<string, unknown>).map(
-              ([sessionId, entry]) => [
-                sessionId,
-                migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
-              ]
-            )
+            Object.entries(
+              serverSettings.agentModelBySession as Record<string, unknown>,
+            ).map(([sessionId, entry]) => [
+              sessionId,
+              migratePhaseModelEntry(
+                entry as string | PhaseModelEntry | null | undefined,
+              ),
+            ]),
           )
         : currentAppState.agentModelBySession,
       // Hydrate last-used phase model overrides (persisted ad-hoc selections from dialogs)
       lastUsedPhaseOverrides: serverSettings.lastUsedPhaseOverrides
         ? Object.fromEntries(
             Object.entries(
-              serverSettings.lastUsedPhaseOverrides as Record<string, unknown>
+              serverSettings.lastUsedPhaseOverrides as Record<string, unknown>,
             ).map(([phase, entry]) => [
               phase as PhaseModelKey,
-              migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
-            ])
+              migratePhaseModelEntry(
+                entry as string | PhaseModelEntry | null | undefined,
+              ),
+            ]),
           )
         : currentAppState.lastUsedPhaseOverrides,
       // Restore all valid worktree selections (both main branch and feature worktrees).
       // The validation effect in use-worktrees.ts handles deleted worktrees gracefully.
       currentWorktreeByProject: sanitizeWorktreeByProject(
-        serverSettings.currentWorktreeByProject ?? currentAppState.currentWorktreeByProject
+        serverSettings.currentWorktreeByProject ??
+          currentAppState.currentWorktreeByProject,
       ),
       // UI State (previously in localStorage)
       worktreePanelCollapsed: serverSettings.worktreePanelCollapsed ?? false,
-      lastProjectDir: serverSettings.lastProjectDir ?? '',
+      lastProjectDir: serverSettings.lastProjectDir ?? "",
       recentFolders: serverSettings.recentFolders ?? [],
       // Event hooks
       eventHooks: serverSettings.eventHooks ?? [],
@@ -903,8 +982,8 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       featureTemplates: serverSettings.featureTemplates ?? [],
       // Codex CLI Settings
       codexAutoLoadAgents: serverSettings.codexAutoLoadAgents ?? false,
-      codexSandboxMode: serverSettings.codexSandboxMode ?? 'workspace-write',
-      codexApprovalPolicy: serverSettings.codexApprovalPolicy ?? 'on-request',
+      codexSandboxMode: serverSettings.codexSandboxMode ?? "workspace-write",
+      codexApprovalPolicy: serverSettings.codexApprovalPolicy ?? "on-request",
       codexEnableWebSearch: serverSettings.codexEnableWebSearch ?? false,
       codexEnableImages: serverSettings.codexEnableImages ?? true,
       codexAdditionalDirs: serverSettings.codexAdditionalDirs ?? [],
@@ -912,10 +991,10 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       // Terminal settings (nested in terminalState)
       ...((serverSettings.terminalFontFamily ||
         serverSettings.openTerminalMode ||
-        (serverSettings as unknown as Record<string, unknown>).terminalCustomBackgroundColor !==
-          undefined ||
-        (serverSettings as unknown as Record<string, unknown>).terminalCustomForegroundColor !==
-          undefined) && {
+        (serverSettings as unknown as Record<string, unknown>)
+          .terminalCustomBackgroundColor !== undefined ||
+        (serverSettings as unknown as Record<string, unknown>)
+          .terminalCustomForegroundColor !== undefined) && {
         terminalState: {
           ...currentAppState.terminalState,
           ...(serverSettings.terminalFontFamily && {
@@ -926,13 +1005,15 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
           }),
           ...((serverSettings as unknown as Record<string, unknown>)
             .terminalCustomBackgroundColor !== undefined && {
-            customBackgroundColor: (serverSettings as unknown as Record<string, unknown>)
-              .terminalCustomBackgroundColor as string | null,
+            customBackgroundColor: (
+              serverSettings as unknown as Record<string, unknown>
+            ).terminalCustomBackgroundColor as string | null,
           }),
           ...((serverSettings as unknown as Record<string, unknown>)
             .terminalCustomForegroundColor !== undefined && {
-            customForegroundColor: (serverSettings as unknown as Record<string, unknown>)
-              .terminalCustomForegroundColor as string | null,
+            customForegroundColor: (
+              serverSettings as unknown as Record<string, unknown>
+            ).terminalCustomForegroundColor as string | null,
           }),
         },
       }),
@@ -943,13 +1024,13 @@ export async function refreshSettingsFromServer(): Promise<boolean> {
       setupComplete: serverSettings.setupComplete ?? false,
       isFirstRun: serverSettings.isFirstRun ?? true,
       skipClaudeSetup: serverSettings.skipClaudeSetup ?? false,
-      currentStep: serverSettings.setupComplete ? 'complete' : 'welcome',
+      currentStep: serverSettings.setupComplete ? "complete" : "welcome",
     });
 
-    logger.info('Settings refreshed from server');
+    logger.info("Settings refreshed from server");
     return true;
   } catch (error) {
-    logger.error('Failed to refresh settings from server:', error);
+    logger.error("Failed to refresh settings from server:", error);
     return false;
   }
 }

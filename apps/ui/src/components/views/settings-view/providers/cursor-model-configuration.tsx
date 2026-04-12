@@ -1,17 +1,17 @@
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Terminal } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { CursorModelId, CursorModelConfig } from '@pegasus/types';
-import { CURSOR_MODEL_MAP } from '@pegasus/types';
+} from "@/components/ui/select";
+import { Terminal } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { CursorModelId, CursorModelConfig } from "@pegasus/types";
+import { CURSOR_MODEL_MAP } from "@pegasus/types";
 
 interface CursorModelConfigurationProps {
   enabledCursorModels: CursorModelId[];
@@ -34,10 +34,10 @@ export function CursorModelConfiguration({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -92,8 +92,8 @@ export function CursorModelConfiguration({
           <div className="grid gap-3">
             {availableModels.map((model) => {
               const isEnabled = enabledCursorModels.includes(model.id);
-              // With canonical IDs, 'auto' becomes 'cursor-auto'
-              const isAuto = model.id === 'cursor-auto';
+              // Auto model (if present) should always be enabled
+              const isAuto = (model.id as string).endsWith("-auto");
 
               return (
                 <div
@@ -103,19 +103,25 @@ export function CursorModelConfiguration({
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={isEnabled}
-                      onCheckedChange={(checked) => onModelToggle(model.id, !!checked)}
+                      onCheckedChange={(checked) =>
+                        onModelToggle(model.id, !!checked)
+                      }
                       disabled={isSaving || isAuto}
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{model.label}</span>
+                        <span className="text-sm font-medium">
+                          {model.label}
+                        </span>
                         {model.hasThinking && (
                           <Badge variant="outline" className="text-xs">
                             Thinking
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {model.description}
+                      </p>
                     </div>
                   </div>
                 </div>

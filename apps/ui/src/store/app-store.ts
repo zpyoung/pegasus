@@ -1,12 +1,15 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 // Note: persist middleware removed - settings now sync via API (use-settings-sync.ts)
-import type { Project, TrashedProject } from '@/lib/electron';
-import { saveProjects, saveTrashedProjects } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { createLogger } from '@pegasus/utils/logger';
+import type { Project, TrashedProject } from "@/lib/electron";
+import { saveProjects, saveTrashedProjects } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { createLogger } from "@pegasus/utils/logger";
 // Note: setItem/getItem moved to ./utils/theme-utils.ts
-import { UI_SANS_FONT_OPTIONS, UI_MONO_FONT_OPTIONS } from '@/config/ui-font-options';
-import { loadFont } from '@/styles/font-imports';
+import {
+  UI_SANS_FONT_OPTIONS,
+  UI_MONO_FONT_OPTIONS,
+} from "@/config/ui-font-options";
+import { loadFont } from "@/styles/font-imports";
 import type {
   FeatureImagePath,
   FeatureTextFilePath,
@@ -23,7 +26,7 @@ import type {
   ParsedTask,
   PlanSpec,
   FeatureTemplate,
-} from '@pegasus/types';
+} from "@pegasus/types";
 import {
   getAllCursorModelIds,
   getAllCodexModelIds,
@@ -37,7 +40,7 @@ import {
   DEFAULT_MAX_CONCURRENCY,
   DEFAULT_GLOBAL_SETTINGS,
   getThinkingLevelsForModel,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 // Import types from modular type files
 import {
@@ -91,7 +94,7 @@ import {
   type GeminiTierQuota,
   type GeminiUsage,
   type GeminiUsageResponse,
-} from './types';
+} from "./types";
 
 // Import utility functions from modular utils files
 import {
@@ -103,10 +106,14 @@ import {
   formatShortcut,
   DEFAULT_KEYBOARD_SHORTCUTS,
   isClaudeUsageAtLimit,
-} from './utils';
+} from "./utils";
 
 // Import default values from modular defaults files
-import { defaultBackgroundSettings, defaultTerminalState, MAX_INIT_OUTPUT_LINES } from './defaults';
+import {
+  defaultBackgroundSettings,
+  defaultTerminalState,
+  MAX_INIT_OUTPUT_LINES,
+} from "./defaults";
 
 // Import internal theme utils (not re-exported publicly)
 import {
@@ -115,10 +122,10 @@ import {
   saveFontSansToStorage,
   saveFontMonoToStorage,
   persistEffectiveThemeForProject,
-} from './utils/theme-utils';
+} from "./utils/theme-utils";
 
-const logger = createLogger('AppStore');
-const OPENCODE_BEDROCK_PROVIDER_ID = 'amazon-bedrock';
+const logger = createLogger("AppStore");
+const OPENCODE_BEDROCK_PROVIDER_ID = "amazon-bedrock";
 const OPENCODE_BEDROCK_MODEL_PREFIX = `${OPENCODE_BEDROCK_PROVIDER_ID}/`;
 
 // Re-export types from @pegasus/types for convenience
@@ -197,7 +204,11 @@ export {
 };
 
 // Re-export defaults from ./defaults for backward compatibility
-export { defaultBackgroundSettings, defaultTerminalState, MAX_INIT_OUTPUT_LINES } from './defaults';
+export {
+  defaultBackgroundSettings,
+  defaultTerminalState,
+  MAX_INIT_OUTPUT_LINES,
+} from "./defaults";
 
 // NOTE: Type definitions moved to ./types/ directory, utilities moved to ./utils/ directory
 // The following inline types have been replaced with imports above:
@@ -230,11 +241,11 @@ export { defaultBackgroundSettings, defaultTerminalState, MAX_INIT_OUTPUT_LINES 
  */
 function getInitialUIState(): {
   sidebarOpen: boolean;
-  sidebarStyle: 'unified' | 'discord';
+  sidebarStyle: "unified" | "discord";
   collapsedNavSections: Record<string, boolean>;
 } {
   try {
-    const raw = localStorage.getItem('pegasus-ui-cache');
+    const raw = localStorage.getItem("pegasus-ui-cache");
     if (raw) {
       const wrapper = JSON.parse(raw);
       // zustand/persist wraps state under a "state" key
@@ -242,15 +253,20 @@ function getInitialUIState(): {
       if (cache) {
         return {
           sidebarOpen:
-            typeof cache.cachedSidebarOpen === 'boolean' ? cache.cachedSidebarOpen : true,
-          sidebarStyle: cache.cachedSidebarStyle === 'discord' ? 'discord' : 'unified',
+            typeof cache.cachedSidebarOpen === "boolean"
+              ? cache.cachedSidebarOpen
+              : true,
+          sidebarStyle:
+            cache.cachedSidebarStyle === "discord" ? "discord" : "unified",
           collapsedNavSections: (() => {
             const raw = cache.cachedCollapsedNavSections;
             if (
               raw &&
-              typeof raw === 'object' &&
+              typeof raw === "object" &&
               !Array.isArray(raw) &&
-              Object.getOwnPropertyNames(raw).every((k) => typeof raw[k] === 'boolean')
+              Object.getOwnPropertyNames(raw).every(
+                (k) => typeof raw[k] === "boolean",
+              )
             ) {
               return raw as Record<string, boolean>;
             }
@@ -262,7 +278,11 @@ function getInitialUIState(): {
   } catch {
     // fall through to defaults
   }
-  return { sidebarOpen: true, sidebarStyle: 'unified', collapsedNavSections: {} };
+  return {
+    sidebarOpen: true,
+    sidebarStyle: "unified",
+    collapsedNavSections: {},
+  };
 }
 
 const cachedUI = getInitialUIState();
@@ -273,25 +293,26 @@ const initialState: AppState = {
   trashedProjects: [],
   projectHistory: [],
   projectHistoryIndex: -1,
-  currentView: 'welcome',
+  currentView: "welcome",
   sidebarOpen: cachedUI.sidebarOpen,
   sidebarStyle: cachedUI.sidebarStyle,
   collapsedNavSections: cachedUI.collapsedNavSections,
   mobileSidebarHidden: false,
   lastSelectedSessionByProject: {},
   agentModelBySession: {},
+  helperModelByFeature: {},
   lastUsedPhaseOverrides: {},
-  theme: getStoredTheme() || 'dark',
+  theme: getStoredTheme() || "dark",
   fontFamilySans: getStoredFontSans(),
   fontFamilyMono: getStoredFontMono(),
   features: [],
-  appSpec: '',
+  appSpec: "",
   ipcConnected: false,
   apiKeys: {
-    anthropic: '',
-    google: '',
-    openai: '',
-    zai: '',
+    anthropic: "",
+    google: "",
+    openai: "",
+    zai: "",
   },
   chatSessions: [],
   currentChatSession: null,
@@ -300,7 +321,7 @@ const initialState: AppState = {
   autoModeActivityLog: [],
   recentlyCompletedFeatures: new Set<string>(),
   maxConcurrency: DEFAULT_MAX_CONCURRENCY,
-  boardViewMode: 'kanban',
+  boardViewMode: "kanban",
   defaultSkipTests: true,
   enableDependencyBlocking: true,
   skipVerificationInAutoMode: false,
@@ -315,20 +336,20 @@ const initialState: AppState = {
   muteDoneSound: false,
   disableSplashScreen: false,
   defaultSortNewestCardOnTop: false,
-  serverLogLevel: 'info',
+  serverLogLevel: "info",
   enableRequestLogging: true,
   showQueryDevtools: true,
-  enhancementModel: 'claude-sonnet',
-  validationModel: 'claude-opus',
+  enhancementModel: "claude-sonnet",
+  validationModel: "claude-opus",
   phaseModels: DEFAULT_PHASE_MODELS,
   favoriteModels: [],
   enabledCursorModels: getAllCursorModelIds(),
-  cursorDefaultModel: 'cursor-auto',
+  cursorDefaultModel: "cursor-sonnet-4.6",
   enabledCodexModels: getAllCodexModelIds(),
-  codexDefaultModel: 'codex-gpt-5.2-codex',
+  codexDefaultModel: "codex-gpt-5.2-codex",
   codexAutoLoadAgents: false,
-  codexSandboxMode: 'workspace-write',
-  codexApprovalPolicy: 'on-request',
+  codexSandboxMode: "workspace-write",
+  codexApprovalPolicy: "on-request",
   codexEnableWebSearch: false,
   codexEnableImages: false,
   codexAdditionalDirs: [],
@@ -354,14 +375,14 @@ const initialState: AppState = {
   mcpServers: [],
   defaultEditorCommand: null,
   editorFontSize: 13,
-  editorFontFamily: 'default',
+  editorFontFamily: "default",
   editorAutoSave: false,
   editorAutoSaveDelay: 1000,
   defaultTerminalId: null,
   enableSkills: true,
-  skillsSources: ['user', 'project'] as Array<'user' | 'project'>,
+  skillsSources: ["user", "project"] as Array<"user" | "project">,
   enableSubagents: true,
-  subagentsSources: ['user', 'project'] as Array<'user' | 'project'>,
+  subagentsSources: ["user", "project"] as Array<"user" | "project">,
   promptCustomization: {},
   eventHooks: [],
   ntfyEndpoints: [],
@@ -376,11 +397,13 @@ const initialState: AppState = {
   terminalState: defaultTerminalState,
   terminalLayoutByProject: {},
   specCreatingForProject: null,
-  defaultPlanningMode: 'skip' as PlanningMode,
+  defaultPlanningMode: "skip" as PlanningMode,
   defaultRequirePlanApproval: false,
   defaultFeatureModel: DEFAULT_GLOBAL_SETTINGS.defaultFeatureModel,
-  defaultThinkingLevel: DEFAULT_GLOBAL_SETTINGS.defaultThinkingLevel ?? 'adaptive',
-  defaultReasoningEffort: DEFAULT_GLOBAL_SETTINGS.defaultReasoningEffort ?? 'none',
+  defaultThinkingLevel:
+    DEFAULT_GLOBAL_SETTINGS.defaultThinkingLevel ?? "adaptive",
+  defaultReasoningEffort:
+    DEFAULT_GLOBAL_SETTINGS.defaultReasoningEffort ?? "none",
   defaultMaxTurns: DEFAULT_GLOBAL_SETTINGS.defaultMaxTurns ?? 10000,
   pendingPlanApproval: null,
   claudeRefreshInterval: 60,
@@ -411,7 +434,7 @@ const initialState: AppState = {
   alwaysUseWorktreeDropdownByProject: {},
   showAllWorktreesByProject: {},
   worktreePanelCollapsed: false,
-  lastProjectDir: '',
+  lastProjectDir: "",
   recentFolders: [],
   initScriptState: {},
 };
@@ -437,7 +460,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   removeProject: (projectId: string) => {
     set((state) => ({
       projects: state.projects.filter((p) => p.id !== projectId),
-      currentProject: state.currentProject?.id === projectId ? null : state.currentProject,
+      currentProject:
+        state.currentProject?.id === projectId ? null : state.currentProject,
     }));
 
     // Persist to storage
@@ -456,7 +480,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       projects: state.projects.filter((p) => p.id !== projectId),
       trashedProjects: [...state.trashedProjects, trashedProject],
-      currentProject: state.currentProject?.id === projectId ? null : state.currentProject,
+      currentProject:
+        state.currentProject?.id === projectId ? null : state.currentProject,
     }));
 
     // Persist to storage
@@ -465,7 +490,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   },
 
   restoreTrashedProject: (projectId: string) => {
-    const trashedProject = get().trashedProjects.find((p) => p.id === projectId);
+    const trashedProject = get().trashedProjects.find(
+      (p) => p.id === projectId,
+    );
     if (!trashedProject) return;
 
     // Remove trashedAt from the project
@@ -506,7 +533,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     if (newId && newId !== currentId) {
       set((state) => {
         // Remove the new project from history if it exists
-        const filteredHistory = state.projectHistory.filter((id) => id !== newId);
+        const filteredHistory = state.projectHistory.filter(
+          (id) => id !== newId,
+        );
         // Add new project at the front (most recent)
         const newHistory = [newId, ...filteredHistory];
         // Limit history size to prevent unbounded growth
@@ -532,7 +561,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }
   },
 
-  upsertAndSetCurrentProject: (path: string, name: string, theme?: ThemeMode) => {
+  upsertAndSetCurrentProject: (
+    path: string,
+    name: string,
+    theme?: ThemeMode,
+  ) => {
     const existingProject = get().projects.find((p) => p.path === path);
     if (existingProject) {
       get().setCurrentProject(existingProject);
@@ -541,7 +574,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
     // Create new project
     const newProject: Project = {
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      id: crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2),
       name,
       path,
       isFavorite: false, // New projects start as non-favorites
@@ -575,7 +610,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       if (projectHistory.length === 0) return state;
 
       // Move back in history (to older project)
-      const newIndex = Math.min(projectHistoryIndex + 1, projectHistory.length - 1);
+      const newIndex = Math.min(
+        projectHistoryIndex + 1,
+        projectHistory.length - 1,
+      );
       if (newIndex === projectHistoryIndex) return state; // Already at oldest
 
       const projectId = projectHistory[newIndex];
@@ -584,7 +622,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       if (!project) {
         // Project no longer exists, remove from history and try again
         const filteredHistory = projectHistory.filter((id) => id !== projectId);
-        return { projectHistory: filteredHistory, projectHistoryIndex: state.projectHistoryIndex };
+        return {
+          projectHistory: filteredHistory,
+          projectHistoryIndex: state.projectHistoryIndex,
+        };
       }
 
       // Persist effective theme for the cycled-to project
@@ -600,7 +641,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   cycleNextProject: () => {
     set((state) => {
       const { projectHistory, projectHistoryIndex, projects } = state;
-      if (projectHistory.length === 0 || projectHistoryIndex === 0) return state; // Already at most recent
+      if (projectHistory.length === 0 || projectHistoryIndex === 0)
+        return state; // Already at most recent
 
       // Move forward in history (to newer project)
       const newIndex = Math.max(projectHistoryIndex - 1, 0);
@@ -610,7 +652,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       if (!project) {
         // Project no longer exists, remove from history and try again
         const filteredHistory = projectHistory.filter((id) => id !== projectId);
-        return { projectHistory: filteredHistory, projectHistoryIndex: state.projectHistoryIndex };
+        return {
+          projectHistory: filteredHistory,
+          projectHistoryIndex: state.projectHistoryIndex,
+        };
       }
 
       // Persist effective theme for the cycled-to project
@@ -634,7 +679,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   toggleProjectFavorite: (projectId: string) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p
+        p.id === projectId ? { ...p, isFavorite: !p.isFavorite } : p,
       ),
     }));
 
@@ -645,7 +690,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectIcon: (projectId: string, icon: string | null) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, icon: icon ?? undefined } : p
+        p.id === projectId ? { ...p, icon: icon ?? undefined } : p,
       ),
       // Also update currentProject if it's the one being modified
       currentProject:
@@ -661,12 +706,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectCustomIcon: (projectId: string, customIconPath: string | null) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, customIconPath: customIconPath ?? undefined } : p
+        p.id === projectId
+          ? { ...p, customIconPath: customIconPath ?? undefined }
+          : p,
       ),
       // Also update currentProject if it's the one being modified
       currentProject:
         state.currentProject?.id === projectId
-          ? { ...state.currentProject, customIconPath: customIconPath ?? undefined }
+          ? {
+              ...state.currentProject,
+              customIconPath: customIconPath ?? undefined,
+            }
           : state.currentProject,
     }));
 
@@ -676,7 +726,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   setProjectName: (projectId: string, name: string) => {
     set((state) => ({
-      projects: state.projects.map((p) => (p.id === projectId ? { ...p, name } : p)),
+      projects: state.projects.map((p) =>
+        p.id === projectId ? { ...p, name } : p,
+      ),
       // Also update currentProject if it's the one being renamed
       currentProject:
         state.currentProject?.id === projectId
@@ -693,7 +745,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSidebarStyle: (style) => set({ sidebarStyle: style }),
-  setCollapsedNavSections: (sections) => set({ collapsedNavSections: sections }),
+  setCollapsedNavSections: (sections) =>
+    set({ collapsedNavSections: sections }),
   toggleNavSection: (sectionLabel) =>
     set((state) => ({
       collapsedNavSections: {
@@ -713,7 +766,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectTheme: (projectId: string, theme: ThemeMode | null) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, theme: theme ?? undefined } : p
+        p.id === projectId ? { ...p, theme: theme ?? undefined } : p,
       ),
       // Also update currentProject if it's the one being changed
       currentProject:
@@ -727,7 +780,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     if (currentProject?.id === projectId) {
       persistEffectiveThemeForProject(
         { ...currentProject, theme: theme ?? undefined },
-        get().theme
+        get().theme,
       );
     }
 
@@ -758,7 +811,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectFontSans: (projectId: string, fontFamily: string | null) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, fontSans: fontFamily ?? undefined } : p
+        p.id === projectId ? { ...p, fontSans: fontFamily ?? undefined } : p,
       ),
       // Also update currentProject if it's the one being changed
       currentProject:
@@ -773,7 +826,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectFontMono: (projectId: string, fontFamily: string | null) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, fontMono: fontFamily ?? undefined } : p
+        p.id === projectId ? { ...p, fontMono: fontFamily ?? undefined } : p,
       ),
       // Also update currentProject if it's the one being changed
       currentProject:
@@ -788,19 +841,30 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   getEffectiveFontSans: () => {
     const state = get();
     const projectFont = state.currentProject?.fontFamilySans;
-    return getEffectiveFont(projectFont, state.fontFamilySans, UI_SANS_FONT_OPTIONS);
+    return getEffectiveFont(
+      projectFont,
+      state.fontFamilySans,
+      UI_SANS_FONT_OPTIONS,
+    );
   },
   getEffectiveFontMono: () => {
     const state = get();
     const projectFont = state.currentProject?.fontFamilyMono;
-    return getEffectiveFont(projectFont, state.fontFamilyMono, UI_MONO_FONT_OPTIONS);
+    return getEffectiveFont(
+      projectFont,
+      state.fontFamilyMono,
+      UI_MONO_FONT_OPTIONS,
+    );
   },
 
   // Claude API Profile actions (per-project override)
-  setProjectClaudeApiProfile: (projectId: string, profileId: string | null | undefined) => {
+  setProjectClaudeApiProfile: (
+    projectId: string,
+    profileId: string | null | undefined,
+  ) => {
     set((state) => ({
       projects: state.projects.map((p) =>
-        p.id === projectId ? { ...p, claudeApiProfileId: profileId } : p
+        p.id === projectId ? { ...p, claudeApiProfileId: profileId } : p,
       ),
       // Also update currentProject if it's the one being changed
       currentProject:
@@ -817,7 +881,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setProjectPhaseModelOverride: (
     projectId: string,
     phase: PhaseModelKey,
-    entry: PhaseModelEntry | null
+    entry: PhaseModelEntry | null,
   ) => {
     set((state) => {
       const updatePhaseModels = (project: Project): Project => {
@@ -830,12 +894,15 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         }
         return {
           ...project,
-          phaseModelOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined,
+          phaseModelOverrides:
+            Object.keys(newOverrides).length > 0 ? newOverrides : undefined,
         };
       };
 
       return {
-        projects: state.projects.map((p) => (p.id === projectId ? updatePhaseModels(p) : p)),
+        projects: state.projects.map((p) =>
+          p.id === projectId ? updatePhaseModels(p) : p,
+        ),
         currentProject:
           state.currentProject?.id === projectId
             ? updatePhaseModels(state.currentProject)
@@ -855,7 +922,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       });
 
       return {
-        projects: state.projects.map((p) => (p.id === projectId ? clearOverrides(p) : p)),
+        projects: state.projects.map((p) =>
+          p.id === projectId ? clearOverrides(p) : p,
+        ),
         currentProject:
           state.currentProject?.id === projectId
             ? clearOverrides(state.currentProject)
@@ -868,7 +937,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   },
 
   // Project Default Feature Model Override
-  setProjectDefaultFeatureModel: (projectId: string, entry: PhaseModelEntry | null) => {
+  setProjectDefaultFeatureModel: (
+    projectId: string,
+    entry: PhaseModelEntry | null,
+  ) => {
     set((state) => {
       const updateDefaultFeatureModel = (project: Project): Project => ({
         ...project,
@@ -877,7 +949,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
       return {
         projects: state.projects.map((p) =>
-          p.id === projectId ? updateDefaultFeatureModel(p) : p
+          p.id === projectId ? updateDefaultFeatureModel(p) : p,
         ),
         currentProject:
           state.currentProject?.id === projectId
@@ -894,25 +966,34 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setFeatures: (features) => set({ features }),
   updateFeature: (id, updates) =>
     set((state) => ({
-      features: state.features.map((f) => (f.id === id ? { ...f, ...updates } : f)),
+      features: state.features.map((f) =>
+        f.id === id ? { ...f, ...updates } : f,
+      ),
     })),
   batchUpdateFeatures: (ids, updates) => {
     if (ids.length === 0) return;
     const idSet = new Set(ids);
     set((state) => ({
-      features: state.features.map((f) => (idSet.has(f.id) ? { ...f, ...updates } : f)),
+      features: state.features.map((f) =>
+        idSet.has(f.id) ? { ...f, ...updates } : f,
+      ),
     }));
   },
   addFeature: (feature) => {
-    const id = feature.id ?? `feature-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id =
+      feature.id ??
+      `feature-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const newFeature = { ...feature, id } as Feature;
     set((state) => ({ features: [...state.features, newFeature] }));
     return newFeature;
   },
-  removeFeature: (id) => set((state) => ({ features: state.features.filter((f) => f.id !== id) })),
+  removeFeature: (id) =>
+    set((state) => ({ features: state.features.filter((f) => f.id !== id) })),
   moveFeature: (id, newStatus) =>
     set((state) => ({
-      features: state.features.map((f) => (f.id === id ? { ...f, status: newStatus } : f)),
+      features: state.features.map((f) =>
+        f.id === id ? { ...f, status: newStatus } : f,
+      ),
     })),
 
   // App spec actions
@@ -922,15 +1003,16 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setIpcConnected: (connected) => set({ ipcConnected: connected }),
 
   // API Keys actions
-  setApiKeys: (keys) => set((state) => ({ apiKeys: { ...state.apiKeys, ...keys } })),
+  setApiKeys: (keys) =>
+    set((state) => ({ apiKeys: { ...state.apiKeys, ...keys } })),
 
   // Chat Session actions
   createChatSession: (title) => {
     const currentProject = get().currentProject;
     const newSession: ChatSession = {
       id: `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      title: title || 'New Chat',
-      projectId: currentProject?.id || '',
+      title: title || "New Chat",
+      projectId: currentProject?.id || "",
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -945,7 +1027,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   updateChatSession: (sessionId, updates) =>
     set((state) => ({
       chatSessions: state.chatSessions.map((s) =>
-        s.id === sessionId ? { ...s, ...updates, updatedAt: new Date() } : s
+        s.id === sessionId ? { ...s, ...updates, updatedAt: new Date() } : s,
       ),
       currentChatSession:
         state.currentChatSession?.id === sessionId
@@ -955,7 +1037,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   addMessageToSession: (sessionId, message) =>
     set((state) => ({
       chatSessions: state.chatSessions.map((s) =>
-        s.id === sessionId ? { ...s, messages: [...s.messages, message], updatedAt: new Date() } : s
+        s.id === sessionId
+          ? { ...s, messages: [...s.messages, message], updatedAt: new Date() }
+          : s,
       ),
       currentChatSession:
         state.currentChatSession?.id === sessionId
@@ -970,38 +1054,42 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   archiveChatSession: (sessionId) =>
     set((state) => ({
       chatSessions: state.chatSessions.map((s) =>
-        s.id === sessionId ? { ...s, archived: true } : s
+        s.id === sessionId ? { ...s, archived: true } : s,
       ),
     })),
   unarchiveChatSession: (sessionId) =>
     set((state) => ({
       chatSessions: state.chatSessions.map((s) =>
-        s.id === sessionId ? { ...s, archived: false } : s
+        s.id === sessionId ? { ...s, archived: false } : s,
       ),
     })),
   deleteChatSession: (sessionId) =>
     set((state) => {
-      const { [sessionId]: _removed, ...remainingAgentModels } = state.agentModelBySession;
+      const { [sessionId]: _removed, ...remainingAgentModels } =
+        state.agentModelBySession;
       return {
         chatSessions: state.chatSessions.filter((s) => s.id !== sessionId),
         currentChatSession:
-          state.currentChatSession?.id === sessionId ? null : state.currentChatSession,
+          state.currentChatSession?.id === sessionId
+            ? null
+            : state.currentChatSession,
         agentModelBySession: remainingAgentModels,
       };
     }),
   setChatHistoryOpen: (open) => set({ chatHistoryOpen: open }),
-  toggleChatHistory: () => set((state) => ({ chatHistoryOpen: !state.chatHistoryOpen })),
+  toggleChatHistory: () =>
+    set((state) => ({ chatHistoryOpen: !state.chatHistoryOpen })),
 
   // Auto Mode actions (per-worktree)
   getWorktreeKey: (projectId: string, branchName: string | null) =>
-    `${projectId}::${branchName ?? '__main__'}`,
+    `${projectId}::${branchName ?? "__main__"}`,
 
   setAutoModeRunning: (
     projectId: string,
     branchName: string | null,
     running: boolean,
     maxConcurrency?: number,
-    runningTasks?: string[]
+    runningTasks?: string[],
   ) => {
     const key = get().getWorktreeKey(projectId, branchName);
     set((state) => ({
@@ -1009,15 +1097,21 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         ...state.autoModeByWorktree,
         [key]: {
           isRunning: running,
-          runningTasks: runningTasks ?? state.autoModeByWorktree[key]?.runningTasks ?? [],
+          runningTasks:
+            runningTasks ?? state.autoModeByWorktree[key]?.runningTasks ?? [],
           branchName,
-          maxConcurrency: maxConcurrency ?? state.autoModeByWorktree[key]?.maxConcurrency,
+          maxConcurrency:
+            maxConcurrency ?? state.autoModeByWorktree[key]?.maxConcurrency,
         },
       },
     }));
   },
 
-  addRunningTask: (projectId: string, branchName: string | null, taskId: string) => {
+  addRunningTask: (
+    projectId: string,
+    branchName: string | null,
+    taskId: string,
+  ) => {
     const key = get().getWorktreeKey(projectId, branchName);
     set((state) => {
       const current = state.autoModeByWorktree[key] || {
@@ -1044,7 +1138,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     });
   },
 
-  removeRunningTask: (projectId: string, branchName: string | null, taskId: string) => {
+  removeRunningTask: (
+    projectId: string,
+    branchName: string | null,
+    taskId: string,
+  ) => {
     const key = get().getWorktreeKey(projectId, branchName);
     set((state) => {
       const current = state.autoModeByWorktree[key];
@@ -1096,7 +1194,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   addAutoModeActivity: (activity) =>
     set((state) => ({
       autoModeActivityLog: [
-        { ...activity, id: Math.random().toString(36).slice(2), timestamp: new Date() },
+        {
+          ...activity,
+          id: Math.random().toString(36).slice(2),
+          timestamp: new Date(),
+        },
         ...state.autoModeActivityLog.slice(0, 99), // Keep last 100 activities
       ],
     })),
@@ -1122,7 +1224,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   setMaxConcurrency: (max) => set({ maxConcurrency: max }),
 
-  getMaxConcurrencyForWorktree: (projectId: string, branchName: string | null) => {
+  getMaxConcurrencyForWorktree: (
+    projectId: string,
+    branchName: string | null,
+  ) => {
     const key = get().getWorktreeKey(projectId, branchName);
     const worktreeState = get().autoModeByWorktree[key];
     return worktreeState?.maxConcurrency ?? get().maxConcurrency;
@@ -1131,7 +1236,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setMaxConcurrencyForWorktree: (
     projectId: string,
     branchName: string | null,
-    maxConcurrency: number
+    maxConcurrency: number,
   ) => {
     const key = get().getWorktreeKey(projectId, branchName);
     set((state) => ({
@@ -1153,15 +1258,18 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   // Feature Default Settings actions
   setDefaultSkipTests: (skip) => set({ defaultSkipTests: skip }),
-  setEnableDependencyBlocking: (enabled) => set({ enableDependencyBlocking: enabled }),
+  setEnableDependencyBlocking: (enabled) =>
+    set({ enableDependencyBlocking: enabled }),
   setSkipVerificationInAutoMode: async (enabled) => {
     set({ skipVerificationInAutoMode: enabled });
     // Sync to server
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ skipVerificationInAutoMode: enabled });
+      await httpApi.settings.updateGlobal({
+        skipVerificationInAutoMode: enabled,
+      });
     } catch (error) {
-      logger.error('Failed to sync skipVerificationInAutoMode:', error);
+      logger.error("Failed to sync skipVerificationInAutoMode:", error);
     }
   },
   setEnableAiCommitMessages: async (enabled) => {
@@ -1171,7 +1279,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ enableAiCommitMessages: enabled });
     } catch (error) {
-      logger.error('Failed to sync enableAiCommitMessages:', error);
+      logger.error("Failed to sync enableAiCommitMessages:", error);
     }
   },
   setMergePostAction: async (action) => {
@@ -1181,7 +1289,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ mergePostAction: action });
     } catch (error) {
-      logger.error('Failed to sync mergePostAction:', error);
+      logger.error("Failed to sync mergePostAction:", error);
     }
   },
   setPlanUseSelectedWorktreeBranch: async (enabled) => {
@@ -1189,9 +1297,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     // Sync to server
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ planUseSelectedWorktreeBranch: enabled });
+      await httpApi.settings.updateGlobal({
+        planUseSelectedWorktreeBranch: enabled,
+      });
     } catch (error) {
-      logger.error('Failed to sync planUseSelectedWorktreeBranch:', error);
+      logger.error("Failed to sync planUseSelectedWorktreeBranch:", error);
     }
   },
   setAddFeatureUseSelectedWorktreeBranch: async (enabled) => {
@@ -1199,9 +1309,14 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     // Sync to server
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ addFeatureUseSelectedWorktreeBranch: enabled });
+      await httpApi.settings.updateGlobal({
+        addFeatureUseSelectedWorktreeBranch: enabled,
+      });
     } catch (error) {
-      logger.error('Failed to sync addFeatureUseSelectedWorktreeBranch:', error);
+      logger.error(
+        "Failed to sync addFeatureUseSelectedWorktreeBranch:",
+        error,
+      );
     }
   },
 
@@ -1221,7 +1336,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: worktrees,
       },
     })),
-  getCurrentWorktree: (projectPath) => get().currentWorktreeByProject[projectPath] ?? null,
+  getCurrentWorktree: (projectPath) =>
+    get().currentWorktreeByProject[projectPath] ?? null,
   getWorktrees: (projectPath) => get().worktreesByProject[projectPath] ?? [],
   isPrimaryWorktreeBranch: (projectPath: string, branchName: string) => {
     const worktrees = get().worktreesByProject[projectPath] ?? [];
@@ -1243,7 +1359,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       keyboardShortcuts: { ...state.keyboardShortcuts, ...shortcuts },
     })),
-  resetKeyboardShortcuts: () => set({ keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS }),
+  resetKeyboardShortcuts: () =>
+    set({ keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS }),
 
   // Audio Settings actions
   setMuteDoneSound: (muted) => set({ muteDoneSound: muted }),
@@ -1252,7 +1369,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
   setDisableSplashScreen: (disabled) => set({ disableSplashScreen: disabled }),
 
   // Board Card Sorting (global default) actions
-  setDefaultSortNewestCardOnTop: (enabled) => set({ defaultSortNewestCardOnTop: enabled }),
+  setDefaultSortNewestCardOnTop: (enabled) =>
+    set({ defaultSortNewestCardOnTop: enabled }),
 
   // Server Log Level actions
   setServerLogLevel: (level) => set({ serverLogLevel: level }),
@@ -1277,7 +1395,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ phaseModels: get().phaseModels });
     } catch (error) {
-      logger.error('Failed to sync phase model:', error);
+      logger.error("Failed to sync phase model:", error);
     }
   },
   setPhaseModels: async (models) => {
@@ -1289,7 +1407,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ phaseModels: get().phaseModels });
     } catch (error) {
-      logger.error('Failed to sync phase models:', error);
+      logger.error("Failed to sync phase models:", error);
     }
   },
   resetPhaseModels: async () => {
@@ -1297,9 +1415,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     // Sync to server
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ phaseModels: DEFAULT_PHASE_MODELS });
+      await httpApi.settings.updateGlobal({
+        phaseModels: DEFAULT_PHASE_MODELS,
+      });
     } catch (error) {
-      logger.error('Failed to sync phase models reset:', error);
+      logger.error("Failed to sync phase models reset:", error);
     }
   },
   toggleFavoriteModel: (modelId) =>
@@ -1334,7 +1454,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ codexAutoLoadAgents: enabled });
     } catch (error) {
-      logger.error('Failed to sync codexAutoLoadAgents:', error);
+      logger.error("Failed to sync codexAutoLoadAgents:", error);
     }
   },
   setCodexSandboxMode: async (mode) => {
@@ -1343,7 +1463,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ codexSandboxMode: mode });
     } catch (error) {
-      logger.error('Failed to sync codexSandboxMode:', error);
+      logger.error("Failed to sync codexSandboxMode:", error);
     }
   },
   setCodexApprovalPolicy: async (policy) => {
@@ -1352,7 +1472,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ codexApprovalPolicy: policy });
     } catch (error) {
-      logger.error('Failed to sync codexApprovalPolicy:', error);
+      logger.error("Failed to sync codexApprovalPolicy:", error);
     }
   },
   setCodexEnableWebSearch: async (enabled) => {
@@ -1361,7 +1481,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ codexEnableWebSearch: enabled });
     } catch (error) {
-      logger.error('Failed to sync codexEnableWebSearch:', error);
+      logger.error("Failed to sync codexEnableWebSearch:", error);
     }
   },
   setCodexEnableImages: async (enabled) => {
@@ -1370,7 +1490,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ codexEnableImages: enabled });
     } catch (error) {
-      logger.error('Failed to sync codexEnableImages:', error);
+      logger.error("Failed to sync codexEnableImages:", error);
     }
   },
 
@@ -1382,7 +1502,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ opencodeDefaultModel: model });
     } catch (error) {
-      logger.error('Failed to sync opencodeDefaultModel:', error);
+      logger.error("Failed to sync opencodeDefaultModel:", error);
     }
   },
   toggleOpencodeModel: async (model, enabled) => {
@@ -1393,9 +1513,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ enabledOpencodeModels: get().enabledOpencodeModels });
+      await httpApi.settings.updateGlobal({
+        enabledOpencodeModels: get().enabledOpencodeModels,
+      });
     } catch (error) {
-      logger.error('Failed to sync enabledOpencodeModels:', error);
+      logger.error("Failed to sync enabledOpencodeModels:", error);
     }
   },
   setDynamicOpencodeModels: (models) => set({ dynamicOpencodeModels: models }),
@@ -1406,7 +1528,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ enabledDynamicModelIds: deduped });
     } catch (error) {
-      logger.error('Failed to sync enabledDynamicModelIds:', error);
+      logger.error("Failed to sync enabledDynamicModelIds:", error);
     }
   },
   toggleDynamicModel: async (modelId, enabled) => {
@@ -1417,12 +1539,15 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ enabledDynamicModelIds: get().enabledDynamicModelIds });
+      await httpApi.settings.updateGlobal({
+        enabledDynamicModelIds: get().enabledDynamicModelIds,
+      });
     } catch (error) {
-      logger.error('Failed to sync enabledDynamicModelIds:', error);
+      logger.error("Failed to sync enabledDynamicModelIds:", error);
     }
   },
-  setCachedOpencodeProviders: (providers) => set({ cachedOpencodeProviders: providers }),
+  setCachedOpencodeProviders: (providers) =>
+    set({ cachedOpencodeProviders: providers }),
 
   // Gemini CLI Settings actions
   setEnabledGeminiModels: (models) => set({ enabledGeminiModels: models }),
@@ -1461,16 +1586,18 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ autoLoadClaudeMd: enabled });
     } catch (error) {
-      logger.error('Failed to sync autoLoadClaudeMd:', error);
+      logger.error("Failed to sync autoLoadClaudeMd:", error);
     }
   },
   setUseClaudeCodeSystemPrompt: async (enabled) => {
     set({ useClaudeCodeSystemPrompt: enabled });
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ useClaudeCodeSystemPrompt: enabled });
+      await httpApi.settings.updateGlobal({
+        useClaudeCodeSystemPrompt: enabled,
+      });
     } catch (error) {
-      logger.error('Failed to sync useClaudeCodeSystemPrompt:', error);
+      logger.error("Failed to sync useClaudeCodeSystemPrompt:", error);
     }
   },
   setSkipSandboxWarning: async (skip) => {
@@ -1479,7 +1606,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ skipSandboxWarning: skip });
     } catch (error) {
-      logger.error('Failed to sync skipSandboxWarning:', error);
+      logger.error("Failed to sync skipSandboxWarning:", error);
     }
   },
 
@@ -1500,9 +1627,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set({ promptCustomization: customization });
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ promptCustomization: customization });
+      await httpApi.settings.updateGlobal({
+        promptCustomization: customization,
+      });
     } catch (error) {
-      logger.error('Failed to sync prompt customization:', error);
+      logger.error("Failed to sync prompt customization:", error);
     }
   },
 
@@ -1517,7 +1646,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         ...(hooks.length === 0 ? { __allowEmptyEventHooks: true } : {}),
       });
     } catch (error) {
-      logger.error('Failed to sync event hooks:', error);
+      logger.error("Failed to sync event hooks:", error);
     }
   },
 
@@ -1532,7 +1661,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         ...(endpoints.length === 0 ? { __allowEmptyNtfyEndpoints: true } : {}),
       });
     } catch (error) {
-      logger.error('Failed to sync ntfy endpoints:', error);
+      logger.error("Failed to sync ntfy endpoints:", error);
     }
   },
 
@@ -1543,7 +1672,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ featureTemplates: templates });
     } catch (error) {
-      logger.error('Failed to sync feature templates:', error);
+      logger.error("Failed to sync feature templates:", error);
     }
   },
   addFeatureTemplate: async (template) => {
@@ -1552,20 +1681,26 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ featureTemplates: get().featureTemplates });
+      await httpApi.settings.updateGlobal({
+        featureTemplates: get().featureTemplates,
+      });
     } catch (error) {
-      logger.error('Failed to sync feature templates:', error);
+      logger.error("Failed to sync feature templates:", error);
     }
   },
   updateFeatureTemplate: async (id, updates) => {
     set((state) => ({
-      featureTemplates: state.featureTemplates.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+      featureTemplates: state.featureTemplates.map((t) =>
+        t.id === id ? { ...t, ...updates } : t,
+      ),
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ featureTemplates: get().featureTemplates });
+      await httpApi.settings.updateGlobal({
+        featureTemplates: get().featureTemplates,
+      });
     } catch (error) {
-      logger.error('Failed to sync feature templates:', error);
+      logger.error("Failed to sync feature templates:", error);
     }
   },
   deleteFeatureTemplate: async (id) => {
@@ -1574,9 +1709,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ featureTemplates: get().featureTemplates });
+      await httpApi.settings.updateGlobal({
+        featureTemplates: get().featureTemplates,
+      });
     } catch (error) {
-      logger.error('Failed to sync feature templates:', error);
+      logger.error("Failed to sync feature templates:", error);
     }
   },
   reorderFeatureTemplates: async (templateIds) => {
@@ -1593,9 +1730,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     });
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ featureTemplates: get().featureTemplates });
+      await httpApi.settings.updateGlobal({
+        featureTemplates: get().featureTemplates,
+      });
     } catch (error) {
-      logger.error('Failed to sync feature templates:', error);
+      logger.error("Failed to sync feature templates:", error);
     }
   },
 
@@ -1610,13 +1749,13 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         claudeCompatibleProviders: get().claudeCompatibleProviders,
       });
     } catch (error) {
-      logger.error('Failed to sync Claude-compatible providers:', error);
+      logger.error("Failed to sync Claude-compatible providers:", error);
     }
   },
   updateClaudeCompatibleProvider: async (id, updates) => {
     set((state) => ({
       claudeCompatibleProviders: state.claudeCompatibleProviders.map((p) =>
-        p.id === id ? { ...p, ...updates } : p
+        p.id === id ? { ...p, ...updates } : p,
       ),
     }));
     try {
@@ -1625,12 +1764,14 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         claudeCompatibleProviders: get().claudeCompatibleProviders,
       });
     } catch (error) {
-      logger.error('Failed to sync Claude-compatible providers:', error);
+      logger.error("Failed to sync Claude-compatible providers:", error);
     }
   },
   deleteClaudeCompatibleProvider: async (id) => {
     set((state) => ({
-      claudeCompatibleProviders: state.claudeCompatibleProviders.filter((p) => p.id !== id),
+      claudeCompatibleProviders: state.claudeCompatibleProviders.filter(
+        (p) => p.id !== id,
+      ),
     }));
     try {
       const httpApi = getHttpApiClient();
@@ -1638,22 +1779,24 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         claudeCompatibleProviders: get().claudeCompatibleProviders,
       });
     } catch (error) {
-      logger.error('Failed to sync Claude-compatible providers:', error);
+      logger.error("Failed to sync Claude-compatible providers:", error);
     }
   },
   setClaudeCompatibleProviders: async (providers) => {
     set({ claudeCompatibleProviders: providers });
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ claudeCompatibleProviders: providers });
+      await httpApi.settings.updateGlobal({
+        claudeCompatibleProviders: providers,
+      });
     } catch (error) {
-      logger.error('Failed to sync Claude-compatible providers:', error);
+      logger.error("Failed to sync Claude-compatible providers:", error);
     }
   },
   toggleClaudeCompatibleProviderEnabled: async (id) => {
     set((state) => ({
       claudeCompatibleProviders: state.claudeCompatibleProviders.map((p) =>
-        p.id === id ? { ...p, enabled: !p.enabled } : p
+        p.id === id ? { ...p, enabled: !p.enabled } : p,
       ),
     }));
     try {
@@ -1662,7 +1805,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         claudeCompatibleProviders: get().claudeCompatibleProviders,
       });
     } catch (error) {
-      logger.error('Failed to sync Claude-compatible providers:', error);
+      logger.error("Failed to sync Claude-compatible providers:", error);
     }
   },
 
@@ -1673,29 +1816,35 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ claudeApiProfiles: get().claudeApiProfiles });
+      await httpApi.settings.updateGlobal({
+        claudeApiProfiles: get().claudeApiProfiles,
+      });
     } catch (error) {
-      logger.error('Failed to sync Claude API profiles:', error);
+      logger.error("Failed to sync Claude API profiles:", error);
     }
   },
   updateClaudeApiProfile: async (id, updates) => {
     set((state) => ({
       claudeApiProfiles: state.claudeApiProfiles.map((p) =>
-        p.id === id ? { ...p, ...updates } : p
+        p.id === id ? { ...p, ...updates } : p,
       ),
     }));
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ claudeApiProfiles: get().claudeApiProfiles });
+      await httpApi.settings.updateGlobal({
+        claudeApiProfiles: get().claudeApiProfiles,
+      });
     } catch (error) {
-      logger.error('Failed to sync Claude API profiles:', error);
+      logger.error("Failed to sync Claude API profiles:", error);
     }
   },
   deleteClaudeApiProfile: async (id) => {
     set((state) => ({
       claudeApiProfiles: state.claudeApiProfiles.filter((p) => p.id !== id),
       activeClaudeApiProfileId:
-        state.activeClaudeApiProfileId === id ? null : state.activeClaudeApiProfileId,
+        state.activeClaudeApiProfileId === id
+          ? null
+          : state.activeClaudeApiProfileId,
     }));
     try {
       const httpApi = getHttpApiClient();
@@ -1704,7 +1853,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         activeClaudeApiProfileId: get().activeClaudeApiProfileId,
       });
     } catch (error) {
-      logger.error('Failed to sync Claude API profiles:', error);
+      logger.error("Failed to sync Claude API profiles:", error);
     }
   },
   setActiveClaudeApiProfile: async (id) => {
@@ -1713,7 +1862,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ activeClaudeApiProfileId: id });
     } catch (error) {
-      logger.error('Failed to sync active Claude API profile:', error);
+      logger.error("Failed to sync active Claude API profile:", error);
     }
   },
   setClaudeApiProfiles: async (profiles) => {
@@ -1722,7 +1871,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ claudeApiProfiles: profiles });
     } catch (error) {
-      logger.error('Failed to sync Claude API profiles:', error);
+      logger.error("Failed to sync Claude API profiles:", error);
     }
   },
 
@@ -1731,12 +1880,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       mcpServers: [
         ...state.mcpServers,
-        { ...server, id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2)}` },
+        {
+          ...server,
+          id: `mcp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        },
       ],
     })),
   updateMCPServer: (id, updates) =>
     set((state) => ({
-      mcpServers: state.mcpServers.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      mcpServers: state.mcpServers.map((s) =>
+        s.id === id ? { ...s, ...updates } : s,
+      ),
     })),
   removeMCPServer: (id) =>
     set((state) => ({
@@ -1763,7 +1917,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: sessionId ?? undefined,
       } as Record<string, string>,
     })),
-  getLastSelectedSession: (projectPath) => get().lastSelectedSessionByProject[projectPath] ?? null,
+  getLastSelectedSession: (projectPath) =>
+    get().lastSelectedSessionByProject[projectPath] ?? null,
 
   // Agent model selection actions
   setAgentModelForSession: (sessionId, model) =>
@@ -1773,7 +1928,19 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [sessionId]: model,
       },
     })),
-  getAgentModelForSession: (sessionId) => get().agentModelBySession[sessionId] ?? null,
+  getAgentModelForSession: (sessionId) =>
+    get().agentModelBySession[sessionId] ?? null,
+
+  // Helper chat model selection actions (per-feature)
+  setHelperModelForFeature: (featureId, model) =>
+    set((state) => ({
+      helperModelByFeature: {
+        ...state.helperModelByFeature,
+        [featureId]: model,
+      },
+    })),
+  getHelperModelForFeature: (featureId) =>
+    get().helperModelByFeature[featureId] ?? null,
 
   // Last-used phase model override actions
   setLastUsedPhaseOverride: (phase, entry) =>
@@ -1788,7 +1955,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const { [phase]: _removed, ...remaining } = state.lastUsedPhaseOverrides;
       return { lastUsedPhaseOverrides: remaining };
     }),
-  getLastUsedPhaseOverride: (phase) => get().lastUsedPhaseOverrides[phase] ?? null,
+  getLastUsedPhaseOverride: (phase) =>
+    get().lastUsedPhaseOverrides[phase] ?? null,
 
   // Board Background actions
   setBoardBackground: (projectPath, imagePath) =>
@@ -1796,7 +1964,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           imagePath,
           imageVersion: Date.now(), // Bust cache on image change
         },
@@ -1807,7 +1976,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           cardOpacity: opacity,
         },
       },
@@ -1817,7 +1987,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           columnOpacity: opacity,
         },
       },
@@ -1827,7 +1998,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           columnBorderEnabled: enabled,
         },
       },
@@ -1839,7 +2011,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           cardGlassmorphism: enabled,
         },
       },
@@ -1849,7 +2022,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           cardBorderEnabled: enabled,
         },
       },
@@ -1859,7 +2033,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           cardBorderOpacity: opacity,
         },
       },
@@ -1869,7 +2044,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       boardBackgroundByProject: {
         ...state.boardBackgroundByProject,
         [projectPath]: {
-          ...(state.boardBackgroundByProject[projectPath] ?? defaultBackgroundSettings),
+          ...(state.boardBackgroundByProject[projectPath] ??
+            defaultBackgroundSettings),
           hideScrollbar: hide,
         },
       },
@@ -1903,11 +2079,19 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       terminalState: {
         ...state.terminalState,
-        maximizedSessionId: state.terminalState.maximizedSessionId === sessionId ? null : sessionId,
+        maximizedSessionId:
+          state.terminalState.maximizedSessionId === sessionId
+            ? null
+            : sessionId,
       },
     })),
 
-  addTerminalToLayout: (sessionId, direction = 'horizontal', _targetSessionId, branchName) => {
+  addTerminalToLayout: (
+    sessionId,
+    direction = "horizontal",
+    _targetSessionId,
+    branchName,
+  ) => {
     set((state) => {
       const { tabs, activeTabId } = state.terminalState;
 
@@ -1920,8 +2104,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
             tabs: [
               {
                 id: newTabId,
-                name: 'Terminal 1',
-                layout: { type: 'terminal' as const, sessionId, branchName },
+                name: "Terminal 1",
+                layout: { type: "terminal" as const, sessionId, branchName },
               },
             ],
             activeTabId: newTabId,
@@ -1941,8 +2125,15 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
             ...state.terminalState,
             tabs: tabs.map((t) =>
               t.id === activeTabId
-                ? { ...t, layout: { type: 'terminal' as const, sessionId, branchName } }
-                : t
+                ? {
+                    ...t,
+                    layout: {
+                      type: "terminal" as const,
+                      sessionId,
+                      branchName,
+                    },
+                  }
+                : t,
             ),
             activeSessionId: sessionId,
           },
@@ -1951,16 +2142,21 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
       // Add new terminal to split
       const newLayout: TerminalPanelContent = {
-        type: 'split',
+        type: "split",
         id: generateSplitId(),
         direction,
-        panels: [activeTab.layout, { type: 'terminal' as const, sessionId, branchName }],
+        panels: [
+          activeTab.layout,
+          { type: "terminal" as const, sessionId, branchName },
+        ],
       };
 
       return {
         terminalState: {
           ...state.terminalState,
-          tabs: tabs.map((t) => (t.id === activeTabId ? { ...t, layout: newLayout } : t)),
+          tabs: tabs.map((t) =>
+            t.id === activeTabId ? { ...t, layout: newLayout } : t,
+          ),
           activeSessionId: sessionId,
         },
       };
@@ -1972,12 +2168,14 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const { tabs } = state.terminalState;
 
       const removeFromLayout = (
-        layout: TerminalPanelContent | null
+        layout: TerminalPanelContent | null,
       ): TerminalPanelContent | null => {
         if (!layout) return null;
-        if (layout.type === 'terminal' && layout.sessionId === sessionId) return null;
-        if (layout.type === 'testRunner' && layout.sessionId === sessionId) return null;
-        if (layout.type === 'split') {
+        if (layout.type === "terminal" && layout.sessionId === sessionId)
+          return null;
+        if (layout.type === "testRunner" && layout.sessionId === sessionId)
+          return null;
+        if (layout.type === "split") {
           const remainingPanels = layout.panels
             .map(removeFromLayout)
             .filter((p): p is TerminalPanelContent => p !== null);
@@ -1998,10 +2196,13 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       if (newActiveSessionId === sessionId) {
         // Find the first available session in any tab
         for (const tab of updatedTabs) {
-          const findFirstSession = (layout: TerminalPanelContent | null): string | null => {
+          const findFirstSession = (
+            layout: TerminalPanelContent | null,
+          ): string | null => {
             if (!layout) return null;
-            if (layout.type === 'terminal' || layout.type === 'testRunner') return layout.sessionId;
-            if (layout.type === 'split') {
+            if (layout.type === "terminal" || layout.type === "testRunner")
+              return layout.sessionId;
+            if (layout.type === "split") {
               for (const panel of layout.panels) {
                 const found = findFirstSession(panel);
                 if (found) return found;
@@ -2036,21 +2237,23 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => {
       const { tabs } = state.terminalState;
 
-      const swapInLayout = (layout: TerminalPanelContent | null): TerminalPanelContent | null => {
+      const swapInLayout = (
+        layout: TerminalPanelContent | null,
+      ): TerminalPanelContent | null => {
         if (!layout) return null;
         if (
-          (layout.type === 'terminal' || layout.type === 'testRunner') &&
+          (layout.type === "terminal" || layout.type === "testRunner") &&
           layout.sessionId === sessionId1
         ) {
           return { ...layout, sessionId: sessionId2 };
         }
         if (
-          (layout.type === 'terminal' || layout.type === 'testRunner') &&
+          (layout.type === "terminal" || layout.type === "testRunner") &&
           layout.sessionId === sessionId2
         ) {
           return { ...layout, sessionId: sessionId1 };
         }
-        if (layout.type === 'split') {
+        if (layout.type === "split") {
           return {
             ...layout,
             panels: layout.panels
@@ -2085,12 +2288,14 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => {
       const { tabs } = state.terminalState;
 
-      const updateFontSize = (layout: TerminalPanelContent | null): TerminalPanelContent | null => {
+      const updateFontSize = (
+        layout: TerminalPanelContent | null,
+      ): TerminalPanelContent | null => {
         if (!layout) return null;
-        if (layout.type === 'terminal' && layout.sessionId === sessionId) {
+        if (layout.type === "terminal" && layout.sessionId === sessionId) {
           return { ...layout, fontSize };
         }
-        if (layout.type === 'split') {
+        if (layout.type === "split") {
           return {
             ...layout,
             panels: layout.panels
@@ -2147,7 +2352,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   setTerminalLastActiveProjectPath: (projectPath) =>
     set((state) => ({
-      terminalState: { ...state.terminalState, lastActiveProjectPath: projectPath },
+      terminalState: {
+        ...state.terminalState,
+        lastActiveProjectPath: projectPath,
+      },
     })),
 
   setOpenTerminalMode: (mode) =>
@@ -2183,7 +2391,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   removeTerminalTab: (tabId) => {
     set((state) => {
-      const tabIndex = state.terminalState.tabs.findIndex((t) => t.id === tabId);
+      const tabIndex = state.terminalState.tabs.findIndex(
+        (t) => t.id === tabId,
+      );
       const newTabs = state.terminalState.tabs.filter((t) => t.id !== tabId);
 
       let newActiveTabId = state.terminalState.activeTabId;
@@ -2200,9 +2410,12 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       if (newActiveTabId) {
         const newActiveTab = newTabs.find((t) => t.id === newActiveTabId);
         if (newActiveTab?.layout) {
-          const findFirstSession = (layout: TerminalPanelContent): string | null => {
-            if (layout.type === 'terminal' || layout.type === 'testRunner') return layout.sessionId;
-            if (layout.type === 'split') {
+          const findFirstSession = (
+            layout: TerminalPanelContent,
+          ): string | null => {
+            if (layout.type === "terminal" || layout.type === "testRunner")
+              return layout.sessionId;
+            if (layout.type === "split") {
               for (const panel of layout.panels) {
                 const found = findFirstSession(panel);
                 if (found) return found;
@@ -2237,9 +2450,12 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       // Find first session in the tab's layout
       let newActiveSessionId = state.terminalState.activeSessionId;
       if (tab.layout) {
-        const findFirstSession = (layout: TerminalPanelContent): string | null => {
-          if (layout.type === 'terminal' || layout.type === 'testRunner') return layout.sessionId;
-          if (layout.type === 'split') {
+        const findFirstSession = (
+          layout: TerminalPanelContent,
+        ): string | null => {
+          if (layout.type === "terminal" || layout.type === "testRunner")
+            return layout.sessionId;
+          if (layout.type === "split") {
             for (const panel of layout.panels) {
               const found = findFirstSession(panel);
               if (found) return found;
@@ -2266,7 +2482,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       terminalState: {
         ...state.terminalState,
-        tabs: state.terminalState.tabs.map((t) => (t.id === tabId ? { ...t, name } : t)),
+        tabs: state.terminalState.tabs.map((t) =>
+          t.id === tabId ? { ...t, name } : t,
+        ),
       },
     })),
 
@@ -2294,15 +2512,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       let sourceTabId: string | null = null;
 
       for (const tab of tabs) {
-        const findPanel = (layout: TerminalPanelContent | null): TerminalPanelContent | null => {
+        const findPanel = (
+          layout: TerminalPanelContent | null,
+        ): TerminalPanelContent | null => {
           if (!layout) return null;
           if (
-            (layout.type === 'terminal' || layout.type === 'testRunner') &&
+            (layout.type === "terminal" || layout.type === "testRunner") &&
             layout.sessionId === sessionId
           ) {
             return layout;
           }
-          if (layout.type === 'split') {
+          if (layout.type === "split") {
             for (const panel of layout.panels) {
               const found = findPanel(panel);
               if (found) return found;
@@ -2322,16 +2542,16 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
       // Remove from source tab
       const removeFromLayout = (
-        layout: TerminalPanelContent | null
+        layout: TerminalPanelContent | null,
       ): TerminalPanelContent | null => {
         if (!layout) return null;
         if (
-          (layout.type === 'terminal' || layout.type === 'testRunner') &&
+          (layout.type === "terminal" || layout.type === "testRunner") &&
           layout.sessionId === sessionId
         ) {
           return null;
         }
-        if (layout.type === 'split') {
+        if (layout.type === "split") {
           const remainingPanels = layout.panels
             .map(removeFromLayout)
             .filter((p): p is TerminalPanelContent => p !== null);
@@ -2343,11 +2563,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       };
 
       let newTabs = tabs.map((t) =>
-        t.id === sourceTabId ? { ...t, layout: removeFromLayout(t.layout) } : t
+        t.id === sourceTabId ? { ...t, layout: removeFromLayout(t.layout) } : t,
       );
 
       // Add to target tab (or create new tab)
-      if (targetTabId === 'new') {
+      if (targetTabId === "new") {
         const newTabId = `tab-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const tabNumber = newTabs.length + 1;
         newTabs = [
@@ -2371,9 +2591,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           return {
             ...t,
             layout: {
-              type: 'split' as const,
+              type: "split" as const,
               id: generateSplitId(),
-              direction: 'horizontal' as const,
+              direction: "horizontal" as const,
               panels: [t.layout, panelToMove!],
             },
           };
@@ -2390,19 +2610,30 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     });
   },
 
-  addTerminalToTab: (sessionId, tabId, direction = 'horizontal', branchName) => {
+  addTerminalToTab: (
+    sessionId,
+    tabId,
+    direction = "horizontal",
+    branchName,
+  ) => {
     set((state) => {
       const { tabs } = state.terminalState;
       const targetTab = tabs.find((t) => t.id === tabId);
       if (!targetTab) return state;
 
-      const newPanel: TerminalPanelContent = { type: 'terminal', sessionId, branchName };
+      const newPanel: TerminalPanelContent = {
+        type: "terminal",
+        sessionId,
+        branchName,
+      };
 
       if (!targetTab.layout) {
         return {
           terminalState: {
             ...state.terminalState,
-            tabs: tabs.map((t) => (t.id === tabId ? { ...t, layout: newPanel } : t)),
+            tabs: tabs.map((t) =>
+              t.id === tabId ? { ...t, layout: newPanel } : t,
+            ),
             activeTabId: tabId,
             activeSessionId: sessionId,
           },
@@ -2410,7 +2641,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       }
 
       const newLayout: TerminalPanelContent = {
-        type: 'split',
+        type: "split",
         id: generateSplitId(),
         direction,
         panels: [targetTab.layout, newPanel],
@@ -2419,7 +2650,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       return {
         terminalState: {
           ...state.terminalState,
-          tabs: tabs.map((t) => (t.id === tabId ? { ...t, layout: newLayout } : t)),
+          tabs: tabs.map((t) =>
+            t.id === tabId ? { ...t, layout: newLayout } : t,
+          ),
           activeTabId: tabId,
           activeSessionId: sessionId,
         },
@@ -2431,7 +2664,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     set((state) => ({
       terminalState: {
         ...state.terminalState,
-        tabs: state.terminalState.tabs.map((t) => (t.id === tabId ? { ...t, layout } : t)),
+        tabs: state.terminalState.tabs.map((t) =>
+          t.id === tabId ? { ...t, layout } : t,
+        ),
         activeSessionId: activeSessionId ?? state.terminalState.activeSessionId,
       },
     })),
@@ -2442,23 +2677,25 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const tab = tabs.find((t) => t.id === tabId);
       if (!tab?.layout) return state;
 
-      const updateSizes = (layout: TerminalPanelContent): TerminalPanelContent => {
-        if (layout.type === 'split') {
+      const updateSizes = (
+        layout: TerminalPanelContent,
+      ): TerminalPanelContent => {
+        if (layout.type === "split") {
           // Find matching panels and update sizes
           const updatedPanels = layout.panels.map((panel, _index) => {
             // Generate key for this panel
             const panelKey =
-              panel.type === 'split'
+              panel.type === "split"
                 ? panel.id
-                : panel.type === 'terminal' || panel.type === 'testRunner'
+                : panel.type === "terminal" || panel.type === "testRunner"
                   ? panel.sessionId
-                  : '';
+                  : "";
             const keyIndex = panelKeys.indexOf(panelKey);
             if (keyIndex !== -1 && sizes[keyIndex] !== undefined) {
               return { ...panel, size: sizes[keyIndex] };
             }
             // Recursively update nested splits
-            if (panel.type === 'split') {
+            if (panel.type === "split") {
               return updateSizes(panel);
             }
             return panel;
@@ -2471,7 +2708,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       return {
         terminalState: {
           ...state.terminalState,
-          tabs: tabs.map((t) => (t.id === tabId ? { ...t, layout: updateSizes(t.layout!) } : t)),
+          tabs: tabs.map((t) =>
+            t.id === tabId ? { ...t, layout: updateSizes(t.layout!) } : t,
+          ),
         },
       };
     });
@@ -2481,28 +2720,30 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     const state = get();
     const { terminalState } = state;
 
-    const persistLayout = (layout: TerminalPanelContent | null): PersistedTerminalPanel | null => {
+    const persistLayout = (
+      layout: TerminalPanelContent | null,
+    ): PersistedTerminalPanel | null => {
       if (!layout) return null;
-      if (layout.type === 'terminal') {
+      if (layout.type === "terminal") {
         return {
-          type: 'terminal',
+          type: "terminal",
           size: layout.size,
           fontSize: layout.fontSize,
           sessionId: layout.sessionId,
           branchName: layout.branchName,
         };
       }
-      if (layout.type === 'testRunner') {
+      if (layout.type === "testRunner") {
         return {
-          type: 'testRunner',
+          type: "testRunner",
           size: layout.size,
           sessionId: layout.sessionId,
           worktreePath: layout.worktreePath,
         };
       }
-      if (layout.type === 'split') {
+      if (layout.type === "split") {
         return {
-          type: 'split',
+          type: "split",
           id: layout.id,
           direction: layout.direction,
           panels: layout.panels
@@ -2520,7 +2761,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         name: t.name,
         layout: persistLayout(t.layout),
       })),
-      activeTabIndex: terminalState.tabs.findIndex((t) => t.id === terminalState.activeTabId),
+      activeTabIndex: terminalState.tabs.findIndex(
+        (t) => t.id === terminalState.activeTabId,
+      ),
       defaultFontSize: terminalState.defaultFontSize,
       defaultRunScript: terminalState.defaultRunScript,
       screenReaderMode: terminalState.screenReaderMode,
@@ -2537,7 +2780,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }));
   },
 
-  getPersistedTerminalLayout: (projectPath) => get().terminalLayoutByProject[projectPath] ?? null,
+  getPersistedTerminalLayout: (projectPath) =>
+    get().terminalLayoutByProject[projectPath] ?? null,
 
   clearPersistedTerminalLayout: (projectPath) =>
     set((state) => {
@@ -2547,8 +2791,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }),
 
   // Spec Creation actions
-  setSpecCreatingForProject: (projectPath) => set({ specCreatingForProject: projectPath }),
-  isSpecCreatingForProject: (projectPath) => get().specCreatingForProject === projectPath,
+  setSpecCreatingForProject: (projectPath) =>
+    set({ specCreatingForProject: projectPath }),
+  isSpecCreatingForProject: (projectPath) =>
+    get().specCreatingForProject === projectPath,
 
   setDefaultPlanningMode: async (mode) => {
     set({ defaultPlanningMode: mode });
@@ -2556,16 +2802,18 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ defaultPlanningMode: mode });
     } catch (error) {
-      logger.error('Failed to sync defaultPlanningMode:', error);
+      logger.error("Failed to sync defaultPlanningMode:", error);
     }
   },
   setDefaultRequirePlanApproval: async (require) => {
     set({ defaultRequirePlanApproval: require });
     try {
       const httpApi = getHttpApiClient();
-      await httpApi.settings.updateGlobal({ defaultRequirePlanApproval: require });
+      await httpApi.settings.updateGlobal({
+        defaultRequirePlanApproval: require,
+      });
     } catch (error) {
-      logger.error('Failed to sync defaultRequirePlanApproval:', error);
+      logger.error("Failed to sync defaultRequirePlanApproval:", error);
     }
   },
   setDefaultFeatureModel: async (entry) => {
@@ -2574,7 +2822,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ defaultFeatureModel: entry });
     } catch (error) {
-      logger.error('Failed to sync defaultFeatureModel:', error);
+      logger.error("Failed to sync defaultFeatureModel:", error);
     }
   },
 
@@ -2598,7 +2846,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           defaultFeatureModel: updatedFeatureModel,
         });
       } catch (error) {
-        logger.error('Failed to sync defaultThinkingLevel:', error);
+        logger.error("Failed to sync defaultThinkingLevel:", error);
       }
     } else {
       set({ defaultThinkingLevel: level });
@@ -2607,7 +2855,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         const httpApi = getHttpApiClient();
         await httpApi.settings.updateGlobal({ defaultThinkingLevel: level });
       } catch (error) {
-        logger.error('Failed to sync defaultThinkingLevel:', error);
+        logger.error("Failed to sync defaultThinkingLevel:", error);
       }
     }
   },
@@ -2619,7 +2867,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ defaultReasoningEffort: effort });
     } catch (error) {
-      logger.error('Failed to sync defaultReasoningEffort:', error);
+      logger.error("Failed to sync defaultReasoningEffort:", error);
     }
   },
 
@@ -2634,7 +2882,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       const httpApi = getHttpApiClient();
       await httpApi.settings.updateGlobal({ defaultMaxTurns: clamped });
     } catch (error) {
-      logger.error('Failed to sync defaultMaxTurns:', error);
+      logger.error("Failed to sync defaultMaxTurns:", error);
     }
   },
 
@@ -2649,7 +2897,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: config,
       },
     })),
-  getPipelineConfig: (projectPath) => get().pipelineConfigByProject[projectPath] ?? null,
+  getPipelineConfig: (projectPath) =>
+    get().pipelineConfigByProject[projectPath] ?? null,
   addPipelineStep: (projectPath, step) => {
     const newStep: PipelineStep = {
       ...step,
@@ -2684,7 +2933,9 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           [projectPath]: {
             ...config,
             steps: config.steps.map((s) =>
-              s.id === stepId ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s
+              s.id === stepId
+                ? { ...s, ...updates, updatedAt: new Date().toISOString() }
+                : s,
             ),
           },
         },
@@ -2753,7 +3004,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: deleteBranch,
       },
     })),
-  getDefaultDeleteBranch: (projectPath) => get().defaultDeleteBranchByProject[projectPath] ?? false,
+  getDefaultDeleteBranch: (projectPath) =>
+    get().defaultDeleteBranchByProject[projectPath] ?? false,
 
   // Auto-dismiss Init Script Indicator actions
   setAutoDismissInitScriptIndicator: (projectPath, autoDismiss) =>
@@ -2774,7 +3026,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: useWorktrees ?? undefined,
       },
     })),
-  getProjectUseWorktrees: (projectPath) => get().useWorktreesByProject[projectPath],
+  getProjectUseWorktrees: (projectPath) =>
+    get().useWorktreesByProject[projectPath],
   getEffectiveUseWorktrees: (projectPath) => {
     const projectOverride = get().useWorktreesByProject[projectPath];
     return projectOverride !== undefined ? projectOverride : get().useWorktrees;
@@ -2788,7 +3041,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: files,
       },
     })),
-  getWorktreeCopyFiles: (projectPath) => get().worktreeCopyFilesByProject[projectPath] ?? [],
+  getWorktreeCopyFiles: (projectPath) =>
+    get().worktreeCopyFilesByProject[projectPath] ?? [],
 
   // Worktree Symlink Files actions
   setWorktreeSymlinkFiles: (projectPath, files) =>
@@ -2798,7 +3052,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: files,
       },
     })),
-  getWorktreeSymlinkFiles: (projectPath) => get().worktreeSymlinkFilesByProject[projectPath] ?? [],
+  getWorktreeSymlinkFiles: (projectPath) =>
+    get().worktreeSymlinkFilesByProject[projectPath] ?? [],
 
   // Worktree Display Settings actions
   setPinnedWorktreesCount: (projectPath, count) =>
@@ -2808,7 +3063,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         [projectPath]: count,
       },
     })),
-  getPinnedWorktreesCount: (projectPath) => get().pinnedWorktreesCountByProject[projectPath] ?? 0,
+  getPinnedWorktreesCount: (projectPath) =>
+    get().pinnedWorktreesCountByProject[projectPath] ?? 0,
   setPinnedWorktreeBranches: (projectPath, branches) =>
     set((state) => ({
       pinnedWorktreeBranchesByProject: {
@@ -2824,10 +3080,10 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       // Pre-fill up to slotIndex to prevent sparse holes
       const current: string[] = Array.from(
         { length: Math.max(src.length, slotIndex + 1) },
-        (_, i) => src[i] ?? ''
+        (_, i) => src[i] ?? "",
       );
       // If the new branch is already in another slot, swap them (only when newBranch is non-empty)
-      const existingIndex = newBranch !== '' ? current.indexOf(newBranch) : -1;
+      const existingIndex = newBranch !== "" ? current.indexOf(newBranch) : -1;
       if (existingIndex !== -1 && existingIndex !== slotIndex) {
         // Swap: put the old branch from this slot into the other slot
         current[existingIndex] = current[slotIndex];
@@ -2871,7 +3127,8 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     get().showAllWorktreesByProject[projectPath] ?? false,
 
   // UI State actions
-  setWorktreePanelCollapsed: (collapsed) => set({ worktreePanelCollapsed: collapsed }),
+  setWorktreePanelCollapsed: (collapsed) =>
+    set({ worktreePanelCollapsed: collapsed }),
   setLastProjectDir: (dir) => set({ lastProjectDir: dir }),
   setRecentFolders: (folders) => set({ recentFolders: folders }),
   addRecentFolder: (folder) =>
@@ -2881,15 +3138,20 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     }),
 
   // Claude Usage Tracking actions
-  setClaudeRefreshInterval: (interval) => set({ claudeRefreshInterval: interval }),
-  setClaudeUsageLastUpdated: (timestamp) => set({ claudeUsageLastUpdated: timestamp }),
-  setClaudeUsage: (usage) => set({ claudeUsage: usage, claudeUsageLastUpdated: Date.now() }),
+  setClaudeRefreshInterval: (interval) =>
+    set({ claudeRefreshInterval: interval }),
+  setClaudeUsageLastUpdated: (timestamp) =>
+    set({ claudeUsageLastUpdated: timestamp }),
+  setClaudeUsage: (usage) =>
+    set({ claudeUsage: usage, claudeUsageLastUpdated: Date.now() }),
 
   // Codex Usage Tracking actions
-  setCodexUsage: (usage) => set({ codexUsage: usage, codexUsageLastUpdated: Date.now() }),
+  setCodexUsage: (usage) =>
+    set({ codexUsage: usage, codexUsageLastUpdated: Date.now() }),
 
   // z.ai Usage Tracking actions
-  setZaiUsage: (usage) => set({ zaiUsage: usage, zaiUsageLastUpdated: usage ? Date.now() : null }),
+  setZaiUsage: (usage) =>
+    set({ zaiUsage: usage, zaiUsageLastUpdated: usage ? Date.now() : null }),
 
   // Gemini Usage Tracking actions
   setGeminiUsage: (usage, lastUpdated) =>
@@ -2938,11 +3200,11 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           description: string;
           hasThinking: boolean;
           supportsVision: boolean;
-          tier: 'premium' | 'standard' | 'basic';
+          tier: "premium" | "standard" | "basic";
           isDefault: boolean;
         }>;
         error?: string;
-      }>('/api/codex/models');
+      }>("/api/codex/models");
 
       if (data.success && data.models) {
         set({
@@ -2954,14 +3216,15 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       } else {
         set({
           codexModelsLoading: false,
-          codexModelsError: data.error || 'Failed to fetch Codex models',
+          codexModelsError: data.error || "Failed to fetch Codex models",
           codexModelsLastFailedAt: now,
         });
       }
     } catch (error) {
       set({
         codexModelsLoading: false,
-        codexModelsError: error instanceof Error ? error.message : 'Unknown error',
+        codexModelsError:
+          error instanceof Error ? error.message : "Unknown error",
         codexModelsLastFailedAt: now,
       });
     }
@@ -3010,12 +3273,12 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           authMethod?: string;
         }>;
         error?: string;
-      }>('/api/setup/opencode/models');
+      }>("/api/setup/opencode/models");
 
       if (data.success && data.models) {
         // Filter out Bedrock models
         const filteredModels = data.models.filter(
-          (m) => !m.id.startsWith(OPENCODE_BEDROCK_MODEL_PREFIX)
+          (m) => !m.id.startsWith(OPENCODE_BEDROCK_MODEL_PREFIX),
         );
 
         // Auto-enable only models that are genuinely new (never seen before).
@@ -3025,13 +3288,17 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
         const currentKnownIds = get().knownDynamicModelIds;
         const allFetchedIds = filteredModels.map((m) => m.id);
         // Only auto-enable models that have NEVER been seen before (not in knownDynamicModelIds)
-        const trulyNewModelIds = allFetchedIds.filter((id) => !currentKnownIds.includes(id));
+        const trulyNewModelIds = allFetchedIds.filter(
+          (id) => !currentKnownIds.includes(id),
+        );
         const updatedEnabledIds =
           trulyNewModelIds.length > 0
             ? [...new Set([...currentEnabledIds, ...trulyNewModelIds])]
             : currentEnabledIds;
         // Track all discovered model IDs (union of known + newly fetched)
-        const updatedKnownIds = [...new Set([...currentKnownIds, ...allFetchedIds])];
+        const updatedKnownIds = [
+          ...new Set([...currentKnownIds, ...allFetchedIds]),
+        ];
 
         set({
           dynamicOpencodeModels: filteredModels,
@@ -3052,20 +3319,24 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
               knownDynamicModelIds: updatedKnownIds,
             });
           } catch (syncError) {
-            logger.error('Failed to sync enabledDynamicModelIds after auto-enable:', syncError);
+            logger.error(
+              "Failed to sync enabledDynamicModelIds after auto-enable:",
+              syncError,
+            );
           }
         }
       } else {
         set({
           opencodeModelsLoading: false,
-          opencodeModelsError: data.error || 'Failed to fetch OpenCode models',
+          opencodeModelsError: data.error || "Failed to fetch OpenCode models",
           opencodeModelsLastFailedAt: now,
         });
       }
     } catch (error) {
       set({
         opencodeModelsLoading: false,
-        opencodeModelsError: error instanceof Error ? error.message : 'Unknown error',
+        opencodeModelsError:
+          error instanceof Error ? error.message : "Unknown error",
         opencodeModelsLastFailedAt: now,
       });
     }
@@ -3081,7 +3352,7 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
           ...s.initScriptState[key],
           branch,
           output: s.initScriptState[key]?.output ?? [],
-          status: s.initScriptState[key]?.status ?? 'idle',
+          status: s.initScriptState[key]?.status ?? "idle",
           ...state,
         },
       },
