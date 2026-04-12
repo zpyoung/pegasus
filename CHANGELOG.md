@@ -8,6 +8,32 @@ This project was bootstrapped from an open-source upstream and has diverged
 substantially. The entries below describe changes relative to that upstream
 baseline.
 
+## [1.1.0] — 2026-04-12
+
+### ✨ Added
+
+- ✨ Update formatting scripts, enhance test cases, and add husky hooks for Vite cache management (`532b842`)
+- ✨ Enhance pre-commit hook to include TypeScript type checking for staged files (`408f876`)
+- ✨ Add helper model management and improve type handling in state (`2d07c73`)
+
+### 🐛 Fixed
+
+- 🐛 Resolve TypeScript errors, add validate command, and fix lint/test issues (`7623094`)
+  - Fix duplicate `lastUsedPhaseOverrides` declarations in state types
+  - Add missing `helperModelByFeature` store actions and initial state
+  - Replace removed `cursor-auto` model ID with `cursor-sonnet-4.6`
+  - Add `pnpm validate` command (lint + typecheck + format + test in parallel)
+  - Fix all lint warnings (unused vars, imports, directives)
+
+### 🔄 Changed
+
+- 🎨 Apply Prettier formatting across codebase (`df2ac80`)
+- 📝 Comprehensive documentation overhaul — add 6 new architecture docs, rewrite 3 outdated docs, fix 8 partially outdated docs, remove 7 irrelevant docs (`e5d6959`)
+- 🔧 Update repository links and enhance changelog formatting with emoji sections (`e2b66f4`)
+- 🔧 Update contribution guidelines and license information (`93add0f`)
+
+---
+
 ## [1.0.0] — 2026-04-10
 
 ### ✨ Added
@@ -128,4 +154,5 @@ baseline.
 
 ---
 
+[1.1.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.1.0
 [1.0.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.0.0
