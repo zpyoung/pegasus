@@ -1,0 +1,9 @@
+pnpm lint-staged
+
+# Type-check if any TS/TSX files are staged in apps/ or libs/
+STAGED_TS=$(git diff --cached --name-only --diff-filter=d -- 'apps/**/*.ts' 'apps/**/*.tsx' 'libs/**/*.ts' 'libs/**/*.tsx')
+
+if [ -n "$STAGED_TS" ]; then
+  echo "husky - staged TypeScript files detected, running typecheck..."
+  pnpm run typecheck
+fi
