@@ -10,33 +10,23 @@ function mockFetch(status: number, body: unknown) {
   } as Response);
 }
 
-const VALID_RESPONSE_MODELS = {
-  models: [
-    {
-      id: "claude-sonnet-4.6",
-      name: "Claude Sonnet 4.6",
-      vendor: "anthropic",
-      capabilities: {
-        supports: { tool_calls: true },
-        limits: { max_context_window_tokens: 200000, max_output_tokens: 4096 },
-      },
-      is_chat_default: true,
-    },
-    {
-      id: "gpt-5.2",
-      name: "GPT-5.2",
-      vendor: "openai",
-      capabilities: {
-        supports: { tool_calls: true },
-        limits: { max_context_window_tokens: 128000 },
-      },
-    },
-  ],
-};
-
-const VALID_RESPONSE_DATA = {
-  data: VALID_RESPONSE_MODELS.models,
-};
+// The adapter expects a bare GitHubModel[] array from the GitHub Models catalog API
+const VALID_MODELS = [
+  {
+    id: "claude-sonnet-4.6",
+    name: "Claude Sonnet 4.6",
+    capabilities: ["tool_calls"],
+    limits: { max_input_tokens: 200000, max_output_tokens: 4096 },
+    supported_input_modalities: ["text", "image"],
+  },
+  {
+    id: "gpt-5.2",
+    name: "GPT-5.2",
+    capabilities: ["tool_calls"],
+    limits: { max_input_tokens: 128000 },
+    supported_input_modalities: ["text"],
+  },
+];
 
 describe("copilotAdapter", () => {
   const originalToken = process.env.GITHUB_TOKEN;
@@ -58,16 +48,8 @@ describe("copilotAdapter", () => {
     expect(copilotAdapter.tier).toBe("ci");
   });
 
-  it("returns ModelEntry[] from models field", async () => {
-    mockFetch(200, VALID_RESPONSE_MODELS);
-
-    const models = await copilotAdapter.fetchModels();
-
-    expect(models).toHaveLength(2);
-  });
-
-  it("also handles data field (OpenAI-compatible shape)", async () => {
-    mockFetch(200, VALID_RESPONSE_DATA);
+  it("returns ModelEntry[] from bare array response", async () => {
+    mockFetch(200, VALID_MODELS);
 
     const models = await copilotAdapter.fetchModels();
 
@@ -75,7 +57,7 @@ describe("copilotAdapter", () => {
   });
 
   it("applies copilot- prefix to IDs", async () => {
-    mockFetch(200, VALID_RESPONSE_MODELS);
+    mockFetch(200, VALID_MODELS);
 
     const models = await copilotAdapter.fetchModels();
 
@@ -85,7 +67,7 @@ describe("copilotAdapter", () => {
   });
 
   it("sets provider to copilot", async () => {
-    mockFetch(200, VALID_RESPONSE_MODELS);
+    mockFetch(200, VALID_MODELS);
 
     const models = await copilotAdapter.fetchModels();
 
@@ -94,8 +76,8 @@ describe("copilotAdapter", () => {
     }
   });
 
-  it("maps context window from capabilities", async () => {
-    mockFetch(200, VALID_RESPONSE_MODELS);
+  it("maps context window from limits", async () => {
+    mockFetch(200, VALID_MODELS);
 
     const models = await copilotAdapter.fetchModels();
     const sonnet = models.find((m) => m.id === "copilot-claude-sonnet-4.6")!;
@@ -104,13 +86,24 @@ describe("copilotAdapter", () => {
     expect(sonnet.maxOutputTokens).toBe(4096);
   });
 
-  it("sets defaultFor on the default model", async () => {
-    mockFetch(200, VALID_RESPONSE_MODELS);
+  it("maps vision support from input modalities", async () => {
+    mockFetch(200, VALID_MODELS);
 
     const models = await copilotAdapter.fetchModels();
-    const defaultModel = models.find((m) => m.defaultFor === "copilot");
+    const sonnet = models.find((m) => m.id === "copilot-claude-sonnet-4.6")!;
+    const gpt = models.find((m) => m.id === "copilot-gpt-5.2")!;
 
-    expect(defaultModel?.id).toBe("copilot-claude-sonnet-4.6");
+    expect(sonnet.supportsVision).toBe(true);
+    expect(gpt.supportsVision).toBe(false);
+  });
+
+  it("maps tool support from capabilities", async () => {
+    mockFetch(200, VALID_MODELS);
+
+    const models = await copilotAdapter.fetchModels();
+    const sonnet = models.find((m) => m.id === "copilot-claude-sonnet-4.6")!;
+
+    expect(sonnet.supportsTools).toBe(true);
   });
 
   it("throws when GITHUB_TOKEN is not set", async () => {
@@ -125,7 +118,7 @@ describe("copilotAdapter", () => {
     mockFetch(401, { message: "Bad credentials" });
 
     await expect(copilotAdapter.fetchModels()).rejects.toThrow(
-      "Copilot API error: 401",
+      "GitHub Models API error: 401",
     );
   });
 
@@ -133,15 +126,23 @@ describe("copilotAdapter", () => {
     mockFetch(429, { message: "Too Many Requests" });
 
     await expect(copilotAdapter.fetchModels()).rejects.toThrow(
-      "Copilot API error: 429",
+      "GitHub Models API error: 429",
     );
   });
 
   it("throws on empty model list", async () => {
-    mockFetch(200, { models: [] });
+    mockFetch(200, []);
 
     await expect(copilotAdapter.fetchModels()).rejects.toThrow(
-      "Copilot API returned empty model list",
+      "GitHub Models API returned empty or invalid response",
+    );
+  });
+
+  it("throws on non-array response", async () => {
+    mockFetch(200, { models: VALID_MODELS });
+
+    await expect(copilotAdapter.fetchModels()).rejects.toThrow(
+      "GitHub Models API returned empty or invalid response",
     );
   });
 });

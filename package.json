@@ -55,8 +55,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:all": "vitest run",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --cache --write . && rm -rf apps/ui/node_modules/.vite",
+    "format:check": "prettier --cache --check .",
     "rebuild": "rm -rf node_modules apps/*/node_modules libs/*/node_modules && pnpm install",
     "sync-models": "tsx scripts/sync-models/index.ts",
     "prepare": "husky && pnpm run build:packages"

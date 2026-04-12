@@ -1,0 +1,2 @@
+# Clear Vite cache after merge to prevent stale module hashes
+rm -rf apps/ui/node_modules/.vite 2>/dev/null

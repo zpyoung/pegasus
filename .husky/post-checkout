@@ -1,0 +1,5 @@
+# Clear Vite cache after branch switch to prevent stale module hashes
+# $3 = 1 for branch checkout, 0 for file checkout
+if [ "$3" = "1" ]; then
+  rm -rf apps/ui/node_modules/.vite 2>/dev/null
+fi

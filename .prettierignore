@@ -1,0 +1,4 @@
+dist/
+dist-electron/
+*.gen.ts
+pnpm-lock.yaml
