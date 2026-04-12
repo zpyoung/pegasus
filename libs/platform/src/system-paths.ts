@@ -734,6 +734,8 @@ function getAllAllowedSystemPaths(): string[] {
  */
 function getAllAllowedSystemDirs(): string[] {
   return [
+    // Pegasus user-level config (~/.pegasus/)
+    path.join(os.homedir(), ".pegasus"),
     // Claude config
     getClaudeConfigDir(),
     getClaudeProjectsDir(),
