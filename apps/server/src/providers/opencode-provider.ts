@@ -10,11 +10,11 @@
  * Spawns the opencode CLI with --output-format stream-json for streaming responses.
  */
 
-import * as path from 'path';
-import * as os from 'os';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { CliProvider, type CliSpawnConfig } from './cli-provider.js';
+import * as path from "path";
+import * as os from "os";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { CliProvider, type CliSpawnConfig } from "./cli-provider.js";
 
 const execFileAsync = promisify(execFile);
 import type {
@@ -24,12 +24,15 @@ import type {
   ModelDefinition,
   InstallationStatus,
   ContentBlock,
-} from '@pegasus/types';
-import { type SubprocessOptions, getOpenCodeAuthIndicators } from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
+} from "@pegasus/types";
+import {
+  type SubprocessOptions,
+  getOpenCodeAuthIndicators,
+} from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
 
 // Create logger for OpenCode operations
-const opencodeLogger = createLogger('OpencodeProvider');
+const opencodeLogger = createLogger("OpencodeProvider");
 
 // =============================================================================
 // OpenCode Auth Types
@@ -37,7 +40,7 @@ const opencodeLogger = createLogger('OpencodeProvider');
 
 export interface OpenCodeAuthStatus {
   authenticated: boolean;
-  method: 'api_key' | 'oauth' | 'none';
+  method: "api_key" | "oauth" | "none";
   hasOAuthToken?: boolean;
   hasApiKey?: boolean;
 }
@@ -114,15 +117,15 @@ export interface OpenCodeProviderInfo {
   /** Whether the provider is authenticated */
   authenticated: boolean;
   /** Authentication method if authenticated */
-  authMethod?: 'oauth' | 'api_key';
+  authMethod?: "oauth" | "api_key";
 }
 
 /** Cache duration for dynamic model fetching (5 minutes) */
 const MODEL_CACHE_DURATION_MS = 5 * 60 * 1000;
-const OPENCODE_MODEL_ID_SEPARATOR = '/';
+const OPENCODE_MODEL_ID_SEPARATOR = "/";
 const OPENCODE_MODEL_ID_PATTERN = /^[a-z0-9.-]+\/\S+$/;
-const OPENCODE_PROVIDER_PATTERN = /^[a-z0-9.-]+$/;
-const OPENCODE_MODEL_NAME_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
+const _OPENCODE_PROVIDER_PATTERN = /^[a-z0-9.-]+$/;
+const _OPENCODE_MODEL_NAME_PATTERN = /^[a-zA-Z0-9._:/-]+$/;
 
 // =============================================================================
 // OpenCode Stream Event Types
@@ -169,40 +172,40 @@ interface OpenCodeBaseEvent {
  * Text event - Text output from the model
  */
 export interface OpenCodeTextEvent extends OpenCodeBaseEvent {
-  type: 'text';
-  part: OpenCodePart & { type: 'text'; text: string };
+  type: "text";
+  part: OpenCodePart & { type: "text"; text: string };
 }
 
 /**
  * Step start event - Begins an agentic loop iteration
  */
 export interface OpenCodeStepStartEvent extends OpenCodeBaseEvent {
-  type: 'step_start';
-  part: OpenCodePart & { type: 'step-start' };
+  type: "step_start";
+  part: OpenCodePart & { type: "step-start" };
 }
 
 /**
  * Step finish event - Completes an agentic loop iteration
  */
 export interface OpenCodeStepFinishEvent extends OpenCodeBaseEvent {
-  type: 'step_finish';
-  part: OpenCodePart & { type: 'step-finish'; reason?: string };
+  type: "step_finish";
+  part: OpenCodePart & { type: "step-finish"; reason?: string };
 }
 
 /**
  * Tool call event - Request to execute a tool
  */
 export interface OpenCodeToolCallEvent extends OpenCodeBaseEvent {
-  type: 'tool_call';
-  part: OpenCodePart & { type: 'tool-call'; name: string; args?: unknown };
+  type: "tool_call";
+  part: OpenCodePart & { type: "tool-call"; name: string; args?: unknown };
 }
 
 /**
  * Tool result event - Output from a tool execution
  */
 export interface OpenCodeToolResultEvent extends OpenCodeBaseEvent {
-  type: 'tool_result';
-  part: OpenCodePart & { type: 'tool-result'; output: string };
+  type: "tool_result";
+  part: OpenCodePart & { type: "tool-result"; output: string };
 }
 
 /**
@@ -222,7 +225,7 @@ interface OpenCodeErrorDetails {
  * Error event - An error occurred
  */
 export interface OpenCodeErrorEvent extends OpenCodeBaseEvent {
-  type: 'error';
+  type: "error";
   part?: OpenCodePart & { error: string };
   error?: string | OpenCodeErrorDetails;
 }
@@ -231,7 +234,7 @@ export interface OpenCodeErrorEvent extends OpenCodeBaseEvent {
  * Tool error event - A tool execution failed
  */
 export interface OpenCodeToolErrorEvent extends OpenCodeBaseEvent {
-  type: 'tool_error';
+  type: "tool_error";
   part?: OpenCodePart & { error: string };
 }
 
@@ -241,9 +244,9 @@ export interface OpenCodeToolErrorEvent extends OpenCodeBaseEvent {
  * Note: OpenCode CLI emits 'tool_use' (not 'tool_call') as the event type.
  */
 export interface OpenCodeToolUseEvent extends OpenCodeBaseEvent {
-  type: 'tool_use';
+  type: "tool_use";
   part: OpenCodePart & {
-    type: 'tool';
+    type: "tool";
     callID?: string;
     tool?: string;
     state?: {
@@ -335,37 +338,37 @@ export class OpencodeProvider extends CliProvider {
   // ==========================================================================
 
   getName(): string {
-    return 'opencode';
+    return "opencode";
   }
 
   getCliName(): string {
-    return 'opencode';
+    return "opencode";
   }
 
   getSpawnConfig(): CliSpawnConfig {
     return {
-      windowsStrategy: 'npx',
-      npxPackage: 'opencode-ai@latest',
+      windowsStrategy: "npx",
+      npxPackage: "opencode-ai@latest",
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
-          '/usr/local/bin/opencode',
-          '/usr/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(os.homedir(), ".opencode/bin/opencode"),
+          path.join(os.homedir(), ".npm-global/bin/opencode"),
+          "/usr/local/bin/opencode",
+          "/usr/bin/opencode",
+          path.join(os.homedir(), ".local/bin/opencode"),
         ],
         darwin: [
-          path.join(os.homedir(), '.opencode/bin/opencode'),
-          path.join(os.homedir(), '.npm-global/bin/opencode'),
-          '/usr/local/bin/opencode',
-          '/opt/homebrew/bin/opencode',
-          path.join(os.homedir(), '.local/bin/opencode'),
+          path.join(os.homedir(), ".opencode/bin/opencode"),
+          path.join(os.homedir(), ".npm-global/bin/opencode"),
+          "/usr/local/bin/opencode",
+          "/opt/homebrew/bin/opencode",
+          path.join(os.homedir(), ".local/bin/opencode"),
         ],
         win32: [
-          path.join(os.homedir(), '.opencode', 'bin', 'opencode.exe'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode.cmd'),
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'opencode'),
-          path.join(process.env.APPDATA || '', 'npm', 'opencode.cmd'),
+          path.join(os.homedir(), ".opencode", "bin", "opencode.exe"),
+          path.join(os.homedir(), "AppData", "Roaming", "npm", "opencode.cmd"),
+          path.join(os.homedir(), "AppData", "Roaming", "npm", "opencode"),
+          path.join(process.env.APPDATA || "", "npm", "opencode.cmd"),
         ],
       },
     };
@@ -387,17 +390,17 @@ export class OpencodeProvider extends CliProvider {
    * @returns Array of CLI arguments for opencode run
    */
   buildCliArgs(options: ExecuteOptions): string[] {
-    const args: string[] = ['run'];
+    const args: string[] = ["run"];
 
     // Add JSON output format for JSONL parsing (not 'stream-json')
-    args.push('--format', 'json');
+    args.push("--format", "json");
 
     // Handle session resumption for conversation continuity.
     // The opencode CLI supports `--session <id>` to continue an existing session.
     // The sdkSessionId is captured from the sessionID field in previous stream events
     // and persisted by AgentService for use in follow-up messages.
     if (options.sdkSessionId) {
-      args.push('--session', options.sdkSessionId);
+      args.push("--session", options.sdkSessionId);
     }
 
     // Handle model selection
@@ -405,14 +408,14 @@ export class OpencodeProvider extends CliProvider {
     // OpenCode CLI expects provider/model format (e.g., 'opencode/big-model')
     if (options.model) {
       // Strip opencode- prefix if present, then ensure slash format
-      const model = options.model.startsWith('opencode-')
-        ? options.model.slice('opencode-'.length)
+      const model = options.model.startsWith("opencode-")
+        ? options.model.slice("opencode-".length)
         : options.model;
 
       // If model has slash, it's already provider/model format; otherwise prepend opencode/
-      const cliModel = model.includes('/') ? model : `opencode/${model}`;
+      const cliModel = model.includes("/") ? model : `opencode/${model}`;
 
-      args.push('--model', cliModel);
+      args.push("--model", cliModel);
     }
 
     // Note: OpenCode reads from stdin automatically when input is piped
@@ -436,19 +439,21 @@ export class OpencodeProvider extends CliProvider {
    * @returns Plain text prompt string
    */
   private extractPromptText(options: ExecuteOptions): string {
-    if (typeof options.prompt === 'string') {
+    if (typeof options.prompt === "string") {
       return options.prompt;
     }
 
     // Array-based prompt - extract text content
     if (Array.isArray(options.prompt)) {
       return options.prompt
-        .filter((block) => block.type === 'text' && block.text)
+        .filter((block) => block.type === "text" && block.text)
         .map((block) => block.text)
-        .join('\n');
+        .join("\n");
     }
 
-    throw new Error('Invalid prompt format: expected string or content block array');
+    throw new Error(
+      "Invalid prompt format: expected string or content block array",
+    );
   }
 
   /**
@@ -462,7 +467,10 @@ export class OpencodeProvider extends CliProvider {
    * @param cliArgs - CLI arguments from buildCliArgs
    * @returns SubprocessOptions with stdinData set
    */
-  protected buildSubprocessOptions(options: ExecuteOptions, cliArgs: string[]): SubprocessOptions {
+  protected buildSubprocessOptions(
+    options: ExecuteOptions,
+    cliArgs: string[],
+  ): SubprocessOptions {
     const subprocessOptions = super.buildSubprocessOptions(options, cliArgs);
 
     // Pass prompt via stdin to avoid shell interpretation of special characters
@@ -493,11 +501,11 @@ export class OpencodeProvider extends CliProvider {
 
     // Explicit session-related phrases — high confidence
     if (
-      cleaned.includes('session not found') ||
-      cleaned.includes('session does not exist') ||
-      cleaned.includes('invalid session') ||
-      cleaned.includes('session expired') ||
-      cleaned.includes('no such session')
+      cleaned.includes("session not found") ||
+      cleaned.includes("session does not exist") ||
+      cleaned.includes("invalid session") ||
+      cleaned.includes("session expired") ||
+      cleaned.includes("no such session")
     ) {
       return true;
     }
@@ -506,8 +514,11 @@ export class OpencodeProvider extends CliProvider {
     // when the message also references a session path or session ID.
     // Without this guard, errors like "ProviderModelNotFoundError" or
     // "Resource not found: /path/to/config.json" would false-positive.
-    if (cleaned.includes('notfounderror') || cleaned.includes('resource not found')) {
-      return cleaned.includes('/session/') || /\bsession\b/.test(cleaned);
+    if (
+      cleaned.includes("notfounderror") ||
+      cleaned.includes("resource not found")
+    ) {
+      return cleaned.includes("/session/") || /\bsession\b/.test(cleaned);
     }
 
     return false;
@@ -522,7 +533,7 @@ export class OpencodeProvider extends CliProvider {
    * clean and human-readable.
    */
   private static stripAnsiCodes(text: string): string {
-    return text.replace(/\x1b\[[0-9;]*m/g, '');
+    return text.replace(/\x1b\[[0-9;]*m/g, "");
   }
 
   /**
@@ -541,7 +552,7 @@ export class OpencodeProvider extends CliProvider {
     // Remove leading "Error: " prefix (case-insensitive) if present.
     // The CLI formats errors as: \x1b[91m\x1b[1mError: \x1b[0m<actual message>
     // After ANSI stripping this becomes: "Error: <actual message>"
-    cleaned = cleaned.replace(/^Error:\s*/i, '').trim();
+    cleaned = cleaned.replace(/^Error:\s*/i, "").trim();
     return cleaned || text;
   }
 
@@ -576,13 +587,19 @@ export class OpencodeProvider extends CliProvider {
    * session_id from the fresh stream events, which it persists to metadata —
    * replacing the stale sdkSessionId and preventing repeated failures.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     // When no sdkSessionId is set, there is nothing to "retry without" — just
     // stream normally and clean error messages as they pass through.
     if (!options.sdkSessionId) {
       for await (const msg of super.executeQuery(options)) {
         // Clean error messages so consumers don't get ANSI or double "Error:" prefix
-        if (msg.type === 'error' && msg.error && typeof msg.error === 'string') {
+        if (
+          msg.type === "error" &&
+          msg.error &&
+          typeof msg.error === "string"
+        ) {
           msg.error = OpencodeProvider.cleanErrorMessage(msg.error);
         }
         yield msg;
@@ -604,19 +621,19 @@ export class OpencodeProvider extends CliProvider {
 
     try {
       for await (const msg of super.executeQuery(options)) {
-        if (msg.type === 'error') {
-          const errorText = msg.error || '';
+        if (msg.type === "error") {
+          const errorText = msg.error || "";
           if (OpencodeProvider.isSessionNotFoundError(errorText)) {
             sessionError = true;
             opencodeLogger.info(
               `OpenCode session error detected (session "${options.sdkSessionId}") ` +
-                `— retrying without --session to start fresh`
+                `— retrying without --session to start fresh`,
             );
             break; // stop consuming the failed stream
           }
 
           // Non-session error — clean it
-          if (msg.error && typeof msg.error === 'string') {
+          if (msg.error && typeof msg.error === "string") {
             msg.error = OpencodeProvider.cleanErrorMessage(msg.error);
           }
         } else {
@@ -647,7 +664,7 @@ export class OpencodeProvider extends CliProvider {
         sessionError = true;
         opencodeLogger.info(
           `OpenCode session error detected (thrown, session "${options.sdkSessionId}") ` +
-            `— retrying without --session to start fresh`
+            `— retrying without --session to start fresh`,
         );
       } else {
         throw error;
@@ -657,14 +674,18 @@ export class OpencodeProvider extends CliProvider {
     if (sessionError) {
       // Retry the entire query without the stale session ID.
       const retryOptions = { ...options, sdkSessionId: undefined };
-      opencodeLogger.info('Retrying OpenCode query without --session flag...');
+      opencodeLogger.info("Retrying OpenCode query without --session flag...");
 
       // Stream the retry directly to the consumer.
       // If the retry also fails, it's a genuine error (not session-related)
       // and should be surfaced as-is rather than masked with a misleading
       // "session could not be created" message.
       for await (const retryMsg of super.executeQuery(retryOptions)) {
-        if (retryMsg.type === 'error' && retryMsg.error && typeof retryMsg.error === 'string') {
+        if (
+          retryMsg.type === "error" &&
+          retryMsg.error &&
+          typeof retryMsg.error === "string"
+        ) {
           retryMsg.error = OpencodeProvider.cleanErrorMessage(retryMsg.error);
         }
         yield retryMsg;
@@ -698,14 +719,14 @@ export class OpencodeProvider extends CliProvider {
    * @returns Normalized ProviderMessage or null to skip the event
    */
   normalizeEvent(event: unknown): ProviderMessage | null {
-    if (!event || typeof event !== 'object') {
+    if (!event || typeof event !== "object") {
       return null;
     }
 
     const openCodeEvent = event as OpenCodeStreamEvent;
 
     switch (openCodeEvent.type) {
-      case 'text': {
+      case "text": {
         const textEvent = openCodeEvent as OpenCodeTextEvent;
 
         // Skip empty text
@@ -715,51 +736,51 @@ export class OpencodeProvider extends CliProvider {
 
         const content: ContentBlock[] = [
           {
-            type: 'text',
+            type: "text",
             text: textEvent.part.text,
           },
         ];
 
         return {
-          type: 'assistant',
+          type: "assistant",
           session_id: textEvent.sessionID,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content,
           },
         };
       }
 
-      case 'step_start': {
+      case "step_start": {
         // Step start is informational - no message needed
         return null;
       }
 
-      case 'step_finish': {
+      case "step_finish": {
         const finishEvent = openCodeEvent as OpenCodeStepFinishEvent;
 
         // Check if the step failed - either by error property or reason='error'
         if (finishEvent.part?.error) {
           return {
-            type: 'error',
+            type: "error",
             session_id: finishEvent.sessionID,
             error: OpencodeProvider.cleanErrorMessage(finishEvent.part.error),
           };
         }
 
         // Check if reason indicates error (even without explicit error text)
-        if (finishEvent.part?.reason === 'error') {
+        if (finishEvent.part?.reason === "error") {
           return {
-            type: 'error',
+            type: "error",
             session_id: finishEvent.sessionID,
-            error: OpencodeProvider.cleanErrorMessage('Step execution failed'),
+            error: OpencodeProvider.cleanErrorMessage("Step execution failed"),
           };
         }
 
         // Intermediate step completion (reason: 'tool-calls') — the agent loop
         // is continuing because the model requested tool calls. Skip these so
         // consumers don't mistake them for final results.
-        if (finishEvent.part?.reason === 'tool-calls') {
+        if (finishEvent.part?.reason === "tool-calls") {
           return null;
         }
 
@@ -767,39 +788,41 @@ export class OpencodeProvider extends CliProvider {
         // Reasons like 'length' (context-window truncation) or 'content-filter'
         // indicate the model stopped abnormally and must not be surfaced as
         // successful completions.
-        const SUCCESS_REASONS = new Set(['stop', 'end_turn']);
+        const SUCCESS_REASONS = new Set(["stop", "end_turn"]);
         const reason = finishEvent.part?.reason;
 
         if (reason === undefined || SUCCESS_REASONS.has(reason)) {
           // Final completion (reason: 'stop', 'end_turn', or unset)
           return {
-            type: 'result',
-            subtype: 'success',
+            type: "result",
+            subtype: "success",
             session_id: finishEvent.sessionID,
-            result: (finishEvent.part as OpenCodePart & { result?: string })?.result,
+            result: (finishEvent.part as OpenCodePart & { result?: string })
+              ?.result,
           };
         }
 
         // Non-success, non-tool-calls reason (e.g. 'length', 'content-filter')
         return {
-          type: 'result',
-          subtype: 'error',
+          type: "result",
+          subtype: "error",
           session_id: finishEvent.sessionID,
           error: `Step finished with non-success reason: ${reason}`,
-          result: (finishEvent.part as OpenCodePart & { result?: string })?.result,
+          result: (finishEvent.part as OpenCodePart & { result?: string })
+            ?.result,
         };
       }
 
-      case 'tool_error': {
+      case "tool_error": {
         const toolErrorEvent = openCodeEvent as OpenCodeBaseEvent;
 
         // Extract error message from part.error and clean ANSI codes
         const errorMessage = OpencodeProvider.cleanErrorMessage(
-          toolErrorEvent.part?.error || 'Tool execution failed'
+          toolErrorEvent.part?.error || "Tool execution failed",
         );
 
         return {
-          type: 'error',
+          type: "error",
           session_id: toolErrorEvent.sessionID,
           error: errorMessage,
         };
@@ -808,17 +831,17 @@ export class OpencodeProvider extends CliProvider {
       // OpenCode CLI emits 'tool_use' events (not 'tool_call') when the model invokes a tool.
       // The event format includes the tool name, call ID, and state with input/output.
       // Handle both 'tool_use' (actual CLI format) and 'tool_call' (legacy/alternative) for robustness.
-      case 'tool_use': {
+      case "tool_use": {
         const toolUseEvent = openCodeEvent as OpenCodeToolUseEvent;
         const part = toolUseEvent.part;
 
         // Generate a tool use ID if not provided
         const toolUseId = part?.callID || part?.call_id || generateToolUseId();
-        const toolName = part?.tool || part?.name || 'unknown';
+        const toolName = part?.tool || part?.name || "unknown";
 
         const content: ContentBlock[] = [
           {
-            type: 'tool_use',
+            type: "tool_use",
             name: toolName,
             tool_use_id: toolUseId,
             input: part?.state?.input || part?.args,
@@ -826,25 +849,25 @@ export class OpencodeProvider extends CliProvider {
         ];
 
         // If the tool has already completed (state.status === 'completed'), also emit the result
-        if (part?.state?.status === 'completed' && part?.state?.output) {
+        if (part?.state?.status === "completed" && part?.state?.output) {
           content.push({
-            type: 'tool_result',
+            type: "tool_result",
             tool_use_id: toolUseId,
             content: part.state.output,
           });
         }
 
         return {
-          type: 'assistant',
+          type: "assistant",
           session_id: toolUseEvent.sessionID,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content,
           },
         };
       }
 
-      case 'tool_call': {
+      case "tool_call": {
         const toolEvent = openCodeEvent as OpenCodeToolCallEvent;
 
         // Generate a tool use ID if not provided
@@ -852,51 +875,51 @@ export class OpencodeProvider extends CliProvider {
 
         const content: ContentBlock[] = [
           {
-            type: 'tool_use',
-            name: toolEvent.part?.name || 'unknown',
+            type: "tool_use",
+            name: toolEvent.part?.name || "unknown",
             tool_use_id: toolUseId,
             input: toolEvent.part?.args,
           },
         ];
 
         return {
-          type: 'assistant',
+          type: "assistant",
           session_id: toolEvent.sessionID,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content,
           },
         };
       }
 
-      case 'tool_result': {
+      case "tool_result": {
         const resultEvent = openCodeEvent as OpenCodeToolResultEvent;
 
         const content: ContentBlock[] = [
           {
-            type: 'tool_result',
+            type: "tool_result",
             tool_use_id: resultEvent.part?.call_id,
-            content: resultEvent.part?.output || '',
+            content: resultEvent.part?.output || "",
           },
         ];
 
         return {
-          type: 'assistant',
+          type: "assistant",
           session_id: resultEvent.sessionID,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content,
           },
         };
       }
 
-      case 'error': {
+      case "error": {
         const errorEvent = openCodeEvent as OpenCodeErrorEvent;
 
         // Extract error message from various formats
-        let errorMessage = 'Unknown error';
+        let errorMessage = "Unknown error";
         if (errorEvent.error) {
-          if (typeof errorEvent.error === 'string') {
+          if (typeof errorEvent.error === "string") {
             errorMessage = errorEvent.error;
           } else {
             // Error is an object with name/data structure
@@ -904,7 +927,7 @@ export class OpencodeProvider extends CliProvider {
               errorEvent.error.data?.message ||
               errorEvent.error.message ||
               errorEvent.error.name ||
-              'Unknown error';
+              "Unknown error";
           }
         } else if (errorEvent.part?.error) {
           errorMessage = errorEvent.part.error;
@@ -918,7 +941,7 @@ export class OpencodeProvider extends CliProvider {
         errorMessage = OpencodeProvider.cleanErrorMessage(errorMessage);
 
         return {
-          type: 'error',
+          type: "error",
           session_id: errorEvent.sessionID,
           error: errorMessage,
         };
@@ -969,55 +992,55 @@ export class OpencodeProvider extends CliProvider {
     return [
       // OpenCode Free Tier Models
       {
-        id: 'opencode/big-pickle',
-        name: 'Big Pickle (Free)',
-        modelString: 'opencode/big-pickle',
-        provider: 'opencode',
-        description: 'OpenCode free tier model - great for general coding',
+        id: "opencode/big-pickle",
+        name: "Big Pickle (Free)",
+        modelString: "opencode/big-pickle",
+        provider: "opencode",
+        description: "OpenCode free tier model - great for general coding",
         supportsTools: true,
         supportsVision: false,
-        tier: 'basic',
+        tier: "basic",
         default: true,
       },
       {
-        id: 'opencode/glm-5-free',
-        name: 'GLM 5 Free',
-        modelString: 'opencode/glm-5-free',
-        provider: 'opencode',
-        description: 'OpenCode free tier GLM model',
+        id: "opencode/glm-5-free",
+        name: "GLM 5 Free",
+        modelString: "opencode/glm-5-free",
+        provider: "opencode",
+        description: "OpenCode free tier GLM model",
         supportsTools: true,
         supportsVision: false,
-        tier: 'basic',
+        tier: "basic",
       },
       {
-        id: 'opencode/gpt-5-nano',
-        name: 'GPT-5 Nano (Free)',
-        modelString: 'opencode/gpt-5-nano',
-        provider: 'opencode',
-        description: 'Fast and lightweight free tier model',
+        id: "opencode/gpt-5-nano",
+        name: "GPT-5 Nano (Free)",
+        modelString: "opencode/gpt-5-nano",
+        provider: "opencode",
+        description: "Fast and lightweight free tier model",
         supportsTools: true,
         supportsVision: false,
-        tier: 'basic',
+        tier: "basic",
       },
       {
-        id: 'opencode/kimi-k2.5-free',
-        name: 'Kimi K2.5 Free',
-        modelString: 'opencode/kimi-k2.5-free',
-        provider: 'opencode',
-        description: 'OpenCode free tier Kimi model for coding',
+        id: "opencode/kimi-k2.5-free",
+        name: "Kimi K2.5 Free",
+        modelString: "opencode/kimi-k2.5-free",
+        provider: "opencode",
+        description: "OpenCode free tier Kimi model for coding",
         supportsTools: true,
         supportsVision: false,
-        tier: 'basic',
+        tier: "basic",
       },
       {
-        id: 'opencode/minimax-m2.5-free',
-        name: 'MiniMax M2.5 Free',
-        modelString: 'opencode/minimax-m2.5-free',
-        provider: 'opencode',
-        description: 'OpenCode free tier MiniMax model',
+        id: "opencode/minimax-m2.5-free",
+        name: "MiniMax M2.5 Free",
+        modelString: "opencode/minimax-m2.5-free",
+        provider: "opencode",
+        description: "OpenCode free tier MiniMax model",
         supportsTools: true,
         supportsVision: false,
-        tier: 'basic',
+        tier: "basic",
       },
     ];
   }
@@ -1035,12 +1058,14 @@ export class OpencodeProvider extends CliProvider {
   async refreshModels(): Promise<ModelDefinition[]> {
     // If refresh is in progress, wait for existing promise instead of busy-waiting
     if (this.isRefreshing && this.refreshPromise) {
-      opencodeLogger.debug('Model refresh already in progress, waiting for completion...');
+      opencodeLogger.debug(
+        "Model refresh already in progress, waiting for completion...",
+      );
       return this.refreshPromise;
     }
 
     this.isRefreshing = true;
-    opencodeLogger.debug('Starting model refresh from OpenCode CLI');
+    opencodeLogger.debug("Starting model refresh from OpenCode CLI");
 
     this.refreshPromise = this.doRefreshModels();
     try {
@@ -1061,10 +1086,14 @@ export class OpencodeProvider extends CliProvider {
       if (models.length > 0) {
         this.cachedModels = models;
         this.modelsCacheExpiry = Date.now() + MODEL_CACHE_DURATION_MS;
-        opencodeLogger.debug(`Cached ${models.length} models from OpenCode CLI`);
+        opencodeLogger.debug(
+          `Cached ${models.length} models from OpenCode CLI`,
+        );
       } else {
         // Keep existing cache if fetch returned nothing
-        opencodeLogger.debug('No models returned from CLI, keeping existing cache');
+        opencodeLogger.debug(
+          "No models returned from CLI, keeping existing cache",
+        );
       }
 
       return this.cachedModels || this.getDefaultModels();
@@ -1084,7 +1113,7 @@ export class OpencodeProvider extends CliProvider {
     this.ensureCliDetected();
 
     if (!this.cliPath) {
-      opencodeLogger.debug('OpenCode CLI not available for model fetch');
+      opencodeLogger.debug("OpenCode CLI not available for model fetch");
       return [];
     }
 
@@ -1092,35 +1121,35 @@ export class OpencodeProvider extends CliProvider {
       let command: string;
       let args: string[];
 
-      if (this.detectedStrategy === 'npx') {
+      if (this.detectedStrategy === "npx") {
         // NPX strategy: execute npx with opencode-ai package
-        command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-        args = ['opencode-ai@latest', 'models', '--verbose'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+        command = process.platform === "win32" ? "npx.cmd" : "npx";
+        args = ["opencode-ai@latest", "models", "--verbose"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       } else if (this.useWsl && this.wslCliPath) {
         // WSL strategy: execute via wsl.exe
-        command = 'wsl.exe';
+        command = "wsl.exe";
         args = this.wslDistribution
-          ? ['-d', this.wslDistribution, this.wslCliPath, 'models', '--verbose']
-          : [this.wslCliPath, 'models', '--verbose'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+          ? ["-d", this.wslDistribution, this.wslCliPath, "models", "--verbose"]
+          : [this.wslCliPath, "models", "--verbose"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       } else {
         // Direct CLI execution
         command = this.cliPath;
-        args = ['models', '--verbose'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+        args = ["models", "--verbose"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       }
 
       const { stdout } = await execFileAsync(command, args, {
-        encoding: 'utf-8',
+        encoding: "utf-8",
         timeout: 30000,
         windowsHide: true,
         // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        shell: process.platform === "win32" && command.endsWith(".cmd"),
       });
 
       opencodeLogger.debug(
-        `Models output (${stdout.length} chars): ${stdout.substring(0, 200)}...`
+        `Models output (${stdout.length} chars): ${stdout.substring(0, 200)}...`,
       );
       return this.parseModelsOutput(stdout);
     } catch (error) {
@@ -1149,24 +1178,26 @@ export class OpencodeProvider extends CliProvider {
     const models: ModelDefinition[] = [];
 
     // Strip ANSI escape codes globally
-    const clean = output.replace(/\x1b\[[0-9;]*m/g, '');
+    const clean = output.replace(/\x1b\[[0-9;]*m/g, "");
 
     // Split into blocks: each block starts with a model ID line matching provider/model pattern
     // followed by a JSON object. We use a regex to find all model ID header lines and
     // extract the JSON block between consecutive headers.
-    const lines = clean.split('\n');
+    const lines = clean.split("\n");
     let currentModelId: string | null = null;
     let jsonLines: string[] = [];
 
     const flushModel = () => {
       if (!currentModelId || jsonLines.length === 0) return;
 
-      const jsonStr = jsonLines.join('\n').trim();
+      const jsonStr = jsonLines.join("\n").trim();
       if (!jsonStr) return;
 
       try {
         const verbose = JSON.parse(jsonStr) as OpenCodeVerboseModel;
-        const separatorIndex = currentModelId.indexOf(OPENCODE_MODEL_ID_SEPARATOR);
+        const separatorIndex = currentModelId.indexOf(
+          OPENCODE_MODEL_ID_SEPARATOR,
+        );
         const provider = currentModelId.slice(0, separatorIndex);
         const name = currentModelId.slice(separatorIndex + 1);
 
@@ -1177,16 +1208,22 @@ export class OpencodeProvider extends CliProvider {
             name,
             displayName: verbose.name,
             verbose,
-          })
+          }),
         );
       } catch {
         // JSON parse failed — fall back to basic ID-only entry
-        opencodeLogger.debug(`Failed to parse verbose JSON for ${currentModelId}, using ID only`);
-        const separatorIndex = currentModelId.indexOf(OPENCODE_MODEL_ID_SEPARATOR);
+        opencodeLogger.debug(
+          `Failed to parse verbose JSON for ${currentModelId}, using ID only`,
+        );
+        const separatorIndex = currentModelId.indexOf(
+          OPENCODE_MODEL_ID_SEPARATOR,
+        );
         if (separatorIndex > 0) {
           const provider = currentModelId.slice(0, separatorIndex);
           const name = currentModelId.slice(separatorIndex + 1);
-          models.push(this.modelInfoToDefinition({ id: currentModelId, provider, name }));
+          models.push(
+            this.modelInfoToDefinition({ id: currentModelId, provider, name }),
+          );
         }
       }
     };
@@ -1196,7 +1233,11 @@ export class OpencodeProvider extends CliProvider {
       if (!trimmed) continue;
 
       // Check if this line is a model ID header (provider/model-name format)
-      if (OPENCODE_MODEL_ID_PATTERN.test(trimmed) && !trimmed.startsWith('{') && !trimmed.startsWith('"')) {
+      if (
+        OPENCODE_MODEL_ID_PATTERN.test(trimmed) &&
+        !trimmed.startsWith("{") &&
+        !trimmed.startsWith('"')
+      ) {
         // Flush previous model
         flushModel();
         currentModelId = trimmed;
@@ -1210,7 +1251,9 @@ export class OpencodeProvider extends CliProvider {
     // Flush last model
     flushModel();
 
-    opencodeLogger.debug(`Parsed ${models.length} models from CLI verbose output`);
+    opencodeLogger.debug(
+      `Parsed ${models.length} models from CLI verbose output`,
+    );
     return models;
   }
 
@@ -1229,9 +1272,10 @@ export class OpencodeProvider extends CliProvider {
       provider: model.provider,
       description: `${model.name} via ${this.formatProviderName(model.provider)}`,
       supportsTools: v?.capabilities?.toolcall ?? true,
-      supportsVision: v?.capabilities?.input?.image ?? this.modelSupportsVision(model.id),
+      supportsVision:
+        v?.capabilities?.input?.image ?? this.modelSupportsVision(model.id),
       tier,
-      default: model.id.includes('claude-sonnet-4'),
+      default: model.id.includes("claude-sonnet-4"),
       ...(v?.limit?.context != null && { contextWindow: v.limit.context }),
       ...(v?.limit?.output != null && { maxOutputTokens: v.limit.output }),
     };
@@ -1242,21 +1286,21 @@ export class OpencodeProvider extends CliProvider {
    */
   private formatProviderName(provider: string): string {
     const providerNames: Record<string, string> = {
-      'github-copilot': 'GitHub Copilot',
-      google: 'Google AI',
-      openai: 'OpenAI',
-      anthropic: 'Anthropic',
-      openrouter: 'OpenRouter',
-      opencode: 'OpenCode',
-      ollama: 'Ollama',
-      lmstudio: 'LM Studio',
-      azure: 'Azure OpenAI',
-      xai: 'xAI',
-      deepseek: 'DeepSeek',
+      "github-copilot": "GitHub Copilot",
+      google: "Google AI",
+      openai: "OpenAI",
+      anthropic: "Anthropic",
+      openrouter: "OpenRouter",
+      opencode: "OpenCode",
+      ollama: "Ollama",
+      lmstudio: "LM Studio",
+      azure: "Azure OpenAI",
+      xai: "xAI",
+      deepseek: "DeepSeek",
     };
     return (
       providerNames[provider] ||
-      provider.charAt(0).toUpperCase() + provider.slice(1).replace(/-/g, ' ')
+      provider.charAt(0).toUpperCase() + provider.slice(1).replace(/-/g, " ")
     );
   }
 
@@ -1267,13 +1311,13 @@ export class OpencodeProvider extends CliProvider {
     // Extract the last path segment for nested model IDs
     // e.g., "arcee-ai/trinity-large-preview:free" → "trinity-large-preview:free"
     let rawName = model.name;
-    if (rawName.includes('/')) {
-      rawName = rawName.split('/').pop()!;
+    if (rawName.includes("/")) {
+      rawName = rawName.split("/").pop()!;
     }
 
     // Strip tier/pricing suffixes like ":free", ":extended"
-    const colonIdx = rawName.indexOf(':');
-    let suffix = '';
+    const colonIdx = rawName.indexOf(":");
+    let suffix = "";
     if (colonIdx !== -1) {
       const tierPart = rawName.slice(colonIdx + 1);
       if (/^(free|extended|beta|preview)$/i.test(tierPart)) {
@@ -1284,7 +1328,7 @@ export class OpencodeProvider extends CliProvider {
 
     // Capitalize and format the model name
     const formattedName = rawName
-      .split('-')
+      .split("-")
       .map((part) => {
         // Handle version numbers like "4-5" -> "4.5"
         if (/^\d+$/.test(part)) {
@@ -1292,22 +1336,22 @@ export class OpencodeProvider extends CliProvider {
         }
         return part.charAt(0).toUpperCase() + part.slice(1);
       })
-      .join(' ')
-      .replace(/(\d)\s+(\d)/g, '$1.$2'); // "4 5" -> "4.5"
+      .join(" ")
+      .replace(/(\d)\s+(\d)/g, "$1.$2"); // "4 5" -> "4.5"
 
     // Format provider name
     const providerNames: Record<string, string> = {
-      copilot: 'GitHub Copilot',
-      anthropic: 'Anthropic',
-      openai: 'OpenAI',
-      google: 'Google',
-      'amazon-bedrock': 'AWS Bedrock',
-      bedrock: 'AWS Bedrock',
-      openrouter: 'OpenRouter',
-      opencode: 'OpenCode',
-      azure: 'Azure',
-      ollama: 'Ollama',
-      lmstudio: 'LM Studio',
+      copilot: "GitHub Copilot",
+      anthropic: "Anthropic",
+      openai: "OpenAI",
+      google: "Google",
+      "amazon-bedrock": "AWS Bedrock",
+      bedrock: "AWS Bedrock",
+      openrouter: "OpenRouter",
+      opencode: "OpenCode",
+      azure: "Azure",
+      ollama: "Ollama",
+      lmstudio: "LM Studio",
     };
 
     const providerDisplay = providerNames[model.provider] || model.provider;
@@ -1317,34 +1361,34 @@ export class OpencodeProvider extends CliProvider {
   /**
    * Infer model tier based on model ID
    */
-  private inferModelTier(modelId: string): 'basic' | 'standard' | 'premium' {
+  private inferModelTier(modelId: string): "basic" | "standard" | "premium" {
     const lowerModelId = modelId.toLowerCase();
 
     // Premium tier: flagship models
     if (
-      lowerModelId.includes('opus') ||
-      lowerModelId.includes('gpt-5') ||
-      lowerModelId.includes('o3') ||
-      lowerModelId.includes('o4') ||
-      lowerModelId.includes('gemini-2') ||
-      lowerModelId.includes('deepseek-r1')
+      lowerModelId.includes("opus") ||
+      lowerModelId.includes("gpt-5") ||
+      lowerModelId.includes("o3") ||
+      lowerModelId.includes("o4") ||
+      lowerModelId.includes("gemini-2") ||
+      lowerModelId.includes("deepseek-r1")
     ) {
-      return 'premium';
+      return "premium";
     }
 
     // Basic tier: free or lightweight models
     if (
-      lowerModelId.includes('free') ||
-      lowerModelId.includes('nano') ||
-      lowerModelId.includes('mini') ||
-      lowerModelId.includes('haiku') ||
-      lowerModelId.includes('flash')
+      lowerModelId.includes("free") ||
+      lowerModelId.includes("nano") ||
+      lowerModelId.includes("mini") ||
+      lowerModelId.includes("haiku") ||
+      lowerModelId.includes("flash")
     ) {
-      return 'basic';
+      return "basic";
     }
 
     // Standard tier: everything else
-    return 'standard';
+    return "standard";
   }
 
   /**
@@ -1354,7 +1398,15 @@ export class OpencodeProvider extends CliProvider {
     const lowerModelId = modelId.toLowerCase();
 
     // Models known to support vision
-    const visionModels = ['claude', 'gpt-4', 'gpt-5', 'gemini', 'nova', 'llama-3', 'llama-4'];
+    const visionModels = [
+      "claude",
+      "gpt-4",
+      "gpt-5",
+      "gemini",
+      "nova",
+      "llama-3",
+      "llama-4",
+    ];
 
     return visionModels.some((vm) => lowerModelId.includes(vm));
   }
@@ -1369,7 +1421,7 @@ export class OpencodeProvider extends CliProvider {
     this.ensureCliDetected();
 
     if (!this.cliPath) {
-      opencodeLogger.debug('OpenCode CLI not available for provider fetch');
+      opencodeLogger.debug("OpenCode CLI not available for provider fetch");
       return [];
     }
 
@@ -1377,35 +1429,35 @@ export class OpencodeProvider extends CliProvider {
       let command: string;
       let args: string[];
 
-      if (this.detectedStrategy === 'npx') {
+      if (this.detectedStrategy === "npx") {
         // NPX strategy
-        command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-        args = ['opencode-ai@latest', 'auth', 'list'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+        command = process.platform === "win32" ? "npx.cmd" : "npx";
+        args = ["opencode-ai@latest", "auth", "list"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       } else if (this.useWsl && this.wslCliPath) {
         // WSL strategy
-        command = 'wsl.exe';
+        command = "wsl.exe";
         args = this.wslDistribution
-          ? ['-d', this.wslDistribution, this.wslCliPath, 'auth', 'list']
-          : [this.wslCliPath, 'auth', 'list'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+          ? ["-d", this.wslDistribution, this.wslCliPath, "auth", "list"]
+          : [this.wslCliPath, "auth", "list"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       } else {
         // Direct CLI execution
         command = this.cliPath;
-        args = ['auth', 'list'];
-        opencodeLogger.debug(`Executing: ${command} ${args.join(' ')}`);
+        args = ["auth", "list"];
+        opencodeLogger.debug(`Executing: ${command} ${args.join(" ")}`);
       }
 
       const { stdout } = await execFileAsync(command, args, {
-        encoding: 'utf-8',
+        encoding: "utf-8",
         timeout: 15000,
         windowsHide: true,
         // Use shell on Windows for .cmd files
-        shell: process.platform === 'win32' && command.endsWith('.cmd'),
+        shell: process.platform === "win32" && command.endsWith(".cmd"),
       });
 
       opencodeLogger.debug(
-        `Auth list output (${stdout.length} chars): ${stdout.substring(0, 200)}...`
+        `Auth list output (${stdout.length} chars): ${stdout.substring(0, 200)}...`,
       );
       const providers = this.parseProvidersOutput(stdout);
       this.cachedProviders = providers;
@@ -1431,36 +1483,36 @@ export class OpencodeProvider extends CliProvider {
    * Each line with ● contains: provider name and auth method (oauth/api)
    */
   private parseProvidersOutput(output: string): OpenCodeProviderInfo[] {
-    const lines = output.split('\n');
+    const lines = output.split("\n");
     const providers: OpenCodeProviderInfo[] = [];
 
     // Provider name to ID mapping
     const providerIdMap: Record<string, string> = {
-      anthropic: 'anthropic',
-      'github copilot': 'github-copilot',
-      copilot: 'github-copilot',
-      google: 'google',
-      openai: 'openai',
-      openrouter: 'openrouter',
-      azure: 'azure',
-      bedrock: 'amazon-bedrock',
-      'amazon bedrock': 'amazon-bedrock',
-      ollama: 'ollama',
-      'lm studio': 'lmstudio',
-      lmstudio: 'lmstudio',
-      opencode: 'opencode',
-      'z.ai coding plan': 'zai-coding-plan',
-      'z.ai': 'z-ai',
+      anthropic: "anthropic",
+      "github copilot": "github-copilot",
+      copilot: "github-copilot",
+      google: "google",
+      openai: "openai",
+      openrouter: "openrouter",
+      azure: "azure",
+      bedrock: "amazon-bedrock",
+      "amazon bedrock": "amazon-bedrock",
+      ollama: "ollama",
+      "lm studio": "lmstudio",
+      lmstudio: "lmstudio",
+      opencode: "opencode",
+      "z.ai coding plan": "zai-coding-plan",
+      "z.ai": "z-ai",
     };
 
     for (const line of lines) {
       // Look for lines with ● which indicate authenticated providers
       // Format: "●  Provider Name auth_method"
-      if (line.includes('●')) {
+      if (line.includes("●")) {
         // Remove ANSI escape codes and the ● symbol
         const cleanLine = line
-          .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
-          .replace(/●/g, '') // Remove ● symbol
+          .replace(/\x1b\[[0-9;]*m/g, "") // Remove ANSI codes
+          .replace(/●/g, "") // Remove ● symbol
           .trim();
 
         if (!cleanLine) continue;
@@ -1470,20 +1522,21 @@ export class OpencodeProvider extends CliProvider {
         const parts = cleanLine.split(/\s+/);
         if (parts.length >= 2) {
           const authMethod = parts[parts.length - 1].toLowerCase();
-          const providerName = parts.slice(0, -1).join(' ');
+          const providerName = parts.slice(0, -1).join(" ");
 
           // Determine auth method type
-          let authMethodType: 'oauth' | 'api_key' | undefined;
-          if (authMethod === 'oauth') {
-            authMethodType = 'oauth';
-          } else if (authMethod === 'api' || authMethod === 'api_key') {
-            authMethodType = 'api_key';
+          let authMethodType: "oauth" | "api_key" | undefined;
+          if (authMethod === "oauth") {
+            authMethodType = "oauth";
+          } else if (authMethod === "api" || authMethod === "api_key") {
+            authMethodType = "api_key";
           }
 
           // Get provider ID from name
           const providerNameLower = providerName.toLowerCase();
           const providerId =
-            providerIdMap[providerNameLower] || providerNameLower.replace(/\s+/g, '-');
+            providerIdMap[providerNameLower] ||
+            providerNameLower.replace(/\s+/g, "-");
 
           providers.push({
             id: providerId,
@@ -1513,7 +1566,7 @@ export class OpencodeProvider extends CliProvider {
     this.cachedModels = null;
     this.modelsCacheExpiry = 0;
     this.cachedProviders = null;
-    opencodeLogger.debug('Model cache cleared');
+    opencodeLogger.debug("Model cache cleared");
   }
 
   /**
@@ -1536,7 +1589,7 @@ export class OpencodeProvider extends CliProvider {
    * - vision: Image understanding
    */
   supportsFeature(feature: string): boolean {
-    const supportedFeatures = ['tools', 'text', 'vision'];
+    const supportedFeatures = ["tools", "text", "vision"];
     return supportedFeatures.includes(feature);
   }
 
@@ -1558,7 +1611,7 @@ export class OpencodeProvider extends CliProvider {
     if (authIndicators.hasOAuthToken) {
       return {
         authenticated: true,
-        method: 'oauth',
+        method: "oauth",
         hasOAuthToken: true,
         hasApiKey: authIndicators.hasApiKey,
       };
@@ -1568,7 +1621,7 @@ export class OpencodeProvider extends CliProvider {
     if (authIndicators.hasApiKey) {
       return {
         authenticated: true,
-        method: 'api_key',
+        method: "api_key",
         hasOAuthToken: false,
         hasApiKey: true,
       };
@@ -1576,7 +1629,7 @@ export class OpencodeProvider extends CliProvider {
 
     return {
       authenticated: false,
-      method: 'none',
+      method: "none",
       hasOAuthToken: false,
       hasApiKey: false,
     };
@@ -1603,7 +1656,7 @@ export class OpencodeProvider extends CliProvider {
     return {
       installed,
       path: this.cliPath || undefined,
-      method: this.detectedStrategy === 'npx' ? 'npm' : 'cli',
+      method: this.detectedStrategy === "npx" ? "npm" : "cli",
       authenticated: auth.authenticated,
       hasApiKey: auth.hasApiKey,
       hasOAuthToken: auth.hasOAuthToken,

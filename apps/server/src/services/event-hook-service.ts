@@ -15,26 +15,25 @@
  * - auto_mode_error: Auto mode encountered a critical error
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { createLogger } from '@pegasus/utils';
-import type { EventEmitter } from '../lib/events.js';
-import type { SettingsService } from './settings-service.js';
-import type { EventHistoryService } from './event-history-service.js';
-import type { FeatureLoader } from './feature-loader.js';
+import { exec } from "child_process";
+import { promisify } from "util";
+import { createLogger } from "@pegasus/utils";
+import type { EventEmitter } from "../lib/events.js";
+import type { SettingsService } from "./settings-service.js";
+import type { EventHistoryService } from "./event-history-service.js";
+import type { FeatureLoader } from "./feature-loader.js";
 import type {
   EventHook,
   EventHookTrigger,
   EventHookShellAction,
   EventHookHttpAction,
   EventHookNtfyAction,
-  NtfyEndpointConfig,
   EventHookContext,
-} from '@pegasus/types';
-import { ntfyService, type NtfyContext } from './ntfy-service.js';
+} from "@pegasus/types";
+import { ntfyService, type NtfyContext } from "./ntfy-service.js";
 
 const execAsync = promisify(exec);
-const logger = createLogger('EventHooks');
+const logger = createLogger("EventHooks");
 
 /** Default timeout for shell commands (30 seconds) */
 const DEFAULT_SHELL_TIMEOUT = 30000;
@@ -53,7 +52,7 @@ interface AutoModeEventPayload {
   featureId?: string;
   featureName?: string;
   passes?: boolean;
-  executionMode?: 'auto' | 'manual';
+  executionMode?: "auto" | "manual";
   message?: string;
   error?: string;
   errorType?: string;
@@ -84,12 +83,12 @@ interface FeatureStatusChangedPayload {
  * Type guard to safely narrow AutoModeEventPayload to FeatureStatusChangedPayload
  */
 function isFeatureStatusChangedPayload(
-  payload: AutoModeEventPayload
+  payload: AutoModeEventPayload,
 ): payload is AutoModeEventPayload & FeatureStatusChangedPayload {
   return (
-    typeof payload.featureId === 'string' &&
-    typeof payload.projectPath === 'string' &&
-    typeof payload.status === 'string'
+    typeof payload.featureId === "string" &&
+    typeof payload.projectPath === "string" &&
+    typeof payload.status === "string"
   );
 }
 
@@ -102,7 +101,7 @@ interface FeatureCompletedPayload {
   projectPath: string;
   passes?: boolean;
   message?: string;
-  executionMode?: 'auto' | 'manual';
+  executionMode?: "auto" | "manual";
 }
 
 /**
@@ -113,9 +112,9 @@ interface FeatureCompletedPayload {
  */
 export class EventHookService {
   /** Feature status that indicates agent work is done and awaiting human review (tests skipped) */
-  private static readonly STATUS_WAITING_APPROVAL = 'waiting_approval';
+  private static readonly STATUS_WAITING_APPROVAL = "waiting_approval";
   /** Feature status that indicates agent work passed automated verification */
-  private static readonly STATUS_VERIFIED = 'verified';
+  private static readonly STATUS_VERIFIED = "verified";
 
   private emitter: EventEmitter | null = null;
   private settingsService: SettingsService | null = null;
@@ -134,7 +133,10 @@ export class EventHookService {
    * Timer IDs for pending cleanup of recentlyHandledFeatures entries,
    * keyed by featureId. Stored so they can be cancelled in destroy().
    */
-  private recentlyHandledTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private recentlyHandledTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
 
   /**
    * Initialize the service with event emitter, settings service, event history service, and feature loader
@@ -143,7 +145,7 @@ export class EventHookService {
     emitter: EventEmitter,
     settingsService: SettingsService,
     eventHistoryService?: EventHistoryService,
-    featureLoader?: FeatureLoader
+    featureLoader?: FeatureLoader,
   ): void {
     this.emitter = emitter;
     this.settingsService = settingsService;
@@ -152,16 +154,16 @@ export class EventHookService {
 
     // Subscribe to events
     this.unsubscribe = emitter.subscribe((type, payload) => {
-      if (type === 'auto-mode:event') {
+      if (type === "auto-mode:event") {
         this.handleAutoModeEvent(payload as AutoModeEventPayload);
-      } else if (type === 'feature:created') {
+      } else if (type === "feature:created") {
         this.handleFeatureCreatedEvent(payload as FeatureCreatedPayload);
-      } else if (type === 'feature:completed') {
+      } else if (type === "feature:completed") {
         this.handleFeatureCompletedEvent(payload as FeatureCompletedPayload);
       }
     });
 
-    logger.info('Event hook service initialized');
+    logger.info("Event hook service initialized");
   }
 
   /**
@@ -187,35 +189,37 @@ export class EventHookService {
   /**
    * Handle auto-mode events and trigger matching hooks
    */
-  private async handleAutoModeEvent(payload: AutoModeEventPayload): Promise<void> {
+  private async handleAutoModeEvent(
+    payload: AutoModeEventPayload,
+  ): Promise<void> {
     if (!payload.type) return;
 
     // Map internal event types to hook triggers
     let trigger: EventHookTrigger | null = null;
 
     switch (payload.type) {
-      case 'auto_mode_feature_complete':
+      case "auto_mode_feature_complete":
         // Only map explicit auto-mode completion events.
         // Manual feature completions are emitted as feature:completed.
-        if (payload.executionMode !== 'auto') return;
-        trigger = payload.passes ? 'feature_success' : 'feature_error';
+        if (payload.executionMode !== "auto") return;
+        trigger = payload.passes ? "feature_success" : "feature_error";
         // Track this feature so feature_status_changed doesn't double-fire hooks
         if (payload.featureId) {
           this.markFeatureHandled(payload.featureId);
         }
         break;
-      case 'auto_mode_error':
+      case "auto_mode_error":
         // Feature-level error (has featureId) vs auto-mode level error
-        trigger = payload.featureId ? 'feature_error' : 'auto_mode_error';
+        trigger = payload.featureId ? "feature_error" : "auto_mode_error";
         // Track this feature so feature_status_changed doesn't double-fire hooks
         if (payload.featureId) {
           this.markFeatureHandled(payload.featureId);
         }
         break;
-      case 'auto_mode_idle':
-        trigger = 'auto_mode_complete';
+      case "auto_mode_idle":
+        trigger = "auto_mode_complete";
         break;
-      case 'feature_status_changed':
+      case "feature_status_changed":
         if (isFeatureStatusChangedPayload(payload)) {
           this.handleFeatureStatusChanged(payload);
         }
@@ -231,24 +235,33 @@ export class EventHookService {
     let featureName: string | undefined = undefined;
     if (payload.featureId && payload.projectPath && this.featureLoader) {
       try {
-        const feature = await this.featureLoader.get(payload.projectPath, payload.featureId);
+        const feature = await this.featureLoader.get(
+          payload.projectPath,
+          payload.featureId,
+        );
         if (feature?.title) {
           featureName = feature.title;
         }
       } catch (error) {
-        logger.warn(`Failed to load feature ${payload.featureId} for event hook:`, error);
+        logger.warn(
+          `Failed to load feature ${payload.featureId} for event hook:`,
+          error,
+        );
       }
     }
 
     // Build context for variable substitution
     // Use loaded featureName (from feature.title) or fall back to payload.featureName
     // Only populate error/errorType for error triggers - don't leak success messages into error fields
-    const isErrorTrigger = trigger === 'feature_error' || trigger === 'auto_mode_error';
+    const isErrorTrigger =
+      trigger === "feature_error" || trigger === "auto_mode_error";
     const context: HookContext = {
       featureId: payload.featureId,
       featureName: featureName || payload.featureName,
       projectPath: payload.projectPath,
-      projectName: payload.projectPath ? this.extractProjectName(payload.projectPath) : undefined,
+      projectName: payload.projectPath
+        ? this.extractProjectName(payload.projectPath)
+        : undefined,
       error: isErrorTrigger ? payload.error || payload.message : undefined,
       errorType: isErrorTrigger ? payload.errorType : undefined,
       timestamp: new Date().toISOString(),
@@ -256,35 +269,47 @@ export class EventHookService {
     };
 
     // Execute matching hooks (pass passes for feature completion events)
-    await this.executeHooksForTrigger(trigger, context, { passes: payload.passes });
+    await this.executeHooksForTrigger(trigger, context, {
+      passes: payload.passes,
+    });
   }
 
   /**
    * Handle feature:completed events and trigger matching hooks
    */
-  private async handleFeatureCompletedEvent(payload: FeatureCompletedPayload): Promise<void> {
+  private async handleFeatureCompletedEvent(
+    payload: FeatureCompletedPayload,
+  ): Promise<void> {
     if (!payload.featureId || !payload.projectPath) return;
 
     // Mark as handled to prevent duplicate firing if feature_status_changed also fires
     this.markFeatureHandled(payload.featureId);
 
     const passes = payload.passes ?? true;
-    const trigger: EventHookTrigger = passes ? 'feature_success' : 'feature_error';
+    const trigger: EventHookTrigger = passes
+      ? "feature_success"
+      : "feature_error";
 
     // Load feature name if we have featureId but no featureName
     let featureName: string | undefined = undefined;
     if (payload.projectPath && this.featureLoader) {
       try {
-        const feature = await this.featureLoader.get(payload.projectPath, payload.featureId);
+        const feature = await this.featureLoader.get(
+          payload.projectPath,
+          payload.featureId,
+        );
         if (feature?.title) {
           featureName = feature.title;
         }
       } catch (error) {
-        logger.warn(`Failed to load feature ${payload.featureId} for event hook:`, error);
+        logger.warn(
+          `Failed to load feature ${payload.featureId} for event hook:`,
+          error,
+        );
       }
     }
 
-    const isErrorTrigger = trigger === 'feature_error';
+    const isErrorTrigger = trigger === "feature_error";
     const context: HookContext = {
       featureId: payload.featureId,
       featureName: featureName || payload.featureName,
@@ -302,17 +327,19 @@ export class EventHookService {
   /**
    * Handle feature:created events and trigger matching hooks
    */
-  private async handleFeatureCreatedEvent(payload: FeatureCreatedPayload): Promise<void> {
+  private async handleFeatureCreatedEvent(
+    payload: FeatureCreatedPayload,
+  ): Promise<void> {
     const context: HookContext = {
       featureId: payload.featureId,
       featureName: payload.featureName,
       projectPath: payload.projectPath,
       projectName: this.extractProjectName(payload.projectPath),
       timestamp: new Date().toISOString(),
-      eventType: 'feature_created',
+      eventType: "feature_created",
     };
 
-    await this.executeHooksForTrigger('feature_created', context);
+    await this.executeHooksForTrigger("feature_created", context);
   }
 
   /**
@@ -322,7 +349,9 @@ export class EventHookService {
    * This handler catches manual (non-auto-mode) feature completions by detecting
    * status transitions to completion states (verified, waiting_approval).
    */
-  private async handleFeatureStatusChanged(payload: FeatureStatusChangedPayload): Promise<void> {
+  private async handleFeatureStatusChanged(
+    payload: FeatureStatusChangedPayload,
+  ): Promise<void> {
     // Skip if this feature was already handled via auto_mode_feature_complete
     if (this.recentlyHandledFeatures.has(payload.featureId)) {
       return;
@@ -334,7 +363,7 @@ export class EventHookService {
       payload.status === EventHookService.STATUS_VERIFIED ||
       payload.status === EventHookService.STATUS_WAITING_APPROVAL
     ) {
-      trigger = 'feature_success';
+      trigger = "feature_success";
     } else {
       // Only completion statuses trigger hooks from status changes
       return;
@@ -344,12 +373,18 @@ export class EventHookService {
     let featureName: string | undefined = undefined;
     if (this.featureLoader) {
       try {
-        const feature = await this.featureLoader.get(payload.projectPath, payload.featureId);
+        const feature = await this.featureLoader.get(
+          payload.projectPath,
+          payload.featureId,
+        );
         if (feature?.title) {
           featureName = feature.title;
         }
       } catch (error) {
-        logger.warn(`Failed to load feature ${payload.featureId} for status change hook:`, error);
+        logger.warn(
+          `Failed to load feature ${payload.featureId} for status change hook:`,
+          error,
+        );
       }
     }
 
@@ -389,7 +424,7 @@ export class EventHookService {
   private async executeHooksForTrigger(
     trigger: EventHookTrigger,
     context: HookContext,
-    additionalData?: { passes?: boolean }
+    additionalData?: { passes?: boolean },
   ): Promise<void> {
     // Store event to history (even if no hooks match)
     if (this.eventHistoryService && context.projectPath) {
@@ -404,12 +439,12 @@ export class EventHookService {
           passes: additionalData?.passes,
         });
       } catch (error) {
-        logger.error('Failed to store event to history:', error);
+        logger.error("Failed to store event to history:", error);
       }
     }
 
     if (!this.settingsService) {
-      logger.warn('Settings service not available');
+      logger.warn("Settings service not available");
       return;
     }
 
@@ -418,33 +453,42 @@ export class EventHookService {
       const hooks = settings.eventHooks || [];
 
       // Filter to enabled hooks matching this trigger
-      const matchingHooks = hooks.filter((hook) => hook.enabled && hook.trigger === trigger);
+      const matchingHooks = hooks.filter(
+        (hook) => hook.enabled && hook.trigger === trigger,
+      );
 
       if (matchingHooks.length === 0) {
         return;
       }
 
-      logger.info(`Executing ${matchingHooks.length} hook(s) for trigger: ${trigger}`);
+      logger.info(
+        `Executing ${matchingHooks.length} hook(s) for trigger: ${trigger}`,
+      );
 
       // Execute hooks in parallel (don't wait for one to finish before starting next)
-      await Promise.allSettled(matchingHooks.map((hook) => this.executeHook(hook, context)));
+      await Promise.allSettled(
+        matchingHooks.map((hook) => this.executeHook(hook, context)),
+      );
     } catch (error) {
-      logger.error('Error executing hooks:', error);
+      logger.error("Error executing hooks:", error);
     }
   }
 
   /**
    * Execute a single hook
    */
-  private async executeHook(hook: EventHook, context: HookContext): Promise<void> {
+  private async executeHook(
+    hook: EventHook,
+    context: HookContext,
+  ): Promise<void> {
     const hookName = hook.name || hook.id;
 
     try {
-      if (hook.action.type === 'shell') {
+      if (hook.action.type === "shell") {
         await this.executeShellHook(hook.action, context, hookName);
-      } else if (hook.action.type === 'http') {
+      } else if (hook.action.type === "http") {
         await this.executeHttpHook(hook.action, context, hookName);
-      } else if (hook.action.type === 'ntfy') {
+      } else if (hook.action.type === "ntfy") {
         await this.executeNtfyHook(hook.action, context, hookName);
       }
     } catch (error) {
@@ -458,7 +502,7 @@ export class EventHookService {
   private async executeShellHook(
     action: EventHookShellAction,
     context: HookContext,
-    hookName: string
+    hookName: string,
   ): Promise<void> {
     const command = this.substituteVariables(action.command, context);
     const timeout = action.timeout || DEFAULT_SHELL_TIMEOUT;
@@ -480,7 +524,7 @@ export class EventHookService {
 
       logger.info(`Shell hook "${hookName}" completed successfully`);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ETIMEDOUT') {
+      if ((error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
         logger.error(`Shell hook "${hookName}" timed out after ${timeout}ms`);
       }
       throw error;
@@ -493,14 +537,14 @@ export class EventHookService {
   private async executeHttpHook(
     action: EventHookHttpAction,
     context: HookContext,
-    hookName: string
+    hookName: string,
   ): Promise<void> {
     const url = this.substituteVariables(action.url, context);
-    const method = action.method || 'POST';
+    const method = action.method || "POST";
 
     // Substitute variables in headers
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
     if (action.headers) {
       for (const [key, value] of Object.entries(action.headers)) {
@@ -512,7 +556,7 @@ export class EventHookService {
     let body: string | undefined;
     if (action.body) {
       body = this.substituteVariables(action.body, context);
-    } else if (method !== 'GET') {
+    } else if (method !== "GET") {
       // Default body with context information
       body = JSON.stringify({
         eventType: context.eventType,
@@ -529,25 +573,34 @@ export class EventHookService {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_HTTP_TIMEOUT);
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        DEFAULT_HTTP_TIMEOUT,
+      );
 
       const response = await fetch(url, {
         method,
         headers,
-        body: method !== 'GET' ? body : undefined,
+        body: method !== "GET" ? body : undefined,
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        logger.warn(`HTTP hook "${hookName}" received status ${response.status}`);
+        logger.warn(
+          `HTTP hook "${hookName}" received status ${response.status}`,
+        );
       } else {
-        logger.info(`HTTP hook "${hookName}" completed successfully (status: ${response.status})`);
+        logger.info(
+          `HTTP hook "${hookName}" completed successfully (status: ${response.status})`,
+        );
       }
     } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        logger.error(`HTTP hook "${hookName}" timed out after ${DEFAULT_HTTP_TIMEOUT}ms`);
+      if ((error as Error).name === "AbortError") {
+        logger.error(
+          `HTTP hook "${hookName}" timed out after ${DEFAULT_HTTP_TIMEOUT}ms`,
+        );
       }
       throw error;
     }
@@ -559,10 +612,10 @@ export class EventHookService {
   private async executeNtfyHook(
     action: EventHookNtfyAction,
     context: HookContext,
-    hookName: string
+    hookName: string,
   ): Promise<void> {
     if (!this.settingsService) {
-      logger.warn('Settings service not available for ntfy hook');
+      logger.warn("Settings service not available for ntfy hook");
       return;
     }
 
@@ -572,7 +625,9 @@ export class EventHookService {
     const endpoint = endpoints.find((e) => e.id === action.endpointId);
 
     if (!endpoint) {
-      logger.error(`Ntfy hook "${hookName}" references unknown endpoint: ${action.endpointId}`);
+      logger.error(
+        `Ntfy hook "${hookName}" references unknown endpoint: ${action.endpointId}`,
+      );
       return;
     }
 
@@ -595,23 +650,25 @@ export class EventHookService {
     if (clickUrl && context.projectPath) {
       try {
         const url = new URL(clickUrl);
-        url.pathname = '/board';
+        url.pathname = "/board";
         // Add projectPath so the UI can switch to the correct project
-        url.searchParams.set('projectPath', context.projectPath);
+        url.searchParams.set("projectPath", context.projectPath);
         // Add featureId as query param for deep linking to board with feature output modal
         if (context.featureId) {
-          url.searchParams.set('featureId', context.featureId);
+          url.searchParams.set("featureId", context.featureId);
         }
         clickUrl = url.toString();
       } catch (error) {
         // If URL parsing fails, log warning and use as-is
         logger.warn(
-          `Failed to parse click URL "${clickUrl}" for deep linking: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to parse click URL "${clickUrl}" for deep linking: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
 
-    logger.info(`Executing ntfy hook "${hookName}" to endpoint "${endpoint.name}"`);
+    logger.info(
+      `Executing ntfy hook "${hookName}" to endpoint "${endpoint.name}"`,
+    );
 
     const result = await ntfyService.sendNotification(
       endpoint,
@@ -623,7 +680,7 @@ export class EventHookService {
         clickUrl,
         priority: action.priority,
       },
-      ntfyContext
+      ntfyContext,
     );
 
     if (!result.success) {
@@ -640,7 +697,7 @@ export class EventHookService {
     return template.replace(/\{\{(\w+)\}\}/g, (match, variable) => {
       const value = context[variable as keyof HookContext];
       if (value === undefined || value === null) {
-        return '';
+        return "";
       }
       return String(value);
     });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,18 +6,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   GitCommit,
   GitMerge,
@@ -31,18 +31,18 @@ import {
   ChevronRight,
   Upload,
   RefreshCw,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { cn } from '@/lib/utils';
-import { TruncatedFilePath } from '@/components/ui/truncated-file-path';
-import { ModelOverrideTrigger, useModelOverride } from '@/components/shared';
-import type { FileStatus, MergeStateInfo } from '@/types/electron';
-import { parseDiff, type ParsedFileDiff } from '@/lib/diff-utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { cn } from "@/lib/utils";
+import { TruncatedFilePath } from "@/components/ui/truncated-file-path";
+import { ModelOverrideTrigger, useModelOverride } from "@/components/shared";
+import type { FileStatus, MergeStateInfo } from "@/types/electron";
+import { parseDiff, type ParsedFileDiff } from "@/lib/diff-utils";
 
 interface RemoteInfo {
   name: string;
@@ -67,79 +67,81 @@ interface CommitWorktreeDialogProps {
 
 const getFileIcon = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
+    case "A":
+    case "?":
       return <FilePlus className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />;
-    case 'D':
+    case "D":
       return <FileX className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />;
-    case 'M':
-    case 'U':
+    case "M":
+    case "U":
       return <FilePen className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />;
-    case 'R':
-    case 'C':
+    case "R":
+    case "C":
       return <File className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />;
     default:
-      return <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />;
+      return (
+        <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+      );
   }
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'A':
-      return 'Added';
-    case '?':
-      return 'Untracked';
-    case 'D':
-      return 'Deleted';
-    case 'M':
-      return 'Modified';
-    case 'U':
-      return 'Updated';
-    case 'R':
-      return 'Renamed';
-    case 'C':
-      return 'Copied';
+    case "A":
+      return "Added";
+    case "?":
+      return "Untracked";
+    case "D":
+      return "Deleted";
+    case "M":
+      return "Modified";
+    case "U":
+      return "Updated";
+    case "R":
+      return "Renamed";
+    case "C":
+      return "Copied";
     default:
-      return 'Changed';
+      return "Changed";
   }
 };
 
 const getStatusBadgeColor = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
-    case 'D':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
-    case 'M':
-    case 'U':
-      return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    case 'R':
-    case 'C':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case "A":
+    case "?":
+      return "bg-green-500/20 text-green-400 border-green-500/30";
+    case "D":
+      return "bg-red-500/20 text-red-400 border-red-500/30";
+    case "M":
+    case "U":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    case "R":
+    case "C":
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     default:
-      return 'bg-muted text-muted-foreground border-border';
+      return "bg-muted text-muted-foreground border-border";
   }
 };
 
 const getMergeTypeLabel = (mergeType?: string) => {
   switch (mergeType) {
-    case 'both-modified':
-      return 'Both Modified';
-    case 'added-by-us':
-      return 'Added by Us';
-    case 'added-by-them':
-      return 'Added by Them';
-    case 'deleted-by-us':
-      return 'Deleted by Us';
-    case 'deleted-by-them':
-      return 'Deleted by Them';
-    case 'both-added':
-      return 'Both Added';
-    case 'both-deleted':
-      return 'Both Deleted';
+    case "both-modified":
+      return "Both Modified";
+    case "added-by-us":
+      return "Added by Us";
+    case "added-by-them":
+      return "Added by Them";
+    case "deleted-by-us":
+      return "Deleted by Us";
+    case "deleted-by-them":
+      return "Deleted by Them";
+    case "both-added":
+      return "Both Added";
+    case "both-deleted":
+      return "Both Deleted";
     default:
-      return 'Merge';
+      return "Merge";
   }
 };
 
@@ -148,52 +150,68 @@ function DiffLine({
   content,
   lineNumber,
 }: {
-  type: 'context' | 'addition' | 'deletion' | 'header';
+  type: "context" | "addition" | "deletion" | "header";
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
   const bgClass = {
-    context: 'bg-transparent',
-    addition: 'bg-green-500/10',
-    deletion: 'bg-red-500/10',
-    header: 'bg-blue-500/10',
+    context: "bg-transparent",
+    addition: "bg-green-500/10",
+    deletion: "bg-red-500/10",
+    header: "bg-blue-500/10",
   };
 
   const textClass = {
-    context: 'text-foreground-secondary',
-    addition: 'text-green-400',
-    deletion: 'text-red-400',
-    header: 'text-blue-400',
+    context: "text-foreground-secondary",
+    addition: "text-green-400",
+    deletion: "text-red-400",
+    header: "text-blue-400",
   };
 
   const prefix = {
-    context: ' ',
-    addition: '+',
-    deletion: '-',
-    header: '',
+    context: " ",
+    addition: "+",
+    deletion: "-",
+    header: "",
   };
 
-  if (type === 'header') {
+  if (type === "header") {
     return (
-      <div className={cn('px-2 py-1 font-mono text-xs', bgClass[type], textClass[type])}>
+      <div
+        className={cn(
+          "px-2 py-1 font-mono text-xs",
+          bgClass[type],
+          textClass[type],
+        )}
+      >
         {content}
       </div>
     );
   }
 
   return (
-    <div className={cn('flex font-mono text-xs', bgClass[type])}>
+    <div className={cn("flex font-mono text-xs", bgClass[type])}>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.old ?? ''}
+        {lineNumber?.old ?? ""}
       </span>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.new ?? ''}
+        {lineNumber?.new ?? ""}
       </span>
-      <span className={cn('w-4 flex-shrink-0 text-center select-none', textClass[type])}>
+      <span
+        className={cn(
+          "w-4 flex-shrink-0 text-center select-none",
+          textClass[type],
+        )}
+      >
         {prefix[type]}
       </span>
-      <span className={cn('flex-1 px-1.5 whitespace-pre-wrap break-all', textClass[type])}>
-        {content || '\u00A0'}
+      <span
+        className={cn(
+          "flex-1 px-1.5 whitespace-pre-wrap break-all",
+          textClass[type],
+        )}
+      >
+        {content || "\u00A0"}
       </span>
     </div>
   );
@@ -206,33 +224,41 @@ export function CommitWorktreeDialog({
   agentModifiedFiles,
   onCommitted,
 }: CommitWorktreeDialogProps) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const enableAiCommitMessages = useAppStore((state) => state.enableAiCommitMessages);
+  const enableAiCommitMessages = useAppStore(
+    (state) => state.enableAiCommitMessages,
+  );
 
   // Commit message model override
-  const commitModelOverride = useModelOverride({ phase: 'commitMessageModel' });
-  const { effectiveModel: commitEffectiveModel, effectiveModelEntry: commitEffectiveModelEntry } =
-    commitModelOverride;
+  const commitModelOverride = useModelOverride({ phase: "commitMessageModel" });
+  const {
+    effectiveModel: commitEffectiveModel,
+    effectiveModelEntry: commitEffectiveModelEntry,
+  } = commitModelOverride;
 
   // File selection state
   const [files, setFiles] = useState<FileStatus[]>([]);
-  const [diffContent, setDiffContent] = useState('');
+  const [diffContent, setDiffContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [isLoadingDiffs, setIsLoadingDiffs] = useState(false);
-  const [mergeState, setMergeState] = useState<MergeStateInfo | undefined>(undefined);
+  const [mergeState, setMergeState] = useState<MergeStateInfo | undefined>(
+    undefined,
+  );
 
   // Push after commit state
   const [pushAfterCommit, setPushAfterCommit] = useState(false);
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
-  const [selectedRemote, setSelectedRemote] = useState<string>('');
+  const [selectedRemote, setSelectedRemote] = useState<string>("");
   const [isLoadingRemotes, setIsLoadingRemotes] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [remotesFetched, setRemotesFetched] = useState(false);
-  const [remotesFetchError, setRemotesFetchError] = useState<string | null>(null);
+  const [remotesFetchError, setRemotesFetchError] = useState<string | null>(
+    null,
+  );
   // Track whether the commit already succeeded so retries can skip straight to push
   const [commitSucceeded, setCommitSucceeded] = useState(false);
 
@@ -267,27 +293,30 @@ export function CommitWorktreeDialog({
             setRemotes(remoteInfos);
             // Auto-select 'origin' if available, otherwise first remote
             if (remoteInfos.length > 0) {
-              const defaultRemote = remoteInfos.find((r) => r.name === 'origin') || remoteInfos[0];
+              const defaultRemote =
+                remoteInfos.find((r) => r.name === "origin") || remoteInfos[0];
               setSelectedRemote(defaultRemote.name);
             }
           }
         } else {
           // API not available — mark fetch as complete with an error so the UI
           // shows feedback instead of remaining in an empty/loading state.
-          setRemotesFetchError('Remote listing not available');
+          setRemotesFetchError("Remote listing not available");
           setRemotesFetched(true);
           return;
         }
       } catch (err) {
         if (signal?.cancelled) return;
         // Don't mark as successfully fetched — show an error with retry instead
-        setRemotesFetchError(err instanceof Error ? err.message : 'Failed to fetch remotes');
-        console.warn('Failed to fetch remotes:', err);
+        setRemotesFetchError(
+          err instanceof Error ? err.message : "Failed to fetch remotes",
+        );
+        console.warn("Failed to fetch remotes:", err);
       } finally {
         if (!signal?.cancelled) setIsLoadingRemotes(false);
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -298,21 +327,27 @@ export function CommitWorktreeDialog({
         signal.cancelled = true;
       };
     }
-  }, [pushAfterCommit, worktree, remotesFetched, remotesFetchError, fetchRemotesForWorktree]);
+  }, [
+    pushAfterCommit,
+    worktree,
+    remotesFetched,
+    remotesFetchError,
+    fetchRemotesForWorktree,
+  ]);
 
   // Load diffs when dialog opens
   useEffect(() => {
     if (open && worktree) {
       setIsLoadingDiffs(true);
       setFiles([]);
-      setDiffContent('');
+      setDiffContent("");
       setSelectedFiles(new Set());
       setExpandedFile(null);
       setMergeState(undefined);
       // Reset push state
       setPushAfterCommit(false);
       setRemotes([]);
-      setSelectedRemote('');
+      setSelectedRemote("");
       setIsPushing(false);
       setRemotesFetched(false);
       setRemotesFetchError(null);
@@ -331,42 +366,49 @@ export function CommitWorktreeDialog({
               if (result.mergeState?.isMerging) {
                 const mergeSet = new Set(result.mergeState.mergeAffectedFiles);
                 fileList.sort((a, b) => {
-                  const aIsMerge = mergeSet.has(a.path) || (a.isMergeAffected ?? false);
-                  const bIsMerge = mergeSet.has(b.path) || (b.isMergeAffected ?? false);
+                  const aIsMerge =
+                    mergeSet.has(a.path) || (a.isMergeAffected ?? false);
+                  const bIsMerge =
+                    mergeSet.has(b.path) || (b.isMergeAffected ?? false);
                   if (aIsMerge && !bIsMerge) return -1;
                   if (!aIsMerge && bIsMerge) return 1;
                   return 0;
                 });
               }
               if (!cancelled) setFiles(fileList);
-              if (!cancelled) setDiffContent(result.diff ?? '');
+              if (!cancelled) setDiffContent(result.diff ?? "");
               if (!cancelled) setMergeState(result.mergeState);
               // If any files are already staged, pre-select only staged files
               // Otherwise select all files by default
               const stagedFiles = fileList.filter((f) => {
-                const idx = f.indexStatus ?? ' ';
-                return idx !== ' ' && idx !== '?';
+                const idx = f.indexStatus ?? " ";
+                return idx !== " " && idx !== "?";
               });
               if (!cancelled) {
                 if (stagedFiles.length > 0) {
                   // Also include untracked files that are staged (A status)
                   setSelectedFiles(new Set(stagedFiles.map((f) => f.path)));
-                } else if (agentModifiedFiles && agentModifiedFiles.length > 0) {
+                } else if (
+                  agentModifiedFiles &&
+                  agentModifiedFiles.length > 0
+                ) {
                   // Pre-select only files the agent modified
                   const agentFileSet = new Set(agentModifiedFiles);
-                  const matching = fileList.filter((f) => agentFileSet.has(f.path));
+                  const matching = fileList.filter((f) =>
+                    agentFileSet.has(f.path),
+                  );
                   setSelectedFiles(
                     matching.length > 0
                       ? new Set(matching.map((f) => f.path))
-                      : new Set(fileList.map((f) => f.path))
+                      : new Set(fileList.map((f) => f.path)),
                   );
                 } else {
                   setSelectedFiles(new Set(fileList.map((f) => f.path)));
                 }
               }
             } else {
-              const errorMsg = result.error ?? 'Failed to load diffs';
-              console.warn('Failed to load diffs for commit dialog:', errorMsg);
+              const errorMsg = result.error ?? "Failed to load diffs";
+              console.warn("Failed to load diffs for commit dialog:", errorMsg);
               if (!cancelled) {
                 setError(errorMsg);
                 toast.error(errorMsg);
@@ -374,9 +416,10 @@ export function CommitWorktreeDialog({
             }
           }
         } catch (err) {
-          console.error('Failed to load diffs for commit dialog:', err);
+          console.error("Failed to load diffs for commit dialog:", err);
           if (!cancelled) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to load diffs';
+            const errorMsg =
+              err instanceof Error ? err.message : "Failed to load diffs";
             setError(errorMsg);
             toast.error(errorMsg);
           }
@@ -391,7 +434,7 @@ export function CommitWorktreeDialog({
         cancelled = true;
       };
     }
-  }, [open, worktree]);
+  }, [open, worktree, agentModifiedFiles]);
 
   const handleToggleFile = useCallback((filePath: string) => {
     setSelectedFiles((prev) => {
@@ -422,26 +465,32 @@ export function CommitWorktreeDialog({
   const performPush = async (
     api: ReturnType<typeof getElectronAPI>,
     worktreePath: string,
-    remoteName: string
+    remoteName: string,
   ): Promise<boolean> => {
     if (!api?.worktree?.push) {
-      toast.error('Push API not available');
+      toast.error("Push API not available");
       return false;
     }
     setIsPushing(true);
     try {
-      const pushResult = await api.worktree.push(worktreePath, false, remoteName);
+      const pushResult = await api.worktree.push(
+        worktreePath,
+        false,
+        remoteName,
+      );
       if (pushResult.success && pushResult.result) {
-        toast.success('Pushed to remote', {
+        toast.success("Pushed to remote", {
           description: pushResult.result.message,
         });
         return true;
       } else {
-        toast.error(pushResult.error || 'Failed to push to remote');
+        toast.error(pushResult.error || "Failed to push to remote");
         return false;
       }
     } catch (pushErr) {
-      toast.error(pushErr instanceof Error ? pushErr.message : 'Failed to push to remote');
+      toast.error(
+        pushErr instanceof Error ? pushErr.message : "Failed to push to remote",
+      );
       return false;
     } finally {
       setIsPushing(false);
@@ -460,12 +509,12 @@ export function CommitWorktreeDialog({
         if (ok) {
           onCommitted();
           onOpenChange(false);
-          setMessage('');
+          setMessage("");
         }
       } else {
         onCommitted();
         onOpenChange(false);
-        setMessage('');
+        setMessage("");
       }
       return;
     }
@@ -477,27 +526,37 @@ export function CommitWorktreeDialog({
 
     try {
       if (!api?.worktree?.commit) {
-        setError('Worktree API not available');
+        setError("Worktree API not available");
         return;
       }
 
       // Pass selected files if not all files are selected
       const filesToCommit =
-        selectedFiles.size === files.length ? undefined : Array.from(selectedFiles);
+        selectedFiles.size === files.length
+          ? undefined
+          : Array.from(selectedFiles);
 
-      const result = await api.worktree.commit(worktree.path, message, filesToCommit);
+      const result = await api.worktree.commit(
+        worktree.path,
+        message,
+        filesToCommit,
+      );
 
       if (result.success && result.result) {
         if (result.result.committed) {
           setCommitSucceeded(true);
-          toast.success('Changes committed', {
+          toast.success("Changes committed", {
             description: `Commit ${result.result.commitHash} on ${result.result.branch}`,
           });
 
           // Push after commit if enabled
           let pushSucceeded = false;
           if (pushAfterCommit && selectedRemote) {
-            pushSucceeded = await performPush(api, worktree.path, selectedRemote);
+            pushSucceeded = await performPush(
+              api,
+              worktree.path,
+              selectedRemote,
+            );
           }
 
           // Only close the dialog when no push was requested or the push completed successfully.
@@ -505,21 +564,21 @@ export function CommitWorktreeDialog({
           if (!pushAfterCommit || pushSucceeded) {
             onCommitted();
             onOpenChange(false);
-            setMessage('');
+            setMessage("");
           } else {
             // Commit succeeded but push failed — notify parent of commit but keep dialog open for retry
             onCommitted();
           }
         } else {
-          toast.info('No changes to commit', {
+          toast.info("No changes to commit", {
             description: result.result.message,
           });
         }
       } else {
-        setError(result.error || 'Failed to commit changes');
+        setError(result.error || "Failed to commit changes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to commit');
+      setError(err instanceof Error ? err.message : "Failed to commit");
     } finally {
       setIsLoading(false);
     }
@@ -531,7 +590,7 @@ export function CommitWorktreeDialog({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (
-      e.key === 'Enter' &&
+      e.key === "Enter" &&
       (e.metaKey || e.ctrlKey) &&
       !isLoading &&
       !isPushing &&
@@ -564,21 +623,21 @@ export function CommitWorktreeDialog({
         worktree.path,
         resolvedCommitModel,
         commitEffectiveModelEntry?.thinkingLevel,
-        commitEffectiveModelEntry?.providerId
+        commitEffectiveModelEntry?.providerId,
       );
 
       if (result.success && result.message) {
         setMessage(result.message);
       } else {
-        console.warn('Failed to generate commit message:', result.error);
-        toast.error('Failed to generate commit message', {
-          description: result.error || 'Unknown error',
+        console.warn("Failed to generate commit message:", result.error);
+        toast.error("Failed to generate commit message", {
+          description: result.error || "Unknown error",
         });
       }
     } catch (err) {
-      console.warn('Error generating commit message:', err);
-      toast.error('Failed to generate commit message', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      console.warn("Error generating commit message:", err);
+      toast.error("Failed to generate commit message", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setIsGenerating(false);
@@ -596,7 +655,7 @@ export function CommitWorktreeDialog({
   useEffect(() => {
     if (open && worktree) {
       // Reset state
-      setMessage('');
+      setMessage("");
       setError(null);
 
       if (!enableAiCommitMessages) {
@@ -631,8 +690,11 @@ export function CommitWorktreeDialog({
             Commit Changes
           </DialogTitle>
           <DialogDescription>
-            Commit changes in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
+            Commit changes in the{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>{" "}
+            worktree.
           </DialogDescription>
         </DialogHeader>
 
@@ -643,22 +705,25 @@ export function CommitWorktreeDialog({
               <GitMerge className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
               <div className="text-sm">
                 <span className="font-medium text-purple-400">
-                  {mergeState.mergeOperationType === 'cherry-pick'
-                    ? 'Cherry-pick'
-                    : mergeState.mergeOperationType === 'rebase'
-                      ? 'Rebase'
-                      : 'Merge'}{' '}
+                  {mergeState.mergeOperationType === "cherry-pick"
+                    ? "Cherry-pick"
+                    : mergeState.mergeOperationType === "rebase"
+                      ? "Rebase"
+                      : "Merge"}{" "}
                   in progress
                 </span>
                 {mergeState.conflictFiles.length > 0 ? (
                   <span className="text-purple-400/80 ml-1">
                     &mdash; {mergeState.conflictFiles.length} file
-                    {mergeState.conflictFiles.length !== 1 ? 's' : ''} with conflicts
+                    {mergeState.conflictFiles.length !== 1 ? "s" : ""} with
+                    conflicts
                   </span>
                 ) : mergeState.isCleanMerge ? (
                   <span className="text-purple-400/80 ml-1">
-                    &mdash; Clean merge, {mergeState.mergeAffectedFiles.length} file
-                    {mergeState.mergeAffectedFiles.length !== 1 ? 's' : ''} affected
+                    &mdash; Clean merge, {mergeState.mergeAffectedFiles.length}{" "}
+                    file
+                    {mergeState.mergeAffectedFiles.length !== 1 ? "s" : ""}{" "}
+                    affected
                   </span>
                 ) : null}
               </div>
@@ -683,7 +748,7 @@ export function CommitWorktreeDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? "Deselect all" : "Select all"}
                 </button>
               )}
             </div>
@@ -706,30 +771,32 @@ export function CommitWorktreeDialog({
                   const additions = fileDiff?.additions ?? 0;
                   const deletions = fileDiff?.deletions ?? 0;
                   // Determine staging state from index/worktree status
-                  const idx = file.indexStatus ?? ' ';
-                  const wt = file.workTreeStatus ?? ' ';
-                  const isStaged = idx !== ' ' && idx !== '?';
-                  const isUnstaged = wt !== ' ' && wt !== '?';
-                  const isUntracked = idx === '?' && wt === '?';
+                  const idx = file.indexStatus ?? " ";
+                  const wt = file.workTreeStatus ?? " ";
+                  const isStaged = idx !== " " && idx !== "?";
+                  const isUnstaged = wt !== " " && wt !== "?";
+                  const isUntracked = idx === "?" && wt === "?";
                   const isMergeFile =
                     file.isMergeAffected ||
-                    (mergeState?.mergeAffectedFiles?.includes(file.path) ?? false);
+                    (mergeState?.mergeAffectedFiles?.includes(file.path) ??
+                      false);
 
                   return (
                     <div
                       key={file.path}
                       className={cn(
-                        'border-b last:border-b-0',
-                        isMergeFile ? 'border-purple-500/30' : 'border-border'
+                        "border-b last:border-b-0",
+                        isMergeFile ? "border-purple-500/30" : "border-border",
                       )}
                     >
                       <div
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 transition-colors group',
+                          "flex items-center gap-2 px-3 py-1.5 transition-colors group",
                           isMergeFile
-                            ? 'bg-purple-500/5 hover:bg-purple-500/10'
-                            : 'hover:bg-accent/50',
-                          isExpanded && (isMergeFile ? 'bg-purple-500/10' : 'bg-accent/30')
+                            ? "bg-purple-500/5 hover:bg-purple-500/10"
+                            : "hover:bg-accent/50",
+                          isExpanded &&
+                            (isMergeFile ? "bg-purple-500/10" : "bg-accent/30"),
                         )}
                       >
                         {/* Checkbox */}
@@ -766,8 +833,8 @@ export function CommitWorktreeDialog({
                           )}
                           <span
                             className={cn(
-                              'text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0',
-                              getStatusBadgeColor(file.status)
+                              "text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0",
+                              getStatusBadgeColor(file.status),
                             )}
                           >
                             {getStatusLabel(file.status)}
@@ -817,9 +884,9 @@ export function CommitWorktreeDialog({
                       )}
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
-                          {file.status === '?' ? (
+                          {file.status === "?" ? (
                             <span>New file - diff preview not available</span>
-                          ) : file.status === 'D' ? (
+                          ) : file.status === "D" ? (
                             <span>File deleted</span>
                           ) : (
                             <span>Diff content not available</span>
@@ -836,7 +903,10 @@ export function CommitWorktreeDialog({
           {/* Commit Message */}
           <div className="grid gap-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="commit-message" className="flex items-center gap-2">
+              <Label
+                htmlFor="commit-message"
+                className="flex items-center gap-2"
+              >
                 Commit Message
                 {isGenerating && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -864,7 +934,9 @@ export function CommitWorktreeDialog({
                       Regenerate
                     </Button>
                     <ModelOverrideTrigger
-                      currentModelEntry={commitModelOverride.effectiveModelEntry}
+                      currentModelEntry={
+                        commitModelOverride.effectiveModelEntry
+                      }
                       onModelChange={commitModelOverride.setOverride}
                       phase="commitMessageModel"
                       isOverridden={commitModelOverride.isOverridden}
@@ -878,7 +950,9 @@ export function CommitWorktreeDialog({
             <Textarea
               id="commit-message"
               placeholder={
-                isGenerating ? 'Generating commit message...' : 'Describe your changes...'
+                isGenerating
+                  ? "Generating commit message..."
+                  : "Describe your changes..."
               }
               value={message}
               onChange={(e) => {
@@ -899,7 +973,9 @@ export function CommitWorktreeDialog({
               <Checkbox
                 id="push-after-commit"
                 checked={pushAfterCommit}
-                onCheckedChange={(checked) => setPushAfterCommit(checked === true)}
+                onCheckedChange={(checked) =>
+                  setPushAfterCommit(checked === true)
+                }
               />
               <Label
                 htmlFor="push-after-commit"
@@ -943,8 +1019,14 @@ export function CommitWorktreeDialog({
                     >
                       Remote:
                     </Label>
-                    <Select value={selectedRemote} onValueChange={setSelectedRemote}>
-                      <SelectTrigger id="remote-select" className="h-8 text-xs flex-1">
+                    <Select
+                      value={selectedRemote}
+                      onValueChange={setSelectedRemote}
+                    >
+                      <SelectTrigger
+                        id="remote-select"
+                        className="h-8 text-xs flex-1"
+                      >
                         <SelectValue placeholder="Select remote" />
                       </SelectTrigger>
                       <SelectContent>
@@ -970,8 +1052,11 @@ export function CommitWorktreeDialog({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Cmd/Ctrl+Enter</kbd> to
-            commit{pushAfterCommit ? ' & push' : ''}
+            Press{" "}
+            <kbd className="px-1 py-0.5 bg-muted rounded text-xs">
+              Cmd/Ctrl+Enter
+            </kbd>{" "}
+            to commit{pushAfterCommit ? " & push" : ""}
           </p>
         </div>
 
@@ -999,7 +1084,7 @@ export function CommitWorktreeDialog({
             {isLoading || isPushing ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                {isPushing ? 'Pushing...' : 'Committing...'}
+                {isPushing ? "Pushing..." : "Committing..."}
               </>
             ) : isPushRetry ? (
               <>
@@ -1013,10 +1098,10 @@ export function CommitWorktreeDialog({
                 ) : (
                   <GitCommit className="w-4 h-4 mr-2" />
                 )}
-                {pushAfterCommit ? 'Commit & Push' : 'Commit'}
+                {pushAfterCommit ? "Commit & Push" : "Commit"}
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
-                  : ''}
+                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? "s" : ""})`
+                  : ""}
               </>
             )}
           </Button>

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Globe, Square, ChevronDown, ChevronUp, Server } from 'lucide-react';
-import { cn, normalizePath } from '@/lib/utils';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
-import { createLogger } from '@pegasus/utils/logger';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Globe, Square, ChevronDown, ChevronUp, Server } from "lucide-react";
+import { cn, normalizePath } from "@/lib/utils";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
+import { createLogger } from "@pegasus/utils/logger";
 
-const logger = createLogger('RunningDevServersIndicator');
+const logger = createLogger("RunningDevServersIndicator");
 
 /** Interval for polling running dev servers (ms) */
 const POLL_INTERVAL_MS = 30_000;
@@ -24,13 +24,13 @@ interface RunningServer {
  */
 function extractBranchName(worktreePath: string): string {
   const normalized = normalizePath(worktreePath);
-  const worktreesSeg = '/.worktrees/';
+  const worktreesSeg = "/.worktrees/";
   const idx = normalized.lastIndexOf(worktreesSeg);
   if (idx !== -1) {
-    return normalized.slice(idx + worktreesSeg.length).split('/')[0];
+    return normalized.slice(idx + worktreesSeg.length).split("/")[0];
   }
   // Fallback: last segment of path
-  const segments = normalized.split('/').filter(Boolean);
+  const segments = normalized.split("/").filter(Boolean);
   return segments[segments.length - 1] ?? worktreePath;
 }
 
@@ -41,7 +41,8 @@ function extractBranchName(worktreePath: string): string {
 function buildBrowserUrl(serverUrl: string): string | null {
   try {
     const parsed = new URL(serverUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+      return null;
     parsed.hostname = window.location.hostname;
     return parsed.toString();
   } catch {
@@ -53,10 +54,14 @@ interface RunningDevServersIndicatorProps {
   projectPath: string;
 }
 
-export function RunningDevServersIndicator({ projectPath }: RunningDevServersIndicatorProps) {
+export function RunningDevServersIndicator({
+  projectPath: _projectPath,
+}: RunningDevServersIndicatorProps) {
   const [servers, setServers] = useState<Map<string, RunningServer>>(new Map());
   const [expanded, setExpanded] = useState(false);
-  const [stoppingServers, setStoppingServers] = useState<Set<string>>(new Set());
+  const [stoppingServers, setStoppingServers] = useState<Set<string>>(
+    new Set(),
+  );
   const initialFetchDone = useRef(false);
 
   // Fetch all running dev servers from backend
@@ -80,7 +85,7 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
       }
       initialFetchDone.current = true;
     } catch (error) {
-      logger.error('Failed to fetch dev servers:', error);
+      logger.error("Failed to fetch dev servers:", error);
       initialFetchDone.current = true;
     }
   }, []);
@@ -104,7 +109,7 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
     if (!api?.worktree?.onDevServerLogEvent) return;
 
     const unsubscribe = api.worktree.onDevServerLogEvent((event) => {
-      if (event.type === 'dev-server:started') {
+      if (event.type === "dev-server:started") {
         const { worktreePath, port, url } = event.payload;
         const key = normalizePath(worktreePath);
         setServers((prev) => {
@@ -112,16 +117,22 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
           next.set(key, { worktreePath, port, url, urlDetected: false });
           return next;
         });
-      } else if (event.type === 'dev-server:url-detected') {
+      } else if (event.type === "dev-server:url-detected") {
         const { worktreePath, url, port } = event.payload;
         const key = normalizePath(worktreePath);
         setServers((prev) => {
           const next = new Map(prev);
           const existing = prev.get(key);
-          next.set(key, { worktreePath, port, url, urlDetected: true, ...existing });
+          next.set(key, {
+            worktreePath,
+            port,
+            url,
+            urlDetected: true,
+            ...existing,
+          });
           return next;
         });
-      } else if (event.type === 'dev-server:stopped') {
+      } else if (event.type === "dev-server:stopped") {
         const { worktreePath } = event.payload;
         const key = normalizePath(worktreePath);
         setServers((prev) => {
@@ -149,7 +160,7 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.stopDevServer) {
-        toast.error('Stop dev server API not available');
+        toast.error("Stop dev server API not available");
         return;
       }
 
@@ -161,13 +172,13 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
           next.delete(key);
           return next;
         });
-        toast.success(result.result?.message || 'Dev server stopped');
+        toast.success(result.result?.message || "Dev server stopped");
       } else {
-        toast.error(result.error || 'Failed to stop dev server');
+        toast.error(result.error || "Failed to stop dev server");
       }
     } catch (error) {
-      logger.error('Stop dev server failed:', error);
-      toast.error('Failed to stop dev server');
+      logger.error("Stop dev server failed:", error);
+      toast.error("Failed to stop dev server");
     } finally {
       setStoppingServers((prev) => {
         const next = new Set(prev);
@@ -182,12 +193,12 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
     await Promise.allSettled(entries.map((s) => handleStop(s.worktreePath)));
   }, [servers, handleStop]);
 
-  const handleOpenUrl = useCallback((url: string, port: number) => {
+  const handleOpenUrl = useCallback((url: string, _port: number) => {
     const browserUrl = buildBrowserUrl(url);
     if (browserUrl) {
-      window.open(browserUrl, '_blank', 'noopener,noreferrer');
+      window.open(browserUrl, "_blank", "noopener,noreferrer");
     } else {
-      toast.error('Invalid dev server URL');
+      toast.error("Invalid dev server URL");
     }
   }, []);
 
@@ -199,14 +210,14 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
   return (
     <div
       className={cn(
-        'fixed bottom-4 left-4 z-50',
-        'animate-in slide-in-from-left-5 duration-200'
+        "fixed bottom-4 left-4 z-50",
+        "animate-in slide-in-from-left-5 duration-200",
       )}
     >
       <div
         className={cn(
-          'bg-card border border-border rounded-lg shadow-lg',
-          'min-w-[280px] max-w-[400px]'
+          "bg-card border border-border rounded-lg shadow-lg",
+          "min-w-[280px] max-w-[400px]",
         )}
       >
         {/* Header - always visible */}
@@ -221,7 +232,7 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
             </span>
             <Server className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="font-medium text-xs">
-              {servers.size} Dev Server{servers.size !== 1 ? 's' : ''} Running
+              {servers.size} Dev Server{servers.size !== 1 ? "s" : ""} Running
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -239,7 +250,7 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
             )}
             <button
               className="p-1 hover:bg-accent rounded transition-colors"
-              title={expanded ? 'Collapse' : 'Expand'}
+              title={expanded ? "Collapse" : "Expand"}
             >
               {expanded ? (
                 <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
@@ -256,7 +267,9 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
             {serverList.map(([key, server]) => {
               const branchName = extractBranchName(server.worktreePath);
               const isStopping = stoppingServers.has(key);
-              const browserUrl = server.urlDetected ? buildBrowserUrl(server.url) : null;
+              const browserUrl = server.urlDetected
+                ? buildBrowserUrl(server.url)
+                : null;
 
               return (
                 <div
@@ -264,11 +277,16 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
                   className="flex items-center justify-between px-3 py-2 border-b border-border/30 last:border-b-0 hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                    <span className="text-xs font-mono truncate" title={server.worktreePath}>
+                    <span
+                      className="text-xs font-mono truncate"
+                      title={server.worktreePath}
+                    >
                       {branchName}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      {server.urlDetected ? `Port ${server.port}` : 'Detecting port...'}
+                      {server.urlDetected
+                        ? `Port ${server.port}`
+                        : "Detecting port..."}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 ml-2 shrink-0">
@@ -285,8 +303,8 @@ export function RunningDevServersIndicator({ projectPath }: RunningDevServersInd
                       onClick={() => handleStop(server.worktreePath)}
                       disabled={isStopping}
                       className={cn(
-                        'p-1 hover:bg-destructive/10 rounded transition-colors text-destructive',
-                        isStopping && 'opacity-50 cursor-not-allowed'
+                        "p-1 hover:bg-destructive/10 rounded transition-colors text-destructive",
+                        isStopping && "opacity-50 cursor-not-allowed",
                       )}
                       title="Stop dev server"
                     >

@@ -1,5 +1,5 @@
-import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useEffect, useCallback, useRef, useState, useMemo } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import {
   FileCode2,
   Save,
@@ -13,92 +13,101 @@ import {
   Settings,
   Diff,
   FolderKanban,
-} from 'lucide-react';
-import { createLogger } from '@pegasus/utils/logger';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { cn, generateUUID, pathsEqual } from '@/lib/utils';
-import { queryKeys } from '@/lib/query-keys';
-import { useIsMobile } from '@/hooks/use-media-query';
-import { useVirtualKeyboardResize } from '@/hooks/use-virtual-keyboard-resize';
-import { Button } from '@/components/ui/button';
+} from "lucide-react";
+import { createLogger } from "@pegasus/utils/logger";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { cn, generateUUID, pathsEqual } from "@/lib/utils";
+import { queryKeys } from "@/lib/query-keys";
+import { useIsMobile } from "@/hooks/use-media-query";
+import { useVirtualKeyboardResize } from "@/hooks/use-virtual-keyboard-resize";
+import { Button } from "@/components/ui/button";
 import {
   HeaderActionsPanel,
   HeaderActionsPanelTrigger,
-} from '@/components/ui/header-actions-panel';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from "@/components/ui/header-actions-panel";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-import { toast } from 'sonner';
+import { toast } from "sonner";
 import {
   useFileEditorStore,
   type FileTreeNode,
   type EnhancedGitFileStatus,
-} from './use-file-editor-store';
-import { normalizeLineEndings } from './file-editor-dirty-utils';
-import { FileTree } from './components/file-tree';
-import { CodeEditor, getLanguageName, type CodeEditorHandle } from './components/code-editor';
-import { EditorTabs } from './components/editor-tabs';
-import { EditorSettingsForm } from './components/editor-settings-form';
+} from "./use-file-editor-store";
+import { normalizeLineEndings } from "./file-editor-dirty-utils";
+import { FileTree } from "./components/file-tree";
+import {
+  CodeEditor,
+  getLanguageName,
+  type CodeEditorHandle,
+} from "./components/code-editor";
+import { EditorTabs } from "./components/editor-tabs";
+import { EditorSettingsForm } from "./components/editor-settings-form";
 import {
   MarkdownPreviewPanel,
   MarkdownViewToolbar,
   isMarkdownFile,
-} from './components/markdown-preview';
-import { WorktreeDirectoryDropdown } from './components/worktree-directory-dropdown';
-import { GitDetailPanel } from './components/git-detail-panel';
-import { AddFeatureDialog } from '@/components/views/board-view/dialogs';
+} from "./components/markdown-preview";
+import { WorktreeDirectoryDropdown } from "./components/worktree-directory-dropdown";
+import { GitDetailPanel } from "./components/git-detail-panel";
+import { AddFeatureDialog } from "@/components/views/board-view/dialogs";
+import type { Feature } from "@pegasus/types";
 
-const logger = createLogger('FileEditorView');
+const logger = createLogger("FileEditorView");
 
 // Files with these extensions are considered binary
 const BINARY_EXTENSIONS = new Set([
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'bmp',
-  'ico',
-  'svg',
-  'webp',
-  'avif',
-  'mp3',
-  'mp4',
-  'wav',
-  'ogg',
-  'webm',
-  'avi',
-  'mov',
-  'flac',
-  'zip',
-  'tar',
-  'gz',
-  'bz2',
-  'xz',
-  '7z',
-  'rar',
-  'pdf',
-  'doc',
-  'docx',
-  'xls',
-  'xlsx',
-  'ppt',
-  'pptx',
-  'exe',
-  'dll',
-  'so',
-  'dylib',
-  'bin',
-  'dat',
-  'woff',
-  'woff2',
-  'ttf',
-  'otf',
-  'eot',
-  'sqlite',
-  'db',
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "bmp",
+  "ico",
+  "svg",
+  "webp",
+  "avif",
+  "mp3",
+  "mp4",
+  "wav",
+  "ogg",
+  "webm",
+  "avi",
+  "mov",
+  "flac",
+  "zip",
+  "tar",
+  "gz",
+  "bz2",
+  "xz",
+  "7z",
+  "rar",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "exe",
+  "dll",
+  "so",
+  "dylib",
+  "bin",
+  "dat",
+  "woff",
+  "woff2",
+  "ttf",
+  "otf",
+  "eot",
+  "sqlite",
+  "db",
 ]);
 
 function isBinaryFile(filePath: string): boolean {
@@ -106,8 +115,8 @@ function isBinaryFile(filePath: string): boolean {
   // Using split('/').pop() ensures we don't confuse dots in directory names
   // with the file extension. Files without an extension (no dot after the
   // last slash) correctly return '' here.
-  const fileName = filePath.split('/').pop() || '';
-  const dotIndex = fileName.lastIndexOf('.');
+  const fileName = filePath.split("/").pop() || "";
+  const dotIndex = fileName.lastIndexOf(".");
   // No dot found, or dot is at index 0 (dotfile like ".gitignore") → no extension
   if (dotIndex <= 0) return false;
   const ext = fileName.slice(dotIndex + 1).toLowerCase();
@@ -119,10 +128,16 @@ interface FileEditorViewProps {
 }
 
 export function FileEditorView({ initialPath }: FileEditorViewProps) {
-  const { currentProject, defaultSkipTests, getCurrentWorktree, worktreesByProject } =
-    useAppStore();
+  const {
+    currentProject,
+    defaultSkipTests,
+    getCurrentWorktree,
+    worktreesByProject,
+  } = useAppStore();
   const currentWorktree = useAppStore((s) =>
-    currentProject?.path ? (s.currentWorktreeByProject[currentProject.path] ?? null) : null
+    currentProject?.path
+      ? (s.currentWorktreeByProject[currentProject.path] ?? null)
+      : null,
   );
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -144,7 +159,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
   const [showActionsPanel, setShowActionsPanel] = useState(false);
   const [hasEditorSelection, setHasEditorSelection] = useState(false);
   const [showAddFeatureDialog, setShowAddFeatureDialog] = useState(false);
-  const [featureSelectionContext, setFeatureSelectionContext] = useState<string | undefined>();
+  const [featureSelectionContext, setFeatureSelectionContext] = useState<
+    string | undefined
+  >();
 
   // Derive the effective working path from the current worktree selection.
   // When a worktree is selected (path is non-null), use the worktree path;
@@ -199,7 +216,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         const api = getElectronAPI();
 
         // Recursive tree builder
-        const buildTree = async (dirPath: string, depth: number = 0): Promise<FileTreeNode[]> => {
+        const buildTree = async (
+          dirPath: string,
+          depth: number = 0,
+        ): Promise<FileTreeNode[]> => {
           const result = await api.readdir(dirPath);
           if (!result.success || !result.entries) return [];
 
@@ -228,7 +248,8 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         };
 
         const tree = await buildTree(treePath);
-        const { setFileTree, setExpandedFolders } = useFileEditorStore.getState();
+        const { setFileTree, setExpandedFolders } =
+          useFileEditorStore.getState();
         setFileTree(tree);
 
         if (expandedSnapshot !== null) {
@@ -239,10 +260,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           setExpandedFolders(new Set());
         }
       } catch (error) {
-        logger.error('Failed to load file tree:', error);
+        logger.error("Failed to load file tree:", error);
       }
     },
-    [effectivePath]
+    [effectivePath],
   );
 
   // ─── Load Git Status ─────────────────────────────────────────
@@ -263,7 +284,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           const fullPath = `${effectivePath}/${file.path}`;
           // Determine status - prefer workTree, fallback to index
           let status = file.workTreeStatus || file.indexStatus || file.status;
-          if (status === ' ') status = file.indexStatus || '';
+          if (status === " ") status = file.indexStatus || "";
           if (status) {
             statusMap.set(fullPath, status);
           }
@@ -301,59 +322,62 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       }
     } catch (error) {
       // Git might not be available - that's okay
-      logger.debug('Git status not available:', error);
+      logger.debug("Git status not available:", error);
     }
   }, [effectivePath]);
 
   // ─── Load subdirectory children lazily ───────────────────────
-  const loadSubdirectory = useCallback(async (dirPath: string): Promise<FileTreeNode[]> => {
-    try {
-      const api = getElectronAPI();
-      const result = await api.readdir(dirPath);
-      if (!result.success || !result.entries) return [];
+  const loadSubdirectory = useCallback(
+    async (dirPath: string): Promise<FileTreeNode[]> => {
+      try {
+        const api = getElectronAPI();
+        const result = await api.readdir(dirPath);
+        if (!result.success || !result.entries) return [];
 
-      const nodes: FileTreeNode[] = result.entries
-        .sort((a, b) => {
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          return a.name.localeCompare(b.name);
-        })
-        .map((entry) => ({
-          name: entry.name,
-          path: `${dirPath}/${entry.name}`,
-          isDirectory: entry.isDirectory,
-        }));
+        const nodes: FileTreeNode[] = result.entries
+          .sort((a, b) => {
+            if (a.isDirectory && !b.isDirectory) return -1;
+            if (!a.isDirectory && b.isDirectory) return 1;
+            return a.name.localeCompare(b.name);
+          })
+          .map((entry) => ({
+            name: entry.name,
+            path: `${dirPath}/${entry.name}`,
+            isDirectory: entry.isDirectory,
+          }));
 
-      // Pre-load first level of children for subdirectories so they can be expanded next
-      for (const node of nodes) {
-        if (node.isDirectory) {
-          try {
-            const subResult = await api.readdir(node.path);
-            if (subResult.success && subResult.entries) {
-              node.children = subResult.entries
-                .sort((a, b) => {
-                  if (a.isDirectory && !b.isDirectory) return -1;
-                  if (!a.isDirectory && b.isDirectory) return 1;
-                  return a.name.localeCompare(b.name);
-                })
-                .map((entry) => ({
-                  name: entry.name,
-                  path: `${node.path}/${entry.name}`,
-                  isDirectory: entry.isDirectory,
-                }));
+        // Pre-load first level of children for subdirectories so they can be expanded next
+        for (const node of nodes) {
+          if (node.isDirectory) {
+            try {
+              const subResult = await api.readdir(node.path);
+              if (subResult.success && subResult.entries) {
+                node.children = subResult.entries
+                  .sort((a, b) => {
+                    if (a.isDirectory && !b.isDirectory) return -1;
+                    if (!a.isDirectory && b.isDirectory) return 1;
+                    return a.name.localeCompare(b.name);
+                  })
+                  .map((entry) => ({
+                    name: entry.name,
+                    path: `${node.path}/${entry.name}`,
+                    isDirectory: entry.isDirectory,
+                  }));
+              }
+            } catch {
+              // Failed to pre-load children, they'll be loaded on expand
             }
-          } catch {
-            // Failed to pre-load children, they'll be loaded on expand
           }
         }
-      }
 
-      return nodes;
-    } catch (error) {
-      logger.error('Failed to load subdirectory:', error);
-      return [];
-    }
-  }, []);
+        return nodes;
+      } catch (error) {
+        logger.error("Failed to load subdirectory:", error);
+        return [];
+      }
+    },
+    [],
+  );
 
   // ─── Handle File Select ──────────────────────────────────────
   const handleFileSelect = useCallback(
@@ -373,7 +397,11 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           try {
             const api = getElectronAPI();
             const result = await api.readFile(filePath);
-            if (result.success && result.content !== undefined && !result.content.includes('\0')) {
+            if (
+              result.success &&
+              result.content !== undefined &&
+              !result.content.includes("\0")
+            ) {
               // Re-check isDirty after the async read: a concurrent save may have
               // already cleared it. Only refresh if the tab is still dirty.
               const { tabs: currentTabs } = useFileEditorStore.getState();
@@ -389,15 +417,15 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         return;
       }
 
-      const fileName = filePath.split('/').pop() || 'untitled';
+      const fileName = filePath.split("/").pop() || "untitled";
 
       // Check if binary
       if (isBinaryFile(filePath)) {
         openTab({
           filePath,
           fileName,
-          content: '',
-          originalContent: '',
+          content: "",
+          originalContent: "",
           isDirty: false,
           scrollTop: 0,
           cursorLine: 1,
@@ -414,14 +442,15 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
         // Check file size first
         const statResult = await api.stat(filePath);
-        const fileSize = statResult.success && statResult.stats ? statResult.stats.size : 0;
+        const fileSize =
+          statResult.success && statResult.stats ? statResult.stats.size : 0;
 
         if (fileSize > maxFileSize) {
           openTab({
             filePath,
             fileName,
-            content: '',
-            originalContent: '',
+            content: "",
+            originalContent: "",
             isDirty: false,
             scrollTop: 0,
             cursorLine: 1,
@@ -437,12 +466,12 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         const result = await api.readFile(filePath);
         if (result.success && result.content !== undefined) {
           // Check if content looks binary (contains null bytes)
-          if (result.content.includes('\0')) {
+          if (result.content.includes("\0")) {
             openTab({
               filePath,
               fileName,
-              content: '',
-              originalContent: '',
+              content: "",
+              originalContent: "",
               isDirty: false,
               scrollTop: 0,
               cursorLine: 1,
@@ -473,10 +502,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           });
         }
       } catch (error) {
-        logger.error('Failed to open file:', error);
+        logger.error("Failed to open file:", error);
       }
     },
-    [tabs, setActiveTab, openTab, refreshTabContent, maxFileSize]
+    [tabs, setActiveTab, openTab, refreshTabContent, maxFileSize],
   );
 
   // ─── Mobile-aware file select ────────────────────────────────
@@ -487,7 +516,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         setMobileBrowserVisible(false);
       }
     },
-    [handleFileSelect, isMobile, setMobileBrowserVisible]
+    [handleFileSelect, isMobile, setMobileBrowserVisible],
   );
 
   // ─── Load File Diff for Inline Display ───────────────────────────────────
@@ -514,7 +543,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         setActiveFileDiff(null);
       }
     },
-    [effectivePath]
+    [effectivePath],
   );
 
   // ─── Handle Save ─────────────────────────────────────────────
@@ -553,10 +582,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           loadFileDiff(tab.filePath);
         }
       } else {
-        logger.error('Failed to save file:', result.error);
+        logger.error("Failed to save file:", result.error);
       }
     } catch (error) {
-      logger.error('Failed to save file:', error);
+      logger.error("Failed to save file:", error);
     }
   }, [markTabSaved, loadGitStatus, showInlineDiff, loadFileDiff]);
 
@@ -575,18 +604,19 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           markTabSaved(tab.id, tab.content);
           loadGitStatus();
           // Refresh inline diff for the saved file if diff is active
-          const { showInlineDiff, activeTabId: currentActive } = useFileEditorStore.getState();
+          const { showInlineDiff, activeTabId: currentActive } =
+            useFileEditorStore.getState();
           if (showInlineDiff && tab.id === currentActive) {
             loadFileDiff(tab.filePath);
           }
         } else {
-          logger.error('Auto-save failed:', result.error);
+          logger.error("Auto-save failed:", result.error);
         }
       } catch (error) {
-        logger.error('Auto-save failed:', error);
+        logger.error("Auto-save failed:", error);
       }
     },
-    [markTabSaved, loadGitStatus, loadFileDiff]
+    [markTabSaved, loadGitStatus, loadFileDiff],
   );
 
   // ─── Auto Save: on tab switch ──────────────────────────────
@@ -635,7 +665,13 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab is accessed for isDirty/content only
-  }, [editorAutoSave, editorAutoSaveDelay, activeTab?.isDirty, activeTab?.content, handleSave]);
+  }, [
+    editorAutoSave,
+    editorAutoSaveDelay,
+    activeTab?.isDirty,
+    activeTab?.content,
+    handleSave,
+  ]);
 
   // ─── Handle Search ──────────────────────────────────────────
   const handleSearch = useCallback(() => {
@@ -660,7 +696,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
   // ─── Get current branch from selected worktree ────────────
   const currentBranch = useMemo(() => {
-    if (!currentProject?.path) return '';
+    if (!currentProject?.path) return "";
     const currentWorktreeInfo = getCurrentWorktree(currentProject.path);
     const worktrees = worktreesByProject[currentProject.path] ?? [];
     const currentWorktreePath = currentWorktreeInfo?.path ?? null;
@@ -668,9 +704,13 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
     const selectedWorktree =
       currentWorktreePath === null
         ? worktrees.find((w) => w.isMain)
-        : worktrees.find((w) => !w.isMain && pathsEqual(w.path, currentWorktreePath));
+        : worktrees.find(
+            (w) => !w.isMain && pathsEqual(w.path, currentWorktreePath),
+          );
 
-    return selectedWorktree?.branch || worktrees.find((w) => w.isMain)?.branch || '';
+    return (
+      selectedWorktree?.branch || worktrees.find((w) => w.isMain)?.branch || ""
+    );
   }, [currentProject?.path, getCurrentWorktree, worktreesByProject]);
 
   // ─── Create Feature from Selection ─────────────────────────
@@ -683,41 +723,43 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
     // Compute relative path from effectivePath
     const relativePath = activeTab.filePath.startsWith(effectivePath)
       ? activeTab.filePath.substring(effectivePath.length + 1)
-      : activeTab.filePath.split('/').pop() || activeTab.filePath;
+      : activeTab.filePath.split("/").pop() || activeTab.filePath;
 
     // Get language extension for code fence
     const langName = getLanguageName(activeTab.filePath).toLowerCase();
     const langMap: Record<string, string> = {
-      javascript: 'js',
-      jsx: 'jsx',
-      typescript: 'ts',
-      tsx: 'tsx',
-      python: 'py',
-      ruby: 'rb',
-      shell: 'sh',
-      'c++': 'cpp',
-      'plain text': '',
+      javascript: "js",
+      jsx: "jsx",
+      typescript: "ts",
+      tsx: "tsx",
+      python: "py",
+      ruby: "rb",
+      shell: "sh",
+      "c++": "cpp",
+      "plain text": "",
     };
     const fenceLang = langMap[langName] || langName;
 
     // Truncate selection to ~200 lines
-    const lines = selection.text.split('\n');
+    const lines = selection.text.split("\n");
     const truncated = lines.length > 200;
-    const codeText = truncated ? lines.slice(0, 200).join('\n') + '\n[...]' : selection.text;
+    const codeText = truncated
+      ? lines.slice(0, 200).join("\n") + "\n[...]"
+      : selection.text;
 
     const description = [
       `**File:** \`${relativePath}\` (Lines ${selection.fromLine}-${selection.toLine})`,
-      '',
+      "",
       `\`\`\`${fenceLang}`,
       codeText,
-      '```',
-      truncated ? `\n*Selection truncated (${lines.length} lines total)*` : '',
-      '',
-      '---',
-      '',
+      "```",
+      truncated ? `\n*Selection truncated (${lines.length} lines total)*` : "",
+      "",
+      "---",
+      "",
     ]
       .filter((line) => line !== undefined)
-      .join('\n');
+      .join("\n");
 
     setFeatureSelectionContext(description);
     setShowAddFeatureDialog(true);
@@ -744,7 +786,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       textFilePaths?: Array<{ id: string; path: string; description?: string }>;
     }) => {
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error("No project selected");
         return;
       }
 
@@ -756,7 +798,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             title: featureData.title,
             description: featureData.description,
             category: featureData.category,
-            status: 'backlog' as const,
+            status: "backlog" as const,
             passes: false,
             priority: featureData.priority,
             model: resolveModelString(featureData.model),
@@ -764,11 +806,16 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             reasoningEffort: featureData.reasoningEffort,
             providerId: featureData.providerId,
             skipTests: featureData.skipTests,
-            branchName: featureData.workMode === 'current' ? currentBranch : featureData.branchName,
+            branchName:
+              featureData.workMode === "current"
+                ? currentBranch
+                : featureData.branchName,
             planningMode: featureData.planningMode,
             requirePlanApproval: featureData.requirePlanApproval,
             excludedPipelineSteps: featureData.excludedPipelineSteps,
-            ...(featureData.imagePaths?.length ? { imagePaths: featureData.imagePaths } : {}),
+            ...(featureData.imagePaths?.length
+              ? { imagePaths: featureData.imagePaths }
+              : {}),
             ...(featureData.textFilePaths?.length
               ? { textFilePaths: featureData.textFilePaths }
               : {}),
@@ -776,8 +823,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             updatedAt: new Date().toISOString(),
           };
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const result = await api.features.create(currentProject.path, feature as any);
+          const result = await api.features.create(
+            currentProject.path,
+            feature as Feature,
+          );
           if (result.success) {
             queryClient.invalidateQueries({
               queryKey: queryKeys.features.all(currentProject.path),
@@ -786,38 +835,42 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
               `Created feature: ${featureData.title || featureData.description.slice(0, 50)}`,
               {
                 action: {
-                  label: 'View Board',
-                  onClick: () => navigate({ to: '/board' }),
+                  label: "View Board",
+                  onClick: () => navigate({ to: "/board" }),
                 },
-              }
+              },
             );
             setShowAddFeatureDialog(false);
             setFeatureSelectionContext(undefined);
           } else {
-            toast.error(result.error || 'Failed to create feature');
+            toast.error(result.error || "Failed to create feature");
           }
         }
       } catch (err) {
-        logger.error('Create feature from editor error:', err);
-        toast.error(err instanceof Error ? err.message : 'Failed to create feature');
+        logger.error("Create feature from editor error:", err);
+        toast.error(
+          err instanceof Error ? err.message : "Failed to create feature",
+        );
       }
     },
-    [currentProject?.path, currentBranch, queryClient, navigate]
+    [currentProject?.path, currentBranch, queryClient, navigate],
   );
 
   // ─── File Operations ─────────────────────────────────────────
   const handleCreateFile = useCallback(
     async (parentPath: string, name: string) => {
       if (!effectivePath) return;
-      const fullPath = parentPath ? `${parentPath}/${name}` : `${effectivePath}/${name}`;
+      const fullPath = parentPath
+        ? `${parentPath}/${name}`
+        : `${effectivePath}/${name}`;
 
       try {
         const api = getElectronAPI();
-        await api.writeFile(fullPath, '');
+        await api.writeFile(fullPath, "");
 
         // If the new file starts with a dot, auto-enable hidden files visibility
         // so the created file doesn't "disappear" from the tree
-        if (name.startsWith('.')) {
+        if (name.startsWith(".")) {
           const { showHiddenFiles } = useFileEditorStore.getState();
           if (!showHiddenFiles) {
             store.setShowHiddenFiles(true);
@@ -833,16 +886,25 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           handleFileSelect(fullPath);
         }
       } catch (error) {
-        logger.error('Failed to create file:', error);
+        logger.error("Failed to create file:", error);
       }
     },
-    [effectivePath, loadTree, handleFileSelect, handleMobileFileSelect, isMobile, store]
+    [
+      effectivePath,
+      loadTree,
+      handleFileSelect,
+      handleMobileFileSelect,
+      isMobile,
+      store,
+    ],
   );
 
   const handleCreateFolder = useCallback(
     async (parentPath: string, name: string) => {
       if (!effectivePath) return;
-      const fullPath = parentPath ? `${parentPath}/${name}` : `${effectivePath}/${name}`;
+      const fullPath = parentPath
+        ? `${parentPath}/${name}`
+        : `${effectivePath}/${name}`;
 
       try {
         const api = getElectronAPI();
@@ -850,7 +912,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
         // If the new folder starts with a dot, auto-enable hidden files visibility
         // so the created folder doesn't "disappear" from the tree
-        if (name.startsWith('.')) {
+        if (name.startsWith(".")) {
           const { showHiddenFiles } = useFileEditorStore.getState();
           if (!showHiddenFiles) {
             store.setShowHiddenFiles(true);
@@ -860,10 +922,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         // Preserve expanded folders so the parent directory stays open after refresh
         await loadTree(undefined, { preserveExpanded: true });
       } catch (error) {
-        logger.error('Failed to create folder:', error);
+        logger.error("Failed to create folder:", error);
       }
     },
-    [effectivePath, loadTree, store]
+    [effectivePath, loadTree, store],
   );
 
   const handleDeleteItem = useCallback(
@@ -887,21 +949,21 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         await loadTree(undefined, { preserveExpanded: true });
         loadGitStatus();
       } catch (error) {
-        logger.error('Failed to delete item:', error);
+        logger.error("Failed to delete item:", error);
       }
     },
-    [tabs, closeTab, loadTree, loadGitStatus]
+    [tabs, closeTab, loadTree, loadGitStatus],
   );
 
   const handleRenameItem = useCallback(
     async (oldPath: string, newName: string) => {
       // Extract the current file/folder name from the old path
-      const oldName = oldPath.split('/').pop() || '';
+      const oldName = oldPath.split("/").pop() || "";
 
       // If the name hasn't changed, skip the rename entirely (no-op)
       if (newName === oldName) return;
 
-      const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+      const parentPath = oldPath.substring(0, oldPath.lastIndexOf("/"));
       const newPath = `${parentPath}/${newName}`;
 
       try {
@@ -924,7 +986,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
           // If the new name starts with a dot, auto-enable hidden files visibility
           // so the renamed file doesn't "disappear" from the tree
-          if (newName.startsWith('.')) {
+          if (newName.startsWith(".")) {
             const { showHiddenFiles } = useFileEditorStore.getState();
             if (!showHiddenFiles) {
               store.setShowHiddenFiles(true);
@@ -934,10 +996,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Rename failed', { description: result?.error });
+          toast.error("Rename failed", { description: result?.error });
         }
       } catch (error) {
-        logger.error('Failed to rename item:', error);
+        logger.error("Failed to rename item:", error);
       }
     },
     [
@@ -949,7 +1011,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       loadTree,
       loadGitStatus,
       store,
-    ]
+    ],
   );
 
   // ─── Handle Copy Item ────────────────────────────────────────
@@ -958,7 +1020,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       try {
         const api = getElectronAPI();
         if (!api.copyItem) {
-          toast.error('Copy not supported');
+          toast.error("Copy not supported");
           return;
         }
 
@@ -967,33 +1029,37 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         if (!result.success && result.exists) {
           // Ask for confirmation to overwrite
           const confirmed = window.confirm(
-            `"${destinationPath.split('/').pop()}" already exists at the destination. Do you want to replace it?`
+            `"${destinationPath.split("/").pop()}" already exists at the destination. Do you want to replace it?`,
           );
           if (confirmed) {
-            const retryResult = await api.copyItem(sourcePath, destinationPath, true);
+            const retryResult = await api.copyItem(
+              sourcePath,
+              destinationPath,
+              true,
+            );
             if (retryResult.success) {
-              toast.success('Copied successfully');
+              toast.success("Copied successfully");
               await loadTree(undefined, { preserveExpanded: true });
               loadGitStatus();
             } else {
-              toast.error('Copy failed', { description: retryResult.error });
+              toast.error("Copy failed", { description: retryResult.error });
             }
           }
         } else if (result.success) {
-          toast.success('Copied successfully');
+          toast.success("Copied successfully");
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Copy failed', { description: result.error });
+          toast.error("Copy failed", { description: result.error });
         }
       } catch (error) {
-        logger.error('Failed to copy item:', error);
-        toast.error('Copy failed', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to copy item:", error);
+        toast.error("Copy failed", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [loadTree, loadGitStatus]
+    [loadTree, loadGitStatus],
   );
 
   // ─── Handle Move Item ──────────────────────────────────────
@@ -1002,7 +1068,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       try {
         const api = getElectronAPI();
         if (!api.moveItem) {
-          toast.error('Move not supported');
+          toast.error("Move not supported");
           return;
         }
 
@@ -1011,12 +1077,16 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         if (!result.success && result.exists) {
           // Ask for confirmation to overwrite
           const confirmed = window.confirm(
-            `"${destinationPath.split('/').pop()}" already exists at the destination. Do you want to replace it?`
+            `"${destinationPath.split("/").pop()}" already exists at the destination. Do you want to replace it?`,
           );
           if (confirmed) {
-            const retryResult = await api.moveItem(sourcePath, destinationPath, true);
+            const retryResult = await api.moveItem(
+              sourcePath,
+              destinationPath,
+              true,
+            );
             if (retryResult.success) {
-              toast.success('Moved successfully');
+              toast.success("Moved successfully");
               // Update open tabs that point to moved files
               const tab = tabs.find((t) => t.filePath === sourcePath);
               if (tab) {
@@ -1026,11 +1096,11 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
               await loadTree(undefined, { preserveExpanded: true });
               loadGitStatus();
             } else {
-              toast.error('Move failed', { description: retryResult.error });
+              toast.error("Move failed", { description: retryResult.error });
             }
           }
         } else if (result.success) {
-          toast.success('Moved successfully');
+          toast.success("Moved successfully");
           // Update open tabs that point to moved files
           const tab = tabs.find((t) => t.filePath === sourcePath);
           if (tab) {
@@ -1040,16 +1110,16 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           await loadTree(undefined, { preserveExpanded: true });
           loadGitStatus();
         } else {
-          toast.error('Move failed', { description: result.error });
+          toast.error("Move failed", { description: result.error });
         }
       } catch (error) {
-        logger.error('Failed to move item:', error);
-        toast.error('Move failed', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to move item:", error);
+        toast.error("Move failed", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [tabs, closeTab, handleFileSelect, loadTree, loadGitStatus]
+    [tabs, closeTab, handleFileSelect, loadTree, loadGitStatus],
   );
 
   // ─── Handle Download Item ──────────────────────────────────
@@ -1057,16 +1127,16 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
     try {
       const api = getElectronAPI();
       if (!api.downloadItem) {
-        toast.error('Download not supported');
+        toast.error("Download not supported");
         return;
       }
-      toast.info('Starting download...');
+      toast.info("Starting download...");
       await api.downloadItem(filePath);
-      toast.success('Download complete');
+      toast.success("Download complete");
     } catch (error) {
-      logger.error('Failed to download item:', error);
-      toast.error('Download failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      logger.error("Failed to download item:", error);
+      toast.error("Download failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }, []);
@@ -1075,17 +1145,17 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
   const handleDragDropMove = useCallback(
     async (sourcePaths: string[], targetFolderPath: string) => {
       for (const sourcePath of sourcePaths) {
-        const fileName = sourcePath.split('/').pop() || '';
+        const fileName = sourcePath.split("/").pop() || "";
         const destinationPath = `${targetFolderPath}/${fileName}`;
 
         // Prevent moving to the same location
-        const sourceDir = sourcePath.substring(0, sourcePath.lastIndexOf('/'));
+        const sourceDir = sourcePath.substring(0, sourcePath.lastIndexOf("/"));
         if (sourceDir === targetFolderPath) continue;
 
         await handleMoveItem(sourcePath, destinationPath);
       }
     },
-    [handleMoveItem]
+    [handleMoveItem],
   );
 
   // ─── Load git details for active file ──────────────────────
@@ -1112,7 +1182,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         setActiveFileGitDetails(null);
       }
     },
-    [effectivePath]
+    [effectivePath],
   );
 
   // Load git details when active tab changes
@@ -1127,7 +1197,12 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
   // Load file diff when inline diff is enabled and active tab changes
   useEffect(() => {
-    if (showInlineDiff && activeTab && !activeTab.isBinary && !activeTab.isTooLarge) {
+    if (
+      showInlineDiff &&
+      activeTab &&
+      !activeTab.isBinary &&
+      !activeTab.isTooLarge
+    ) {
       loadFileDiff(activeTab.filePath);
     } else {
       useFileEditorStore.getState().setActiveFileDiff(null);
@@ -1149,7 +1224,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
   const handleCursorChange = useCallback((line: number, col: number) => {
     const { activeTabId: currentActiveTabId } = useFileEditorStore.getState();
     if (currentActiveTabId) {
-      useFileEditorStore.getState().updateTabCursor(currentActiveTabId, line, col);
+      useFileEditorStore
+        .getState()
+        .updateTabCursor(currentActiveTabId, line, col);
     }
   }, []);
 
@@ -1168,7 +1245,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
     try {
       await navigator.clipboard.writeText(path);
     } catch (error) {
-      logger.error('Failed to copy path to clipboard:', error);
+      logger.error("Failed to copy path to clipboard:", error);
     }
   }, []);
 
@@ -1197,7 +1274,8 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           const updateChildren = (nodes: FileTreeNode[]): FileTreeNode[] => {
             return nodes.map((n) => {
               if (n.path === path) return { ...n, children };
-              if (n.children) return { ...n, children: updateChildren(n.children) };
+              if (n.children)
+                return { ...n, children: updateChildren(n.children) };
               return n;
             });
           };
@@ -1209,7 +1287,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       // on every render, which would make this useCallback's dependency unstable.
       useFileEditorStore.getState().toggleFolder(path);
     },
-    [loadSubdirectory]
+    [loadSubdirectory],
   );
 
   // ─── Initial Load ────────────────────────────────────────────
@@ -1243,7 +1321,8 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
   useEffect(() => {
     if (!effectivePath || hasRefreshedTabsRef.current) return;
-    const { tabs: currentTabs, refreshTabContent: refresh } = useFileEditorStore.getState();
+    const { tabs: currentTabs, refreshTabContent: refresh } =
+      useFileEditorStore.getState();
     if (currentTabs.length === 0) return;
 
     hasRefreshedTabsRef.current = true;
@@ -1254,7 +1333,11 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         if (tab.isBinary || tab.isTooLarge) continue;
         try {
           const result = await api.readFile(tab.filePath);
-          if (result.success && result.content !== undefined && !result.content.includes('\0')) {
+          if (
+            result.success &&
+            result.content !== undefined &&
+            !result.content.includes("\0")
+          ) {
             refresh(tab.id, result.content);
           }
         } catch {
@@ -1283,22 +1366,22 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       const tab = tabs.find((t) => t.id === tabId);
       if (tab?.isDirty) {
         const shouldClose = window.confirm(
-          `"${tab.fileName}" has unsaved changes. Are you sure you want to close it?`
+          `"${tab.fileName}" has unsaved changes. Are you sure you want to close it?`,
         );
         if (!shouldClose) return;
       }
       closeTab(tabId);
     },
-    [tabs, closeTab]
+    [tabs, closeTab],
   );
 
   // ─── Handle Close All Tabs with Dirty Check ──────────────────
   const handleCloseAll = useCallback(() => {
     const dirtyTabs = tabs.filter((t) => t.isDirty);
     if (dirtyTabs.length > 0) {
-      const fileList = dirtyTabs.map((t) => `  • ${t.fileName}`).join('\n');
+      const fileList = dirtyTabs.map((t) => `  • ${t.fileName}`).join("\n");
       const shouldClose = window.confirm(
-        `${dirtyTabs.length} file${dirtyTabs.length > 1 ? 's have' : ' has'} unsaved changes:\n${fileList}\n\nAre you sure you want to close all tabs?`
+        `${dirtyTabs.length} file${dirtyTabs.length > 1 ? "s have" : " has"} unsaved changes:\n${fileList}\n\nAre you sure you want to close all tabs?`,
       );
       if (!shouldClose) return;
     }
@@ -1308,15 +1391,18 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
   // ─── Rendering ───────────────────────────────────────────────
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="file-editor-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="file-editor-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
   }
 
   const isMarkdown = activeTab ? isMarkdownFile(activeTab.filePath) : false;
-  const showPreview = isMarkdown && markdownViewMode !== 'editor';
-  const showEditor = !isMarkdown || markdownViewMode !== 'preview';
+  const showPreview = isMarkdown && markdownViewMode !== "editor";
+  const showEditor = !isMarkdown || markdownViewMode !== "preview";
 
   // ─── Editor Panel Content (shared between mobile and desktop) ──
   const renderEditorPanel = () => (
@@ -1329,8 +1415,15 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         onTabClose={handleTabClose}
         onCloseAll={handleCloseAll}
         onSave={handleSave}
-        isDirty={activeTab?.isDirty && !activeTab?.isBinary && !activeTab?.isTooLarge}
-        showSaveButton={isMobile && !!activeTab && !activeTab.isBinary && !activeTab.isTooLarge}
+        isDirty={
+          activeTab?.isDirty && !activeTab?.isBinary && !activeTab?.isTooLarge
+        }
+        showSaveButton={
+          isMobile &&
+          !!activeTab &&
+          !activeTab.isBinary &&
+          !activeTab.isTooLarge
+        }
       />
 
       {/* Editor content */}
@@ -1356,8 +1449,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
               <div className="text-center">
                 <p className="text-lg font-medium">File Too Large</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  This file is {(activeTab.fileSize / (1024 * 1024)).toFixed(1)}MB, which exceeds
-                  the {(maxFileSize / (1024 * 1024)).toFixed(0)}MB limit.
+                  This file is {(activeTab.fileSize / (1024 * 1024)).toFixed(1)}
+                  MB, which exceeds the{" "}
+                  {(maxFileSize / (1024 * 1024)).toFixed(0)}MB limit.
                 </p>
               </div>
             </div>
@@ -1368,7 +1462,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             <>
               {isMarkdown && showEditor && showPreview ? (
                 // Markdown split view (stacks vertically on mobile)
-                <PanelGroup direction={isMobile ? 'vertical' : 'horizontal'} className="h-full">
+                <PanelGroup
+                  direction={isMobile ? "vertical" : "horizontal"}
+                  className="h-full"
+                >
                   <Panel defaultSize={50} minSize={30}>
                     <CodeEditor
                       ref={editorRef}
@@ -1388,10 +1485,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
                   </Panel>
                   <PanelResizeHandle
                     className={cn(
-                      'transition-colors',
+                      "transition-colors",
                       isMobile
-                        ? 'h-1 bg-border hover:bg-primary/50'
-                        : 'w-1 bg-border hover:bg-primary/50'
+                        ? "h-1 bg-border hover:bg-primary/50"
+                        : "w-1 bg-border hover:bg-primary/50",
                     )}
                   />
                   <Panel defaultSize={50} minSize={30}>
@@ -1400,7 +1497,10 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
                 </PanelGroup>
               ) : isMarkdown && !showEditor ? (
                 // Markdown preview only
-                <MarkdownPreviewPanel content={activeTab.content} className="h-full" />
+                <MarkdownPreviewPanel
+                  content={activeTab.content}
+                  className="h-full"
+                />
               ) : (
                 // Regular editor (or markdown editor-only mode)
                 <CodeEditor
@@ -1429,8 +1529,8 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           <div className="text-center">
             <p className="text-muted-foreground">
               {isMobile
-                ? 'Tap a file from the explorer to start editing'
-                : 'Select a file from the explorer to start editing'}
+                ? "Tap a file from the explorer to start editing"
+                : "Select a file from the explorer to start editing"}
             </p>
             {!isMobile && (
               <p className="text-xs text-muted-foreground/60 mt-1">
@@ -1442,13 +1542,16 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       )}
 
       {/* Git detail panel (shown below editor for active file) */}
-      {activeTab && !activeTab.isBinary && !activeTab.isTooLarge && activeFileGitDetails && (
-        <GitDetailPanel
-          details={activeFileGitDetails}
-          filePath={activeTab.filePath}
-          onOpenFile={handleFileSelect}
-        />
-      )}
+      {activeTab &&
+        !activeTab.isBinary &&
+        !activeTab.isTooLarge &&
+        activeFileGitDetails && (
+          <GitDetailPanel
+            details={activeFileGitDetails}
+            filePath={activeTab.filePath}
+            onOpenFile={handleFileSelect}
+          />
+        )}
 
       {/* Status bar */}
       {activeTab && !activeTab.isBinary && !activeTab.isTooLarge && (
@@ -1472,7 +1575,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
               </span>
             )}
             <span>Spaces: {tabSize}</span>
-            {!isMobile && <span>{wordWrap ? 'Wrap' : 'No Wrap'}</span>}
+            {!isMobile && <span>{wordWrap ? "Wrap" : "No Wrap"}</span>}
             <span>UTF-8</span>
           </div>
         </div>
@@ -1499,12 +1602,15 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
       onMoveItem={handleMoveItem}
       onDownloadItem={handleDownloadItem}
       onDragDropMove={handleDragDropMove}
-      effectivePath={effectivePath || ''}
+      effectivePath={effectivePath || ""}
     />
   );
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="file-editor-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="file-editor-view"
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 sm:p-4 border-b border-border bg-glass backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -1524,7 +1630,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             <FileCode2 className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">File Editor</h1>
+            <h1 className="text-lg font-semibold text-foreground">
+              File Editor
+            </h1>
             <p className="text-sm text-muted-foreground truncate max-w-[150px] md:max-w-none">
               {currentProject.name}
             </p>
@@ -1533,7 +1641,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
 
         <div className="flex items-center gap-3">
           {/* Worktree directory selector */}
-          {currentProject?.path && <WorktreeDirectoryDropdown projectPath={currentProject.path} />}
+          {currentProject?.path && (
+            <WorktreeDirectoryDropdown projectPath={currentProject.path} />
+          )}
 
           {/* Desktop: Markdown view mode toggle */}
           {isMarkdown && !(isMobile && mobileBrowserVisible) && (
@@ -1568,7 +1678,12 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             !activeTab.isTooLarge &&
             !(isMobile && mobileBrowserVisible) && (
               <div className="hidden lg:flex items-center gap-1">
-                <Button variant="outline" size="icon-sm" onClick={handleUndo} title="Undo (Ctrl+Z)">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleUndo}
+                  title="Undo (Ctrl+Z)"
+                >
                   <Undo2 className="w-4 h-4" />
                 </Button>
                 <Button
@@ -1593,10 +1708,14 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
                 onClick={handleSave}
                 disabled={!activeTab.isDirty}
                 className="hidden lg:flex"
-                title={editorAutoSave ? 'Auto-save enabled (Ctrl+S)' : 'Save file (Ctrl+S)'}
+                title={
+                  editorAutoSave
+                    ? "Auto-save enabled (Ctrl+S)"
+                    : "Save file (Ctrl+S)"
+                }
               >
                 <Save className="w-4 h-4 mr-2" />
-                {editorAutoSave ? 'Auto' : 'Save'}
+                {editorAutoSave ? "Auto" : "Save"}
               </Button>
             )}
 
@@ -1606,11 +1725,15 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             !activeTab.isTooLarge &&
             !(isMobile && mobileBrowserVisible) && (
               <Button
-                variant={showInlineDiff ? 'default' : 'outline'}
+                variant={showInlineDiff ? "default" : "outline"}
                 size="sm"
                 onClick={() => setShowInlineDiff(!showInlineDiff)}
                 className="hidden lg:flex"
-                title={showInlineDiff ? 'Hide git diff highlighting' : 'Show git diff highlighting'}
+                title={
+                  showInlineDiff
+                    ? "Hide git diff highlighting"
+                    : "Show git diff highlighting"
+                }
               >
                 <Diff className="w-4 h-4 mr-2" />
                 Diff
@@ -1649,7 +1772,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3" align="end" side="bottom">
               <div className="space-y-4">
-                <p className="text-xs font-semibold text-foreground">Editor Settings</p>
+                <p className="text-xs font-semibold text-foreground">
+                  Editor Settings
+                </p>
                 <EditorSettingsForm
                   editorFontSize={editorFontSize}
                   setEditorFontSize={setEditorFontSize}
@@ -1744,7 +1869,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             }}
           >
             <Save className="w-4 h-4 mr-2" />
-            {editorAutoSave ? 'Save Now (Auto-save on)' : 'Save Changes'}
+            {editorAutoSave ? "Save Now (Auto-save on)" : "Save Changes"}
           </Button>
         )}
 
@@ -1753,31 +1878,34 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           <button
             onClick={() => setShowInlineDiff(!showInlineDiff)}
             className={cn(
-              'flex items-center gap-2 w-full p-2 rounded-lg border transition-colors text-sm',
+              "flex items-center gap-2 w-full p-2 rounded-lg border transition-colors text-sm",
               showInlineDiff
-                ? 'bg-primary/10 border-primary/30 text-primary'
-                : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                ? "bg-primary/10 border-primary/30 text-primary"
+                : "bg-muted/30 border-border text-muted-foreground hover:text-foreground",
             )}
           >
             <Diff className="w-4 h-4" />
-            <span>{showInlineDiff ? 'Hide Git Diff' : 'Show Git Diff'}</span>
+            <span>{showInlineDiff ? "Hide Git Diff" : "Show Git Diff"}</span>
           </button>
         )}
 
         {/* Create Feature from selection */}
-        {hasEditorSelection && activeTab && !activeTab.isBinary && !activeTab.isTooLarge && (
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => {
-              handleCreateFeatureFromSelection();
-              setShowActionsPanel(false);
-            }}
-          >
-            <FolderKanban className="w-4 h-4 mr-2" />
-            Create Feature from Selection
-          </Button>
-        )}
+        {hasEditorSelection &&
+          activeTab &&
+          !activeTab.isBinary &&
+          !activeTab.isTooLarge && (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                handleCreateFeatureFromSelection();
+                setShowActionsPanel(false);
+              }}
+            >
+              <FolderKanban className="w-4 h-4 mr-2" />
+              Create Feature from Selection
+            </Button>
+          )}
 
         {/* File info */}
         {activeTab && !activeTab.isBinary && !activeTab.isTooLarge && (
@@ -1785,7 +1913,9 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               File Info
             </span>
-            <div className="text-sm text-foreground">{getLanguageName(activeTab.filePath)}</div>
+            <div className="text-sm text-foreground">
+              {getLanguageName(activeTab.filePath)}
+            </div>
             <div className="text-xs text-muted-foreground">
               Ln {activeTab.cursorLine}, Col {activeTab.cursorCol}
             </div>
@@ -1815,7 +1945,11 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
         // editor content scrolls up and the cursor stays visible above the keyboard.
         <div
           className="flex-1 overflow-hidden"
-          style={isKeyboardOpen ? { height: `calc(100% - ${keyboardHeight}px)` } : undefined}
+          style={
+            isKeyboardOpen
+              ? { height: `calc(100% - ${keyboardHeight}px)` }
+              : undefined
+          }
         >
           {mobileBrowserVisible ? (
             // Full-screen file browser on mobile
@@ -1853,7 +1987,7 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
           }
         }}
         onAdd={handleAddFeatureFromEditor}
-        categorySuggestions={['From Editor']}
+        categorySuggestions={["From Editor"]}
         branchSuggestions={[]}
         defaultSkipTests={defaultSkipTests}
         defaultBranch={currentBranch}

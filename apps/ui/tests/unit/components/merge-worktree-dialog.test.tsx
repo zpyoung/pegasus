@@ -7,28 +7,47 @@
  * - Default (non-squash) behavior remains unchanged
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MergeWorktreeDialog } from '../../../src/components/views/board-view/dialogs/merge-worktree-dialog';
-import { getElectronAPI } from '@pegasus/ui/lib/electron';
-import type { WorktreeInfo } from '../../../src/components/views/board-view/worktree-panel/types';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MergeWorktreeDialog } from "../../../src/components/views/board-view/dialogs/merge-worktree-dialog";
+import { getElectronAPI } from "@pegasus/ui/lib/electron";
+import type { WorktreeInfo } from "../../../src/components/views/board-view/worktree-panel/types";
 
 // Mock dependencies
-vi.mock('@pegasus/ui/lib/electron');
-vi.mock('sonner', () => ({
+vi.mock("@pegasus/ui/lib/electron");
+vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
   },
 }));
+// Mock BranchAutocomplete to avoid ResizeObserver issues in tests
+vi.mock("@/components/ui/branch-autocomplete", () => ({
+  BranchAutocomplete: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+  }) => (
+    <input
+      data-testid="merge-target-branch"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  ),
+}));
 
 const mockGetElectronAPI = vi.mocked(getElectronAPI);
 
 const mockWorktree: WorktreeInfo = {
-  path: '/test/worktrees/feature-branch',
-  branch: 'feature/test-branch',
+  path: "/test/worktrees/feature-branch",
+  branch: "feature/test-branch",
   isMainWorktree: false,
   hasChanges: false,
   changedFilesCount: 0,
@@ -37,20 +56,20 @@ const mockWorktree: WorktreeInfo = {
 const mockMergeFeature = vi.fn();
 const mockListBranches = vi.fn();
 
-describe('MergeWorktreeDialog - squash mode', () => {
+describe("MergeWorktreeDialog - squash mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMergeFeature.mockResolvedValue({
       success: true,
-      mergedBranch: 'feature/test-branch',
-      targetBranch: 'main',
+      mergedBranch: "feature/test-branch",
+      targetBranch: "main",
     });
     mockListBranches.mockResolvedValue({
       success: true,
       result: {
         branches: [
-          { name: 'main', isRemote: false },
-          { name: 'develop', isRemote: false },
+          { name: "main", isRemote: false },
+          { name: "develop", isRemote: false },
         ],
       },
     });
@@ -62,7 +81,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
     } as ReturnType<typeof getElectronAPI>);
   });
 
-  it('renders the squash checkbox unchecked by default', () => {
+  it("renders the squash checkbox unchecked by default", () => {
     render(
       <MergeWorktreeDialog
         open={true}
@@ -70,7 +89,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     const squashCheckbox = screen.getByLabelText(/squash commits/i);
@@ -78,7 +97,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
     expect(squashCheckbox).not.toBeChecked();
   });
 
-  it('shows explanatory text when squash is selected', async () => {
+  it("shows explanatory text when squash is selected", async () => {
     const user = userEvent.setup();
     render(
       <MergeWorktreeDialog
@@ -87,18 +106,18 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     const squashCheckbox = screen.getByLabelText(/squash commits/i);
     await user.click(squashCheckbox);
 
     expect(
-      screen.getByText(/all commits from this branch will be condensed/i)
+      screen.getByText(/all commits from this branch will be condensed/i),
     ).toBeInTheDocument();
   });
 
-  it('does not show explanatory text when squash is not selected', () => {
+  it("does not show explanatory text when squash is not selected", () => {
     render(
       <MergeWorktreeDialog
         open={true}
@@ -106,15 +125,15 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     expect(
-      screen.queryByText(/all commits from this branch will be condensed/i)
+      screen.queryByText(/all commits from this branch will be condensed/i),
     ).not.toBeInTheDocument();
   });
 
-  it('passes squash option to API when squash is selected', async () => {
+  it("passes squash option to API when squash is selected", async () => {
     const user = userEvent.setup();
     const onIntegrated = vi.fn();
 
@@ -125,7 +144,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={onIntegrated}
-      />
+      />,
     );
 
     // Check the squash checkbox
@@ -133,21 +152,21 @@ describe('MergeWorktreeDialog - squash mode', () => {
     await user.click(squashCheckbox);
 
     // Click integrate button
-    const integrateButton = screen.getByRole('button', { name: /integrate/i });
+    const integrateButton = screen.getByRole("button", { name: /integrate/i });
     await user.click(integrateButton);
 
     await waitFor(() => {
       expect(mockMergeFeature).toHaveBeenCalledWith(
-        '/test/project',
-        'feature/test-branch',
-        '/test/worktrees/feature-branch',
-        'main',
-        expect.objectContaining({ squash: true })
+        "/test/project",
+        "feature/test-branch",
+        "/test/worktrees/feature-branch",
+        "main",
+        expect.objectContaining({ squash: true }),
       );
     });
   });
 
-  it('does not pass squash option by default', async () => {
+  it("does not pass squash option by default", async () => {
     const user = userEvent.setup();
 
     render(
@@ -157,24 +176,24 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
-    const integrateButton = screen.getByRole('button', { name: /integrate/i });
+    const integrateButton = screen.getByRole("button", { name: /integrate/i });
     await user.click(integrateButton);
 
     await waitFor(() => {
       expect(mockMergeFeature).toHaveBeenCalledWith(
-        '/test/project',
-        'feature/test-branch',
-        '/test/worktrees/feature-branch',
-        'main',
-        expect.objectContaining({ squash: false })
+        "/test/project",
+        "feature/test-branch",
+        "/test/worktrees/feature-branch",
+        "main",
+        expect.objectContaining({ squash: false }),
       );
     });
   });
 
-  it('resets squash state when dialog reopens', async () => {
+  it("resets squash state when dialog reopens", async () => {
     const { rerender } = render(
       <MergeWorktreeDialog
         open={true}
@@ -182,7 +201,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     // Close
@@ -193,7 +212,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     // Reopen
@@ -204,7 +223,7 @@ describe('MergeWorktreeDialog - squash mode', () => {
         projectPath="/test/project"
         worktree={mockWorktree}
         onIntegrated={vi.fn()}
-      />
+      />,
     );
 
     const squashCheckbox = screen.getByLabelText(/squash commits/i);

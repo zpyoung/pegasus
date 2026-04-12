@@ -1,18 +1,24 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
-import os from 'os';
-import { CursorConfigManager } from '@/providers/cursor-config-manager.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
+import os from "os";
+import { CursorConfigManager } from "@/providers/cursor-config-manager.js";
 
-vi.mock('fs');
-vi.mock('@pegasus/platform', () => ({
-  getPegasusDir: vi.fn((projectPath: string) => path.join(projectPath, '.pegasus')),
+vi.mock("fs");
+vi.mock("@pegasus/platform", () => ({
+  getPegasusDir: vi.fn((projectPath: string) =>
+    path.join(projectPath, ".pegasus"),
+  ),
 }));
 
-describe('cursor-config-manager.ts', () => {
+describe("cursor-config-manager.ts", () => {
   // Use platform-agnostic paths
-  const testProjectPath = path.join(os.tmpdir(), 'test-project');
-  const expectedConfigPath = path.join(testProjectPath, '.pegasus', 'cursor-config.json');
+  const testProjectPath = path.join(os.tmpdir(), "test-project");
+  const expectedConfigPath = path.join(
+    testProjectPath,
+    ".pegasus",
+    "cursor-config.json",
+  );
   let manager: CursorConfigManager;
 
   beforeEach(() => {
@@ -27,56 +33,58 @@ describe('cursor-config-manager.ts', () => {
     vi.resetAllMocks();
   });
 
-  describe('constructor', () => {
-    it('should load existing config from disk', () => {
+  describe("constructor", () => {
+    it("should load existing config from disk", () => {
       const existingConfig = {
-        defaultModel: 'claude-3-5-sonnet',
-        models: ['auto', 'claude-3-5-sonnet'],
+        defaultModel: "claude-3-5-sonnet",
+        models: ["auto", "claude-3-5-sonnet"],
       };
 
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(existingConfig));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify(existingConfig),
+      );
 
       manager = new CursorConfigManager(testProjectPath);
 
       expect(fs.existsSync).toHaveBeenCalledWith(expectedConfigPath);
-      expect(fs.readFileSync).toHaveBeenCalledWith(expectedConfigPath, 'utf8');
+      expect(fs.readFileSync).toHaveBeenCalledWith(expectedConfigPath, "utf8");
       expect(manager.getConfig()).toEqual(existingConfig);
     });
 
-    it('should use default config if file does not exist', () => {
+    it("should use default config if file does not exist", () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
 
       manager = new CursorConfigManager(testProjectPath);
 
       const config = manager.getConfig();
-      expect(config.defaultModel).toBe('cursor-auto');
-      expect(config.models).toContain('cursor-auto');
+      expect(config.defaultModel).toBe("cursor-sonnet-4.6");
+      expect(config.models).toContain("cursor-sonnet-4.6");
     });
 
-    it('should use default config if file read fails', () => {
+    it("should use default config if file read fails", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockImplementation(() => {
-        throw new Error('Read error');
+        throw new Error("Read error");
       });
 
       manager = new CursorConfigManager(testProjectPath);
 
-      expect(manager.getDefaultModel()).toBe('cursor-auto');
+      expect(manager.getDefaultModel()).toBe("cursor-sonnet-4.6");
     });
 
-    it('should use default config if JSON parse fails', () => {
+    it("should use default config if JSON parse fails", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue('invalid json');
+      vi.mocked(fs.readFileSync).mockReturnValue("invalid json");
 
       manager = new CursorConfigManager(testProjectPath);
 
-      expect(manager.getDefaultModel()).toBe('cursor-auto');
+      expect(manager.getDefaultModel()).toBe("cursor-sonnet-4.6");
     });
   });
 
-  describe('getConfig', () => {
-    it('should return a copy of the config', () => {
+  describe("getConfig", () => {
+    it("should return a copy of the config", () => {
       manager = new CursorConfigManager(testProjectPath);
 
       const config1 = manager.getConfig();
@@ -87,221 +95,234 @@ describe('cursor-config-manager.ts', () => {
     });
   });
 
-  describe('getDefaultModel / setDefaultModel', () => {
+  describe("getDefaultModel / setDefaultModel", () => {
     beforeEach(() => {
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should return default model', () => {
-      expect(manager.getDefaultModel()).toBe('cursor-auto');
+    it("should return default model", () => {
+      expect(manager.getDefaultModel()).toBe("cursor-sonnet-4.6");
     });
 
-    it('should set and persist default model', () => {
-      manager.setDefaultModel('claude-3-5-sonnet');
+    it("should set and persist default model", () => {
+      manager.setDefaultModel("claude-3-5-sonnet");
 
-      expect(manager.getDefaultModel()).toBe('claude-3-5-sonnet');
+      expect(manager.getDefaultModel()).toBe("claude-3-5-sonnet");
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should return cursor-auto if defaultModel is undefined', () => {
+    it("should return cursor-sonnet-4.6 if defaultModel is undefined", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ models: ['cursor-auto'] }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ models: ["cursor-sonnet-4.6"] }),
+      );
 
       manager = new CursorConfigManager(testProjectPath);
 
-      expect(manager.getDefaultModel()).toBe('cursor-auto');
+      expect(manager.getDefaultModel()).toBe("cursor-sonnet-4.6");
     });
   });
 
-  describe('getEnabledModels / setEnabledModels', () => {
+  describe("getEnabledModels / setEnabledModels", () => {
     beforeEach(() => {
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should return enabled models', () => {
+    it("should return enabled models", () => {
       const models = manager.getEnabledModels();
       expect(Array.isArray(models)).toBe(true);
-      expect(models).toContain('cursor-auto');
+      expect(models).toContain("cursor-sonnet-4.6");
     });
 
-    it('should set enabled models', () => {
-      manager.setEnabledModels(['claude-3-5-sonnet', 'gpt-4o']);
+    it("should set enabled models", () => {
+      manager.setEnabledModels(["claude-3-5-sonnet", "gpt-4o"]);
 
-      expect(manager.getEnabledModels()).toEqual(['claude-3-5-sonnet', 'gpt-4o']);
+      expect(manager.getEnabledModels()).toEqual([
+        "claude-3-5-sonnet",
+        "gpt-4o",
+      ]);
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should return [cursor-auto] if models is undefined', () => {
+    it("should return [cursor-sonnet-4.6] if models is undefined", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ defaultModel: 'cursor-auto' }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ defaultModel: "cursor-sonnet-4.6" }),
+      );
 
       manager = new CursorConfigManager(testProjectPath);
 
-      expect(manager.getEnabledModels()).toEqual(['cursor-auto']);
+      expect(manager.getEnabledModels()).toEqual(["cursor-sonnet-4.6"]);
     });
   });
 
-  describe('addModel', () => {
+  describe("addModel", () => {
     beforeEach(() => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(
         JSON.stringify({
-          defaultModel: 'cursor-auto',
-          models: ['cursor-auto'],
-        })
+          defaultModel: "cursor-sonnet-4.6",
+          models: ["cursor-sonnet-4.6"],
+        }),
       );
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should add a new model', () => {
-      manager.addModel('claude-3-5-sonnet');
+    it("should add a new model", () => {
+      manager.addModel("claude-3-5-sonnet");
 
-      expect(manager.getEnabledModels()).toContain('claude-3-5-sonnet');
+      expect(manager.getEnabledModels()).toContain("claude-3-5-sonnet");
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should not add duplicate models', () => {
-      manager.addModel('cursor-auto');
+    it("should not add duplicate models", () => {
+      manager.addModel("cursor-sonnet-4.6");
 
       // Should not save if model already exists
       expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
 
-    it('should initialize models array if undefined', () => {
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ defaultModel: 'cursor-auto' }));
+    it("should initialize models array if undefined", () => {
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ defaultModel: "cursor-sonnet-4.6" }),
+      );
       manager = new CursorConfigManager(testProjectPath);
 
-      manager.addModel('claude-3-5-sonnet');
+      manager.addModel("claude-3-5-sonnet");
 
-      expect(manager.getEnabledModels()).toContain('claude-3-5-sonnet');
+      expect(manager.getEnabledModels()).toContain("claude-3-5-sonnet");
     });
   });
 
-  describe('removeModel', () => {
+  describe("removeModel", () => {
     beforeEach(() => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(
         JSON.stringify({
-          defaultModel: 'auto',
-          models: ['auto', 'claude-3-5-sonnet', 'gpt-4o'],
-        })
+          defaultModel: "auto",
+          models: ["auto", "claude-3-5-sonnet", "gpt-4o"],
+        }),
       );
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should remove a model', () => {
-      manager.removeModel('gpt-4o');
+    it("should remove a model", () => {
+      manager.removeModel("gpt-4o");
 
-      expect(manager.getEnabledModels()).not.toContain('gpt-4o');
+      expect(manager.getEnabledModels()).not.toContain("gpt-4o");
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should handle removing non-existent model', () => {
-      manager.removeModel('non-existent' as any);
+    it("should handle removing non-existent model", () => {
+      manager.removeModel("non-existent" as any);
 
       // Should still save (filtering happens regardless)
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should do nothing if models array is undefined', () => {
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ defaultModel: 'auto' }));
+    it("should do nothing if models array is undefined", () => {
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ defaultModel: "auto" }),
+      );
       manager = new CursorConfigManager(testProjectPath);
 
-      manager.removeModel('auto');
+      manager.removeModel("auto");
 
       expect(fs.writeFileSync).not.toHaveBeenCalled();
     });
   });
 
-  describe('isModelEnabled', () => {
+  describe("isModelEnabled", () => {
     beforeEach(() => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(
         JSON.stringify({
-          defaultModel: 'auto',
-          models: ['auto', 'claude-3-5-sonnet'],
-        })
+          defaultModel: "auto",
+          models: ["auto", "claude-3-5-sonnet"],
+        }),
       );
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should return true for enabled model', () => {
-      expect(manager.isModelEnabled('auto')).toBe(true);
-      expect(manager.isModelEnabled('claude-3-5-sonnet')).toBe(true);
+    it("should return true for enabled model", () => {
+      expect(manager.isModelEnabled("auto")).toBe(true);
+      expect(manager.isModelEnabled("claude-3-5-sonnet")).toBe(true);
     });
 
-    it('should return false for disabled model', () => {
-      expect(manager.isModelEnabled('gpt-4o')).toBe(false);
+    it("should return false for disabled model", () => {
+      expect(manager.isModelEnabled("gpt-4o")).toBe(false);
     });
 
-    it('should return false if models is undefined', () => {
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ defaultModel: 'auto' }));
+    it("should return false if models is undefined", () => {
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ defaultModel: "auto" }),
+      );
       manager = new CursorConfigManager(testProjectPath);
 
-      expect(manager.isModelEnabled('auto')).toBe(false);
+      expect(manager.isModelEnabled("auto")).toBe(false);
     });
   });
 
-  describe('getMcpServers / setMcpServers', () => {
+  describe("getMcpServers / setMcpServers", () => {
     beforeEach(() => {
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should return empty array by default', () => {
+    it("should return empty array by default", () => {
       expect(manager.getMcpServers()).toEqual([]);
     });
 
-    it('should set and get MCP servers', () => {
-      manager.setMcpServers(['server1', 'server2']);
+    it("should set and get MCP servers", () => {
+      manager.setMcpServers(["server1", "server2"]);
 
-      expect(manager.getMcpServers()).toEqual(['server1', 'server2']);
+      expect(manager.getMcpServers()).toEqual(["server1", "server2"]);
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
   });
 
-  describe('getRules / setRules', () => {
+  describe("getRules / setRules", () => {
     beforeEach(() => {
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should return empty array by default', () => {
+    it("should return empty array by default", () => {
       expect(manager.getRules()).toEqual([]);
     });
 
-    it('should set and get rules', () => {
-      manager.setRules(['.cursorrules', 'rules.md']);
+    it("should set and get rules", () => {
+      manager.setRules([".cursorrules", "rules.md"]);
 
-      expect(manager.getRules()).toEqual(['.cursorrules', 'rules.md']);
+      expect(manager.getRules()).toEqual([".cursorrules", "rules.md"]);
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
   });
 
-  describe('reset', () => {
+  describe("reset", () => {
     beforeEach(() => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(
         JSON.stringify({
-          defaultModel: 'claude-3-5-sonnet',
-          models: ['claude-3-5-sonnet'],
-          mcpServers: ['server1'],
-          rules: ['rules.md'],
-        })
+          defaultModel: "claude-3-5-sonnet",
+          models: ["claude-3-5-sonnet"],
+          mcpServers: ["server1"],
+          rules: ["rules.md"],
+        }),
       );
       manager = new CursorConfigManager(testProjectPath);
     });
 
-    it('should reset to default values', () => {
+    it("should reset to default values", () => {
       manager.reset();
 
-      expect(manager.getDefaultModel()).toBe('cursor-auto');
+      expect(manager.getDefaultModel()).toBe("cursor-sonnet-4.6");
       expect(manager.getMcpServers()).toEqual([]);
       expect(manager.getRules()).toEqual([]);
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
   });
 
-  describe('exists', () => {
-    it('should return true if config file exists', () => {
+  describe("exists", () => {
+    it("should return true if config file exists", () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       manager = new CursorConfigManager(testProjectPath);
 
@@ -309,7 +330,7 @@ describe('cursor-config-manager.ts', () => {
       expect(manager.exists()).toBe(true);
     });
 
-    it('should return false if config file does not exist', () => {
+    it("should return false if config file does not exist", () => {
       manager = new CursorConfigManager(testProjectPath);
 
       vi.mocked(fs.existsSync).mockReturnValue(false);
@@ -317,36 +338,41 @@ describe('cursor-config-manager.ts', () => {
     });
   });
 
-  describe('getConfigPath', () => {
-    it('should return the config file path', () => {
+  describe("getConfigPath", () => {
+    it("should return the config file path", () => {
       manager = new CursorConfigManager(testProjectPath);
 
       expect(manager.getConfigPath()).toBe(expectedConfigPath);
     });
   });
 
-  describe('saveConfig', () => {
-    it('should create directory if it does not exist', () => {
+  describe("saveConfig", () => {
+    it("should create directory if it does not exist", () => {
       vi.mocked(fs.existsSync)
         .mockReturnValueOnce(false) // For loadConfig
         .mockReturnValueOnce(false); // For directory check in saveConfig
 
       manager = new CursorConfigManager(testProjectPath);
-      manager.setDefaultModel('claude-3-5-sonnet');
+      manager.setDefaultModel("claude-3-5-sonnet");
 
-      expect(fs.mkdirSync).toHaveBeenCalledWith(path.dirname(expectedConfigPath), {
-        recursive: true,
-      });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        path.dirname(expectedConfigPath),
+        {
+          recursive: true,
+        },
+      );
     });
 
-    it('should throw error on write failure', () => {
+    it("should throw error on write failure", () => {
       manager = new CursorConfigManager(testProjectPath);
 
       vi.mocked(fs.writeFileSync).mockImplementation(() => {
-        throw new Error('Write failed');
+        throw new Error("Write failed");
       });
 
-      expect(() => manager.setDefaultModel('claude-3-5-sonnet')).toThrow('Write failed');
+      expect(() => manager.setDefaultModel("claude-3-5-sonnet")).toThrow(
+        "Write failed",
+      );
     });
   });
 });

@@ -1,13 +1,16 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   OpencodeProvider,
   resetToolUseIdCounter,
-} from '../../../src/providers/opencode-provider.js';
-import type { ProviderMessage, ModelDefinition } from '@pegasus/types';
-import { collectAsyncGenerator } from '../../utils/helpers.js';
-import { spawnJSONLProcess, getOpenCodeAuthIndicators } from '@pegasus/platform';
+} from "../../../src/providers/opencode-provider.js";
+import type { ProviderMessage, ModelDefinition } from "@pegasus/types";
+import { collectAsyncGenerator } from "../../utils/helpers.js";
+import {
+  spawnJSONLProcess,
+  getOpenCodeAuthIndicators,
+} from "@pegasus/platform";
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   spawnJSONLProcess: vi.fn(),
   isWslAvailable: vi.fn().mockReturnValue(false),
   findCliInWsl: vi.fn().mockReturnValue(null),
@@ -20,7 +23,7 @@ vi.mock('@pegasus/platform', () => ({
   }),
 }));
 
-describe('opencode-provider.ts', () => {
+describe("opencode-provider.ts", () => {
   let provider: OpencodeProvider;
 
   beforeEach(() => {
@@ -38,54 +41,54 @@ describe('opencode-provider.ts', () => {
   // Basic Provider Tests
   // ==========================================================================
 
-  describe('getName', () => {
+  describe("getName", () => {
     it("should return 'opencode' as provider name", () => {
-      expect(provider.getName()).toBe('opencode');
+      expect(provider.getName()).toBe("opencode");
     });
   });
 
-  describe('getCliName', () => {
+  describe("getCliName", () => {
     it("should return 'opencode' as CLI name", () => {
-      expect(provider.getCliName()).toBe('opencode');
+      expect(provider.getCliName()).toBe("opencode");
     });
   });
 
-  describe('getAvailableModels', () => {
-    it('should return 5 models', () => {
+  describe("getAvailableModels", () => {
+    it("should return 5 models", () => {
       const models = provider.getAvailableModels();
       expect(models).toHaveLength(5);
     });
 
-    it('should include Big Pickle as default', () => {
+    it("should include Big Pickle as default", () => {
       const models = provider.getAvailableModels();
-      const bigPickle = models.find((m) => m.id === 'opencode/big-pickle');
+      const bigPickle = models.find((m) => m.id === "opencode/big-pickle");
 
       expect(bigPickle).toBeDefined();
-      expect(bigPickle?.name).toBe('Big Pickle (Free)');
-      expect(bigPickle?.provider).toBe('opencode');
+      expect(bigPickle?.name).toBe("Big Pickle (Free)");
+      expect(bigPickle?.provider).toBe("opencode");
       expect(bigPickle?.default).toBe(true);
-      expect(bigPickle?.modelString).toBe('opencode/big-pickle');
+      expect(bigPickle?.modelString).toBe("opencode/big-pickle");
     });
 
-    it('should include free tier GLM model', () => {
+    it("should include free tier GLM model", () => {
       const models = provider.getAvailableModels();
-      const glm = models.find((m) => m.id === 'opencode/glm-5-free');
+      const glm = models.find((m) => m.id === "opencode/glm-5-free");
 
       expect(glm).toBeDefined();
-      expect(glm?.name).toBe('GLM 5 Free');
-      expect(glm?.tier).toBe('basic');
+      expect(glm?.name).toBe("GLM 5 Free");
+      expect(glm?.tier).toBe("basic");
     });
 
-    it('should include free tier MiniMax model', () => {
+    it("should include free tier MiniMax model", () => {
       const models = provider.getAvailableModels();
-      const minimax = models.find((m) => m.id === 'opencode/minimax-m2.5-free');
+      const minimax = models.find((m) => m.id === "opencode/minimax-m2.5-free");
 
       expect(minimax).toBeDefined();
-      expect(minimax?.name).toBe('MiniMax M2.5 Free');
-      expect(minimax?.tier).toBe('basic');
+      expect(minimax?.name).toBe("MiniMax M2.5 Free");
+      expect(minimax?.tier).toBe("basic");
     });
 
-    it('should have all models support tools', () => {
+    it("should have all models support tools", () => {
       const models = provider.getAvailableModels();
 
       models.forEach((model) => {
@@ -93,63 +96,82 @@ describe('opencode-provider.ts', () => {
       });
     });
 
-    it('should have models with modelString property', () => {
+    it("should have models with modelString property", () => {
       const models = provider.getAvailableModels();
 
       for (const model of models) {
-        expect(model).toHaveProperty('modelString');
-        expect(typeof model.modelString).toBe('string');
+        expect(model).toHaveProperty("modelString");
+        expect(typeof model.modelString).toBe("string");
       }
     });
   });
 
-  describe('parseModelsOutput', () => {
-    it('should parse nested provider model IDs', () => {
-      const output = ['openrouter/anthropic/claude-3.5-sonnet', 'openai/gpt-4o'].join('\n');
+  describe("parseModelsOutput", () => {
+    it("should parse nested provider model IDs", () => {
+      const output = [
+        "openrouter/anthropic/claude-3.5-sonnet",
+        JSON.stringify({
+          id: "anthropic/claude-3.5-sonnet",
+          providerID: "openrouter",
+          name: "Claude 3.5 Sonnet",
+        }),
+        "openai/gpt-4o",
+        JSON.stringify({
+          id: "gpt-4o",
+          providerID: "openai",
+          name: "GPT-4o",
+        }),
+      ].join("\n");
 
       const parseModelsOutput = (
-        provider as unknown as { parseModelsOutput: (output: string) => ModelDefinition[] }
+        provider as unknown as {
+          parseModelsOutput: (output: string) => ModelDefinition[];
+        }
       ).parseModelsOutput.bind(provider);
       const models = parseModelsOutput(output);
 
       expect(models).toHaveLength(2);
-      const openrouterModel = models.find((model) => model.id.startsWith('openrouter/'));
+      const openrouterModel = models.find((model) =>
+        model.id.startsWith("openrouter/"),
+      );
 
       expect(openrouterModel).toBeDefined();
-      expect(openrouterModel?.provider).toBe('openrouter');
-      expect(openrouterModel?.modelString).toBe('openrouter/anthropic/claude-3.5-sonnet');
+      expect(openrouterModel?.provider).toBe("openrouter");
+      expect(openrouterModel?.modelString).toBe(
+        "openrouter/anthropic/claude-3.5-sonnet",
+      );
     });
   });
 
-  describe('supportsFeature', () => {
+  describe("supportsFeature", () => {
     it("should support 'tools' feature", () => {
-      expect(provider.supportsFeature('tools')).toBe(true);
+      expect(provider.supportsFeature("tools")).toBe(true);
     });
 
     it("should support 'text' feature", () => {
-      expect(provider.supportsFeature('text')).toBe(true);
+      expect(provider.supportsFeature("text")).toBe(true);
     });
 
     it("should support 'vision' feature", () => {
-      expect(provider.supportsFeature('vision')).toBe(true);
+      expect(provider.supportsFeature("vision")).toBe(true);
     });
 
     it("should not support 'thinking' feature", () => {
-      expect(provider.supportsFeature('thinking')).toBe(false);
+      expect(provider.supportsFeature("thinking")).toBe(false);
     });
 
     it("should not support 'mcp' feature", () => {
-      expect(provider.supportsFeature('mcp')).toBe(false);
+      expect(provider.supportsFeature("mcp")).toBe(false);
     });
 
     it("should not support 'cli' feature", () => {
-      expect(provider.supportsFeature('cli')).toBe(false);
+      expect(provider.supportsFeature("cli")).toBe(false);
     });
 
-    it('should return false for unknown features', () => {
-      expect(provider.supportsFeature('unknown-feature')).toBe(false);
-      expect(provider.supportsFeature('nonexistent')).toBe(false);
-      expect(provider.supportsFeature('')).toBe(false);
+    it("should return false for unknown features", () => {
+      expect(provider.supportsFeature("unknown-feature")).toBe(false);
+      expect(provider.supportsFeature("nonexistent")).toBe(false);
+      expect(provider.supportsFeature("")).toBe(false);
     });
   });
 
@@ -157,70 +179,70 @@ describe('opencode-provider.ts', () => {
   // buildCliArgs Tests
   // ==========================================================================
 
-  describe('buildCliArgs', () => {
-    it('should build correct args with run subcommand', () => {
+  describe("buildCliArgs", () => {
+    it("should build correct args with run subcommand", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'opencode/big-pickle',
-        cwd: '/tmp/project',
+        prompt: "Hello",
+        model: "opencode/big-pickle",
+        cwd: "/tmp/project",
       });
 
-      expect(args[0]).toBe('run');
+      expect(args[0]).toBe("run");
     });
 
-    it('should include --format json for streaming output', () => {
+    it("should include --format json for streaming output", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'opencode/big-pickle',
-        cwd: '/tmp/project',
+        prompt: "Hello",
+        model: "opencode/big-pickle",
+        cwd: "/tmp/project",
       });
 
-      const formatIndex = args.indexOf('--format');
+      const formatIndex = args.indexOf("--format");
       expect(formatIndex).toBeGreaterThan(-1);
-      expect(args[formatIndex + 1]).toBe('json');
+      expect(args[formatIndex + 1]).toBe("json");
     });
 
-    it('should include model with --model flag', () => {
+    it("should include model with --model flag", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'anthropic/claude-sonnet-4-5',
-        cwd: '/tmp/project',
+        prompt: "Hello",
+        model: "anthropic/claude-sonnet-4-5",
+        cwd: "/tmp/project",
       });
 
-      const modelIndex = args.indexOf('--model');
+      const modelIndex = args.indexOf("--model");
       expect(modelIndex).toBeGreaterThan(-1);
-      expect(args[modelIndex + 1]).toBe('anthropic/claude-sonnet-4-5');
+      expect(args[modelIndex + 1]).toBe("anthropic/claude-sonnet-4-5");
     });
 
-    it('should strip opencode- prefix from model', () => {
+    it("should strip opencode- prefix from model", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'opencode-anthropic/claude-sonnet-4-5',
-        cwd: '/tmp/project',
+        prompt: "Hello",
+        model: "opencode-anthropic/claude-sonnet-4-5",
+        cwd: "/tmp/project",
       });
 
-      const modelIndex = args.indexOf('--model');
-      expect(args[modelIndex + 1]).toBe('anthropic/claude-sonnet-4-5');
+      const modelIndex = args.indexOf("--model");
+      expect(args[modelIndex + 1]).toBe("anthropic/claude-sonnet-4-5");
     });
 
-    it('should handle missing cwd', () => {
+    it("should handle missing cwd", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'opencode/big-pickle',
+        prompt: "Hello",
+        model: "opencode/big-pickle",
       });
 
-      expect(args).not.toContain('-c');
+      expect(args).not.toContain("-c");
     });
 
-    it('should handle model from opencode provider', () => {
+    it("should handle model from opencode provider", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Hello',
-        model: 'opencode/big-pickle',
-        cwd: '/tmp/project',
+        prompt: "Hello",
+        model: "opencode/big-pickle",
+        cwd: "/tmp/project",
       });
 
-      expect(args).toContain('--model');
-      expect(args).toContain('opencode/big-pickle');
+      expect(args).toContain("--model");
+      expect(args).toContain("opencode/big-pickle");
     });
   });
 
@@ -228,41 +250,41 @@ describe('opencode-provider.ts', () => {
   // normalizeEvent Tests
   // ==========================================================================
 
-  describe('normalizeEvent', () => {
-    describe('text events (new OpenCode format)', () => {
-      it('should convert text to assistant message with text content', () => {
+  describe("normalizeEvent", () => {
+    describe("text events (new OpenCode format)", () => {
+      it("should convert text to assistant message with text content", () => {
         const event = {
-          type: 'text',
+          type: "text",
           part: {
-            type: 'text',
-            text: 'Hello, world!',
+            type: "text",
+            text: "Hello, world!",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'assistant',
-          session_id: 'test-session',
+          type: "assistant",
+          session_id: "test-session",
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: [
               {
-                type: 'text',
-                text: 'Hello, world!',
+                type: "text",
+                text: "Hello, world!",
               },
             ],
           },
         });
       });
 
-      it('should return null for empty text', () => {
+      it("should return null for empty text", () => {
         const event = {
-          type: 'text',
+          type: "text",
           part: {
-            type: 'text',
-            text: '',
+            type: "text",
+            text: "",
           },
         };
 
@@ -271,9 +293,9 @@ describe('opencode-provider.ts', () => {
         expect(result).toBeNull();
       });
 
-      it('should return null for text with undefined text', () => {
+      it("should return null for text with undefined text", () => {
         const event = {
-          type: 'text',
+          type: "text",
           part: {},
         };
 
@@ -283,157 +305,159 @@ describe('opencode-provider.ts', () => {
       });
     });
 
-    describe('tool_call events', () => {
-      it('should convert tool_call to assistant message with tool_use content', () => {
+    describe("tool_call events", () => {
+      it("should convert tool_call to assistant message with tool_use content", () => {
         const event = {
-          type: 'tool_call',
+          type: "tool_call",
           part: {
-            type: 'tool-call',
-            call_id: 'call-123',
-            name: 'Read',
-            args: { file_path: '/tmp/test.txt' },
+            type: "tool-call",
+            call_id: "call-123",
+            name: "Read",
+            args: { file_path: "/tmp/test.txt" },
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'assistant',
-          session_id: 'test-session',
+          type: "assistant",
+          session_id: "test-session",
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: [
               {
-                type: 'tool_use',
-                name: 'Read',
-                tool_use_id: 'call-123',
-                input: { file_path: '/tmp/test.txt' },
+                type: "tool_use",
+                name: "Read",
+                tool_use_id: "call-123",
+                input: { file_path: "/tmp/test.txt" },
               },
             ],
           },
         });
       });
 
-      it('should generate tool_use_id when call_id is missing', () => {
+      it("should generate tool_use_id when call_id is missing", () => {
         const event = {
-          type: 'tool_call',
+          type: "tool_call",
           part: {
-            type: 'tool-call',
-            name: 'Write',
-            args: { content: 'test' },
+            type: "tool-call",
+            name: "Write",
+            args: { content: "test" },
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.message?.content[0].type).toBe('tool_use');
-        expect(result?.message?.content[0].tool_use_id).toBe('opencode-tool-1');
+        expect(result?.message?.content[0].type).toBe("tool_use");
+        expect(result?.message?.content[0].tool_use_id).toBe("opencode-tool-1");
 
         // Second call should increment
         const result2 = provider.normalizeEvent({
-          type: 'tool_call',
+          type: "tool_call",
           part: {
-            type: 'tool-call',
-            name: 'Edit',
+            type: "tool-call",
+            name: "Edit",
             args: {},
           },
         });
-        expect(result2?.message?.content[0].tool_use_id).toBe('opencode-tool-2');
+        expect(result2?.message?.content[0].tool_use_id).toBe(
+          "opencode-tool-2",
+        );
       });
     });
 
-    describe('tool_result events', () => {
-      it('should convert tool_result to assistant message with tool_result content', () => {
+    describe("tool_result events", () => {
+      it("should convert tool_result to assistant message with tool_result content", () => {
         const event = {
-          type: 'tool_result',
+          type: "tool_result",
           part: {
-            type: 'tool-result',
-            call_id: 'call-123',
-            output: 'File contents here',
+            type: "tool-result",
+            call_id: "call-123",
+            output: "File contents here",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'assistant',
-          session_id: 'test-session',
+          type: "assistant",
+          session_id: "test-session",
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: [
               {
-                type: 'tool_result',
-                tool_use_id: 'call-123',
-                content: 'File contents here',
+                type: "tool_result",
+                tool_use_id: "call-123",
+                content: "File contents here",
               },
             ],
           },
         });
       });
 
-      it('should handle tool_result without call_id', () => {
+      it("should handle tool_result without call_id", () => {
         const event = {
-          type: 'tool_result',
+          type: "tool_result",
           part: {
-            type: 'tool-result',
-            output: 'Result without ID',
+            type: "tool-result",
+            output: "Result without ID",
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.message?.content[0].type).toBe('tool_result');
+        expect(result?.message?.content[0].type).toBe("tool_result");
         expect(result?.message?.content[0].tool_use_id).toBeUndefined();
       });
     });
 
-    describe('tool_error events', () => {
-      it('should convert tool_error to error message', () => {
+    describe("tool_error events", () => {
+      it("should convert tool_error to error message", () => {
         const event = {
-          type: 'tool_error',
+          type: "tool_error",
           part: {
-            type: 'tool-error',
-            call_id: 'call-123',
-            error: 'File not found',
+            type: "tool-error",
+            call_id: "call-123",
+            error: "File not found",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'error',
-          session_id: 'test-session',
-          error: 'File not found',
+          type: "error",
+          session_id: "test-session",
+          error: "File not found",
         });
       });
 
-      it('should provide default error message when error is missing', () => {
+      it("should provide default error message when error is missing", () => {
         const event = {
-          type: 'tool_error',
+          type: "tool_error",
           part: {
-            type: 'tool-error',
-            call_id: 'call-123',
+            type: "tool-error",
+            call_id: "call-123",
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.type).toBe('error');
-        expect(result?.error).toBe('Tool execution failed');
+        expect(result?.type).toBe("error");
+        expect(result?.error).toBe("Tool execution failed");
       });
     });
 
-    describe('step_start events', () => {
-      it('should return null for step_start events (informational)', () => {
+    describe("step_start events", () => {
+      it("should return null for step_start events (informational)", () => {
         const event = {
-          type: 'step_start',
+          type: "step_start",
           part: {
-            type: 'step-start',
+            type: "step-start",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
@@ -442,100 +466,100 @@ describe('opencode-provider.ts', () => {
       });
     });
 
-    describe('step_finish events', () => {
-      it('should convert successful step_finish to result message', () => {
+    describe("step_finish events", () => {
+      it("should convert successful step_finish to result message", () => {
         const event = {
-          type: 'step_finish',
+          type: "step_finish",
           part: {
-            type: 'step-finish',
-            reason: 'stop',
-            result: 'Task completed successfully',
+            type: "step-finish",
+            reason: "stop",
+            result: "Task completed successfully",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'result',
-          subtype: 'success',
-          session_id: 'test-session',
-          result: 'Task completed successfully',
+          type: "result",
+          subtype: "success",
+          session_id: "test-session",
+          result: "Task completed successfully",
         });
       });
 
-      it('should convert step_finish with error to error message', () => {
+      it("should convert step_finish with error to error message", () => {
         const event = {
-          type: 'step_finish',
+          type: "step_finish",
           part: {
-            type: 'step-finish',
-            reason: 'error',
-            error: 'Something went wrong',
+            type: "step-finish",
+            reason: "error",
+            error: "Something went wrong",
           },
-          sessionID: 'test-session',
+          sessionID: "test-session",
         };
 
         const result = provider.normalizeEvent(event);
 
         expect(result).toEqual({
-          type: 'error',
-          session_id: 'test-session',
-          error: 'Something went wrong',
+          type: "error",
+          session_id: "test-session",
+          error: "Something went wrong",
         });
       });
 
-      it('should convert step_finish with error property to error message', () => {
+      it("should convert step_finish with error property to error message", () => {
         const event = {
-          type: 'step_finish',
+          type: "step_finish",
           part: {
-            type: 'step-finish',
-            error: 'Process failed',
+            type: "step-finish",
+            error: "Process failed",
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.type).toBe('error');
-        expect(result?.error).toBe('Process failed');
+        expect(result?.type).toBe("error");
+        expect(result?.error).toBe("Process failed");
       });
 
-      it('should provide default error message for failed step without error text', () => {
+      it("should provide default error message for failed step without error text", () => {
         const event = {
-          type: 'step_finish',
+          type: "step_finish",
           part: {
-            type: 'step-finish',
-            reason: 'error',
+            type: "step-finish",
+            reason: "error",
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.type).toBe('error');
-        expect(result?.error).toBe('Step execution failed');
+        expect(result?.type).toBe("error");
+        expect(result?.error).toBe("Step execution failed");
       });
 
-      it('should treat step_finish with reason=stop as success', () => {
+      it("should treat step_finish with reason=stop as success", () => {
         const event = {
-          type: 'step_finish',
+          type: "step_finish",
           part: {
-            type: 'step-finish',
-            reason: 'stop',
-            result: 'Done',
+            type: "step-finish",
+            reason: "stop",
+            result: "Done",
           },
         };
 
         const result = provider.normalizeEvent(event);
 
-        expect(result?.type).toBe('result');
-        expect(result?.subtype).toBe('success');
+        expect(result?.type).toBe("result");
+        expect(result?.subtype).toBe("success");
       });
     });
 
-    describe('unknown events', () => {
-      it('should return null for unknown event types', () => {
+    describe("unknown events", () => {
+      it("should return null for unknown event types", () => {
         const event = {
-          type: 'unknown-event',
-          data: 'some data',
+          type: "unknown-event",
+          data: "some data",
         };
 
         const result = provider.normalizeEvent(event);
@@ -543,25 +567,25 @@ describe('opencode-provider.ts', () => {
         expect(result).toBeNull();
       });
 
-      it('should return null for null input', () => {
+      it("should return null for null input", () => {
         const result = provider.normalizeEvent(null);
         expect(result).toBeNull();
       });
 
-      it('should return null for undefined input', () => {
+      it("should return null for undefined input", () => {
         const result = provider.normalizeEvent(undefined);
         expect(result).toBeNull();
       });
 
-      it('should return null for non-object input', () => {
-        expect(provider.normalizeEvent('string')).toBeNull();
+      it("should return null for non-object input", () => {
+        expect(provider.normalizeEvent("string")).toBeNull();
         expect(provider.normalizeEvent(123)).toBeNull();
         expect(provider.normalizeEvent(true)).toBeNull();
       });
 
-      it('should return null for events without type', () => {
+      it("should return null for events without type", () => {
         expect(provider.normalizeEvent({})).toBeNull();
-        expect(provider.normalizeEvent({ data: 'no type' })).toBeNull();
+        expect(provider.normalizeEvent({ data: "no type" })).toBeNull();
       });
     });
   });
@@ -570,7 +594,7 @@ describe('opencode-provider.ts', () => {
   // executeQuery Tests
   // ==========================================================================
 
-  describe('executeQuery', () => {
+  describe("executeQuery", () => {
     /**
      * Helper to set up the provider with a mocked CLI path
      * This bypasses CLI detection for testing
@@ -578,17 +602,20 @@ describe('opencode-provider.ts', () => {
     function setupMockedProvider(): OpencodeProvider {
       const mockedProvider = new OpencodeProvider();
       // Access protected property to simulate CLI detection
-      (mockedProvider as unknown as { cliPath: string }).cliPath = '/usr/bin/opencode';
-      (mockedProvider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+      (mockedProvider as unknown as { cliPath: string }).cliPath =
+        "/usr/bin/opencode";
+      (
+        mockedProvider as unknown as { detectedStrategy: string }
+      ).detectedStrategy = "native";
       return mockedProvider;
     }
 
-    it('should stream text events as assistant messages', async () => {
+    it("should stream text events as assistant messages", async () => {
       const mockedProvider = setupMockedProvider();
 
       const mockEvents = [
-        { type: 'text', part: { type: 'text', text: 'Hello ' } },
-        { type: 'text', part: { type: 'text', text: 'World!' } },
+        { type: "text", part: { type: "text", text: "Hello " } },
+        { type: "text", part: { type: "text", text: "World!" } },
       ];
 
       vi.mocked(spawnJSONLProcess).mockReturnValue(
@@ -596,42 +623,42 @@ describe('opencode-provider.ts', () => {
           for (const event of mockEvents) {
             yield event;
           }
-        })()
+        })(),
       );
 
       const results = await collectAsyncGenerator<ProviderMessage>(
         mockedProvider.executeQuery({
-          prompt: 'Say hello',
-          model: 'anthropic/claude-sonnet-4-5',
-          cwd: '/tmp',
-        })
+          prompt: "Say hello",
+          model: "anthropic/claude-sonnet-4-5",
+          cwd: "/tmp",
+        }),
       );
 
       expect(results).toHaveLength(2);
-      expect(results[0].type).toBe('assistant');
-      expect(results[0].message?.content[0].text).toBe('Hello ');
-      expect(results[1].message?.content[0].text).toBe('World!');
+      expect(results[0].type).toBe("assistant");
+      expect(results[0].message?.content[0].text).toBe("Hello ");
+      expect(results[1].message?.content[0].text).toBe("World!");
     });
 
-    it('should emit tool_use and tool_result with matching IDs', async () => {
+    it("should emit tool_use and tool_result with matching IDs", async () => {
       const mockedProvider = setupMockedProvider();
 
       const mockEvents = [
         {
-          type: 'tool_call',
+          type: "tool_call",
           part: {
-            type: 'tool-call',
-            call_id: 'tool-1',
-            name: 'Read',
-            args: { file_path: '/tmp/test.txt' },
+            type: "tool-call",
+            call_id: "tool-1",
+            name: "Read",
+            args: { file_path: "/tmp/test.txt" },
           },
         },
         {
-          type: 'tool_result',
+          type: "tool_result",
           part: {
-            type: 'tool-result',
-            call_id: 'tool-1',
-            output: 'File contents',
+            type: "tool-result",
+            call_id: "tool-1",
+            output: "File contents",
           },
         },
       ];
@@ -641,14 +668,14 @@ describe('opencode-provider.ts', () => {
           for (const event of mockEvents) {
             yield event;
           }
-        })()
+        })(),
       );
 
       const results = await collectAsyncGenerator<ProviderMessage>(
         mockedProvider.executeQuery({
-          prompt: 'Read a file',
-          cwd: '/tmp',
-        })
+          prompt: "Read a file",
+          cwd: "/tmp",
+        }),
       );
 
       expect(results).toHaveLength(2);
@@ -656,82 +683,85 @@ describe('opencode-provider.ts', () => {
       const toolUse = results[0];
       const toolResult = results[1];
 
-      expect(toolUse.type).toBe('assistant');
-      expect(toolUse.message?.content[0].type).toBe('tool_use');
-      expect(toolUse.message?.content[0].tool_use_id).toBe('tool-1');
+      expect(toolUse.type).toBe("assistant");
+      expect(toolUse.message?.content[0].type).toBe("tool_use");
+      expect(toolUse.message?.content[0].tool_use_id).toBe("tool-1");
 
-      expect(toolResult.type).toBe('assistant');
-      expect(toolResult.message?.content[0].type).toBe('tool_result');
-      expect(toolResult.message?.content[0].tool_use_id).toBe('tool-1');
+      expect(toolResult.type).toBe("assistant");
+      expect(toolResult.message?.content[0].type).toBe("tool_result");
+      expect(toolResult.message?.content[0].tool_use_id).toBe("tool-1");
     });
 
-    it('should pass stdinData containing the prompt', async () => {
+    it("should pass stdinData containing the prompt", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
-          prompt: 'My test prompt',
-          cwd: '/tmp',
-        })
+          prompt: "My test prompt",
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.stdinData).toBe('My test prompt');
+      expect(call.stdinData).toBe("My test prompt");
     });
 
-    it('should extract text from array prompt', async () => {
+    it("should extract text from array prompt", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       const arrayPrompt = [
-        { type: 'text', text: 'First part' },
-        { type: 'image', source: { type: 'base64', data: '...' } },
-        { type: 'text', text: 'Second part' },
+        { type: "text", text: "First part" },
+        { type: "image", source: { type: "base64", data: "..." } },
+        { type: "text", text: "Second part" },
       ];
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
           prompt: arrayPrompt as unknown as string,
-          cwd: '/tmp',
-        })
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.stdinData).toBe('First part\nSecond part');
+      expect(call.stdinData).toBe("First part\nSecond part");
     });
 
-    it('should include correct CLI args in subprocess options', async () => {
+    it("should include correct CLI args in subprocess options", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
-          prompt: 'Test',
-          model: 'opencode-anthropic/claude-opus-4-5',
-          cwd: '/tmp/workspace',
-        })
+          prompt: "Test",
+          model: "opencode-anthropic/claude-opus-4-5",
+          cwd: "/tmp/workspace",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.args).toContain('run');
-      expect(call.args).toContain('--format');
-      expect(call.args).toContain('json');
-      expect(call.args).toContain('--model');
-      expect(call.args).toContain('anthropic/claude-opus-4-5');
+      expect(call.args).toContain("run");
+      expect(call.args).toContain("--format");
+      expect(call.args).toContain("json");
+      expect(call.args).toContain("--model");
+      expect(call.args).toContain("anthropic/claude-opus-4-5");
     });
 
-    it('should skip null-normalized events', async () => {
+    it("should skip null-normalized events", async () => {
       const mockedProvider = setupMockedProvider();
 
       const mockEvents = [
-        { type: 'unknown-internal-event', data: 'ignored' },
-        { type: 'text', part: { type: 'text', text: 'Valid text' } },
-        { type: 'another-unknown', foo: 'bar' },
-        { type: 'step_finish', part: { type: 'step-finish', reason: 'stop', result: 'Done' } },
+        { type: "unknown-internal-event", data: "ignored" },
+        { type: "text", part: { type: "text", text: "Valid text" } },
+        { type: "another-unknown", foo: "bar" },
+        {
+          type: "step_finish",
+          part: { type: "step-finish", reason: "stop", result: "Done" },
+        },
       ];
 
       vi.mocked(spawnJSONLProcess).mockReturnValue(
@@ -739,35 +769,38 @@ describe('opencode-provider.ts', () => {
           for (const event of mockEvents) {
             yield event;
           }
-        })()
+        })(),
       );
 
       const results = await collectAsyncGenerator<ProviderMessage>(
         mockedProvider.executeQuery({
-          prompt: 'Test',
-          model: 'opencode/big-pickle',
-          cwd: '/test',
-        })
+          prompt: "Test",
+          model: "opencode/big-pickle",
+          cwd: "/test",
+        }),
       );
 
       // Should only have valid events (text and result), not the unknown ones
       expect(results.length).toBe(2);
     });
 
-    it('should throw error when CLI is not installed', async () => {
+    it("should throw error when CLI is not installed", async () => {
       // Create provider and explicitly set cliPath to null to simulate not installed
       // Set detectedStrategy to 'npx' to prevent ensureCliDetected from re-running detection
       const unmockedProvider = new OpencodeProvider();
-      (unmockedProvider as unknown as { cliPath: string | null }).cliPath = null;
-      (unmockedProvider as unknown as { detectedStrategy: string }).detectedStrategy = 'npx';
+      (unmockedProvider as unknown as { cliPath: string | null }).cliPath =
+        null;
+      (
+        unmockedProvider as unknown as { detectedStrategy: string }
+      ).detectedStrategy = "npx";
 
       await expect(
         collectAsyncGenerator(
           unmockedProvider.executeQuery({
-            prompt: 'Test',
-            cwd: '/test',
-          })
-        )
+            prompt: "Test",
+            cwd: "/test",
+          }),
+        ),
       ).rejects.toThrow(/CLI not found/);
     });
   });
@@ -776,42 +809,42 @@ describe('opencode-provider.ts', () => {
   // getSpawnConfig Tests
   // ==========================================================================
 
-  describe('getSpawnConfig', () => {
-    it('should return npx as Windows strategy', () => {
+  describe("getSpawnConfig", () => {
+    it("should return npx as Windows strategy", () => {
       const config = provider.getSpawnConfig();
-      expect(config.windowsStrategy).toBe('npx');
+      expect(config.windowsStrategy).toBe("npx");
     });
 
-    it('should specify opencode-ai@latest as npx package', () => {
+    it("should specify opencode-ai@latest as npx package", () => {
       const config = provider.getSpawnConfig();
-      expect(config.npxPackage).toBe('opencode-ai@latest');
+      expect(config.npxPackage).toBe("opencode-ai@latest");
     });
 
-    it('should include common paths for Linux', () => {
+    it("should include common paths for Linux", () => {
       const config = provider.getSpawnConfig();
-      const linuxPaths = config.commonPaths['linux'];
+      const linuxPaths = config.commonPaths["linux"];
 
       expect(linuxPaths).toBeDefined();
       expect(linuxPaths.length).toBeGreaterThan(0);
-      expect(linuxPaths.some((p) => p.includes('opencode'))).toBe(true);
+      expect(linuxPaths.some((p) => p.includes("opencode"))).toBe(true);
     });
 
-    it('should include common paths for macOS', () => {
+    it("should include common paths for macOS", () => {
       const config = provider.getSpawnConfig();
-      const darwinPaths = config.commonPaths['darwin'];
+      const darwinPaths = config.commonPaths["darwin"];
 
       expect(darwinPaths).toBeDefined();
       expect(darwinPaths.length).toBeGreaterThan(0);
-      expect(darwinPaths.some((p) => p.includes('homebrew'))).toBe(true);
+      expect(darwinPaths.some((p) => p.includes("homebrew"))).toBe(true);
     });
 
-    it('should include common paths for Windows', () => {
+    it("should include common paths for Windows", () => {
       const config = provider.getSpawnConfig();
-      const win32Paths = config.commonPaths['win32'];
+      const win32Paths = config.commonPaths["win32"];
 
       expect(win32Paths).toBeDefined();
       expect(win32Paths.length).toBeGreaterThan(0);
-      expect(win32Paths.some((p) => p.includes('npm'))).toBe(true);
+      expect(win32Paths.some((p) => p.includes("npm"))).toBe(true);
     });
   });
 
@@ -819,7 +852,7 @@ describe('opencode-provider.ts', () => {
   // detectInstallation Tests
   // ==========================================================================
 
-  describe('detectInstallation', () => {
+  describe("detectInstallation", () => {
     beforeEach(() => {
       // Ensure the mock implementation is set up for each test
       vi.mocked(getOpenCodeAuthIndicators).mockResolvedValue({
@@ -829,43 +862,49 @@ describe('opencode-provider.ts', () => {
       });
     });
 
-    it('should return installed true when CLI is found', async () => {
-      (provider as unknown as { cliPath: string }).cliPath = '/usr/local/bin/opencode';
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+    it("should return installed true when CLI is found", async () => {
+      (provider as unknown as { cliPath: string }).cliPath =
+        "/usr/local/bin/opencode";
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "native";
 
       const result = await provider.detectInstallation();
 
       expect(result.installed).toBe(true);
-      expect(result.path).toBe('/usr/local/bin/opencode');
+      expect(result.path).toBe("/usr/local/bin/opencode");
     });
 
-    it('should return installed false when CLI is not found', async () => {
+    it("should return installed false when CLI is not found", async () => {
       // Set both cliPath to null and detectedStrategy to something other than 'native'
       // to prevent ensureCliDetected from re-detecting
       (provider as unknown as { cliPath: string | null }).cliPath = null;
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'npx';
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "npx";
 
       const result = await provider.detectInstallation();
 
       expect(result.installed).toBe(false);
     });
 
-    it('should return method as npm when using npx strategy', async () => {
-      (provider as unknown as { cliPath: string }).cliPath = 'npx';
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'npx';
+    it("should return method as npm when using npx strategy", async () => {
+      (provider as unknown as { cliPath: string }).cliPath = "npx";
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "npx";
 
       const result = await provider.detectInstallation();
 
-      expect(result.method).toBe('npm');
+      expect(result.method).toBe("npm");
     });
 
-    it('should return method as cli when using native strategy', async () => {
-      (provider as unknown as { cliPath: string }).cliPath = '/usr/local/bin/opencode';
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+    it("should return method as cli when using native strategy", async () => {
+      (provider as unknown as { cliPath: string }).cliPath =
+        "/usr/local/bin/opencode";
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "native";
 
       const result = await provider.detectInstallation();
 
-      expect(result.method).toBe('cli');
+      expect(result.method).toBe("cli");
     });
   });
 
@@ -873,26 +912,26 @@ describe('opencode-provider.ts', () => {
   // Config Management Tests (inherited from BaseProvider)
   // ==========================================================================
 
-  describe('config management', () => {
-    it('should get and set config', () => {
-      provider.setConfig({ apiKey: 'test-api-key' });
+  describe("config management", () => {
+    it("should get and set config", () => {
+      provider.setConfig({ apiKey: "test-api-key" });
 
       const config = provider.getConfig();
-      expect(config.apiKey).toBe('test-api-key');
+      expect(config.apiKey).toBe("test-api-key");
     });
 
-    it('should merge config updates', () => {
-      provider.setConfig({ apiKey: 'key1' });
-      provider.setConfig({ model: 'model1' });
+    it("should merge config updates", () => {
+      provider.setConfig({ apiKey: "key1" });
+      provider.setConfig({ model: "model1" });
 
       const config = provider.getConfig();
-      expect(config.apiKey).toBe('key1');
-      expect(config.model).toBe('model1');
+      expect(config.apiKey).toBe("key1");
+      expect(config.model).toBe("model1");
     });
   });
 
-  describe('validateConfig', () => {
-    it('should validate config from base class', () => {
+  describe("validateConfig", () => {
+    it("should validate config from base class", () => {
       const result = provider.validateConfig();
 
       expect(result.valid).toBe(true);
@@ -904,15 +943,18 @@ describe('opencode-provider.ts', () => {
   // Additional Edge Case Tests
   // ==========================================================================
 
-  describe('extractPromptText edge cases', () => {
+  describe("extractPromptText edge cases", () => {
     function setupMockedProvider(): OpencodeProvider {
       const mockedProvider = new OpencodeProvider();
-      (mockedProvider as unknown as { cliPath: string }).cliPath = '/usr/bin/opencode';
-      (mockedProvider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+      (mockedProvider as unknown as { cliPath: string }).cliPath =
+        "/usr/bin/opencode";
+      (
+        mockedProvider as unknown as { detectedStrategy: string }
+      ).detectedStrategy = "native";
       return mockedProvider;
     }
 
-    it('should handle empty array prompt', async () => {
+    it("should handle empty array prompt", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
@@ -920,92 +962,97 @@ describe('opencode-provider.ts', () => {
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
           prompt: [] as unknown as string,
-          cwd: '/tmp',
-        })
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.stdinData).toBe('');
+      expect(call.stdinData).toBe("");
     });
 
-    it('should handle array prompt with only image blocks (no text)', async () => {
+    it("should handle array prompt with only image blocks (no text)", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       const imageOnlyPrompt = [
-        { type: 'image', source: { type: 'base64', data: 'abc123' } },
-        { type: 'image', source: { type: 'base64', data: 'def456' } },
+        { type: "image", source: { type: "base64", data: "abc123" } },
+        { type: "image", source: { type: "base64", data: "def456" } },
       ];
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
           prompt: imageOnlyPrompt as unknown as string,
-          cwd: '/tmp',
-        })
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.stdinData).toBe('');
+      expect(call.stdinData).toBe("");
     });
 
-    it('should handle array prompt with mixed content types', async () => {
+    it("should handle array prompt with mixed content types", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       const mixedPrompt = [
-        { type: 'text', text: 'Analyze this image' },
-        { type: 'image', source: { type: 'base64', data: 'abc123' } },
-        { type: 'text', text: 'And this one' },
-        { type: 'image', source: { type: 'base64', data: 'def456' } },
-        { type: 'text', text: 'What differences do you see?' },
+        { type: "text", text: "Analyze this image" },
+        { type: "image", source: { type: "base64", data: "abc123" } },
+        { type: "text", text: "And this one" },
+        { type: "image", source: { type: "base64", data: "def456" } },
+        { type: "text", text: "What differences do you see?" },
       ];
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
           prompt: mixedPrompt as unknown as string,
-          cwd: '/tmp',
-        })
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
-      expect(call.stdinData).toBe('Analyze this image\nAnd this one\nWhat differences do you see?');
+      expect(call.stdinData).toBe(
+        "Analyze this image\nAnd this one\nWhat differences do you see?",
+      );
     });
 
-    it('should handle text blocks with empty text property', async () => {
+    it("should handle text blocks with empty text property", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
 
       const promptWithEmptyText = [
-        { type: 'text', text: 'Hello' },
-        { type: 'text', text: '' },
-        { type: 'text', text: 'World' },
+        { type: "text", text: "Hello" },
+        { type: "text", text: "" },
+        { type: "text", text: "World" },
       ];
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
           prompt: promptWithEmptyText as unknown as string,
-          cwd: '/tmp',
-        })
+          cwd: "/tmp",
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
       // Empty text blocks should be filtered out
-      expect(call.stdinData).toBe('Hello\nWorld');
+      expect(call.stdinData).toBe("Hello\nWorld");
     });
   });
 
-  describe('abort handling', () => {
+  describe("abort handling", () => {
     function setupMockedProvider(): OpencodeProvider {
       const mockedProvider = new OpencodeProvider();
-      (mockedProvider as unknown as { cliPath: string }).cliPath = '/usr/bin/opencode';
-      (mockedProvider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+      (mockedProvider as unknown as { cliPath: string }).cliPath =
+        "/usr/bin/opencode";
+      (
+        mockedProvider as unknown as { detectedStrategy: string }
+      ).detectedStrategy = "native";
       return mockedProvider;
     }
 
-    it('should pass abortController to subprocess options', async () => {
+    it("should pass abortController to subprocess options", async () => {
       const mockedProvider = setupMockedProvider();
 
       vi.mocked(spawnJSONLProcess).mockReturnValue((async function* () {})());
@@ -1014,10 +1061,10 @@ describe('opencode-provider.ts', () => {
 
       await collectAsyncGenerator(
         mockedProvider.executeQuery({
-          prompt: 'Test',
-          cwd: '/tmp',
+          prompt: "Test",
+          cwd: "/tmp",
           abortController,
-        })
+        }),
       );
 
       const call = vi.mocked(spawnJSONLProcess).mock.calls[0][0];
@@ -1025,33 +1072,40 @@ describe('opencode-provider.ts', () => {
     });
   });
 
-  describe('session_id preservation', () => {
+  describe("session_id preservation", () => {
     function setupMockedProvider(): OpencodeProvider {
       const mockedProvider = new OpencodeProvider();
-      (mockedProvider as unknown as { cliPath: string }).cliPath = '/usr/bin/opencode';
-      (mockedProvider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+      (mockedProvider as unknown as { cliPath: string }).cliPath =
+        "/usr/bin/opencode";
+      (
+        mockedProvider as unknown as { detectedStrategy: string }
+      ).detectedStrategy = "native";
       return mockedProvider;
     }
 
-    it('should preserve session_id through the full executeQuery flow', async () => {
+    it("should preserve session_id through the full executeQuery flow", async () => {
       const mockedProvider = setupMockedProvider();
-      const sessionId = 'test-session-123';
+      const sessionId = "test-session-123";
 
       const mockEvents = [
-        { type: 'text', part: { type: 'text', text: 'Hello ' }, sessionID: sessionId },
         {
-          type: 'tool_call',
-          part: { type: 'tool-call', name: 'Read', args: {}, call_id: 'c1' },
+          type: "text",
+          part: { type: "text", text: "Hello " },
           sessionID: sessionId,
         },
         {
-          type: 'tool_result',
-          part: { type: 'tool-result', call_id: 'c1', output: 'file content' },
+          type: "tool_call",
+          part: { type: "tool-call", name: "Read", args: {}, call_id: "c1" },
           sessionID: sessionId,
         },
         {
-          type: 'step_finish',
-          part: { type: 'step-finish', reason: 'stop', result: 'Done' },
+          type: "tool_result",
+          part: { type: "tool-result", call_id: "c1", output: "file content" },
+          sessionID: sessionId,
+        },
+        {
+          type: "step_finish",
+          part: { type: "step-finish", reason: "stop", result: "Done" },
           sessionID: sessionId,
         },
       ];
@@ -1061,15 +1115,15 @@ describe('opencode-provider.ts', () => {
           for (const event of mockEvents) {
             yield event;
           }
-        })()
+        })(),
       );
 
       const results = await collectAsyncGenerator<ProviderMessage>(
         mockedProvider.executeQuery({
-          prompt: 'Test',
-          model: 'opencode/big-pickle',
-          cwd: '/tmp',
-        })
+          prompt: "Test",
+          model: "opencode/big-pickle",
+          cwd: "/tmp",
+        }),
       );
 
       // All emitted messages should have the session_id
@@ -1080,53 +1134,53 @@ describe('opencode-provider.ts', () => {
     });
   });
 
-  describe('normalizeEvent additional edge cases', () => {
-    it('should handle tool_call with empty args object', () => {
+  describe("normalizeEvent additional edge cases", () => {
+    it("should handle tool_call with empty args object", () => {
       const event = {
-        type: 'tool_call',
+        type: "tool_call",
         part: {
-          type: 'tool-call',
-          call_id: 'call-123',
-          name: 'Glob',
+          type: "tool-call",
+          call_id: "call-123",
+          name: "Glob",
           args: {},
         },
       };
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.message?.content[0].type).toBe('tool_use');
+      expect(result?.message?.content[0].type).toBe("tool_use");
       expect(result?.message?.content[0].input).toEqual({});
     });
 
-    it('should handle tool_call with null args', () => {
+    it("should handle tool_call with null args", () => {
       const event = {
-        type: 'tool_call',
+        type: "tool_call",
         part: {
-          type: 'tool-call',
-          call_id: 'call-123',
-          name: 'Glob',
+          type: "tool-call",
+          call_id: "call-123",
+          name: "Glob",
           args: null,
         },
       };
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.message?.content[0].type).toBe('tool_use');
+      expect(result?.message?.content[0].type).toBe("tool_use");
       expect(result?.message?.content[0].input).toBeNull();
     });
 
-    it('should handle tool_call with complex nested args', () => {
+    it("should handle tool_call with complex nested args", () => {
       const event = {
-        type: 'tool_call',
+        type: "tool_call",
         part: {
-          type: 'tool-call',
-          call_id: 'call-123',
-          name: 'Edit',
+          type: "tool-call",
+          call_id: "call-123",
+          name: "Edit",
           args: {
-            file_path: '/tmp/test.ts',
+            file_path: "/tmp/test.ts",
             changes: [
-              { line: 10, old: 'foo', new: 'bar' },
-              { line: 20, old: 'baz', new: 'qux' },
+              { line: 10, old: "foo", new: "bar" },
+              { line: 20, old: "baz", new: "qux" },
             ],
             options: { replace_all: true },
           },
@@ -1135,39 +1189,39 @@ describe('opencode-provider.ts', () => {
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.message?.content[0].type).toBe('tool_use');
+      expect(result?.message?.content[0].type).toBe("tool_use");
       expect(result?.message?.content[0].input).toEqual({
-        file_path: '/tmp/test.ts',
+        file_path: "/tmp/test.ts",
         changes: [
-          { line: 10, old: 'foo', new: 'bar' },
-          { line: 20, old: 'baz', new: 'qux' },
+          { line: 10, old: "foo", new: "bar" },
+          { line: 20, old: "baz", new: "qux" },
         ],
         options: { replace_all: true },
       });
     });
 
-    it('should handle tool_result with empty output', () => {
+    it("should handle tool_result with empty output", () => {
       const event = {
-        type: 'tool_result',
+        type: "tool_result",
         part: {
-          type: 'tool-result',
-          call_id: 'call-123',
-          output: '',
+          type: "tool-result",
+          call_id: "call-123",
+          output: "",
         },
       };
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.message?.content[0].type).toBe('tool_result');
-      expect(result?.message?.content[0].content).toBe('');
+      expect(result?.message?.content[0].type).toBe("tool_result");
+      expect(result?.message?.content[0].content).toBe("");
     });
 
-    it('should handle text with whitespace-only text', () => {
+    it("should handle text with whitespace-only text", () => {
       const event = {
-        type: 'text',
+        type: "text",
         part: {
-          type: 'text',
-          text: '   ',
+          type: "text",
+          text: "   ",
         },
       };
 
@@ -1175,54 +1229,57 @@ describe('opencode-provider.ts', () => {
 
       // Whitespace should be preserved (not filtered like empty string)
       expect(result).not.toBeNull();
-      expect(result?.message?.content[0].text).toBe('   ');
+      expect(result?.message?.content[0].text).toBe("   ");
     });
 
-    it('should handle text with newlines', () => {
+    it("should handle text with newlines", () => {
       const event = {
-        type: 'text',
+        type: "text",
         part: {
-          type: 'text',
-          text: 'Line 1\nLine 2\nLine 3',
+          type: "text",
+          text: "Line 1\nLine 2\nLine 3",
         },
       };
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.message?.content[0].text).toBe('Line 1\nLine 2\nLine 3');
+      expect(result?.message?.content[0].text).toBe("Line 1\nLine 2\nLine 3");
     });
 
-    it('should handle step_finish with both result and error (error takes precedence)', () => {
+    it("should handle step_finish with both result and error (error takes precedence)", () => {
       const event = {
-        type: 'step_finish',
+        type: "step_finish",
         part: {
-          type: 'step-finish',
-          reason: 'stop',
-          result: 'Some result',
-          error: 'But also an error',
+          type: "step-finish",
+          reason: "stop",
+          result: "Some result",
+          error: "But also an error",
         },
       };
 
       const result = provider.normalizeEvent(event);
 
-      expect(result?.type).toBe('error');
-      expect(result?.error).toBe('But also an error');
+      expect(result?.type).toBe("error");
+      expect(result?.error).toBe("But also an error");
     });
   });
 
-  describe('isInstalled', () => {
-    it('should return true when CLI path is set', async () => {
-      (provider as unknown as { cliPath: string }).cliPath = '/usr/bin/opencode';
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'native';
+  describe("isInstalled", () => {
+    it("should return true when CLI path is set", async () => {
+      (provider as unknown as { cliPath: string }).cliPath =
+        "/usr/bin/opencode";
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "native";
 
       const result = await provider.isInstalled();
 
       expect(result).toBe(true);
     });
 
-    it('should return false when CLI path is null', async () => {
+    it("should return false when CLI path is null", async () => {
       (provider as unknown as { cliPath: string | null }).cliPath = null;
-      (provider as unknown as { detectedStrategy: string }).detectedStrategy = 'npx';
+      (provider as unknown as { detectedStrategy: string }).detectedStrategy =
+        "npx";
 
       const result = await provider.isInstalled();
 
@@ -1230,85 +1287,86 @@ describe('opencode-provider.ts', () => {
     });
   });
 
-  describe('model tier validation', () => {
-    it('should have exactly one default model', () => {
+  describe("model tier validation", () => {
+    it("should have exactly one default model", () => {
       const models = provider.getAvailableModels();
       const defaultModels = models.filter((m) => m.default === true);
 
       expect(defaultModels).toHaveLength(1);
-      expect(defaultModels[0].id).toBe('opencode/big-pickle');
+      expect(defaultModels[0].id).toBe("opencode/big-pickle");
     });
 
-    it('should have valid tier values for all models', () => {
+    it("should have valid tier values for all models", () => {
       const models = provider.getAvailableModels();
-      const validTiers = ['basic', 'standard', 'premium'];
+      const validTiers = ["basic", "standard", "premium"];
 
       models.forEach((model) => {
         expect(validTiers).toContain(model.tier);
       });
     });
 
-    it('should have descriptions for all models', () => {
+    it("should have descriptions for all models", () => {
       const models = provider.getAvailableModels();
 
       models.forEach((model) => {
         expect(model.description).toBeDefined();
-        expect(typeof model.description).toBe('string');
+        expect(typeof model.description).toBe("string");
         expect(model.description!.length).toBeGreaterThan(0);
       });
     });
   });
 
-  describe('buildCliArgs edge cases', () => {
-    it('should handle very long prompts', () => {
-      const longPrompt = 'a'.repeat(10000);
+  describe("buildCliArgs edge cases", () => {
+    it("should handle very long prompts", () => {
+      const longPrompt = "a".repeat(10000);
       const args = provider.buildCliArgs({
         prompt: longPrompt,
-        model: 'opencode/big-pickle',
-        cwd: '/tmp',
+        model: "opencode/big-pickle",
+        cwd: "/tmp",
       });
 
       // The prompt is NOT in args (it's passed via stdin)
       // Just verify the args structure is correct
-      expect(args).toContain('run');
-      expect(args).not.toContain('-');
-      expect(args.join(' ')).not.toContain(longPrompt);
+      expect(args).toContain("run");
+      expect(args).not.toContain("-");
+      expect(args.join(" ")).not.toContain(longPrompt);
     });
 
-    it('should handle prompts with special characters', () => {
-      const specialPrompt = 'Test $HOME $(rm -rf /) `command` "quotes" \'single\'';
+    it("should handle prompts with special characters", () => {
+      const specialPrompt =
+        "Test $HOME $(rm -rf /) `command` \"quotes\" 'single'";
       const args = provider.buildCliArgs({
         prompt: specialPrompt,
-        model: 'opencode/big-pickle',
-        cwd: '/tmp',
+        model: "opencode/big-pickle",
+        cwd: "/tmp",
       });
 
       // Special chars in prompt should not affect args (prompt is via stdin)
-      expect(args).toContain('run');
-      expect(args).not.toContain('-');
+      expect(args).toContain("run");
+      expect(args).not.toContain("-");
     });
 
-    it('should handle cwd with spaces', () => {
+    it("should handle cwd with spaces", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Test',
-        model: 'opencode/big-pickle',
-        cwd: '/tmp/path with spaces/project',
+        prompt: "Test",
+        model: "opencode/big-pickle",
+        cwd: "/tmp/path with spaces/project",
       });
 
       // cwd is set at subprocess level, not via CLI args
-      expect(args).not.toContain('-c');
-      expect(args).not.toContain('/tmp/path with spaces/project');
+      expect(args).not.toContain("-c");
+      expect(args).not.toContain("/tmp/path with spaces/project");
     });
 
-    it('should handle model with unusual characters', () => {
+    it("should handle model with unusual characters", () => {
       const args = provider.buildCliArgs({
-        prompt: 'Test',
-        model: 'opencode-provider/model-v1.2.3-beta',
-        cwd: '/tmp',
+        prompt: "Test",
+        model: "opencode-provider/model-v1.2.3-beta",
+        cwd: "/tmp",
       });
 
-      const modelIndex = args.indexOf('--model');
-      expect(args[modelIndex + 1]).toBe('provider/model-v1.2.3-beta');
+      const modelIndex = args.indexOf("--model");
+      expect(args[modelIndex + 1]).toBe("provider/model-v1.2.3-beta");
     });
   });
 
@@ -1316,7 +1374,7 @@ describe('opencode-provider.ts', () => {
   // parseProvidersOutput Tests
   // ==========================================================================
 
-  describe('parseProvidersOutput', () => {
+  describe("parseProvidersOutput", () => {
     // Helper function to access private method
     function parseProviders(output: string) {
       return (
@@ -1325,7 +1383,7 @@ describe('opencode-provider.ts', () => {
             id: string;
             name: string;
             authenticated: boolean;
-            authMethod?: 'oauth' | 'api_key';
+            authMethod?: "oauth" | "api_key";
           }>;
         }
       ).parseProvidersOutput(output);
@@ -1335,36 +1393,36 @@ describe('opencode-provider.ts', () => {
     // Critical Fix Validation
     // =======================================================================
 
-    describe('Critical Fix Validation', () => {
+    describe("Critical Fix Validation", () => {
       it('should map "z.ai coding plan" to "zai-coding-plan" (NOT "z-ai")', () => {
-        const output = '●  z.ai coding plan oauth';
+        const output = "●  z.ai coding plan oauth";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('zai-coding-plan');
-        expect(result[0].name).toBe('z.ai coding plan');
-        expect(result[0].authMethod).toBe('oauth');
+        expect(result[0].id).toBe("zai-coding-plan");
+        expect(result[0].name).toBe("z.ai coding plan");
+        expect(result[0].authMethod).toBe("oauth");
       });
 
       it('should map "z.ai" to "z-ai" (different from coding plan)', () => {
-        const output = '●  z.ai api';
+        const output = "●  z.ai api";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('z-ai');
-        expect(result[0].name).toBe('z.ai');
-        expect(result[0].authMethod).toBe('api_key');
+        expect(result[0].id).toBe("z-ai");
+        expect(result[0].name).toBe("z.ai");
+        expect(result[0].authMethod).toBe("api_key");
       });
 
       it('should distinguish between "z.ai coding plan" and "z.ai"', () => {
-        const output = '●  z.ai coding plan oauth\n●  z.ai api';
+        const output = "●  z.ai coding plan oauth\n●  z.ai api";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(2);
-        expect(result[0].id).toBe('zai-coding-plan');
-        expect(result[0].name).toBe('z.ai coding plan');
-        expect(result[1].id).toBe('z-ai');
-        expect(result[1].name).toBe('z.ai');
+        expect(result[0].id).toBe("zai-coding-plan");
+        expect(result[0].name).toBe("z.ai coding plan");
+        expect(result[1].id).toBe("z-ai");
+        expect(result[1].name).toBe("z.ai");
       });
     });
 
@@ -1372,8 +1430,8 @@ describe('opencode-provider.ts', () => {
     // Provider Name Mapping
     // =======================================================================
 
-    describe('Provider Name Mapping', () => {
-      it('should map all 12 providers correctly', () => {
+    describe("Provider Name Mapping", () => {
+      it("should map all 12 providers correctly", () => {
         const output = `●  anthropic oauth
 ●  github copilot oauth
 ●  google api
@@ -1391,44 +1449,46 @@ describe('opencode-provider.ts', () => {
 
         expect(result).toHaveLength(12);
         expect(result.map((p) => p.id)).toEqual([
-          'anthropic',
-          'github-copilot',
-          'google',
-          'openai',
-          'openrouter',
-          'azure',
-          'amazon-bedrock',
-          'ollama',
-          'lmstudio',
-          'opencode',
-          'zai-coding-plan',
-          'z-ai',
+          "anthropic",
+          "github-copilot",
+          "google",
+          "openai",
+          "openrouter",
+          "azure",
+          "amazon-bedrock",
+          "ollama",
+          "lmstudio",
+          "opencode",
+          "zai-coding-plan",
+          "z-ai",
         ]);
       });
 
-      it('should handle case-insensitive provider names and preserve original casing', () => {
-        const output = '●  Anthropic api\n●  OPENAI oauth\n●  GitHub Copilot oauth';
+      it("should handle case-insensitive provider names and preserve original casing", () => {
+        const output =
+          "●  Anthropic api\n●  OPENAI oauth\n●  GitHub Copilot oauth";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(3);
-        expect(result[0].id).toBe('anthropic');
-        expect(result[0].name).toBe('Anthropic'); // Preserves casing
-        expect(result[1].id).toBe('openai');
-        expect(result[1].name).toBe('OPENAI'); // Preserves casing
-        expect(result[2].id).toBe('github-copilot');
-        expect(result[2].name).toBe('GitHub Copilot'); // Preserves casing
+        expect(result[0].id).toBe("anthropic");
+        expect(result[0].name).toBe("Anthropic"); // Preserves casing
+        expect(result[1].id).toBe("openai");
+        expect(result[1].name).toBe("OPENAI"); // Preserves casing
+        expect(result[2].id).toBe("github-copilot");
+        expect(result[2].name).toBe("GitHub Copilot"); // Preserves casing
       });
 
-      it('should handle multi-word provider names with spaces', () => {
-        const output = '●  Amazon Bedrock oauth\n●  LM Studio api\n●  GitHub Copilot oauth';
+      it("should handle multi-word provider names with spaces", () => {
+        const output =
+          "●  Amazon Bedrock oauth\n●  LM Studio api\n●  GitHub Copilot oauth";
         const result = parseProviders(output);
 
-        expect(result[0].id).toBe('amazon-bedrock');
-        expect(result[0].name).toBe('Amazon Bedrock');
-        expect(result[1].id).toBe('lmstudio');
-        expect(result[1].name).toBe('LM Studio');
-        expect(result[2].id).toBe('github-copilot');
-        expect(result[2].name).toBe('GitHub Copilot');
+        expect(result[0].id).toBe("amazon-bedrock");
+        expect(result[0].name).toBe("Amazon Bedrock");
+        expect(result[1].id).toBe("lmstudio");
+        expect(result[1].name).toBe("LM Studio");
+        expect(result[2].id).toBe("github-copilot");
+        expect(result[2].name).toBe("GitHub Copilot");
       });
     });
 
@@ -1436,25 +1496,25 @@ describe('opencode-provider.ts', () => {
     // Duplicate Aliases
     // =======================================================================
 
-    describe('Duplicate Aliases', () => {
-      it('should map provider aliases to the same ID', () => {
+    describe("Duplicate Aliases", () => {
+      it("should map provider aliases to the same ID", () => {
         // Test copilot variants
-        const copilot1 = parseProviders('●  copilot oauth');
-        const copilot2 = parseProviders('●  github copilot oauth');
-        expect(copilot1[0].id).toBe('github-copilot');
-        expect(copilot2[0].id).toBe('github-copilot');
+        const copilot1 = parseProviders("●  copilot oauth");
+        const copilot2 = parseProviders("●  github copilot oauth");
+        expect(copilot1[0].id).toBe("github-copilot");
+        expect(copilot2[0].id).toBe("github-copilot");
 
         // Test bedrock variants
-        const bedrock1 = parseProviders('●  bedrock oauth');
-        const bedrock2 = parseProviders('●  amazon bedrock oauth');
-        expect(bedrock1[0].id).toBe('amazon-bedrock');
-        expect(bedrock2[0].id).toBe('amazon-bedrock');
+        const bedrock1 = parseProviders("●  bedrock oauth");
+        const bedrock2 = parseProviders("●  amazon bedrock oauth");
+        expect(bedrock1[0].id).toBe("amazon-bedrock");
+        expect(bedrock2[0].id).toBe("amazon-bedrock");
 
         // Test lmstudio variants
-        const lm1 = parseProviders('●  lmstudio api');
-        const lm2 = parseProviders('●  lm studio api');
-        expect(lm1[0].id).toBe('lmstudio');
-        expect(lm2[0].id).toBe('lmstudio');
+        const lm1 = parseProviders("●  lmstudio api");
+        const lm2 = parseProviders("●  lm studio api");
+        expect(lm1[0].id).toBe("lmstudio");
+        expect(lm2[0].id).toBe("lmstudio");
       });
     });
 
@@ -1462,28 +1522,28 @@ describe('opencode-provider.ts', () => {
     // Authentication Methods
     // =======================================================================
 
-    describe('Authentication Methods', () => {
-      it('should detect oauth and api_key auth methods', () => {
-        const output = '●  anthropic oauth\n●  openai api\n●  google api_key';
+    describe("Authentication Methods", () => {
+      it("should detect oauth and api_key auth methods", () => {
+        const output = "●  anthropic oauth\n●  openai api\n●  google api_key";
         const result = parseProviders(output);
 
-        expect(result[0].authMethod).toBe('oauth');
-        expect(result[1].authMethod).toBe('api_key');
-        expect(result[2].authMethod).toBe('api_key');
+        expect(result[0].authMethod).toBe("oauth");
+        expect(result[1].authMethod).toBe("api_key");
+        expect(result[2].authMethod).toBe("api_key");
       });
 
-      it('should set authenticated to true and handle case-insensitive auth methods', () => {
-        const output = '●  anthropic OAuth\n●  openai API';
+      it("should set authenticated to true and handle case-insensitive auth methods", () => {
+        const output = "●  anthropic OAuth\n●  openai API";
         const result = parseProviders(output);
 
         expect(result[0].authenticated).toBe(true);
-        expect(result[0].authMethod).toBe('oauth');
+        expect(result[0].authMethod).toBe("oauth");
         expect(result[1].authenticated).toBe(true);
-        expect(result[1].authMethod).toBe('api_key');
+        expect(result[1].authMethod).toBe("api_key");
       });
 
-      it('should return undefined authMethod for unknown auth types', () => {
-        const output = '●  anthropic unknown-auth';
+      it("should return undefined authMethod for unknown auth types", () => {
+        const output = "●  anthropic unknown-auth";
         const result = parseProviders(output);
 
         expect(result[0].authenticated).toBe(true);
@@ -1495,23 +1555,23 @@ describe('opencode-provider.ts', () => {
     // ANSI Escape Sequences
     // =======================================================================
 
-    describe('ANSI Escape Sequences', () => {
-      it('should strip ANSI color codes from output', () => {
-        const output = '\x1b[32m●  anthropic oauth\x1b[0m';
+    describe("ANSI Escape Sequences", () => {
+      it("should strip ANSI color codes from output", () => {
+        const output = "\x1b[32m●  anthropic oauth\x1b[0m";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('anthropic');
-        expect(result[0].name).toBe('anthropic');
+        expect(result[0].id).toBe("anthropic");
+        expect(result[0].name).toBe("anthropic");
       });
 
-      it('should handle complex ANSI sequences and codes in provider names', () => {
+      it("should handle complex ANSI sequences and codes in provider names", () => {
         const output =
-          '\x1b[1;32m●\x1b[0m  \x1b[33mgit\x1b[32mhub\x1b[0m copilot\x1b[0m \x1b[36moauth\x1b[0m';
+          "\x1b[1;32m●\x1b[0m  \x1b[33mgit\x1b[32mhub\x1b[0m copilot\x1b[0m \x1b[36moauth\x1b[0m";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('github-copilot');
+        expect(result[0].id).toBe("github-copilot");
       });
     });
 
@@ -1519,49 +1579,49 @@ describe('opencode-provider.ts', () => {
     // Edge Cases
     // =======================================================================
 
-    describe('Edge Cases', () => {
-      it('should return empty array for empty output or no ● symbols', () => {
-        expect(parseProviders('')).toEqual([]);
-        expect(parseProviders('anthropic oauth\nopenai api')).toEqual([]);
-        expect(parseProviders('No authenticated providers')).toEqual([]);
+    describe("Edge Cases", () => {
+      it("should return empty array for empty output or no ● symbols", () => {
+        expect(parseProviders("")).toEqual([]);
+        expect(parseProviders("anthropic oauth\nopenai api")).toEqual([]);
+        expect(parseProviders("No authenticated providers")).toEqual([]);
       });
 
-      it('should skip malformed lines with ● but insufficient content', () => {
-        const output = '●\n●  \n●  anthropic\n●  openai api';
+      it("should skip malformed lines with ● but insufficient content", () => {
+        const output = "●\n●  \n●  anthropic\n●  openai api";
         const result = parseProviders(output);
 
         // Only the last line has both provider name and auth method
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('openai');
+        expect(result[0].id).toBe("openai");
       });
 
-      it('should use fallback for unknown providers (spaces to hyphens)', () => {
-        const output = '●  unknown provider name oauth';
+      it("should use fallback for unknown providers (spaces to hyphens)", () => {
+        const output = "●  unknown provider name oauth";
         const result = parseProviders(output);
 
-        expect(result[0].id).toBe('unknown-provider-name');
-        expect(result[0].name).toBe('unknown provider name');
+        expect(result[0].id).toBe("unknown-provider-name");
+        expect(result[0].name).toBe("unknown provider name");
       });
 
-      it('should handle extra whitespace and mixed case', () => {
-        const output = '●    AnThRoPiC    oauth';
+      it("should handle extra whitespace and mixed case", () => {
+        const output = "●    AnThRoPiC    oauth";
         const result = parseProviders(output);
 
-        expect(result[0].id).toBe('anthropic');
-        expect(result[0].name).toBe('AnThRoPiC');
+        expect(result[0].id).toBe("anthropic");
+        expect(result[0].name).toBe("AnThRoPiC");
       });
 
-      it('should handle multiple ● symbols on same line', () => {
-        const output = '●  ●  anthropic oauth';
+      it("should handle multiple ● symbols on same line", () => {
+        const output = "●  ●  anthropic oauth";
         const result = parseProviders(output);
 
         expect(result).toHaveLength(1);
-        expect(result[0].id).toBe('anthropic');
+        expect(result[0].id).toBe("anthropic");
       });
 
-      it('should handle different newline formats and trailing newlines', () => {
-        const outputUnix = '●  anthropic oauth\n●  openai api';
-        const outputWindows = '●  anthropic oauth\r\n●  openai api\r\n\r\n';
+      it("should handle different newline formats and trailing newlines", () => {
+        const outputUnix = "●  anthropic oauth\n●  openai api";
+        const outputWindows = "●  anthropic oauth\r\n●  openai api\r\n\r\n";
 
         const resultUnix = parseProviders(outputUnix);
         const resultWindows = parseProviders(outputWindows);
@@ -1570,12 +1630,12 @@ describe('opencode-provider.ts', () => {
         expect(resultWindows).toHaveLength(2);
       });
 
-      it('should handle provider names with numbers and special characters', () => {
-        const output = '●  gpt-4o api';
+      it("should handle provider names with numbers and special characters", () => {
+        const output = "●  gpt-4o api";
         const result = parseProviders(output);
 
-        expect(result[0].id).toBe('gpt-4o');
-        expect(result[0].name).toBe('gpt-4o');
+        expect(result[0].id).toBe("gpt-4o");
+        expect(result[0].name).toBe("gpt-4o");
       });
     });
 
@@ -1583,8 +1643,8 @@ describe('opencode-provider.ts', () => {
     // Real-world CLI Output
     // =======================================================================
 
-    describe('Real-world CLI Output', () => {
-      it('should parse CLI output with box drawing characters and decorations', () => {
+    describe("Real-world CLI Output", () => {
+      it("should parse CLI output with box drawing characters and decorations", () => {
         const output = `┌─────────────────────────────────────────────────┐
 │ Authenticated Providers                        │
 ├─────────────────────────────────────────────────┤
@@ -1595,11 +1655,11 @@ describe('opencode-provider.ts', () => {
         const result = parseProviders(output);
 
         expect(result).toHaveLength(2);
-        expect(result[0].id).toBe('anthropic');
-        expect(result[1].id).toBe('openai');
+        expect(result[0].id).toBe("anthropic");
+        expect(result[1].id).toBe("openai");
       });
 
-      it('should parse output with ANSI colors and box characters', () => {
+      it("should parse output with ANSI colors and box characters", () => {
         const output = `\x1b[1m┌─────────────────────────────────────────────────┐\x1b[0m
 \x1b[1m│ Authenticated Providers                        │\x1b[0m
 \x1b[1m├─────────────────────────────────────────────────┤\x1b[0m
@@ -1610,8 +1670,8 @@ describe('opencode-provider.ts', () => {
         const result = parseProviders(output);
 
         expect(result).toHaveLength(2);
-        expect(result[0].id).toBe('anthropic');
-        expect(result[1].id).toBe('google');
+        expect(result[0].id).toBe("anthropic");
+        expect(result[1].id).toBe("google");
       });
 
       it('should handle "no authenticated providers" message', () => {
