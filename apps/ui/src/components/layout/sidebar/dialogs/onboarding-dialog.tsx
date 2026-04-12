@@ -1,5 +1,12 @@
-import { useRef } from 'react';
-import { Rocket, CheckCircle2, Zap, FileText, Sparkles, ArrowRight } from 'lucide-react';
+import { useRef } from "react";
+import {
+  Rocket,
+  CheckCircle2,
+  Zap,
+  FileText,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +14,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface OnboardingDialogProps {
   open: boolean;
@@ -54,7 +61,9 @@ export function OnboardingDialog({
               <Rocket className="w-6 h-6 text-brand-500" />
             </div>
             <div className="min-w-0 flex-1">
-              <DialogTitle className="text-2xl truncate">Welcome to {newProjectName}!</DialogTitle>
+              <DialogTitle className="text-2xl truncate">
+                Welcome to {newProjectName}!
+              </DialogTitle>
               <DialogDescription className="text-muted-foreground mt-1">
                 Your new project is ready. Let&apos;s get you started.
               </DialogDescription>
@@ -66,9 +75,9 @@ export function OnboardingDialog({
           {/* Main explanation */}
           <div className="space-y-3">
             <p className="text-sm text-foreground leading-relaxed">
-              Would you like to auto-generate your <strong>app_spec.txt</strong>? This file helps
-              describe your project and is used to pre-populate your backlog with features to work
-              on.
+              Would you like to auto-generate your <strong>app_spec.txt</strong>
+              ? This file helps describe your project and is used to
+              pre-populate your backlog with features to work on.
             </p>
           </div>
 
@@ -77,27 +86,36 @@ export function OnboardingDialog({
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-foreground">Pre-populate your backlog</p>
+                <p className="text-sm font-medium text-foreground">
+                  Pre-populate your backlog
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Automatically generate features based on your project specification
+                  Automatically generate features based on your project
+                  specification
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Zap className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-foreground">Better AI assistance</p>
+                <p className="text-sm font-medium text-foreground">
+                  Better AI assistance
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Help AI agents understand your project structure and tech stack
+                  Help AI agents understand your project structure and tech
+                  stack
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <FileText className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-foreground">Project documentation</p>
+                <p className="text-sm font-medium text-foreground">
+                  Project documentation
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Keep a clear record of your project&apos;s capabilities and features
+                  Keep a clear record of your project&apos;s capabilities and
+                  features
                 </p>
               </div>
             </div>
@@ -106,8 +124,9 @@ export function OnboardingDialog({
           {/* Info box */}
           <div className="rounded-xl bg-brand-500/5 border border-brand-500/10 p-3">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Tip:</strong> You can always generate or edit your
-              app_spec.txt later from the Spec Editor in the sidebar.
+              <strong className="text-foreground">Tip:</strong> You can always
+              generate or edit your app_spec.txt later from the Spec Editor in
+              the sidebar.
             </p>
           </div>
         </div>

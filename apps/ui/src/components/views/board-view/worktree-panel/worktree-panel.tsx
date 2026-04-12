@@ -1,29 +1,33 @@
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
-import { GitBranch, Plus, RefreshCw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { pathsEqual } from '@/lib/utils';
-import { toast } from 'sonner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { useIsMobile } from '@/hooks/use-media-query';
-import { useWorktreeInitScript, useProjectSettings } from '@/hooks/queries';
-import { useTestRunnerEvents } from '@/hooks/use-test-runners';
-import { useTestRunnersStore } from '@/store/test-runners-store';
-import { DEFAULT_TERMINAL_SCRIPTS } from '@/components/views/project-settings-view/terminal-scripts-constants';
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
+import { GitBranch, Plus, RefreshCw } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { pathsEqual } from "@/lib/utils";
+import { toast } from "sonner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { useIsMobile } from "@/hooks/use-media-query";
+import { useWorktreeInitScript, useProjectSettings } from "@/hooks/queries";
+import { useTestRunnerEvents } from "@/hooks/use-test-runners";
+import { useTestRunnersStore } from "@/store/test-runners-store";
+import { DEFAULT_TERMINAL_SCRIPTS } from "@/components/views/project-settings-view/terminal-scripts-constants";
 import type {
   TestRunnerStartedEvent,
   TestRunnerOutputEvent,
   TestRunnerCompletedEvent,
-} from '@/types/electron';
-import type { WorktreePanelProps, WorktreeInfo, TestSessionInfo } from './types';
+} from "@/types/electron";
+import type {
+  WorktreePanelProps,
+  WorktreeInfo,
+  TestSessionInfo,
+} from "./types";
 import {
   useWorktrees,
   useDevServers,
   useBranches,
   useWorktreeActions,
   useRunningFeatures,
-} from './hooks';
+} from "./hooks";
 import {
   WorktreeTab,
   WorktreeDropdown,
@@ -31,8 +35,8 @@ import {
   WorktreeMobileDropdown,
   WorktreeActionsDropdown,
   BranchSwitchDropdown,
-} from './components';
-import { useAppStore } from '@/store/app-store';
+} from "./components";
+import { useAppStore } from "@/store/app-store";
 import {
   ViewWorktreeChangesDialog,
   ViewCommitsDialog,
@@ -44,11 +48,11 @@ import {
   ViewStashesDialog,
   CherryPickDialog,
   GitPullDialog,
-} from '../dialogs';
-import { StashConfirmDialog } from '../dialogs/stash-confirm-dialog';
-import type { SelectRemoteOperation } from '../dialogs';
-import { TestLogsPanel } from '@/components/ui/test-logs-panel';
-import { getElectronAPI } from '@/lib/electron';
+} from "../dialogs";
+import { StashConfirmDialog } from "../dialogs/stash-confirm-dialog";
+import type { SelectRemoteOperation } from "../dialogs";
+import { TestLogsPanel } from "@/components/ui/test-logs-panel";
+import { getElectronAPI } from "@/lib/electron";
 
 // Stable empty array to avoid creating a new [] reference on every render
 // when pinnedWorktreeBranchesByProject[projectPath] is undefined
@@ -143,7 +147,7 @@ export function WorktreePanel({
 
   // Show all worktrees toggle from store
   const showAllWorktrees = useAppStore(
-    (state) => state.showAllWorktreesByProject[projectPath] ?? false
+    (state) => state.showAllWorktreesByProject[projectPath] ?? false,
   );
   const setShowAllWorktrees = useAppStore((state) => state.setShowAllWorktrees);
 
@@ -152,22 +156,28 @@ export function WorktreePanel({
     setShowAllWorktrees(projectPath, newValue);
     try {
       const api = getHttpApiClient();
-      await api.settings.updateProject(projectPath, { showAllWorktrees: newValue });
+      await api.settings.updateProject(projectPath, {
+        showAllWorktrees: newValue,
+      });
     } catch (error) {
-      console.error('Failed to persist showAllWorktrees setting:', error);
+      console.error("Failed to persist showAllWorktrees setting:", error);
     }
   }, [projectPath, showAllWorktrees, setShowAllWorktrees]);
 
   // Pinned worktrees count from store
   const pinnedWorktreesCount = useAppStore(
-    (state) => state.pinnedWorktreesCountByProject[projectPath] ?? 0
+    (state) => state.pinnedWorktreesCountByProject[projectPath] ?? 0,
   );
   const pinnedWorktreeBranchesRaw = useAppStore(
-    (state) => state.pinnedWorktreeBranchesByProject[projectPath]
+    (state) => state.pinnedWorktreeBranchesByProject[projectPath],
   );
   const pinnedWorktreeBranches = pinnedWorktreeBranchesRaw ?? EMPTY_BRANCHES;
-  const setPinnedWorktreeBranches = useAppStore((state) => state.setPinnedWorktreeBranches);
-  const swapPinnedWorktreeBranch = useAppStore((state) => state.swapPinnedWorktreeBranch);
+  const setPinnedWorktreeBranches = useAppStore(
+    (state) => state.setPinnedWorktreeBranches,
+  );
+  const swapPinnedWorktreeBranch = useAppStore(
+    (state) => state.swapPinnedWorktreeBranch,
+  );
 
   // Resolve pinned worktrees from explicit branch assignments
   // Shows exactly pinnedWorktreesCount slots, each with a specific worktree.
@@ -193,7 +203,9 @@ export function WorktreePanel({
 
         // Try to find the explicitly assigned worktree
         if (assignedBranch) {
-          wt = otherWts.find((w) => w.branch === assignedBranch && !usedBranches.has(w.branch));
+          wt = otherWts.find(
+            (w) => w.branch === assignedBranch && !usedBranches.has(w.branch),
+          );
         }
 
         // Fall back to next available worktree if assigned one doesn't exist
@@ -221,7 +233,7 @@ export function WorktreePanel({
     (slotIndex: number, newBranch: string) => {
       swapPinnedWorktreeBranch(projectPath, slotIndex, newBranch);
     },
-    [projectPath, swapPinnedWorktreeBranch]
+    [projectPath, swapPinnedWorktreeBranch],
   );
 
   // Initialize pinned branch assignments when worktrees change
@@ -232,7 +244,8 @@ export function WorktreePanel({
     const otherWts = worktrees.filter((w) => !w.isMain);
     const otherSlotCount = Math.max(0, pinnedWorktreesCount);
 
-    const storedBranches = useAppStore.getState().pinnedWorktreeBranchesByProject[projectPath];
+    const storedBranches =
+      useAppStore.getState().pinnedWorktreeBranchesByProject[projectPath];
     if (otherSlotCount > 0 && otherWts.length > 0) {
       const existing = storedBranches ?? [];
       if (existing.length < otherSlotCount) {
@@ -257,13 +270,15 @@ export function WorktreePanel({
   const autoModeByWorktree = useAppStore((state) => state.autoModeByWorktree);
   const currentProject = useAppStore((state) => state.currentProject);
   const setAutoModeRunning = useAppStore((state) => state.setAutoModeRunning);
-  const getMaxConcurrencyForWorktree = useAppStore((state) => state.getMaxConcurrencyForWorktree);
+  const getMaxConcurrencyForWorktree = useAppStore(
+    (state) => state.getMaxConcurrencyForWorktree,
+  );
   // Helper to generate worktree key for auto-mode (inlined to avoid selector issues)
   const getAutoModeWorktreeKey = useCallback(
     (projectId: string, branchName: string | null): string => {
-      return `${projectId}::${branchName ?? '__main__'}`;
+      return `${projectId}::${branchName ?? "__main__"}`;
     },
-    []
+    [],
   );
 
   // Helper to check if auto-mode is running for a specific worktree
@@ -274,7 +289,7 @@ export function WorktreePanel({
       const key = getAutoModeWorktreeKey(currentProject.id, branchName);
       return autoModeByWorktree[key]?.isRunning ?? false;
     },
-    [currentProject, autoModeByWorktree, getAutoModeWorktreeKey]
+    [currentProject, autoModeByWorktree, getAutoModeWorktreeKey],
   );
 
   // Handler to toggle auto-mode for a worktree
@@ -291,25 +306,37 @@ export function WorktreePanel({
           const result = await api.autoMode.stop(projectPath, branchName);
           if (result.success) {
             setAutoModeRunning(currentProject.id, branchName, false);
-            const desc = branchName ? `worktree ${branchName}` : 'main branch';
+            const desc = branchName ? `worktree ${branchName}` : "main branch";
             toast.success(`Auto Mode stopped for ${desc}`);
           } else {
-            toast.error(result.error || 'Failed to stop Auto Mode');
+            toast.error(result.error || "Failed to stop Auto Mode");
           }
         } else {
-          const maxConcurrency = getMaxConcurrencyForWorktree(currentProject.id, branchName);
-          const result = await api.autoMode.start(projectPath, branchName, maxConcurrency);
+          const maxConcurrency = getMaxConcurrencyForWorktree(
+            currentProject.id,
+            branchName,
+          );
+          const result = await api.autoMode.start(
+            projectPath,
+            branchName,
+            maxConcurrency,
+          );
           if (result.success) {
-            setAutoModeRunning(currentProject.id, branchName, true, maxConcurrency);
-            const desc = branchName ? `worktree ${branchName}` : 'main branch';
+            setAutoModeRunning(
+              currentProject.id,
+              branchName,
+              true,
+              maxConcurrency,
+            );
+            const desc = branchName ? `worktree ${branchName}` : "main branch";
             toast.success(`Auto Mode started for ${desc}`);
           } else {
-            toast.error(result.error || 'Failed to start Auto Mode');
+            toast.error(result.error || "Failed to start Auto Mode");
           }
         }
       } catch (error) {
-        toast.error('Error toggling Auto Mode');
-        console.error('Auto mode toggle error:', error);
+        toast.error("Error toggling Auto Mode");
+        console.error("Auto mode toggle error:", error);
       }
     },
     [
@@ -318,7 +345,7 @@ export function WorktreePanel({
       isAutoModeRunningForWorktree,
       setAutoModeRunning,
       getMaxConcurrencyForWorktree,
-    ]
+    ],
   );
 
   // Check if init script exists for the project using React Query
@@ -341,7 +368,10 @@ export function WorktreePanel({
   // Navigate to project settings to edit scripts
   const navigate = useNavigate();
   const handleEditScripts = useCallback(() => {
-    navigate({ to: '/project-settings', search: { section: 'commands-scripts' } });
+    navigate({
+      to: "/project-settings",
+      search: { section: "commands-scripts" },
+    });
   }, [navigate]);
 
   // Test runner state management
@@ -359,19 +389,19 @@ export function WorktreePanel({
           sessionId: event.sessionId,
           worktreePath: event.worktreePath,
           command: event.command,
-          status: 'running',
+          status: "running",
           testFile: event.testFile,
           startedAt: event.timestamp,
         });
       },
-      [testRunnersStore]
+      [testRunnersStore],
     ),
     // onOutput - test output received
     useCallback(
       (event: TestRunnerOutputEvent) => {
         testRunnersStore.appendOutput(event.sessionId, event.content);
       },
-      [testRunnersStore]
+      [testRunnersStore],
     ),
     // onCompleted - test run finished
     useCallback(
@@ -380,32 +410,41 @@ export function WorktreePanel({
           event.sessionId,
           event.status,
           event.exitCode,
-          event.duration
+          event.duration,
         );
         // Show toast notification for test completion
         const statusEmoji =
-          event.status === 'passed' ? '✅' : event.status === 'failed' ? '❌' : '⏹️';
+          event.status === "passed"
+            ? "✅"
+            : event.status === "failed"
+              ? "❌"
+              : "⏹️";
         const statusText =
-          event.status === 'passed' ? 'passed' : event.status === 'failed' ? 'failed' : 'stopped';
+          event.status === "passed"
+            ? "passed"
+            : event.status === "failed"
+              ? "failed"
+              : "stopped";
         toast(`${statusEmoji} Tests ${statusText}`, {
-          description: `Exit code: ${event.exitCode ?? 'N/A'}`,
+          description: `Exit code: ${event.exitCode ?? "N/A"}`,
           duration: 4000,
         });
       },
-      [testRunnersStore]
-    )
+      [testRunnersStore],
+    ),
   );
 
   // Test logs panel state
   const [testLogsPanelOpen, setTestLogsPanelOpen] = useState(false);
-  const [testLogsPanelWorktree, setTestLogsPanelWorktree] = useState<WorktreeInfo | null>(null);
+  const [testLogsPanelWorktree, setTestLogsPanelWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Helper to check if tests are running for a specific worktree
   const isTestRunningForWorktree = useCallback(
     (worktree: WorktreeInfo): boolean => {
       return testRunnersStore.isWorktreeRunning(worktree.path);
     },
-    [testRunnersStore]
+    [testRunnersStore],
   );
 
   // Helper to get test session info for a specific worktree
@@ -415,17 +454,18 @@ export function WorktreePanel({
       if (!session) {
         // Check for completed sessions to show last result
         const allSessions = Object.values(testRunnersStore.sessions).filter(
-          (s) => s.worktreePath === worktree.path
+          (s) => s.worktreePath === worktree.path,
         );
         const lastSession = allSessions.sort(
-          (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+          (a, b) =>
+            new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
         )[0];
         if (lastSession) {
           return {
             sessionId: lastSession.sessionId,
             worktreePath: lastSession.worktreePath,
             command: lastSession.command,
-            status: lastSession.status as TestSessionInfo['status'],
+            status: lastSession.status as TestSessionInfo["status"],
             testFile: lastSession.testFile,
             startedAt: lastSession.startedAt,
             finishedAt: lastSession.finishedAt,
@@ -439,7 +479,7 @@ export function WorktreePanel({
         sessionId: session.sessionId,
         worktreePath: session.worktreePath,
         command: session.command,
-        status: session.status as TestSessionInfo['status'],
+        status: session.status as TestSessionInfo["status"],
         testFile: session.testFile,
         startedAt: session.startedAt,
         finishedAt: session.finishedAt,
@@ -447,7 +487,7 @@ export function WorktreePanel({
         duration: session.duration,
       };
     },
-    [testRunnersStore]
+    [testRunnersStore],
   );
 
   // Handler to start tests for a worktree
@@ -457,29 +497,31 @@ export function WorktreePanel({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.startTests) {
-          toast.error('Test runner API not available');
+          toast.error("Test runner API not available");
           return;
         }
 
-        const result = await api.worktree.startTests(worktree.path, { projectPath });
+        const result = await api.worktree.startTests(worktree.path, {
+          projectPath,
+        });
         if (result.success) {
-          toast.success('Tests started', {
+          toast.success("Tests started", {
             description: `Running tests in ${worktree.branch}`,
           });
         } else {
-          toast.error('Failed to start tests', {
-            description: result.error || 'Unknown error',
+          toast.error("Failed to start tests", {
+            description: result.error || "Unknown error",
           });
         }
       } catch (error) {
-        toast.error('Failed to start tests', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to start tests", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsStartingTests(false);
       }
     },
-    [projectPath]
+    [projectPath],
   );
 
   // Handler to stop tests for a worktree
@@ -488,33 +530,33 @@ export function WorktreePanel({
       try {
         const session = testRunnersStore.getActiveSession(worktree.path);
         if (!session) {
-          toast.error('No active test session to stop');
+          toast.error("No active test session to stop");
           return;
         }
 
         const api = getElectronAPI();
         if (!api?.worktree?.stopTests) {
-          toast.error('Test runner API not available');
+          toast.error("Test runner API not available");
           return;
         }
 
         const result = await api.worktree.stopTests(session.sessionId);
         if (result.success) {
-          toast.success('Tests stopped', {
+          toast.success("Tests stopped", {
             description: `Stopped tests in ${worktree.branch}`,
           });
         } else {
-          toast.error(result.error || 'Failed to stop tests', {
-            description: result.error || 'Unknown error',
+          toast.error(result.error || "Failed to stop tests", {
+            description: result.error || "Unknown error",
           });
         }
       } catch (error) {
-        toast.error('Failed to stop tests', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to stop tests", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [testRunnersStore]
+    [testRunnersStore],
   );
 
   // Handler to view test logs for a worktree
@@ -530,23 +572,30 @@ export function WorktreePanel({
 
   // View changes dialog state
   const [viewChangesDialogOpen, setViewChangesDialogOpen] = useState(false);
-  const [viewChangesWorktree, setViewChangesWorktree] = useState<WorktreeInfo | null>(null);
+  const [viewChangesWorktree, setViewChangesWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // View commits dialog state
   const [viewCommitsDialogOpen, setViewCommitsDialogOpen] = useState(false);
-  const [viewCommitsWorktree, setViewCommitsWorktree] = useState<WorktreeInfo | null>(null);
+  const [viewCommitsWorktree, setViewCommitsWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Discard changes confirmation dialog state
-  const [discardChangesDialogOpen, setDiscardChangesDialogOpen] = useState(false);
-  const [discardChangesWorktree, setDiscardChangesWorktree] = useState<WorktreeInfo | null>(null);
+  const [discardChangesDialogOpen, setDiscardChangesDialogOpen] =
+    useState(false);
+  const [discardChangesWorktree, setDiscardChangesWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Log panel state management
   const [logPanelOpen, setLogPanelOpen] = useState(false);
-  const [logPanelWorktree, setLogPanelWorktree] = useState<WorktreeInfo | null>(null);
+  const [logPanelWorktree, setLogPanelWorktree] = useState<WorktreeInfo | null>(
+    null,
+  );
 
   // Push to remote dialog state
   const [pushToRemoteDialogOpen, setPushToRemoteDialogOpen] = useState(false);
-  const [pushToRemoteWorktree, setPushToRemoteWorktree] = useState<WorktreeInfo | null>(null);
+  const [pushToRemoteWorktree, setPushToRemoteWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Integrate branch dialog state
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
@@ -554,23 +603,31 @@ export function WorktreePanel({
 
   // Select remote dialog state (for pull/push with multiple remotes)
   const [selectRemoteDialogOpen, setSelectRemoteDialogOpen] = useState(false);
-  const [selectRemoteWorktree, setSelectRemoteWorktree] = useState<WorktreeInfo | null>(null);
-  const [selectRemoteOperation, setSelectRemoteOperation] = useState<SelectRemoteOperation>('pull');
+  const [selectRemoteWorktree, setSelectRemoteWorktree] =
+    useState<WorktreeInfo | null>(null);
+  const [selectRemoteOperation, setSelectRemoteOperation] =
+    useState<SelectRemoteOperation>("pull");
 
   // Stash dialog states
   const [stashChangesDialogOpen, setStashChangesDialogOpen] = useState(false);
-  const [stashChangesWorktree, setStashChangesWorktree] = useState<WorktreeInfo | null>(null);
+  const [stashChangesWorktree, setStashChangesWorktree] =
+    useState<WorktreeInfo | null>(null);
   const [viewStashesDialogOpen, setViewStashesDialogOpen] = useState(false);
-  const [viewStashesWorktree, setViewStashesWorktree] = useState<WorktreeInfo | null>(null);
+  const [viewStashesWorktree, setViewStashesWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Cherry-pick dialog states
   const [cherryPickDialogOpen, setCherryPickDialogOpen] = useState(false);
-  const [cherryPickWorktree, setCherryPickWorktree] = useState<WorktreeInfo | null>(null);
+  const [cherryPickWorktree, setCherryPickWorktree] =
+    useState<WorktreeInfo | null>(null);
 
   // Pull dialog states
   const [pullDialogOpen, setPullDialogOpen] = useState(false);
-  const [pullDialogWorktree, setPullDialogWorktree] = useState<WorktreeInfo | null>(null);
-  const [pullDialogRemote, setPullDialogRemote] = useState<string | undefined>(undefined);
+  const [pullDialogWorktree, setPullDialogWorktree] =
+    useState<WorktreeInfo | null>(null);
+  const [pullDialogRemote, setPullDialogRemote] = useState<string | undefined>(
+    undefined,
+  );
 
   // Remotes cache: maps worktree path -> list of remotes (fetched when dropdown opens)
   const [remotesCache, setRemotesCache] = useState<
@@ -599,39 +656,46 @@ export function WorktreePanel({
 
   const isWorktreeSelected = (worktree: WorktreeInfo) => {
     return worktree.isMain
-      ? currentWorktree === null || currentWorktree === undefined || currentWorktree.path === null
+      ? currentWorktree === null ||
+          currentWorktree === undefined ||
+          currentWorktree.path === null
       : pathsEqual(worktree.path, currentWorktreePath);
   };
 
-  const handleBranchDropdownOpenChange = (worktree: WorktreeInfo) => (open: boolean) => {
-    if (open) {
-      fetchBranches(worktree.path);
-      resetBranchFilter();
-    }
-  };
-
-  const handleActionsDropdownOpenChange = (worktree: WorktreeInfo) => (open: boolean) => {
-    if (open) {
-      fetchBranches(worktree.path);
-      // Fetch remotes for the submenu when the dropdown opens, but only if not already cached
-      if (!remotesCache[worktree.path]) {
-        const api = getHttpApiClient();
-        api.worktree
-          .listRemotes(worktree.path)
-          .then((result) => {
-            if (result.success && result.result) {
-              setRemotesCache((prev) => ({
-                ...prev,
-                [worktree.path]: result.result!.remotes.map((r) => ({ name: r.name, url: r.url })),
-              }));
-            }
-          })
-          .catch((err) => {
-            console.warn('Failed to fetch remotes for worktree:', err);
-          });
+  const handleBranchDropdownOpenChange =
+    (worktree: WorktreeInfo) => (open: boolean) => {
+      if (open) {
+        fetchBranches(worktree.path);
+        resetBranchFilter();
       }
-    }
-  };
+    };
+
+  const handleActionsDropdownOpenChange =
+    (worktree: WorktreeInfo) => (open: boolean) => {
+      if (open) {
+        fetchBranches(worktree.path);
+        // Fetch remotes for the submenu when the dropdown opens, but only if not already cached
+        if (!remotesCache[worktree.path]) {
+          const api = getHttpApiClient();
+          api.worktree
+            .listRemotes(worktree.path)
+            .then((result) => {
+              if (result.success && result.result) {
+                setRemotesCache((prev) => ({
+                  ...prev,
+                  [worktree.path]: result.result!.remotes.map((r) => ({
+                    name: r.name,
+                    url: r.url,
+                  })),
+                }));
+              }
+            })
+            .catch((err) => {
+              console.warn("Failed to fetch remotes for worktree:", err);
+            });
+        }
+      }
+    };
 
   const handleRunInitScript = useCallback(
     async (worktree: WorktreeInfo) => {
@@ -642,22 +706,22 @@ export function WorktreePanel({
         const result = await api.worktree.runInitScript(
           projectPath,
           worktree.path,
-          worktree.branch
+          worktree.branch,
         );
 
         if (!result.success) {
-          toast.error('Failed to run init script', {
+          toast.error("Failed to run init script", {
             description: result.error,
           });
         }
         // Success feedback will come via WebSocket events (init-started, init-output, init-completed)
       } catch (error) {
-        toast.error('Failed to run init script', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to run init script", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [projectPath]
+    [projectPath],
   );
 
   const handleViewChanges = useCallback((worktree: WorktreeInfo) => {
@@ -716,18 +780,20 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.abortOperation(worktree.path);
         if (result.success && result.result) {
-          toast.success(result.result.message || 'Operation aborted successfully');
+          toast.success(
+            result.result.message || "Operation aborted successfully",
+          );
           fetchWorktrees({ silent: true });
         } else {
-          toast.error(result.error || 'Failed to abort operation');
+          toast.error(result.error || "Failed to abort operation");
         }
       } catch (error) {
-        toast.error('Failed to abort operation', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to abort operation", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [fetchWorktrees]
+    [fetchWorktrees],
   );
 
   // Handle continuing an in-progress merge/rebase/cherry-pick after conflict resolution
@@ -737,18 +803,20 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.continueOperation(worktree.path);
         if (result.success && result.result) {
-          toast.success(result.result.message || 'Operation continued successfully');
+          toast.success(
+            result.result.message || "Operation continued successfully",
+          );
           fetchWorktrees({ silent: true });
         } else {
-          toast.error(result.error || 'Failed to continue operation');
+          toast.error(result.error || "Failed to continue operation");
         }
       } catch (error) {
-        toast.error('Failed to continue operation', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to continue operation", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [fetchWorktrees]
+    [fetchWorktrees],
   );
 
   // Handle opening the log panel for a specific worktree
@@ -799,7 +867,7 @@ export function WorktreePanel({
         onCommit(pullDialogWorktreeRef.current);
       }
     },
-    [onCommit]
+    [onCommit],
   );
 
   // Handle pull with remote selection when multiple remotes exist
@@ -820,12 +888,20 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.listRemotes(worktree.path);
 
-        if (result.success && result.result && result.result.remotes.length > 1) {
+        if (
+          result.success &&
+          result.result &&
+          result.result.remotes.length > 1
+        ) {
           // Multiple remotes and no tracking remote - show selection dialog
           setSelectRemoteWorktree(worktree);
-          setSelectRemoteOperation('pull');
+          setSelectRemoteOperation("pull");
           setSelectRemoteDialogOpen(true);
-        } else if (result.success && result.result && result.result.remotes.length === 1) {
+        } else if (
+          result.success &&
+          result.result &&
+          result.result.remotes.length === 1
+        ) {
           // Exactly one remote - open pull dialog directly with that remote
           const remoteName = result.result.remotes[0].name;
           setPullDialogRemote(remoteName);
@@ -844,7 +920,7 @@ export function WorktreePanel({
         setPullDialogOpen(true);
       }
     },
-    [getTrackingRemote]
+    [getTrackingRemote],
   );
 
   // Handle push with remote selection when multiple remotes exist
@@ -862,12 +938,20 @@ export function WorktreePanel({
         const api = getHttpApiClient();
         const result = await api.worktree.listRemotes(worktree.path);
 
-        if (result.success && result.result && result.result.remotes.length > 1) {
+        if (
+          result.success &&
+          result.result &&
+          result.result.remotes.length > 1
+        ) {
           // Multiple remotes and no tracking remote - show selection dialog
           setSelectRemoteWorktree(worktree);
-          setSelectRemoteOperation('push');
+          setSelectRemoteOperation("push");
           setSelectRemoteDialogOpen(true);
-        } else if (result.success && result.result && result.result.remotes.length === 1) {
+        } else if (
+          result.success &&
+          result.result &&
+          result.result.remotes.length === 1
+        ) {
           // Exactly one remote - use it directly
           const remoteName = result.result.remotes[0].name;
           handlePush(worktree, remoteName);
@@ -880,13 +964,13 @@ export function WorktreePanel({
         handlePush(worktree);
       }
     },
-    [handlePush, getTrackingRemote]
+    [handlePush, getTrackingRemote],
   );
 
   // Handle confirming remote selection for pull/push
   const handleConfirmSelectRemote = useCallback(
     async (worktree: WorktreeInfo, remote: string) => {
-      if (selectRemoteOperation === 'pull') {
+      if (selectRemoteOperation === "pull") {
         // Open the pull dialog — let GitPullDialog manage the pull operation
         // via its useEffect and onPulled callback (handlePullCompleted)
         setPullDialogRemote(remote);
@@ -898,17 +982,20 @@ export function WorktreePanel({
         fetchWorktrees({ silent: true });
       }
     },
-    [selectRemoteOperation, handlePush, fetchBranches, fetchWorktrees]
+    [selectRemoteOperation, handlePush, fetchBranches, fetchWorktrees],
   );
 
   // Handle pull with a specific remote selected from the submenu (bypasses the remote selection dialog)
-  const handlePullWithSpecificRemote = useCallback((worktree: WorktreeInfo, remote: string) => {
-    // Open the pull dialog — let GitPullDialog manage the pull operation
-    // via its useEffect and onPulled callback (handlePullCompleted)
-    setPullDialogRemote(remote);
-    setPullDialogWorktree(worktree);
-    setPullDialogOpen(true);
-  }, []);
+  const handlePullWithSpecificRemote = useCallback(
+    (worktree: WorktreeInfo, remote: string) => {
+      // Open the pull dialog — let GitPullDialog manage the pull operation
+      // via its useEffect and onPulled callback (handlePullCompleted)
+      setPullDialogRemote(remote);
+      setPullDialogWorktree(worktree);
+      setPullDialogOpen(true);
+    },
+    [],
+  );
 
   // Handle push to a specific remote selected from the submenu (bypasses the remote selection dialog)
   const handlePushWithSpecificRemote = useCallback(
@@ -917,7 +1004,7 @@ export function WorktreePanel({
       fetchBranches(worktree.path);
       fetchWorktrees({ silent: true });
     },
-    [handlePush, fetchBranches, fetchWorktrees]
+    [handlePush, fetchBranches, fetchWorktrees],
   );
 
   // Handle sync (pull + push) with optional remote selection
@@ -925,7 +1012,7 @@ export function WorktreePanel({
     (worktree: WorktreeInfo) => {
       handleSync(worktree);
     },
-    [handleSync]
+    [handleSync],
   );
 
   // Handle sync with a specific remote selected from the submenu
@@ -933,7 +1020,7 @@ export function WorktreePanel({
     (worktree: WorktreeInfo, remote: string) => {
       handleSync(worktree, remote);
     },
-    [handleSync]
+    [handleSync],
   );
 
   // Handle set tracking branch for a specific remote
@@ -941,7 +1028,7 @@ export function WorktreePanel({
     (worktree: WorktreeInfo, remote: string) => {
       handleSetTracking(worktree, remote);
     },
-    [handleSetTracking]
+    [handleSetTracking],
   );
 
   // Handle confirming the push to remote dialog
@@ -950,7 +1037,7 @@ export function WorktreePanel({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.push) {
-          toast.error('Push API not available');
+          toast.error("Push API not available");
           return;
         }
         const result = await api.worktree.push(worktree.path, false, remote);
@@ -959,13 +1046,13 @@ export function WorktreePanel({
           fetchBranches(worktree.path);
           fetchWorktrees();
         } else {
-          toast.error(result.error || 'Failed to push changes');
+          toast.error(result.error || "Failed to push changes");
         }
       } catch {
-        toast.error('Failed to push changes');
+        toast.error("Failed to push changes");
       }
     },
-    [fetchBranches, fetchWorktrees]
+    [fetchBranches, fetchWorktrees],
   );
 
   // Handle opening the merge dialog
@@ -983,7 +1070,7 @@ export function WorktreePanel({
         onBranchDeletedDuringMerge(integratedWorktree.branch);
       }
     },
-    [fetchWorktrees, onBranchDeletedDuringMerge]
+    [fetchWorktrees, onBranchDeletedDuringMerge],
   );
 
   const mainWorktree = worktrees.find((w) => w.isMain);
@@ -991,7 +1078,8 @@ export function WorktreePanel({
   // Mobile view: single dropdown for all worktrees
   if (isMobile) {
     // Find the currently selected worktree for the actions menu
-    const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w)) || mainWorktree;
+    const selectedWorktree =
+      worktrees.find((w) => isWorktreeSelected(w)) || mainWorktree;
 
     return (
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-glass/50 backdrop-blur-sm">
@@ -1088,7 +1176,9 @@ export function WorktreePanel({
             onCherryPick={handleCherryPick}
             onAbortOperation={handleAbortOperation}
             onContinueOperation={handleContinueOperation}
-            onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+            onCreateConflictResolutionFeature={
+              onCreateMergeConflictResolutionFeature
+            }
             hasInitScript={hasInitScript}
             terminalScripts={terminalScripts}
             onRunTerminalScript={handleRunTerminalScript}
@@ -1098,11 +1188,15 @@ export function WorktreePanel({
 
         {/* All Worktrees toggle */}
         <Button
-          variant={showAllWorktrees ? 'secondary' : 'ghost'}
+          variant={showAllWorktrees ? "secondary" : "ghost"}
           size="sm"
-          className={`h-8 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`h-8 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
           onClick={handleToggleAllWorktrees}
-          title={showAllWorktrees ? 'Showing all worktrees — click to filter' : 'Show all worktrees'}
+          title={
+            showAllWorktrees
+              ? "Showing all worktrees — click to filter"
+              : "Show all worktrees"
+          }
         >
           All
         </Button>
@@ -1125,14 +1219,22 @@ export function WorktreePanel({
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0"
               onClick={async () => {
                 const removedWorktrees = await fetchWorktrees();
-                if (removedWorktrees && removedWorktrees.length > 0 && onRemovedWorktrees) {
+                if (
+                  removedWorktrees &&
+                  removedWorktrees.length > 0 &&
+                  onRemovedWorktrees
+                ) {
                   onRemovedWorktrees(removedWorktrees);
                 }
               }}
               disabled={isLoading}
               title="Refresh worktrees"
             >
-              {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {isLoading ? (
+                <Spinner size="xs" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
             </Button>
           </>
         )}
@@ -1175,7 +1277,9 @@ export function WorktreePanel({
             if (!isOpen) cancelPendingSwitch();
           }}
           operationDescription={
-            pendingSwitch ? `switch to branch '${pendingSwitch.branchName}'` : ''
+            pendingSwitch
+              ? `switch to branch '${pendingSwitch.branchName}'`
+              : ""
           }
           changesInfo={pendingSwitch?.changesInfo ?? null}
           onConfirm={confirmPendingSwitch}
@@ -1197,7 +1301,9 @@ export function WorktreePanel({
           onOpenChange={setCherryPickDialogOpen}
           worktree={cherryPickWorktree}
           onCherryPicked={handleCherryPicked}
-          onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+          onCreateConflictResolutionFeature={
+            onCreateMergeConflictResolutionFeature
+          }
         />
 
         {/* Git Pull Dialog */}
@@ -1207,7 +1313,9 @@ export function WorktreePanel({
           worktree={pullDialogWorktree}
           remote={pullDialogRemote}
           onPulled={handlePullCompleted}
-          onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+          onCreateConflictResolutionFeature={
+            onCreateMergeConflictResolutionFeature
+          }
           onCommitMerge={handleCommitMerge}
         />
 
@@ -1244,7 +1352,9 @@ export function WorktreePanel({
           projectPath={projectPath}
           worktree={mergeWorktree}
           onIntegrated={handleIntegrated}
-          onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+          onCreateConflictResolutionFeature={
+            onCreateMergeConflictResolutionFeature
+          }
         />
 
         {/* Test Logs Panel */}
@@ -1254,7 +1364,9 @@ export function WorktreePanel({
           worktreePath={testLogsPanelWorktree?.path ?? null}
           branch={testLogsPanelWorktree?.branch}
           onStopTests={
-            testLogsPanelWorktree ? () => handleStopTests(testLogsPanelWorktree) : undefined
+            testLogsPanelWorktree
+              ? () => handleStopTests(testLogsPanelWorktree)
+              : undefined
           }
         />
       </div>
@@ -1266,7 +1378,9 @@ export function WorktreePanel({
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-b border-border bg-glass/50 backdrop-blur-sm">
       <GitBranch className="w-4 h-4 text-muted-foreground shrink-0" />
-      <span className="text-sm text-muted-foreground mr-2 shrink-0">Worktree:</span>
+      <span className="text-sm text-muted-foreground mr-2 shrink-0">
+        Worktree:
+      </span>
 
       {/* When only 1 pinned slot (main only) and there are other worktrees,
           use a compact dropdown to switch between them without highlighting main */}
@@ -1339,7 +1453,9 @@ export function WorktreePanel({
           onCherryPick={handleCherryPick}
           onAbortOperation={handleAbortOperation}
           onContinueOperation={handleContinueOperation}
-          onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+          onCreateConflictResolutionFeature={
+            onCreateMergeConflictResolutionFeature
+          }
           terminalScripts={terminalScripts}
           onRunTerminalScript={handleRunTerminalScript}
           onEditScripts={handleEditScripts}
@@ -1377,8 +1493,12 @@ export function WorktreePanel({
             isTestRunning={isTestRunningForWorktree(mainWorktree)}
             testSessionInfo={getTestSessionInfo(mainWorktree)}
             onSelectWorktree={handleSelectWorktree}
-            onBranchDropdownOpenChange={handleBranchDropdownOpenChange(mainWorktree)}
-            onActionsDropdownOpenChange={handleActionsDropdownOpenChange(mainWorktree)}
+            onBranchDropdownOpenChange={handleBranchDropdownOpenChange(
+              mainWorktree,
+            )}
+            onActionsDropdownOpenChange={handleActionsDropdownOpenChange(
+              mainWorktree,
+            )}
             onBranchFilterChange={setBranchFilter}
             onSwitchBranch={handleSwitchBranch}
             onCreateBranch={onCreateBranch}
@@ -1421,7 +1541,9 @@ export function WorktreePanel({
             onCherryPick={handleCherryPick}
             onAbortOperation={handleAbortOperation}
             onContinueOperation={handleContinueOperation}
-            onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+            onCreateConflictResolutionFeature={
+              onCreateMergeConflictResolutionFeature
+            }
             hasInitScript={hasInitScript}
             hasTestCommand={hasTestCommand}
             terminalScripts={terminalScripts}
@@ -1434,10 +1556,13 @@ export function WorktreePanel({
         pinnedWorktrees.map((worktree, index) => {
           const hasOtherWorktrees = worktrees.length > 1;
           const effectiveIsSelected =
-            isWorktreeSelected(worktree) && (hasOtherWorktrees || !worktree.isMain);
+            isWorktreeSelected(worktree) &&
+            (hasOtherWorktrees || !worktree.isMain);
 
           // Slot index for swap (0-based, excluding main which is always slot 0)
-          const slotIndex = worktree.isMain ? -1 : index - (pinnedWorktrees[0]?.isMain ? 1 : 0);
+          const slotIndex = worktree.isMain
+            ? -1
+            : index - (pinnedWorktrees[0]?.isMain ? 1 : 0);
 
           return (
             <WorktreeTab
@@ -1470,8 +1595,12 @@ export function WorktreePanel({
               isTestRunning={isTestRunningForWorktree(worktree)}
               testSessionInfo={getTestSessionInfo(worktree)}
               onSelectWorktree={handleSelectWorktree}
-              onBranchDropdownOpenChange={handleBranchDropdownOpenChange(worktree)}
-              onActionsDropdownOpenChange={handleActionsDropdownOpenChange(worktree)}
+              onBranchDropdownOpenChange={handleBranchDropdownOpenChange(
+                worktree,
+              )}
+              onActionsDropdownOpenChange={handleActionsDropdownOpenChange(
+                worktree,
+              )}
               onBranchFilterChange={setBranchFilter}
               onSwitchBranch={handleSwitchBranch}
               onCreateBranch={onCreateBranch}
@@ -1509,15 +1638,21 @@ export function WorktreePanel({
               onCherryPick={handleCherryPick}
               onAbortOperation={handleAbortOperation}
               onContinueOperation={handleContinueOperation}
-              onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+              onCreateConflictResolutionFeature={
+                onCreateMergeConflictResolutionFeature
+              }
               hasInitScript={hasInitScript}
               hasTestCommand={hasTestCommand}
               terminalScripts={terminalScripts}
               onRunTerminalScript={handleRunTerminalScript}
               onEditScripts={handleEditScripts}
-              availableWorktreesForSwap={!worktree.isMain ? availableWorktreesForSwap : undefined}
+              availableWorktreesForSwap={
+                !worktree.isMain ? availableWorktreesForSwap : undefined
+              }
               slotIndex={slotIndex >= 0 ? slotIndex : undefined}
-              onSwapWorktree={slotIndex >= 0 ? handleSwapWorktreeSlot : undefined}
+              onSwapWorktree={
+                slotIndex >= 0 ? handleSwapWorktreeSlot : undefined
+              }
               pinnedBranches={pinnedWorktrees.map((w) => w.branch)}
               isSyncing={isSyncing}
               onSync={handleSyncWithRemoteSelection}
@@ -1530,11 +1665,15 @@ export function WorktreePanel({
 
       {/* All Worktrees toggle - shows features from all worktrees simultaneously */}
       <Button
-        variant={showAllWorktrees ? 'secondary' : 'ghost'}
+        variant={showAllWorktrees ? "secondary" : "ghost"}
         size="sm"
-        className={`h-7 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        className={`h-7 px-2 text-xs font-medium shrink-0 ${showAllWorktrees ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
         onClick={handleToggleAllWorktrees}
-        title={showAllWorktrees ? 'Showing features from all worktrees — click to filter by current worktree' : 'Show features from all worktrees'}
+        title={
+          showAllWorktrees
+            ? "Showing features from all worktrees — click to filter by current worktree"
+            : "Show features from all worktrees"
+        }
       >
         All
       </Button>
@@ -1558,14 +1697,22 @@ export function WorktreePanel({
             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={async () => {
               const removedWorktrees = await fetchWorktrees();
-              if (removedWorktrees && removedWorktrees.length > 0 && onRemovedWorktrees) {
+              if (
+                removedWorktrees &&
+                removedWorktrees.length > 0 &&
+                onRemovedWorktrees
+              ) {
                 onRemovedWorktrees(removedWorktrees);
               }
             }}
             disabled={isLoading}
             title="Refresh worktrees"
           >
-            {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            {isLoading ? (
+              <Spinner size="xs" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
           </Button>
         </>
       )}
@@ -1626,7 +1773,9 @@ export function WorktreePanel({
         projectPath={projectPath}
         worktree={mergeWorktree}
         onIntegrated={handleIntegrated}
-        onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+        onCreateConflictResolutionFeature={
+          onCreateMergeConflictResolutionFeature
+        }
       />
 
       {/* Test Logs Panel */}
@@ -1636,7 +1785,9 @@ export function WorktreePanel({
         worktreePath={testLogsPanelWorktree?.path ?? null}
         branch={testLogsPanelWorktree?.branch}
         onStopTests={
-          testLogsPanelWorktree ? () => handleStopTests(testLogsPanelWorktree) : undefined
+          testLogsPanelWorktree
+            ? () => handleStopTests(testLogsPanelWorktree)
+            : undefined
         }
       />
 
@@ -1654,7 +1805,9 @@ export function WorktreePanel({
         onOpenChange={(isOpen) => {
           if (!isOpen) cancelPendingSwitch();
         }}
-        operationDescription={pendingSwitch ? `switch to branch '${pendingSwitch.branchName}'` : ''}
+        operationDescription={
+          pendingSwitch ? `switch to branch '${pendingSwitch.branchName}'` : ""
+        }
         changesInfo={pendingSwitch?.changesInfo ?? null}
         onConfirm={confirmPendingSwitch}
         isLoading={isSwitching}
@@ -1675,7 +1828,9 @@ export function WorktreePanel({
         onOpenChange={setCherryPickDialogOpen}
         worktree={cherryPickWorktree}
         onCherryPicked={handleCherryPicked}
-        onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+        onCreateConflictResolutionFeature={
+          onCreateMergeConflictResolutionFeature
+        }
       />
 
       {/* Git Pull Dialog */}
@@ -1686,7 +1841,9 @@ export function WorktreePanel({
         remote={pullDialogRemote}
         onPulled={handlePullCompleted}
         onCommitMerge={handleCommitMerge}
-        onCreateConflictResolutionFeature={onCreateMergeConflictResolutionFeature}
+        onCreateConflictResolutionFeature={
+          onCreateMergeConflictResolutionFeature
+        }
       />
     </div>
   );

@@ -5,16 +5,16 @@
  * that may remain when afterAll hooks didn't run (e.g. worker crash, aborted run).
  */
 
-import { FullConfig } from '@playwright/test';
+import { FullConfig } from "@playwright/test";
 import {
   cleanupLeftoverFixtureWorkerDirs,
   cleanupLeftoverTestDirs,
-} from './utils/cleanup-test-dirs';
+} from "./utils/cleanup-test-dirs";
 
 async function globalTeardown(_config: FullConfig) {
   cleanupLeftoverTestDirs();
   cleanupLeftoverFixtureWorkerDirs();
-  console.log('[GlobalTeardown] Cleanup complete');
+  console.log("[GlobalTeardown] Cleanup complete");
 }
 
 export default globalTeardown;

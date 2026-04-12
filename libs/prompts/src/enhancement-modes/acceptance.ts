@@ -3,7 +3,7 @@
  * Adds testable acceptance criteria to task descriptions.
  */
 
-import type { EnhancementExample } from '@pegasus/types';
+import type { EnhancementExample } from "@pegasus/types";
 
 /**
  * System prompt for the "acceptance" enhancement mode.
@@ -41,7 +41,7 @@ IMPORTANT: Output ONLY the acceptance criteria section. Do NOT repeat or rewrite
  */
 export const ACCEPTANCE_EXAMPLES: EnhancementExample[] = [
   {
-    input: 'Add password reset functionality',
+    input: "Add password reset functionality",
     output: `Acceptance Criteria:
 
 1. Given a user is on the login page, when they click "Forgot Password", then they should see a password reset form requesting their email.
@@ -57,7 +57,7 @@ export const ACCEPTANCE_EXAMPLES: EnhancementExample[] = [
 6. Given a reset link older than 1 hour, when a user clicks it, then they should see an expiration message with option to request a new link.`,
   },
   {
-    input: 'Shopping cart checkout',
+    input: "Shopping cart checkout",
     output: `Acceptance Criteria:
 
 1. Given a user has items in their cart, when they click "Checkout", then they should see an order summary with item details and total price.
@@ -79,4 +79,5 @@ export const ACCEPTANCE_EXAMPLES: EnhancementExample[] = [
 /**
  * Description of what this enhancement mode does
  */
-export const ACCEPTANCE_DESCRIPTION = 'Add testable acceptance criteria to task descriptions';
+export const ACCEPTANCE_DESCRIPTION =
+  "Add testable acceptance criteria to task descriptions";

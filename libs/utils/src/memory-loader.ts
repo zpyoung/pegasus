@@ -9,7 +9,7 @@
  * Memory files use YAML frontmatter for metadata.
  */
 
-import path from 'path';
+import path from "path";
 
 /**
  * File system module interface (compatible with secureFs)
@@ -17,9 +17,15 @@ import path from 'path';
 export interface MemoryFsModule {
   access: (path: string) => Promise<void>;
   readdir: (path: string) => Promise<string[]>;
-  readFile: (path: string, encoding?: BufferEncoding) => Promise<string | Buffer>;
+  readFile: (
+    path: string,
+    encoding?: BufferEncoding,
+  ) => Promise<string | Buffer>;
   writeFile: (path: string, content: string) => Promise<void>;
-  mkdir: (path: string, options?: { recursive?: boolean }) => Promise<string | undefined>;
+  mkdir: (
+    path: string,
+    options?: { recursive?: boolean },
+  ) => Promise<string | undefined>;
   appendFile: (path: string, content: string) => Promise<void>;
 }
 
@@ -67,7 +73,7 @@ export interface MemoryLoadResult {
  */
 export interface LearningEntry {
   category: string;
-  type: 'decision' | 'learning' | 'pattern' | 'gotcha';
+  type: "decision" | "learning" | "pattern" | "gotcha";
   content: string;
   context?: string; // Problem being solved or situation faced
   why?: string; // Reasoning behind the approach
@@ -83,7 +89,7 @@ export interface LearningEntry {
 function createDefaultMetadata(): MemoryMetadata {
   return {
     tags: [],
-    summary: '',
+    summary: "",
     relevantTo: [],
     importance: 0.5,
     relatedFiles: [],
@@ -103,7 +109,10 @@ const fileLocks = new Map<string, Promise<void>>();
 /**
  * Acquire a lock for a file path, execute the operation, then release
  */
-async function withFileLock<T>(filePath: string, operation: () => Promise<T>): Promise<T> {
+async function withFileLock<T>(
+  filePath: string,
+  operation: () => Promise<T>,
+): Promise<T> {
   // Wait for any existing lock on this file
   const existingLock = fileLocks.get(filePath);
   if (existingLock) {
@@ -129,7 +138,7 @@ async function withFileLock<T>(filePath: string, operation: () => Promise<T>): P
  * Get the memory directory path for a project
  */
 export function getMemoryDir(projectPath: string): string {
-  return path.join(projectPath, '.pegasus', 'memory');
+  return path.join(projectPath, ".pegasus", "memory");
 }
 
 /**
@@ -159,23 +168,23 @@ export function parseFrontmatter(content: string): {
     const tagsMatch = frontmatterStr.match(/tags:\s*\[(.*?)\]/);
     if (tagsMatch) {
       metadata.tags = tagsMatch[1]
-        .split(',')
-        .map((t) => t.trim().replace(/['"]/g, ''))
+        .split(",")
+        .map((t) => t.trim().replace(/['"]/g, ""))
         .filter((t) => t.length > 0); // Filter out empty strings
     }
 
     // Parse summary
     const summaryMatch = frontmatterStr.match(/summary:\s*(.+)/);
     if (summaryMatch) {
-      metadata.summary = summaryMatch[1].trim().replace(/^["']|["']$/g, '');
+      metadata.summary = summaryMatch[1].trim().replace(/^["']|["']$/g, "");
     }
 
     // Parse relevantTo: [term1, term2]
     const relevantMatch = frontmatterStr.match(/relevantTo:\s*\[(.*?)\]/);
     if (relevantMatch) {
       metadata.relevantTo = relevantMatch[1]
-        .split(',')
-        .map((t) => t.trim().replace(/['"]/g, ''))
+        .split(",")
+        .map((t) => t.trim().replace(/['"]/g, ""))
         .filter((t) => t.length > 0); // Filter out empty strings
     }
 
@@ -190,8 +199,8 @@ export function parseFrontmatter(content: string): {
     const relatedMatch = frontmatterStr.match(/relatedFiles:\s*\[(.*?)\]/);
     if (relatedMatch) {
       metadata.relatedFiles = relatedMatch[1]
-        .split(',')
-        .map((t) => t.trim().replace(/['"]/g, ''))
+        .split(",")
+        .map((t) => t.trim().replace(/['"]/g, ""))
         .filter((t) => t.length > 0); // Filter out empty strings
     }
 
@@ -201,8 +210,10 @@ export function parseFrontmatter(content: string): {
     const successMatch = frontmatterStr.match(/successfulFeatures:\s*(\d+)/);
 
     if (loadedMatch) metadata.usageStats.loaded = parseInt(loadedMatch[1], 10);
-    if (referencedMatch) metadata.usageStats.referenced = parseInt(referencedMatch[1], 10);
-    if (successMatch) metadata.usageStats.successfulFeatures = parseInt(successMatch[1], 10);
+    if (referencedMatch)
+      metadata.usageStats.referenced = parseInt(referencedMatch[1], 10);
+    if (successMatch)
+      metadata.usageStats.successfulFeatures = parseInt(successMatch[1], 10);
 
     return { metadata, body };
   } catch {
@@ -233,11 +244,11 @@ export function serializeFrontmatter(metadata: MemoryMetadata): string {
   const escapedSummary = escapeYamlString(metadata.summary);
 
   return `---
-tags: [${escapedTags.join(', ')}]
+tags: [${escapedTags.join(", ")}]
 summary: ${escapedSummary}
-relevantTo: [${escapedRelevantTo.join(', ')}]
+relevantTo: [${escapedRelevantTo.join(", ")}]
 importance: ${metadata.importance}
-relatedFiles: [${escapedRelatedFiles.join(', ')}]
+relatedFiles: [${escapedRelatedFiles.join(", ")}]
 usageStats:
   loaded: ${metadata.usageStats.loaded}
   referenced: ${metadata.usageStats.referenced}
@@ -251,64 +262,64 @@ usageStats:
  */
 export function extractTerms(text: string): string[] {
   const stopWords = new Set([
-    'a',
-    'an',
-    'the',
-    'and',
-    'or',
-    'but',
-    'in',
-    'on',
-    'at',
-    'to',
-    'for',
-    'of',
-    'with',
-    'by',
-    'is',
-    'it',
-    'this',
-    'that',
-    'be',
-    'as',
-    'are',
-    'was',
-    'were',
-    'been',
-    'being',
-    'have',
-    'has',
-    'had',
-    'do',
-    'does',
-    'did',
-    'will',
-    'would',
-    'could',
-    'should',
-    'may',
-    'might',
-    'must',
-    'shall',
-    'can',
-    'need',
-    'dare',
-    'ought',
-    'used',
-    'add',
-    'create',
-    'implement',
-    'build',
-    'make',
-    'update',
-    'fix',
-    'change',
-    'modify',
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "is",
+    "it",
+    "this",
+    "that",
+    "be",
+    "as",
+    "are",
+    "was",
+    "were",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "must",
+    "shall",
+    "can",
+    "need",
+    "dare",
+    "ought",
+    "used",
+    "add",
+    "create",
+    "implement",
+    "build",
+    "make",
+    "update",
+    "fix",
+    "change",
+    "modify",
   ]);
 
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((word) => word.length > 2 && !stopWords.has(word));
 }
@@ -329,7 +340,8 @@ export function calculateUsageScore(stats: UsageStats): number {
   if (stats.loaded === 0) return 1; // New file, neutral score
 
   const referenceRate = stats.referenced / stats.loaded;
-  const successRate = stats.referenced > 0 ? stats.successfulFeatures / stats.referenced : 0;
+  const successRate =
+    stats.referenced > 0 ? stats.successfulFeatures / stats.referenced : 0;
 
   // Base 0.5 + up to 0.3 for reference rate + up to 0.2 for success rate
   return 0.5 + referenceRate * 0.3 + successRate * 0.2;
@@ -351,7 +363,7 @@ export async function loadRelevantMemory(
   projectPath: string,
   featureTitle: string,
   featureDescription: string,
-  fsModule: MemoryFsModule
+  fsModule: MemoryFsModule,
 ): Promise<MemoryLoadResult> {
   const memoryDir = getMemoryDir(projectPath);
 
@@ -359,27 +371,32 @@ export async function loadRelevantMemory(
     await fsModule.access(memoryDir);
   } catch {
     // Memory directory doesn't exist yet
-    return { files: [], formattedPrompt: '' };
+    return { files: [], formattedPrompt: "" };
   }
 
   const allFiles = await fsModule.readdir(memoryDir);
-  const featureTerms = extractTerms(featureTitle + ' ' + featureDescription);
+  const featureTerms = extractTerms(featureTitle + " " + featureDescription);
 
   // Score each file
-  const scored: Array<{ file: string; score: number; content: string; metadata: MemoryMetadata }> =
-    [];
+  const scored: Array<{
+    file: string;
+    score: number;
+    content: string;
+    metadata: MemoryMetadata;
+  }> = [];
 
   for (const file of allFiles) {
-    if (!file.endsWith('.md') || file === '_index.md') continue;
+    if (!file.endsWith(".md") || file === "_index.md") continue;
 
     const filePath = path.join(memoryDir, file);
     try {
-      const content = (await fsModule.readFile(filePath, 'utf-8')) as string;
+      const content = (await fsModule.readFile(filePath, "utf-8")) as string;
       const { metadata, body } = parseFrontmatter(content);
 
       // Calculate relevance score
       const tagScore = countMatches(metadata.tags, featureTerms) * 3;
-      const relevantToScore = countMatches(metadata.relevantTo, featureTerms) * 2;
+      const relevantToScore =
+        countMatches(metadata.relevantTo, featureTerms) * 2;
       const summaryTerms = extractTerms(metadata.summary);
       const summaryScore = countMatches(summaryTerms, featureTerms);
 
@@ -387,7 +404,10 @@ export async function loadRelevantMemory(
       const usageScore = calculateUsageScore(metadata.usageStats);
 
       // Combined score
-      const score = (tagScore + relevantToScore + summaryScore) * metadata.importance * usageScore;
+      const score =
+        (tagScore + relevantToScore + summaryScore) *
+        metadata.importance *
+        usageScore;
 
       // Include if score > 0 or high importance
       if (score > 0 || metadata.importance >= 0.9) {
@@ -402,7 +422,7 @@ export async function loadRelevantMemory(
   const topFiles = scored.sort((a, b) => b.score - a.score).slice(0, 5);
 
   // Always include gotchas.md if it exists
-  const toLoad = new Set(['gotchas.md', ...topFiles.map((f) => f.file)]);
+  const toLoad = new Set(["gotchas.md", ...topFiles.map((f) => f.file)]);
 
   const loaded: MemoryFile[] = [];
   for (const file of toLoad) {
@@ -413,11 +433,14 @@ export async function loadRelevantMemory(
         content: existing.content,
         metadata: existing.metadata,
       });
-    } else if (file === 'gotchas.md') {
+    } else if (file === "gotchas.md") {
       // Try to load gotchas.md even if it wasn't scored
-      const gotchasPath = path.join(memoryDir, 'gotchas.md');
+      const gotchasPath = path.join(memoryDir, "gotchas.md");
       try {
-        const content = (await fsModule.readFile(gotchasPath, 'utf-8')) as string;
+        const content = (await fsModule.readFile(
+          gotchasPath,
+          "utf-8",
+        )) as string;
         const { metadata, body } = parseFrontmatter(content);
         loaded.push({ name: file, content: body, metadata });
       } catch {
@@ -436,10 +459,10 @@ export async function loadRelevantMemory(
  * Build a formatted prompt from loaded memory files
  */
 function buildMemoryPrompt(files: MemoryFile[]): string {
-  if (files.length === 0) return '';
+  if (files.length === 0) return "";
 
   const sections = files.map((file) => {
-    return `## ${file.name.replace('.md', '').toUpperCase()}
+    return `## ${file.name.replace(".md", "").toUpperCase()}
 
 ${file.content}`;
   });
@@ -451,7 +474,7 @@ The following learnings and decisions from previous work are relevant to this ta
 
 ---
 
-${sections.join('\n\n---\n\n')}
+${sections.join("\n\n---\n\n")}
 
 ---
 `;
@@ -464,17 +487,17 @@ ${sections.join('\n\n---\n\n')}
 export async function incrementUsageStat(
   filePath: string,
   stat: keyof UsageStats,
-  fsModule: MemoryFsModule
+  fsModule: MemoryFsModule,
 ): Promise<void> {
   await withFileLock(filePath, async () => {
     try {
-      const content = (await fsModule.readFile(filePath, 'utf-8')) as string;
+      const content = (await fsModule.readFile(filePath, "utf-8")) as string;
       const { metadata, body } = parseFrontmatter(content);
 
       metadata.usageStats[stat]++;
 
       // serializeFrontmatter ends with "---", add newline before body
-      const newContent = serializeFrontmatter(metadata) + '\n' + body;
+      const newContent = serializeFrontmatter(metadata) + "\n" + body;
       await fsModule.writeFile(filePath, newContent);
     } catch {
       // File doesn't exist or can't be updated - that's fine
@@ -499,7 +522,7 @@ export async function recordMemoryUsage(
   loadedFiles: SimpleMemoryFile[],
   agentOutput: string,
   success: boolean,
-  fsModule: MemoryFsModule
+  fsModule: MemoryFsModule,
 ): Promise<void> {
   const memoryDir = getMemoryDir(projectPath);
 
@@ -513,9 +536,9 @@ export async function recordMemoryUsage(
     const wasReferenced = countMatches(fileTerms, outputTerms) >= 3;
 
     if (wasReferenced) {
-      await incrementUsageStat(filePath, 'referenced', fsModule);
+      await incrementUsageStat(filePath, "referenced", fsModule);
       if (success) {
-        await incrementUsageStat(filePath, 'successfulFeatures', fsModule);
+        await incrementUsageStat(filePath, "successfulFeatures", fsModule);
       }
     }
   }
@@ -526,34 +549,37 @@ export async function recordMemoryUsage(
  * Uses ADR-style format for rich context
  */
 export function formatLearning(learning: LearningEntry): string {
-  const date = new Date().toISOString().split('T')[0];
+  const date = new Date().toISOString().split("T")[0];
   const lines: string[] = [];
 
-  if (learning.type === 'decision') {
+  if (learning.type === "decision") {
     lines.push(`\n### ${learning.content} (${date})`);
     if (learning.context) lines.push(`- **Context:** ${learning.context}`);
     if (learning.why) lines.push(`- **Why:** ${learning.why}`);
     if (learning.rejected) lines.push(`- **Rejected:** ${learning.rejected}`);
-    if (learning.tradeoffs) lines.push(`- **Trade-offs:** ${learning.tradeoffs}`);
-    if (learning.breaking) lines.push(`- **Breaking if changed:** ${learning.breaking}`);
-    return lines.join('\n');
+    if (learning.tradeoffs)
+      lines.push(`- **Trade-offs:** ${learning.tradeoffs}`);
+    if (learning.breaking)
+      lines.push(`- **Breaking if changed:** ${learning.breaking}`);
+    return lines.join("\n");
   }
 
-  if (learning.type === 'gotcha') {
+  if (learning.type === "gotcha") {
     lines.push(`\n#### [Gotcha] ${learning.content} (${date})`);
     if (learning.context) lines.push(`- **Situation:** ${learning.context}`);
     if (learning.why) lines.push(`- **Root cause:** ${learning.why}`);
-    if (learning.tradeoffs) lines.push(`- **How to avoid:** ${learning.tradeoffs}`);
-    return lines.join('\n');
+    if (learning.tradeoffs)
+      lines.push(`- **How to avoid:** ${learning.tradeoffs}`);
+    return lines.join("\n");
   }
 
   // Pattern or learning
-  const prefix = learning.type === 'pattern' ? '[Pattern]' : '[Learned]';
+  const prefix = learning.type === "pattern" ? "[Pattern]" : "[Learned]";
   lines.push(`\n#### ${prefix} ${learning.content} (${date})`);
   if (learning.context) lines.push(`- **Problem solved:** ${learning.context}`);
   if (learning.why) lines.push(`- **Why this works:** ${learning.why}`);
   if (learning.tradeoffs) lines.push(`- **Trade-offs:** ${learning.tradeoffs}`);
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -564,18 +590,18 @@ export function formatLearning(learning: LearningEntry): string {
 export async function appendLearning(
   projectPath: string,
   learning: LearningEntry,
-  fsModule: MemoryFsModule
+  fsModule: MemoryFsModule,
 ): Promise<void> {
   console.log(
-    `[MemoryLoader] appendLearning called: category=${learning.category}, type=${learning.type}`
+    `[MemoryLoader] appendLearning called: category=${learning.category}, type=${learning.type}`,
   );
   const memoryDir = getMemoryDir(projectPath);
   // Sanitize category name: lowercase, replace spaces with hyphens, remove special chars
   const sanitizedCategory = learning.category
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
-  const fileName = `${sanitizedCategory || 'general'}.md`;
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+  const fileName = `${sanitizedCategory || "general"}.md`;
   const filePath = path.join(memoryDir, fileName);
 
   // Use file locking to prevent race conditions when multiple processes
@@ -585,22 +611,26 @@ export async function appendLearning(
       await fsModule.access(filePath);
       // File exists, append to it
       const formatted = formatLearning(learning);
-      await fsModule.appendFile(filePath, '\n' + formatted);
-      console.log(`[MemoryLoader] Appended learning to existing file: ${fileName}`);
+      await fsModule.appendFile(filePath, "\n" + formatted);
+      console.log(
+        `[MemoryLoader] Appended learning to existing file: ${fileName}`,
+      );
     } catch {
       // File doesn't exist, create it with frontmatter
       console.log(`[MemoryLoader] Creating new memory file: ${fileName}`);
       const metadata: MemoryMetadata = {
-        tags: [sanitizedCategory || 'general'],
+        tags: [sanitizedCategory || "general"],
         summary: `${learning.category} implementation decisions and patterns`,
-        relevantTo: [sanitizedCategory || 'general'],
+        relevantTo: [sanitizedCategory || "general"],
         importance: 0.7,
         relatedFiles: [],
         usageStats: { loaded: 0, referenced: 0, successfulFeatures: 0 },
       };
 
       const content =
-        serializeFrontmatter(metadata) + `\n# ${learning.category}\n` + formatLearning(learning);
+        serializeFrontmatter(metadata) +
+        `\n# ${learning.category}\n` +
+        formatLearning(learning);
 
       await fsModule.writeFile(filePath, content);
     }
@@ -613,7 +643,7 @@ export async function appendLearning(
  */
 export async function initializeMemoryFolder(
   projectPath: string,
-  fsModule: MemoryFsModule
+  fsModule: MemoryFsModule,
 ): Promise<void> {
   const memoryDir = getMemoryDir(projectPath);
 
@@ -627,9 +657,9 @@ export async function initializeMemoryFolder(
 
     // Create _index.md
     const indexMetadata: MemoryMetadata = {
-      tags: ['index', 'overview'],
-      summary: 'Overview of project memory categories',
-      relevantTo: ['project', 'memory', 'overview'],
+      tags: ["index", "overview"],
+      summary: "Overview of project memory categories",
+      relevantTo: ["project", "memory", "overview"],
       importance: 0.5,
       relatedFiles: [],
       usageStats: { loaded: 0, referenced: 0, successfulFeatures: 0 },
@@ -655,13 +685,13 @@ Categories are created automatically as agents work on features.
 - Other categories are created automatically based on feature work
 `;
 
-    await fsModule.writeFile(path.join(memoryDir, '_index.md'), indexContent);
+    await fsModule.writeFile(path.join(memoryDir, "_index.md"), indexContent);
 
     // Create gotchas.md
     const gotchasMetadata: MemoryMetadata = {
-      tags: ['gotcha', 'mistake', 'edge-case', 'bug', 'warning'],
-      summary: 'Mistakes and edge cases to avoid',
-      relevantTo: ['error', 'bug', 'fix', 'issue', 'problem'],
+      tags: ["gotcha", "mistake", "edge-case", "bug", "warning"],
+      summary: "Mistakes and edge cases to avoid",
+      relevantTo: ["error", "bug", "fix", "issue", "problem"],
       importance: 0.9,
       relatedFiles: [],
       usageStats: { loaded: 0, referenced: 0, successfulFeatures: 0 },
@@ -678,7 +708,10 @@ Mistakes and edge cases to avoid. These are lessons learned from past issues.
 
 `;
 
-    await fsModule.writeFile(path.join(memoryDir, 'gotchas.md'), gotchasContent);
+    await fsModule.writeFile(
+      path.join(memoryDir, "gotchas.md"),
+      gotchasContent,
+    );
 
     console.log(`[MemoryLoader] Initialized memory folder at ${memoryDir}`);
   }

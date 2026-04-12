@@ -4,7 +4,7 @@
  * Happy path: Create a new profile
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 import {
   setupMockProjectWithProfiles,
   waitForNetworkIdle,
@@ -16,17 +16,17 @@ import {
   countCustomProfiles,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
-test.describe('AI Profiles', () => {
+test.describe("AI Profiles", () => {
   // Skip: The profiles UI (standalone nav item, profile cards, add/edit dialogs)
   // has not been implemented yet. The test references data-testid values that
   // do not exist in the current codebase.
-  test.skip('should create a new profile', async ({ page }) => {
+  test.skip("should create a new profile", async ({ page }) => {
     await setupMockProjectWithProfiles(page, { customProfilesCount: 0 });
     await authenticateForTests(page);
-    await page.goto('/');
-    await page.waitForLoadState('load');
+    await page.goto("/");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
     await navigateToProfiles(page);
@@ -37,16 +37,16 @@ test.describe('AI Profiles', () => {
     await clickNewProfileButton(page);
 
     await fillProfileForm(page, {
-      name: 'Test Profile',
-      description: 'A test profile',
-      icon: 'Brain',
-      model: 'sonnet',
-      thinkingLevel: 'medium',
+      name: "Test Profile",
+      description: "A test profile",
+      icon: "Brain",
+      model: "sonnet",
+      thinkingLevel: "medium",
     });
 
     await saveProfile(page);
 
-    await waitForSuccessToast(page, 'Profile created');
+    await waitForSuccessToast(page, "Profile created");
 
     // Wait for the new profile to appear in the list (replaces arbitrary timeout)
     // The count should increase by 1 from the initial count

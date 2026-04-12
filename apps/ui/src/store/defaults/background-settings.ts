@@ -1,4 +1,4 @@
-import type { BackgroundSettings } from '../types/ui-types';
+import type { BackgroundSettings } from "../types/ui-types";
 
 // Default background settings for board backgrounds
 export const defaultBackgroundSettings: BackgroundSettings = {

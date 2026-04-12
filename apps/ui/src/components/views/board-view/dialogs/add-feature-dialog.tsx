@@ -1,5 +1,5 @@
 // @ts-nocheck - feature data building with conditional fields and model type inference
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,35 +7,47 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { CategoryAutocomplete } from '@/components/ui/category-autocomplete';
-import { DependencySelector } from '@/components/ui/dependency-selector';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CategoryAutocomplete } from "@/components/ui/category-autocomplete";
+import { DependencySelector } from "@/components/ui/dependency-selector";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   DescriptionImageDropZone,
   FeatureImagePath as DescriptionImagePath,
   FeatureTextFilePath as DescriptionTextFilePath,
   ImagePreviewMap,
-} from '@/components/ui/description-image-dropzone';
-import { Play, Cpu, FolderKanban, Settings2, Workflow } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
-import { cn, normalizeModelEntry } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import type { ThinkingLevel, PlanningMode, Feature, FeatureImage } from '@/store/types';
-import type { ReasoningEffort, PhaseModelEntry, AgentModel } from '@pegasus/types';
-import { normalizeThinkingLevelForModel, getThinkingLevelsForModel } from '@pegasus/types';
+} from "@/components/ui/description-image-dropzone";
+import { Play, Cpu, FolderKanban, Settings2, Workflow } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { cn, normalizeModelEntry } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import type {
+  ThinkingLevel,
+  PlanningMode,
+  Feature,
+  FeatureImage,
+} from "@/store/types";
+import type {
+  ReasoningEffort,
+  PhaseModelEntry,
+  AgentModel,
+} from "@pegasus/types";
+import {
+  normalizeThinkingLevelForModel,
+  getThinkingLevelsForModel,
+} from "@pegasus/types";
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -45,22 +57,27 @@ import {
   EnhancementHistoryButton,
   PipelineExclusionControls,
   type BaseHistoryEntry,
-} from '../shared';
-import type { WorkMode } from '../shared';
-import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from "../shared";
+import type { WorkMode } from "../shared";
+import { PhaseModelSelector } from "@/components/views/settings-view/model-defaults/phase-model-selector";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   getAncestors,
   formatAncestorContextForPrompt,
   type AncestorContext,
-} from '@pegasus/dependency-resolver';
-import { useDiscoverPipelines } from '@/hooks/queries/use-pipeline';
+} from "@pegasus/dependency-resolver";
+import { useDiscoverPipelines } from "@/hooks/queries/use-pipeline";
 
 /**
  * Regex pattern to extract Handlebars variable references from a template string.
  * Matches simple `{{variable.path}}` expressions.
  */
-const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
+const TEMPLATE_VARIABLE_REGEX =
+  /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
 
 /**
  * Extract `inputs.*` variable names from all stages' prompt templates in a pipeline.
@@ -70,7 +87,7 @@ const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g
  * extractPipelineInputVariables(stages) → ["target_module", "test_framework"]
  */
 function extractPipelineInputVariables(
-  stages: Array<{ prompt: string }>
+  stages: Array<{ prompt: string }>,
 ): string[] {
   const inputVars = new Set<string>();
   for (const stage of stages) {
@@ -78,8 +95,8 @@ function extractPipelineInputVariables(
     let match: RegExpExecArray | null;
     while ((match = TEMPLATE_VARIABLE_REGEX.exec(stage.prompt)) !== null) {
       const varPath = match[1];
-      if (varPath.startsWith('inputs.')) {
-        inputVars.add(varPath.slice('inputs.'.length));
+      if (varPath.startsWith("inputs.")) {
+        inputVars.add(varPath.slice("inputs.".length));
       }
     }
   }
@@ -93,9 +110,7 @@ function extractPipelineInputVariables(
  * @example formatInputLabel("target_module") → "Target Module"
  */
 function formatInputLabel(varName: string): string {
-  return varName
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return varName.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -110,18 +125,18 @@ function formatInputLabel(varName: string): string {
 const getDefaultWorkMode = (
   useWorktrees: boolean,
   selectedNonMainWorktreeBranch?: string,
-  forceCurrentBranchMode?: boolean
+  forceCurrentBranchMode?: boolean,
 ): WorkMode => {
   // If force current branch mode is enabled (worktree setting is off), always use 'current'
   if (forceCurrentBranchMode) {
-    return 'current';
+    return "current";
   }
   // If a non-main worktree is selected, default to 'custom' mode with that branch
   if (selectedNonMainWorktreeBranch) {
-    return 'custom';
+    return "custom";
   }
   // Otherwise, respect the global worktree setting
-  return useWorktrees ? 'auto' : 'current';
+  return useWorktrees ? "auto" : "current";
 };
 
 type FeatureData = {
@@ -206,7 +221,7 @@ export function AddFeatureDialog({
   branchSuggestions,
   branchCardCounts,
   defaultSkipTests,
-  defaultBranch = 'main',
+  defaultBranch = "main",
   currentBranch,
   isMaximized,
   parentFeature = null,
@@ -220,55 +235,70 @@ export function AddFeatureDialog({
 }: AddFeatureDialogProps) {
   const isSpawnMode = !!parentFeature;
   const navigate = useNavigate();
-  const [workMode, setWorkMode] = useState<WorkMode>('current');
+  const [workMode, setWorkMode] = useState<WorkMode>("current");
 
   // Form state
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
   const [images, setImages] = useState<FeatureImage[]>([]);
   const [imagePaths, setImagePaths] = useState<DescriptionImagePath[]>([]);
-  const [textFilePaths, setTextFilePaths] = useState<DescriptionTextFilePath[]>([]);
+  const [textFilePaths, setTextFilePaths] = useState<DescriptionTextFilePath[]>(
+    [],
+  );
   const [skipTests, setSkipTests] = useState(false);
-  const [branchName, setBranchName] = useState('');
+  const [branchName, setBranchName] = useState("");
   const [priority, setPriority] = useState(2);
 
   // Model selection state
-  const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({ model: 'claude-opus' });
+  const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({
+    model: "claude-opus",
+  });
 
   // Planning mode state
-  const [planningMode, setPlanningMode] = useState<PlanningMode>('skip');
+  const [planningMode, setPlanningMode] = useState<PlanningMode>("skip");
   const [requirePlanApproval, setRequirePlanApproval] = useState(false);
 
   // UI state
-  const [previewMap, setPreviewMap] = useState<ImagePreviewMap>(() => new Map());
+  const [previewMap, setPreviewMap] = useState<ImagePreviewMap>(
+    () => new Map(),
+  );
   const [descriptionError, setDescriptionError] = useState(false);
 
   // Description history state
-  const [descriptionHistory, setDescriptionHistory] = useState<DescriptionHistoryEntry[]>([]);
+  const [descriptionHistory, setDescriptionHistory] = useState<
+    DescriptionHistoryEntry[]
+  >([]);
 
   // Spawn mode state
   const [ancestors, setAncestors] = useState<AncestorContext[]>([]);
-  const [selectedAncestorIds, setSelectedAncestorIds] = useState<Set<string>>(new Set());
+  const [selectedAncestorIds, setSelectedAncestorIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Dependency selection state (not in spawn mode)
   const [parentDependencies, setParentDependencies] = useState<string[]>([]);
   const [childDependencies, setChildDependencies] = useState<string[]>([]);
 
   // Pipeline exclusion state
-  const [excludedPipelineSteps, setExcludedPipelineSteps] = useState<string[]>([]);
+  const [excludedPipelineSteps, setExcludedPipelineSteps] = useState<string[]>(
+    [],
+  );
 
   // YAML Pipeline selection state
-  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>('');
-  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string | boolean>>({});
+  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>("");
+  const [pipelineInputs, setPipelineInputs] = useState<
+    Record<string, string | boolean>
+  >({});
 
   // Discover available YAML pipelines
   const { data: discoveredPipelines = [] } = useDiscoverPipelines(projectPath);
 
   // Compute the selected pipeline
   const selectedPipeline = useMemo(
-    () => discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
-    [discoveredPipelines, selectedPipelineSlug]
+    () =>
+      discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
+    [discoveredPipelines, selectedPipelineSlug],
   );
 
   // Compute input field definitions: prefer formally declared inputs, fall back to dynamic extraction
@@ -285,22 +315,24 @@ export function AddFeatureDialog({
       }));
     }
     // Fall back to dynamically extracting {{inputs.X}} references from stage prompts
-    return extractPipelineInputVariables(selectedPipeline.config.stages).map((varName) => ({
-      name: varName,
-      type: 'string' as const,
-      required: false,
-      default: undefined,
-      description: undefined,
-    }));
+    return extractPipelineInputVariables(selectedPipeline.config.stages).map(
+      (varName) => ({
+        name: varName,
+        type: "string" as const,
+        required: false,
+        default: undefined,
+        description: undefined,
+      }),
+    );
   }, [selectedPipeline]);
 
   // Whether any required input fields are empty — blocks form submission when true
   const hasMissingRequiredInputs = useMemo(() => {
     return pipelineInputDefinitions.some((field) => {
       if (!field.required) return false;
-      if (field.type === 'boolean') return false; // Checkboxes always have a value
+      if (field.type === "boolean") return false; // Checkboxes always have a value
       const value = pipelineInputs[field.name];
-      return value === undefined || String(value).trim() === '';
+      return value === undefined || String(value).trim() === "";
     });
   }, [pipelineInputDefinitions, pipelineInputs]);
 
@@ -315,7 +347,8 @@ export function AddFeatureDialog({
   } = useAppStore();
 
   // Use project-level default feature model if set, otherwise fall back to global
-  const effectiveDefaultFeatureModel = currentProject?.defaultFeatureModel ?? defaultFeatureModel;
+  const effectiveDefaultFeatureModel =
+    currentProject?.defaultFeatureModel ?? defaultFeatureModel;
 
   // Track previous open state to detect when dialog opens
   const wasOpenRef = useRef(false);
@@ -327,16 +360,20 @@ export function AddFeatureDialog({
 
     if (justOpened) {
       // Initialize with prefilled values if provided, otherwise use defaults
-      setTitle(prefilledTitle ?? '');
-      setDescription(prefilledDescription ?? '');
-      setCategory(prefilledCategory ?? '');
+      setTitle(prefilledTitle ?? "");
+      setDescription(prefilledDescription ?? "");
+      setCategory(prefilledCategory ?? "");
 
       setSkipTests(defaultSkipTests);
       // When a non-main worktree is selected, use its branch name for custom mode
       // Otherwise, use the default branch
-      setBranchName(selectedNonMainWorktreeBranch || defaultBranch || '');
+      setBranchName(selectedNonMainWorktreeBranch || defaultBranch || "");
       setWorkMode(
-        getDefaultWorkMode(useWorktrees, selectedNonMainWorktreeBranch, forceCurrentBranchMode)
+        getDefaultWorkMode(
+          useWorktrees,
+          selectedNonMainWorktreeBranch,
+          forceCurrentBranchMode,
+        ),
       );
       setPlanningMode(defaultPlanningMode);
       setRequirePlanApproval(defaultRequirePlanApproval);
@@ -345,11 +382,13 @@ export function AddFeatureDialog({
       // This ensures the "Quick-Select Defaults" thinking level setting is respected
       // even when the user doesn't change the model in the dropdown.
       const modelId =
-        typeof effectiveDefaultFeatureModel.model === 'string'
+        typeof effectiveDefaultFeatureModel.model === "string"
           ? effectiveDefaultFeatureModel.model
-          : '';
+          : "";
       const availableLevels = getThinkingLevelsForModel(modelId);
-      const effectiveThinkingLevel = availableLevels.includes(defaultThinkingLevel)
+      const effectiveThinkingLevel = availableLevels.includes(
+        defaultThinkingLevel,
+      )
         ? defaultThinkingLevel
         : availableLevels[0];
       setModelEntry({
@@ -378,7 +417,7 @@ export function AddFeatureDialog({
       setExcludedPipelineSteps([]);
 
       // Reset YAML pipeline selection
-      setSelectedPipelineSlug('');
+      setSelectedPipelineSlug("");
       setPipelineInputs({});
     }
   }, [
@@ -401,7 +440,7 @@ export function AddFeatureDialog({
 
   // Clear requirePlanApproval when planning mode is skip (lite supports approval)
   useEffect(() => {
-    if (planningMode === 'skip') {
+    if (planningMode === "skip") {
       setRequirePlanApproval(false);
     }
   }, [planningMode]);
@@ -409,14 +448,17 @@ export function AddFeatureDialog({
   // When a YAML pipeline is selected, planning is handled by the pipeline - reset to skip
   useEffect(() => {
     if (selectedPipelineSlug) {
-      setPlanningMode('skip');
+      setPlanningMode("skip");
       setRequirePlanApproval(false);
     }
   }, [selectedPipelineSlug]);
 
   const handleModelChange = (entry: PhaseModelEntry) => {
-    const modelId = typeof entry.model === 'string' ? entry.model : '';
-    const normalizedThinkingLevel = normalizeThinkingLevelForModel(modelId, entry.thinkingLevel);
+    const modelId = typeof entry.model === "string" ? entry.model : "";
+    const normalizedThinkingLevel = normalizeThinkingLevelForModel(
+      modelId,
+      entry.thinkingLevel,
+    );
 
     setModelEntry({ ...entry, thinkingLevel: normalizedThinkingLevel });
   };
@@ -427,18 +469,18 @@ export function AddFeatureDialog({
       return null;
     }
 
-    if (workMode === 'custom' && !branchName.trim()) {
-      toast.error('Please select a branch name');
+    if (workMode === "custom" && !branchName.trim()) {
+      toast.error("Please select a branch name");
       return null;
     }
 
-    const finalCategory = category || 'Uncategorized';
+    const finalCategory = category || "Uncategorized";
     const normalizedEntry = normalizeModelEntry(modelEntry);
 
     // For 'current' mode, use empty string (work on current branch)
     // For 'auto' mode, use empty string (will be auto-generated in use-board-actions)
     // For 'custom' mode, use the specified branch name
-    const finalBranchName = workMode === 'custom' ? branchName || '' : '';
+    const finalBranchName = workMode === "custom" ? branchName || "" : "";
 
     // Build final description with ancestor context in spawn mode
     let finalDescription = description;
@@ -455,7 +497,7 @@ export function AddFeatureDialog({
       const allAncestorsWithParent = [parentContext, ...ancestors];
       const contextText = formatAncestorContextForPrompt(
         allAncestorsWithParent,
-        selectedAncestorIds
+        selectedAncestorIds,
       );
 
       if (contextText) {
@@ -479,19 +521,22 @@ export function AddFeatureDialog({
     if (selectedPipelineSlug) {
       for (const field of pipelineInputDefinitions) {
         const rawValue = pipelineInputs[field.name];
-        if (field.type === 'boolean') {
-          finalPipelineInputs[field.name] = typeof rawValue === 'boolean' ? rawValue : (field.default ?? false);
-        } else if (field.type === 'number') {
-          const strValue = String(rawValue ?? '').trim();
-          if (strValue !== '') {
+        if (field.type === "boolean") {
+          finalPipelineInputs[field.name] =
+            typeof rawValue === "boolean" ? rawValue : (field.default ?? false);
+        } else if (field.type === "number") {
+          const strValue = String(rawValue ?? "").trim();
+          if (strValue !== "") {
             const numValue = Number(strValue);
-            finalPipelineInputs[field.name] = isNaN(numValue) ? strValue : numValue;
+            finalPipelineInputs[field.name] = isNaN(numValue)
+              ? strValue
+              : numValue;
           } else if (field.default !== undefined) {
             finalPipelineInputs[field.name] = field.default;
           }
         } else {
-          const strValue = String(rawValue ?? '').trim();
-          if (strValue !== '') {
+          const strValue = String(rawValue ?? "").trim();
+          if (strValue !== "") {
             finalPipelineInputs[field.name] = strValue;
           } else if (field.default !== undefined) {
             finalPipelineInputs[field.name] = String(field.default);
@@ -517,32 +562,39 @@ export function AddFeatureDialog({
       planningMode,
       requirePlanApproval,
       dependencies: finalDependencies,
-      childDependencies: childDependencies.length > 0 ? childDependencies : undefined,
-      excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
+      childDependencies:
+        childDependencies.length > 0 ? childDependencies : undefined,
+      excludedPipelineSteps:
+        excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
       pipeline: selectedPipelineSlug || undefined,
-      pipelineInputs: Object.keys(finalPipelineInputs).length > 0 ? finalPipelineInputs : undefined,
+      pipelineInputs:
+        Object.keys(finalPipelineInputs).length > 0
+          ? finalPipelineInputs
+          : undefined,
       workMode,
     };
   };
 
   const resetForm = () => {
-    setTitle('');
-    setCategory('');
-    setDescription('');
+    setTitle("");
+    setCategory("");
+    setDescription("");
     setImages([]);
     setImagePaths([]);
     setTextFilePaths([]);
     setSkipTests(defaultSkipTests);
     // When a non-main worktree is selected, use its branch name for custom mode
-    setBranchName(selectedNonMainWorktreeBranch || '');
+    setBranchName(selectedNonMainWorktreeBranch || "");
     setPriority(2);
     // Apply defaultThinkingLevel to the model entry (same logic as dialog open)
     const resetModelId =
-      typeof effectiveDefaultFeatureModel.model === 'string'
+      typeof effectiveDefaultFeatureModel.model === "string"
         ? effectiveDefaultFeatureModel.model
-        : '';
+        : "";
     const resetAvailableLevels = getThinkingLevelsForModel(resetModelId);
-    const resetThinkingLevel = resetAvailableLevels.includes(defaultThinkingLevel)
+    const resetThinkingLevel = resetAvailableLevels.includes(
+      defaultThinkingLevel,
+    )
       ? defaultThinkingLevel
       : resetAvailableLevels[0];
     setModelEntry({
@@ -550,7 +602,11 @@ export function AddFeatureDialog({
       thinkingLevel: resetThinkingLevel,
     });
     setWorkMode(
-      getDefaultWorkMode(useWorktrees, selectedNonMainWorktreeBranch, forceCurrentBranchMode)
+      getDefaultWorkMode(
+        useWorktrees,
+        selectedNonMainWorktreeBranch,
+        forceCurrentBranchMode,
+      ),
     );
     setPlanningMode(defaultPlanningMode);
     setRequirePlanApproval(defaultRequirePlanApproval);
@@ -560,7 +616,7 @@ export function AddFeatureDialog({
     setParentDependencies([]);
     setChildDependencies([]);
     setExcludedPipelineSteps([]);
-    setSelectedPipelineSlug('');
+    setSelectedPipelineSlug("");
     setPipelineInputs({});
     onOpenChange(false);
   };
@@ -585,8 +641,10 @@ export function AddFeatureDialog({
   };
 
   // Shared card styling
-  const cardClass = 'rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3';
-  const sectionHeaderClass = 'flex items-center gap-2 text-sm font-medium text-foreground';
+  const cardClass =
+    "rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3";
+  const sectionHeaderClass =
+    "flex items-center gap-2 text-sm font-medium text-foreground";
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
@@ -607,11 +665,13 @@ export function AddFeatureDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>{isSpawnMode ? 'Spawn Sub-Task' : 'Add New Feature'}</DialogTitle>
+          <DialogTitle>
+            {isSpawnMode ? "Spawn Sub-Task" : "Add New Feature"}
+          </DialogTitle>
           <DialogDescription>
             {isSpawnMode
               ? `Create a sub-task that depends on "${parentFeature?.title || parentFeature?.description.slice(0, 50)}..."`
-              : 'Create a new feature card for the Kanban board.'}
+              : "Create a new feature card for the Kanban board."}
           </DialogDescription>
         </DialogHeader>
 
@@ -690,14 +750,14 @@ export function AddFeatureDialog({
                     newHistory.push({
                       description: originalText,
                       timestamp,
-                      source: prev.length === 0 ? 'initial' : 'edit',
+                      source: prev.length === 0 ? "initial" : "edit",
                     });
                   }
                   // Add enhanced text
                   newHistory.push({
                     description: enhancedText,
                     timestamp,
-                    source: 'enhance',
+                    source: "enhance",
                     enhancementMode: mode,
                   });
                   return newHistory;
@@ -719,7 +779,10 @@ export function AddFeatureDialog({
                     type="button"
                     onClick={() => {
                       onOpenChange(false);
-                      navigate({ to: '/settings', search: { view: 'defaults' } });
+                      navigate({
+                        to: "/settings",
+                        search: { view: "defaults" },
+                      });
                     }}
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -728,7 +791,9 @@ export function AddFeatureDialog({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Change default model and planning settings for new features</p>
+                  <p>
+                    Change default model and planning settings for new features
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -743,10 +808,17 @@ export function AddFeatureDialog({
               />
             </div>
 
-            <div className={cn('grid gap-3', selectedPipelineSlug ? 'grid-cols-1' : 'grid-cols-2')}>
+            <div
+              className={cn(
+                "grid gap-3",
+                selectedPipelineSlug ? "grid-cols-1" : "grid-cols-2",
+              )}
+            >
               {!selectedPipelineSlug && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Planning</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Planning
+                  </Label>
                   <PlanningModeSelect
                     mode={planningMode}
                     onModeChange={setPlanningMode}
@@ -777,17 +849,19 @@ export function AddFeatureDialog({
                       <Checkbox
                         id="add-feature-require-approval"
                         checked={requirePlanApproval}
-                        onCheckedChange={(checked) => setRequirePlanApproval(!!checked)}
-                        disabled={planningMode === 'skip'}
+                        onCheckedChange={(checked) =>
+                          setRequirePlanApproval(!!checked)
+                        }
+                        disabled={planningMode === "skip"}
                         data-testid="add-feature-planning-require-approval-checkbox"
                       />
                       <Label
                         htmlFor="add-feature-require-approval"
                         className={cn(
-                          'text-xs font-normal',
-                          planningMode === 'skip'
-                            ? 'cursor-not-allowed text-muted-foreground'
-                            : 'cursor-pointer'
+                          "text-xs font-normal",
+                          planningMode === "skip"
+                            ? "cursor-not-allowed text-muted-foreground"
+                            : "cursor-pointer",
                         )}
                       >
                         Require approval
@@ -808,21 +882,28 @@ export function AddFeatureDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Workflow Pipeline</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Workflow Pipeline
+                </Label>
                 <Select
                   value={selectedPipelineSlug}
                   onValueChange={(value) => {
-                    const slug = value === '__none__' ? '' : value;
+                    const slug = value === "__none__" ? "" : value;
                     setSelectedPipelineSlug(slug);
                     // Reset inputs and pre-fill defaults when pipeline changes
                     if (slug) {
-                      const pipeline = discoveredPipelines.find((p) => p.slug === slug);
+                      const pipeline = discoveredPipelines.find(
+                        (p) => p.slug === slug,
+                      );
                       const declared = pipeline?.config.inputs;
                       if (declared && Object.keys(declared).length > 0) {
                         const defaults: Record<string, string | boolean> = {};
                         for (const [name, input] of Object.entries(declared)) {
-                          if (input.type === 'boolean') {
-                            defaults[name] = typeof input.default === 'boolean' ? input.default : false;
+                          if (input.type === "boolean") {
+                            defaults[name] =
+                              typeof input.default === "boolean"
+                                ? input.default
+                                : false;
                           } else if (input.default !== undefined) {
                             defaults[name] = String(input.default);
                           }
@@ -849,7 +930,8 @@ export function AddFeatureDialog({
                         value={pipeline.slug}
                         description={
                           <span className="text-xs text-muted-foreground">
-                            {pipeline.config.description} ({pipeline.stageCount} stage{pipeline.stageCount !== 1 ? 's' : ''})
+                            {pipeline.config.description} ({pipeline.stageCount}{" "}
+                            stage{pipeline.stageCount !== 1 ? "s" : ""})
                           </span>
                         }
                       >
@@ -869,7 +951,9 @@ export function AddFeatureDialog({
                         key={stage.id}
                         className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted border border-border/50 text-muted-foreground"
                       >
-                        <span className="text-[10px] font-mono opacity-60">{idx + 1}</span>
+                        <span className="text-[10px] font-mono opacity-60">
+                          {idx + 1}
+                        </span>
                         {stage.name}
                       </span>
                     ))}
@@ -888,12 +972,12 @@ export function AddFeatureDialog({
                   </Label>
                   {pipelineInputDefinitions.map((field) => (
                     <div key={field.name} className="space-y-1">
-                      {field.type === 'boolean' ? (
+                      {field.type === "boolean" ? (
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`pipeline-input-${field.name}`}
                             checked={
-                              typeof pipelineInputs[field.name] === 'boolean'
+                              typeof pipelineInputs[field.name] === "boolean"
                                 ? pipelineInputs[field.name]
                                 : false
                             }
@@ -927,18 +1011,21 @@ export function AddFeatureDialog({
                               {formatInputLabel(field.name)}
                             </Label>
                             {field.required && (
-                              <span className="text-xs text-destructive" aria-label="required">
+                              <span
+                                className="text-xs text-destructive"
+                                aria-label="required"
+                              >
                                 *
                               </span>
                             )}
                           </div>
                           <Input
                             id={`pipeline-input-${field.name}`}
-                            type={field.type === 'number' ? 'number' : 'text'}
+                            type={field.type === "number" ? "number" : "text"}
                             value={
-                              typeof pipelineInputs[field.name] === 'string'
+                              typeof pipelineInputs[field.name] === "string"
                                 ? pipelineInputs[field.name]
-                                : ''
+                                : ""
                             }
                             onChange={(e) =>
                               setPipelineInputs((prev) => ({
@@ -954,14 +1041,17 @@ export function AddFeatureDialog({
                             data-testid={`add-feature-pipeline-input-${field.name}`}
                           />
                           {field.description && (
-                            <p className="text-xs text-muted-foreground">{field.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {field.description}
+                            </p>
                           )}
                         </>
                       )}
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">
-                    These values will be available as template variables in the pipeline stages.
+                    These values will be available as template variables in the
+                    pipeline stages.
                   </p>
                 </div>
               )}
@@ -977,7 +1067,9 @@ export function AddFeatureDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Category</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Category
+                </Label>
                 <CategoryAutocomplete
                   value={category}
                   onChange={setCategory}
@@ -987,7 +1079,9 @@ export function AddFeatureDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Priority
+                </Label>
                 <PrioritySelector
                   selectedPriority={priority}
                   onPrioritySelect={setPriority}
@@ -1063,7 +1157,10 @@ export function AddFeatureDialog({
               onClick={handleAddAndStart}
               variant="secondary"
               data-testid="confirm-add-and-start-feature"
-              disabled={(workMode === 'custom' && !branchName.trim()) || hasMissingRequiredInputs}
+              disabled={
+                (workMode === "custom" && !branchName.trim()) ||
+                hasMissingRequiredInputs
+              }
             >
               <Play className="w-4 h-4 mr-2" />
               Make
@@ -1071,12 +1168,15 @@ export function AddFeatureDialog({
           )}
           <HotkeyButton
             onClick={handleAdd}
-            hotkey={{ key: 'Enter', cmdCtrl: true }}
+            hotkey={{ key: "Enter", cmdCtrl: true }}
             hotkeyActive={open}
             data-testid="confirm-add-feature"
-            disabled={(workMode === 'custom' && !branchName.trim()) || hasMissingRequiredInputs}
+            disabled={
+              (workMode === "custom" && !branchName.trim()) ||
+              hasMissingRequiredInputs
+            }
           >
-            {isSpawnMode ? 'Spawn Task' : 'Add Feature'}
+            {isSpawnMode ? "Spawn Task" : "Add Feature"}
           </HotkeyButton>
         </DialogFooter>
       </DialogContent>

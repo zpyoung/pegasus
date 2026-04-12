@@ -9,15 +9,22 @@
  * Use this instead of raw fetch() for all authenticated API calls.
  */
 
-import { getApiKey, getSessionToken, getServerUrlSync } from './http-api-client';
+import {
+  getApiKey,
+  getSessionToken,
+  getServerUrlSync,
+} from "./http-api-client";
 
 // Server URL - uses shared cached URL from http-api-client
 const getServerUrl = (): string => getServerUrlSync();
-const DEFAULT_CACHE_MODE: RequestCache = 'no-store';
+const DEFAULT_CACHE_MODE: RequestCache = "no-store";
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
-export interface ApiFetchOptions extends Omit<RequestInit, 'method' | 'headers' | 'body'> {
+export interface ApiFetchOptions extends Omit<
+  RequestInit,
+  "method" | "headers" | "body"
+> {
   /** Additional headers to include (merged with auth headers) */
   headers?: Record<string, string>;
   /** Request body - will be JSON stringified if object */
@@ -29,23 +36,25 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'method' | 'headers' 
 /**
  * Build headers for an authenticated request
  */
-export function getAuthHeaders(additionalHeaders?: Record<string, string>): Record<string, string> {
+export function getAuthHeaders(
+  additionalHeaders?: Record<string, string>,
+): Record<string, string> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...additionalHeaders,
   };
 
   // Electron mode: use API key
   const apiKey = getApiKey();
   if (apiKey) {
-    headers['X-API-Key'] = apiKey;
+    headers["X-API-Key"] = apiKey;
     return headers;
   }
 
   // Web mode: use session token if available
   const sessionToken = getSessionToken();
   if (sessionToken) {
-    headers['X-Session-Token'] = sessionToken;
+    headers["X-Session-Token"] = sessionToken;
   }
 
   return headers;
@@ -78,28 +87,36 @@ export function getAuthHeaders(additionalHeaders?: Record<string, string>): Reco
  */
 export async function apiFetch(
   endpoint: string,
-  method: HttpMethod = 'GET',
-  options: ApiFetchOptions = {}
+  method: HttpMethod = "GET",
+  options: ApiFetchOptions = {},
 ): Promise<Response> {
-  const { headers: additionalHeaders, body, skipAuth, cache, ...restOptions } = options;
+  const {
+    headers: additionalHeaders,
+    body,
+    skipAuth,
+    cache,
+    ...restOptions
+  } = options;
 
   const headers = skipAuth
-    ? { 'Content-Type': 'application/json', ...additionalHeaders }
+    ? { "Content-Type": "application/json", ...additionalHeaders }
     : getAuthHeaders(additionalHeaders);
 
   const fetchOptions: RequestInit = {
     method,
     headers,
-    credentials: 'include',
+    credentials: "include",
     cache: cache ?? DEFAULT_CACHE_MODE,
     ...restOptions,
   };
 
   if (body !== undefined) {
-    fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `${getServerUrl()}${endpoint}`;
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${getServerUrl()}${endpoint}`;
   return fetch(url, fetchOptions);
 }
 
@@ -108,9 +125,9 @@ export async function apiFetch(
  */
 export async function apiGet<T>(
   endpoint: string,
-  options: Omit<ApiFetchOptions, 'body'> = {}
+  options: Omit<ApiFetchOptions, "body"> = {},
 ): Promise<T> {
-  const response = await apiFetch(endpoint, 'GET', options);
+  const response = await apiFetch(endpoint, "GET", options);
   return response.json();
 }
 
@@ -120,9 +137,9 @@ export async function apiGet<T>(
 export async function apiPost<T>(
   endpoint: string,
   body?: unknown,
-  options: ApiFetchOptions = {}
+  options: ApiFetchOptions = {},
 ): Promise<T> {
-  const response = await apiFetch(endpoint, 'POST', { ...options, body });
+  const response = await apiFetch(endpoint, "POST", { ...options, body });
   return response.json();
 }
 
@@ -132,17 +149,20 @@ export async function apiPost<T>(
 export async function apiPut<T>(
   endpoint: string,
   body?: unknown,
-  options: ApiFetchOptions = {}
+  options: ApiFetchOptions = {},
 ): Promise<T> {
-  const response = await apiFetch(endpoint, 'PUT', { ...options, body });
+  const response = await apiFetch(endpoint, "PUT", { ...options, body });
   return response.json();
 }
 
 /**
  * Make an authenticated DELETE request
  */
-export async function apiDelete<T>(endpoint: string, options: ApiFetchOptions = {}): Promise<T> {
-  const response = await apiFetch(endpoint, 'DELETE', options);
+export async function apiDelete<T>(
+  endpoint: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const response = await apiFetch(endpoint, "DELETE", options);
   return response.json();
 }
 
@@ -151,9 +171,9 @@ export async function apiDelete<T>(endpoint: string, options: ApiFetchOptions = 
  */
 export async function apiDeleteRaw(
   endpoint: string,
-  options: ApiFetchOptions = {}
+  options: ApiFetchOptions = {},
 ): Promise<Response> {
-  return apiFetch(endpoint, 'DELETE', options);
+  return apiFetch(endpoint, "DELETE", options);
 }
 
 /**
@@ -168,7 +188,7 @@ export async function apiDeleteRaw(
 export function getAuthenticatedImageUrl(
   path: string,
   projectPath: string,
-  version?: string | number
+  version?: string | number,
 ): string {
   const serverUrl = getServerUrl();
   const params = new URLSearchParams({
@@ -177,20 +197,20 @@ export function getAuthenticatedImageUrl(
   });
 
   if (version !== undefined) {
-    params.set('v', String(version));
+    params.set("v", String(version));
   }
 
   // Add auth credential as query param (needed for image loads that can't set headers)
   const apiKey = getApiKey();
   if (apiKey) {
-    params.set('apiKey', apiKey);
+    params.set("apiKey", apiKey);
   }
 
   // Web mode: also add session token as query param for image loads
   // This ensures images load correctly even if cookies aren't sent (e.g., cross-origin proxy scenarios)
   const sessionToken = getSessionToken();
   if (sessionToken) {
-    params.set('token', sessionToken);
+    params.set("token", sessionToken);
   }
 
   return `${serverUrl}/api/fs/image?${params.toString()}`;

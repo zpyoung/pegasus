@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -21,9 +21,9 @@ import {
   X,
   Filter,
   Circle,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import {
   parseLogOutput,
   getLogTypeColors,
@@ -31,7 +31,7 @@ import {
   type LogEntry,
   type LogEntryType,
   type ToolCategory,
-} from '@/lib/log-parser';
+} from "@/lib/log-parser";
 
 interface LogViewerProps {
   output: string;
@@ -40,23 +40,23 @@ interface LogViewerProps {
 
 const getLogIcon = (type: LogEntryType) => {
   switch (type) {
-    case 'prompt':
+    case "prompt":
       return <MessageSquare className="w-4 h-4" />;
-    case 'tool_call':
+    case "tool_call":
       return <Wrench className="w-4 h-4" />;
-    case 'tool_result':
+    case "tool_result":
       return <FileOutput className="w-4 h-4" />;
-    case 'phase':
+    case "phase":
       return <Zap className="w-4 h-4" />;
-    case 'error':
+    case "error":
       return <AlertCircle className="w-4 h-4" />;
-    case 'success':
+    case "success":
       return <CheckCircle2 className="w-4 h-4" />;
-    case 'warning':
+    case "warning":
       return <AlertTriangle className="w-4 h-4" />;
-    case 'thinking':
+    case "thinking":
       return <Brain className="w-4 h-4" />;
-    case 'debug':
+    case "debug":
       return <Bug className="w-4 h-4" />;
     default:
       return <Info className="w-4 h-4" />;
@@ -68,19 +68,19 @@ const getLogIcon = (type: LogEntryType) => {
  */
 const getToolCategoryIcon = (category: ToolCategory | undefined) => {
   switch (category) {
-    case 'read':
+    case "read":
       return <Eye className="w-4 h-4" />;
-    case 'edit':
+    case "edit":
       return <Pencil className="w-4 h-4" />;
-    case 'write':
+    case "write":
       return <FileOutput className="w-4 h-4" />;
-    case 'bash':
+    case "bash":
       return <Terminal className="w-4 h-4" />;
-    case 'search':
+    case "search":
       return <Search className="w-4 h-4" />;
-    case 'todo':
+    case "todo":
       return <ListTodo className="w-4 h-4" />;
-    case 'task':
+    case "task":
       return <Layers className="w-4 h-4" />;
     default:
       return <Wrench className="w-4 h-4" />;
@@ -92,22 +92,22 @@ const getToolCategoryIcon = (category: ToolCategory | undefined) => {
  */
 const getToolCategoryColor = (category: ToolCategory | undefined): string => {
   switch (category) {
-    case 'read':
-      return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
-    case 'edit':
-      return 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-    case 'write':
-      return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-    case 'bash':
-      return 'text-purple-400 bg-purple-500/10 border-purple-500/30';
-    case 'search':
-      return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30';
-    case 'todo':
-      return 'text-green-400 bg-green-500/10 border-green-500/30';
-    case 'task':
-      return 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30';
+    case "read":
+      return "text-blue-400 bg-blue-500/10 border-blue-500/30";
+    case "edit":
+      return "text-amber-400 bg-amber-500/10 border-amber-500/30";
+    case "write":
+      return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
+    case "bash":
+      return "text-purple-400 bg-purple-500/10 border-purple-500/30";
+    case "search":
+      return "text-cyan-400 bg-cyan-500/10 border-cyan-500/30";
+    case "todo":
+      return "text-green-400 bg-green-500/10 border-green-500/30";
+    case "task":
+      return "text-indigo-400 bg-indigo-500/10 border-indigo-500/30";
     default:
-      return 'text-muted-foreground bg-muted/30 border-border';
+      return "text-muted-foreground bg-muted/30 border-border";
   }
 };
 
@@ -116,7 +116,7 @@ const getToolCategoryColor = (category: ToolCategory | undefined): string => {
  */
 interface TodoItem {
   content: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
   activeForm?: string;
 }
 
@@ -142,41 +142,41 @@ function parseTodoContent(content: string): TodoItem[] | null {
  * Renders a list of todo items with status icons and colors
  */
 function TodoListRenderer({ todos }: { todos: TodoItem[] }) {
-  const getStatusIcon = (status: TodoItem['status']) => {
+  const getStatusIcon = (status: TodoItem["status"]) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
-      case 'in_progress':
+      case "in_progress":
         return <Spinner size="sm" />;
-      case 'pending':
+      case "pending":
         return <Circle className="w-4 h-4 text-muted-foreground/70" />;
       default:
         return <Circle className="w-4 h-4 text-muted-foreground/70" />;
     }
   };
 
-  const getStatusColor = (status: TodoItem['status']) => {
+  const getStatusColor = (status: TodoItem["status"]) => {
     switch (status) {
-      case 'completed':
-        return 'text-emerald-300 line-through opacity-70';
-      case 'in_progress':
-        return 'text-amber-300';
-      case 'pending':
-        return 'text-muted-foreground';
+      case "completed":
+        return "text-emerald-300 line-through opacity-70";
+      case "in_progress":
+        return "text-amber-300";
+      case "pending":
+        return "text-muted-foreground";
       default:
-        return 'text-muted-foreground';
+        return "text-muted-foreground";
     }
   };
 
-  const getStatusBadge = (status: TodoItem['status']) => {
+  const getStatusBadge = (status: TodoItem["status"]) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 ml-auto">
             Done
           </span>
         );
-      case 'in_progress':
+      case "in_progress":
         return (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 ml-auto">
             In Progress
@@ -193,17 +193,24 @@ function TodoListRenderer({ todos }: { todos: TodoItem[] }) {
         <div
           key={index}
           className={cn(
-            'flex items-start gap-2 p-2 rounded-md transition-colors',
-            todo.status === 'in_progress' && 'bg-amber-500/5 border border-amber-500/20',
-            todo.status === 'completed' && 'bg-emerald-500/5',
-            todo.status === 'pending' && 'bg-muted/30'
+            "flex items-start gap-2 p-2 rounded-md transition-colors",
+            todo.status === "in_progress" &&
+              "bg-amber-500/5 border border-amber-500/20",
+            todo.status === "completed" && "bg-emerald-500/5",
+            todo.status === "pending" && "bg-muted/30",
           )}
         >
-          <div className="mt-0.5 flex-shrink-0">{getStatusIcon(todo.status)}</div>
+          <div className="mt-0.5 flex-shrink-0">
+            {getStatusIcon(todo.status)}
+          </div>
           <div className="flex-1 min-w-0">
-            <p className={cn('text-sm', getStatusColor(todo.status))}>{todo.content}</p>
-            {todo.status === 'in_progress' && todo.activeForm && (
-              <p className="text-xs text-amber-400/70 mt-0.5 italic">{todo.activeForm}</p>
+            <p className={cn("text-sm", getStatusColor(todo.status))}>
+              {todo.content}
+            </p>
+            {todo.status === "in_progress" && todo.activeForm && (
+              <p className="text-xs text-amber-400/70 mt-0.5 italic">
+                {todo.activeForm}
+              </p>
             )}
           </div>
           {getStatusBadge(todo.status)}
@@ -224,23 +231,27 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
   const hasContent = entry.content.length > 100;
 
   // For tool_call entries, use tool-specific styling
-  const isToolCall = entry.type === 'tool_call';
+  const isToolCall = entry.type === "tool_call";
   const toolCategory = entry.metadata?.toolCategory;
-  const toolCategoryColors = isToolCall ? getToolCategoryColor(toolCategory) : '';
+  const toolCategoryColors = isToolCall
+    ? getToolCategoryColor(toolCategory)
+    : "";
 
   // Check if this is a TodoWrite entry and parse the todos
-  const isTodoWrite = entry.metadata?.toolName === 'TodoWrite';
+  const isTodoWrite = entry.metadata?.toolName === "TodoWrite";
   const parsedTodos = useMemo(() => {
     if (!isTodoWrite) return null;
     return parseTodoContent(entry.content);
   }, [isTodoWrite, entry.content]);
 
   // Get the appropriate icon based on entry type and tool category
-  const icon = isToolCall ? getToolCategoryIcon(toolCategory) : getLogIcon(entry.type);
+  const icon = isToolCall
+    ? getToolCategoryIcon(toolCategory)
+    : getLogIcon(entry.type);
 
   // Get collapsed preview text - prefer smart summary for tool calls
   const collapsedPreview = useMemo(() => {
-    if (isExpanded) return '';
+    if (isExpanded) return "";
 
     // Use smart summary if available
     if (entry.metadata?.summary) {
@@ -248,7 +259,9 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
     }
 
     // Fallback to truncated content
-    return entry.content.slice(0, 80) + (entry.content.length > 80 ? '...' : '');
+    return (
+      entry.content.slice(0, 80) + (entry.content.length > 80 ? "..." : "")
+    );
   }, [isExpanded, entry.metadata?.summary, entry.content]);
 
   // Format content - detect and highlight JSON
@@ -259,30 +272,30 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
     // since we already show the tool name in the header badge
     if (isToolCall) {
       // Remove "🔧 Tool: ToolName\n" or "Tool: ToolName\n" prefix
-      content = content.replace(/^(?:🔧\s*)?Tool:\s*\w+\s*\n?/i, '');
+      content = content.replace(/^(?:🔧\s*)?Tool:\s*\w+\s*\n?/i, "");
       // Remove standalone "Input:" label (keep the JSON that follows)
-      content = content.replace(/^Input:\s*\n?/i, '');
+      content = content.replace(/^Input:\s*\n?/i, "");
       content = content.trim();
     }
 
     // For summary entries, remove the <summary> and </summary> tags
-    if (entry.title === 'Summary') {
-      content = content.replace(/^<summary>\s*/i, '');
-      content = content.replace(/\s*<\/summary>\s*$/i, '');
+    if (entry.title === "Summary") {
+      content = content.replace(/^<summary>\s*/i, "");
+      content = content.replace(/\s*<\/summary>\s*$/i, "");
       content = content.trim();
     }
 
     // Try to find and format JSON blocks
     const jsonRegex = /(\{[\s\S]*?\}|\[[\s\S]*?\])/g;
     let lastIndex = 0;
-    const parts: { type: 'text' | 'json'; content: string }[] = [];
+    const parts: { type: "text" | "json"; content: string }[] = [];
 
     let match;
     while ((match = jsonRegex.exec(content)) !== null) {
       // Add text before JSON
       if (match.index > lastIndex) {
         parts.push({
-          type: 'text',
+          type: "text",
           content: content.slice(lastIndex, match.index),
         });
       }
@@ -291,12 +304,12 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
       try {
         const parsed = JSON.parse(match[1]);
         parts.push({
-          type: 'json',
+          type: "json",
           content: JSON.stringify(parsed, null, 2),
         });
       } catch {
         // Not valid JSON, treat as text
-        parts.push({ type: 'text', content: match[1] });
+        parts.push({ type: "text", content: match[1] });
       }
 
       lastIndex = match.index + match[1].length;
@@ -304,25 +317,29 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
 
     // Add remaining text
     if (lastIndex < content.length) {
-      parts.push({ type: 'text', content: content.slice(lastIndex) });
+      parts.push({ type: "text", content: content.slice(lastIndex) });
     }
 
-    return parts.length > 0 ? parts : [{ type: 'text' as const, content }];
+    return parts.length > 0 ? parts : [{ type: "text" as const, content }];
   }, [entry.content, entry.title, isToolCall]);
 
   // Get colors - use tool category colors for tool_call entries
-  const colorParts = toolCategoryColors.split(' ');
-  const textColor = isToolCall ? colorParts[0] || 'text-muted-foreground' : colors.text;
-  const bgColor = isToolCall ? colorParts[1] || 'bg-muted/30' : colors.bg;
-  const borderColor = isToolCall ? colorParts[2] || 'border-border' : colors.border;
+  const colorParts = toolCategoryColors.split(" ");
+  const textColor = isToolCall
+    ? colorParts[0] || "text-muted-foreground"
+    : colors.text;
+  const bgColor = isToolCall ? colorParts[1] || "bg-muted/30" : colors.bg;
+  const borderColor = isToolCall
+    ? colorParts[2] || "border-border"
+    : colors.border;
 
   return (
     <div
       className={cn(
-        'rounded-lg border transition-all duration-200',
+        "rounded-lg border transition-all duration-200",
         bgColor,
         borderColor,
-        'hover:brightness-110'
+        "hover:brightness-110",
       )}
       data-testid={`log-entry-${entry.type}`}
     >
@@ -343,8 +360,8 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
 
         <span
           className={cn(
-            'flex-shrink-0',
-            isToolCall ? toolCategoryColors.split(' ')[0] : colors.icon
+            "flex-shrink-0",
+            isToolCall ? toolCategoryColors.split(" ")[0] : colors.icon,
           )}
         >
           {icon}
@@ -352,8 +369,8 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
 
         <span
           className={cn(
-            'text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0',
-            isToolCall ? toolCategoryColors : colors.badge
+            "text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0",
+            isToolCall ? toolCategoryColors : colors.badge,
           )}
           data-testid="log-entry-badge"
         >
@@ -366,7 +383,10 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
       </button>
 
       {(isExpanded || !hasContent) && (
-        <div className="px-4 pb-3 pt-1" data-testid={`log-entry-content-${entry.id}`}>
+        <div
+          className="px-4 pb-3 pt-1"
+          data-testid={`log-entry-content-${entry.id}`}
+        >
           {/* Render TodoWrite entries with special formatting */}
           {parsedTodos ? (
             <TodoListRenderer todos={parsedTodos} />
@@ -374,12 +394,17 @@ function LogEntryItem({ entry, isExpanded, onToggle }: LogEntryItemProps) {
             <div className="font-mono text-xs space-y-1">
               {formattedContent.map((part, index) => (
                 <div key={index}>
-                  {part.type === 'json' ? (
+                  {part.type === "json" ? (
                     <pre className="bg-muted/50 rounded p-2 overflow-x-auto scrollbar-styled text-xs text-primary">
                       {part.content}
                     </pre>
                   ) : (
-                    <pre className={cn('whitespace-pre-wrap break-words', textColor)}>
+                    <pre
+                      className={cn(
+                        "whitespace-pre-wrap break-words",
+                        textColor,
+                      )}
+                    >
                       {part.content}
                     </pre>
                   )}
@@ -406,9 +431,11 @@ interface ToolCategoryStats {
 
 export function LogViewer({ output, className }: LogViewerProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [hiddenTypes, setHiddenTypes] = useState<Set<LogEntryType>>(new Set());
-  const [hiddenCategories, setHiddenCategories] = useState<Set<ToolCategory>>(new Set());
+  const [hiddenCategories, setHiddenCategories] = useState<Set<ToolCategory>>(
+    new Set(),
+  );
   // Track if user has "Expand All" mode active - new entries will auto-expand when this is true
   const [expandAllMode, setExpandAllMode] = useState(false);
 
@@ -459,7 +486,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
 
   // Calculate stats for tool categories
   const stats = useMemo(() => {
-    const toolCalls = entries.filter((e) => e.type === 'tool_call');
+    const toolCalls = entries.filter((e) => e.type === "tool_call");
     const byCategory: ToolCategoryStats = {
       read: 0,
       edit: 0,
@@ -472,14 +499,14 @@ export function LogViewer({ output, className }: LogViewerProps) {
     };
 
     toolCalls.forEach((tc) => {
-      const cat = tc.metadata?.toolCategory || 'other';
+      const cat = tc.metadata?.toolCategory || "other";
       byCategory[cat]++;
     });
 
     return {
       total: toolCalls.length,
       byCategory,
-      errors: entries.filter((e) => e.type === 'error').length,
+      errors: entries.filter((e) => e.type === "error").length,
     };
   }, [entries]);
 
@@ -490,7 +517,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
       if (hiddenTypes.has(entry.type)) return false;
 
       // Filter by hidden tool categories (for tool_call entries)
-      if (entry.type === 'tool_call' && entry.metadata?.toolCategory) {
+      if (entry.type === "tool_call" && entry.metadata?.toolCategory) {
         if (hiddenCategories.has(entry.metadata.toolCategory)) return false;
       }
 
@@ -563,19 +590,22 @@ export function LogViewer({ output, className }: LogViewerProps) {
   };
 
   const clearFilters = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     setHiddenTypes(new Set());
     setHiddenCategories(new Set());
   };
 
-  const hasActiveFilters = searchQuery || hiddenTypes.size > 0 || hiddenCategories.size > 0;
+  const hasActiveFilters =
+    searchQuery || hiddenTypes.size > 0 || hiddenCategories.size > 0;
 
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center p-8 text-muted-foreground">
         <div className="text-center">
           <Info className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No log entries yet. Logs will appear here as the process runs.</p>
+          <p className="text-sm">
+            No log entries yet. Logs will appear here as the process runs.
+          </p>
           {output && output.trim() && (
             <div className="mt-4 p-3 bg-muted/50 rounded text-xs font-mono text-left max-h-40 overflow-auto scrollbar-styled">
               <pre className="whitespace-pre-wrap">{output}</pre>
@@ -592,28 +622,31 @@ export function LogViewer({ output, className }: LogViewerProps) {
       acc[entry.type] = (acc[entry.type] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>
+    {} as Record<string, number>,
   );
 
   // Tool categories to display in stats bar
   const toolCategoryLabels: { key: ToolCategory; label: string }[] = [
-    { key: 'read', label: 'Read' },
-    { key: 'edit', label: 'Edit' },
-    { key: 'write', label: 'Write' },
-    { key: 'bash', label: 'Bash' },
-    { key: 'search', label: 'Search' },
-    { key: 'todo', label: 'Todo' },
-    { key: 'task', label: 'Task' },
-    { key: 'other', label: 'Other' },
+    { key: "read", label: "Read" },
+    { key: "edit", label: "Edit" },
+    { key: "write", label: "Write" },
+    { key: "bash", label: "Bash" },
+    { key: "search", label: "Search" },
+    { key: "todo", label: "Todo" },
+    { key: "task", label: "Task" },
+    { key: "other", label: "Other" },
   ];
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    <div className={cn("flex flex-col", className)}>
       {/* Sticky header with search, stats, and filters */}
       {/* Use -top-4 to compensate for parent's p-4 padding, pt-4 to restore visual spacing */}
       <div className="sticky -top-4 z-10 bg-popover/95 backdrop-blur-sm pt-4 pb-2 space-y-2 -mx-4 px-4">
         {/* Search bar */}
-        <div className="flex items-center gap-2 px-1" data-testid="log-search-bar">
+        <div
+          className="flex items-center gap-2 px-1"
+          data-testid="log-search-bar"
+        >
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
             <input
@@ -626,7 +659,7 @@ export function LogViewer({ output, className }: LogViewerProps) {
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 data-testid="log-search-clear"
               >
@@ -648,7 +681,10 @@ export function LogViewer({ output, className }: LogViewerProps) {
 
         {/* Tool category stats bar */}
         {stats.total > 0 && (
-          <div className="flex items-center gap-1 px-1 flex-wrap" data-testid="log-stats-bar">
+          <div
+            className="flex items-center gap-1 px-1 flex-wrap"
+            data-testid="log-stats-bar"
+          >
             <span className="text-xs text-muted-foreground/70 mr-1">
               <Wrench className="w-3 h-3 inline mr-1" />
               {stats.total} tools:
@@ -663,11 +699,13 @@ export function LogViewer({ output, className }: LogViewerProps) {
                   key={key}
                   onClick={() => toggleCategoryFilter(key)}
                   className={cn(
-                    'text-xs px-2 py-0.5 rounded-full border transition-all flex items-center gap-1',
+                    "text-xs px-2 py-0.5 rounded-full border transition-all flex items-center gap-1",
                     colorClasses,
-                    isHidden && 'opacity-40 line-through'
+                    isHidden && "opacity-40 line-through",
                   )}
-                  title={isHidden ? `Show ${label} tools` : `Hide ${label} tools`}
+                  title={
+                    isHidden ? `Show ${label} tools` : `Hide ${label} tools`
+                  }
                   data-testid={`log-category-filter-${key}`}
                 >
                   {getToolCategoryIcon(key)}
@@ -685,7 +723,10 @@ export function LogViewer({ output, className }: LogViewerProps) {
         )}
 
         {/* Header with type filters and controls */}
-        <div className="flex items-center justify-between px-1" data-testid="log-viewer-header">
+        <div
+          className="flex items-center justify-between px-1"
+          data-testid="log-viewer-header"
+        >
           <div className="flex items-center gap-1 flex-wrap">
             <Filter className="w-3 h-3 text-muted-foreground/70 mr-1" />
             {Object.entries(typeCounts).map(([type, count]) => {
@@ -696,9 +737,9 @@ export function LogViewer({ output, className }: LogViewerProps) {
                   key={type}
                   onClick={() => toggleTypeFilter(type as LogEntryType)}
                   className={cn(
-                    'text-xs px-2 py-0.5 rounded-full transition-all',
+                    "text-xs px-2 py-0.5 rounded-full transition-all",
                     colors.badge,
-                    isHidden && 'opacity-40 line-through'
+                    isHidden && "opacity-40 line-through",
                   )}
                   title={isHidden ? `Show ${type}` : `Hide ${type}`}
                   data-testid={`log-type-filter-${type}`}
@@ -715,17 +756,19 @@ export function LogViewer({ output, className }: LogViewerProps) {
             <button
               onClick={expandAll}
               className={cn(
-                'text-xs px-2 py-1 rounded transition-colors',
+                "text-xs px-2 py-1 rounded transition-colors",
                 expandAllMode
-                  ? 'text-primary bg-primary/20 hover:bg-primary/30'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  ? "text-primary bg-primary/20 hover:bg-primary/30"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
               data-testid="log-expand-all"
               title={
-                expandAllMode ? 'Expand All (Active - new items will auto-expand)' : 'Expand All'
+                expandAllMode
+                  ? "Expand All (Active - new items will auto-expand)"
+                  : "Expand All"
               }
             >
-              Expand All{expandAllMode ? ' (On)' : ''}
+              Expand All{expandAllMode ? " (On)" : ""}
             </button>
             <button
               onClick={collapseAll}
@@ -744,7 +787,10 @@ export function LogViewer({ output, className }: LogViewerProps) {
           <div className="text-center py-4 text-muted-foreground text-sm">
             No entries match your filters.
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="ml-2 text-primary hover:underline">
+              <button
+                onClick={clearFilters}
+                className="ml-2 text-primary hover:underline"
+              >
                 Clear filters
               </button>
             )}

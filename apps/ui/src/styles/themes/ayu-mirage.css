@@ -82,7 +82,12 @@
 /* Theme-specific overrides */
 
 .ayu-mirage .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #ffcc66 0%, #ffa659 50%, #ffcc66 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #ffcc66 0%,
+    #ffa659 50%,
+    #ffcc66 100%
+  );
 }
 
 .ayu-mirage .animated-outline-inner {
@@ -90,7 +95,9 @@
   color: #ffcc66 !important;
 }
 
-.ayu-mirage [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.ayu-mirage
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.24 0.02 260) !important;
   color: #ffcd66 !important;
 }

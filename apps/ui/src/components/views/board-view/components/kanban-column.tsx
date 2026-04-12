@@ -1,7 +1,7 @@
-import { memo } from 'react';
-import { useDroppable } from '@dnd-kit/core';
-import { cn } from '@/lib/utils';
-import type { CSSProperties, ReactNode, Ref, UIEvent } from 'react';
+import { memo } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { cn } from "@/lib/utils";
+import type { CSSProperties, ReactNode, Ref, UIEvent } from "react";
 
 interface KanbanColumnProps {
   id: string;
@@ -56,12 +56,12 @@ export const KanbanColumn = memo(function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'relative flex flex-col h-full rounded-xl',
+        "relative flex flex-col h-full rounded-xl",
         // Only transition ring/shadow for drag-over effect, not width
-        'transition-[box-shadow,ring] duration-200',
-        !width && 'w-72', // Only apply w-72 if no custom width
-        showBorder && 'border border-border/60',
-        isOver && 'ring-2 ring-primary/30 ring-offset-1 ring-offset-background'
+        "transition-[box-shadow,ring] duration-200",
+        !width && "w-72", // Only apply w-72 if no custom width
+        showBorder && "border border-border/60",
+        isOver && "ring-2 ring-primary/30 ring-offset-1 ring-offset-background",
       )}
       style={widthStyle}
       data-testid={`kanban-column-${id}`}
@@ -69,8 +69,8 @@ export const KanbanColumn = memo(function KanbanColumn({
       {/* Background layer with opacity */}
       <div
         className={cn(
-          'absolute inset-0 rounded-xl backdrop-blur-sm transition-colors duration-200',
-          isOver ? 'bg-accent/80' : 'bg-card/80'
+          "absolute inset-0 rounded-xl backdrop-blur-sm transition-colors duration-200",
+          isOver ? "bg-accent/80" : "bg-card/80",
         )}
         style={{ opacity: opacity / 100 }}
       />
@@ -79,11 +79,11 @@ export const KanbanColumn = memo(function KanbanColumn({
       <div
         ref={setHeaderDropRef}
         className={cn(
-          'relative z-10 flex items-center gap-3 px-3 py-2.5',
-          showBorder && 'border-b border-border/40'
+          "relative z-10 flex items-center gap-3 px-3 py-2.5",
+          showBorder && "border-b border-border/40",
         )}
       >
-        <div className={cn('w-2.5 h-2.5 rounded-full shrink-0', colorClass)} />
+        <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", colorClass)} />
         <h3 className="font-semibold text-sm text-foreground/90 flex-1 tracking-tight whitespace-nowrap">
           {title}
         </h3>
@@ -96,15 +96,15 @@ export const KanbanColumn = memo(function KanbanColumn({
       {/* Column Content */}
       <div
         className={cn(
-          'relative z-10 flex-1 overflow-y-auto p-2',
-          !disableItemSpacing && 'space-y-2.5',
+          "relative z-10 flex-1 overflow-y-auto p-2",
+          !disableItemSpacing && "space-y-2.5",
           hideScrollbar &&
-            '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]',
+            "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
           // Smooth scrolling
-          'scroll-smooth',
+          "scroll-smooth",
           // Add padding at bottom if there's a footer action (less on mobile to reduce blank space)
-          footerAction && 'pb-12 sm:pb-14',
-          contentClassName
+          footerAction && "pb-12 sm:pb-14",
+          contentClassName,
         )}
         ref={contentRef}
         onScroll={onScroll}

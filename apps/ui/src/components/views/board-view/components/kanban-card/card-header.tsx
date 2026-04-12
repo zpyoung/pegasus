@@ -1,9 +1,12 @@
-import { memo, useState, useMemo } from 'react';
-import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
-import { Feature } from '@/store/app-store';
-import { cn } from '@/lib/utils';
-import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { memo, useState, useMemo } from "react";
+import type {
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+} from "@dnd-kit/core";
+import { Feature } from "@/store/app-store";
+import { cn } from "@/lib/utils";
+import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +15,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   GripVertical,
   Edit,
@@ -24,13 +27,13 @@ import {
   GitFork,
   Copy,
   Repeat,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { CountUpTimer } from '@/components/ui/count-up-timer';
-import { formatModelName, DEFAULT_MODEL } from '@/lib/agent-context-parser';
-import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
-import { getProviderIconForModel } from '@/components/ui/provider-icon';
-import { useAppStore } from '@/store/app-store';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { CountUpTimer } from "@/components/ui/count-up-timer";
+import { formatModelName, DEFAULT_MODEL } from "@/lib/agent-context-parser";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { getProviderIconForModel } from "@/components/ui/provider-icon";
+import { useAppStore } from "@/store/app-store";
 
 function DuplicateMenuItems({
   onDuplicate,
@@ -143,7 +146,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
   // Get providers from store for provider-aware model name display
   // This allows formatModelName to show provider-specific model names (e.g., "GLM 4.7" instead of "Sonnet 4.5")
   // when a feature was executed using a Claude-compatible provider
-  const claudeCompatibleProviders = useAppStore((state) => state.claudeCompatibleProviders);
+  const claudeCompatibleProviders = useAppStore(
+    (state) => state.claudeCompatibleProviders,
+  );
 
   // Memoize the format options to avoid recreating the object on every render
   const modelFormatOptions = useMemo(
@@ -151,7 +156,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
       providerId: feature.providerId,
       claudeCompatibleProviders,
     }),
-    [feature.providerId, claudeCompatibleProviders]
+    [feature.providerId, claudeCompatibleProviders],
   );
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -170,7 +175,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
         <div className="absolute top-2 right-2 flex items-center gap-1">
           <div className="flex items-center justify-center gap-2 bg-[var(--status-in-progress)]/15 border border-[var(--status-in-progress)]/50 rounded-md px-2 py-0.5">
             <Spinner size="xs" />
-            {typeof feature.startedAt === 'string' && (
+            {typeof feature.startedAt === "string" && (
               <CountUpTimer
                 startedAt={feature.startedAt}
                 className="text-[var(--status-in-progress)] text-[10px]"
@@ -226,7 +231,10 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                     <div className="flex items-center gap-1">
                       <ProviderIcon className="w-3 h-3" />
                       <span>
-                        {formatModelName(feature.model ?? DEFAULT_MODEL, modelFormatOptions)}
+                        {formatModelName(
+                          feature.model ?? DEFAULT_MODEL,
+                          modelFormatOptions,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -240,10 +248,10 @@ export const CardHeaderSection = memo(function CardHeaderSection({
       {/* Backlog header (also handles 'interrupted' and 'ready' statuses that display in backlog column) */}
       {!isCurrentAutoTask &&
         !isSelectionMode &&
-        (feature.status === 'backlog' ||
-          feature.status === 'merge_conflict' ||
-          feature.status === 'interrupted' ||
-          feature.status === 'ready') && (
+        (feature.status === "backlog" ||
+          feature.status === "merge_conflict" ||
+          feature.status === "interrupted" ||
+          feature.status === "ready") && (
           <div className="absolute top-2 right-2 flex items-center gap-1">
             <Button
               variant="ghost"
@@ -315,7 +323,8 @@ export const CardHeaderSection = memo(function CardHeaderSection({
       {/* Waiting approval / Verified header */}
       {!isCurrentAutoTask &&
         !isSelectionMode &&
-        (feature.status === 'waiting_approval' || feature.status === 'verified') && (
+        (feature.status === "waiting_approval" ||
+          feature.status === "verified") && (
           <>
             <div className="absolute top-2 right-2 flex items-center gap-1">
               <Button
@@ -328,7 +337,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`edit-${
-                  feature.status === 'waiting_approval' ? 'waiting' : 'verified'
+                  feature.status === "waiting_approval" ? "waiting" : "verified"
                 }-${feature.id}`}
                 title="Edit"
               >
@@ -345,7 +354,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                   data-testid={`logs-${
-                    feature.status === 'waiting_approval' ? 'waiting' : 'verified'
+                    feature.status === "waiting_approval"
+                      ? "waiting"
+                      : "verified"
                   }-${feature.id}`}
                   title="Logs"
                 >
@@ -359,7 +370,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                 onClick={handleDeleteClick}
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`delete-${
-                  feature.status === 'waiting_approval' ? 'waiting' : 'verified'
+                  feature.status === "waiting_approval" ? "waiting" : "verified"
                 }-${feature.id}`}
                 title="Delete"
               >
@@ -374,7 +385,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                     data-testid={`menu-${
-                      feature.status === 'waiting_approval' ? 'waiting' : 'verified'
+                      feature.status === "waiting_approval"
+                        ? "waiting"
+                        : "verified"
                     }-${feature.id}`}
                   >
                     <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
@@ -387,7 +400,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                       onSpawnTask?.();
                     }}
                     data-testid={`spawn-${
-                      feature.status === 'waiting_approval' ? 'waiting' : 'verified'
+                      feature.status === "waiting_approval"
+                        ? "waiting"
+                        : "verified"
                     }-${feature.id}`}
                     className="text-xs"
                   >
@@ -406,7 +421,7 @@ export const CardHeaderSection = memo(function CardHeaderSection({
         )}
 
       {/* In progress header */}
-      {!isCurrentAutoTask && feature.status === 'in_progress' && (
+      {!isCurrentAutoTask && feature.status === "in_progress" && (
         <>
           <div className="absolute top-2 right-2 flex items-center gap-1">
             <Button
@@ -482,7 +497,10 @@ export const CardHeaderSection = memo(function CardHeaderSection({
                       <div className="flex items-center gap-1">
                         <ProviderIcon className="w-3 h-3" />
                         <span>
-                          {formatModelName(feature.model ?? DEFAULT_MODEL, modelFormatOptions)}
+                          {formatModelName(
+                            feature.model ?? DEFAULT_MODEL,
+                            modelFormatOptions,
+                          )}
                         </span>
                       </div>
                     </div>
@@ -510,7 +528,9 @@ export const CardHeaderSection = memo(function CardHeaderSection({
           {feature.titleGenerating && !feature.title ? (
             <div className="flex items-center gap-1.5 mb-1">
               <Spinner size="xs" />
-              <span className="text-xs text-muted-foreground italic">Generating title...</span>
+              <span className="text-xs text-muted-foreground italic">
+                Generating title...
+              </span>
             </div>
           ) : feature.title ? (
             <CardTitle className="text-sm font-semibold text-foreground mb-1 line-clamp-2">
@@ -519,13 +539,13 @@ export const CardHeaderSection = memo(function CardHeaderSection({
           ) : null}
           <CardDescription
             className={cn(
-              'text-xs leading-snug break-words hyphens-auto overflow-hidden text-muted-foreground',
-              !isDescriptionExpanded && 'line-clamp-3'
+              "text-xs leading-snug break-words hyphens-auto overflow-hidden text-muted-foreground",
+              !isDescriptionExpanded && "line-clamp-3",
             )}
           >
             {feature.description || feature.summary || feature.id}
           </CardDescription>
-          {(feature.description || feature.summary || '').length > 100 && (
+          {(feature.description || feature.summary || "").length > 100 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();

@@ -4,17 +4,17 @@
  * React Query hooks for fetching GitHub issues, PRs, and validations.
  */
 
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
 import type {
   GitHubIssue,
   GitHubPR,
   GitHubComment,
   PRReviewComment,
   StoredValidation,
-} from '@/lib/electron';
+} from "@/lib/electron";
 
 interface GitHubIssuesResult {
   openIssues: GitHubIssue[];
@@ -40,16 +40,16 @@ interface GitHubPRsResult {
  */
 export function useGitHubIssues(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.github.issues(projectPath ?? ''),
+    queryKey: queryKeys.github.issues(projectPath ?? ""),
     queryFn: async (): Promise<GitHubIssuesResult> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
       const result = await api.github.listIssues(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch issues');
+        throw new Error(result.error || "Failed to fetch issues");
       }
       return {
         openIssues: result.openIssues ?? [],
@@ -69,16 +69,16 @@ export function useGitHubIssues(projectPath: string | undefined) {
  */
 export function useGitHubPRs(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.github.prs(projectPath ?? ''),
+    queryKey: queryKeys.github.prs(projectPath ?? ""),
     queryFn: async (): Promise<GitHubPRsResult> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
       const result = await api.github.listPRs(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch PRs');
+        throw new Error(result.error || "Failed to fetch PRs");
       }
       return {
         openPRs: result.openPRs ?? [],
@@ -97,20 +97,23 @@ export function useGitHubPRs(projectPath: string | undefined) {
  * @param issueNumber - Optional issue number to filter by
  * @returns Query result with validations
  */
-export function useGitHubValidations(projectPath: string | undefined, issueNumber?: number) {
+export function useGitHubValidations(
+  projectPath: string | undefined,
+  issueNumber?: number,
+) {
   return useQuery({
     queryKey: issueNumber
-      ? queryKeys.github.validation(projectPath ?? '', issueNumber)
-      : queryKeys.github.validations(projectPath ?? ''),
+      ? queryKeys.github.validation(projectPath ?? "", issueNumber)
+      : queryKeys.github.validations(projectPath ?? ""),
     queryFn: async (): Promise<StoredValidation[]> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
       const result = await api.github.getValidations(projectPath, issueNumber);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch validations');
+        throw new Error(result.error || "Failed to fetch validations");
       }
       return result.validations ?? [];
     },
@@ -127,16 +130,16 @@ export function useGitHubValidations(projectPath: string | undefined, issueNumbe
  */
 export function useGitHubRemote(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.github.remote(projectPath ?? ''),
+    queryKey: queryKeys.github.remote(projectPath ?? ""),
     queryFn: async () => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
       const result = await api.github.checkRemote(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to check remote');
+        throw new Error(result.error || "Failed to check remote");
       }
       return {
         hasRemote: result.hasGitHubRemote ?? false,
@@ -176,19 +179,27 @@ export function useGitHubRemote(projectPath: string | undefined) {
  */
 export function useGitHubIssueComments(
   projectPath: string | undefined,
-  issueNumber: number | undefined
+  issueNumber: number | undefined,
 ) {
   return useInfiniteQuery({
-    queryKey: queryKeys.github.issueComments(projectPath ?? '', issueNumber ?? 0),
+    queryKey: queryKeys.github.issueComments(
+      projectPath ?? "",
+      issueNumber ?? 0,
+    ),
     queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
-      if (!projectPath || !issueNumber) throw new Error('Missing project path or issue number');
+      if (!projectPath || !issueNumber)
+        throw new Error("Missing project path or issue number");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
-      const result = await api.github.getIssueComments(projectPath, issueNumber, pageParam);
+      const result = await api.github.getIssueComments(
+        projectPath,
+        issueNumber,
+        pageParam,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch comments');
+        throw new Error(result.error || "Failed to fetch comments");
       }
       return {
         comments: (result.comments ?? []) as GitHubComment[],
@@ -198,7 +209,8 @@ export function useGitHubIssueComments(
       };
     },
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => (lastPage.hasNextPage ? lastPage.endCursor : undefined),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasNextPage ? lastPage.endCursor : undefined,
     enabled: !!projectPath && !!issueNumber,
     staleTime: STALE_TIMES.GITHUB,
   });
@@ -222,19 +234,29 @@ export function useGitHubIssueComments(
  */
 export function useGitHubPRReviewComments(
   projectPath: string | undefined,
-  prNumber: number | undefined
+  prNumber: number | undefined,
 ) {
   return useQuery({
-    queryKey: queryKeys.github.prReviewComments(projectPath ?? '', prNumber ?? 0),
-    queryFn: async (): Promise<{ comments: PRReviewComment[]; totalCount: number }> => {
-      if (!projectPath || !prNumber) throw new Error('Missing project path or PR number');
+    queryKey: queryKeys.github.prReviewComments(
+      projectPath ?? "",
+      prNumber ?? 0,
+    ),
+    queryFn: async (): Promise<{
+      comments: PRReviewComment[];
+      totalCount: number;
+    }> => {
+      if (!projectPath || !prNumber)
+        throw new Error("Missing project path or PR number");
       const api = getElectronAPI();
       if (!api.github) {
-        throw new Error('GitHub API not available');
+        throw new Error("GitHub API not available");
       }
-      const result = await api.github.getPRReviewComments(projectPath, prNumber);
+      const result = await api.github.getPRReviewComments(
+        projectPath,
+        prNumber,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch PR review comments');
+        throw new Error(result.error || "Failed to fetch PR review comments");
       }
       return {
         comments: (result.comments ?? []) as PRReviewComment[],

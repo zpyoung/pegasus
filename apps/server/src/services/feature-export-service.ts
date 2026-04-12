@@ -8,18 +8,23 @@
  * - Validate import data for compatibility
  */
 
-import { createLogger } from '@pegasus/utils';
-import { stringify as yamlStringify, parse as yamlParse } from 'yaml';
-import type { Feature, FeatureExport, FeatureImport, FeatureImportResult } from '@pegasus/types';
-import { FeatureLoader } from './feature-loader.js';
+import { createLogger } from "@pegasus/utils";
+import { stringify as yamlStringify, parse as yamlParse } from "yaml";
+import type {
+  Feature,
+  FeatureExport,
+  FeatureImport,
+  FeatureImportResult,
+} from "@pegasus/types";
+import { FeatureLoader } from "./feature-loader.js";
 
-const logger = createLogger('FeatureExportService');
+const logger = createLogger("FeatureExportService");
 
 /** Current export format version */
-export const FEATURE_EXPORT_VERSION = '1.0.0';
+export const FEATURE_EXPORT_VERSION = "1.0.0";
 
 /** Supported export formats */
-export type ExportFormat = 'json' | 'yaml';
+export type ExportFormat = "json" | "yaml";
 
 /** Options for exporting features */
 export interface ExportOptions {
@@ -92,7 +97,7 @@ export class FeatureExportService {
   async exportFeature(
     projectPath: string,
     featureId: string,
-    options: ExportOptions = {}
+    options: ExportOptions = {},
   ): Promise<string> {
     const feature = await this.featureLoader.get(projectPath, featureId);
     if (!feature) {
@@ -111,7 +116,7 @@ export class FeatureExportService {
    */
   exportFeatureData(feature: Feature, options: ExportOptions = {}): string {
     const {
-      format = 'json',
+      format = "json",
       includeHistory = true,
       includePlanSpec = true,
       metadata,
@@ -143,9 +148,12 @@ export class FeatureExportService {
    * @param options - Bulk export options
    * @returns Promise resolving to the exported features string
    */
-  async exportFeatures(projectPath: string, options: BulkExportOptions = {}): Promise<string> {
+  async exportFeatures(
+    projectPath: string,
+    options: BulkExportOptions = {},
+  ): Promise<string> {
     const {
-      format = 'json',
+      format = "json",
       category,
       status,
       featureIds,
@@ -176,7 +184,10 @@ export class FeatureExportService {
     // Prepare feature exports
     const featureExports: FeatureExport[] = features.map((feature) => ({
       version: FEATURE_EXPORT_VERSION,
-      feature: this.prepareFeatureForExport(feature, { includeHistory, includePlanSpec }),
+      feature: this.prepareFeatureForExport(feature, {
+        includeHistory,
+        includePlanSpec,
+      }),
       exportedAt,
     }));
 
@@ -188,7 +199,9 @@ export class FeatureExportService {
       ...(metadata ? { metadata } : {}),
     };
 
-    logger.info(`Exported ${featureExports.length} features from ${projectPath}`);
+    logger.info(
+      `Exported ${featureExports.length} features from ${projectPath}`,
+    );
 
     return this.serialize(bulkExport, format, prettyPrint);
   }
@@ -202,7 +215,7 @@ export class FeatureExportService {
    */
   async importFeature(
     projectPath: string,
-    importData: FeatureImport
+    importData: FeatureImport,
   ): Promise<FeatureImportResult> {
     const warnings: string[] = [];
 
@@ -213,7 +226,7 @@ export class FeatureExportService {
         return {
           success: false,
           importedAt: new Date().toISOString(),
-          errors: ['Invalid import data: could not extract feature'],
+          errors: ["Invalid import data: could not extract feature"],
         };
       }
 
@@ -228,15 +241,23 @@ export class FeatureExportService {
       }
 
       // Determine the feature ID to use
-      const featureId = importData.newId || feature.id || this.featureLoader.generateFeatureId();
+      const featureId =
+        importData.newId ||
+        feature.id ||
+        this.featureLoader.generateFeatureId();
 
       // Check for existing feature
-      const existingFeature = await this.featureLoader.get(projectPath, featureId);
+      const existingFeature = await this.featureLoader.get(
+        projectPath,
+        featureId,
+      );
       if (existingFeature && !importData.overwrite) {
         return {
           success: false,
           importedAt: new Date().toISOString(),
-          errors: [`Feature with ID ${featureId} already exists. Set overwrite: true to replace.`],
+          errors: [
+            `Feature with ID ${featureId} already exists. Set overwrite: true to replace.`,
+          ],
         };
       }
 
@@ -245,7 +266,9 @@ export class FeatureExportService {
         ...feature,
         id: featureId,
         // Optionally override category
-        ...(importData.targetCategory ? { category: importData.targetCategory } : {}),
+        ...(importData.targetCategory
+          ? { category: importData.targetCategory }
+          : {}),
         // Clear branch info if not preserving
         ...(importData.preserveBranchInfo ? {} : { branchName: undefined }),
       };
@@ -257,22 +280,29 @@ export class FeatureExportService {
       // Handle image paths - they won't be valid after import
       if (featureToImport.imagePaths && featureToImport.imagePaths.length > 0) {
         warnings.push(
-          `Feature had ${featureToImport.imagePaths.length} image path(s) that were cleared during import. Images must be re-attached.`
+          `Feature had ${featureToImport.imagePaths.length} image path(s) that were cleared during import. Images must be re-attached.`,
         );
         featureToImport.imagePaths = [];
       }
 
       // Handle text file paths - they won't be valid after import
-      if (featureToImport.textFilePaths && featureToImport.textFilePaths.length > 0) {
+      if (
+        featureToImport.textFilePaths &&
+        featureToImport.textFilePaths.length > 0
+      ) {
         warnings.push(
-          `Feature had ${featureToImport.textFilePaths.length} text file path(s) that were cleared during import. Files must be re-attached.`
+          `Feature had ${featureToImport.textFilePaths.length} text file path(s) that were cleared during import. Files must be re-attached.`,
         );
         featureToImport.textFilePaths = [];
       }
 
       // Create or update the feature
       if (existingFeature) {
-        await this.featureLoader.update(projectPath, featureId, featureToImport);
+        await this.featureLoader.update(
+          projectPath,
+          featureId,
+          featureToImport,
+        );
         logger.info(`Updated feature ${featureId} via import`);
       } else {
         await this.featureLoader.create(projectPath, featureToImport);
@@ -287,11 +317,13 @@ export class FeatureExportService {
         wasOverwritten: !!existingFeature,
       };
     } catch (error) {
-      logger.error('Failed to import feature:', error);
+      logger.error("Failed to import feature:", error);
       return {
         success: false,
         importedAt: new Date().toISOString(),
-        errors: [`Import failed: ${error instanceof Error ? error.message : String(error)}`],
+        errors: [
+          `Import failed: ${error instanceof Error ? error.message : String(error)}`,
+        ],
       };
     }
   }
@@ -307,19 +339,21 @@ export class FeatureExportService {
   async importFeatures(
     projectPath: string,
     data: string | BulkExportResult,
-    options: Omit<FeatureImport, 'data'> = {}
+    options: Omit<FeatureImport, "data"> = {},
   ): Promise<FeatureImportResult[]> {
     let bulkData: BulkExportResult;
 
     // Parse if string
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       const parsed = this.parseImportData(data);
       if (!parsed || !this.isBulkExport(parsed)) {
         return [
           {
             success: false,
             importedAt: new Date().toISOString(),
-            errors: ['Invalid bulk import data: expected BulkExportResult format'],
+            errors: [
+              "Invalid bulk import data: expected BulkExportResult format",
+            ],
           },
         ];
       }
@@ -339,7 +373,9 @@ export class FeatureExportService {
     }
 
     const successCount = results.filter((r) => r.success).length;
-    logger.info(`Bulk import complete: ${successCount}/${results.length} features imported`);
+    logger.info(
+      `Bulk import complete: ${successCount}/${results.length} features imported`,
+    );
 
     return results;
   }
@@ -350,11 +386,13 @@ export class FeatureExportService {
    * @param data - Raw JSON or YAML string
    * @returns Parsed data or null if parsing fails
    */
-  parseImportData(data: string): Feature | FeatureExport | BulkExportResult | null {
+  parseImportData(
+    data: string,
+  ): Feature | FeatureExport | BulkExportResult | null {
     const trimmed = data.trim();
 
     // Try JSON first
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
       try {
         return JSON.parse(trimmed);
       } catch {
@@ -366,7 +404,7 @@ export class FeatureExportService {
     try {
       return yamlParse(trimmed);
     } catch (error) {
-      logger.error('Failed to parse import data:', error);
+      logger.error("Failed to parse import data:", error);
       return null;
     }
   }
@@ -381,10 +419,10 @@ export class FeatureExportService {
     const trimmed = data.trim();
 
     // JSON detection
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
       try {
         JSON.parse(trimmed);
-        return 'json';
+        return "json";
       } catch {
         // Not valid JSON
       }
@@ -393,7 +431,7 @@ export class FeatureExportService {
     // YAML detection (if it parses and wasn't JSON)
     try {
       yamlParse(trimmed);
-      return 'yaml';
+      return "yaml";
     } catch {
       // Not valid YAML either
     }
@@ -406,7 +444,7 @@ export class FeatureExportService {
    */
   private prepareFeatureForExport(
     feature: Feature,
-    options: { includeHistory?: boolean; includePlanSpec?: boolean }
+    options: { includeHistory?: boolean; includePlanSpec?: boolean },
   ): Feature {
     const { includeHistory = true, includePlanSpec = true } = options;
 
@@ -433,13 +471,15 @@ export class FeatureExportService {
   /**
    * Extract a Feature from import data (handles both raw and wrapped formats)
    */
-  private extractFeatureFromImport(data: Feature | FeatureExport): Feature | null {
-    if (!data || typeof data !== 'object') {
+  private extractFeatureFromImport(
+    data: Feature | FeatureExport,
+  ): Feature | null {
+    if (!data || typeof data !== "object") {
       return null;
     }
 
     // Check if it's a FeatureExport wrapper
-    if ('version' in data && 'feature' in data && 'exportedAt' in data) {
+    if ("version" in data && "feature" in data && "exportedAt" in data) {
       const exportData = data as FeatureExport;
       return exportData.feature;
     }
@@ -452,28 +492,28 @@ export class FeatureExportService {
    * Check if parsed data is a bulk export
    */
   isBulkExport(data: unknown): data is BulkExportResult {
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== "object") {
       return false;
     }
     const obj = data as Record<string, unknown>;
-    return 'version' in obj && 'features' in obj && Array.isArray(obj.features);
+    return "version" in obj && "features" in obj && Array.isArray(obj.features);
   }
 
   /**
    * Check if parsed data is a single FeatureExport
    */
   isFeatureExport(data: unknown): data is FeatureExport {
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== "object") {
       return false;
     }
     const obj = data as Record<string, unknown>;
     return (
-      'version' in obj &&
-      'feature' in obj &&
-      'exportedAt' in obj &&
-      typeof obj.feature === 'object' &&
+      "version" in obj &&
+      "feature" in obj &&
+      "exportedAt" in obj &&
+      typeof obj.feature === "object" &&
       obj.feature !== null &&
-      'id' in (obj.feature as Record<string, unknown>)
+      "id" in (obj.feature as Record<string, unknown>)
     );
   }
 
@@ -481,12 +521,12 @@ export class FeatureExportService {
    * Check if parsed data is a raw Feature
    */
   isRawFeature(data: unknown): data is Feature {
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== "object") {
       return false;
     }
     const obj = data as Record<string, unknown>;
     // A raw feature has 'id' but not the 'version' + 'feature' wrapper of FeatureExport
-    return 'id' in obj && !('feature' in obj && 'version' in obj);
+    return "id" in obj && !("feature" in obj && "version" in obj);
   }
 
   /**
@@ -496,11 +536,11 @@ export class FeatureExportService {
     const errors: string[] = [];
 
     if (!feature.description && !feature.title) {
-      errors.push('Feature must have at least a title or description');
+      errors.push("Feature must have at least a title or description");
     }
 
     if (!feature.category) {
-      errors.push('Feature must have a category');
+      errors.push("Feature must have a category");
     }
 
     return errors;
@@ -512,9 +552,9 @@ export class FeatureExportService {
   private serialize<T extends FeatureExport | BulkExportResult>(
     data: T,
     format: ExportFormat,
-    prettyPrint: boolean
+    prettyPrint: boolean,
   ): string {
-    if (format === 'yaml') {
+    if (format === "yaml") {
       return yamlStringify(data, {
         indent: 2,
         lineWidth: 120,

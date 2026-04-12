@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useSaveSpec } from '@/hooks/mutations';
+import { useState } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useSaveSpec } from "@/hooks/mutations";
 
 export function useSpecSave() {
   const { currentProject, appSpec, setAppSpec } = useAppStore();
   const [hasChanges, setHasChanges] = useState(false);
 
   // React Query mutation
-  const saveMutation = useSaveSpec(currentProject?.path ?? '');
+  const saveMutation = useSaveSpec(currentProject?.path ?? "");
 
   const saveSpec = async () => {
     if (!currentProject) return;

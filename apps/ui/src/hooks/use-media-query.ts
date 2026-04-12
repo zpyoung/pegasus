@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 /**
  * Hook to detect if a media query matches
@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
  */
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === "undefined") return false;
     return window.matchMedia(query).matches;
   });
 
@@ -15,7 +15,7 @@ export function useMediaQuery(query: string): boolean {
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const mediaQuery = window.matchMedia(query);
     const handleChange = (e: MediaQueryListEvent) => {
@@ -31,10 +31,10 @@ export function useMediaQuery(query: string): boolean {
     }
 
     // Listen for changes
-    mediaQuery.addEventListener('change', handleChange);
+    mediaQuery.addEventListener("change", handleChange);
 
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
+      mediaQuery.removeEventListener("change", handleChange);
     };
   }, [query]);
 
@@ -46,7 +46,7 @@ export function useMediaQuery(query: string): boolean {
  * @returns boolean indicating if the device is mobile
  */
 export function useIsMobile(): boolean {
-  return useMediaQuery('(max-width: 768px)');
+  return useMediaQuery("(max-width: 768px)");
 }
 
 /**
@@ -54,7 +54,7 @@ export function useIsMobile(): boolean {
  * @returns boolean indicating if the device is tablet or smaller
  */
 export function useIsTablet(): boolean {
-  return useMediaQuery('(max-width: 1024px)');
+  return useMediaQuery("(max-width: 1024px)");
 }
 
 /**
@@ -63,5 +63,5 @@ export function useIsTablet(): boolean {
  * @returns boolean indicating if compact layout should be used
  */
 export function useIsCompact(): boolean {
-  return useMediaQuery('(max-width: 1240px)');
+  return useMediaQuery("(max-width: 1240px)");
 }

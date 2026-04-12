@@ -6,11 +6,11 @@
  * pattern as merge-service.ts.
  */
 
-import { createLogger } from '@pegasus/utils';
-import { execGitCommand, getCurrentBranch } from '../lib/git.js';
-import { type EventEmitter } from '../lib/events.js';
+import { createLogger } from "@pegasus/utils";
+import { execGitCommand, getCurrentBranch } from "../lib/git.js";
+import { type EventEmitter } from "../lib/events.js";
 
-const logger = createLogger('CherryPickService');
+const logger = createLogger("CherryPickService");
 
 // ============================================================================
 // Types
@@ -46,13 +46,13 @@ export interface CherryPickResult {
 export async function verifyCommits(
   worktreePath: string,
   commitHashes: string[],
-  emitter?: EventEmitter
+  emitter?: EventEmitter,
 ): Promise<string | null> {
   for (const hash of commitHashes) {
     try {
-      await execGitCommand(['rev-parse', '--verify', hash], worktreePath);
+      await execGitCommand(["rev-parse", "--verify", hash], worktreePath);
     } catch {
-      emitter?.emit('cherry-pick:verify-failed', { worktreePath, hash });
+      emitter?.emit("cherry-pick:verify-failed", { worktreePath, hash });
       return hash;
     }
   }
@@ -72,15 +72,15 @@ export async function runCherryPick(
   worktreePath: string,
   commitHashes: string[],
   options?: CherryPickOptions,
-  emitter?: EventEmitter
+  emitter?: EventEmitter,
 ): Promise<CherryPickResult> {
-  const args = ['cherry-pick'];
+  const args = ["cherry-pick"];
   if (options?.noCommit) {
-    args.push('--no-commit');
+    args.push("--no-commit");
   }
   args.push(...commitHashes);
 
-  emitter?.emit('cherry-pick:started', { worktreePath, commitHashes });
+  emitter?.emit("cherry-pick:started", { worktreePath, commitHashes });
 
   try {
     await execGitCommand(args, worktreePath);
@@ -95,7 +95,11 @@ export async function runCherryPick(
         branch,
         message: `Staged changes from ${commitHashes.length} commit(s); no commit created due to --no-commit`,
       };
-      emitter?.emit('cherry-pick:success', { worktreePath, commitHashes, branch });
+      emitter?.emit("cherry-pick:success", {
+        worktreePath,
+        commitHashes,
+        branch,
+      });
       return result;
     }
 
@@ -106,16 +110,24 @@ export async function runCherryPick(
       branch,
       message: `Successfully cherry-picked ${commitHashes.length} commit(s)`,
     };
-    emitter?.emit('cherry-pick:success', { worktreePath, commitHashes, branch });
+    emitter?.emit("cherry-pick:success", {
+      worktreePath,
+      commitHashes,
+      branch,
+    });
     return result;
   } catch (cherryPickError: unknown) {
     // Check if this is a cherry-pick conflict
-    const err = cherryPickError as { stdout?: string; stderr?: string; message?: string };
-    const output = `${err.stdout || ''} ${err.stderr || ''} ${err.message || ''}`;
+    const err = cherryPickError as {
+      stdout?: string;
+      stderr?: string;
+      message?: string;
+    };
+    const output = `${err.stdout || ""} ${err.stderr || ""} ${err.message || ""}`;
     const hasConflicts =
-      output.includes('CONFLICT') ||
-      output.includes('cherry-pick failed') ||
-      output.includes('could not apply');
+      output.includes("CONFLICT") ||
+      output.includes("cherry-pick failed") ||
+      output.includes("could not apply");
 
     if (hasConflicts) {
       // Abort the cherry-pick to leave the repo in a clean state
@@ -123,12 +135,12 @@ export async function runCherryPick(
 
       if (!aborted) {
         logger.error(
-          'Failed to abort cherry-pick after conflict; repository may be in a dirty state',
-          { worktreePath }
+          "Failed to abort cherry-pick after conflict; repository may be in a dirty state",
+          { worktreePath },
         );
       }
 
-      emitter?.emit('cherry-pick:conflict', {
+      emitter?.emit("cherry-pick:conflict", {
         worktreePath,
         commitHashes,
         aborted,
@@ -139,8 +151,8 @@ export async function runCherryPick(
       return {
         success: false,
         error: aborted
-          ? 'Cherry-pick aborted due to conflicts; no changes were applied.'
-          : 'Cherry-pick failed due to conflicts and the abort also failed; repository may be in a dirty state.',
+          ? "Cherry-pick aborted due to conflicts; no changes were applied."
+          : "Cherry-pick failed due to conflicts and the abort also failed; repository may be in a dirty state.",
         hasConflicts: true,
         aborted,
       };
@@ -160,19 +172,19 @@ export async function runCherryPick(
  */
 export async function abortCherryPick(
   worktreePath: string,
-  emitter?: EventEmitter
+  emitter?: EventEmitter,
 ): Promise<boolean> {
   try {
-    await execGitCommand(['cherry-pick', '--abort'], worktreePath);
-    emitter?.emit('cherry-pick:abort', { worktreePath, aborted: true });
+    await execGitCommand(["cherry-pick", "--abort"], worktreePath);
+    emitter?.emit("cherry-pick:abort", { worktreePath, aborted: true });
     return true;
   } catch (err: unknown) {
     const error = err as { message?: string };
-    logger.warn('Failed to abort cherry-pick after conflict');
-    emitter?.emit('cherry-pick:abort', {
+    logger.warn("Failed to abort cherry-pick after conflict");
+    emitter?.emit("cherry-pick:abort", {
       worktreePath,
       aborted: false,
-      error: error.message ?? 'Unknown error during cherry-pick abort',
+      error: error.message ?? "Unknown error during cherry-pick abort",
     });
     return false;
   }

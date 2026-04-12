@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useUpdateProjectSettings } from '@/hooks/mutations';
+import { useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useUpdateProjectSettings } from "@/hooks/mutations";
 
 /**
  * Hook for managing board background settings with automatic persistence to server.
@@ -24,7 +24,7 @@ export function useBoardBackgroundSettings() {
         settings: { boardBackground: settingsToUpdate },
       });
     },
-    [updateProjectSettings]
+    [updateProjectSettings],
   );
 
   // Get current background settings for a project
@@ -44,7 +44,7 @@ export function useBoardBackgroundSettings() {
         }
       );
     },
-    [store.boardBackgroundByProject]
+    [store.boardBackgroundByProject],
   );
 
   // Persisting wrappers for store actions
@@ -66,7 +66,7 @@ export function useBoardBackgroundSettings() {
       // Persist to server
       await persistSettings(projectPath, toUpdate);
     },
-    [store, persistSettings, getCurrentSettings]
+    [store, persistSettings, getCurrentSettings],
   );
 
   // Update store (called on slider commit to update the board view)
@@ -74,7 +74,7 @@ export function useBoardBackgroundSettings() {
     (projectPath: string, opacity: number) => {
       store.setCardOpacity(projectPath, opacity);
     },
-    [store]
+    [store],
   );
 
   // Update store (called on slider commit to update the board view)
@@ -82,7 +82,7 @@ export function useBoardBackgroundSettings() {
     (projectPath: string, opacity: number) => {
       store.setColumnOpacity(projectPath, opacity);
     },
-    [store]
+    [store],
   );
 
   const setColumnBorderEnabled = useCallback(
@@ -94,7 +94,7 @@ export function useBoardBackgroundSettings() {
         columnBorderEnabled: enabled,
       });
     },
-    [store, persistSettings, getCurrentSettings]
+    [store, persistSettings, getCurrentSettings],
   );
 
   const setCardGlassmorphism = useCallback(
@@ -106,7 +106,7 @@ export function useBoardBackgroundSettings() {
         cardGlassmorphism: enabled,
       });
     },
-    [store, persistSettings, getCurrentSettings]
+    [store, persistSettings, getCurrentSettings],
   );
 
   const setCardBorderEnabled = useCallback(
@@ -118,7 +118,7 @@ export function useBoardBackgroundSettings() {
         cardBorderEnabled: enabled,
       });
     },
-    [store, persistSettings, getCurrentSettings]
+    [store, persistSettings, getCurrentSettings],
   );
 
   // Update store (called on slider commit to update the board view)
@@ -126,7 +126,7 @@ export function useBoardBackgroundSettings() {
     (projectPath: string, opacity: number) => {
       store.setCardBorderOpacity(projectPath, opacity);
     },
-    [store]
+    [store],
   );
 
   const setHideScrollbar = useCallback(
@@ -135,7 +135,7 @@ export function useBoardBackgroundSettings() {
       store.setHideScrollbar(projectPath, hide);
       await persistSettings(projectPath, { ...current, hideScrollbar: hide });
     },
-    [store, persistSettings, getCurrentSettings]
+    [store, persistSettings, getCurrentSettings],
   );
 
   const clearBoardBackground = useCallback(
@@ -154,7 +154,7 @@ export function useBoardBackgroundSettings() {
         hideScrollbar: false,
       });
     },
-    [store, persistSettings]
+    [store, persistSettings],
   );
 
   return {

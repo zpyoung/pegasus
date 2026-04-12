@@ -1,7 +1,7 @@
-import { createPortal } from 'react-dom';
-import { X, Menu } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { createPortal } from "react-dom";
+import { X, Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface HeaderActionsPanelProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ interface HeaderActionsPanelProps {
 export function HeaderActionsPanel({
   isOpen,
   onClose,
-  title = 'Actions',
+  title = "Actions",
   children,
 }: HeaderActionsPanelProps) {
   // Use portal to render outside parent stacking contexts (backdrop-blur creates stacking context)
@@ -37,15 +37,15 @@ export function HeaderActionsPanel({
       <div
         className={cn(
           // Mobile: fixed position overlay with slide transition from right
-          'fixed inset-y-0 right-0 w-72 z-[70]',
-          'transition-transform duration-200 ease-out',
+          "fixed inset-y-0 right-0 w-72 z-[70]",
+          "transition-transform duration-200 ease-out",
           // Hide on mobile when closed, show when open
-          isOpen ? 'translate-x-0' : 'translate-x-full',
+          isOpen ? "translate-x-0" : "translate-x-full",
           // Desktop: hidden entirely (actions shown inline in header)
-          'lg:hidden',
-          'flex flex-col',
-          'border-l border-border/50',
-          'bg-gradient-to-b from-card/95 via-card/90 to-card/85 backdrop-blur-xl'
+          "lg:hidden",
+          "flex flex-col",
+          "border-l border-border/50",
+          "bg-gradient-to-b from-card/95 via-card/90 to-card/85 backdrop-blur-xl",
         )}
       >
         {/* Panel header with close button */}
@@ -69,7 +69,7 @@ export function HeaderActionsPanel({
   );
 
   // Render to document.body to escape stacking context
-  if (typeof document !== 'undefined') {
+  if (typeof document !== "undefined") {
     return createPortal(panelContent, document.body);
   }
 
@@ -96,8 +96,11 @@ export function HeaderActionsPanelTrigger({
       variant="ghost"
       size="sm"
       onClick={onToggle}
-      className={cn('h-8 w-8 p-0 text-muted-foreground hover:text-foreground lg:hidden', className)}
-      aria-label={isOpen ? 'Close actions menu' : 'Open actions menu'}
+      className={cn(
+        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground lg:hidden",
+        className,
+      )}
+      aria-label={isOpen ? "Close actions menu" : "Open actions menu"}
       data-testid="header-actions-panel-trigger"
     >
       {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

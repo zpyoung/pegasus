@@ -1,35 +1,38 @@
-import { memo, useState } from 'react';
-import { BaseEdge, getBezierPath, EdgeLabelRenderer } from '@xyflow/react';
-import type { EdgeProps } from '@xyflow/react';
-import { cn } from '@/lib/utils';
-import { Feature } from '@/store/app-store';
-import { Trash2 } from 'lucide-react';
-import { GRAPH_RENDER_MODE_COMPACT, type GraphRenderMode } from '../constants';
+import { memo, useState } from "react";
+import { BaseEdge, getBezierPath, EdgeLabelRenderer } from "@xyflow/react";
+import type { EdgeProps } from "@xyflow/react";
+import { cn } from "@/lib/utils";
+import { Feature } from "@/store/app-store";
+import { Trash2 } from "lucide-react";
+import { GRAPH_RENDER_MODE_COMPACT, type GraphRenderMode } from "../constants";
 
 export interface DependencyEdgeData {
-  sourceStatus: Feature['status'];
-  targetStatus: Feature['status'];
+  sourceStatus: Feature["status"];
+  targetStatus: Feature["status"];
   isHighlighted?: boolean;
   isDimmed?: boolean;
   onDeleteDependency?: (sourceId: string, targetId: string) => void;
   renderMode?: GraphRenderMode;
 }
 
-const getEdgeColor = (sourceStatus?: Feature['status'], targetStatus?: Feature['status']) => {
+const getEdgeColor = (
+  sourceStatus?: Feature["status"],
+  targetStatus?: Feature["status"],
+) => {
   // If source is completed/verified, the dependency is satisfied
-  if (sourceStatus === 'completed' || sourceStatus === 'verified') {
-    return 'var(--status-success)';
+  if (sourceStatus === "completed" || sourceStatus === "verified") {
+    return "var(--status-success)";
   }
   // If target is in progress, show active color
-  if (targetStatus === 'in_progress') {
-    return 'var(--status-in-progress)';
+  if (targetStatus === "in_progress") {
+    return "var(--status-in-progress)";
   }
   // If target is blocked (in backlog with incomplete deps)
-  if (targetStatus === 'backlog') {
-    return 'var(--border)';
+  if (targetStatus === "backlog") {
+    return "var(--border)";
   }
   // Default
-  return 'var(--border)';
+  return "var(--border)";
 };
 
 export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
@@ -66,18 +69,19 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
   const isCompact = edgeData?.renderMode === GRAPH_RENDER_MODE_COMPACT;
 
   const edgeColor = isHighlighted
-    ? 'var(--brand-500)'
+    ? "var(--brand-500)"
     : edgeData
       ? getEdgeColor(edgeData.sourceStatus, edgeData.targetStatus)
-      : 'var(--border)';
+      : "var(--border)";
 
   const isCompleted =
-    edgeData?.sourceStatus === 'completed' || edgeData?.sourceStatus === 'verified';
-  const isInProgress = edgeData?.targetStatus === 'in_progress';
+    edgeData?.sourceStatus === "completed" ||
+    edgeData?.sourceStatus === "verified";
+  const isInProgress = edgeData?.targetStatus === "in_progress";
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('Edge delete button clicked', {
+    console.log("Edge delete button clicked", {
       source,
       target,
       hasCallback: !!edgeData?.onDeleteDependency,
@@ -85,7 +89,7 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
     if (edgeData?.onDeleteDependency) {
       edgeData.onDeleteDependency(source, target);
     } else {
-      console.error('onDeleteDependency callback is not defined on edge data');
+      console.error("onDeleteDependency callback is not defined on edge data");
     }
   };
 
@@ -95,11 +99,14 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         <BaseEdge
           id={id}
           path={edgePath}
-          className={cn('transition-opacity duration-200', isDimmed && 'graph-edge-dimmed')}
+          className={cn(
+            "transition-opacity duration-200",
+            isDimmed && "graph-edge-dimmed",
+          )}
           style={{
             strokeWidth: selected ? 2 : 1.5,
-            stroke: selected ? 'var(--status-error)' : edgeColor,
-            strokeDasharray: isCompleted ? 'none' : '5 5',
+            stroke: selected ? "var(--status-error)" : edgeColor,
+            strokeDasharray: isCompleted ? "none" : "5 5",
             opacity: isDimmed ? 0.2 : 1,
           }}
         />
@@ -107,21 +114,21 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
           <EdgeLabelRenderer>
             <div
               style={{
-                position: 'absolute',
+                position: "absolute",
                 transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-                pointerEvents: 'auto',
+                pointerEvents: "auto",
                 zIndex: 1000,
               }}
             >
               <button
                 onClick={handleDelete}
                 className={cn(
-                  'flex items-center justify-center',
-                  'w-6 h-6 rounded-full',
-                  'bg-[var(--status-error)] hover:bg-[var(--status-error)]/80',
-                  'text-white shadow-lg',
-                  'transition-all duration-150',
-                  'hover:scale-110'
+                  "flex items-center justify-center",
+                  "w-6 h-6 rounded-full",
+                  "bg-[var(--status-error)] hover:bg-[var(--status-error)]/80",
+                  "text-white shadow-lg",
+                  "transition-all duration-150",
+                  "hover:scale-110",
                 )}
                 title="Delete dependency"
               >
@@ -144,7 +151,7 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         strokeWidth={20}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: "pointer" }}
       />
 
       {/* Background edge for better visibility */}
@@ -153,7 +160,7 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         path={edgePath}
         style={{
           strokeWidth: isHighlighted || isHovered ? 6 : 4,
-          stroke: 'var(--background)',
+          stroke: "var(--background)",
           opacity: isDimmed ? 0.3 : 1,
         }}
       />
@@ -163,21 +170,27 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         id={id}
         path={edgePath}
         className={cn(
-          'transition-all duration-300',
-          animated && 'animated-edge',
-          isInProgress && 'edge-flowing',
-          isHighlighted && 'graph-edge-highlighted',
-          isDimmed && 'graph-edge-dimmed'
+          "transition-all duration-300",
+          animated && "animated-edge",
+          isInProgress && "edge-flowing",
+          isHighlighted && "graph-edge-highlighted",
+          isDimmed && "graph-edge-dimmed",
         )}
         style={{
-          strokeWidth: isHighlighted ? 4 : isHovered || selected ? 3 : isDimmed ? 1 : 2,
-          stroke: isHovered || selected ? 'var(--status-error)' : edgeColor,
-          strokeDasharray: isCompleted ? 'none' : '5 5',
-          filter: isHighlighted
-            ? 'drop-shadow(0 0 6px var(--brand-500))'
+          strokeWidth: isHighlighted
+            ? 4
             : isHovered || selected
-              ? 'drop-shadow(0 0 4px var(--status-error))'
-              : 'none',
+              ? 3
+              : isDimmed
+                ? 1
+                : 2,
+          stroke: isHovered || selected ? "var(--status-error)" : edgeColor,
+          strokeDasharray: isCompleted ? "none" : "5 5",
+          filter: isHighlighted
+            ? "drop-shadow(0 0 6px var(--brand-500))"
+            : isHovered || selected
+              ? "drop-shadow(0 0 4px var(--status-error))"
+              : "none",
           opacity: isDimmed ? 0.2 : 1,
         }}
       />
@@ -187,9 +200,9 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         <EdgeLabelRenderer>
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'auto',
+              pointerEvents: "auto",
               zIndex: 1000,
             }}
             onMouseEnter={() => setIsHovered(true)}
@@ -198,12 +211,12 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
             <button
               onClick={handleDelete}
               className={cn(
-                'flex items-center justify-center',
-                'w-6 h-6 rounded-full',
-                'bg-[var(--status-error)] hover:bg-[var(--status-error)]/80',
-                'text-white shadow-lg',
-                'transition-all duration-150',
-                'hover:scale-110'
+                "flex items-center justify-center",
+                "w-6 h-6 rounded-full",
+                "bg-[var(--status-error)] hover:bg-[var(--status-error)]/80",
+                "text-white shadow-lg",
+                "transition-all duration-150",
+                "hover:scale-110",
               )}
               title="Delete dependency"
             >
@@ -218,18 +231,18 @@ export const DependencyEdge = memo(function DependencyEdge(props: EdgeProps) {
         <EdgeLabelRenderer>
           <div
             style={{
-              position: 'absolute',
+              position: "absolute",
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'none',
+              pointerEvents: "none",
             }}
             className="edge-particle"
           >
             <div
               className={cn(
-                'w-2 h-2 rounded-full',
+                "w-2 h-2 rounded-full",
                 isInProgress
-                  ? 'bg-[var(--status-in-progress)] animate-ping'
-                  : 'bg-brand-500 animate-pulse'
+                  ? "bg-[var(--status-in-progress)] animate-ping"
+                  : "bg-brand-500 animate-pulse",
               )}
             />
           </div>

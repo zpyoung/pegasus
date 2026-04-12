@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   GitBranch,
   AlertCircle,
@@ -18,28 +18,31 @@ import {
   Globe,
   RefreshCw,
   Cloud,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { BranchAutocomplete } from "@/components/ui/branch-autocomplete";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 /**
  * Qualify a branch name with a remote prefix when appropriate.
  * Returns undefined when branch is empty, and avoids double-prefixing.
  */
-function qualifyRemoteBranch(remote: string, branch?: string): string | undefined {
+function qualifyRemoteBranch(
+  remote: string,
+  branch?: string,
+): string | undefined {
   const trimmed = branch?.trim();
   if (!trimmed) return undefined;
-  if (remote === 'local') return trimmed;
+  if (remote === "local") return trimmed;
   if (trimmed.startsWith(`${remote}/`)) return trimmed;
   return `${remote}/${trimmed}`;
 }
@@ -47,63 +50,75 @@ function qualifyRemoteBranch(remote: string, branch?: string): string | undefine
 /**
  * Parse git/worktree error messages and return user-friendly versions
  */
-function parseWorktreeError(error: string): { title: string; description?: string } {
+function parseWorktreeError(error: string): {
+  title: string;
+  description?: string;
+} {
   const errorLower = error.toLowerCase();
 
   // Worktree already exists
-  if (errorLower.includes('already exists') && errorLower.includes('worktree')) {
+  if (
+    errorLower.includes("already exists") &&
+    errorLower.includes("worktree")
+  ) {
     return {
-      title: 'A worktree with this name already exists',
-      description: 'Try a different branch name or delete the existing worktree first.',
+      title: "A worktree with this name already exists",
+      description:
+        "Try a different branch name or delete the existing worktree first.",
     };
   }
 
   // Branch already checked out in another worktree
   if (
-    errorLower.includes('already checked out') ||
-    errorLower.includes('is already used by worktree')
+    errorLower.includes("already checked out") ||
+    errorLower.includes("is already used by worktree")
   ) {
     return {
-      title: 'This branch is already in use',
-      description: 'The branch is checked out in another worktree. Use a different branch name.',
+      title: "This branch is already in use",
+      description:
+        "The branch is checked out in another worktree. Use a different branch name.",
     };
   }
 
   // Branch name conflicts with existing branch
-  if (errorLower.includes('already exists') && errorLower.includes('branch')) {
+  if (errorLower.includes("already exists") && errorLower.includes("branch")) {
     return {
-      title: 'A branch with this name already exists',
-      description: 'The worktree will use the existing branch, or try a different name.',
+      title: "A branch with this name already exists",
+      description:
+        "The worktree will use the existing branch, or try a different name.",
     };
   }
 
   // Not a git repository
-  if (errorLower.includes('not a git repository')) {
+  if (errorLower.includes("not a git repository")) {
     return {
-      title: 'Not a git repository',
+      title: "Not a git repository",
       description: 'Initialize git in this project first with "git init".',
     };
   }
 
   // Lock file exists (another git operation in progress)
-  if (errorLower.includes('.lock') || errorLower.includes('lock file')) {
+  if (errorLower.includes(".lock") || errorLower.includes("lock file")) {
     return {
-      title: 'Another git operation is in progress',
-      description: 'Wait for it to complete or remove stale lock files.',
+      title: "Another git operation is in progress",
+      description: "Wait for it to complete or remove stale lock files.",
     };
   }
 
   // Permission denied
-  if (errorLower.includes('permission denied') || errorLower.includes('access denied')) {
+  if (
+    errorLower.includes("permission denied") ||
+    errorLower.includes("access denied")
+  ) {
     return {
-      title: 'Permission denied',
-      description: 'Check file permissions for the project directory.',
+      title: "Permission denied",
+      description: "Check file permissions for the project directory.",
     };
   }
 
   // Default: return original error but cleaned up
   return {
-    title: error.replace(/^(fatal|error):\s*/i, '').split('\n')[0],
+    title: error.replace(/^(fatal|error):\s*/i, "").split("\n")[0],
   };
 }
 
@@ -125,13 +140,16 @@ export function CreateWorktreeDialog({
   projectPath,
   onCreated,
 }: CreateWorktreeDialogProps) {
-  const [branchName, setBranchName] = useState('');
+  const [branchName, setBranchName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<{ title: string; description?: string } | null>(null);
+  const [error, setError] = useState<{
+    title: string;
+    description?: string;
+  } | null>(null);
 
   // Base branch selection state
   const [showBaseBranch, setShowBaseBranch] = useState(false);
-  const [baseBranch, setBaseBranch] = useState('');
+  const [baseBranch, setBaseBranch] = useState("");
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [availableBranches, setAvailableBranches] = useState<
     Array<{ name: string; isRemote: boolean }>
@@ -141,10 +159,10 @@ export function CreateWorktreeDialog({
   const [branchFetchError, setBranchFetchError] = useState<string | null>(null);
 
   // Remote selection state
-  const [selectedRemote, setSelectedRemote] = useState<string>('local');
-  const [availableRemotes, setAvailableRemotes] = useState<Array<{ name: string; url: string }>>(
-    []
-  );
+  const [selectedRemote, setSelectedRemote] = useState<string>("local");
+  const [availableRemotes, setAvailableRemotes] = useState<
+    Array<{ name: string; url: string }>
+  >([]);
   const [remoteBranches, setRemoteBranches] = useState<
     Map<string, Array<{ name: string; fullRef: string }>>
   >(new Map());
@@ -174,31 +192,39 @@ export function CreateWorktreeDialog({
         if (branchResult.success && branchResult.result) {
           setBranchFetchError(null);
           setAvailableBranches(
-            branchResult.result.branches.map((b: { name: string; isRemote: boolean }) => ({
-              name: b.name,
-              isRemote: b.isRemote,
-            }))
+            branchResult.result.branches.map(
+              (b: { name: string; isRemote: boolean }) => ({
+                name: b.name,
+                isRemote: b.isRemote,
+              }),
+            ),
           );
         } else {
           // API returned success: false — treat as an error
           const message =
-            branchResult.error || 'Failed to load branches. You can type a branch name manually.';
+            branchResult.error ||
+            "Failed to load branches. You can type a branch name manually.";
           setBranchFetchError(message);
-          setAvailableBranches([{ name: 'main', isRemote: false }]);
+          setAvailableBranches([{ name: "main", isRemote: false }]);
         }
 
         // Process remotes
         if (remotesResult.success && remotesResult.result) {
           const remotes = remotesResult.result.remotes;
           setAvailableRemotes(
-            remotes.map((r: { name: string; url: string; branches: unknown[] }) => ({
-              name: r.name,
-              url: r.url,
-            }))
+            remotes.map(
+              (r: { name: string; url: string; branches: unknown[] }) => ({
+                name: r.name,
+                url: r.url,
+              }),
+            ),
           );
 
           // Build remote branches map for filtering
-          const branchesMap = new Map<string, Array<{ name: string; fullRef: string }>>();
+          const branchesMap = new Map<
+            string,
+            Array<{ name: string; fullRef: string }>
+          >();
           remotes.forEach(
             (r: {
               name: string;
@@ -206,7 +232,7 @@ export function CreateWorktreeDialog({
               branches: Array<{ name: string; fullRef: string }>;
             }) => {
               branchesMap.set(r.name, r.branches || []);
-            }
+            },
           );
           setRemoteBranches(branchesMap);
         }
@@ -217,12 +243,12 @@ export function CreateWorktreeDialog({
         const message =
           err instanceof Error
             ? err.message
-            : 'Failed to load branches. You can type a branch name manually.';
+            : "Failed to load branches. You can type a branch name manually.";
         setBranchFetchError(message);
         // Provide 'main' as a safe fallback so the autocomplete is not empty,
         // and enable free-form entry (allowCreate) so the user can still type
         // any branch name when the remote list is unavailable.
-        setAvailableBranches([{ name: 'main', isRemote: false }]);
+        setAvailableBranches([{ name: "main", isRemote: false }]);
         setAvailableRemotes([]);
         setRemoteBranches(new Map());
       } finally {
@@ -231,7 +257,7 @@ export function CreateWorktreeDialog({
         }
       }
     },
-    [projectPath]
+    [projectPath],
   );
 
   // Fetch branches when the base branch section is expanded
@@ -256,14 +282,14 @@ export function CreateWorktreeDialog({
       branchFetchAbortRef.current?.abort();
       branchFetchAbortRef.current = null;
 
-      setBranchName('');
-      setBaseBranch('');
+      setBranchName("");
+      setBaseBranch("");
       setShowBaseBranch(false);
       setError(null);
       setAvailableBranches([]);
       setBranchFetchError(null);
       setIsLoadingBranches(false);
-      setSelectedRemote('local');
+      setSelectedRemote("local");
       setAvailableRemotes([]);
       setRemoteBranches(new Map());
     }
@@ -272,7 +298,7 @@ export function CreateWorktreeDialog({
   // Build branch name list for the autocomplete, filtered by selected remote
   const branchNames = useMemo(() => {
     // If "local" is selected, show only local branches
-    if (selectedRemote === 'local') {
+    if (selectedRemote === "local") {
       return availableBranches.filter((b) => !b.isRemote).map((b) => b.name);
     }
 
@@ -300,14 +326,18 @@ export function CreateWorktreeDialog({
     // and may not reflect reality — suppress the remote hint to avoid misleading the user.
     if (branchFetchError) return false;
     // If a remote is explicitly selected, the branch is remote
-    if (selectedRemote !== 'local') return true;
+    if (selectedRemote !== "local") return true;
     // Check fetched branch list first
-    const knownRemote = availableBranches.some((b) => b.name === baseBranch && b.isRemote);
+    const knownRemote = availableBranches.some(
+      (b) => b.name === baseBranch && b.isRemote,
+    );
     if (knownRemote) return true;
     // Heuristic: if the branch contains '/' and isn't a known local branch,
     // treat it as a remote ref (e.g. "origin/main")
-    if (baseBranch.includes('/')) {
-      const isKnownLocal = availableBranches.some((b) => b.name === baseBranch && !b.isRemote);
+    if (baseBranch.includes("/")) {
+      const isKnownLocal = availableBranches.some(
+        (b) => b.name === baseBranch && !b.isRemote,
+      );
       return !isKnownLocal;
     }
     return false;
@@ -315,7 +345,7 @@ export function CreateWorktreeDialog({
 
   const handleCreate = async () => {
     if (!branchName.trim()) {
-      setError({ title: 'Branch name is required' });
+      setError({ title: "Branch name is required" });
       return;
     }
 
@@ -323,8 +353,9 @@ export function CreateWorktreeDialog({
     const validBranchRegex = /^[a-zA-Z0-9._/-]+$/;
     if (!validBranchRegex.test(branchName)) {
       setError({
-        title: 'Invalid branch name',
-        description: 'Use only letters, numbers, dots, underscores, hyphens, and slashes.',
+        title: "Invalid branch name",
+        description:
+          "Use only letters, numbers, dots, underscores, hyphens, and slashes.",
       });
       return;
     }
@@ -334,8 +365,9 @@ export function CreateWorktreeDialog({
     const trimmedBaseBranch = baseBranch.trim();
     if (trimmedBaseBranch && !validBranchRegex.test(trimmedBaseBranch)) {
       setError({
-        title: 'Invalid base branch name',
-        description: 'Use only letters, numbers, dots, underscores, hyphens, and slashes.',
+        title: "Invalid base branch name",
+        description:
+          "Use only letters, numbers, dots, underscores, hyphens, and slashes.",
       });
       return;
     }
@@ -346,55 +378,80 @@ export function CreateWorktreeDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.create) {
-        setError({ title: 'Worktree API not available' });
+        setError({ title: "Worktree API not available" });
         return;
       }
 
       // Pass the validated baseBranch if one was selected (otherwise defaults to HEAD).
       // When a remote is selected, prepend the remote name to form the full ref
       // (e.g. "main" with remote "origin" becomes "origin/main").
-      const effectiveBaseBranch = qualifyRemoteBranch(selectedRemote, trimmedBaseBranch);
-      const result = await api.worktree.create(projectPath, branchName, effectiveBaseBranch);
+      const effectiveBaseBranch = qualifyRemoteBranch(
+        selectedRemote,
+        trimmedBaseBranch,
+      );
+      const result = await api.worktree.create(
+        projectPath,
+        branchName,
+        effectiveBaseBranch,
+      );
 
       if (result.success && result.worktree) {
-        const baseDesc = effectiveBaseBranch ? ` from ${effectiveBaseBranch}` : '';
+        const baseDesc = effectiveBaseBranch
+          ? ` from ${effectiveBaseBranch}`
+          : "";
         const commitInfo = result.worktree.baseCommitHash
           ? ` (${result.worktree.baseCommitHash})`
-          : '';
+          : "";
 
         // Show sync result feedback
         const syncResult = result.worktree.syncResult;
         if (syncResult?.diverged) {
           // Branch had diverged — warn the user
-          toast.warning(`Worktree created for branch "${result.worktree.branch}"`, {
-            description: `${syncResult.message}`,
-            duration: 8000,
-          });
+          toast.warning(
+            `Worktree created for branch "${result.worktree.branch}"`,
+            {
+              description: `${syncResult.message}`,
+              duration: 8000,
+            },
+          );
         } else if (syncResult && !syncResult.synced && syncResult.message) {
           // Sync was attempted but failed (network error, etc.)
-          toast.warning(`Worktree created for branch "${result.worktree.branch}"`, {
-            description: `Created with local copy. ${syncResult.message}`,
-            duration: 6000,
-          });
+          toast.warning(
+            `Worktree created for branch "${result.worktree.branch}"`,
+            {
+              description: `Created with local copy. ${syncResult.message}`,
+              duration: 6000,
+            },
+          );
         } else {
           // Normal success — include commit info if available
-          toast.success(`Worktree created for branch "${result.worktree.branch}"`, {
-            description: result.worktree.isNew
-              ? `New branch created${baseDesc}${commitInfo}`
-              : `Using existing branch${commitInfo}`,
-          });
+          toast.success(
+            `Worktree created for branch "${result.worktree.branch}"`,
+            {
+              description: result.worktree.isNew
+                ? `New branch created${baseDesc}${commitInfo}`
+                : `Using existing branch${commitInfo}`,
+            },
+          );
         }
 
-        onCreated({ path: result.worktree.path, branch: result.worktree.branch });
+        onCreated({
+          path: result.worktree.path,
+          branch: result.worktree.branch,
+        });
         onOpenChange(false);
-        setBranchName('');
-        setBaseBranch('');
+        setBranchName("");
+        setBaseBranch("");
       } else {
-        setError(parseWorktreeError(result.error || 'Failed to create worktree'));
+        setError(
+          parseWorktreeError(result.error || "Failed to create worktree"),
+        );
       }
     } catch (err) {
       setError(
-        parseWorktreeError(err instanceof Error ? err.message : 'Failed to create worktree')
+        parseWorktreeError(
+          err instanceof Error ? err.message : "Failed to create worktree",
+        ),
       );
     } finally {
       setIsLoading(false);
@@ -402,7 +459,7 @@ export function CreateWorktreeDialog({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading && branchName.trim()) {
+    if (e.key === "Enter" && !isLoading && branchName.trim()) {
       handleCreate();
     }
   };
@@ -416,8 +473,8 @@ export function CreateWorktreeDialog({
             Create New Worktree
           </DialogTitle>
           <DialogDescription>
-            Create a new git worktree with its own branch. This allows you to work on multiple
-            features in parallel.
+            Create a new git worktree with its own branch. This allows you to
+            work on multiple features in parallel.
           </DialogDescription>
         </DialogHeader>
 
@@ -453,7 +510,8 @@ export function CreateWorktreeDialog({
               <span>Base Branch</span>
               {baseBranch && !showBaseBranch && (
                 <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono ml-1">
-                  {qualifyRemoteBranch(selectedRemote, baseBranch) ?? baseBranch}
+                  {qualifyRemoteBranch(selectedRemote, baseBranch) ??
+                    baseBranch}
                 </code>
               )}
             </button>
@@ -494,7 +552,10 @@ export function CreateWorktreeDialog({
 
                 {/* Remote Selector */}
                 <div className="grid gap-1.5">
-                  <Label htmlFor="remote-select" className="text-xs text-muted-foreground">
+                  <Label
+                    htmlFor="remote-select"
+                    className="text-xs text-muted-foreground"
+                  >
                     Source
                   </Label>
                   <Select
@@ -502,7 +563,7 @@ export function CreateWorktreeDialog({
                     onValueChange={(value) => {
                       setSelectedRemote(value);
                       // Clear base branch when switching remotes
-                      setBaseBranch('');
+                      setBaseBranch("");
                     }}
                     disabled={isLoadingBranches}
                   >
@@ -541,24 +602,28 @@ export function CreateWorktreeDialog({
                   }}
                   branches={branchNames}
                   placeholder={
-                    selectedRemote === 'local'
-                      ? 'Select local branch (default: HEAD)...'
+                    selectedRemote === "local"
+                      ? "Select local branch (default: HEAD)..."
                       : `Select branch from ${selectedRemote}...`
                   }
                   disabled={isLoadingBranches}
-                  allowCreate={!!branchFetchError || selectedRemote === 'local'}
+                  allowCreate={!!branchFetchError || selectedRemote === "local"}
                 />
 
                 {isRemoteBaseBranch && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Globe className="w-3 h-3" />
-                    <span>Remote branch — will fetch latest before creating worktree</span>
+                    <span>
+                      Remote branch — will fetch latest before creating worktree
+                    </span>
                   </div>
                 )}
                 {!isRemoteBaseBranch && baseBranch && !branchFetchError && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <RefreshCw className="w-3 h-3" />
-                    <span>Will sync with remote tracking branch if available</span>
+                    <span>
+                      Will sync with remote tracking branch if available
+                    </span>
                   </div>
                 )}
               </div>
@@ -569,9 +634,13 @@ export function CreateWorktreeDialog({
             <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/20">
               <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
-                <p className="text-sm font-medium text-destructive">{error.title}</p>
+                <p className="text-sm font-medium text-destructive">
+                  {error.title}
+                </p>
                 {error.description && (
-                  <p className="text-xs text-destructive/80">{error.description}</p>
+                  <p className="text-xs text-destructive/80">
+                    {error.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -587,21 +656,30 @@ export function CreateWorktreeDialog({
                 <code className="bg-muted px-1 rounded">fix/login-bug</code>
               </li>
               <li>
-                <code className="bg-muted px-1 rounded">hotfix/security-patch</code>
+                <code className="bg-muted px-1 rounded">
+                  hotfix/security-patch
+                </code>
               </li>
             </ul>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={isLoading || !branchName.trim()}>
+          <Button
+            onClick={handleCreate}
+            disabled={isLoading || !branchName.trim()}
+          >
             {isLoading ? (
               <>
                 <Spinner size="sm" className="mr-2" />
-                {baseBranch.trim() ? 'Syncing & Creating...' : 'Creating...'}
+                {baseBranch.trim() ? "Syncing & Creating..." : "Creating..."}
               </>
             ) : (
               <>

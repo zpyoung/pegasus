@@ -9,10 +9,14 @@
  * @param ellipsis - The ellipsis string to use (default: '...')
  * @returns The truncated string
  */
-export function truncate(str: string, maxLength: number, ellipsis: string = '...'): string {
+export function truncate(
+  str: string,
+  maxLength: number,
+  ellipsis: string = "...",
+): string {
   if (maxLength < ellipsis.length) {
     throw new Error(
-      `maxLength (${maxLength}) must be at least the length of ellipsis (${ellipsis.length})`
+      `maxLength (${maxLength}) must be at least the length of ellipsis (${ellipsis.length})`,
     );
   }
 
@@ -30,11 +34,11 @@ export function truncate(str: string, maxLength: number, ellipsis: string = '...
  */
 export function toKebabCase(str: string): string {
   return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2') // camelCase -> camel-Case
-    .replace(/[\s_]+/g, '-') // spaces and underscores -> hyphens
-    .replace(/[^a-zA-Z0-9-]/g, '') // remove non-alphanumeric (except hyphens)
-    .replace(/-+/g, '-') // collapse multiple hyphens
-    .replace(/^-|-$/g, '') // remove leading/trailing hyphens
+    .replace(/([a-z])([A-Z])/g, "$1-$2") // camelCase -> camel-Case
+    .replace(/[\s_]+/g, "-") // spaces and underscores -> hyphens
+    .replace(/[^a-zA-Z0-9-]/g, "") // remove non-alphanumeric (except hyphens)
+    .replace(/-+/g, "-") // collapse multiple hyphens
+    .replace(/^-|-$/g, "") // remove leading/trailing hyphens
     .toLowerCase();
 }
 
@@ -45,8 +49,8 @@ export function toKebabCase(str: string): string {
  */
 export function toCamelCase(str: string): string {
   return str
-    .replace(/[^a-zA-Z0-9\s_-]/g, '') // remove special characters
-    .replace(/[-_\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ''))
+    .replace(/[^a-zA-Z0-9\s_-]/g, "") // remove special characters
+    .replace(/[-_\s]+(.)?/g, (_, char) => (char ? char.toUpperCase() : ""))
     .replace(/^[A-Z]/, (char) => char.toLowerCase());
 }
 
@@ -78,7 +82,7 @@ export function capitalize(str: string): string {
  * @returns The string with duplicate whitespace removed
  */
 export function collapseWhitespace(str: string): string {
-  return str.replace(/\s+/g, ' ').trim();
+  return str.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -105,7 +109,10 @@ export function isNotBlank(str: string | null | undefined): boolean {
  * @param defaultValue - The default value if parsing fails (default: 0)
  * @returns The parsed integer or the default value
  */
-export function safeParseInt(str: string | null | undefined, defaultValue: number = 0): number {
+export function safeParseInt(
+  str: string | null | undefined,
+  defaultValue: number = 0,
+): number {
   if (isBlank(str)) {
     return defaultValue;
   }
@@ -123,21 +130,21 @@ export function safeParseInt(str: string | null | undefined, defaultValue: numbe
 export function slugify(str: string, maxLength?: number): string {
   let slug = str
     .toLowerCase()
-    .normalize('NFD') // Normalize unicode characters
-    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-    .replace(/[^a-z0-9\s-]/g, '') // Remove non-alphanumeric
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Collapse multiple hyphens
-    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    .normalize("NFD") // Normalize unicode characters
+    .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+    .replace(/[^a-z0-9\s-]/g, "") // Remove non-alphanumeric
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
 
   if (maxLength !== undefined && slug.length > maxLength) {
     // Truncate at word boundary if possible
     slug = slug.slice(0, maxLength);
-    const lastHyphen = slug.lastIndexOf('-');
+    const lastHyphen = slug.lastIndexOf("-");
     if (lastHyphen > maxLength * 0.5) {
       slug = slug.slice(0, lastHyphen);
     }
-    slug = slug.replace(/-$/g, ''); // Remove trailing hyphen after truncation
+    slug = slug.replace(/-$/g, ""); // Remove trailing hyphen after truncation
   }
 
   return slug;
@@ -149,7 +156,7 @@ export function slugify(str: string, maxLength?: number): string {
  * @returns The escaped string safe for use in a RegExp
  */
 export function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -159,7 +166,11 @@ export function escapeRegex(str: string): string {
  * @param pluralForm - Optional custom plural form (default: word + 's')
  * @returns The word in singular or plural form
  */
-export function pluralize(word: string, count: number, pluralForm?: string): string {
+export function pluralize(
+  word: string,
+  count: number,
+  pluralForm?: string,
+): string {
   if (count === 1) {
     return word;
   }
@@ -173,6 +184,10 @@ export function pluralize(word: string, count: number, pluralForm?: string): str
  * @param plural - Optional custom plural form
  * @returns Formatted string with count and word
  */
-export function formatCount(count: number, singular: string, plural?: string): string {
+export function formatCount(
+  count: number,
+  singular: string,
+  plural?: string,
+): string {
   return `${count} ${pluralize(singular, count, plural)}`;
 }

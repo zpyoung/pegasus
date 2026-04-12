@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   FolderOpen,
   Folder,
@@ -8,7 +8,7 @@ import {
   Check,
   Search,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,14 +16,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
-import { useOSDetection } from '@/hooks';
-import { apiPost } from '@/lib/api-fetch';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { useOSDetection } from "@/hooks";
+import { apiPost } from "@/lib/api-fetch";
+import { cn } from "@/lib/utils";
 
 interface ProjectFileEntry {
   name: string;
@@ -57,18 +57,20 @@ export function ProjectFileSelectorDialog({
   onSelect,
   projectPath,
   existingFiles = [],
-  title = 'Select Files to Copy',
-  description = 'Browse your project and select files or directories to copy into new worktrees.',
+  title = "Select Files to Copy",
+  description = "Browse your project and select files or directories to copy into new worktrees.",
 }: ProjectFileSelectorDialogProps) {
   const { isMac } = useOSDetection();
-  const [currentRelativePath, setCurrentRelativePath] = useState('');
-  const [parentRelativePath, setParentRelativePath] = useState<string | null>(null);
+  const [currentRelativePath, setCurrentRelativePath] = useState("");
+  const [parentRelativePath, setParentRelativePath] = useState<string | null>(
+    null,
+  );
   const [entries, setEntries] = useState<ProjectFileEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [warning, setWarning] = useState('');
+  const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Ref to track the current request generation; incremented to cancel stale requests
   const requestGenRef = useRef(0);
@@ -76,10 +78,10 @@ export function ProjectFileSelectorDialog({
   // Track the path segments for breadcrumb navigation
   const breadcrumbs = useMemo(() => {
     if (!currentRelativePath) return [];
-    const parts = currentRelativePath.split('/').filter(Boolean);
+    const parts = currentRelativePath.split("/").filter(Boolean);
     return parts.map((part, index) => ({
       name: part,
-      path: parts.slice(0, index + 1).join('/'),
+      path: parts.slice(0, index + 1).join("/"),
     }));
   }, [currentRelativePath]);
 
@@ -91,15 +93,18 @@ export function ProjectFileSelectorDialog({
       const isCancelled = () => requestGenRef.current !== generation;
 
       setLoading(true);
-      setError('');
-      setWarning('');
-      setSearchQuery('');
+      setError("");
+      setWarning("");
+      setSearchQuery("");
 
       try {
-        const result = await apiPost<BrowseResult>('/api/fs/browse-project-files', {
-          projectPath,
-          relativePath: relativePath || '',
-        });
+        const result = await apiPost<BrowseResult>(
+          "/api/fs/browse-project-files",
+          {
+            projectPath,
+            relativePath: relativePath || "",
+          },
+        );
 
         if (isCancelled()) return;
 
@@ -107,38 +112,42 @@ export function ProjectFileSelectorDialog({
           setCurrentRelativePath(result.currentRelativePath);
           setParentRelativePath(result.parentRelativePath);
           setEntries(result.entries);
-          setWarning(result.warning || '');
+          setWarning(result.warning || "");
         } else {
-          setError(result.error || 'Failed to browse directory');
+          setError(result.error || "Failed to browse directory");
         }
       } catch (err) {
         if (isCancelled()) return;
-        setError(err instanceof Error ? err.message : 'Failed to load directory contents');
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load directory contents",
+        );
       } finally {
         if (!isCancelled()) {
           setLoading(false);
         }
       }
     },
-    [projectPath]
+    [projectPath],
   );
 
   // Reset state when dialog opens/closes
   useEffect(() => {
     if (open) {
       setSelectedPaths(new Set());
-      setSearchQuery('');
+      setSearchQuery("");
       browseDirectory();
     } else {
       // Invalidate any in-flight request so it won't clobber the cleared state
       requestGenRef.current++;
-      setCurrentRelativePath('');
+      setCurrentRelativePath("");
       setParentRelativePath(null);
       setEntries([]);
-      setError('');
-      setWarning('');
+      setError("");
+      setWarning("");
       setSelectedPaths(new Set());
-      setSearchQuery('');
+      setSearchQuery("");
     }
   }, [open, browseDirectory]);
 
@@ -148,7 +157,7 @@ export function ProjectFileSelectorDialog({
         browseDirectory(entry.relativePath);
       }
     },
-    [browseDirectory]
+    [browseDirectory],
   );
 
   const handleGoBack = useCallback(() => {
@@ -165,7 +174,7 @@ export function ProjectFileSelectorDialog({
     (path: string) => {
       browseDirectory(path);
     },
-    [browseDirectory]
+    [browseDirectory],
   );
 
   const handleToggleSelect = useCallback((entry: ProjectFileEntry) => {
@@ -193,7 +202,7 @@ export function ProjectFileSelectorDialog({
     (relativePath: string) => {
       return existingFiles.includes(relativePath);
     },
-    [existingFiles]
+    [existingFiles],
   );
 
   // Filter entries based on search query
@@ -208,7 +217,7 @@ export function ProjectFileSelectorDialog({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         if (selectedPaths.size > 0 && !loading) {
           handleConfirmSelection();
@@ -216,8 +225,8 @@ export function ProjectFileSelectorDialog({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, selectedPaths, loading, handleConfirmSelection]);
 
   const selectedCount = selectedPaths.size;
@@ -254,25 +263,28 @@ export function ProjectFileSelectorDialog({
               <button
                 onClick={handleGoToRoot}
                 className={cn(
-                  'text-xs font-mono shrink-0 transition-colors',
+                  "text-xs font-mono shrink-0 transition-colors",
                   currentRelativePath
-                    ? 'text-muted-foreground hover:text-foreground'
-                    : 'text-foreground font-medium'
+                    ? "text-muted-foreground hover:text-foreground"
+                    : "text-foreground font-medium",
                 )}
                 disabled={loading}
               >
                 Project Root
               </button>
               {breadcrumbs.map((crumb) => (
-                <span key={crumb.path} className="flex items-center gap-1 shrink-0">
+                <span
+                  key={crumb.path}
+                  className="flex items-center gap-1 shrink-0"
+                >
                   <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
                   <button
                     onClick={() => handleBreadcrumbClick(crumb.path)}
                     className={cn(
-                      'text-xs font-mono truncate max-w-[150px] transition-colors',
+                      "text-xs font-mono truncate max-w-[150px] transition-colors",
                       crumb.path === currentRelativePath
-                        ? 'text-foreground font-medium'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? "text-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                     disabled={loading}
                   >
@@ -295,7 +307,7 @@ export function ProjectFileSelectorDialog({
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
@@ -308,7 +320,8 @@ export function ProjectFileSelectorDialog({
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-brand-500/10 border border-brand-500/20 text-xs">
               <Check className="w-3.5 h-3.5 text-brand-500" />
               <span className="text-brand-500 font-medium">
-                {selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected
+                {selectedCount} {selectedCount === 1 ? "item" : "items"}{" "}
+                selected
               </span>
               <button
                 onClick={() => setSelectedPaths(new Set())}
@@ -342,7 +355,9 @@ export function ProjectFileSelectorDialog({
             {!loading && !error && filteredEntries.length === 0 && (
               <div className="flex items-center justify-center h-full p-4">
                 <div className="text-xs text-muted-foreground">
-                  {searchQuery ? 'No matching files or directories' : 'This directory is empty'}
+                  {searchQuery
+                    ? "No matching files or directories"
+                    : "This directory is empty"}
                 </div>
               </div>
             )}
@@ -357,12 +372,12 @@ export function ProjectFileSelectorDialog({
                     <div
                       key={entry.relativePath}
                       className={cn(
-                        'w-full flex items-center gap-2 px-2 py-1.5 transition-colors text-left group',
+                        "w-full flex items-center gap-2 px-2 py-1.5 transition-colors text-left group",
                         isConfigured
-                          ? 'opacity-50'
+                          ? "opacity-50"
                           : isSelected
-                            ? 'bg-brand-500/10'
-                            : 'hover:bg-sidebar-accent/10'
+                            ? "bg-brand-500/10"
+                            : "hover:bg-sidebar-accent/10",
                       )}
                     >
                       {/* Checkbox for selection */}
@@ -421,8 +436,8 @@ export function ProjectFileSelectorDialog({
           </div>
 
           <div className="text-[10px] text-muted-foreground">
-            Select files or directories to copy into new worktrees. Directories are copied
-            recursively. Click the arrow to browse into a directory.
+            Select files or directories to copy into new worktrees. Directories
+            are copied recursively. Click the arrow to browse into a directory.
           </div>
         </div>
 
@@ -434,13 +449,13 @@ export function ProjectFileSelectorDialog({
             size="sm"
             onClick={handleConfirmSelection}
             disabled={selectedCount === 0 || loading}
-            title={`Add ${selectedCount} selected items (${isMac ? '⌘' : 'Ctrl'}+Enter)`}
+            title={`Add ${selectedCount} selected items (${isMac ? "⌘" : "Ctrl"}+Enter)`}
           >
             <Check className="w-3.5 h-3.5 mr-1.5" />
-            Add {selectedCount > 0 ? `${selectedCount} ` : ''}
-            {selectedCount === 1 ? 'Item' : 'Items'}
+            Add {selectedCount > 0 ? `${selectedCount} ` : ""}
+            {selectedCount === 1 ? "Item" : "Items"}
             <KbdGroup className="ml-1">
-              <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+              <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
               <Kbd>↵</Kbd>
             </KbdGroup>
           </Button>

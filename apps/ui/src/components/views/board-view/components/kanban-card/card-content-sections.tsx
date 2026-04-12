@@ -1,7 +1,7 @@
 // @ts-nocheck - content section prop typing with feature data extraction
-import { memo } from 'react';
-import { Feature } from '@/store/app-store';
-import { GitBranch, GitPullRequest, ExternalLink } from 'lucide-react';
+import { memo } from "react";
+import { Feature } from "@/store/app-store";
+import { GitBranch, GitPullRequest, ExternalLink } from "lucide-react";
 
 /** Deterministic branch-to-hue mapping for per-branch badge coloring. */
 function branchToHue(branch: string): number {
@@ -29,35 +29,51 @@ export const CardContentSections = memo(function CardContentSections({
 }: CardContentSectionsProps) {
   // In all-worktrees mode, show branch for every feature (normalizing null to mainBranch)
   const displayBranch = showAllWorktrees
-    ? (feature.branchName ?? mainBranch ?? 'main')
+    ? (feature.branchName ?? mainBranch ?? "main")
     : feature.branchName;
-  const showBranchBadge = useWorktrees && (showAllWorktrees ? true : !!feature.branchName);
+  const showBranchBadge =
+    useWorktrees && (showAllWorktrees ? true : !!feature.branchName);
 
   return (
     <>
       {/* Target Branch Display */}
-      {showBranchBadge && (
-        showAllWorktrees ? (
+      {showBranchBadge &&
+        (showAllWorktrees ? (
           // Pill badge with per-branch hash-to-hue coloring (all-worktrees mode)
           <div className="mb-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium${onBranchPillClick ? ' cursor-pointer hover:brightness-125 transition-[filter]' : ''}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium${onBranchPillClick ? " cursor-pointer hover:brightness-125 transition-[filter]" : ""}`}
               style={{
-                backgroundColor: `hsl(${branchToHue(displayBranch ?? 'main')} 55% 20%)`,
-                color: `hsl(${branchToHue(displayBranch ?? 'main')} 80% 75%)`,
+                backgroundColor: `hsl(${branchToHue(displayBranch ?? "main")} 55% 20%)`,
+                color: `hsl(${branchToHue(displayBranch ?? "main")} 80% 75%)`,
               }}
-              title={onBranchPillClick ? `Filter board to: ${displayBranch}` : displayBranch}
+              title={
+                onBranchPillClick
+                  ? `Filter board to: ${displayBranch}`
+                  : displayBranch
+              }
               data-testid="branch-badge-pill"
               {...(onBranchPillClick && {
-                role: 'button',
+                role: "button",
                 tabIndex: 0,
-                onClick: (e) => { e.stopPropagation(); onBranchPillClick(displayBranch ?? 'main'); },
+                onClick: (e) => {
+                  e.stopPropagation();
+                  onBranchPillClick(displayBranch ?? "main");
+                },
                 onPointerDown: (e) => e.stopPropagation(),
-                onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onBranchPillClick(displayBranch ?? 'main'); } },
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onBranchPillClick(displayBranch ?? "main");
+                  }
+                },
               })}
             >
               <GitBranch className="w-2.5 h-2.5 shrink-0" />
-              <span className="font-mono truncate max-w-[120px]">{displayBranch}</span>
+              <span className="font-mono truncate max-w-[120px]">
+                {displayBranch}
+              </span>
             </span>
           </div>
         ) : (
@@ -68,14 +84,13 @@ export const CardContentSections = memo(function CardContentSections({
               {displayBranch}
             </span>
           </div>
-        )
-      )}
+        ))}
 
       {/* PR URL Display */}
-      {typeof feature.prUrl === 'string' &&
+      {typeof feature.prUrl === "string" &&
         /^https?:\/\//i.test(feature.prUrl) &&
         (() => {
-          const prNumber = feature.prUrl.split('/').pop();
+          const prNumber = feature.prUrl.split("/").pop();
           return (
             <div className="mb-2">
               <a
@@ -90,7 +105,7 @@ export const CardContentSections = memo(function CardContentSections({
               >
                 <GitPullRequest className="w-3 h-3 shrink-0" />
                 <span className="truncate max-w-[150px]">
-                  {prNumber ? `Pull Request #${prNumber}` : 'Pull Request'}
+                  {prNumber ? `Pull Request #${prNumber}` : "Pull Request"}
                 </span>
                 <ExternalLink className="w-2.5 h-2.5 shrink-0" />
               </a>

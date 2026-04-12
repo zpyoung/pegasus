@@ -9,9 +9,12 @@
  * the requireGitRepoOnly middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { stageFiles, StageFilesValidationError } from '../../../services/stage-files-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import {
+  stageFiles,
+  StageFilesValidationError,
+} from "../../../services/stage-files-service.js";
 
 export function createStageFilesHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -19,13 +22,13 @@ export function createStageFilesHandler() {
       const { worktreePath, files, operation } = req.body as {
         worktreePath: string;
         files: string[];
-        operation: 'stage' | 'unstage';
+        operation: "stage" | "unstage";
       };
 
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -33,22 +36,22 @@ export function createStageFilesHandler() {
       if (!Array.isArray(files) || files.length === 0) {
         res.status(400).json({
           success: false,
-          error: 'files array required and must not be empty',
+          error: "files array required and must not be empty",
         });
         return;
       }
 
       for (const file of files) {
-        if (typeof file !== 'string' || file.trim() === '') {
+        if (typeof file !== "string" || file.trim() === "") {
           res.status(400).json({
             success: false,
-            error: 'Each element of files must be a non-empty string',
+            error: "Each element of files must be a non-empty string",
           });
           return;
         }
       }
 
-      if (operation !== 'stage' && operation !== 'unstage') {
+      if (operation !== "stage" && operation !== "unstage") {
         res.status(400).json({
           success: false,
           error: 'operation must be "stage" or "unstage"',
@@ -67,7 +70,10 @@ export function createStageFilesHandler() {
         res.status(400).json({ success: false, error: error.message });
         return;
       }
-      logError(error, `${(req.body as { operation?: string })?.operation ?? 'stage'} files failed`);
+      logError(
+        error,
+        `${(req.body as { operation?: string })?.operation ?? "stage"} files failed`,
+      );
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

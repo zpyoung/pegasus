@@ -1,7 +1,7 @@
-import { Component, type ReactNode, type ErrorInfo } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { Component, type ReactNode, type ErrorInfo } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 
-const logger = createLogger('AppErrorBoundary');
+const logger = createLogger("AppErrorBoundary");
 
 interface Props {
   children: ReactNode;
@@ -14,7 +14,7 @@ interface State {
 }
 
 /** Key used to track recent crash timestamps for crash loop detection */
-const CRASH_TIMESTAMPS_KEY = 'pegasus-crash-timestamps';
+const CRASH_TIMESTAMPS_KEY = "pegasus-crash-timestamps";
 /** Number of crashes within the time window that constitutes a crash loop */
 const CRASH_LOOP_THRESHOLD = 3;
 /** Time window in ms for crash loop detection (30 seconds) */
@@ -45,7 +45,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('Uncaught application error:', {
+    logger.error("Uncaught application error:", {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -65,10 +65,10 @@ export class AppErrorBoundary extends Component<Props, State> {
 
       if (recent.length >= CRASH_LOOP_THRESHOLD) {
         logger.error(
-          `Crash loop detected (${recent.length} crashes in ${CRASH_LOOP_WINDOW_MS}ms) — clearing UI cache`
+          `Crash loop detected (${recent.length} crashes in ${CRASH_LOOP_WINDOW_MS}ms) — clearing UI cache`,
         );
         // Auto-clear the UI cache to break the loop
-        localStorage.removeItem('pegasus-ui-cache');
+        localStorage.removeItem("pegasus-ui-cache");
         sessionStorage.removeItem(CRASH_TIMESTAMPS_KEY);
         this.setState({ isCrashLoop: true });
       }
@@ -85,7 +85,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     // Clear the UI cache store that persists worktree selections and other UI state.
     // This breaks crash loops caused by stale worktree paths that no longer exist on disk.
     try {
-      localStorage.removeItem('pegasus-ui-cache');
+      localStorage.removeItem("pegasus-ui-cache");
     } catch {
       // localStorage may be unavailable in some contexts
     }
@@ -131,8 +131,8 @@ export class AppErrorBoundary extends Component<Props, State> {
             <h1 className="text-xl font-semibold">Something went wrong</h1>
             <p className="text-sm text-muted-foreground max-w-md">
               {this.state.isCrashLoop
-                ? 'The application crashed repeatedly, likely due to stale cached data. The cache has been cleared automatically. Reload to continue.'
-                : 'The application encountered an unexpected error. This is usually temporary and can be resolved by reloading the page.'}
+                ? "The application crashed repeatedly, likely due to stale cached data. The cache has been cleared automatically. Reload to continue."
+                : "The application encountered an unexpected error. This is usually temporary and can be resolved by reloading the page."}
             </p>
           </div>
 

@@ -4,27 +4,35 @@
  * Types for validating GitHub issues against the codebase using Claude SDK.
  */
 
-import type { ModelId } from './model.js';
+import type { ModelId } from "./model.js";
 
 /**
  * Verdict from issue validation
  */
-export type IssueValidationVerdict = 'valid' | 'invalid' | 'needs_clarification';
+export type IssueValidationVerdict =
+  | "valid"
+  | "invalid"
+  | "needs_clarification";
 
 /**
  * Confidence level of the validation
  */
-export type IssueValidationConfidence = 'high' | 'medium' | 'low';
+export type IssueValidationConfidence = "high" | "medium" | "low";
 
 /**
  * Complexity estimation for valid issues
  */
-export type IssueComplexity = 'trivial' | 'simple' | 'moderate' | 'complex' | 'very_complex';
+export type IssueComplexity =
+  | "trivial"
+  | "simple"
+  | "moderate"
+  | "complex"
+  | "very_complex";
 
 /**
  * Recommendation for PR-related action
  */
-export type PRRecommendation = 'wait_for_merge' | 'pr_needs_work' | 'no_pr';
+export type PRRecommendation = "wait_for_merge" | "pr_needs_work" | "no_pr";
 
 /**
  * Analysis of a linked pull request
@@ -122,19 +130,19 @@ export interface IssueValidationErrorResponse {
  */
 export type IssueValidationEvent =
   | {
-      type: 'issue_validation_start';
+      type: "issue_validation_start";
       issueNumber: number;
       issueTitle: string;
       projectPath: string;
     }
   | {
-      type: 'issue_validation_progress';
+      type: "issue_validation_progress";
       issueNumber: number;
       content: string;
       projectPath: string;
     }
   | {
-      type: 'issue_validation_complete';
+      type: "issue_validation_complete";
       issueNumber: number;
       issueTitle: string;
       result: IssueValidationResult;
@@ -143,13 +151,13 @@ export type IssueValidationEvent =
       model: ModelId;
     }
   | {
-      type: 'issue_validation_error';
+      type: "issue_validation_error";
       issueNumber: number;
       error: string;
       projectPath: string;
     }
   | {
-      type: 'issue_validation_viewed';
+      type: "issue_validation_viewed";
       issueNumber: number;
       projectPath: string;
     };

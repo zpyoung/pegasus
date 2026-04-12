@@ -57,6 +57,7 @@ AutoModeServiceCompat          (compatibility shim used by routes)
 ### GlobalAutoModeService
 
 Created once at server startup and shared across all facades. Responsible for:
+
 - Global status (all running features across all projects)
 - Active auto-loop project/worktree enumeration
 - Graceful shutdown: marking all running features as `interrupted`
@@ -68,7 +69,7 @@ Created per-project path (cached in `AutoModeServiceCompat`). Provides all per-p
 
 ```typescript
 // Creating a facade (internal pattern used by AutoModeServiceCompat)
-const facade = AutoModeServiceFacade.create('/path/to/project', {
+const facade = AutoModeServiceFacade.create("/path/to/project", {
   events: eventEmitter,
   settingsService,
   sharedServices, // from GlobalAutoModeService.getSharedServices()
@@ -78,12 +79,13 @@ const facade = AutoModeServiceFacade.create('/path/to/project', {
 await facade.startAutoLoop(null, 3);
 
 // Start auto-mode for a named worktree
-await facade.startAutoLoop('feature/my-branch', 2);
+await facade.startAutoLoop("feature/my-branch", 2);
 ```
 
 ### AutoModeServiceCompat
 
 The compatibility shim that routes use. It owns the facade cache and delegates:
+
 - Global operations to `GlobalAutoModeService`
 - Per-project operations to the appropriate `AutoModeServiceFacade`
 
@@ -121,7 +123,11 @@ The `AutoModeServiceFacade.isFeatureEligibleForAutoMode()` static method determi
 // A feature is eligible if:
 // 1. Status is 'backlog', 'ready', 'interrupted', or a pipeline status
 // 2. branchName matches the current worktree scope
-AutoModeServiceFacade.isFeatureEligibleForAutoMode(feature, branchName, primaryBranch);
+AutoModeServiceFacade.isFeatureEligibleForAutoMode(
+  feature,
+  branchName,
+  primaryBranch,
+);
 ```
 
 For the main worktree (`branchName === null`): features with no `branchName` or one matching the primary branch (e.g., `main`) are eligible.
@@ -139,13 +145,16 @@ For named worktrees: only features whose `branchName` exactly matches the worktr
 ```typescript
 // Start the loop — returns the resolved maxConcurrency
 const maxConcurrency = await coordinator.startAutoLoopForProject(
-  '/path/to/project',
-  null,        // branchName: null for main worktree
-  3            // maxConcurrency (optional, falls back to settings)
+  "/path/to/project",
+  null, // branchName: null for main worktree
+  3, // maxConcurrency (optional, falls back to settings)
 );
 
 // Stop the loop — returns count of still-running features
-const runningCount = await coordinator.stopAutoLoopForProject('/path/to/project', null);
+const runningCount = await coordinator.stopAutoLoopForProject(
+  "/path/to/project",
+  null,
+);
 ```
 
 Each project/worktree gets a unique key: `${projectPath}::${branchName ?? '__main__'}`.
@@ -176,6 +185,7 @@ When paused, the loop emits `auto_mode_paused_failures` and stops itself. The us
 ### Concurrency Resolution
 
 `maxConcurrency` is resolved in priority order:
+
 1. Explicitly provided value (API parameter)
 2. Per-worktree setting from `settings.autoModeByWorktree`
 3. Global `settings.maxConcurrency`
@@ -192,24 +202,24 @@ When paused, the loop emits `auto_mode_paused_failures` and stops itself. The us
 ```typescript
 // Acquire a slot — throws 'already running' if occupied and allowReuse is false
 const entry = concurrencyManager.acquire({
-  featureId: 'feat-abc',
-  projectPath: '/path/to/project',
+  featureId: "feat-abc",
+  projectPath: "/path/to/project",
   isAutoMode: true,
 });
 
 // Nested acquire (e.g., resumeFeature → executeFeature)
 const entry = concurrencyManager.acquire({
-  featureId: 'feat-abc',
-  projectPath: '/path/to/project',
+  featureId: "feat-abc",
+  projectPath: "/path/to/project",
   isAutoMode: false,
-  allowReuse: true,  // increments leaseCount instead of throwing
+  allowReuse: true, // increments leaseCount instead of throwing
 });
 
 // Release — decrements leaseCount; removes entry when count reaches 0
-concurrencyManager.release('feat-abc');
+concurrencyManager.release("feat-abc");
 
 // Force-release (used by stopFeature to bypass leaseCount)
-concurrencyManager.release('feat-abc', { force: true });
+concurrencyManager.release("feat-abc", { force: true });
 ```
 
 ### Worktree-Aware Counting
@@ -219,10 +229,16 @@ The concurrency limit is enforced per worktree:
 ```typescript
 // Count for main worktree (branchName: null)
 // Matches features where branchName is null OR equals the primary branch name
-const count = await concurrencyManager.getRunningCountForWorktree(projectPath, null);
+const count = await concurrencyManager.getRunningCountForWorktree(
+  projectPath,
+  null,
+);
 
 // Count for a named worktree (exact branch match)
-const count = await concurrencyManager.getRunningCountForWorktree(projectPath, 'feature/my-branch');
+const count = await concurrencyManager.getRunningCountForWorktree(
+  projectPath,
+  "feature/my-branch",
+);
 ```
 
 Manual feature starts (via `/run-feature`) bypass the concurrency limit and always execute immediately, but their presence is counted when auto-mode decides whether to dispatch additional features.
@@ -279,11 +295,11 @@ For the legacy (non-YAML) flow, if the agent finishes but `planSpec.tasks` has p
 
 After successful execution:
 
-| Condition | Final Status |
-|-----------|-------------|
-| `feature.skipTests === true` | `waiting_approval` |
-| Agent output has no tool usage markers or is too short | `waiting_approval` |
-| Agent did meaningful work (tool markers + sufficient output) | `verified` |
+| Condition                                                    | Final Status       |
+| ------------------------------------------------------------ | ------------------ |
+| `feature.skipTests === true`                                 | `waiting_approval` |
+| Agent output has no tool usage markers or is too short       | `waiting_approval` |
+| Agent did meaningful work (tool markers + sufficient output) | `verified`         |
 
 ---
 
@@ -325,6 +341,7 @@ stages:
 ```
 
 Template variables available in prompts:
+
 - `{{task.description}}` — feature description
 - `{{task.title}}` — feature title
 - `{{project.language}}` — project language (from project settings)
@@ -352,6 +369,7 @@ Template variables available in prompts:
 After a crash or stop, `StageRunner` reloads `pipeline-state.json` and skips stages that already completed, resuming from the next incomplete stage with the accumulated context from the last checkpoint. Stage order and IDs are validated before resuming; if they don't match the current pipeline definition, the runner starts fresh.
 
 Events emitted during pipeline execution:
+
 - `pipeline_step_started` — when a stage begins
 - `pipeline_step_complete` — when a stage finishes
 - `auto_mode_progress` — progress updates for the UI
@@ -389,6 +407,7 @@ Agent resumes with answered Q&A injected into the prompt
 ### Question Types
 
 Questions can be:
+
 - `free-text` — open-ended text input
 - `single-select` — one of several provided options
 - `multi-select` — multiple options
@@ -460,23 +479,23 @@ This handles both clean shutdowns and hard crashes/kills.
 
 Auto-mode communicates state changes to the frontend in real time via WebSocket events. All events are under the `auto-mode:event` channel.
 
-| Event Name | Description |
-|-----------|-------------|
-| `auto_mode_started` | Loop started for a project/worktree |
-| `auto_mode_stopped` | Loop stopped |
-| `auto_mode_idle` | No pending features — loop is waiting |
-| `auto_mode_paused_failures` | Loop paused due to consecutive failures |
-| `auto_mode_feature_start` | A feature began execution |
-| `auto_mode_feature_complete` | A feature finished (success or abort) |
-| `auto_mode_progress` | Progress text from agent execution |
-| `auto_mode_error` | An error occurred (non-abort, non-pause) |
-| `feature_status_changed` | Feature status updated |
-| `question_required` | Agent asked one or more questions |
-| `question_answered` | A question was answered |
-| `plan_rejected` | User rejected an agent-generated plan |
-| `planning_started` | Planning phase started |
-| `pipeline_step_started` | A YAML pipeline stage began |
-| `pipeline_step_complete` | A YAML pipeline stage finished |
+| Event Name                   | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| `auto_mode_started`          | Loop started for a project/worktree      |
+| `auto_mode_stopped`          | Loop stopped                             |
+| `auto_mode_idle`             | No pending features — loop is waiting    |
+| `auto_mode_paused_failures`  | Loop paused due to consecutive failures  |
+| `auto_mode_feature_start`    | A feature began execution                |
+| `auto_mode_feature_complete` | A feature finished (success or abort)    |
+| `auto_mode_progress`         | Progress text from agent execution       |
+| `auto_mode_error`            | An error occurred (non-abort, non-pause) |
+| `feature_status_changed`     | Feature status updated                   |
+| `question_required`          | Agent asked one or more questions        |
+| `question_answered`          | A question was answered                  |
+| `plan_rejected`              | User rejected an agent-generated plan    |
+| `planning_started`           | Planning phase started                   |
+| `pipeline_step_started`      | A YAML pipeline stage began              |
+| `pipeline_step_complete`     | A YAML pipeline stage finished           |
 
 ---
 
@@ -768,18 +787,18 @@ Defined in `@pegasus/types` (`libs/types/src/feature.ts`). Key fields relevant t
 ```typescript
 interface Feature {
   id: string;
-  status?: string;              // See lifecycle states above
-  branchName?: string | null;   // Target worktree branch
-  pipeline?: string;            // YAML pipeline slug (e.g., "feature")
+  status?: string; // See lifecycle states above
+  branchName?: string | null; // Target worktree branch
+  pipeline?: string; // YAML pipeline slug (e.g., "feature")
   pipelineInputs?: Record<string, string | number | boolean>;
-  planningMode?: PlanningMode;  // 'skip' | 'spec' | 'full'
+  planningMode?: PlanningMode; // 'skip' | 'spec' | 'full'
   requirePlanApproval?: boolean;
-  planSpec?: PlanSpec;          // Plan generation and approval state
+  planSpec?: PlanSpec; // Plan generation and approval state
   questionState?: FeatureQuestionState; // Pending agent questions
-  priority?: number;            // Lower = higher priority (default: 2)
+  priority?: number; // Lower = higher priority (default: 2)
   skipTests?: boolean;
-  model?: string;               // Override model for this feature
-  dependencies?: string[];      // Feature IDs that must complete first
+  model?: string; // Override model for this feature
+  dependencies?: string[]; // Feature IDs that must complete first
 }
 ```
 
@@ -796,7 +815,7 @@ interface RunningFeature {
   abortController: AbortController;
   isAutoMode: boolean;
   startTime: number;
-  leaseCount: number;           // Reference count for nested acquire/release
+  leaseCount: number; // Reference count for nested acquire/release
   model?: string;
   provider?: ModelProvider;
 }
@@ -811,7 +830,7 @@ interface AutoModeConfig {
   maxConcurrency: number;
   useWorktrees: boolean;
   projectPath: string;
-  branchName: string | null;    // null for main worktree
+  branchName: string | null; // null for main worktree
 }
 ```
 
@@ -822,13 +841,13 @@ A question the agent posed during execution:
 ```typescript
 interface AgentQuestion {
   id: string;
-  stageId: string;              // Which pipeline stage or 'agent' for non-pipeline
+  stageId: string; // Which pipeline stage or 'agent' for non-pipeline
   question: string;
-  type: 'free-text' | 'single-select' | 'multi-select';
+  type: "free-text" | "single-select" | "multi-select";
   options?: Array<{ label: string; description?: string }>;
-  status: 'pending' | 'answered';
+  status: "pending" | "answered";
   answer?: string;
-  source?: 'yaml' | 'agent';   // yaml: pre-stage; agent: mid-execution
+  source?: "yaml" | "agent"; // yaml: pre-stage; agent: mid-execution
 }
 ```
 

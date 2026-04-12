@@ -2,7 +2,7 @@
  * Common utilities shared across all route modules
  */
 
-import { createLogger } from '@pegasus/utils';
+import { createLogger } from "@pegasus/utils";
 
 // Re-export git utilities from shared package
 export {
@@ -16,7 +16,7 @@ export {
   listAllFilesInDirectory,
   generateDiffsForNonGitDirectory,
   getGitRepositoryDiffs,
-} from '@pegasus/git-utils';
+} from "@pegasus/git-utils";
 
 type Logger = ReturnType<typeof createLogger>;
 
@@ -24,7 +24,7 @@ type Logger = ReturnType<typeof createLogger>;
  * Get error message from error object
  */
 export function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unknown error';
+  return error instanceof Error ? error.message : "Unknown error";
 }
 
 /**

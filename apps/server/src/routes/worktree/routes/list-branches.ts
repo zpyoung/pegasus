@@ -5,11 +5,15 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { getErrorMessage, logWorktreeError, execGitCommand } from '../common.js';
-import { getRemotesWithBranch } from '../../../services/worktree-service.js';
+import type { Request, Response } from "express";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import {
+  getErrorMessage,
+  logWorktreeError,
+  execGitCommand,
+} from "../common.js";
+import { getRemotesWithBranch } from "../../../services/worktree-service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -30,31 +34,31 @@ export function createListBranchesHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
       // Get current branch (execGitCommand avoids spawning /bin/sh; works in sandboxed CI)
       const currentBranchOutput = await execGitCommand(
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        worktreePath
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        worktreePath,
       );
       const currentBranch = currentBranchOutput.trim();
 
       // List all local branches
       const branchesOutput = await execGitCommand(
-        ['branch', '--format=%(refname:short)'],
-        worktreePath
+        ["branch", "--format=%(refname:short)"],
+        worktreePath,
       );
 
       const branches: BranchInfo[] = branchesOutput
         .trim()
-        .split('\n')
+        .split("\n")
         .filter((b) => b.trim())
         .map((name) => {
           // Remove any surrounding quotes (Windows git may preserve them)
-          const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
+          const cleanName = name.trim().replace(/^['"]|['"]$/g, "");
           return {
             name: cleanName,
             isCurrent: cleanName === currentBranch,
@@ -67,31 +71,31 @@ export function createListBranchesHandler() {
         try {
           // Fetch latest remote refs (silently, don't fail if offline)
           try {
-            await execGitCommand(['fetch', '--all', '--quiet'], worktreePath);
+            await execGitCommand(["fetch", "--all", "--quiet"], worktreePath);
           } catch {
             // Ignore fetch errors - we'll use cached remote refs
           }
 
           // List remote branches
           const remoteBranchesOutput = await execGitCommand(
-            ['branch', '-r', '--format=%(refname:short)'],
-            worktreePath
+            ["branch", "-r", "--format=%(refname:short)"],
+            worktreePath,
           );
 
           const localBranchNames = new Set(branches.map((b) => b.name));
 
           remoteBranchesOutput
             .trim()
-            .split('\n')
+            .split("\n")
             .filter((b) => b.trim())
             .forEach((name) => {
               // Remove any surrounding quotes
-              const cleanName = name.trim().replace(/^['"]|['"]$/g, '');
+              const cleanName = name.trim().replace(/^['"]|['"]$/g, "");
               // Skip HEAD pointers like "origin/HEAD"
-              if (cleanName.includes('/HEAD')) return;
+              if (cleanName.includes("/HEAD")) return;
 
               // Skip bare remote names without a branch (e.g. "origin" by itself)
-              if (!cleanName.includes('/')) return;
+              if (!cleanName.includes("/")) return;
 
               // Only add remote branches if a branch with the exact same name isn't already
               // in the list. This avoids duplicates if a local branch is named like a remote one.
@@ -114,7 +118,7 @@ export function createListBranchesHandler() {
       // Check if any remotes are configured for this repository
       let hasAnyRemotes = false;
       try {
-        const remotesOutput = await execGitCommand(['remote'], worktreePath);
+        const remotesOutput = await execGitCommand(["remote"], worktreePath);
         hasAnyRemotes = remotesOutput.trim().length > 0;
       } catch {
         // If git remote fails, assume no remotes
@@ -131,25 +135,33 @@ export function createListBranchesHandler() {
       try {
         // First check if there's a remote tracking branch
         const { stdout: upstreamOutput } = await execFileAsync(
-          'git',
-          ['rev-parse', '--abbrev-ref', `${currentBranch}@{upstream}`],
-          { cwd: worktreePath }
+          "git",
+          ["rev-parse", "--abbrev-ref", `${currentBranch}@{upstream}`],
+          { cwd: worktreePath },
         );
 
         const upstreamRef = upstreamOutput.trim();
         if (upstreamRef) {
           hasRemoteBranch = true;
           // Extract the remote name from the upstream ref (e.g. "origin/main" -> "origin")
-          const slashIndex = upstreamRef.indexOf('/');
+          const slashIndex = upstreamRef.indexOf("/");
           if (slashIndex !== -1) {
             trackingRemote = upstreamRef.slice(0, slashIndex);
           }
           const { stdout: aheadBehindOutput } = await execFileAsync(
-            'git',
-            ['rev-list', '--left-right', '--count', `${currentBranch}@{upstream}...HEAD`],
-            { cwd: worktreePath }
+            "git",
+            [
+              "rev-list",
+              "--left-right",
+              "--count",
+              `${currentBranch}@{upstream}...HEAD`,
+            ],
+            { cwd: worktreePath },
           );
-          const [behind, ahead] = aheadBehindOutput.trim().split(/\s+/).map(Number);
+          const [behind, ahead] = aheadBehindOutput
+            .trim()
+            .split(/\s+/)
+            .map(Number);
           aheadCount = ahead || 0;
           behindCount = behind || 0;
         }
@@ -158,9 +170,9 @@ export function createListBranchesHandler() {
         try {
           // Check if there's a matching branch on origin (most common remote)
           const { stdout: remoteBranchOutput } = await execFileAsync(
-            'git',
-            ['ls-remote', '--heads', 'origin', currentBranch],
-            { cwd: worktreePath, timeout: 5000 }
+            "git",
+            ["ls-remote", "--heads", "origin", currentBranch],
+            { cwd: worktreePath, timeout: 5000 },
           );
           hasRemoteBranch = remoteBranchOutput.trim().length > 0;
         } catch {
@@ -173,7 +185,11 @@ export function createListBranchesHandler() {
       // This helps the UI distinguish between "branch exists on tracking remote" vs
       // "branch was pushed to a different remote" (e.g., pushed to 'upstream' but tracking 'origin').
       // Use for-each-ref to check cached remote refs (already fetched above if includeRemote was true)
-      remotesWithBranch = await getRemotesWithBranch(worktreePath, currentBranch, hasAnyRemotes);
+      remotesWithBranch = await getRemotesWithBranch(
+        worktreePath,
+        currentBranch,
+        hasAnyRemotes,
+      );
 
       res.json({
         success: true,
@@ -190,7 +206,7 @@ export function createListBranchesHandler() {
       });
     } catch (error) {
       const worktreePath = req.body?.worktreePath;
-      logWorktreeError(error, 'List branches failed', worktreePath);
+      logWorktreeError(error, "List branches failed", worktreePath);
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

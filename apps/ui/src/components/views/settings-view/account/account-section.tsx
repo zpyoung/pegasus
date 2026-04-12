@@ -1,34 +1,43 @@
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { toast } from 'sonner';
-import { LogOut, User, Code2, RefreshCw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { logout } from '@/lib/http-api-client';
-import { useAuthStore } from '@/store/auth-store';
-import { useAppStore } from '@/store/app-store';
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { toast } from "sonner";
+import { LogOut, User, Code2, RefreshCw } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { logout } from "@/lib/http-api-client";
+import { useAuthStore } from "@/store/auth-store";
+import { useAppStore } from "@/store/app-store";
 import {
   useAvailableEditors,
   useEffectiveDefaultEditor,
   type EditorInfo,
-} from '@/components/views/board-view/worktree-panel/hooks/use-available-editors';
-import { getEditorIcon } from '@/components/icons/editor-icons';
+} from "@/components/views/board-view/worktree-panel/hooks/use-available-editors";
+import { getEditorIcon } from "@/components/icons/editor-icons";
 
 export function AccountSection() {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Editor settings
-  const { editors, isLoading: isLoadingEditors, isRefreshing, refresh } = useAvailableEditors();
+  const {
+    editors,
+    isLoading: isLoadingEditors,
+    isRefreshing,
+    refresh,
+  } = useAvailableEditors();
   const defaultEditorCommand = useAppStore((s) => s.defaultEditorCommand);
   const setDefaultEditorCommand = useAppStore((s) => s.setDefaultEditorCommand);
 
@@ -37,15 +46,18 @@ export function AccountSection() {
 
   // Normalize Select value: if saved editor isn't found, show 'auto'
   const hasSavedEditor =
-    !!defaultEditorCommand && editors.some((e: EditorInfo) => e.command === defaultEditorCommand);
-  const selectValue = hasSavedEditor ? defaultEditorCommand : 'auto';
+    !!defaultEditorCommand &&
+    editors.some((e: EditorInfo) => e.command === defaultEditorCommand);
+  const selectValue = hasSavedEditor ? defaultEditorCommand : "auto";
 
   // Get icon component for the effective editor
-  const EffectiveEditorIcon = effectiveEditor ? getEditorIcon(effectiveEditor.command) : null;
+  const EffectiveEditorIcon = effectiveEditor
+    ? getEditorIcon(effectiveEditor.command)
+    : null;
 
   const handleRefreshEditors = async () => {
     await refresh();
-    toast.success('Editor list refreshed');
+    toast.success("Editor list refreshed");
   };
 
   const handleLogout = async () => {
@@ -55,9 +67,9 @@ export function AccountSection() {
       // Reset auth state
       useAuthStore.getState().resetAuth();
       // Navigate to logged out page
-      navigate({ to: '/logged-out' });
+      navigate({ to: "/logged-out" });
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
       setIsLoggingOut(false);
     }
   };
@@ -65,10 +77,10 @@ export function AccountSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/80 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/80 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm",
       )}
     >
       <div className="p-6 border-b border-border/30 bg-gradient-to-r from-primary/5 via-transparent to-transparent">
@@ -76,9 +88,13 @@ export function AccountSection() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
             <User className="w-5 h-5 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Account</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Account
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">Manage your session and account.</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          Manage your session and account.
+        </p>
       </div>
       <div className="p-6 space-y-4">
         {/* Default IDE */}
@@ -97,21 +113,29 @@ export function AccountSection() {
           <div className="flex items-center gap-2">
             <Select
               value={selectValue}
-              onValueChange={(value) => setDefaultEditorCommand(value === 'auto' ? null : value)}
-              disabled={isLoadingEditors || isRefreshing || editors.length === 0}
+              onValueChange={(value) =>
+                setDefaultEditorCommand(value === "auto" ? null : value)
+              }
+              disabled={
+                isLoadingEditors || isRefreshing || editors.length === 0
+              }
             >
               <SelectTrigger className="w-[180px] shrink-0">
                 <SelectValue placeholder="Select editor">
                   {effectiveEditor ? (
                     <span className="flex items-center gap-2">
-                      {EffectiveEditorIcon && <EffectiveEditorIcon className="w-4 h-4" />}
+                      {EffectiveEditorIcon && (
+                        <EffectiveEditorIcon className="w-4 h-4" />
+                      )}
                       {effectiveEditor.name}
-                      {selectValue === 'auto' && (
-                        <span className="text-muted-foreground text-xs">(Auto)</span>
+                      {selectValue === "auto" && (
+                        <span className="text-muted-foreground text-xs">
+                          (Auto)
+                        </span>
                       )}
                     </span>
                   ) : (
-                    'Select editor'
+                    "Select editor"
                   )}
                 </SelectValue>
               </SelectTrigger>
@@ -144,7 +168,11 @@ export function AccountSection() {
                   disabled={isRefreshing || isLoadingEditors}
                   className="shrink-0 h-9 w-9"
                 >
-                  {isRefreshing ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+                  {isRefreshing ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -173,13 +201,13 @@ export function AccountSection() {
             disabled={isLoggingOut}
             data-testid="logout-button"
             className={cn(
-              'shrink-0 gap-2',
-              'transition-all duration-200 ease-out',
-              'hover:scale-[1.02] active:scale-[0.98]'
+              "shrink-0 gap-2",
+              "transition-all duration-200 ease-out",
+              "hover:scale-[1.02] active:scale-[0.98]",
             )}
           >
             <LogOut className="w-4 h-4" />
-            {isLoggingOut ? 'Logging out...' : 'Log Out'}
+            {isLoggingOut ? "Logging out..." : "Log Out"}
           </Button>
         </div>
       </div>

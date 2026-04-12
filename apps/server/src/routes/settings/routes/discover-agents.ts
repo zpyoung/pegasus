@@ -5,15 +5,15 @@
  * directories for AGENT.md files and returns parsed agent definitions.
  */
 
-import type { Request, Response } from 'express';
-import { discoverFilesystemAgents } from '../../../lib/agent-discovery.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import { discoverFilesystemAgents } from "../../../lib/agent-discovery.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('DiscoverAgentsRoute');
+const logger = createLogger("DiscoverAgentsRoute");
 
 interface DiscoverAgentsRequest {
   projectPath?: string;
-  sources?: Array<'user' | 'project'>;
+  sources?: Array<"user" | "project">;
 }
 
 /**
@@ -36,10 +36,11 @@ interface DiscoverAgentsRequest {
 export function createDiscoverAgentsHandler() {
   return async (req: Request, res: Response) => {
     try {
-      const { projectPath, sources = ['user', 'project'] } = req.body as DiscoverAgentsRequest;
+      const { projectPath, sources = ["user", "project"] } =
+        req.body as DiscoverAgentsRequest;
 
       logger.info(
-        `Discovering agents from sources: ${sources.join(', ')}${projectPath ? ` (project: ${projectPath})` : ''}`
+        `Discovering agents from sources: ${sources.join(", ")}${projectPath ? ` (project: ${projectPath})` : ""}`,
       );
 
       const agents = await discoverFilesystemAgents(projectPath, sources);
@@ -51,10 +52,11 @@ export function createDiscoverAgentsHandler() {
         agents,
       });
     } catch (error) {
-      logger.error('Failed to discover agents:', error);
+      logger.error("Failed to discover agents:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to discover agents',
+        error:
+          error instanceof Error ? error.message : "Failed to discover agents",
       });
     }
   };

@@ -2,21 +2,24 @@
  * POST /delete endpoint - Delete a git worktree
  */
 
-import type { Request, Response } from 'express';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import fs from 'fs/promises';
-import { isGitRepo } from '@pegasus/git-utils';
-import { getErrorMessage, logError, isValidBranchName } from '../common.js';
-import { execGitCommand } from '../../../lib/git.js';
-import { createLogger } from '@pegasus/utils';
-import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { EventEmitter } from '../../../lib/events.js';
+import type { Request, Response } from "express";
+import { exec } from "child_process";
+import { promisify } from "util";
+import fs from "fs/promises";
+import { isGitRepo } from "@pegasus/git-utils";
+import { getErrorMessage, logError, isValidBranchName } from "../common.js";
+import { execGitCommand } from "../../../lib/git.js";
+import { createLogger } from "@pegasus/utils";
+import type { FeatureLoader } from "../../../services/feature-loader.js";
+import type { EventEmitter } from "../../../lib/events.js";
 
 const execAsync = promisify(exec);
-const logger = createLogger('Worktree');
+const logger = createLogger("Worktree");
 
-export function createDeleteHandler(events: EventEmitter, featureLoader?: FeatureLoader) {
+export function createDeleteHandler(
+  events: EventEmitter,
+  featureLoader?: FeatureLoader,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath, worktreePath, deleteBranch } = req.body as {
@@ -28,7 +31,7 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
       if (!projectPath || !worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and worktreePath required',
+          error: "projectPath and worktreePath required",
         });
         return;
       }
@@ -36,7 +39,7 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
       if (!(await isGitRepo(projectPath))) {
         res.status(400).json({
           success: false,
-          error: 'Not a git repository',
+          error: "Not a git repository",
         });
         return;
       }
@@ -44,42 +47,50 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
       // Get branch name before removing worktree
       let branchName: string | null = null;
       try {
-        const { stdout } = await execAsync('git rev-parse --abbrev-ref HEAD', {
+        const { stdout } = await execAsync("git rev-parse --abbrev-ref HEAD", {
           cwd: worktreePath,
         });
         branchName = stdout.trim();
       } catch {
         // Could not get branch name - worktree directory may already be gone
-        logger.debug('Could not determine branch for worktree, directory may be missing');
+        logger.debug(
+          "Could not determine branch for worktree, directory may be missing",
+        );
       }
 
       // Remove the worktree (using array arguments to prevent injection)
       let removeSucceeded = false;
       try {
-        await execGitCommand(['worktree', 'remove', worktreePath, '--force'], projectPath);
+        await execGitCommand(
+          ["worktree", "remove", worktreePath, "--force"],
+          projectPath,
+        );
         removeSucceeded = true;
       } catch (removeError) {
         // `git worktree remove` can fail if the directory is already missing
         // or in a bad state. Try pruning stale worktree entries as a fallback.
-        logger.debug('git worktree remove failed, trying prune', {
+        logger.debug("git worktree remove failed, trying prune", {
           error: getErrorMessage(removeError),
         });
         try {
-          await execGitCommand(['worktree', 'prune'], projectPath);
+          await execGitCommand(["worktree", "prune"], projectPath);
 
           // Verify the specific worktree is no longer registered after prune.
           // `git worktree prune` exits 0 even if worktreePath was never registered,
           // so we must explicitly check the worktree list to avoid false positives.
-          const { stdout: listOut } = await execAsync('git worktree list --porcelain', {
-            cwd: projectPath,
-          });
+          const { stdout: listOut } = await execAsync(
+            "git worktree list --porcelain",
+            {
+              cwd: projectPath,
+            },
+          );
           // Parse porcelain output and check for an exact path match.
           // Using substring .includes() can produce false positives when one
           // worktree path is a prefix of another (e.g. /foo vs /foobar).
           const stillRegistered = listOut
-            .split('\n')
-            .filter((line) => line.startsWith('worktree '))
-            .map((line) => line.slice('worktree '.length).trim())
+            .split("\n")
+            .filter((line) => line.startsWith("worktree "))
+            .map((line) => line.slice("worktree ".length).trim())
             .some((registeredPath) => registeredPath === worktreePath);
           if (stillRegistered) {
             // Prune didn't clean up our entry - treat as failure
@@ -91,7 +102,7 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
           if (pruneError === removeError) {
             throw removeError;
           }
-          logger.warn('git worktree prune also failed', {
+          logger.warn("git worktree prune also failed", {
             error: getErrorMessage(pruneError),
           });
           // If both remove and prune fail, still try to return success
@@ -119,15 +130,17 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
         removeSucceeded &&
         deleteBranch &&
         branchName &&
-        branchName !== 'main' &&
-        branchName !== 'master'
+        branchName !== "main" &&
+        branchName !== "master"
       ) {
         // Validate branch name to prevent command injection
         if (!isValidBranchName(branchName)) {
-          logger.warn(`Invalid branch name detected, skipping deletion: ${branchName}`);
+          logger.warn(
+            `Invalid branch name detected, skipping deletion: ${branchName}`,
+          );
         } else {
           try {
-            await execGitCommand(['branch', '-D', branchName], projectPath);
+            await execGitCommand(["branch", "-D", branchName], projectPath);
             branchDeleted = true;
           } catch {
             // Branch deletion failed, not critical
@@ -137,7 +150,7 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
       }
 
       // Emit worktree:deleted event after successful deletion
-      events.emit('worktree:deleted', {
+      events.emit("worktree:deleted", {
         worktreePath,
         projectPath,
         branchName,
@@ -150,7 +163,9 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
       if (featureLoader && branchName) {
         try {
           const allFeatures = await featureLoader.getAll(projectPath);
-          const affectedFeatures = allFeatures.filter((f) => f.branchName === branchName);
+          const affectedFeatures = allFeatures.filter(
+            (f) => f.branchName === branchName,
+          );
           for (const feature of affectedFeatures) {
             try {
               await featureLoader.update(projectPath, feature.id, {
@@ -158,33 +173,39 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
               });
               featuresMovedToMain++;
               // Emit feature:migrated event for each successfully migrated feature
-              events.emit('feature:migrated', {
+              events.emit("feature:migrated", {
                 featureId: feature.id,
-                status: 'migrated',
+                status: "migrated",
                 fromBranch: branchName,
                 toWorktreeId: null, // migrated to main worktree (no specific worktree)
                 projectPath,
               });
             } catch (featureUpdateError) {
               // Non-fatal: log per-feature failure but continue migrating others
-              logger.warn('Failed to move feature to main worktree after deletion', {
-                error: getErrorMessage(featureUpdateError),
-                featureId: feature.id,
-                branchName,
-              });
+              logger.warn(
+                "Failed to move feature to main worktree after deletion",
+                {
+                  error: getErrorMessage(featureUpdateError),
+                  featureId: feature.id,
+                  branchName,
+                },
+              );
             }
           }
           if (featuresMovedToMain > 0) {
             logger.info(
-              `Moved ${featuresMovedToMain} feature(s) to main worktree after deleting worktree with branch: ${branchName}`
+              `Moved ${featuresMovedToMain} feature(s) to main worktree after deleting worktree with branch: ${branchName}`,
             );
           }
         } catch (featureError) {
           // Non-fatal: log but don't fail the deletion (getAll failed)
-          logger.warn('Failed to load features for migration to main worktree after deletion', {
-            error: getErrorMessage(featureError),
-            branchName,
-          });
+          logger.warn(
+            "Failed to load features for migration to main worktree after deletion",
+            {
+              error: getErrorMessage(featureError),
+              branchName,
+            },
+          );
         }
       }
 
@@ -198,7 +219,7 @@ export function createDeleteHandler(events: EventEmitter, featureLoader?: Featur
         },
       });
     } catch (error) {
-      logError(error, 'Delete worktree failed');
+      logError(error, "Delete worktree failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

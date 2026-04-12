@@ -7,11 +7,15 @@
  * - Per-project settings ({projectPath}/.pegasus/settings.json)
  */
 
-import { createLogger, atomicWriteJson, DEFAULT_BACKUP_COUNT } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import os from 'os';
-import path from 'path';
-import fs from 'fs/promises';
+import {
+  createLogger,
+  atomicWriteJson,
+  DEFAULT_BACKUP_COUNT,
+} from "@pegasus/utils";
+import * as secureFs from "../lib/secure-fs.js";
+import os from "os";
+import path from "path";
+import fs from "fs/promises";
 
 import {
   getGlobalSettingsPath,
@@ -19,7 +23,7 @@ import {
   getProjectSettingsPath,
   ensureDataDir,
   ensurePegasusDir,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 import type {
   GlobalSettings,
   Credentials,
@@ -35,7 +39,7 @@ import type {
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   ProviderModel,
-} from '../types/settings.js';
+} from "../types/settings.js";
 import {
   DEFAULT_GLOBAL_SETTINGS,
   DEFAULT_CREDENTIALS,
@@ -45,15 +49,15 @@ import {
   SETTINGS_VERSION,
   CREDENTIALS_VERSION,
   PROJECT_SETTINGS_VERSION,
-} from '../types/settings.js';
+} from "../types/settings.js";
 import {
   DEFAULT_MAX_CONCURRENCY,
   migrateModelId,
   migrateCursorModelIds,
   migrateOpencodeModelIds,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
-const logger = createLogger('SettingsService');
+const logger = createLogger("SettingsService");
 
 /**
  * Wrapper for readJsonFile from utils that uses the local secureFs
@@ -61,10 +65,10 @@ const logger = createLogger('SettingsService');
  */
 async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(filePath, "utf-8")) as string;
     return JSON.parse(content) as T;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return defaultValue;
     }
     logger.error(`Error reading ${filePath}:`, error);
@@ -87,7 +91,10 @@ async function fileExists(filePath: string): Promise<boolean> {
 /**
  * Write settings atomically with backup support
  */
-async function writeSettingsJson(filePath: string, data: unknown): Promise<void> {
+async function writeSettingsJson(
+  filePath: string,
+  data: unknown,
+): Promise<void> {
   await atomicWriteJson(filePath, data, { backupCount: DEFAULT_BACKUP_COUNT });
 }
 
@@ -133,7 +140,10 @@ export class SettingsService {
    */
   async getGlobalSettings(): Promise<GlobalSettings> {
     const settingsPath = getGlobalSettingsPath(this.dataDir);
-    const settings = await readJsonFile<GlobalSettings>(settingsPath, DEFAULT_GLOBAL_SETTINGS);
+    const settings = await readJsonFile<GlobalSettings>(
+      settingsPath,
+      DEFAULT_GLOBAL_SETTINGS,
+    );
 
     // Migrate legacy enhancementModel/validationModel to phaseModels
     const migratedPhaseModels = this.migratePhaseModels(settings);
@@ -144,7 +154,9 @@ export class SettingsService {
     // Merge built-in feature templates: ensure all built-in templates exist in user settings.
     // User customizations (enabled/disabled state, order overrides) are preserved.
     // New built-in templates added in code updates are injected for existing users.
-    const mergedFeatureTemplates = this.mergeBuiltInTemplates(settings.featureTemplates);
+    const mergedFeatureTemplates = this.mergeBuiltInTemplates(
+      settings.featureTemplates,
+    );
 
     // Apply any missing defaults (for backwards compatibility)
     let result: GlobalSettings = {
@@ -167,7 +179,7 @@ export class SettingsService {
     // Note: migratePhaseModels() handles the actual conversion for both v1 and v2 formats
     if (storedVersion < 3) {
       logger.info(
-        `Migrating settings from v${storedVersion} to v3: converting phase models to PhaseModelEntry format`
+        `Migrating settings from v${storedVersion} to v3: converting phase models to PhaseModelEntry format`,
       );
       needsSave = true;
     }
@@ -178,7 +190,8 @@ export class SettingsService {
     if (storedVersion < 4) {
       if (settings.setupComplete === undefined) result.setupComplete = true;
       if (settings.isFirstRun === undefined) result.isFirstRun = false;
-      if (settings.skipClaudeSetup === undefined) result.skipClaudeSetup = false;
+      if (settings.skipClaudeSetup === undefined)
+        result.skipClaudeSetup = false;
       needsSave = true;
     }
 
@@ -189,15 +202,16 @@ export class SettingsService {
       try {
         const credentials = await this.getCredentials();
         const hasAnthropicKey = !!credentials.apiKeys?.anthropic;
-        const hasNoProfiles = !result.claudeApiProfiles || result.claudeApiProfiles.length === 0;
+        const hasNoProfiles =
+          !result.claudeApiProfiles || result.claudeApiProfiles.length === 0;
         const hasNoActiveProfile = !result.activeClaudeApiProfileId;
 
         if (hasAnthropicKey && hasNoProfiles && hasNoActiveProfile) {
           const directAnthropicProfile = {
             id: `profile-${Date.now()}-direct-anthropic`,
-            name: 'Direct Anthropic',
-            baseUrl: 'https://api.anthropic.com',
-            apiKeySource: 'credentials' as const,
+            name: "Direct Anthropic",
+            baseUrl: "https://api.anthropic.com",
+            apiKeySource: "credentials" as const,
             useAuthToken: false,
           };
 
@@ -205,13 +219,13 @@ export class SettingsService {
           result.activeClaudeApiProfileId = directAnthropicProfile.id;
 
           logger.info(
-            'Migration v4->v5: Created "Direct Anthropic" profile using existing credentials'
+            'Migration v4->v5: Created "Direct Anthropic" profile using existing credentials',
           );
         }
       } catch (error) {
         logger.warn(
-          'Migration v4->v5: Could not check credentials for auto-profile creation:',
-          error
+          "Migration v4->v5: Could not check credentials for auto-profile creation:",
+          error,
         );
       }
       needsSave = true;
@@ -224,16 +238,20 @@ export class SettingsService {
       const legacyProfiles = settings.claudeApiProfiles || [];
       if (
         legacyProfiles.length > 0 &&
-        (!result.claudeCompatibleProviders || result.claudeCompatibleProviders.length === 0)
+        (!result.claudeCompatibleProviders ||
+          result.claudeCompatibleProviders.length === 0)
       ) {
         logger.info(
-          `Migration v5->v6: Converting ${legacyProfiles.length} Claude API profile(s) to compatible providers`
+          `Migration v5->v6: Converting ${legacyProfiles.length} Claude API profile(s) to compatible providers`,
         );
-        result.claudeCompatibleProviders = this.migrateProfilesToProviders(legacyProfiles);
+        result.claudeCompatibleProviders =
+          this.migrateProfilesToProviders(legacyProfiles);
       }
       // Remove the deprecated activeClaudeApiProfileId field
       if (result.activeClaudeApiProfileId) {
-        logger.info('Migration v5->v6: Removing deprecated activeClaudeApiProfileId');
+        logger.info(
+          "Migration v5->v6: Removing deprecated activeClaudeApiProfileId",
+        );
         delete result.activeClaudeApiProfileId;
       }
       needsSave = true;
@@ -249,9 +267,9 @@ export class SettingsService {
       try {
         await ensureDataDir(this.dataDir);
         await writeSettingsJson(settingsPath, result);
-        logger.info('Settings migration complete');
+        logger.info("Settings migration complete");
       } catch (error) {
-        logger.error('Failed to save migrated settings:', error);
+        logger.error("Failed to save migrated settings:", error);
       }
     }
 
@@ -268,13 +286,17 @@ export class SettingsService {
    * @param storedTemplates - Templates from user's settings file (may be undefined for new installs)
    * @returns Merged template list with all built-in templates present
    */
-  private mergeBuiltInTemplates(storedTemplates: FeatureTemplate[] | undefined): FeatureTemplate[] {
+  private mergeBuiltInTemplates(
+    storedTemplates: FeatureTemplate[] | undefined,
+  ): FeatureTemplate[] {
     if (!storedTemplates) {
       return DEFAULT_FEATURE_TEMPLATES;
     }
 
     const storedIds = new Set(storedTemplates.map((t) => t.id));
-    const missingBuiltIns = DEFAULT_FEATURE_TEMPLATES.filter((t) => !storedIds.has(t.id));
+    const missingBuiltIns = DEFAULT_FEATURE_TEMPLATES.filter(
+      (t) => !storedIds.has(t.id),
+    );
 
     if (missingBuiltIns.length === 0) {
       return storedTemplates;
@@ -294,7 +316,9 @@ export class SettingsService {
    * @param settings - Raw settings from file
    * @returns Complete PhaseModelConfig with all fields populated
    */
-  private migratePhaseModels(settings: Partial<GlobalSettings>): PhaseModelConfig {
+  private migratePhaseModels(
+    settings: Partial<GlobalSettings>,
+  ): PhaseModelConfig {
     // Start with defaults
     const result: PhaseModelConfig = { ...DEFAULT_PHASE_MODELS };
 
@@ -302,7 +326,9 @@ export class SettingsService {
     if (settings.phaseModels) {
       // Merge with defaults and convert any string values to PhaseModelEntry
       const merged: PhaseModelConfig = { ...DEFAULT_PHASE_MODELS };
-      for (const key of Object.keys(settings.phaseModels) as Array<keyof PhaseModelConfig>) {
+      for (const key of Object.keys(settings.phaseModels) as Array<
+        keyof PhaseModelConfig
+      >) {
         const value = settings.phaseModels[key];
         if (value !== undefined) {
           // Convert string to PhaseModelEntry if needed (v2 -> v3 migration)
@@ -315,12 +341,18 @@ export class SettingsService {
     // Migrate legacy fields if phaseModels doesn't exist
     // These were the only two legacy fields that existed
     if (settings.enhancementModel) {
-      result.enhancementModel = this.toPhaseModelEntry(settings.enhancementModel);
-      logger.debug(`Migrated legacy enhancementModel: ${settings.enhancementModel}`);
+      result.enhancementModel = this.toPhaseModelEntry(
+        settings.enhancementModel,
+      );
+      logger.debug(
+        `Migrated legacy enhancementModel: ${settings.enhancementModel}`,
+      );
     }
     if (settings.validationModel) {
       result.validationModel = this.toPhaseModelEntry(settings.validationModel);
-      logger.debug(`Migrated legacy validationModel: ${settings.validationModel}`);
+      logger.debug(
+        `Migrated legacy validationModel: ${settings.validationModel}`,
+      );
     }
 
     return result;
@@ -338,14 +370,14 @@ export class SettingsService {
    * @returns PhaseModelEntry object with canonical model ID
    */
   private toPhaseModelEntry(value: string | PhaseModelEntry): PhaseModelEntry {
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       // v2 format: just a model string - migrate to canonical ID
-      return { model: migrateModelId(value) as PhaseModelEntry['model'] };
+      return { model: migrateModelId(value) as PhaseModelEntry["model"] };
     }
     // v3 format: PhaseModelEntry object - migrate model ID if needed
     return {
       ...value,
-      model: migrateModelId(value.model) as PhaseModelEntry['model'],
+      model: migrateModelId(value.model) as PhaseModelEntry["model"],
     };
   }
 
@@ -359,7 +391,9 @@ export class SettingsService {
    * @param profiles - Legacy ClaudeApiProfile array
    * @returns Array of ClaudeCompatibleProvider
    */
-  private migrateProfilesToProviders(profiles: ClaudeApiProfile[]): ClaudeCompatibleProvider[] {
+  private migrateProfilesToProviders(
+    profiles: ClaudeApiProfile[],
+  ): ClaudeCompatibleProvider[] {
     return profiles.map((profile): ClaudeCompatibleProvider => {
       // Convert modelMappings to models array
       const models: ProviderModel[] = [];
@@ -369,24 +403,33 @@ export class SettingsService {
         if (profile.modelMappings.haiku) {
           models.push({
             id: profile.modelMappings.haiku,
-            displayName: this.inferModelDisplayName(profile.modelMappings.haiku, 'haiku'),
-            mapsToClaudeModel: 'haiku',
+            displayName: this.inferModelDisplayName(
+              profile.modelMappings.haiku,
+              "haiku",
+            ),
+            mapsToClaudeModel: "haiku",
           });
         }
         // Sonnet mapping
         if (profile.modelMappings.sonnet) {
           models.push({
             id: profile.modelMappings.sonnet,
-            displayName: this.inferModelDisplayName(profile.modelMappings.sonnet, 'sonnet'),
-            mapsToClaudeModel: 'sonnet',
+            displayName: this.inferModelDisplayName(
+              profile.modelMappings.sonnet,
+              "sonnet",
+            ),
+            mapsToClaudeModel: "sonnet",
           });
         }
         // Opus mapping
         if (profile.modelMappings.opus) {
           models.push({
             id: profile.modelMappings.opus,
-            displayName: this.inferModelDisplayName(profile.modelMappings.opus, 'opus'),
-            mapsToClaudeModel: 'opus',
+            displayName: this.inferModelDisplayName(
+              profile.modelMappings.opus,
+              "opus",
+            ),
+            mapsToClaudeModel: "opus",
           });
         }
       }
@@ -400,7 +443,7 @@ export class SettingsService {
         providerType,
         enabled: true,
         baseUrl: profile.baseUrl,
-        apiKeySource: profile.apiKeySource ?? 'inline',
+        apiKeySource: profile.apiKeySource ?? "inline",
         apiKey: profile.apiKey,
         useAuthToken: profile.useAuthToken,
         timeoutMs: profile.timeoutMs,
@@ -417,22 +460,25 @@ export class SettingsService {
    * @param tier - The tier hint (haiku/sonnet/opus)
    * @returns A user-friendly display name
    */
-  private inferModelDisplayName(modelId: string, tier: 'haiku' | 'sonnet' | 'opus'): string {
+  private inferModelDisplayName(
+    modelId: string,
+    tier: "haiku" | "sonnet" | "opus",
+  ): string {
     // Common patterns in model IDs
     const lowerModelId = modelId.toLowerCase();
 
     // GLM models
-    if (lowerModelId.includes('glm')) {
-      return modelId.replace(/-/g, ' ').replace(/glm/i, 'GLM');
+    if (lowerModelId.includes("glm")) {
+      return modelId.replace(/-/g, " ").replace(/glm/i, "GLM");
     }
 
     // MiniMax models
-    if (lowerModelId.includes('minimax')) {
-      return modelId.replace(/-/g, ' ').replace(/minimax/i, 'MiniMax');
+    if (lowerModelId.includes("minimax")) {
+      return modelId.replace(/-/g, " ").replace(/minimax/i, "MiniMax");
     }
 
     // Claude models via OpenRouter or similar
-    if (lowerModelId.includes('claude')) {
+    if (lowerModelId.includes("claude")) {
       return modelId;
     }
 
@@ -446,40 +492,42 @@ export class SettingsService {
    * @param profile - The legacy profile
    * @returns The inferred provider type
    */
-  private inferProviderType(profile: ClaudeApiProfile): ClaudeCompatibleProvider['providerType'] {
+  private inferProviderType(
+    profile: ClaudeApiProfile,
+  ): ClaudeCompatibleProvider["providerType"] {
     const baseUrl = profile.baseUrl.toLowerCase();
     const name = profile.name.toLowerCase();
 
     // Check URL patterns
-    if (baseUrl.includes('z.ai') || baseUrl.includes('zhipuai')) {
-      return 'glm';
+    if (baseUrl.includes("z.ai") || baseUrl.includes("zhipuai")) {
+      return "glm";
     }
-    if (baseUrl.includes('minimax')) {
-      return 'minimax';
+    if (baseUrl.includes("minimax")) {
+      return "minimax";
     }
-    if (baseUrl.includes('openrouter')) {
-      return 'openrouter';
+    if (baseUrl.includes("openrouter")) {
+      return "openrouter";
     }
-    if (baseUrl.includes('anthropic.com')) {
-      return 'anthropic';
+    if (baseUrl.includes("anthropic.com")) {
+      return "anthropic";
     }
 
     // Check name patterns
-    if (name.includes('glm') || name.includes('zhipu')) {
-      return 'glm';
+    if (name.includes("glm") || name.includes("zhipu")) {
+      return "glm";
     }
-    if (name.includes('minimax')) {
-      return 'minimax';
+    if (name.includes("minimax")) {
+      return "minimax";
     }
-    if (name.includes('openrouter')) {
-      return 'openrouter';
+    if (name.includes("openrouter")) {
+      return "openrouter";
     }
-    if (name.includes('anthropic') || name.includes('direct')) {
-      return 'anthropic';
+    if (name.includes("anthropic") || name.includes("direct")) {
+      return "anthropic";
     }
 
     // Default to custom
-    return 'custom';
+    return "custom";
   }
 
   /**
@@ -493,19 +541,23 @@ export class SettingsService {
    * @param settings - Settings to migrate
    * @returns Settings with migrated model IDs
    */
-  private migrateModelSettings(settings: Partial<GlobalSettings>): Partial<GlobalSettings> {
+  private migrateModelSettings(
+    settings: Partial<GlobalSettings>,
+  ): Partial<GlobalSettings> {
     const migrated: Partial<GlobalSettings> = { ...settings };
 
     // Migrate Cursor models
     if (settings.enabledCursorModels) {
       migrated.enabledCursorModels = migrateCursorModelIds(
-        settings.enabledCursorModels as string[]
+        settings.enabledCursorModels as string[],
       );
     }
 
     // Migrate Cursor default model
     if (settings.cursorDefaultModel) {
-      const migratedDefault = migrateCursorModelIds([settings.cursorDefaultModel as string]);
+      const migratedDefault = migrateCursorModelIds([
+        settings.cursorDefaultModel as string,
+      ]);
       if (migratedDefault.length > 0) {
         migrated.cursorDefaultModel = migratedDefault[0];
       }
@@ -514,13 +566,15 @@ export class SettingsService {
     // Migrate OpenCode models
     if (settings.enabledOpencodeModels) {
       migrated.enabledOpencodeModels = migrateOpencodeModelIds(
-        settings.enabledOpencodeModels as string[]
+        settings.enabledOpencodeModels as string[],
       );
     }
 
     // Migrate OpenCode default model
     if (settings.opencodeDefaultModel) {
-      const migratedDefault = migrateOpencodeModelIds([settings.opencodeDefaultModel as string]);
+      const migratedDefault = migrateOpencodeModelIds([
+        settings.opencodeDefaultModel as string,
+      ]);
       if (migratedDefault.length > 0) {
         migrated.opencodeDefaultModel = migratedDefault[0];
       }
@@ -538,7 +592,9 @@ export class SettingsService {
    * @param updates - Partial GlobalSettings to merge (only provided fields are updated)
    * @returns Promise resolving to complete updated GlobalSettings
    */
-  async updateGlobalSettings(updates: Partial<GlobalSettings>): Promise<GlobalSettings> {
+  async updateGlobalSettings(
+    updates: Partial<GlobalSettings>,
+  ): Promise<GlobalSettings> {
     await ensureDataDir(this.dataDir);
     const settingsPath = getGlobalSettingsPath(this.dataDir);
 
@@ -550,7 +606,9 @@ export class SettingsService {
     const sanitizedUpdates: Partial<GlobalSettings> = { ...updates };
     let attemptedProjectWipe = false;
 
-    const ignoreEmptyArrayOverwrite = <K extends keyof GlobalSettings>(key: K): void => {
+    const ignoreEmptyArrayOverwrite = <K extends keyof GlobalSettings>(
+      key: K,
+    ): void => {
       const nextVal = sanitizedUpdates[key] as unknown;
       const curVal = current[key] as unknown;
       if (
@@ -563,9 +621,13 @@ export class SettingsService {
       }
     };
 
-    const currentProjectsLen = Array.isArray(current.projects) ? current.projects.length : 0;
+    const currentProjectsLen = Array.isArray(current.projects)
+      ? current.projects.length
+      : 0;
     // Check if this is a legitimate project removal (moved to trash) vs accidental wipe
-    const newTrashedProjectsLen = Array.isArray(sanitizedUpdates.trashedProjects)
+    const newTrashedProjectsLen = Array.isArray(
+      sanitizedUpdates.trashedProjects,
+    )
       ? sanitizedUpdates.trashedProjects.length
       : Array.isArray(current.trashedProjects)
         ? current.trashedProjects.length
@@ -580,18 +642,18 @@ export class SettingsService {
       // (If projects are moved to trash, they appear in trashedProjects)
       if (newTrashedProjectsLen === 0) {
         logger.warn(
-          '[WIPE_PROTECTION] Attempted to set projects to empty array with no trash! Ignoring update.',
+          "[WIPE_PROTECTION] Attempted to set projects to empty array with no trash! Ignoring update.",
           {
             currentProjectsLen,
             newProjectsLen: 0,
             newTrashedProjectsLen,
             currentProjects: current.projects?.map((p) => p.name),
-          }
+          },
         );
         attemptedProjectWipe = true;
         delete sanitizedUpdates.projects;
       } else {
-        logger.info('[LEGITIMATE_REMOVAL] Removing all projects to trash', {
+        logger.info("[LEGITIMATE_REMOVAL] Removing all projects to trash", {
           currentProjectsLen,
           newProjectsLen: 0,
           movedToTrash: newTrashedProjectsLen,
@@ -599,32 +661,35 @@ export class SettingsService {
       }
     }
 
-    ignoreEmptyArrayOverwrite('trashedProjects');
-    ignoreEmptyArrayOverwrite('projectHistory');
-    ignoreEmptyArrayOverwrite('recentFolders');
-    ignoreEmptyArrayOverwrite('mcpServers');
-    ignoreEmptyArrayOverwrite('enabledCursorModels');
-    ignoreEmptyArrayOverwrite('claudeApiProfiles');
+    ignoreEmptyArrayOverwrite("trashedProjects");
+    ignoreEmptyArrayOverwrite("projectHistory");
+    ignoreEmptyArrayOverwrite("recentFolders");
+    ignoreEmptyArrayOverwrite("mcpServers");
+    ignoreEmptyArrayOverwrite("enabledCursorModels");
+    ignoreEmptyArrayOverwrite("claudeApiProfiles");
     // Note: claudeCompatibleProviders intentionally NOT guarded - users should be able to delete all providers
 
     // Check for explicit permission to clear eventHooks (escape hatch for intentional clearing)
     const allowEmptyEventHooks =
-      (sanitizedUpdates as Record<string, unknown>).__allowEmptyEventHooks === true;
+      (sanitizedUpdates as Record<string, unknown>).__allowEmptyEventHooks ===
+      true;
     // Remove the flag so it doesn't get persisted
     delete (sanitizedUpdates as Record<string, unknown>).__allowEmptyEventHooks;
 
     // Only guard eventHooks if explicit permission wasn't granted
     if (!allowEmptyEventHooks) {
-      ignoreEmptyArrayOverwrite('eventHooks');
+      ignoreEmptyArrayOverwrite("eventHooks");
     }
 
     // Guard ntfyEndpoints against accidental wipe
     // (similar to eventHooks, these are user-configured and shouldn't be lost)
     // Check for explicit permission to clear ntfyEndpoints (escape hatch for intentional clearing)
     const allowEmptyNtfyEndpoints =
-      (sanitizedUpdates as Record<string, unknown>).__allowEmptyNtfyEndpoints === true;
+      (sanitizedUpdates as Record<string, unknown>)
+        .__allowEmptyNtfyEndpoints === true;
     // Remove the flag so it doesn't get persisted
-    delete (sanitizedUpdates as Record<string, unknown>).__allowEmptyNtfyEndpoints;
+    delete (sanitizedUpdates as Record<string, unknown>)
+      .__allowEmptyNtfyEndpoints;
 
     if (!allowEmptyNtfyEndpoints) {
       const currentNtfyLen = Array.isArray(current.ntfyEndpoints)
@@ -634,31 +699,39 @@ export class SettingsService {
         ? sanitizedUpdates.ntfyEndpoints.length
         : currentNtfyLen;
 
-      if (Array.isArray(sanitizedUpdates.ntfyEndpoints) && newNtfyLen === 0 && currentNtfyLen > 0) {
+      if (
+        Array.isArray(sanitizedUpdates.ntfyEndpoints) &&
+        newNtfyLen === 0 &&
+        currentNtfyLen > 0
+      ) {
         logger.warn(
-          '[WIPE_PROTECTION] Attempted to set ntfyEndpoints to empty array! Ignoring update.',
+          "[WIPE_PROTECTION] Attempted to set ntfyEndpoints to empty array! Ignoring update.",
           {
             currentNtfyLen,
             newNtfyLen,
-          }
+          },
         );
         delete sanitizedUpdates.ntfyEndpoints;
       }
     } else {
-      logger.info('[INTENTIONAL_CLEAR] Clearing ntfyEndpoints via escape hatch');
+      logger.info(
+        "[INTENTIONAL_CLEAR] Clearing ntfyEndpoints via escape hatch",
+      );
     }
 
     // Empty object overwrite guard
-    const ignoreEmptyObjectOverwrite = <K extends keyof GlobalSettings>(key: K): void => {
+    const ignoreEmptyObjectOverwrite = <K extends keyof GlobalSettings>(
+      key: K,
+    ): void => {
       const nextVal = sanitizedUpdates[key] as unknown;
       const curVal = current[key] as unknown;
       if (
         nextVal &&
-        typeof nextVal === 'object' &&
+        typeof nextVal === "object" &&
         !Array.isArray(nextVal) &&
         Object.keys(nextVal).length === 0 &&
         curVal &&
-        typeof curVal === 'object' &&
+        typeof curVal === "object" &&
         !Array.isArray(curVal) &&
         Object.keys(curVal).length > 0
       ) {
@@ -666,8 +739,8 @@ export class SettingsService {
       }
     };
 
-    ignoreEmptyObjectOverwrite('lastSelectedSessionByProject');
-    ignoreEmptyObjectOverwrite('autoModeByWorktree');
+    ignoreEmptyObjectOverwrite("lastSelectedSessionByProject");
+    ignoreEmptyObjectOverwrite("autoModeByWorktree");
 
     // If a request attempted to wipe projects, also ignore theme changes in that same request.
     if (attemptedProjectWipe) {
@@ -698,11 +771,16 @@ export class SettingsService {
 
     // Deep merge autoModeByWorktree if provided (preserves other worktree entries)
     if (sanitizedUpdates.autoModeByWorktree) {
-      type WorktreeEntry = { maxConcurrency: number; branchName: string | null };
+      type WorktreeEntry = {
+        maxConcurrency: number;
+        branchName: string | null;
+      };
       const mergedAutoModeByWorktree: Record<string, WorktreeEntry> = {
         ...current.autoModeByWorktree,
       };
-      for (const [key, value] of Object.entries(sanitizedUpdates.autoModeByWorktree)) {
+      for (const [key, value] of Object.entries(
+        sanitizedUpdates.autoModeByWorktree,
+      )) {
         mergedAutoModeByWorktree[key] = {
           ...mergedAutoModeByWorktree[key],
           ...value,
@@ -712,7 +790,7 @@ export class SettingsService {
     }
 
     await writeSettingsJson(settingsPath, updated);
-    logger.info('Global settings updated');
+    logger.info("Global settings updated");
 
     return updated;
   }
@@ -744,7 +822,10 @@ export class SettingsService {
    */
   async getCredentials(): Promise<Credentials> {
     const credentialsPath = getCredentialsPath(this.dataDir);
-    const credentials = await readJsonFile<Credentials>(credentialsPath, DEFAULT_CREDENTIALS);
+    const credentials = await readJsonFile<Credentials>(
+      credentialsPath,
+      DEFAULT_CREDENTIALS,
+    );
 
     return {
       ...DEFAULT_CREDENTIALS,
@@ -786,7 +867,7 @@ export class SettingsService {
     }
 
     await writeSettingsJson(credentialsPath, updated);
-    logger.info('Credentials updated');
+    logger.info("Credentials updated");
 
     return updated;
   }
@@ -809,7 +890,7 @@ export class SettingsService {
     const credentials = await this.getCredentials();
 
     const maskKey = (key: string): string => {
-      if (!key || key.length < 8) return '';
+      if (!key || key.length < 8) return "";
       return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
     };
 
@@ -861,7 +942,10 @@ export class SettingsService {
    */
   async getProjectSettings(projectPath: string): Promise<ProjectSettings> {
     const settingsPath = getProjectSettingsPath(projectPath);
-    const settings = await readJsonFile<ProjectSettings>(settingsPath, DEFAULT_PROJECT_SETTINGS);
+    const settings = await readJsonFile<ProjectSettings>(
+      settingsPath,
+      DEFAULT_PROJECT_SETTINGS,
+    );
 
     return {
       ...DEFAULT_PROJECT_SETTINGS,
@@ -881,7 +965,7 @@ export class SettingsService {
    */
   async updateProjectSettings(
     projectPath: string,
-    updates: Partial<ProjectSettings>
+    updates: Partial<ProjectSettings>,
   ): Promise<ProjectSettings> {
     await ensurePegasusDir(projectPath);
     const settingsPath = getProjectSettingsPath(projectPath);
@@ -906,8 +990,8 @@ export class SettingsService {
     // - null means explicit "Direct Anthropic API"
     // - string means specific profile ID
     if (
-      'activeClaudeApiProfileId' in updates &&
-      updates.activeClaudeApiProfileId === '__USE_GLOBAL__'
+      "activeClaudeApiProfileId" in updates &&
+      updates.activeClaudeApiProfileId === "__USE_GLOBAL__"
     ) {
       delete updated.activeClaudeApiProfileId;
     }
@@ -916,8 +1000,8 @@ export class SettingsService {
     // - "__CLEAR__" marker means delete the key (use global settings for all phases)
     // - object means partial overrides for specific phases
     if (
-      'phaseModelOverrides' in updates &&
-      (updates as Record<string, unknown>).phaseModelOverrides === '__CLEAR__'
+      "phaseModelOverrides" in updates &&
+      (updates as Record<string, unknown>).phaseModelOverrides === "__CLEAR__"
     ) {
       delete updated.phaseModelOverrides;
     }
@@ -926,8 +1010,8 @@ export class SettingsService {
     // - "__CLEAR__" marker means delete the key (use global setting)
     // - object means project-specific override
     if (
-      'defaultFeatureModel' in updates &&
-      (updates as Record<string, unknown>).defaultFeatureModel === '__CLEAR__'
+      "defaultFeatureModel" in updates &&
+      (updates as Record<string, unknown>).defaultFeatureModel === "__CLEAR__"
     ) {
       delete updated.defaultFeatureModel;
     }
@@ -935,14 +1019,14 @@ export class SettingsService {
     // Handle devCommand special cases:
     // - null means delete the key (use auto-detection)
     // - string means custom command
-    if ('devCommand' in updates && updates.devCommand === null) {
+    if ("devCommand" in updates && updates.devCommand === null) {
       delete updated.devCommand;
     }
 
     // Handle testCommand special cases:
     // - null means delete the key (use auto-detection)
     // - string means custom command
-    if ('testCommand' in updates && updates.testCommand === null) {
+    if ("testCommand" in updates && updates.testCommand === null) {
       delete updated.testCommand;
     }
 
@@ -979,11 +1063,11 @@ export class SettingsService {
    * @returns Promise resolving to migration result with success status and error list
    */
   async migrateFromLocalStorage(localStorageData: {
-    'pegasus-storage'?: string;
-    'pegasus-setup'?: string;
-    'worktree-panel-collapsed'?: string;
-    'file-browser-recent-folders'?: string;
-    'pegasus:lastProjectDir'?: string;
+    "pegasus-storage"?: string;
+    "pegasus-setup"?: string;
+    "worktree-panel-collapsed"?: string;
+    "file-browser-recent-folders"?: string;
+    "pegasus:lastProjectDir"?: string;
   }): Promise<{
     success: boolean;
     migratedGlobalSettings: boolean;
@@ -999,9 +1083,9 @@ export class SettingsService {
     try {
       // Parse the main pegasus-storage
       let appState: Record<string, unknown> = {};
-      if (localStorageData['pegasus-storage']) {
+      if (localStorageData["pegasus-storage"]) {
         try {
-          const parsed = JSON.parse(localStorageData['pegasus-storage']);
+          const parsed = JSON.parse(localStorageData["pegasus-storage"]);
           appState = parsed.state || parsed;
         } catch (e) {
           errors.push(`Failed to parse pegasus-storage: ${e}`);
@@ -1010,9 +1094,9 @@ export class SettingsService {
 
       // Parse setup wizard state (previously stored in localStorage)
       let setupState: Record<string, unknown> = {};
-      if (localStorageData['pegasus-setup']) {
+      if (localStorageData["pegasus-setup"]) {
         try {
-          const parsed = JSON.parse(localStorageData['pegasus-setup']);
+          const parsed = JSON.parse(localStorageData["pegasus-setup"]);
           setupState = parsed.state || parsed;
         } catch (e) {
           errors.push(`Failed to parse pegasus-setup: ${e}`);
@@ -1022,18 +1106,29 @@ export class SettingsService {
       // Extract global settings
       const globalSettings: Partial<GlobalSettings> = {
         setupComplete:
-          setupState.setupComplete !== undefined ? (setupState.setupComplete as boolean) : false,
-        isFirstRun: setupState.isFirstRun !== undefined ? (setupState.isFirstRun as boolean) : true,
+          setupState.setupComplete !== undefined
+            ? (setupState.setupComplete as boolean)
+            : false,
+        isFirstRun:
+          setupState.isFirstRun !== undefined
+            ? (setupState.isFirstRun as boolean)
+            : true,
         skipClaudeSetup:
           setupState.skipClaudeSetup !== undefined
             ? (setupState.skipClaudeSetup as boolean)
             : false,
-        theme: (appState.theme as GlobalSettings['theme']) || 'dark',
-        sidebarOpen: appState.sidebarOpen !== undefined ? (appState.sidebarOpen as boolean) : true,
+        theme: (appState.theme as GlobalSettings["theme"]) || "dark",
+        sidebarOpen:
+          appState.sidebarOpen !== undefined
+            ? (appState.sidebarOpen as boolean)
+            : true,
         chatHistoryOpen: (appState.chatHistoryOpen as boolean) || false,
-        maxConcurrency: (appState.maxConcurrency as number) || DEFAULT_MAX_CONCURRENCY,
+        maxConcurrency:
+          (appState.maxConcurrency as number) || DEFAULT_MAX_CONCURRENCY,
         defaultSkipTests:
-          appState.defaultSkipTests !== undefined ? (appState.defaultSkipTests as boolean) : true,
+          appState.defaultSkipTests !== undefined
+            ? (appState.defaultSkipTests as boolean)
+            : true,
         enableDependencyBlocking:
           appState.enableDependencyBlocking !== undefined
             ? (appState.enableDependencyBlocking as boolean)
@@ -1043,50 +1138,59 @@ export class SettingsService {
             ? (appState.skipVerificationInAutoMode as boolean)
             : false,
         useWorktrees:
-          appState.useWorktrees !== undefined ? (appState.useWorktrees as boolean) : true,
+          appState.useWorktrees !== undefined
+            ? (appState.useWorktrees as boolean)
+            : true,
         defaultPlanningMode:
-          (appState.defaultPlanningMode as GlobalSettings['defaultPlanningMode']) || 'skip',
-        defaultRequirePlanApproval: (appState.defaultRequirePlanApproval as boolean) || false,
+          (appState.defaultPlanningMode as GlobalSettings["defaultPlanningMode"]) ||
+          "skip",
+        defaultRequirePlanApproval:
+          (appState.defaultRequirePlanApproval as boolean) || false,
         muteDoneSound: (appState.muteDoneSound as boolean) || false,
         enhancementModel:
-          (appState.enhancementModel as GlobalSettings['enhancementModel']) || 'sonnet',
+          (appState.enhancementModel as GlobalSettings["enhancementModel"]) ||
+          "sonnet",
         keyboardShortcuts:
           (appState.keyboardShortcuts as KeyboardShortcuts) ||
           DEFAULT_GLOBAL_SETTINGS.keyboardShortcuts,
-        eventHooks: (appState.eventHooks as GlobalSettings['eventHooks']) || [],
-        ntfyEndpoints: (appState.ntfyEndpoints as GlobalSettings['ntfyEndpoints']) || [],
+        eventHooks: (appState.eventHooks as GlobalSettings["eventHooks"]) || [],
+        ntfyEndpoints:
+          (appState.ntfyEndpoints as GlobalSettings["ntfyEndpoints"]) || [],
         projects: (appState.projects as ProjectRef[]) || [],
-        trashedProjects: (appState.trashedProjects as TrashedProjectRef[]) || [],
+        trashedProjects:
+          (appState.trashedProjects as TrashedProjectRef[]) || [],
         projectHistory: (appState.projectHistory as string[]) || [],
         projectHistoryIndex: (appState.projectHistoryIndex as number) || -1,
         lastSelectedSessionByProject:
-          (appState.lastSelectedSessionByProject as Record<string, string>) || {},
+          (appState.lastSelectedSessionByProject as Record<string, string>) ||
+          {},
       };
 
       // Add direct localStorage values
-      if (localStorageData['pegasus:lastProjectDir']) {
-        globalSettings.lastProjectDir = localStorageData['pegasus:lastProjectDir'];
+      if (localStorageData["pegasus:lastProjectDir"]) {
+        globalSettings.lastProjectDir =
+          localStorageData["pegasus:lastProjectDir"];
       }
 
-      if (localStorageData['file-browser-recent-folders']) {
+      if (localStorageData["file-browser-recent-folders"]) {
         try {
           globalSettings.recentFolders = JSON.parse(
-            localStorageData['file-browser-recent-folders']
+            localStorageData["file-browser-recent-folders"],
           );
         } catch {
           globalSettings.recentFolders = [];
         }
       }
 
-      if (localStorageData['worktree-panel-collapsed']) {
+      if (localStorageData["worktree-panel-collapsed"]) {
         globalSettings.worktreePanelCollapsed =
-          localStorageData['worktree-panel-collapsed'] === 'true';
+          localStorageData["worktree-panel-collapsed"] === "true";
       }
 
       // Save global settings
       await this.updateGlobalSettings(globalSettings);
       migratedGlobalSettings = true;
-      logger.info('Migrated global settings from localStorage');
+      logger.info("Migrated global settings from localStorage");
 
       // Extract and save credentials
       if (appState.apiKeys) {
@@ -1097,14 +1201,14 @@ export class SettingsService {
         };
         await this.updateCredentials({
           apiKeys: {
-            anthropic: apiKeys.anthropic || '',
-            google: apiKeys.google || '',
-            openai: apiKeys.openai || '',
-            zai: '',
+            anthropic: apiKeys.anthropic || "",
+            google: apiKeys.google || "",
+            openai: apiKeys.openai || "",
+            zai: "",
           },
         });
         migratedCredentials = true;
-        logger.info('Migrated credentials from localStorage');
+        logger.info("Migrated credentials from localStorage");
       }
 
       // Migrate per-project settings
@@ -1121,10 +1225,14 @@ export class SettingsService {
       // Get unique project paths that have per-project settings
       const projectPaths = new Set<string>();
       if (boardBackgroundByProject) {
-        Object.keys(boardBackgroundByProject).forEach((p) => projectPaths.add(p));
+        Object.keys(boardBackgroundByProject).forEach((p) =>
+          projectPaths.add(p),
+        );
       }
       if (currentWorktreeByProject) {
-        Object.keys(currentWorktreeByProject).forEach((p) => projectPaths.add(p));
+        Object.keys(currentWorktreeByProject).forEach((p) =>
+          projectPaths.add(p),
+        );
       }
       if (worktreesByProject) {
         Object.keys(worktreesByProject).forEach((p) => projectPaths.add(p));
@@ -1146,15 +1254,17 @@ export class SettingsService {
           // Get theme from project object
           const project = projects.find((p) => p.path === projectPath);
           if (project?.theme) {
-            projectSettings.theme = project.theme as ProjectSettings['theme'];
+            projectSettings.theme = project.theme as ProjectSettings["theme"];
           }
 
           if (boardBackgroundByProject?.[projectPath]) {
-            projectSettings.boardBackground = boardBackgroundByProject[projectPath];
+            projectSettings.boardBackground =
+              boardBackgroundByProject[projectPath];
           }
 
           if (currentWorktreeByProject?.[projectPath]) {
-            projectSettings.currentWorktree = currentWorktreeByProject[projectPath];
+            projectSettings.currentWorktree =
+              currentWorktreeByProject[projectPath];
           }
 
           if (worktreesByProject?.[projectPath]) {
@@ -1166,11 +1276,15 @@ export class SettingsService {
             migratedProjectCount++;
           }
         } catch (e) {
-          errors.push(`Failed to migrate project settings for ${projectPath}: ${e}`);
+          errors.push(
+            `Failed to migrate project settings for ${projectPath}: ${e}`,
+          );
         }
       }
 
-      logger.info(`Migration complete: ${migratedProjectCount} projects migrated`);
+      logger.info(
+        `Migration complete: ${migratedProjectCount} projects migrated`,
+      );
 
       return {
         success: errors.length === 0,
@@ -1180,7 +1294,7 @@ export class SettingsService {
         errors,
       };
     } catch (error) {
-      logger.error('Migration failed:', error);
+      logger.error("Migration failed:", error);
       errors.push(`Migration failed: ${error}`);
       return {
         success: false,
@@ -1216,18 +1330,21 @@ export class SettingsService {
     const homeDir = os.homedir();
 
     switch (process.platform) {
-      case 'darwin':
+      case "darwin":
         // macOS: ~/Library/Application Support/Pegasus
-        return path.join(homeDir, 'Library', 'Application Support', 'Pegasus');
-      case 'win32':
+        return path.join(homeDir, "Library", "Application Support", "Pegasus");
+      case "win32":
         // Windows: %APPDATA%\Pegasus
         return path.join(
-          process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'),
-          'Pegasus'
+          process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"),
+          "Pegasus",
         );
       default:
         // Linux and others: ~/.config/Pegasus
-        return path.join(process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config'), 'Pegasus');
+        return path.join(
+          process.env.XDG_CONFIG_HOME || path.join(homeDir, ".config"),
+          "Pegasus",
+        );
     }
   }
 
@@ -1262,7 +1379,7 @@ export class SettingsService {
 
     // Skip if legacy path is the same as current data dir (no migration needed)
     if (path.resolve(legacyPath) === path.resolve(this.dataDir)) {
-      logger.debug('Legacy path same as current data dir, skipping migration');
+      logger.debug("Legacy path same as current data dir, skipping migration");
       return { migrated: false, migratedFiles, legacyPath, errors };
     }
 
@@ -1280,12 +1397,14 @@ export class SettingsService {
     }
 
     if (newSettingsExist) {
-      logger.debug('Settings already exist in new location, skipping migration');
+      logger.debug(
+        "Settings already exist in new location, skipping migration",
+      );
       return { migrated: false, migratedFiles, legacyPath, errors };
     }
 
     // Check if legacy directory exists and has settings
-    const legacySettingsPath = path.join(legacyPath, 'settings.json');
+    const legacySettingsPath = path.join(legacyPath, "settings.json");
     let legacySettingsExist = false;
     try {
       await fs.access(legacySettingsPath);
@@ -1295,13 +1414,15 @@ export class SettingsService {
     }
 
     if (!legacySettingsExist) {
-      logger.debug('No legacy settings found, skipping migration');
+      logger.debug("No legacy settings found, skipping migration");
       return { migrated: false, migratedFiles, legacyPath, errors };
     }
 
     // Perform migration of specific application data files only
     // (not Electron internal caches like Code Cache, GPU Cache, etc.)
-    logger.info('Found legacy data directory, migrating application data to new location...');
+    logger.info(
+      "Found legacy data directory, migrating application data to new location...",
+    );
 
     // Ensure new data directory exists
     try {
@@ -1315,12 +1436,12 @@ export class SettingsService {
 
     // Only migrate specific application data files/directories
     const itemsToMigrate = [
-      'settings.json',
-      'credentials.json',
-      'sessions-metadata.json',
-      'agent-sessions',
-      '.api-key',
-      '.sessions', // Legacy non-port-scoped sessions file
+      "settings.json",
+      "credentials.json",
+      "sessions-metadata.json",
+      "agent-sessions",
+      ".api-key",
+      ".sessions", // Legacy non-port-scoped sessions file
     ];
 
     for (const item of itemsToMigrate) {
@@ -1349,7 +1470,7 @@ export class SettingsService {
         const stat = await fs.stat(srcPath);
         if (stat.isDirectory()) {
           await this.copyDirectory(srcPath, destPath);
-          migratedFiles.push(item + '/');
+          migratedFiles.push(item + "/");
           logger.info(`Migrated directory: ${item}/`);
         } else {
           const content = await fs.readFile(srcPath);
@@ -1366,7 +1487,7 @@ export class SettingsService {
 
     if (migratedFiles.length > 0) {
       logger.info(
-        `Migration complete. Migrated ${migratedFiles.length} item(s): ${migratedFiles.join(', ')}`
+        `Migration complete. Migrated ${migratedFiles.length} item(s): ${migratedFiles.join(", ")}`,
       );
       logger.info(`Legacy path: ${legacyPath}`);
       logger.info(`New path: ${this.dataDir}`);

@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { FileBrowserDialog } from '@/components/dialogs/file-browser-dialog';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { FileBrowserDialog } from "@/components/dialogs/file-browser-dialog";
 
 interface FileBrowserOptions {
   title?: string;
@@ -15,16 +21,21 @@ const FileBrowserContext = createContext<FileBrowserContextValue | null>(null);
 
 export function FileBrowserProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [resolver, setResolver] = useState<((value: string | null) => void) | null>(null);
+  const [resolver, setResolver] = useState<
+    ((value: string | null) => void) | null
+  >(null);
   const [dialogOptions, setDialogOptions] = useState<FileBrowserOptions>({});
 
-  const openFileBrowser = useCallback((options?: FileBrowserOptions): Promise<string | null> => {
-    return new Promise((resolve) => {
-      setDialogOptions(options || {});
-      setIsOpen(true);
-      setResolver(() => resolve);
-    });
-  }, []);
+  const openFileBrowser = useCallback(
+    (options?: FileBrowserOptions): Promise<string | null> => {
+      return new Promise((resolve) => {
+        setDialogOptions(options || {});
+        setIsOpen(true);
+        setResolver(() => resolve);
+      });
+    },
+    [],
+  );
 
   const handleSelect = useCallback(
     (path: string) => {
@@ -35,7 +46,7 @@ export function FileBrowserProvider({ children }: { children: ReactNode }) {
       setIsOpen(false);
       setDialogOptions({});
     },
-    [resolver]
+    [resolver],
   );
 
   const handleOpenChange = useCallback(
@@ -49,7 +60,7 @@ export function FileBrowserProvider({ children }: { children: ReactNode }) {
         setDialogOptions({});
       }
     },
-    [resolver]
+    [resolver],
   );
 
   return (
@@ -70,7 +81,7 @@ export function FileBrowserProvider({ children }: { children: ReactNode }) {
 // No-op fallback for HMR transitions when context temporarily becomes unavailable
 const hmrFallback: FileBrowserContextValue = {
   openFileBrowser: async () => {
-    console.warn('[HMR] FileBrowserContext not available, returning null');
+    console.warn("[HMR] FileBrowserContext not available, returning null");
     return null;
   },
 };
@@ -86,15 +97,19 @@ export function useFileBrowser() {
       return hmrFallback;
     }
     // In production, this indicates a real bug - throw to help debug
-    throw new Error('useFileBrowser must be used within FileBrowserProvider');
+    throw new Error("useFileBrowser must be used within FileBrowserProvider");
   }
   return context;
 }
 
 // Global reference for non-React code (like HttpApiClient)
-let globalFileBrowserFn: ((options?: FileBrowserOptions) => Promise<string | null>) | null = null;
+let globalFileBrowserFn:
+  | ((options?: FileBrowserOptions) => Promise<string | null>)
+  | null = null;
 
-export function setGlobalFileBrowser(fn: (options?: FileBrowserOptions) => Promise<string | null>) {
+export function setGlobalFileBrowser(
+  fn: (options?: FileBrowserOptions) => Promise<string | null>,
+) {
   globalFileBrowserFn = fn;
 }
 

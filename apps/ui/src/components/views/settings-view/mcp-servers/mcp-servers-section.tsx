@@ -1,7 +1,7 @@
-import { Plug } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useMCPServers } from './hooks';
-import { MCPServerHeader, MCPToolsWarning, MCPServerCard } from './components';
+import { Plug } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useMCPServers } from "./hooks";
+import { MCPServerHeader, MCPToolsWarning, MCPServerCard } from "./components";
 import {
   AddEditServerDialog,
   DeleteServerDialog,
@@ -9,7 +9,7 @@ import {
   JsonEditDialog,
   GlobalJsonEditDialog,
   SecurityWarningDialog,
-} from './dialogs';
+} from "./dialogs";
 
 export function MCPServersSection() {
   const {
@@ -73,10 +73,10 @@ export function MCPServersSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <MCPServerHeader
@@ -96,7 +96,9 @@ export function MCPServersSection() {
           <div className="text-center py-8 text-muted-foreground">
             <Plug className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-sm">No MCP servers configured</p>
-            <p className="text-xs mt-1">Add a server to extend agent capabilities</p>
+            <p className="text-xs mt-1">
+              Add a server to extend agent capabilities
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -131,7 +133,9 @@ export function MCPServersSection() {
 
       <DeleteServerDialog
         open={!!deleteConfirmId}
-        onOpenChange={(open) => setDeleteConfirmId(open ? deleteConfirmId : null)}
+        onOpenChange={(open) =>
+          setDeleteConfirmId(open ? deleteConfirmId : null)
+        }
         onConfirm={() => deleteConfirmId && handleDelete(deleteConfirmId)}
       />
 
@@ -143,7 +147,7 @@ export function MCPServersSection() {
         onImport={handleImportJson}
         onCancel={() => {
           setIsImportDialogOpen(false);
-          setImportJson('');
+          setImportJson("");
         }}
       />
 
@@ -152,7 +156,7 @@ export function MCPServersSection() {
         onOpenChange={(open) => {
           if (!open) {
             setJsonEditServer(null);
-            setJsonEditValue('');
+            setJsonEditValue("");
           }
         }}
         server={jsonEditServer}
@@ -161,7 +165,7 @@ export function MCPServersSection() {
         onSave={handleSaveJsonEdit}
         onCancel={() => {
           setJsonEditServer(null);
-          setJsonEditValue('');
+          setJsonEditValue("");
         }}
       />
 
@@ -173,7 +177,7 @@ export function MCPServersSection() {
         onSave={handleSaveGlobalJsonEdit}
         onCancel={() => {
           setIsGlobalJsonEditOpen(false);
-          setGlobalJsonValue('');
+          setGlobalJsonValue("");
         }}
       />
 
@@ -181,13 +185,15 @@ export function MCPServersSection() {
         open={isSecurityWarningOpen}
         onOpenChange={setIsSecurityWarningOpen}
         onConfirm={handleSecurityWarningConfirm}
-        serverType={pendingServerData?.serverType || 'stdio'}
-        serverName={pendingServerData?.serverData?.name || ''}
+        serverType={pendingServerData?.serverType || "stdio"}
+        serverName={pendingServerData?.serverData?.name || ""}
         command={pendingServerData?.command}
         args={pendingServerData?.args}
         url={pendingServerData?.url}
         importCount={
-          pendingServerData?.type === 'import' ? pendingServerData.importServers?.length : undefined
+          pendingServerData?.type === "import"
+            ? pendingServerData.importServers?.length
+            : undefined
         }
       />
     </div>

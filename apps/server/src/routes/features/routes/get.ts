@@ -2,9 +2,9 @@
  * POST /get endpoint - Get a single feature
  */
 
-import type { Request, Response } from 'express';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createGetHandler(featureLoader: FeatureLoader) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -17,20 +17,20 @@ export function createGetHandler(featureLoader: FeatureLoader) {
       if (!projectPath || !featureId) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and featureId are required',
+          error: "projectPath and featureId are required",
         });
         return;
       }
 
       const feature = await featureLoader.get(projectPath, featureId);
       if (!feature) {
-        res.status(404).json({ success: false, error: 'Feature not found' });
+        res.status(404).json({ success: false, error: "Feature not found" });
         return;
       }
 
       res.json({ success: true, feature });
     } catch (error) {
-      logError(error, 'Get feature failed');
+      logError(error, "Get feature failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,26 +1,28 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('ProjectCreation');
-import { initializeProject } from '@/lib/project-init';
-import { toast } from 'sonner';
-import type { StarterTemplate } from '@/lib/templates';
-import type { Project } from '@/lib/electron';
+const logger = createLogger("ProjectCreation");
+import { initializeProject } from "@/lib/project-init";
+import { toast } from "sonner";
+import type { StarterTemplate } from "@/lib/templates";
+import type { Project } from "@/lib/electron";
 
 interface UseProjectCreationProps {
   upsertAndSetCurrentProject: (path: string, name: string) => Project;
 }
 
-export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCreationProps) {
+export function useProjectCreation({
+  upsertAndSetCurrentProject,
+}: UseProjectCreationProps) {
   // Modal state
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   // Onboarding state
   const [showOnboardingDialog, setShowOnboardingDialog] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectPath, setNewProjectPath] = useState('');
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectPath, setNewProjectPath] = useState("");
 
   /**
    * Common logic for all project creation flows
@@ -55,7 +57,7 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   <implemented_features>
     <!-- The AI agent will populate this based on code analysis -->
   </implemented_features>
-</project_specification>`
+</project_specification>`,
         );
 
         // Let the store handle theme (trashed project recovery or undefined for global)
@@ -68,16 +70,16 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created successfully');
+        toast.success("Project created successfully");
       } catch (error) {
-        logger.error('Failed to finalize project:', error);
-        toast.error('Failed to initialize project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to finalize project:", error);
+        toast.error("Failed to initialize project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
         throw error;
       }
     },
-    [upsertAndSetCurrentProject]
+    [upsertAndSetCurrentProject],
   );
 
   /**
@@ -96,33 +98,41 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         // Finalize project setup
         await finalizeProjectCreation(projectPath, projectName);
       } catch (error) {
-        logger.error('Failed to create blank project:', error);
-        toast.error('Failed to create project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create blank project:", error);
+        toast.error("Failed to create project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreatingProject(false);
       }
     },
-    [finalizeProjectCreation]
+    [finalizeProjectCreation],
   );
 
   /**
    * Create project from a starter template
    */
   const handleCreateFromTemplate = useCallback(
-    async (template: StarterTemplate, projectName: string, parentDir: string) => {
+    async (
+      template: StarterTemplate,
+      projectName: string,
+      parentDir: string,
+    ) => {
       setIsCreatingProject(true);
       try {
         const api = getElectronAPI();
 
         // Clone template repository
         if (!api.templates) {
-          throw new Error('Templates API is not available');
+          throw new Error("Templates API is not available");
         }
-        const cloneResult = await api.templates.clone(template.repoUrl, projectName, parentDir);
+        const cloneResult = await api.templates.clone(
+          template.repoUrl,
+          projectName,
+          parentDir,
+        );
         if (!cloneResult.success) {
-          throw new Error(cloneResult.error || 'Failed to clone template');
+          throw new Error(cloneResult.error || "Failed to clone template");
         }
         const projectPath = cloneResult.projectPath!;
 
@@ -141,17 +151,17 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   </overview>
 
   <technology_stack>
-    ${template.techStack.map((tech) => `<technology>${tech}</technology>`).join('\n    ')}
+    ${template.techStack.map((tech) => `<technology>${tech}</technology>`).join("\n    ")}
   </technology_stack>
 
   <core_capabilities>
-    ${template.features.map((feature) => `<capability>${feature}</capability>`).join('\n    ')}
+    ${template.features.map((feature) => `<capability>${feature}</capability>`).join("\n    ")}
   </core_capabilities>
 
   <implemented_features>
     <!-- The AI agent will populate this based on code analysis -->
   </implemented_features>
-</project_specification>`
+</project_specification>`,
         );
 
         // Let the store handle theme (trashed project recovery or undefined for global)
@@ -161,19 +171,19 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created from template', {
+        toast.success("Project created from template", {
           description: `Created ${projectName} from ${template.name}`,
         });
       } catch (error) {
-        logger.error('Failed to create from template:', error);
-        toast.error('Failed to create project from template', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create from template:", error);
+        toast.error("Failed to create project from template", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreatingProject(false);
       }
     },
-    [upsertAndSetCurrentProject]
+    [upsertAndSetCurrentProject],
   );
 
   /**
@@ -187,11 +197,15 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
 
         // Clone custom repository
         if (!api.templates) {
-          throw new Error('Templates API is not available');
+          throw new Error("Templates API is not available");
         }
-        const cloneResult = await api.templates.clone(repoUrl, projectName, parentDir);
+        const cloneResult = await api.templates.clone(
+          repoUrl,
+          projectName,
+          parentDir,
+        );
         if (!cloneResult.success) {
-          throw new Error(cloneResult.error || 'Failed to clone repository');
+          throw new Error(cloneResult.error || "Failed to clone repository");
         }
         const projectPath = cloneResult.projectPath!;
 
@@ -220,7 +234,7 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
   <implemented_features>
     <!-- The AI agent will populate this based on code analysis -->
   </implemented_features>
-</project_specification>`
+</project_specification>`,
         );
 
         // Let the store handle theme (trashed project recovery or undefined for global)
@@ -230,19 +244,19 @@ export function useProjectCreation({ upsertAndSetCurrentProject }: UseProjectCre
         setNewProjectPath(projectPath);
         setShowOnboardingDialog(true);
 
-        toast.success('Project created from repository', {
+        toast.success("Project created from repository", {
           description: `Created ${projectName} from ${repoUrl}`,
         });
       } catch (error) {
-        logger.error('Failed to create from custom URL:', error);
-        toast.error('Failed to create project from URL', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create from custom URL:", error);
+        toast.error("Failed to create project from URL", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreatingProject(false);
       }
     },
-    [upsertAndSetCurrentProject]
+    [upsertAndSetCurrentProject],
   );
 
   return {

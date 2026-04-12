@@ -5,25 +5,25 @@
  * recent completions, and alerts. Quick navigation to any project or feature.
  */
 
-import { useState, useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@pegasus/utils/logger';
-import { useMultiProjectStatus } from '@/hooks/use-multi-project-status';
-import { useAppStore } from '@/store/app-store';
-import { isElectron, getElectronAPI } from '@/lib/electron';
-import { isMac } from '@/lib/utils';
-import { initializeProject } from '@/lib/project-init';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { Spinner } from '@/components/ui/spinner';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { NewProjectModal } from '@/components/dialogs/new-project-modal';
-import { WorkspacePickerModal } from '@/components/dialogs/workspace-picker-modal';
-import { ProjectStatusCard } from './overview/project-status-card';
-import { RecentActivityFeed } from './overview/recent-activity-feed';
-import { RunningAgentsPanel } from './overview/running-agents-panel';
-import type { StarterTemplate } from '@/lib/templates';
+import { useState, useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { createLogger } from "@pegasus/utils/logger";
+import { useMultiProjectStatus } from "@/hooks/use-multi-project-status";
+import { useAppStore } from "@/store/app-store";
+import { isElectron, getElectronAPI } from "@/lib/electron";
+import { isMac } from "@/lib/utils";
+import { initializeProject } from "@/lib/project-init";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NewProjectModal } from "@/components/dialogs/new-project-modal";
+import { WorkspacePickerModal } from "@/components/dialogs/workspace-picker-modal";
+import { ProjectStatusCard } from "./overview/project-status-card";
+import { RecentActivityFeed } from "./overview/recent-activity-feed";
+import { RunningAgentsPanel } from "./overview/running-agents-panel";
+import type { StarterTemplate } from "@/lib/templates";
 import {
   LayoutDashboard,
   RefreshCw,
@@ -36,9 +36,9 @@ import {
   Clock,
   Bot,
   Bell,
-} from 'lucide-react';
+} from "lucide-react";
 
-const logger = createLogger('OverviewView');
+const logger = createLogger("OverviewView");
 
 export function OverviewView() {
   const navigate = useNavigate();
@@ -55,24 +55,24 @@ export function OverviewView() {
       try {
         const initResult = await initializeProject(path);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
+          toast.error("Failed to initialize project", {
+            description: initResult.error || "Unknown error occurred",
           });
           return;
         }
 
         upsertAndSetCurrentProject(path, name);
 
-        toast.success('Project opened', { description: `Opened ${name}` });
-        navigate({ to: '/board' });
+        toast.success("Project opened", { description: `Opened ${name}` });
+        navigate({ to: "/board" });
       } catch (error) {
-        logger.error('[Overview] Failed to open project:', error);
-        toast.error('Failed to open project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("[Overview] Failed to open project:", error);
+        toast.error("Failed to open project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [upsertAndSetCurrentProject, navigate]
+    [upsertAndSetCurrentProject, navigate],
   );
 
   const handleOpenProject = useCallback(async () => {
@@ -88,18 +88,20 @@ export function OverviewView() {
 
         if (!result.canceled && result.filePaths[0]) {
           const path = result.filePaths[0];
-          const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
+          const name =
+            path.split(/[/\\]/).filter(Boolean).pop() || "Untitled Project";
           await initializeAndOpenProject(path, name);
         }
       }
     } catch (error) {
-      logger.error('[Overview] Failed to check workspace config:', error);
+      logger.error("[Overview] Failed to check workspace config:", error);
       const api = getElectronAPI();
       const result = await api.openDirectory();
 
       if (!result.canceled && result.filePaths[0]) {
         const path = result.filePaths[0];
-        const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
+        const name =
+          path.split(/[/\\]/).filter(Boolean).pop() || "Untitled Project";
         await initializeAndOpenProject(path, name);
       }
     }
@@ -110,7 +112,7 @@ export function OverviewView() {
       setShowWorkspacePicker(false);
       await initializeAndOpenProject(path, name);
     },
-    [initializeAndOpenProject]
+    [initializeAndOpenProject],
   );
 
   const handleCreateBlankProject = useCallback(
@@ -124,8 +126,8 @@ export function OverviewView() {
 
         const initResult = await initializeProject(projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
+          toast.error("Failed to initialize project", {
+            description: initResult.error || "Unknown error occurred",
           });
           return;
         }
@@ -138,48 +140,54 @@ export function OverviewView() {
   <technology_stack></technology_stack>
   <core_capabilities></core_capabilities>
   <implemented_features></implemented_features>
-</project_specification>`
+</project_specification>`,
         );
 
         upsertAndSetCurrentProject(projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created', { description: `Created ${projectName}` });
-        navigate({ to: '/board' });
+        toast.success("Project created", {
+          description: `Created ${projectName}`,
+        });
+        navigate({ to: "/board" });
       } catch (error) {
-        logger.error('Failed to create project:', error);
-        toast.error('Failed to create project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create project:", error);
+        toast.error("Failed to create project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreating(false);
       }
     },
-    [upsertAndSetCurrentProject, navigate]
+    [upsertAndSetCurrentProject, navigate],
   );
 
   const handleCreateFromTemplate = useCallback(
-    async (template: StarterTemplate, projectName: string, parentDir: string) => {
+    async (
+      template: StarterTemplate,
+      projectName: string,
+      parentDir: string,
+    ) => {
       setIsCreating(true);
       try {
         const httpClient = getHttpApiClient();
         const cloneResult = await httpClient.templates.clone(
           template.repoUrl,
           projectName,
-          parentDir
+          parentDir,
         );
 
         if (!cloneResult.success || !cloneResult.projectPath) {
-          toast.error('Failed to clone template', {
-            description: cloneResult.error || 'Unknown error occurred',
+          toast.error("Failed to clone template", {
+            description: cloneResult.error || "Unknown error occurred",
           });
           return;
         }
 
         const initResult = await initializeProject(cloneResult.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
+          toast.error("Failed to initialize project", {
+            description: initResult.error || "Unknown error occurred",
           });
           return;
         }
@@ -187,20 +195,20 @@ export function OverviewView() {
         upsertAndSetCurrentProject(cloneResult.projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created from template', {
+        toast.success("Project created from template", {
           description: `Created ${projectName} from ${template.name}`,
         });
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       } catch (error) {
-        logger.error('Failed to create from template:', error);
-        toast.error('Failed to create project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create from template:", error);
+        toast.error("Failed to create project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreating(false);
       }
     },
-    [upsertAndSetCurrentProject, navigate]
+    [upsertAndSetCurrentProject, navigate],
   );
 
   const handleCreateFromCustomUrl = useCallback(
@@ -208,19 +216,23 @@ export function OverviewView() {
       setIsCreating(true);
       try {
         const httpClient = getHttpApiClient();
-        const cloneResult = await httpClient.templates.clone(repoUrl, projectName, parentDir);
+        const cloneResult = await httpClient.templates.clone(
+          repoUrl,
+          projectName,
+          parentDir,
+        );
 
         if (!cloneResult.success || !cloneResult.projectPath) {
-          toast.error('Failed to clone repository', {
-            description: cloneResult.error || 'Unknown error occurred',
+          toast.error("Failed to clone repository", {
+            description: cloneResult.error || "Unknown error occurred",
           });
           return;
         }
 
         const initResult = await initializeProject(cloneResult.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
+          toast.error("Failed to initialize project", {
+            description: initResult.error || "Unknown error occurred",
           });
           return;
         }
@@ -228,28 +240,33 @@ export function OverviewView() {
         upsertAndSetCurrentProject(cloneResult.projectPath, projectName);
         setShowNewProjectModal(false);
 
-        toast.success('Project created from repository', { description: `Created ${projectName}` });
-        navigate({ to: '/board' });
+        toast.success("Project created from repository", {
+          description: `Created ${projectName}`,
+        });
+        navigate({ to: "/board" });
       } catch (error) {
-        logger.error('Failed to create from custom URL:', error);
-        toast.error('Failed to create project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to create from custom URL:", error);
+        toast.error("Failed to create project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setIsCreating(false);
       }
     },
-    [upsertAndSetCurrentProject, navigate]
+    [upsertAndSetCurrentProject, navigate],
   );
 
   return (
-    <div className="flex-1 flex flex-col h-full content-bg" data-testid="overview-view">
+    <div
+      className="flex-1 flex flex-col h-full content-bg"
+      data-testid="overview-view"
+    >
       {/* Header */}
       <header className="shrink-0 border-b border-border bg-glass backdrop-blur-md">
         {/* Electron titlebar drag region */}
         {isElectron() && (
           <div
-            className={`absolute top-0 left-0 right-0 h-6 titlebar-drag-region z-40 pointer-events-none ${isMac ? 'pl-20' : ''}`}
+            className={`absolute top-0 left-0 right-0 h-6 titlebar-drag-region z-40 pointer-events-none ${isMac ? "pl-20" : ""}`}
             aria-hidden="true"
           />
         )}
@@ -260,9 +277,13 @@ export function OverviewView() {
                 <LayoutDashboard className="w-4 h-4 text-brand-500" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Pegasus Dashboard</h1>
+                <h1 className="text-lg font-semibold text-foreground">
+                  Pegasus Dashboard
+                </h1>
                 <p className="text-xs text-muted-foreground">
-                  {overview ? `${overview.aggregate.projectCounts.total} projects` : 'Loading...'}
+                  {overview
+                    ? `${overview.aggregate.projectCounts.total} projects`
+                    : "Loading..."}
                 </p>
               </div>
             </div>
@@ -276,10 +297,17 @@ export function OverviewView() {
               disabled={isLoading}
               className="gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
-            <Button variant="outline" size="sm" onClick={handleOpenProject} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenProject}
+              className="gap-2"
+            >
               <FolderOpen className="w-4 h-4" />
               Open Project
             </Button>
@@ -302,7 +330,9 @@ export function OverviewView() {
           <div className="flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-4">
               <Spinner size="lg" />
-              <p className="text-sm text-muted-foreground">Loading project overview...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading project overview...
+              </p>
             </div>
           </div>
         )}
@@ -315,7 +345,9 @@ export function OverviewView() {
                 <XCircle className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">Failed to load overview</h3>
+                <h3 className="font-medium text-foreground mb-1">
+                  Failed to load overview
+                </h3>
                 <p className="text-sm text-muted-foreground mb-4">{error}</p>
                 <Button variant="outline" size="sm" onClick={refresh}>
                   Try again
@@ -420,11 +452,14 @@ export function OverviewView() {
               {/* Left column: Project cards */}
               <div className="lg:col-span-2 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-foreground">All Projects</h2>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    All Projects
+                  </h2>
                   {overview.aggregate.totalUnreadNotifications > 0 && (
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                       <Bell className="w-4 h-4" />
-                      {overview.aggregate.totalUnreadNotifications} unread notifications
+                      {overview.aggregate.totalUnreadNotifications} unread
+                      notifications
                     </div>
                   )}
                 </div>
@@ -433,7 +468,9 @@ export function OverviewView() {
                   <Card className="bg-card/60">
                     <CardContent className="py-12 text-center">
                       <Folder className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h3 className="font-medium text-foreground mb-1">No projects yet</h3>
+                      <h3 className="font-medium text-foreground mb-1">
+                        No projects yet
+                      </h3>
                       <p className="text-sm text-muted-foreground mb-4">
                         Create or open a project to get started
                       </p>
@@ -445,7 +482,10 @@ export function OverviewView() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {overview.projects.map((project) => (
-                      <ProjectStatusCard key={project.projectId} project={project} />
+                      <ProjectStatusCard
+                        key={project.projectId}
+                        project={project}
+                      />
                     ))}
                   </div>
                 )}
@@ -461,7 +501,8 @@ export function OverviewView() {
                       Running Agents
                       {overview.aggregate.projectsWithAutoModeRunning > 0 && (
                         <span className="text-xs font-normal text-muted-foreground ml-auto">
-                          {overview.aggregate.projectsWithAutoModeRunning} active
+                          {overview.aggregate.projectsWithAutoModeRunning}{" "}
+                          active
                         </span>
                       )}
                     </CardTitle>
@@ -480,7 +521,10 @@ export function OverviewView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <RecentActivityFeed activities={overview.recentActivity} maxItems={8} />
+                    <RecentActivityFeed
+                      activities={overview.recentActivity}
+                      maxItems={8}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -488,11 +532,11 @@ export function OverviewView() {
 
             {/* Footer timestamp */}
             <div className="text-center text-xs text-muted-foreground pt-4">
-              Last updated:{' '}
+              Last updated:{" "}
               {new Date(overview.generatedAt).toLocaleTimeString(undefined, {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
               })}
             </div>
           </div>

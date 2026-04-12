@@ -1,1 +1,4 @@
-export { useProjectSettingsView, type ProjectSettingsViewId } from './use-project-settings-view';
+export {
+  useProjectSettingsView,
+  type ProjectSettingsViewId,
+} from "./use-project-settings-view";

@@ -1,5 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FolderOpen, Folder, ChevronRight, HardDrive, Clock, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import {
+  FolderOpen,
+  Folder,
+  ChevronRight,
+  HardDrive,
+  Clock,
+  X,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,14 +14,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { PathInput } from '@/components/ui/path-input';
-import { Kbd, KbdGroup } from '@/components/ui/kbd';
-import { getDefaultWorkspaceDirectory, saveLastProjectDirectory } from '@/lib/workspace-config';
-import { useOSDetection } from '@/hooks';
-import { apiPost } from '@/lib/api-fetch';
-import { useAppStore } from '@/store/app-store';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { PathInput } from "@/components/ui/path-input";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import {
+  getDefaultWorkspaceDirectory,
+  saveLastProjectDirectory,
+} from "@/lib/workspace-config";
+import { useOSDetection } from "@/hooks";
+import { apiPost } from "@/lib/api-fetch";
+import { useAppStore } from "@/store/app-store";
 
 interface DirectoryEntry {
   name: string;
@@ -44,18 +54,18 @@ export function FileBrowserDialog({
   open,
   onOpenChange,
   onSelect,
-  title = 'Select Project Directory',
-  description = 'Navigate to your project folder or paste a path directly',
+  title = "Select Project Directory",
+  description = "Navigate to your project folder or paste a path directly",
   initialPath,
 }: FileBrowserDialogProps) {
   const { isMac } = useOSDetection();
-  const [currentPath, setCurrentPath] = useState<string>('');
+  const [currentPath, setCurrentPath] = useState<string>("");
   const [parentPath, setParentPath] = useState<string | null>(null);
   const [directories, setDirectories] = useState<DirectoryEntry[]>([]);
   const [drives, setDrives] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [warning, setWarning] = useState('');
+  const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
 
   // Use recent folders from app store (synced via API)
   const recentFolders = useAppStore((s) => s.recentFolders);
@@ -68,28 +78,30 @@ export function FileBrowserDialog({
       const updated = recentFolders.filter((p) => p !== path);
       setRecentFolders(updated);
     },
-    [recentFolders, setRecentFolders]
+    [recentFolders, setRecentFolders],
   );
 
   const browseDirectory = useCallback(async (dirPath?: string) => {
     setLoading(true);
-    setError('');
-    setWarning('');
+    setError("");
+    setWarning("");
 
     try {
-      const result = await apiPost<BrowseResult>('/api/fs/browse', { dirPath });
+      const result = await apiPost<BrowseResult>("/api/fs/browse", { dirPath });
 
       if (result.success) {
         setCurrentPath(result.currentPath);
         setParentPath(result.parentPath);
         setDirectories(result.directories);
         setDrives(result.drives || []);
-        setWarning(result.warning || '');
+        setWarning(result.warning || "");
       } else {
-        setError(result.error || 'Failed to browse directory');
+        setError(result.error || "Failed to browse directory");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load directories');
+      setError(
+        err instanceof Error ? err.message : "Failed to load directories",
+      );
     } finally {
       setLoading(false);
     }
@@ -99,17 +111,17 @@ export function FileBrowserDialog({
     (path: string) => {
       browseDirectory(path);
     },
-    [browseDirectory]
+    [browseDirectory],
   );
 
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setCurrentPath('');
+      setCurrentPath("");
       setParentPath(null);
       setDirectories([]);
-      setError('');
-      setWarning('');
+      setError("");
+      setWarning("");
     }
   }, [open]);
 
@@ -162,7 +174,7 @@ export function FileBrowserDialog({
     (path: string) => {
       browseDirectory(path);
     },
-    [browseDirectory]
+    [browseDirectory],
   );
 
   const handleSelectDrive = (drivePath: string) => {
@@ -185,7 +197,7 @@ export function FileBrowserDialog({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Command+Enter (Mac) or Ctrl+Enter (Windows/Linux)
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         if (currentPath && !loading) {
           handleSelect();
@@ -193,8 +205,8 @@ export function FileBrowserDialog({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, currentPath, loading, handleSelect]);
 
   // Helper to get folder name from path
@@ -249,7 +261,9 @@ export function FileBrowserDialog({
                   title={folder}
                 >
                   <Folder className="w-3 h-3 text-brand-500 shrink-0" />
-                  <span className="truncate max-w-[120px]">{getFolderName(folder)}</span>
+                  <span className="truncate max-w-[120px]">
+                    {getFolderName(folder)}
+                  </span>
                   <button
                     onClick={(e) => handleRemoveRecent(e, folder)}
                     className="ml-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
@@ -272,13 +286,15 @@ export function FileBrowserDialog({
               {drives.map((drive) => (
                 <Button
                   key={drive}
-                  variant={currentPath.startsWith(drive) ? 'default' : 'outline'}
+                  variant={
+                    currentPath.startsWith(drive) ? "default" : "outline"
+                  }
                   size="sm"
                   onClick={() => handleSelectDrive(drive)}
                   className="h-6 px-2 text-xs"
                   disabled={loading}
                 >
-                  {drive.replace('\\', '')}
+                  {drive.replace("\\", "")}
                 </Button>
               ))}
             </div>
@@ -288,7 +304,9 @@ export function FileBrowserDialog({
           <div className="flex-1 overflow-y-auto border border-sidebar-border rounded-md scrollbar-styled">
             {loading && (
               <div className="flex items-center justify-center h-full p-4">
-                <div className="text-xs text-muted-foreground">Loading directories...</div>
+                <div className="text-xs text-muted-foreground">
+                  Loading directories...
+                </div>
               </div>
             )}
 
@@ -306,7 +324,9 @@ export function FileBrowserDialog({
 
             {!loading && !error && !warning && directories.length === 0 && (
               <div className="flex items-center justify-center h-full p-4">
-                <div className="text-xs text-muted-foreground">No subdirectories found</div>
+                <div className="text-xs text-muted-foreground">
+                  No subdirectories found
+                </div>
               </div>
             )}
 
@@ -328,8 +348,8 @@ export function FileBrowserDialog({
           </div>
 
           <div className="text-[10px] text-muted-foreground">
-            Paste a full path above, or click on folders to navigate. Press Enter or click → to jump
-            to a path.
+            Paste a full path above, or click on folders to navigate. Press
+            Enter or click → to jump to a path.
           </div>
         </div>
 
@@ -346,7 +366,7 @@ export function FileBrowserDialog({
             <FolderOpen className="w-3.5 h-3.5 mr-1.5" />
             Select Current Folder
             <KbdGroup className="ml-1">
-              <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd>
+              <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
               <Kbd>↵</Kbd>
             </KbdGroup>
           </Button>

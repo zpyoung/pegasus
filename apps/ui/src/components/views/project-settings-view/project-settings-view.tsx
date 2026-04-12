@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { Settings, FolderOpen, Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ProjectIdentitySection } from './project-identity-section';
-import { ProjectThemeSection } from './project-theme-section';
-import { WorktreePreferencesSection } from './worktree-preferences-section';
-import { CommandsAndScriptsSection } from './commands-and-scripts-section';
-import { ProjectModelsSection } from './project-models-section';
-import { DataManagementSection } from './data-management-section';
-import { OrphanedFeaturesSection } from './orphaned-features-section';
-import { DangerZoneSection } from '../settings-view/danger-zone/danger-zone-section';
-import { DeleteProjectDialog } from '../settings-view/components/delete-project-dialog';
-import { RemoveFromPegasusDialog } from '../settings-view/components/remove-from-pegasus-dialog';
-import { ProjectSettingsNavigation } from './components/project-settings-navigation';
-import { useProjectSettingsView } from './hooks/use-project-settings-view';
-import type { Project as ElectronProject } from '@/lib/electron';
-import { useSearch } from '@tanstack/react-router';
-import type { ProjectSettingsViewId } from './hooks/use-project-settings-view';
+import { useState, useEffect } from "react";
+import { useAppStore } from "@/store/app-store";
+import { Settings, FolderOpen, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ProjectIdentitySection } from "./project-identity-section";
+import { ProjectThemeSection } from "./project-theme-section";
+import { WorktreePreferencesSection } from "./worktree-preferences-section";
+import { CommandsAndScriptsSection } from "./commands-and-scripts-section";
+import { ProjectModelsSection } from "./project-models-section";
+import { DataManagementSection } from "./data-management-section";
+import { OrphanedFeaturesSection } from "./orphaned-features-section";
+import { DangerZoneSection } from "../settings-view/danger-zone/danger-zone-section";
+import { DeleteProjectDialog } from "../settings-view/components/delete-project-dialog";
+import { RemoveFromPegasusDialog } from "../settings-view/components/remove-from-pegasus-dialog";
+import { ProjectSettingsNavigation } from "./components/project-settings-navigation";
+import { useProjectSettingsView } from "./hooks/use-project-settings-view";
+import type { Project as ElectronProject } from "@/lib/electron";
+import { useSearch } from "@tanstack/react-router";
+import type { ProjectSettingsViewId } from "./hooks/use-project-settings-view";
 
 // Breakpoint constant for mobile (matches Tailwind lg breakpoint)
 const LG_BREAKPOINT = 1024;
@@ -34,24 +34,27 @@ interface SettingsProject {
 export function ProjectSettingsView() {
   const { currentProject, moveProjectToTrash, removeProject } = useAppStore();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showRemoveFromPegasusDialog, setShowRemoveFromPegasusDialog] = useState(false);
+  const [showRemoveFromPegasusDialog, setShowRemoveFromPegasusDialog] =
+    useState(false);
 
   // Read the optional section search param to support deep-linking to a specific section
-  const search = useSearch({ strict: false }) as { section?: ProjectSettingsViewId };
+  const search = useSearch({ strict: false }) as {
+    section?: ProjectSettingsViewId;
+  };
   // Map legacy 'commands' and 'scripts' IDs to the combined 'commands-scripts' section
   const resolvedSection: ProjectSettingsViewId | undefined =
-    search.section === 'commands' || search.section === 'scripts'
-      ? 'commands-scripts'
+    search.section === "commands" || search.section === "scripts"
+      ? "commands-scripts"
       : search.section;
 
   // Use project settings view navigation hook
   const { activeView, navigateTo } = useProjectSettingsView({
-    initialView: resolvedSection ?? 'identity',
+    initialView: resolvedSection ?? "identity",
   });
 
   // Mobile navigation state - default to showing on desktop, hidden on mobile
   const [showNavigation, setShowNavigation] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return window.innerWidth >= LG_BREAKPOINT;
     }
     return true;
@@ -59,7 +62,7 @@ export function ProjectSettingsView() {
 
   // Auto-close navigation on mobile when a section is selected
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < LG_BREAKPOINT) {
+    if (typeof window !== "undefined" && window.innerWidth < LG_BREAKPOINT) {
       setShowNavigation(false);
     }
   }, [activeView]);
@@ -72,12 +75,14 @@ export function ProjectSettingsView() {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Convert electron Project to settings-view Project type
-  const convertProject = (project: ElectronProject | null): SettingsProject | null => {
+  const convertProject = (
+    project: ElectronProject | null,
+  ): SettingsProject | null => {
     if (!project) return null;
     return {
       id: project.id,
@@ -96,28 +101,30 @@ export function ProjectSettingsView() {
     if (!currentProject) return null;
 
     switch (activeView) {
-      case 'identity':
+      case "identity":
         return <ProjectIdentitySection project={currentProject} />;
-      case 'theme':
+      case "theme":
         return <ProjectThemeSection project={currentProject} />;
-      case 'worktrees':
+      case "worktrees":
         return <WorktreePreferencesSection project={currentProject} />;
-      case 'commands':
-      case 'scripts':
-      case 'commands-scripts':
+      case "commands":
+      case "scripts":
+      case "commands-scripts":
         return <CommandsAndScriptsSection project={currentProject} />;
-      case 'claude':
+      case "claude":
         return <ProjectModelsSection project={currentProject} />;
-      case 'data':
+      case "data":
         return <DataManagementSection project={currentProject} />;
-      case 'orphaned':
+      case "orphaned":
         return <OrphanedFeaturesSection project={currentProject} />;
-      case 'danger':
+      case "danger":
         return (
           <DangerZoneSection
             project={settingsProject}
             onDeleteClick={() => setShowDeleteDialog(true)}
-            onRemoveFromPegasusClick={() => setShowRemoveFromPegasusDialog(true)}
+            onRemoveFromPegasusClick={() =>
+              setShowRemoveFromPegasusDialog(true)
+            }
           />
         );
       default:
@@ -137,9 +144,12 @@ export function ProjectSettingsView() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
               <FolderOpen className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground mb-2">No Project Selected</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-2">
+              No Project Selected
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Select a project from the sidebar to configure project-specific settings.
+              Select a project from the sidebar to configure project-specific
+              settings.
             </p>
           </div>
         </div>
@@ -169,9 +179,15 @@ export function ProjectSettingsView() {
           size="sm"
           onClick={() => setShowNavigation(!showNavigation)}
           className="lg:hidden h-8 w-8 p-0"
-          aria-label={showNavigation ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-label={
+            showNavigation ? "Close navigation menu" : "Open navigation menu"
+          }
         >
-          {showNavigation ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          {showNavigation ? (
+            <X className="w-4 h-4" />
+          ) : (
+            <Menu className="w-4 h-4" />
+          )}
         </Button>
       </div>
 

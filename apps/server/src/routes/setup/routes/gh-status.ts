@@ -2,11 +2,15 @@
  * GET /gh-status endpoint - Get GitHub CLI status
  */
 
-import type { Request, Response } from 'express';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { getGitHubCliPaths, getExtendedPath, systemPathAccess } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { exec } from "child_process";
+import { promisify } from "util";
+import {
+  getGitHubCliPaths,
+  getExtendedPath,
+  systemPathAccess,
+} from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 const execAsync = promisify(exec);
 
@@ -33,11 +37,11 @@ async function getGhStatus(): Promise<GhStatus> {
     user: null,
   };
 
-  const isWindows = process.platform === 'win32';
+  const isWindows = process.platform === "win32";
 
   // Check if gh CLI is installed
   try {
-    const findCommand = isWindows ? 'where gh' : 'command -v gh';
+    const findCommand = isWindows ? "where gh" : "command -v gh";
     const { stdout } = await execAsync(findCommand, { env: execEnv });
     status.path = stdout.trim().split(/\r?\n/)[0];
     status.installed = true;
@@ -64,10 +68,12 @@ async function getGhStatus(): Promise<GhStatus> {
 
   // Get version
   try {
-    const { stdout } = await execAsync('gh --version', { env: execEnv });
+    const { stdout } = await execAsync("gh --version", { env: execEnv });
     // Extract version from output like "gh version 2.40.1 (2024-01-09)"
     const versionMatch = stdout.match(/gh version ([\d.]+)/);
-    status.version = versionMatch ? versionMatch[1] : stdout.trim().split('\n')[0];
+    status.version = versionMatch
+      ? versionMatch[1]
+      : stdout.trim().split("\n")[0];
   } catch {
     // Version command failed
   }
@@ -76,7 +82,9 @@ async function getGhStatus(): Promise<GhStatus> {
   // gh auth status can return non-zero even when GH_TOKEN is valid
   let apiCallSucceeded = false;
   try {
-    const { stdout } = await execAsync('gh api user --jq ".login"', { env: execEnv });
+    const { stdout } = await execAsync('gh api user --jq ".login"', {
+      env: execEnv,
+    });
     const user = stdout.trim();
     if (user) {
       status.authenticated = true;
@@ -91,7 +99,7 @@ async function getGhStatus(): Promise<GhStatus> {
   // Fallback: try gh auth status if API call didn't succeed
   if (!apiCallSucceeded) {
     try {
-      const { stdout } = await execAsync('gh auth status', { env: execEnv });
+      const { stdout } = await execAsync("gh auth status", { env: execEnv });
       status.authenticated = true;
 
       // Try to extract username from output
@@ -119,7 +127,7 @@ export function createGhStatusHandler() {
         ...status,
       });
     } catch (error) {
-      logError(error, 'Get GitHub CLI status failed');
+      logError(error, "Get GitHub CLI status failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

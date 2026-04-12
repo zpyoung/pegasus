@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('RunningAgents');
+const logger = createLogger("RunningAgents");
 
 export function useRunningAgents() {
   const [runningAgentsCount, setRunningAgentsCount] = useState(0);
@@ -13,23 +13,23 @@ export function useRunningAgents() {
     try {
       const api = getElectronAPI();
       if (api.runningAgents) {
-        logger.debug('Fetching running agents count');
+        logger.debug("Fetching running agents count");
         const result = await api.runningAgents.getAll();
         if (result.success && result.runningAgents) {
-          logger.debug('Running agents count fetched', {
+          logger.debug("Running agents count fetched", {
             count: result.runningAgents.length,
           });
           setRunningAgentsCount(result.runningAgents.length);
         } else {
-          logger.debug('Running agents count fetch returned empty/failed', {
+          logger.debug("Running agents count fetch returned empty/failed", {
             success: result.success,
           });
         }
       } else {
-        logger.debug('Running agents API not available');
+        logger.debug("Running agents API not available");
       }
     } catch (error) {
-      logger.error('Error fetching running agents count:', error);
+      logger.error("Error fetching running agents count:", error);
     }
   }, []);
 
@@ -47,7 +47,7 @@ export function useRunningAgents() {
   useEffect(() => {
     const api = getElectronAPI();
     if (!api.autoMode) {
-      logger.debug('Auto mode API not available for running agents hook');
+      logger.debug("Auto mode API not available for running agents hook");
       // If autoMode is not available, still fetch initial count
       fetchRunningAgentsCount();
       return;
@@ -57,14 +57,14 @@ export function useRunningAgents() {
     fetchRunningAgentsCount();
 
     const unsubscribe = api.autoMode.onEvent((event) => {
-      logger.debug('Auto mode event for running agents hook', {
+      logger.debug("Auto mode event for running agents hook", {
         type: event.type,
       });
       // When a feature starts, completes, or errors, refresh the count
       if (
-        event.type === 'auto_mode_feature_complete' ||
-        event.type === 'auto_mode_error' ||
-        event.type === 'auto_mode_feature_start'
+        event.type === "auto_mode_feature_complete" ||
+        event.type === "auto_mode_error" ||
+        event.type === "auto_mode_feature_start"
       ) {
         fetchRunningAgentsCount();
       }
@@ -99,15 +99,18 @@ export function useRunningAgents() {
     fetchRunningAgentsCount();
 
     const unsubscribe = api.specRegeneration.onEvent((event) => {
-      logger.debug('Spec regeneration event for running agents hook', {
+      logger.debug("Spec regeneration event for running agents hook", {
         type: event.type,
       });
       // When spec regeneration completes or errors, refresh immediately
-      if (event.type === 'spec_regeneration_complete' || event.type === 'spec_regeneration_error') {
+      if (
+        event.type === "spec_regeneration_complete" ||
+        event.type === "spec_regeneration_error"
+      ) {
         fetchRunningAgentsCount();
       }
       // For progress events, use debounced fetch to avoid excessive calls
-      else if (event.type === 'spec_regeneration_progress') {
+      else if (event.type === "spec_regeneration_progress") {
         debouncedFetchRunningAgentsCount();
       }
     });

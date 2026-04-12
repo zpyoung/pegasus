@@ -5,9 +5,9 @@
  * Response: { success: true, count: number }
  */
 
-import type { Request, Response } from 'express';
-import type { NotificationService } from '../../../services/notification-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { NotificationService } from "../../../services/notification-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler for POST /api/notifications/unread-count
@@ -15,13 +15,17 @@ import { getErrorMessage, logError } from '../common.js';
  * @param notificationService - Instance of NotificationService
  * @returns Express request handler
  */
-export function createUnreadCountHandler(notificationService: NotificationService) {
+export function createUnreadCountHandler(
+  notificationService: NotificationService,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath } = req.body;
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -32,7 +36,7 @@ export function createUnreadCountHandler(notificationService: NotificationServic
         count,
       });
     } catch (error) {
-      logError(error, 'Get unread count failed');
+      logError(error, "Get unread count failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

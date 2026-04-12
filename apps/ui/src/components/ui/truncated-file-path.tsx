@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 interface TruncatedFilePathProps {
   /** The full file path to display */
@@ -17,12 +17,12 @@ interface TruncatedFilePathProps {
  * Example: "src/components/...dialog.tsx" instead of "src/components/views/boa..."
  */
 export function TruncatedFilePath({ path, className }: TruncatedFilePathProps) {
-  const lastSlash = path.lastIndexOf('/');
+  const lastSlash = path.lastIndexOf("/");
 
   // If there's no directory component, just render with normal truncation
   if (lastSlash === -1) {
     return (
-      <span className={cn('truncate', className)} title={path}>
+      <span className={cn("truncate", className)} title={path}>
         {path}
       </span>
     );
@@ -32,7 +32,7 @@ export function TruncatedFilePath({ path, className }: TruncatedFilePathProps) {
   const filePart = path.slice(lastSlash + 1);
 
   return (
-    <span className={cn('flex min-w-0', className)} title={path}>
+    <span className={cn("flex min-w-0", className)} title={path}>
       <span className="truncate shrink">{dirPart}</span>
       <span className="shrink-0 whitespace-nowrap">{filePart}</span>
     </span>

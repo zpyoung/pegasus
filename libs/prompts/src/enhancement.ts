@@ -11,10 +11,10 @@
  * Uses chain-of-thought prompting with few-shot examples for consistent results.
  */
 
-import type { EnhancementMode, EnhancementExample } from '@pegasus/types';
+import type { EnhancementMode, EnhancementExample } from "@pegasus/types";
 
 // Re-export enhancement types from shared package
-export type { EnhancementMode, EnhancementExample } from '@pegasus/types';
+export type { EnhancementMode, EnhancementExample } from "@pegasus/types";
 
 // Import all enhancement mode definitions from separate files
 import {
@@ -33,7 +33,7 @@ import {
   UX_REVIEWER_SYSTEM_PROMPT,
   UX_REVIEWER_EXAMPLES,
   UX_REVIEWER_DESCRIPTION,
-} from './enhancement-modes/index.js';
+} from "./enhancement-modes/index.js";
 
 // Re-export system prompts and examples for backward compatibility
 export {
@@ -47,7 +47,7 @@ export {
   ACCEPTANCE_EXAMPLES,
   UX_REVIEWER_SYSTEM_PROMPT,
   UX_REVIEWER_EXAMPLES,
-} from './enhancement-modes/index.js';
+} from "./enhancement-modes/index.js";
 
 /**
  * Map of enhancement modes to their system prompts
@@ -57,7 +57,7 @@ const SYSTEM_PROMPTS: Record<EnhancementMode, string> = {
   technical: TECHNICAL_SYSTEM_PROMPT,
   simplify: SIMPLIFY_SYSTEM_PROMPT,
   acceptance: ACCEPTANCE_SYSTEM_PROMPT,
-  'ux-reviewer': UX_REVIEWER_SYSTEM_PROMPT,
+  "ux-reviewer": UX_REVIEWER_SYSTEM_PROMPT,
 };
 
 /**
@@ -68,7 +68,7 @@ const EXAMPLES: Record<EnhancementMode, EnhancementExample[]> = {
   technical: TECHNICAL_EXAMPLES,
   simplify: SIMPLIFY_EXAMPLES,
   acceptance: ACCEPTANCE_EXAMPLES,
-  'ux-reviewer': UX_REVIEWER_EXAMPLES,
+  "ux-reviewer": UX_REVIEWER_EXAMPLES,
 };
 
 /**
@@ -89,7 +89,7 @@ const MODE_DESCRIPTIONS: Record<EnhancementMode, string> = {
   technical: TECHNICAL_DESCRIPTION,
   simplify: SIMPLIFY_DESCRIPTION,
   acceptance: ACCEPTANCE_DESCRIPTION,
-  'ux-reviewer': UX_REVIEWER_DESCRIPTION,
+  "ux-reviewer": UX_REVIEWER_DESCRIPTION,
 };
 
 /**
@@ -100,7 +100,8 @@ const MODE_DESCRIPTIONS: Record<EnhancementMode, string> = {
  */
 export function getEnhancementPrompt(mode: string): EnhancementPromptConfig {
   const normalizedMode = mode.toLowerCase() as EnhancementMode;
-  const validMode = normalizedMode in SYSTEM_PROMPTS ? normalizedMode : 'improve';
+  const validMode =
+    normalizedMode in SYSTEM_PROMPTS ? normalizedMode : "improve";
 
   return {
     systemPrompt: SYSTEM_PROMPTS[validMode],
@@ -129,7 +130,11 @@ export function getExamples(mode: EnhancementMode): EnhancementExample[] {
 }
 
 /** Modes that append additional content rather than rewriting the description */
-const ADDITIVE_MODES: EnhancementMode[] = ['technical', 'acceptance', 'ux-reviewer'];
+const ADDITIVE_MODES: EnhancementMode[] = [
+  "technical",
+  "acceptance",
+  "ux-reviewer",
+];
 
 /**
  * Build a user prompt for enhancement with optional few-shot examples
@@ -142,14 +147,14 @@ const ADDITIVE_MODES: EnhancementMode[] = ['technical', 'acceptance', 'ux-review
 export function buildUserPrompt(
   mode: EnhancementMode,
   text: string,
-  includeExamples: boolean = true
+  includeExamples: boolean = true,
 ): string {
   const examples = includeExamples ? getExamples(mode) : [];
   const isAdditive = ADDITIVE_MODES.includes(mode);
 
   const instruction = isAdditive
-    ? 'Generate ONLY the additional details section for the following task description. Do NOT rewrite or repeat the original description:'
-    : 'Please enhance the following task description:';
+    ? "Generate ONLY the additional details section for the following task description. Do NOT rewrite or repeat the original description:"
+    : "Please enhance the following task description:";
 
   if (examples.length === 0) {
     return `${instruction}\n\n${text}`;
@@ -159,13 +164,13 @@ export function buildUserPrompt(
   const examplesSection = examples
     .map(
       (example, index) =>
-        `Example ${index + 1}:\nInput: ${example.input}\nOutput: ${example.output}`
+        `Example ${index + 1}:\nInput: ${example.input}\nOutput: ${example.output}`,
     )
-    .join('\n\n---\n\n');
+    .join("\n\n---\n\n");
 
   const examplesIntro = isAdditive
-    ? 'Here are examples of the additional details section to generate (note: these show ONLY the appended content, not the original description):'
-    : 'Here are some examples of how to enhance task descriptions:';
+    ? "Here are examples of the additional details section to generate (note: these show ONLY the appended content, not the original description):"
+    : "Here are some examples of how to enhance task descriptions:";
 
   return `${examplesIntro}
 

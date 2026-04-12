@@ -16,7 +16,7 @@
  * Consider adding an integration test that validates the actual UI parsing behavior.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
 // ============================================================================
 // MIRRORED FUNCTIONS from apps/ui/src/lib/log-parser.ts
@@ -57,7 +57,10 @@ function parsePhaseSummaries(summary: string | undefined): Map<string, string> {
 /**
  * Extracts a specific phase summary from an accumulated summary string.
  */
-function extractPhaseSummary(summary: string | undefined, phaseName: string): string | null {
+function extractPhaseSummary(
+  summary: string | undefined,
+  phaseName: string,
+): string | null {
   const phaseSummaries = parsePhaseSummaries(summary);
   const normalizedPhaseName = phaseName.toLowerCase();
   return phaseSummaries.get(normalizedPhaseName) || null;
@@ -66,7 +69,9 @@ function extractPhaseSummary(summary: string | undefined, phaseName: string): st
 /**
  * Gets the implementation phase summary from an accumulated summary string.
  */
-function extractImplementationSummary(summary: string | undefined): string | null {
+function extractImplementationSummary(
+  summary: string | undefined,
+): string | null {
   if (!summary || !summary.trim()) {
     return null;
   }
@@ -74,14 +79,14 @@ function extractImplementationSummary(summary: string | undefined): string | nul
   const phaseSummaries = parsePhaseSummaries(summary);
 
   // Try exact match first
-  const implementationContent = phaseSummaries.get('implementation');
+  const implementationContent = phaseSummaries.get("implementation");
   if (implementationContent) {
     return implementationContent;
   }
 
   // Fallback: find any phase containing "implement"
   for (const [phaseName, content] of phaseSummaries) {
-    if (phaseName.includes('implement')) {
+    if (phaseName.includes("implement")) {
       return content;
     }
   }
@@ -89,7 +94,7 @@ function extractImplementationSummary(summary: string | undefined): string | nul
   // If no phase summaries found, the summary might not be in accumulated format
   // (legacy or non-pipeline feature). In this case, return the whole summary
   // if it looks like a single summary (no phase headers).
-  if (!summary.includes('### ') && !summary.includes('\n---\n')) {
+  if (!summary.includes("### ") && !summary.includes("\n---\n")) {
     return summary;
   }
 
@@ -106,14 +111,14 @@ function isAccumulatedSummary(summary: string | undefined): boolean {
 
   // Check for the presence of phase headers with separator
   const hasMultiplePhases =
-    summary.includes('\n\n---\n\n') && summary.match(/###\s+.+/g)?.length > 0;
+    summary.includes("\n\n---\n\n") && summary.match(/###\s+.+/g)?.length > 0;
 
   return hasMultiplePhases;
 }
 
-describe('phase summary parser', () => {
-  describe('parsePhaseSummaries', () => {
-    it('should parse single phase summary', () => {
+describe("phase summary parser", () => {
+  describe("parsePhaseSummaries", () => {
+    it("should parse single phase summary", () => {
       const summary = `### Implementation
 
 Created auth module with login functionality.`;
@@ -121,10 +126,12 @@ Created auth module with login functionality.`;
       const result = parsePhaseSummaries(summary);
 
       expect(result.size).toBe(1);
-      expect(result.get('implementation')).toBe('Created auth module with login functionality.');
+      expect(result.get("implementation")).toBe(
+        "Created auth module with login functionality.",
+      );
     });
 
-    it('should parse multiple phase summaries', () => {
+    it("should parse multiple phase summaries", () => {
       const summary = `### Implementation
 
 Created auth module.
@@ -144,37 +151,39 @@ Approved with minor suggestions.`;
       const result = parsePhaseSummaries(summary);
 
       expect(result.size).toBe(3);
-      expect(result.get('implementation')).toBe('Created auth module.');
-      expect(result.get('testing')).toBe('All tests pass.');
-      expect(result.get('code review')).toBe('Approved with minor suggestions.');
+      expect(result.get("implementation")).toBe("Created auth module.");
+      expect(result.get("testing")).toBe("All tests pass.");
+      expect(result.get("code review")).toBe(
+        "Approved with minor suggestions.",
+      );
     });
 
-    it('should handle empty input', () => {
-      expect(parsePhaseSummaries('').size).toBe(0);
+    it("should handle empty input", () => {
+      expect(parsePhaseSummaries("").size).toBe(0);
       expect(parsePhaseSummaries(undefined).size).toBe(0);
-      expect(parsePhaseSummaries('   \n\n   ').size).toBe(0);
+      expect(parsePhaseSummaries("   \n\n   ").size).toBe(0);
     });
 
-    it('should handle phase names with spaces', () => {
+    it("should handle phase names with spaces", () => {
       const summary = `### Code Review
 
 Review findings here.`;
 
       const result = parsePhaseSummaries(summary);
-      expect(result.get('code review')).toBe('Review findings here.');
+      expect(result.get("code review")).toBe("Review findings here.");
     });
 
-    it('should normalize phase names to lowercase', () => {
+    it("should normalize phase names to lowercase", () => {
       const summary = `### IMPLEMENTATION
 
 Content here.`;
 
       const result = parsePhaseSummaries(summary);
-      expect(result.get('implementation')).toBe('Content here.');
-      expect(result.get('IMPLEMENTATION')).toBeUndefined();
+      expect(result.get("implementation")).toBe("Content here.");
+      expect(result.get("IMPLEMENTATION")).toBeUndefined();
     });
 
-    it('should handle content with markdown', () => {
+    it("should handle content with markdown", () => {
       const summary = `### Implementation
 
 ## Changes Made
@@ -186,11 +195,11 @@ const x = 1;
 \`\`\``;
 
       const result = parsePhaseSummaries(summary);
-      expect(result.get('implementation')).toContain('## Changes Made');
-      expect(result.get('implementation')).toContain('```typescript');
+      expect(result.get("implementation")).toContain("## Changes Made");
+      expect(result.get("implementation")).toContain("```typescript");
     });
 
-    it('should return empty map for non-accumulated format', () => {
+    it("should return empty map for non-accumulated format", () => {
       // Legacy format without phase headers
       const summary = `## Summary
 
@@ -201,8 +210,8 @@ This is a simple summary without phase headers.`;
     });
   });
 
-  describe('extractPhaseSummary', () => {
-    it('should extract specific phase by name (case-insensitive)', () => {
+  describe("extractPhaseSummary", () => {
+    it("should extract specific phase by name (case-insensitive)", () => {
       const summary = `### Implementation
 
 Implementation content.
@@ -213,28 +222,34 @@ Implementation content.
 
 Testing content.`;
 
-      expect(extractPhaseSummary(summary, 'implementation')).toBe('Implementation content.');
-      expect(extractPhaseSummary(summary, 'IMPLEMENTATION')).toBe('Implementation content.');
-      expect(extractPhaseSummary(summary, 'Implementation')).toBe('Implementation content.');
-      expect(extractPhaseSummary(summary, 'testing')).toBe('Testing content.');
+      expect(extractPhaseSummary(summary, "implementation")).toBe(
+        "Implementation content.",
+      );
+      expect(extractPhaseSummary(summary, "IMPLEMENTATION")).toBe(
+        "Implementation content.",
+      );
+      expect(extractPhaseSummary(summary, "Implementation")).toBe(
+        "Implementation content.",
+      );
+      expect(extractPhaseSummary(summary, "testing")).toBe("Testing content.");
     });
 
-    it('should return null for non-existent phase', () => {
+    it("should return null for non-existent phase", () => {
       const summary = `### Implementation
 
 Content here.`;
 
-      expect(extractPhaseSummary(summary, 'code review')).toBeNull();
+      expect(extractPhaseSummary(summary, "code review")).toBeNull();
     });
 
-    it('should return null for empty input', () => {
-      expect(extractPhaseSummary('', 'implementation')).toBeNull();
-      expect(extractPhaseSummary(undefined, 'implementation')).toBeNull();
+    it("should return null for empty input", () => {
+      expect(extractPhaseSummary("", "implementation")).toBeNull();
+      expect(extractPhaseSummary(undefined, "implementation")).toBeNull();
     });
   });
 
-  describe('extractImplementationSummary', () => {
-    it('should extract implementation phase from accumulated summary', () => {
+  describe("extractImplementationSummary", () => {
+    it("should extract implementation phase from accumulated summary", () => {
       const summary = `### Implementation
 
 Created auth module.
@@ -252,12 +267,12 @@ All tests pass.
 Approved.`;
 
       const result = extractImplementationSummary(summary);
-      expect(result).toBe('Created auth module.');
-      expect(result).not.toContain('Testing');
-      expect(result).not.toContain('Code Review');
+      expect(result).toBe("Created auth module.");
+      expect(result).not.toContain("Testing");
+      expect(result).not.toContain("Code Review");
     });
 
-    it('should return implementation phase even when not first', () => {
+    it("should return implementation phase even when not first", () => {
       const summary = `### Planning
 
 Plan created.
@@ -275,7 +290,7 @@ Implemented the feature.
 Reviewed.`;
 
       const result = extractImplementationSummary(summary);
-      expect(result).toBe('Implemented the feature.');
+      expect(result).toBe("Implemented the feature.");
     });
 
     it('should handle phase with "implementation" in name', () => {
@@ -284,10 +299,10 @@ Reviewed.`;
 Built the feature.`;
 
       const result = extractImplementationSummary(summary);
-      expect(result).toBe('Built the feature.');
+      expect(result).toBe("Built the feature.");
     });
 
-    it('should return full summary for non-accumulated format (legacy)', () => {
+    it("should return full summary for non-accumulated format (legacy)", () => {
       // Non-pipeline features store summary without phase headers
       const summary = `## Changes
 - Fixed bug
@@ -297,13 +312,13 @@ Built the feature.`;
       expect(result).toBe(summary);
     });
 
-    it('should return null for empty input', () => {
-      expect(extractImplementationSummary('')).toBeNull();
+    it("should return null for empty input", () => {
+      expect(extractImplementationSummary("")).toBeNull();
       expect(extractImplementationSummary(undefined)).toBeNull();
-      expect(extractImplementationSummary('   \n\n   ')).toBeNull();
+      expect(extractImplementationSummary("   \n\n   ")).toBeNull();
     });
 
-    it('should return null when no implementation phase in accumulated summary', () => {
+    it("should return null when no implementation phase in accumulated summary", () => {
       const summary = `### Testing
 
 Tests written.
@@ -319,8 +334,8 @@ Approved.`;
     });
   });
 
-  describe('isAccumulatedSummary', () => {
-    it('should return true for accumulated multi-phase summary', () => {
+  describe("isAccumulatedSummary", () => {
+    it("should return true for accumulated multi-phase summary", () => {
       const summary = `### Implementation
 
 Content.
@@ -334,7 +349,7 @@ Content.`;
       expect(isAccumulatedSummary(summary)).toBe(true);
     });
 
-    it('should return false for single phase summary (no separator)', () => {
+    it("should return false for single phase summary (no separator)", () => {
       const summary = `### Implementation
 
 Content.`;
@@ -342,7 +357,7 @@ Content.`;
       expect(isAccumulatedSummary(summary)).toBe(false);
     });
 
-    it('should return false for legacy non-accumulated format', () => {
+    it("should return false for legacy non-accumulated format", () => {
       const summary = `## Summary
 
 This is a simple summary.`;
@@ -350,13 +365,13 @@ This is a simple summary.`;
       expect(isAccumulatedSummary(summary)).toBe(false);
     });
 
-    it('should return false for empty input', () => {
-      expect(isAccumulatedSummary('')).toBe(false);
+    it("should return false for empty input", () => {
+      expect(isAccumulatedSummary("")).toBe(false);
       expect(isAccumulatedSummary(undefined)).toBe(false);
-      expect(isAccumulatedSummary('   \n\n   ')).toBe(false);
+      expect(isAccumulatedSummary("   \n\n   ")).toBe(false);
     });
 
-    it('should return true even for two phases', () => {
+    it("should return true even for two phases", () => {
       const summary = `### Implementation
 
 Content A.
@@ -371,8 +386,8 @@ Content B.`;
     });
   });
 
-  describe('acceptance criteria scenarios', () => {
-    it('AC1: Implementation summary preserved when Testing completes', () => {
+  describe("acceptance criteria scenarios", () => {
+    it("AC1: Implementation summary preserved when Testing completes", () => {
       // Given a task card completes the Implementation phase,
       // when the Testing phase subsequently completes,
       // then the Implementation phase summary must remain stored independently
@@ -389,15 +404,15 @@ Content B.`;
 - 98% coverage`;
 
       const impl = extractImplementationSummary(summary);
-      const testing = extractPhaseSummary(summary, 'testing');
+      const testing = extractPhaseSummary(summary, "testing");
 
-      expect(impl).toBe('- Created auth module\n- Added user service');
-      expect(testing).toBe('- 42 tests pass\n- 98% coverage');
-      expect(impl).not.toContain('Testing');
-      expect(testing).not.toContain('auth module');
+      expect(impl).toBe("- Created auth module\n- Added user service");
+      expect(testing).toBe("- 42 tests pass\n- 98% coverage");
+      expect(impl).not.toContain("Testing");
+      expect(testing).not.toContain("auth module");
     });
 
-    it('AC4: Implementation Summary tab shows only implementation phase', () => {
+    it("AC4: Implementation Summary tab shows only implementation phase", () => {
       // Given a task card has completed the Implementation phase
       // (regardless of how many subsequent phases have run),
       // when the user opens the "Implementation Summary" tab,
@@ -420,12 +435,12 @@ Code review output here.`;
 
       const impl = extractImplementationSummary(summary);
 
-      expect(impl).toBe('Implementation phase output here.');
-      expect(impl).not.toContain('Testing');
-      expect(impl).not.toContain('Code Review');
+      expect(impl).toBe("Implementation phase output here.");
+      expect(impl).not.toContain("Testing");
+      expect(impl).not.toContain("Code Review");
     });
 
-    it('AC5: Empty state when implementation not started', () => {
+    it("AC5: Empty state when implementation not started", () => {
       // Given a task card has not yet started the Implementation phase
       const summary = `### Planning
 
@@ -437,7 +452,7 @@ Planning phase complete.`;
       expect(impl).toBeNull();
     });
 
-    it('AC6: Single phase summary displayed correctly', () => {
+    it("AC6: Single phase summary displayed correctly", () => {
       // Given a task card where Implementation was the only completed phase
       const summary = `### Implementation
 
@@ -445,10 +460,10 @@ Only implementation was done.`;
 
       const impl = extractImplementationSummary(summary);
 
-      expect(impl).toBe('Only implementation was done.');
+      expect(impl).toBe("Only implementation was done.");
     });
 
-    it('AC9: Mid-progress shows only completed phases', () => {
+    it("AC9: Mid-progress shows only completed phases", () => {
       // Given a task card is mid-progress
       // (e.g., Implementation and Testing complete, Code Review pending)
       const summary = `### Implementation
@@ -464,12 +479,12 @@ Testing done.`;
       const phases = parsePhaseSummaries(summary);
 
       expect(phases.size).toBe(2);
-      expect(phases.has('implementation')).toBe(true);
-      expect(phases.has('testing')).toBe(true);
-      expect(phases.has('code review')).toBe(false);
+      expect(phases.has("implementation")).toBe(true);
+      expect(phases.has("testing")).toBe(true);
+      expect(phases.has("code review")).toBe(false);
     });
 
-    it('AC10: All phases in chronological order', () => {
+    it("AC10: All phases in chronological order", () => {
       // Given all phases of a task card are complete
       const summary = `### Implementation
 
@@ -491,10 +506,10 @@ Third phase content.`;
       const phases = parsePhaseSummaries(summary);
       const phaseNames = [...phases.keys()];
 
-      expect(phaseNames).toEqual(['implementation', 'testing', 'code review']);
+      expect(phaseNames).toEqual(["implementation", "testing", "code review"]);
     });
 
-    it('AC17: Retried phase shows only latest', () => {
+    it("AC17: Retried phase shows only latest", () => {
       // Given a phase was retried, when viewing the Summary tab,
       // only one entry for the retried phase must appear (the latest retry's summary)
       //
@@ -526,8 +541,10 @@ Retry - all tests now pass.`;
       const phases = parsePhaseSummaries(summary);
 
       // The parser will have both entries, but Map keeps last value for same key
-      expect(phases.get('implementation')).toBe('Retry content - fixed issues.');
-      expect(phases.get('testing')).toBe('Retry - all tests now pass.');
+      expect(phases.get("implementation")).toBe(
+        "Retry content - fixed issues.",
+      );
+      expect(phases.get("testing")).toBe("Retry - all tests now pass.");
     });
   });
 });

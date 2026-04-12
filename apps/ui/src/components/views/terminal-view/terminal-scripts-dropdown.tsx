@@ -1,6 +1,11 @@
-import { useCallback, useMemo } from 'react';
-import { ScrollText, Play, Settings2, SquareArrowOutUpRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useCallback, useMemo } from "react";
+import {
+  ScrollText,
+  Play,
+  Settings2,
+  SquareArrowOutUpRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,11 +13,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAppStore } from '@/store/app-store';
-import { useProjectSettings } from '@/hooks/queries';
-import { cn } from '@/lib/utils';
-import { DEFAULT_TERMINAL_SCRIPTS } from '../project-settings-view/terminal-scripts-constants';
+} from "@/components/ui/dropdown-menu";
+import { useAppStore } from "@/store/app-store";
+import { useProjectSettings } from "@/hooks/queries";
+import { cn } from "@/lib/utils";
+import { DEFAULT_TERMINAL_SCRIPTS } from "../project-settings-view/terminal-scripts-constants";
 
 interface TerminalScriptsDropdownProps {
   /** Callback to send a command + newline to the terminal */
@@ -54,7 +59,7 @@ export function TerminalScriptsDropdown({
       if (!isConnected) return;
       onRunCommand(command);
     },
-    [isConnected, onRunCommand]
+    [isConnected, onRunCommand],
   );
 
   const handleRunScriptInNewTab = useCallback(
@@ -62,7 +67,7 @@ export function TerminalScriptsDropdown({
       if (!isConnected || !onRunCommandInNewTab) return;
       onRunCommandInNewTab(command);
     },
-    [isConnected, onRunCommandInNewTab]
+    [isConnected, onRunCommandInNewTab],
   );
 
   return (
@@ -96,7 +101,7 @@ export function TerminalScriptsDropdown({
             disabled={!isConnected}
             className="gap-2 pr-1"
           >
-            <Play className={cn('h-3.5 w-3.5 shrink-0 text-brand-500')} />
+            <Play className={cn("h-3.5 w-3.5 shrink-0 text-brand-500")} />
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-sm truncate">{script.name}</span>
               <span className="text-[10px] text-muted-foreground font-mono truncate">
@@ -107,10 +112,10 @@ export function TerminalScriptsDropdown({
               <button
                 type="button"
                 className={cn(
-                  'shrink-0 ml-1 p-1 rounded-sm border-l border-border',
-                  'text-muted-foreground hover:text-foreground hover:bg-accent/80',
-                  'transition-colors',
-                  !isConnected && 'pointer-events-none opacity-50'
+                  "shrink-0 ml-1 p-1 rounded-sm border-l border-border",
+                  "text-muted-foreground hover:text-foreground hover:bg-accent/80",
+                  "transition-colors",
+                  !isConnected && "pointer-events-none opacity-50",
                 )}
                 title="Run in new tab"
                 onClick={(e) => {

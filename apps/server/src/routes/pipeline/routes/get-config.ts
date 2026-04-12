@@ -7,9 +7,9 @@
  * Response: { success: true, config: PipelineConfig }
  */
 
-import type { Request, Response } from 'express';
-import type { PipelineService } from '../../../services/pipeline-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { PipelineService } from "../../../services/pipeline-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createGetConfigHandler(pipelineService: PipelineService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -17,7 +17,9 @@ export function createGetConfigHandler(pipelineService: PipelineService) {
       const { projectPath } = req.body;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -28,7 +30,7 @@ export function createGetConfigHandler(pipelineService: PipelineService) {
         config,
       });
     } catch (error) {
-      logError(error, 'Get pipeline config failed');
+      logError(error, "Get pipeline config failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,13 +1,13 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
-import type { Feature } from '@/store/app-store';
-import type { AgentTaskInfo } from '@/lib/agent-context-parser';
+import { useMemo, useState, useRef, useEffect } from "react";
+import type { Feature } from "@/store/app-store";
+import type { AgentTaskInfo } from "@/lib/agent-context-parser";
 import {
   parseAllPhaseSummaries,
   isAccumulatedSummary,
   type PhaseSummaryEntry,
-} from '@/lib/log-parser';
-import { getFirstNonEmptySummary } from '@/lib/summary-selection';
-import { useAgentOutput } from '@/hooks/queries';
+} from "@/lib/log-parser";
+import { getFirstNonEmptySummary } from "@/lib/summary-selection";
+import { useAgentOutput } from "@/hooks/queries";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +15,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Markdown } from '@/components/ui/markdown';
-import { LogViewer } from '@/components/ui/log-viewer';
-import { Sparkles, Layers, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
+import { LogViewer } from "@/components/ui/log-viewer";
+import {
+  Sparkles,
+  Layers,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 interface SummaryDialogProps {
   feature: Feature;
@@ -32,7 +38,7 @@ interface SummaryDialogProps {
   projectPath?: string;
 }
 
-type ViewMode = 'summary' | 'output';
+type ViewMode = "summary" | "output";
 
 /**
  * Renders a single phase entry card with header and content.
@@ -54,7 +60,7 @@ function PhaseEntryCard({
   onClick?: () => void;
 }) {
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+    if (onClick && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       onClick();
     }
@@ -63,18 +69,20 @@ function PhaseEntryCard({
   return (
     <div
       className={cn(
-        'p-4 bg-card rounded-lg border border-border/50 transition-all',
-        isActive && 'ring-2 ring-primary/50 border-primary/50',
-        onClick && 'cursor-pointer'
+        "p-4 bg-card rounded-lg border border-border/50 transition-all",
+        isActive && "ring-2 ring-primary/50 border-primary/50",
+        onClick && "cursor-pointer",
       )}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      role={onClick ? 'button' : undefined}
+      role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
       {/* Phase header - styled to stand out */}
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/30">
-        <span className="text-sm font-semibold text-primary">{entry.phaseName}</span>
+        <span className="text-sm font-semibold text-primary">
+          {entry.phaseName}
+        </span>
         {hasMultiplePhases && (
           <span className="text-xs text-muted-foreground">
             Step {index + 1} of {totalPhases}
@@ -82,7 +90,7 @@ function PhaseEntryCard({
         )}
       </div>
       {/* Phase content */}
-      <Markdown>{entry.content || 'No summary available'}</Markdown>
+      <Markdown>{entry.content || "No summary available"}</Markdown>
     </div>
   );
 }
@@ -119,10 +127,10 @@ function StepNavigator({
             key={`step-nav-${index}`}
             onClick={() => onIndexChange(index)}
             className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap',
+              "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap",
               index === activeIndex
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent",
             )}
           >
             {entry.phaseName}
@@ -134,7 +142,9 @@ function StepNavigator({
         variant="ghost"
         size="sm"
         className="h-7 w-7 p-0"
-        onClick={() => onIndexChange(Math.min(phaseEntries.length - 1, activeIndex + 1))}
+        onClick={() =>
+          onIndexChange(Math.min(phaseEntries.length - 1, activeIndex + 1))
+        }
         disabled={activeIndex === phaseEntries.length - 1}
       >
         <ChevronRight className="w-4 h-4" />
@@ -151,13 +161,17 @@ export function SummaryDialog({
   onOpenChange,
   projectPath,
 }: SummaryDialogProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('summary');
+  const [viewMode, setViewMode] = useState<ViewMode>("summary");
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Prefer explicitly provided summary (can come from fresh per-feature query),
   // then fall back to feature/agent-info summaries.
-  const rawSummary = getFirstNonEmptySummary(summary, feature.summary, agentInfo?.summary);
+  const rawSummary = getFirstNonEmptySummary(
+    summary,
+    feature.summary,
+    agentInfo?.summary,
+  );
 
   // Normalize null to undefined for parser helpers that expect string | undefined
   const normalizedSummary = rawSummary ?? undefined;
@@ -165,22 +179,22 @@ export function SummaryDialog({
   // Memoize the parsed phases to avoid re-parsing on every render
   const phaseEntries = useMemo(
     () => parseAllPhaseSummaries(normalizedSummary),
-    [normalizedSummary]
+    [normalizedSummary],
   );
 
   // Memoize the multi-phase check
   const hasMultiplePhases = useMemo(
     () => isAccumulatedSummary(normalizedSummary),
-    [normalizedSummary]
+    [normalizedSummary],
   );
 
   // Fetch agent output
-  const { data: agentOutput = '', isLoading: isLoadingOutput } = useAgentOutput(
-    projectPath || '',
+  const { data: agentOutput = "", isLoading: isLoadingOutput } = useAgentOutput(
+    projectPath || "",
     feature.id,
     {
-      enabled: isOpen && !!projectPath && viewMode === 'output',
-    }
+      enabled: isOpen && !!projectPath && viewMode === "output",
+    },
   );
 
   // Reset active phase index when summary changes
@@ -191,12 +205,13 @@ export function SummaryDialog({
   // Scroll to active phase when it changes or when normalizedSummary changes
   useEffect(() => {
     if (contentRef.current && hasMultiplePhases) {
-      const phaseCards = contentRef.current.querySelectorAll('[data-phase-index]');
+      const phaseCards =
+        contentRef.current.querySelectorAll("[data-phase-index]");
       // Ensure index is within bounds
       const safeIndex = Math.min(activePhaseIndex, phaseCards.length - 1);
       const targetCard = phaseCards[safeIndex];
       if (targetCard) {
-        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   }, [activePhaseIndex, hasMultiplePhases, normalizedSummary]);
@@ -204,7 +219,7 @@ export function SummaryDialog({
   // Determine the dialog title based on number of phases
   const dialogTitle = hasMultiplePhases
     ? `Pipeline Summary (${phaseEntries.length} steps)`
-    : 'Implementation Summary';
+    : "Implementation Summary";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -229,24 +244,24 @@ export function SummaryDialog({
             {/* View mode tabs */}
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <button
-                onClick={() => setViewMode('summary')}
+                onClick={() => setViewMode("summary")}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap',
-                  viewMode === 'summary'
-                    ? 'bg-primary/20 text-primary shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                  viewMode === "summary"
+                    ? "bg-primary/20 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
                 )}
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Summary
               </button>
               <button
-                onClick={() => setViewMode('output')}
+                onClick={() => setViewMode("output")}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap',
-                  viewMode === 'output'
-                    ? 'bg-primary/20 text-primary shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                  viewMode === "output"
+                    ? "bg-primary/20 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
                 )}
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -256,17 +271,20 @@ export function SummaryDialog({
           </div>
           <DialogDescription
             className="text-sm"
-            title={feature.description || feature.summary || ''}
+            title={feature.description || feature.summary || ""}
           >
             {(() => {
-              const displayText = feature.description || feature.summary || 'No description';
-              return displayText.length > 100 ? `${displayText.slice(0, 100)}...` : displayText;
+              const displayText =
+                feature.description || feature.summary || "No description";
+              return displayText.length > 100
+                ? `${displayText.slice(0, 100)}...`
+                : displayText;
             })()}
           </DialogDescription>
         </DialogHeader>
 
         {/* Step navigator for multi-phase summaries */}
-        {viewMode === 'summary' && hasMultiplePhases && (
+        {viewMode === "summary" && hasMultiplePhases && (
           <StepNavigator
             phaseEntries={phaseEntries}
             activeIndex={activePhaseIndex}
@@ -275,18 +293,25 @@ export function SummaryDialog({
         )}
 
         {/* Content area */}
-        {viewMode === 'summary' ? (
+        {viewMode === "summary" ? (
           <div ref={contentRef} className="flex-1 overflow-y-auto space-y-4">
             {phaseEntries.length > 0 ? (
               phaseEntries.map((entry, index) => (
-                <div key={`phase-${index}-${entry.phaseName}`} data-phase-index={index}>
+                <div
+                  key={`phase-${index}-${entry.phaseName}`}
+                  data-phase-index={index}
+                >
                   <PhaseEntryCard
                     entry={entry}
                     index={index}
                     totalPhases={phaseEntries.length}
                     hasMultiplePhases={hasMultiplePhases}
                     isActive={hasMultiplePhases && index === activePhaseIndex}
-                    onClick={hasMultiplePhases ? () => setActivePhaseIndex(index) : undefined}
+                    onClick={
+                      hasMultiplePhases
+                        ? () => setActivePhaseIndex(index)
+                        : undefined
+                    }
                   />
                 </div>
               ))

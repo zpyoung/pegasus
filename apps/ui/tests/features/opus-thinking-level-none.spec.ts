@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -11,11 +11,11 @@ import {
   confirmAddFeature,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
-const TEST_TEMP_DIR = createTempDirPath('opus-thinking-level-none');
+const TEST_TEMP_DIR = createTempDirPath("opus-thinking-level-none");
 
-test.describe('Opus thinking level', () => {
+test.describe("Opus thinking level", () => {
   let projectPath: string;
   const projectName = `test-project-${Date.now()}`;
 
@@ -28,23 +28,23 @@ test.describe('Opus thinking level', () => {
     fs.mkdirSync(projectPath, { recursive: true });
 
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: [] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: [] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for Opus thinking level e2e coverage.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for Opus thinking level e2e coverage.`,
     );
   });
 
@@ -52,13 +52,17 @@ test.describe('Opus thinking level', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('persists thinkingLevel none when selected for Claude Opus', async ({ page }) => {
+  test("persists thinkingLevel none when selected for Claude Opus", async ({
+    page,
+  }) => {
     const featureDescription = `Opus none thinking ${Date.now()}`;
 
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
     await authenticateForTests(page);
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
 
@@ -66,9 +70,12 @@ test.describe('Opus thinking level', () => {
     await fillAddFeatureDialog(page, featureDescription);
 
     await page.locator('[data-testid="model-selector"]').click();
-    await page.locator('[cmdk-input]').fill('opus');
+    await page.locator("[cmdk-input]").fill("opus");
 
-    const opusItem = page.locator('[cmdk-item]').filter({ hasText: 'Claude Opus' }).first();
+    const opusItem = page
+      .locator("[cmdk-item]")
+      .filter({ hasText: "Claude Opus" })
+      .first();
     await expect(opusItem).toBeVisible({ timeout: 10000 });
     await opusItem.locator('button[title="Adjust thinking level"]').click();
 
@@ -80,7 +87,9 @@ test.describe('Opus thinking level', () => {
 
     // Find and click the None button
     // The button's accessible name includes description: "None No extended thinking"
-    const noneOption = page.getByRole('button', { name: /None.*No extended thinking/i }).first();
+    const noneOption = page
+      .getByRole("button", { name: /None.*No extended thinking/i })
+      .first();
     await expect(noneOption).toBeVisible({ timeout: 5000 });
     await noneOption.click();
 
@@ -90,15 +99,17 @@ test.describe('Opus thinking level', () => {
     await page.waitForTimeout(STATE_UPDATE_DELAY_MS);
 
     // When "None" is selected, the badge should NOT show "Adaptive"
-    await expect(page.locator('[data-testid="model-selector"]')).not.toContainText('Adaptive');
+    await expect(
+      page.locator('[data-testid="model-selector"]'),
+    ).not.toContainText("Adaptive");
 
     // Wait for the create API to complete so the server has written the feature to disk
     const createResponsePromise = page.waitForResponse(
       (res) =>
-        res.url().includes('/api/features/create') &&
-        res.request().method() === 'POST' &&
+        res.url().includes("/api/features/create") &&
+        res.request().method() === "POST" &&
         res.status() === 200,
-      { timeout: 15000 }
+      { timeout: 15000 },
     );
 
     await confirmAddFeature(page);
@@ -106,24 +117,32 @@ test.describe('Opus thinking level', () => {
 
     // Wait for the feature to appear in the backlog
     await expect(async () => {
-      const backlogColumn = page.locator('[data-testid="kanban-column-backlog"]');
-      const featureCard = backlogColumn.locator('[data-testid^="kanban-card-"]').filter({
-        hasText: featureDescription,
-      });
+      const backlogColumn = page.locator(
+        '[data-testid="kanban-column-backlog"]',
+      );
+      const featureCard = backlogColumn
+        .locator('[data-testid^="kanban-card-"]')
+        .filter({
+          hasText: featureDescription,
+        });
       expect(await featureCard.count()).toBeGreaterThan(0);
     }).toPass({ timeout: 10000 });
 
-    const featuresDir = path.join(projectPath, '.pegasus', 'features');
-    await expect.poll(() => fs.readdirSync(featuresDir).length, { timeout: 10000 }).toBe(1);
+    const featuresDir = path.join(projectPath, ".pegasus", "features");
+    await expect
+      .poll(() => fs.readdirSync(featuresDir).length, { timeout: 10000 })
+      .toBe(1);
 
     const featureDir = fs.readdirSync(featuresDir)[0];
-    const featureJsonPath = path.join(featuresDir, featureDir, 'feature.json');
-    const featureJson = JSON.parse(fs.readFileSync(featureJsonPath, 'utf-8')) as {
+    const featureJsonPath = path.join(featuresDir, featureDir, "feature.json");
+    const featureJson = JSON.parse(
+      fs.readFileSync(featureJsonPath, "utf-8"),
+    ) as {
       description: string;
       thinkingLevel: string;
     };
 
     expect(featureJson.description).toBe(featureDescription);
-    expect(featureJson.thinkingLevel).toBe('none');
+    expect(featureJson.thinkingLevel).toBe("none");
   });
 });

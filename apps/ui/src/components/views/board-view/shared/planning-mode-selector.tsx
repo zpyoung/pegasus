@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Zap,
   ClipboardList,
@@ -10,18 +10,18 @@ import {
   Eye,
   RefreshCw,
   Sparkles,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import type { PlanSpec } from '@/store/app-store';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import type { PlanSpec } from "@/store/app-store";
 
-export type PlanningMode = 'skip' | 'lite' | 'spec' | 'full';
+export type PlanningMode = "skip" | "lite" | "spec" | "full";
 
 // Re-export for backwards compatibility
-export type { ParsedTask, PlanSpec } from '@/store/app-store';
+export type { ParsedTask, PlanSpec } from "@/store/app-store";
 
 interface PlanningModeSelectorProps {
   mode: PlanningMode;
@@ -41,43 +41,43 @@ interface PlanningModeSelectorProps {
 
 const modes = [
   {
-    value: 'skip' as const,
-    label: 'Skip',
-    description: 'Direct implementation, no upfront planning',
+    value: "skip" as const,
+    label: "Skip",
+    description: "Direct implementation, no upfront planning",
     icon: Zap,
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
-    badge: 'Default',
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    borderColor: "border-emerald-500/30",
+    badge: "Default",
   },
   {
-    value: 'lite' as const,
-    label: 'Lite',
-    description: 'Think through approach, create task list',
+    value: "lite" as const,
+    label: "Lite",
+    description: "Think through approach, create task list",
     icon: ClipboardList,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    borderColor: "border-blue-500/30",
   },
   {
-    value: 'spec' as const,
-    label: 'Spec',
-    description: 'Generate spec with acceptance criteria',
+    value: "spec" as const,
+    label: "Spec",
+    description: "Generate spec with acceptance criteria",
     icon: FileText,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/30',
-    badge: 'Approval Required',
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    borderColor: "border-purple-500/30",
+    badge: "Approval Required",
   },
   {
-    value: 'full' as const,
-    label: 'Full',
-    description: 'Comprehensive spec with phased plan',
+    value: "full" as const,
+    label: "Full",
+    description: "Comprehensive spec with phased plan",
     icon: ScrollText,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-    badge: 'Approval Required',
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    borderColor: "border-amber-500/30",
+    badge: "Approval Required",
   },
 ];
 
@@ -93,13 +93,14 @@ export function PlanningModeSelector({
   onViewSpec,
   isGenerating = false,
   featureDescription,
-  testIdPrefix = 'planning',
+  testIdPrefix = "planning",
   compact = false,
 }: PlanningModeSelectorProps) {
   const [showPreview, setShowPreview] = useState(false);
   const selectedMode = modes.find((m) => m.value === mode);
-  const requiresApproval = mode === 'spec' || mode === 'full';
-  const canGenerate = requiresApproval && featureDescription?.trim() && !isGenerating;
+  const requiresApproval = mode === "spec" || mode === "full";
+  const canGenerate =
+    requiresApproval && featureDescription?.trim() && !isGenerating;
   const hasSpec = planSpec && planSpec.content;
 
   return (
@@ -109,11 +110,15 @@ export function PlanningModeSelector({
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center',
-              selectedMode?.bgColor || 'bg-muted'
+              "w-8 h-8 rounded-lg flex items-center justify-center",
+              selectedMode?.bgColor || "bg-muted",
             )}
           >
-            {selectedMode && <selectedMode.icon className={cn('h-4 w-4', selectedMode.color)} />}
+            {selectedMode && (
+              <selectedMode.icon
+                className={cn("h-4 w-4", selectedMode.color)}
+              />
+            )}
           </div>
           <div>
             <Label className="text-sm font-medium">Planning Mode</Label>
@@ -126,7 +131,12 @@ export function PlanningModeSelector({
         {/* Quick action buttons when spec/full mode */}
         {requiresApproval && hasSpec && (
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onViewSpec} className="h-7 px-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onViewSpec}
+              className="h-7 px-2"
+            >
               <Eye className="h-3.5 w-3.5 mr-1" />
               View
             </Button>
@@ -135,7 +145,12 @@ export function PlanningModeSelector({
       </div>
 
       {/* Mode Selection Cards */}
-      <div className={cn('grid gap-2', compact ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4')}>
+      <div
+        className={cn(
+          "grid gap-2",
+          compact ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4",
+        )}
+      >
         {modes.map((m) => {
           const isSelected = mode === m.value;
           const Icon = m.icon;
@@ -146,23 +161,23 @@ export function PlanningModeSelector({
               onClick={() => onModeChange(m.value)}
               data-testid={`${testIdPrefix}-mode-${m.value}`}
               className={cn(
-                'flex flex-col items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200',
-                'border-2 hover:border-primary/50',
+                "flex flex-col items-center gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200",
+                "border-2 hover:border-primary/50",
                 isSelected
-                  ? cn('border-primary', m.bgColor)
-                  : 'border-border/50 bg-card/50 hover:bg-accent/30'
+                  ? cn("border-primary", m.bgColor)
+                  : "border-border/50 bg-card/50 hover:bg-accent/30",
               )}
             >
               <div
                 className={cn(
-                  'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
-                  isSelected ? m.bgColor : 'bg-muted'
+                  "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                  isSelected ? m.bgColor : "bg-muted",
                 )}
               >
                 <Icon
                   className={cn(
-                    'h-5 w-5 transition-colors',
-                    isSelected ? m.color : 'text-muted-foreground'
+                    "h-5 w-5 transition-colors",
+                    isSelected ? m.color : "text-muted-foreground",
                   )}
                 />
               </div>
@@ -170,8 +185,8 @@ export function PlanningModeSelector({
                 <div className="flex items-center justify-center gap-1">
                   <span
                     className={cn(
-                      'font-medium text-sm',
-                      isSelected ? 'text-foreground' : 'text-muted-foreground'
+                      "font-medium text-sm",
+                      isSelected ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
                     {m.label}
@@ -179,13 +194,13 @@ export function PlanningModeSelector({
                   {m.badge && (
                     <span
                       className={cn(
-                        'text-[9px] px-1 py-0.5 rounded font-medium',
-                        m.badge === 'Default'
-                          ? 'bg-emerald-500/15 text-emerald-500'
-                          : 'bg-amber-500/15 text-amber-500'
+                        "text-[9px] px-1 py-0.5 rounded font-medium",
+                        m.badge === "Default"
+                          ? "bg-emerald-500/15 text-emerald-500"
+                          : "bg-amber-500/15 text-amber-500",
                       )}
                     >
-                      {m.badge === 'Default' ? 'Default' : 'Review'}
+                      {m.badge === "Default" ? "Default" : "Review"}
                     </span>
                   )}
                 </div>
@@ -201,12 +216,14 @@ export function PlanningModeSelector({
       </div>
 
       {/* Require Approval Checkbox - Only show when mode !== 'skip' */}
-      {mode !== 'skip' && onRequireApprovalChange && (
+      {mode !== "skip" && onRequireApprovalChange && (
         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
           <Checkbox
             id="require-approval"
             checked={requireApproval}
-            onCheckedChange={(checked) => onRequireApprovalChange(checked === true)}
+            onCheckedChange={(checked) =>
+              onRequireApprovalChange(checked === true)
+            }
             data-testid={`${testIdPrefix}-require-approval-checkbox`}
           />
           <Label
@@ -222,12 +239,12 @@ export function PlanningModeSelector({
       {requiresApproval && (
         <div
           className={cn(
-            'rounded-xl border transition-all duration-300',
-            planSpec?.status === 'approved'
-              ? 'border-emerald-500/30 bg-emerald-500/5'
-              : planSpec?.status === 'generated'
-                ? 'border-amber-500/30 bg-amber-500/5'
-                : 'border-border/50 bg-muted/30'
+            "rounded-xl border transition-all duration-300",
+            planSpec?.status === "approved"
+              ? "border-emerald-500/30 bg-emerald-500/5"
+              : planSpec?.status === "generated"
+                ? "border-amber-500/30 bg-amber-500/5"
+                : "border-border/50 bg-muted/30",
           )}
         >
           <div className="p-4 space-y-3">
@@ -238,15 +255,18 @@ export function PlanningModeSelector({
                   <>
                     <Spinner size="sm" />
                     <span className="text-sm text-muted-foreground">
-                      Generating {mode === 'full' ? 'comprehensive spec' : 'spec'}...
+                      Generating{" "}
+                      {mode === "full" ? "comprehensive spec" : "spec"}...
                     </span>
                   </>
-                ) : planSpec?.status === 'approved' ? (
+                ) : planSpec?.status === "approved" ? (
                   <>
                     <Check className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm text-emerald-500 font-medium">Spec Approved</span>
+                    <span className="text-sm text-emerald-500 font-medium">
+                      Spec Approved
+                    </span>
                   </>
-                ) : planSpec?.status === 'generated' ? (
+                ) : planSpec?.status === "generated" ? (
                   <>
                     <Eye className="h-4 w-4 text-amber-500" />
                     <span className="text-sm text-amber-500 font-medium">
@@ -288,7 +308,7 @@ export function PlanningModeSelector({
                   className="w-full justify-between h-8 px-2"
                 >
                   <span className="text-xs text-muted-foreground">
-                    {showPreview ? 'Hide Preview' : 'Show Preview'}
+                    {showPreview ? "Hide Preview" : "Show Preview"}
                   </span>
                   <Eye className="h-3.5 w-3.5" />
                 </Button>
@@ -304,9 +324,14 @@ export function PlanningModeSelector({
             )}
 
             {/* Action buttons when spec is generated */}
-            {planSpec?.status === 'generated' && (
+            {planSpec?.status === "generated" && (
               <div className="flex items-center gap-2 pt-2 border-t border-border/30">
-                <Button variant="outline" size="sm" onClick={onRejectSpec} className="flex-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRejectSpec}
+                  className="flex-1"
+                >
                   Request Changes
                 </Button>
                 <Button
@@ -321,9 +346,14 @@ export function PlanningModeSelector({
             )}
 
             {/* Regenerate option when approved */}
-            {planSpec?.status === 'approved' && onGenerateSpec && (
+            {planSpec?.status === "approved" && onGenerateSpec && (
               <div className="flex items-center justify-end pt-2 border-t border-border/30">
-                <Button variant="ghost" size="sm" onClick={onGenerateSpec} className="h-7">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onGenerateSpec}
+                  className="h-7"
+                >
                   <RefreshCw className="h-3.5 w-3.5 mr-1" />
                   Regenerate
                 </Button>
@@ -336,8 +366,8 @@ export function PlanningModeSelector({
       {/* Info text for non-approval modes */}
       {!requiresApproval && (
         <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
-          {mode === 'skip'
-            ? 'The agent will start implementing immediately without creating a plan or spec.'
+          {mode === "skip"
+            ? "The agent will start implementing immediately without creating a plan or spec."
             : "The agent will create a planning outline before implementing, but won't wait for approval."}
         </p>
       )}

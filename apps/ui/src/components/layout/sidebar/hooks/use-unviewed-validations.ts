@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('UnviewedValidations');
-import type { Project, StoredValidation } from '@/lib/electron';
+const logger = createLogger("UnviewedValidations");
+import type { Project, StoredValidation } from "@/lib/electron";
 
 /**
  * Hook to track the count of unviewed (fresh) issue validations for a project.
@@ -31,7 +31,9 @@ export function useUnviewedValidations(currentProject: Project | null) {
           const unviewed = result.validations.filter((v: StoredValidation) => {
             if (v.viewedAt) return false;
             // Check if not stale (< 24 hours)
-            const hoursSince = (Date.now() - new Date(v.validatedAt).getTime()) / (1000 * 60 * 60);
+            const hoursSince =
+              (Date.now() - new Date(v.validatedAt).getTime()) /
+              (1000 * 60 * 60);
             return hoursSince <= 24;
           });
           // Only update count if we're still on the same project (guard against race condition)
@@ -41,7 +43,7 @@ export function useUnviewedValidations(currentProject: Project | null) {
         }
       }
     } catch (err) {
-      logger.error('Failed to load count:', err);
+      logger.error("Failed to load count:", err);
     }
   }, []);
 
@@ -60,10 +62,10 @@ export function useUnviewedValidations(currentProject: Project | null) {
     if (api.github?.onValidationEvent) {
       const unsubscribe = api.github.onValidationEvent((event) => {
         if (event.projectPath === currentProject.path) {
-          if (event.type === 'issue_validation_complete') {
+          if (event.type === "issue_validation_complete") {
             // New validation completed - refresh count from server for consistency
             fetchUnviewedCount();
-          } else if (event.type === 'issue_validation_viewed') {
+          } else if (event.type === "issue_validation_viewed") {
             // Validation was viewed - refresh count from server for consistency
             fetchUnviewedCount();
           }

@@ -1,1 +1,1 @@
-export { FileEditorView } from './file-editor-view';
+export { FileEditorView } from "./file-editor-view";

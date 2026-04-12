@@ -1,16 +1,16 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import { Card } from '@/components/ui/card';
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import { Card } from "@/components/ui/card";
 import {
   HeaderActionsPanel,
   HeaderActionsPanelTrigger,
-} from '@/components/ui/header-actions-panel';
+} from "@/components/ui/header-actions-panel";
 import {
   FileText,
   Image as ImageIcon,
@@ -25,14 +25,14 @@ import {
   FileUp,
   MoreVertical,
   ArrowLeft,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useIsMobile } from '@/hooks/use-media-query';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useIsMobile } from "@/hooks/use-media-query";
 import {
   useKeyboardShortcuts,
   useKeyboardShortcutsConfig,
   KeyboardShortcut,
-} from '@/hooks/use-keyboard-shortcuts';
+} from "@/hooks/use-keyboard-shortcuts";
 import {
   Dialog,
   DialogContent,
@@ -40,35 +40,40 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import { sanitizeFilename, isMarkdownFilename, isImageFilename } from '@/lib/image-utils';
-import { Markdown } from '../ui/markdown';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import {
+  sanitizeFilename,
+  isMarkdownFilename,
+  isImageFilename,
+} from "@/lib/image-utils";
+import { Markdown } from "../ui/markdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Textarea } from '@/components/ui/textarea';
+} from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
 
-const logger = createLogger('ContextView');
+const logger = createLogger("ContextView");
 
 // Responsive layout classes
-const FILE_LIST_BASE_CLASSES = 'border-r border-border flex flex-col overflow-hidden';
-const FILE_LIST_DESKTOP_CLASSES = 'w-64';
-const FILE_LIST_EXPANDED_CLASSES = 'flex-1';
-const FILE_LIST_MOBILE_NO_SELECTION_CLASSES = 'w-full border-r-0';
-const FILE_LIST_MOBILE_SELECTION_CLASSES = 'hidden';
+const FILE_LIST_BASE_CLASSES =
+  "border-r border-border flex flex-col overflow-hidden";
+const FILE_LIST_DESKTOP_CLASSES = "w-64";
+const FILE_LIST_EXPANDED_CLASSES = "flex-1";
+const FILE_LIST_MOBILE_NO_SELECTION_CLASSES = "w-full border-r-0";
+const FILE_LIST_MOBILE_SELECTION_CLASSES = "hidden";
 
-const EDITOR_PANEL_BASE_CLASSES = 'flex-1 flex flex-col overflow-hidden';
-const EDITOR_PANEL_MOBILE_HIDDEN_CLASSES = 'hidden';
+const EDITOR_PANEL_BASE_CLASSES = "flex-1 flex flex-col overflow-hidden";
+const EDITOR_PANEL_MOBILE_HIDDEN_CLASSES = "hidden";
 
 interface ContextFile {
   name: string;
-  type: 'text' | 'image';
+  type: "text" | "image";
   content?: string;
   path: string;
   description?: string;
@@ -86,28 +91,32 @@ export function ContextView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
+  const [editedContent, setEditedContent] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [renameFileName, setRenameFileName] = useState('');
+  const [renameFileName, setRenameFileName] = useState("");
   const [isDropHovering, setIsDropHovering] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingFileName, setUploadingFileName] = useState<string | null>(null);
+  const [uploadingFileName, setUploadingFileName] = useState<string | null>(
+    null,
+  );
 
   // Create Markdown modal state
   const [isCreateMarkdownOpen, setIsCreateMarkdownOpen] = useState(false);
-  const [newMarkdownName, setNewMarkdownName] = useState('');
-  const [newMarkdownDescription, setNewMarkdownDescription] = useState('');
-  const [newMarkdownContent, setNewMarkdownContent] = useState('');
+  const [newMarkdownName, setNewMarkdownName] = useState("");
+  const [newMarkdownDescription, setNewMarkdownDescription] = useState("");
+  const [newMarkdownContent, setNewMarkdownContent] = useState("");
 
   // Track files with generating descriptions (async)
-  const [generatingDescriptions, setGeneratingDescriptions] = useState<Set<string>>(new Set());
+  const [generatingDescriptions, setGeneratingDescriptions] = useState<
+    Set<string>
+  >(new Set());
 
   // Edit description modal state
   const [isEditDescriptionOpen, setIsEditDescriptionOpen] = useState(false);
-  const [editDescriptionValue, setEditDescriptionValue] = useState('');
-  const [editDescriptionFileName, setEditDescriptionFileName] = useState('');
+  const [editDescriptionValue, setEditDescriptionValue] = useState("");
+  const [editDescriptionFileName, setEditDescriptionFileName] = useState("");
 
   // Actions panel state (for tablet/mobile)
   const [showActionsPanel, setShowActionsPanel] = useState(false);
@@ -124,10 +133,10 @@ export function ContextView() {
       {
         key: shortcuts.addContextFile,
         action: () => setIsCreateMarkdownOpen(true),
-        description: 'Create new markdown file',
+        description: "Create new markdown file",
       },
     ],
-    [shortcuts]
+    [shortcuts],
   );
   useKeyboardShortcuts(contextShortcuts);
 
@@ -166,10 +175,10 @@ export function ContextView() {
         const metadataPath = `${contextPath}/context-metadata.json`;
         await api.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
       } catch (error) {
-        logger.error('Failed to save metadata:', error);
+        logger.error("Failed to save metadata:", error);
       }
     },
-    [getContextPath]
+    [getContextPath],
   );
 
   // Load context files
@@ -188,7 +197,10 @@ export function ContextView() {
       const metadataPath = `${contextPath}/context-metadata.json`;
       const metadataExists = await api.exists(metadataPath);
       if (!metadataExists) {
-        await api.writeFile(metadataPath, JSON.stringify({ files: {} }, null, 2));
+        await api.writeFile(
+          metadataPath,
+          JSON.stringify({ files: {} }, null, 2),
+        );
       }
 
       // Load metadata for descriptions
@@ -201,19 +213,19 @@ export function ContextView() {
           .filter(
             (entry) =>
               entry.isFile &&
-              entry.name !== 'context-metadata.json' &&
-              (isMarkdownFilename(entry.name) || isImageFilename(entry.name))
+              entry.name !== "context-metadata.json" &&
+              (isMarkdownFilename(entry.name) || isImageFilename(entry.name)),
           )
           .map((entry) => ({
             name: entry.name,
-            type: isImageFilename(entry.name) ? 'image' : 'text',
+            type: isImageFilename(entry.name) ? "image" : "text",
             path: `${contextPath}/${entry.name}`,
             description: metadata.files[entry.name]?.description,
           }));
         setContextFiles(files);
       }
     } catch (error) {
-      logger.error('Failed to load context files:', error);
+      logger.error("Failed to load context files:", error);
     } finally {
       setIsLoading(false);
     }
@@ -234,7 +246,7 @@ export function ContextView() {
         setHasChanges(false);
       }
     } catch (error) {
-      logger.error('Failed to load file content:', error);
+      logger.error("Failed to load file content:", error);
     }
   }, []);
 
@@ -245,7 +257,7 @@ export function ContextView() {
     // Set selected file immediately for responsive UI feedback,
     // then load content asynchronously
     setSelectedFile(file);
-    setEditedContent(file.content || '');
+    setEditedContent(file.content || "");
     setHasChanges(false);
     setIsPreviewMode(isMarkdownFilename(file.name));
     loadFileContent(file);
@@ -262,7 +274,7 @@ export function ContextView() {
       setSelectedFile({ ...selectedFile, content: editedContent });
       setHasChanges(false);
     } catch (error) {
-      logger.error('Failed to save file:', error);
+      logger.error("Failed to save file:", error);
     } finally {
       setIsSaving(false);
     }
@@ -278,7 +290,7 @@ export function ContextView() {
   const generateDescription = async (
     filePath: string,
     fileName: string,
-    isImage: boolean
+    isImage: boolean,
   ): Promise<string | undefined> => {
     try {
       const httpClient = getHttpApiClient();
@@ -291,15 +303,16 @@ export function ContextView() {
       }
 
       const message =
-        result.error || `Pegasus couldn't generate a description for “${fileName}”.`;
-      toast.error('Failed to generate description', { description: message });
+        result.error ||
+        `Pegasus couldn't generate a description for “${fileName}”.`;
+      toast.error("Failed to generate description", { description: message });
     } catch (error) {
-      logger.error('Failed to generate description:', error);
+      logger.error("Failed to generate description:", error);
       const message =
         error instanceof Error
           ? error.message
-          : 'An unexpected error occurred while generating the description.';
-      toast.error('Failed to generate description', { description: message });
+          : "An unexpected error occurred while generating the description.";
+      toast.error("Failed to generate description", { description: message });
     }
     return undefined;
   };
@@ -311,7 +324,11 @@ export function ContextView() {
       setGeneratingDescriptions((prev) => new Set(prev).add(fileName));
 
       try {
-        const description = await generateDescription(filePath, fileName, isImage);
+        const description = await generateDescription(
+          filePath,
+          fileName,
+          isImage,
+        );
 
         if (description) {
           const metadata = await loadMetadata();
@@ -330,7 +347,7 @@ export function ContextView() {
           });
         }
       } catch (error) {
-        logger.error('Failed to generate description:', error);
+        logger.error("Failed to generate description:", error);
       } finally {
         // Remove from generating set
         setGeneratingDescriptions((prev) => {
@@ -340,7 +357,7 @@ export function ContextView() {
         });
       }
     },
-    [loadMetadata, saveMetadata, loadContextFiles]
+    [loadMetadata, saveMetadata, loadContextFiles],
   );
 
   // Upload a file and generate description asynchronously
@@ -371,21 +388,21 @@ export function ContextView() {
         });
 
         // Extract base64 data without the data URL prefix
-        const base64Data = dataUrl.split(',')[1] || dataUrl;
+        const base64Data = dataUrl.split(",")[1] || dataUrl;
 
         // Determine mime type from original file
-        const mimeType = file.type || 'image/png';
+        const mimeType = file.type || "image/png";
 
         // Use saveImageToTemp to properly save as binary file in .pegasus/images
         const saveResult = await api.saveImageToTemp?.(
           base64Data,
           fileName,
           mimeType,
-          currentProject!.path
+          currentProject!.path,
         );
 
         if (!saveResult?.success || !saveResult.path) {
-          throw new Error(saveResult?.error || 'Failed to save image');
+          throw new Error(saveResult?.error || "Failed to save image");
         }
 
         // The saved image path is used for description
@@ -414,11 +431,15 @@ export function ContextView() {
 
       // Start description generation in background (don't await)
       // For images, use the path in the images directory
-      generateDescriptionAsync(imagePathForDescription || filePath, fileName, isImage);
+      generateDescriptionAsync(
+        imagePathForDescription || filePath,
+        fileName,
+        isImage,
+      );
     } catch (error) {
-      logger.error('Failed to upload file:', error);
-      toast.error('Failed to upload file', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      logger.error("Failed to upload file:", error);
+      toast.error("Failed to upload file", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsUploading(false);
@@ -458,7 +479,9 @@ export function ContextView() {
     fileInputRef.current?.click();
   };
 
-  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -468,7 +491,7 @@ export function ContextView() {
 
     // Reset input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -482,8 +505,8 @@ export function ContextView() {
       let filename = newMarkdownName.trim();
 
       // Add .md extension if not provided
-      if (!filename.includes('.')) {
-        filename += '.md';
+      if (!filename.includes(".")) {
+        filename += ".md";
       }
 
       const filePath = `${contextPath}/${filename}`;
@@ -494,7 +517,9 @@ export function ContextView() {
       // Save description if provided
       if (newMarkdownDescription.trim()) {
         const metadata = await loadMetadata();
-        metadata.files[filename] = { description: newMarkdownDescription.trim() };
+        metadata.files[filename] = {
+          description: newMarkdownDescription.trim(),
+        };
         await saveMetadata(metadata);
       }
 
@@ -503,18 +528,19 @@ export function ContextView() {
 
       // Reset and close modal
       setIsCreateMarkdownOpen(false);
-      setNewMarkdownName('');
-      setNewMarkdownDescription('');
-      setNewMarkdownContent('');
+      setNewMarkdownName("");
+      setNewMarkdownDescription("");
+      setNewMarkdownContent("");
     } catch (error) {
-      logger.error('Failed to create markdown:', error);
+      logger.error("Failed to create markdown:", error);
       // Close dialog and reset state even on error to avoid stuck dialog
       setIsCreateMarkdownOpen(false);
-      setNewMarkdownName('');
-      setNewMarkdownDescription('');
-      setNewMarkdownContent('');
-      toast.error('Failed to create markdown file', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      setNewMarkdownName("");
+      setNewMarkdownDescription("");
+      setNewMarkdownContent("");
+      toast.error("Failed to create markdown file", {
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
       });
     }
   };
@@ -537,10 +563,10 @@ export function ContextView() {
 
       setIsDeleteDialogOpen(false);
       setSelectedFile(null);
-      setEditedContent('');
+      setEditedContent("");
       setHasChanges(false);
     } catch (error) {
-      logger.error('Failed to delete file:', error);
+      logger.error("Failed to delete file:", error);
     }
   };
 
@@ -562,14 +588,14 @@ export function ContextView() {
       // Check if file with new name already exists
       const exists = await api.exists(newPath);
       if (exists) {
-        logger.error('A file with this name already exists');
+        logger.error("A file with this name already exists");
         return;
       }
 
       // Read current file content
       const result = await api.readFile(selectedFile.path);
       if (!result.success || result.content === undefined) {
-        logger.error('Failed to read file for rename');
+        logger.error("Failed to read file for rename");
         return;
       }
 
@@ -588,7 +614,7 @@ export function ContextView() {
       }
 
       setIsRenameDialogOpen(false);
-      setRenameFileName('');
+      setRenameFileName("");
 
       // Reload files and select the renamed file
       await loadContextFiles();
@@ -596,14 +622,14 @@ export function ContextView() {
       // Update selected file with new name and path
       const renamedFile: ContextFile = {
         name: newName,
-        type: isImageFilename(newName) ? 'image' : 'text',
+        type: isImageFilename(newName) ? "image" : "text",
         path: newPath,
         content: result.content,
         description: metadata.files[newName]?.description,
       };
       setSelectedFile(renamedFile);
     } catch (error) {
-      logger.error('Failed to rename file:', error);
+      logger.error("Failed to rename file:", error);
     }
   };
 
@@ -613,29 +639,34 @@ export function ContextView() {
 
     try {
       const metadata = await loadMetadata();
-      metadata.files[editDescriptionFileName] = { description: editDescriptionValue.trim() };
+      metadata.files[editDescriptionFileName] = {
+        description: editDescriptionValue.trim(),
+      };
       await saveMetadata(metadata);
 
       // Update selected file if it's the one being edited
       if (selectedFile?.name === editDescriptionFileName) {
-        setSelectedFile({ ...selectedFile, description: editDescriptionValue.trim() });
+        setSelectedFile({
+          ...selectedFile,
+          description: editDescriptionValue.trim(),
+        });
       }
 
       // Reload files to update list
       await loadContextFiles();
 
       setIsEditDescriptionOpen(false);
-      setEditDescriptionValue('');
-      setEditDescriptionFileName('');
+      setEditDescriptionValue("");
+      setEditDescriptionFileName("");
     } catch (error) {
-      logger.error('Failed to save description:', error);
+      logger.error("Failed to save description:", error);
     }
   };
 
   // Open edit description dialog
   const handleEditDescription = (file: ContextFile) => {
     setEditDescriptionFileName(file.name);
-    setEditDescriptionValue(file.description || '');
+    setEditDescriptionValue(file.description || "");
     setIsEditDescriptionOpen(true);
   };
 
@@ -653,13 +684,13 @@ export function ContextView() {
       // Clear selection if this was the selected file
       if (selectedFile?.path === file.path) {
         setSelectedFile(null);
-        setEditedContent('');
+        setEditedContent("");
         setHasChanges(false);
       }
 
       await loadContextFiles();
     } catch (error) {
-      logger.error('Failed to delete file:', error);
+      logger.error("Failed to delete file:", error);
     }
   };
 
@@ -676,14 +707,20 @@ export function ContextView() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="context-view-loading">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="context-view-loading"
+      >
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="context-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="context-view"
+    >
       {/* Hidden file input for import */}
       <input
         ref={fileInputRef}
@@ -772,8 +809,8 @@ export function ContextView() {
       {/* Main content area with file list and editor */}
       <div
         className={cn(
-          'flex-1 flex overflow-hidden relative',
-          isDropHovering && 'ring-2 ring-primary ring-inset'
+          "flex-1 flex overflow-hidden relative",
+          isDropHovering && "ring-2 ring-primary ring-inset",
         )}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -798,7 +835,9 @@ export function ContextView() {
           <div className="absolute inset-0 bg-background/80 z-50 flex items-center justify-center">
             <div className="flex flex-col items-center">
               <Spinner size="xl" className="mb-2" />
-              <span className="text-sm font-medium">Uploading {uploadingFileName}...</span>
+              <span className="text-sm font-medium">
+                Uploading {uploadingFileName}...
+              </span>
             </div>
           </div>
         )}
@@ -812,7 +851,7 @@ export function ContextView() {
             FILE_LIST_DESKTOP_CLASSES,
             !selectedFile && FILE_LIST_EXPANDED_CLASSES,
             isMobile && !selectedFile && FILE_LIST_MOBILE_NO_SELECTION_CLASSES,
-            isMobile && selectedFile && FILE_LIST_MOBILE_SELECTION_CLASSES
+            isMobile && selectedFile && FILE_LIST_MOBILE_SELECTION_CLASSES,
           )}
         >
           <div className="p-3 border-b border-border">
@@ -820,7 +859,10 @@ export function ContextView() {
               Context Files ({contextFiles.length})
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-2" data-testid="context-file-list">
+          <div
+            className="flex-1 overflow-y-auto p-2"
+            data-testid="context-file-list"
+          >
             {contextFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Upload className="w-8 h-8 text-muted-foreground mb-2" />
@@ -839,20 +881,22 @@ export function ContextView() {
                       key={file.path}
                       onClick={() => handleSelectFile(file)}
                       className={cn(
-                        'group w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer',
+                        "group w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer",
                         selectedFile?.path === file.path
-                          ? 'bg-primary/20 text-foreground border border-primary/30'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                          ? "bg-primary/20 text-foreground border border-primary/30"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
                       )}
                       data-testid={`context-file-${file.name}`}
                     >
-                      {file.type === 'image' ? (
+                      {file.type === "image" ? (
                         <ImageIcon className="w-4 h-4 flex-shrink-0" />
                       ) : (
                         <FileText className="w-4 h-4 flex-shrink-0" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <span className="truncate text-sm block">{file.name}</span>
+                        <span className="truncate text-sm block">
+                          {file.name}
+                        </span>
                         {isGenerating ? (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Spinner size="xs" />
@@ -869,8 +913,10 @@ export function ContextView() {
                           <button
                             onClick={(e) => e.stopPropagation()}
                             className={cn(
-                              'p-1 hover:bg-accent rounded transition-opacity',
-                              isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                              "p-1 hover:bg-accent rounded transition-opacity",
+                              isMobile
+                                ? "opacity-100"
+                                : "opacity-0 group-hover:opacity-100",
                             )}
                             aria-label={`Actions for ${file.name}`}
                             aria-haspopup="menu"
@@ -914,7 +960,7 @@ export function ContextView() {
         <div
           className={cn(
             EDITOR_PANEL_BASE_CLASSES,
-            isMobile && !selectedFile && EDITOR_PANEL_MOBILE_HIDDEN_CLASSES
+            isMobile && !selectedFile && EDITOR_PANEL_MOBILE_HIDDEN_CLASSES,
           )}
         >
           {selectedFile ? (
@@ -935,38 +981,41 @@ export function ContextView() {
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                   )}
-                  {selectedFile.type === 'image' ? (
+                  {selectedFile.type === "image" ? (
                     <ImageIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   ) : (
                     <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   )}
-                  <span className="text-sm font-medium truncate">{selectedFile.name}</span>
+                  <span className="text-sm font-medium truncate">
+                    {selectedFile.name}
+                  </span>
                 </div>
-                <div className={cn('flex gap-2', isMobile && 'gap-1')}>
+                <div className={cn("flex gap-2", isMobile && "gap-1")}>
                   {/* Mobile: Icon-only buttons with aria-labels for accessibility */}
-                  {selectedFile.type === 'text' && isMarkdownFilename(selectedFile.name) && (
-                    <Button
-                      variant={'outline'}
-                      size="sm"
-                      onClick={() => setIsPreviewMode(!isPreviewMode)}
-                      data-testid="toggle-preview-mode"
-                      aria-label={isPreviewMode ? 'Edit' : 'Preview'}
-                      title={isPreviewMode ? 'Edit' : 'Preview'}
-                    >
-                      {isPreviewMode ? (
-                        <>
-                          <Pencil className="w-4 h-4" />
-                          {!isMobile && <span className="ml-2">Edit</span>}
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4" />
-                          {!isMobile && <span className="ml-2">Preview</span>}
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  {selectedFile.type === 'text' && (
+                  {selectedFile.type === "text" &&
+                    isMarkdownFilename(selectedFile.name) && (
+                      <Button
+                        variant={"outline"}
+                        size="sm"
+                        onClick={() => setIsPreviewMode(!isPreviewMode)}
+                        data-testid="toggle-preview-mode"
+                        aria-label={isPreviewMode ? "Edit" : "Preview"}
+                        title={isPreviewMode ? "Edit" : "Preview"}
+                      >
+                        {isPreviewMode ? (
+                          <>
+                            <Pencil className="w-4 h-4" />
+                            {!isMobile && <span className="ml-2">Edit</span>}
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            {!isMobile && <span className="ml-2">Preview</span>}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  {selectedFile.type === "text" && (
                     <Button
                       size="sm"
                       onClick={saveFile}
@@ -978,7 +1027,11 @@ export function ContextView() {
                       <Save className="w-4 h-4" />
                       {!isMobile && (
                         <span className="ml-2">
-                          {isSaving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
+                          {isSaving
+                            ? "Saving..."
+                            : hasChanges
+                              ? "Save"
+                              : "Saved"}
                         </span>
                       )}
                     </Button>
@@ -1014,7 +1067,9 @@ export function ContextView() {
                           <span>Generating description with AI...</span>
                         </div>
                       ) : selectedFile.description ? (
-                        <p className="text-sm mt-1">{selectedFile.description}</p>
+                        <p className="text-sm mt-1">
+                          {selectedFile.description}
+                        </p>
                       ) : (
                         <p className="text-sm text-muted-foreground mt-1 italic">
                           No description. Click edit to add one.
@@ -1036,7 +1091,7 @@ export function ContextView() {
 
               {/* Content area */}
               <div className="flex-1 overflow-hidden px-4 pb-2 sm:pb-4">
-                {selectedFile.type === 'image' ? (
+                {selectedFile.type === "image" ? (
                   <div
                     className="h-full flex items-center justify-center bg-card rounded-lg"
                     data-testid="image-preview"
@@ -1048,7 +1103,10 @@ export function ContextView() {
                     />
                   </div>
                 ) : isPreviewMode ? (
-                  <Card className="h-full overflow-auto p-4" data-testid="markdown-preview">
+                  <Card
+                    className="h-full overflow-auto p-4"
+                    data-testid="markdown-preview"
+                  >
                     <Markdown>{editedContent}</Markdown>
                   </Card>
                 ) : (
@@ -1069,8 +1127,12 @@ export function ContextView() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <File className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground-secondary">Select a file to view or edit</p>
-                <p className="text-muted-foreground text-sm mt-1">Or drop files here to add them</p>
+                <p className="text-foreground-secondary">
+                  Select a file to view or edit
+                </p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Or drop files here to add them
+                </p>
               </div>
             </div>
           )}
@@ -1078,7 +1140,10 @@ export function ContextView() {
       </div>
 
       {/* Create Markdown Dialog */}
-      <Dialog open={isCreateMarkdownOpen} onOpenChange={setIsCreateMarkdownOpen}>
+      <Dialog
+        open={isCreateMarkdownOpen}
+        onOpenChange={setIsCreateMarkdownOpen}
+      >
         <DialogContent
           data-testid="create-markdown-dialog"
           className="w-[60vw] max-w-[60vw] max-h-[80vh] flex flex-col"
@@ -1129,7 +1194,7 @@ export function ContextView() {
                   if (files.length === 0 && e.dataTransfer.items) {
                     const items = Array.from(e.dataTransfer.items);
                     files = items
-                      .filter((item) => item.kind === 'file')
+                      .filter((item) => item.kind === "file")
                       .map((item) => item.getAsFile())
                       .filter((f): f is globalThis.File => f !== null);
                   }
@@ -1159,9 +1224,9 @@ export function ContextView() {
               variant="outline"
               onClick={() => {
                 setIsCreateMarkdownOpen(false);
-                setNewMarkdownName('');
-                setNewMarkdownDescription('');
-                setNewMarkdownContent('');
+                setNewMarkdownName("");
+                setNewMarkdownDescription("");
+                setNewMarkdownContent("");
               }}
             >
               Cancel
@@ -1169,7 +1234,7 @@ export function ContextView() {
             <HotkeyButton
               onClick={handleCreateMarkdown}
               disabled={!newMarkdownName.trim()}
-              hotkey={{ key: 'Enter', cmdCtrl: true }}
+              hotkey={{ key: "Enter", cmdCtrl: true }}
               hotkeyActive={isCreateMarkdownOpen}
               data-testid="confirm-create-markdown"
             >
@@ -1185,11 +1250,15 @@ export function ContextView() {
           <DialogHeader>
             <DialogTitle>Delete Context File</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedFile?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedFile?.name}"? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -1209,7 +1278,9 @@ export function ContextView() {
         <DialogContent data-testid="rename-context-dialog">
           <DialogHeader>
             <DialogTitle>Rename Context File</DialogTitle>
-            <DialogDescription>Enter a new name for "{selectedFile?.name}".</DialogDescription>
+            <DialogDescription>
+              Enter a new name for "{selectedFile?.name}".
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
@@ -1221,7 +1292,7 @@ export function ContextView() {
                 placeholder="Enter new filename"
                 data-testid="rename-file-input"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && renameFileName.trim()) {
+                  if (e.key === "Enter" && renameFileName.trim()) {
                     handleRenameFile();
                   }
                 }}
@@ -1233,14 +1304,16 @@ export function ContextView() {
               variant="outline"
               onClick={() => {
                 setIsRenameDialogOpen(false);
-                setRenameFileName('');
+                setRenameFileName("");
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleRenameFile}
-              disabled={!renameFileName.trim() || renameFileName === selectedFile?.name}
+              disabled={
+                !renameFileName.trim() || renameFileName === selectedFile?.name
+              }
               data-testid="confirm-rename-file"
             >
               Rename
@@ -1250,13 +1323,16 @@ export function ContextView() {
       </Dialog>
 
       {/* Edit Description Dialog */}
-      <Dialog open={isEditDescriptionOpen} onOpenChange={setIsEditDescriptionOpen}>
+      <Dialog
+        open={isEditDescriptionOpen}
+        onOpenChange={setIsEditDescriptionOpen}
+      >
         <DialogContent data-testid="edit-description-dialog">
           <DialogHeader>
             <DialogTitle>Edit Description</DialogTitle>
             <DialogDescription>
-              Update the description for "{editDescriptionFileName}". This helps AI understand the
-              context.
+              Update the description for "{editDescriptionFileName}". This helps
+              AI understand the context.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -1277,13 +1353,16 @@ export function ContextView() {
               variant="outline"
               onClick={() => {
                 setIsEditDescriptionOpen(false);
-                setEditDescriptionValue('');
-                setEditDescriptionFileName('');
+                setEditDescriptionValue("");
+                setEditDescriptionFileName("");
               }}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveDescription} data-testid="confirm-save-description">
+            <Button
+              onClick={handleSaveDescription}
+              data-testid="confirm-save-description"
+            >
               Save
             </Button>
           </DialogFooter>

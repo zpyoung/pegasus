@@ -4,8 +4,8 @@
  * React Query-based hook for fetching GitHub issues.
  */
 
-import { useAppStore } from '@/store/app-store';
-import { useGitHubIssues as useGitHubIssuesQuery } from '@/hooks/queries';
+import { useAppStore } from "@/store/app-store";
+import { useGitHubIssues as useGitHubIssuesQuery } from "@/hooks/queries";
 
 export function useGithubIssues() {
   const { currentProject } = useAppStore();
@@ -23,7 +23,8 @@ export function useGithubIssues() {
     closedIssues: data?.closedIssues ?? [],
     loading,
     refreshing,
-    error: error instanceof Error ? error.message : error ? String(error) : null,
+    error:
+      error instanceof Error ? error.message : error ? String(error) : null,
     refresh,
   };
 }

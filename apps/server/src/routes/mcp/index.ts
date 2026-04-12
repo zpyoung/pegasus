@@ -8,10 +8,10 @@
  * Mounted at /api/mcp in the main server.
  */
 
-import { Router } from 'express';
-import type { MCPTestService } from '../../services/mcp-test-service.js';
-import { createTestServerHandler } from './routes/test-server.js';
-import { createListToolsHandler } from './routes/list-tools.js';
+import { Router } from "express";
+import type { MCPTestService } from "../../services/mcp-test-service.js";
+import { createTestServerHandler } from "./routes/test-server.js";
+import { createListToolsHandler } from "./routes/list-tools.js";
 
 /**
  * Create MCP router with all endpoints
@@ -27,10 +27,10 @@ export function createMCPRoutes(mcpTestService: MCPTestService): Router {
   const router = Router();
 
   // Test MCP server connection
-  router.post('/test', createTestServerHandler(mcpTestService));
+  router.post("/test", createTestServerHandler(mcpTestService));
 
   // List tools from MCP server
-  router.post('/tools', createListToolsHandler(mcpTestService));
+  router.post("/tools", createListToolsHandler(mcpTestService));
 
   return router;
 }

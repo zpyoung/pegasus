@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
-import { normalizePath } from '@/lib/utils';
-import { toast } from 'sonner';
-import type { DevServerInfo, WorktreeInfo } from '../types';
-import { useEventRecencyStore } from '@/hooks/use-event-recency';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
+import { normalizePath } from "@/lib/utils";
+import { toast } from "sonner";
+import type { DevServerInfo, WorktreeInfo } from "../types";
+import { useEventRecencyStore } from "@/hooks/use-event-recency";
 
-const logger = createLogger('DevServers');
+const logger = createLogger("DevServers");
 
 // Timeout (ms) for port detection before showing a warning to the user
 const PORT_DETECTION_TIMEOUT_MS = 30_000;
@@ -29,7 +29,10 @@ function buildDevServerBrowserUrl(serverUrl: string): string | null {
   try {
     const devServerUrl = new URL(serverUrl);
     // Security: Only allow http/https protocols
-    if (devServerUrl.protocol !== 'http:' && devServerUrl.protocol !== 'https:') {
+    if (
+      devServerUrl.protocol !== "http:" &&
+      devServerUrl.protocol !== "https:"
+    ) {
       return null;
     }
     devServerUrl.hostname = window.location.hostname;
@@ -49,9 +52,9 @@ function showUrlDetectedToast(url: string, port: number): void {
     description: browserUrl ? browserUrl : url,
     action: browserUrl
       ? {
-          label: 'Open in Browser',
+          label: "Open in Browser",
           onClick: () => {
-            window.open(browserUrl, '_blank', 'noopener,noreferrer');
+            window.open(browserUrl, "_blank", "noopener,noreferrer");
           },
         }
       : undefined,
@@ -61,8 +64,12 @@ function showUrlDetectedToast(url: string, port: number): void {
 
 export function useDevServers({ projectPath }: UseDevServersOptions) {
   const [isStartingAnyDevServer, setIsStartingAnyDevServer] = useState(false);
-  const [startingServers, setStartingServers] = useState<Set<string>>(new Set());
-  const [runningDevServers, setRunningDevServers] = useState<Map<string, DevServerInfo>>(new Map());
+  const [startingServers, setStartingServers] = useState<Set<string>>(
+    new Set(),
+  );
+  const [runningDevServers, setRunningDevServers] = useState<
+    Map<string, DevServerInfo>
+  >(new Map());
 
   // Track which worktrees have had their url-detected toast shown to prevent re-triggering
   const toastShownForRef = useRef<Set<string>>(new Set());
@@ -109,7 +116,9 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
 
         if (!needsReconciliation) return;
 
-        logger.warn(`Port detection timeout for ${key} after ${PORT_DETECTION_TIMEOUT_MS}ms`);
+        logger.warn(
+          `Port detection timeout for ${key} after ${PORT_DETECTION_TIMEOUT_MS}ms`,
+        );
 
         // Try to reconcile with backend - the server may have detected the URL
         // but the WebSocket event was missed
@@ -119,7 +128,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           const result = await api.worktree.listDevServers();
           if (result.success && result.result?.servers) {
             const backendServer = result.result.servers.find(
-              (s) => normalizePath(s.worktreePath) === key
+              (s) => normalizePath(s.worktreePath) === key,
             );
             if (backendServer && backendServer.urlDetected) {
               // Backend has detected the URL - update our state
@@ -141,7 +150,9 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
 
             if (!backendServer) {
               // Server is no longer running on the backend - remove from state
-              logger.info(`Server ${key} no longer running on backend, removing from state`);
+              logger.info(
+                `Server ${key} no longer running on backend, removing from state`,
+              );
               setRunningDevServers((prev) => {
                 if (!prev.has(key)) return prev;
                 const next = new Map(prev);
@@ -153,15 +164,15 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
             }
           }
         } catch (error) {
-          logger.error('Failed to reconcile port detection:', error);
+          logger.error("Failed to reconcile port detection:", error);
         }
 
         // If we get here, the backend also hasn't detected the URL - show warning
-        toast.warning('Port detection is taking longer than expected', {
+        toast.warning("Port detection is taking longer than expected", {
           description:
-            'The dev server may be slow to start, or the port output format is not recognized.',
+            "The dev server may be slow to start, or the port output format is not recognized.",
           action: {
-            label: 'Retry',
+            label: "Retry",
             onClick: () => {
               // Use ref to get the latest startPortDetectionTimer, avoiding stale closure
               startPortDetectionTimerRef.current(key);
@@ -173,7 +184,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
 
       portDetectionTimers.current.set(key, timer);
     },
-    [clearPortDetectionTimer]
+    [clearPortDetectionTimer],
   );
 
   // Ref to hold the latest startPortDetectionTimer callback, avoiding stale closures
@@ -211,7 +222,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       }
       initialFetchDone.current = true;
     } catch (error) {
-      logger.error('Failed to fetch dev servers:', error);
+      logger.error("Failed to fetch dev servers:", error);
       initialFetchDone.current = true;
     }
   }, [clearPortDetectionTimer, startPortDetectionTimer]);
@@ -236,7 +247,10 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         const result = await api.worktree.listDevServers();
         if (!result.success || !result.result?.servers) return;
 
-        const backendServers = new Map<string, (typeof result.result.servers)[number]>();
+        const backendServers = new Map<
+          string,
+          (typeof result.result.servers)[number]
+        >();
         for (const server of result.result.servers) {
           backendServers.set(normalizePath(server.worktreePath), server);
         }
@@ -254,7 +268,9 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
             const existing = next.get(key);
             if (!existing) {
               // Server running on backend but not in our state - add it
-              sideEffects.push(() => logger.info(`Reconciliation: adding missing server ${key}`));
+              sideEffects.push(() =>
+                logger.info(`Reconciliation: adding missing server ${key}`),
+              );
               next.set(key, {
                 ...server,
                 urlDetected: server.urlDetected ?? true,
@@ -289,7 +305,9 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
               (existing.port !== server.port || existing.url !== server.url)
             ) {
               // Port or URL changed between sessions - update
-              sideEffects.push(() => logger.info(`Reconciliation: port/URL changed for ${key}`));
+              sideEffects.push(() =>
+                logger.info(`Reconciliation: port/URL changed for ${key}`),
+              );
               next.set(key, {
                 ...server,
                 urlDetected: true,
@@ -318,7 +336,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         for (const fn of sideEffects) fn();
       } catch (error) {
         // Reconciliation failures are non-critical - just log and continue
-        logger.debug('State reconciliation failed:', error);
+        logger.debug("State reconciliation failed:", error);
       }
     };
 
@@ -330,7 +348,9 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
   // Without this, dev-server events don't suppress polling intervals,
   // causing all queries (features, worktrees, running-agents) to poll
   // at their default rates even though the WebSocket is actively connected.
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   // Subscribe to all dev server lifecycle events for reactive state updates
   useEffect(() => {
@@ -340,11 +360,11 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
     const unsubscribe = api.worktree.onDevServerLogEvent((event) => {
       // Record that WS is alive (but only for lifecycle events, not output -
       // output fires too frequently and would trigger unnecessary store updates)
-      if (event.type !== 'dev-server:output') {
+      if (event.type !== "dev-server:output") {
         recordGlobalEvent();
       }
 
-      if (event.type === 'dev-server:starting') {
+      if (event.type === "dev-server:starting") {
         const { worktreePath } = event.payload;
         const key = normalizePath(worktreePath);
         setStartingServers((prev) => {
@@ -352,8 +372,10 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           next.add(key);
           return next;
         });
-        logger.info(`Dev server starting for ${worktreePath} (reactive update)`);
-      } else if (event.type === 'dev-server:url-detected') {
+        logger.info(
+          `Dev server starting for ${worktreePath} (reactive update)`,
+        );
+      } else if (event.type === "dev-server:url-detected") {
         const { worktreePath, url, port } = event.payload;
         const key = normalizePath(worktreePath);
         // Clear the port detection timeout since URL was successfully detected
@@ -375,7 +397,12 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
             return next;
           }
           // Avoid updating if already detected with same url/port
-          if (existing.urlDetected && existing.url === url && existing.port === port) return prev;
+          if (
+            existing.urlDetected &&
+            existing.url === url &&
+            existing.port === port
+          )
+            return prev;
           const next = new Map(prev);
           next.set(key, {
             ...existing,
@@ -387,14 +414,16 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           return next;
         });
         if (didUpdate) {
-          logger.info(`Dev server URL detected for ${worktreePath}: ${url} (port ${port})`);
+          logger.info(
+            `Dev server URL detected for ${worktreePath}: ${url} (port ${port})`,
+          );
           // Only show toast on the transition from undetected → detected (not on re-renders/polls)
           if (!toastShownForRef.current.has(key)) {
             toastShownForRef.current.add(key);
             showUrlDetectedToast(url, port);
           }
         }
-      } else if (event.type === 'dev-server:stopped') {
+      } else if (event.type === "dev-server:stopped") {
         // Reactively remove the server from state when it stops
         const { worktreePath } = event.payload;
         const key = normalizePath(worktreePath);
@@ -409,7 +438,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
         // Clear the toast tracking so a fresh detection will show a new toast
         toastShownForRef.current.delete(key);
         logger.info(`Dev server stopped for ${worktreePath} (reactive update)`);
-      } else if (event.type === 'dev-server:started') {
+      } else if (event.type === "dev-server:started") {
         // Reactively add/update the server when it starts
         const { worktreePath, port, url } = event.payload;
         const key = normalizePath(worktreePath);
@@ -458,7 +487,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       const path = worktree.isMain ? projectPath : worktree.path;
       return path ? normalizePath(path) : path;
     },
-    [projectPath]
+    [projectPath],
   );
 
   const handleStartDevServer = useCallback(
@@ -469,12 +498,15 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.startDevServer) {
-          toast.error('Start dev server API not available');
+          toast.error("Start dev server API not available");
           return;
         }
 
         const targetPath = worktree.isMain ? projectPath : worktree.path;
-        const result = await api.worktree.startDevServer(projectPath, targetPath);
+        const result = await api.worktree.startDevServer(
+          projectPath,
+          targetPath,
+        );
 
         if (result.success && result.result) {
           const key = normalizePath(targetPath);
@@ -492,24 +524,24 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           });
           // Start port detection timeout
           startPortDetectionTimer(key);
-          toast.success('Dev server started, detecting port...', {
-            description: 'Logs are now visible in the dev server panel.',
+          toast.success("Dev server started, detecting port...", {
+            description: "Logs are now visible in the dev server panel.",
           });
         } else {
-          toast.error(result.error || 'Failed to start dev server', {
-            description: 'Check the dev server logs panel for details.',
+          toast.error(result.error || "Failed to start dev server", {
+            description: "Check the dev server logs panel for details.",
           });
         }
       } catch (error) {
-        logger.error('Start dev server failed:', error);
-        toast.error('Failed to start dev server', {
+        logger.error("Start dev server failed:", error);
+        toast.error("Failed to start dev server", {
           description: error instanceof Error ? error.message : undefined,
         });
       } finally {
         setIsStartingAnyDevServer(false);
       }
     },
-    [isStartingAnyDevServer, projectPath, startPortDetectionTimer]
+    [isStartingAnyDevServer, projectPath, startPortDetectionTimer],
   );
 
   const handleStopDevServer = useCallback(
@@ -517,7 +549,7 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.stopDevServer) {
-          toast.error('Stop dev server API not available');
+          toast.error("Stop dev server API not available");
           return;
         }
 
@@ -535,62 +567,66 @@ export function useDevServers({ projectPath }: UseDevServersOptions) {
           });
           // Clear toast tracking so future restarts get a fresh toast
           toastShownForRef.current.delete(key);
-          toast.success(result.result?.message || 'Dev server stopped');
+          toast.success(result.result?.message || "Dev server stopped");
         } else {
-          toast.error(result.error || 'Failed to stop dev server');
+          toast.error(result.error || "Failed to stop dev server");
         }
       } catch (error) {
-        logger.error('Stop dev server failed:', error);
-        toast.error('Failed to stop dev server');
+        logger.error("Stop dev server failed:", error);
+        toast.error("Failed to stop dev server");
       }
     },
-    [projectPath, clearPortDetectionTimer]
+    [projectPath, clearPortDetectionTimer],
   );
 
   const handleOpenDevServerUrl = useCallback(
     (worktree: WorktreeInfo) => {
       const serverInfo = runningDevServers.get(getWorktreeKey(worktree));
       if (!serverInfo) {
-        logger.warn('No dev server info found for worktree:', getWorktreeKey(worktree));
-        toast.error('Dev server not found', {
-          description: 'The dev server may have stopped. Try starting it again.',
+        logger.warn(
+          "No dev server info found for worktree:",
+          getWorktreeKey(worktree),
+        );
+        toast.error("Dev server not found", {
+          description:
+            "The dev server may have stopped. Try starting it again.",
         });
         return;
       }
 
       const browserUrl = buildDevServerBrowserUrl(serverInfo.url);
       if (!browserUrl) {
-        logger.error('Invalid dev server URL:', serverInfo.url);
-        toast.error('Invalid dev server URL', {
-          description: 'The server returned an unsupported URL protocol.',
+        logger.error("Invalid dev server URL:", serverInfo.url);
+        toast.error("Invalid dev server URL", {
+          description: "The server returned an unsupported URL protocol.",
         });
         return;
       }
 
-      window.open(browserUrl, '_blank', 'noopener,noreferrer');
+      window.open(browserUrl, "_blank", "noopener,noreferrer");
     },
-    [runningDevServers, getWorktreeKey]
+    [runningDevServers, getWorktreeKey],
   );
 
   const isDevServerRunning = useCallback(
     (worktree: WorktreeInfo) => {
       return runningDevServers.has(getWorktreeKey(worktree));
     },
-    [runningDevServers, getWorktreeKey]
+    [runningDevServers, getWorktreeKey],
   );
 
   const isDevServerStarting = useCallback(
     (worktree: WorktreeInfo) => {
       return startingServers.has(getWorktreeKey(worktree));
     },
-    [startingServers, getWorktreeKey]
+    [startingServers, getWorktreeKey],
   );
 
   const getDevServerInfo = useCallback(
     (worktree: WorktreeInfo) => {
       return runningDevServers.get(getWorktreeKey(worktree));
     },
-    [runningDevServers, getWorktreeKey]
+    [runningDevServers, getWorktreeKey],
   );
 
   return {

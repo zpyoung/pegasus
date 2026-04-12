@@ -2,9 +2,9 @@
  * POST /diffs endpoint - Get diffs for the main project
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { getGitRepositoryDiffs } from '../../common.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { getGitRepositoryDiffs } from "../../common.js";
 
 export function createDiffsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -12,7 +12,7 @@ export function createDiffsHandler() {
       const { projectPath } = req.body as { projectPath: string };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath required' });
+        res.status(400).json({ success: false, error: "projectPath required" });
         return;
       }
 
@@ -26,11 +26,11 @@ export function createDiffsHandler() {
           ...(result.mergeState ? { mergeState: result.mergeState } : {}),
         });
       } catch (innerError) {
-        logError(innerError, 'Git diff failed');
-        res.json({ success: true, diff: '', files: [], hasChanges: false });
+        logError(innerError, "Git diff failed");
+        res.json({ success: true, diff: "", files: [], hasChanges: false });
       }
     } catch (error) {
-      logError(error, 'Get diffs failed');
+      logError(error, "Get diffs failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

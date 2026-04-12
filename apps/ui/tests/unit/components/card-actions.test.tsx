@@ -1,13 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { CardActions } from '../../../src/components/views/board-view/components/kanban-card/card-actions';
-import type { Feature } from '@pegasus/types';
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { CardActions } from "../../../src/components/views/board-view/components/kanban-card/card-actions";
+import type { Feature } from "@pegasus/types";
 
-describe('CardActions', () => {
-  it('renders backlog logs button when context exists', () => {
+describe("CardActions", () => {
+  it("renders backlog logs button when context exists", () => {
     const feature = {
-      id: 'feature-logs',
-      status: 'backlog',
+      id: "feature-logs",
+      status: "backlog",
       error: undefined,
     } as unknown as Feature;
 
@@ -20,16 +20,18 @@ describe('CardActions', () => {
         onEdit={vi.fn()}
         onViewOutput={vi.fn()}
         onImplement={vi.fn()}
-      />
+      />,
     );
 
-    expect(screen.getByTestId('view-output-backlog-feature-logs')).toBeInTheDocument();
+    expect(
+      screen.getByTestId("view-output-backlog-feature-logs"),
+    ).toBeInTheDocument();
   });
 
-  it('does not render backlog logs button without context', () => {
+  it("does not render backlog logs button without context", () => {
     const feature = {
-      id: 'feature-no-logs',
-      status: 'backlog',
+      id: "feature-no-logs",
+      status: "backlog",
       error: undefined,
     } as unknown as Feature;
 
@@ -41,9 +43,11 @@ describe('CardActions', () => {
         onEdit={vi.fn()}
         onViewOutput={vi.fn()}
         onImplement={vi.fn()}
-      />
+      />,
     );
 
-    expect(screen.queryByTestId('view-output-backlog-feature-no-logs')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("view-output-backlog-feature-no-logs"),
+    ).not.toBeInTheDocument();
   });
 });

@@ -2,20 +2,29 @@
  * POST /apply endpoint - Apply a backlog plan
  */
 
-import type { Request, Response } from 'express';
-import { resolvePhaseModel } from '@pegasus/model-resolver';
-import type { BacklogPlanResult, PhaseModelEntry, PlanningMode } from '@pegasus/types';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { clearBacklogPlan, getErrorMessage, logError, logger } from '../common.js';
+import type { Request, Response } from "express";
+import { resolvePhaseModel } from "@pegasus/model-resolver";
+import type {
+  BacklogPlanResult,
+  PhaseModelEntry,
+  PlanningMode,
+} from "@pegasus/types";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import {
+  clearBacklogPlan,
+  getErrorMessage,
+  logError,
+  logger,
+} from "../common.js";
 
 const featureLoader = new FeatureLoader();
 
 function normalizePhaseModelEntry(
-  entry: PhaseModelEntry | string | undefined | null
+  entry: PhaseModelEntry | string | undefined | null,
 ): PhaseModelEntry | undefined {
   if (!entry) return undefined;
-  if (typeof entry === 'string') return { model: entry };
+  if (typeof entry === "string") return { model: entry };
   return entry;
 }
 
@@ -34,32 +43,37 @@ export function createApplyHandler(settingsService?: SettingsService) {
 
       // Validate branchName: must be undefined or a non-empty trimmed string
       const branchName =
-        typeof rawBranchName === 'string' && rawBranchName.trim().length > 0
+        typeof rawBranchName === "string" && rawBranchName.trim().length > 0
           ? rawBranchName.trim()
           : undefined;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath required' });
+        res.status(400).json({ success: false, error: "projectPath required" });
         return;
       }
 
       if (!plan || !plan.changes) {
-        res.status(400).json({ success: false, error: 'plan with changes required' });
+        res
+          .status(400)
+          .json({ success: false, error: "plan with changes required" });
         return;
       }
 
-      let defaultPlanningMode: PlanningMode = 'skip';
+      let defaultPlanningMode: PlanningMode = "skip";
       let defaultRequirePlanApproval = false;
       let defaultModelEntry: PhaseModelEntry | undefined;
 
       if (settingsService) {
         const globalSettings = await settingsService.getGlobalSettings();
-        const projectSettings = await settingsService.getProjectSettings(projectPath);
+        const projectSettings =
+          await settingsService.getProjectSettings(projectPath);
 
-        defaultPlanningMode = globalSettings.defaultPlanningMode ?? 'skip';
-        defaultRequirePlanApproval = globalSettings.defaultRequirePlanApproval ?? false;
+        defaultPlanningMode = globalSettings.defaultPlanningMode ?? "skip";
+        defaultRequirePlanApproval =
+          globalSettings.defaultRequirePlanApproval ?? false;
         defaultModelEntry = normalizePhaseModelEntry(
-          projectSettings.defaultFeatureModel ?? globalSettings.defaultFeatureModel
+          projectSettings.defaultFeatureModel ??
+            globalSettings.defaultFeatureModel,
         );
       }
 
@@ -75,7 +89,7 @@ export function createApplyHandler(settingsService?: SettingsService) {
       // This ensures we can remove dependencies before they cause issues
 
       // 1. First pass: Handle deletes
-      const deletions = plan.changes.filter((c) => c.type === 'delete');
+      const deletions = plan.changes.filter((c) => c.type === "delete");
       for (const change of deletions) {
         if (!change.featureId) continue;
 
@@ -83,19 +97,26 @@ export function createApplyHandler(settingsService?: SettingsService) {
           // Before deleting, update any features that depend on this one
           for (const feature of allFeatures) {
             if (feature.dependencies?.includes(change.featureId)) {
-              const newDeps = feature.dependencies.filter((d) => d !== change.featureId);
-              await featureLoader.update(projectPath, feature.id, { dependencies: newDeps });
+              const newDeps = feature.dependencies.filter(
+                (d) => d !== change.featureId,
+              );
+              await featureLoader.update(projectPath, feature.id, {
+                dependencies: newDeps,
+              });
               // Mutate the in-memory feature object so subsequent deletions use the updated
               // dependency list and don't reintroduce already-removed dependency IDs.
               feature.dependencies = newDeps;
               logger.info(
-                `[BacklogPlan] Removed dependency ${change.featureId} from ${feature.id}`
+                `[BacklogPlan] Removed dependency ${change.featureId} from ${feature.id}`,
               );
             }
           }
 
           // Now delete the feature
-          const deleted = await featureLoader.delete(projectPath, change.featureId);
+          const deleted = await featureLoader.delete(
+            projectPath,
+            change.featureId,
+          );
           if (deleted) {
             appliedChanges.push(`deleted:${change.featureId}`);
             featureMap.delete(change.featureId);
@@ -104,36 +125,43 @@ export function createApplyHandler(settingsService?: SettingsService) {
         } catch (error) {
           logger.error(
             `[BacklogPlan] Failed to delete ${change.featureId}:`,
-            getErrorMessage(error)
+            getErrorMessage(error),
           );
         }
       }
 
       // 2. Second pass: Handle adds
-      const additions = plan.changes.filter((c) => c.type === 'add');
+      const additions = plan.changes.filter((c) => c.type === "add");
       for (const change of additions) {
         if (!change.feature) continue;
 
         try {
-          const effectivePlanningMode = change.feature.planningMode ?? defaultPlanningMode;
+          const effectivePlanningMode =
+            change.feature.planningMode ?? defaultPlanningMode;
           const effectiveRequirePlanApproval =
-            effectivePlanningMode === 'skip' || effectivePlanningMode === 'lite'
+            effectivePlanningMode === "skip" || effectivePlanningMode === "lite"
               ? false
-              : (change.feature.requirePlanApproval ?? defaultRequirePlanApproval);
+              : (change.feature.requirePlanApproval ??
+                defaultRequirePlanApproval);
 
           // Create the new feature - use the AI-generated ID if provided
           const newFeature = await featureLoader.create(projectPath, {
             id: change.feature.id, // Use descriptive ID from AI if provided
             title: change.feature.title,
-            description: change.feature.description || '',
-            category: change.feature.category || 'Uncategorized',
+            description: change.feature.description || "",
+            category: change.feature.category || "Uncategorized",
             dependencies: change.feature.dependencies,
             priority: change.feature.priority,
-            status: 'backlog',
+            status: "backlog",
             model: change.feature.model ?? resolvedDefaultModel.model,
-            thinkingLevel: change.feature.thinkingLevel ?? resolvedDefaultModel.thinkingLevel,
-            reasoningEffort: change.feature.reasoningEffort ?? resolvedDefaultModel.reasoningEffort,
-            providerId: change.feature.providerId ?? resolvedDefaultModel.providerId,
+            thinkingLevel:
+              change.feature.thinkingLevel ??
+              resolvedDefaultModel.thinkingLevel,
+            reasoningEffort:
+              change.feature.reasoningEffort ??
+              resolvedDefaultModel.reasoningEffort,
+            providerId:
+              change.feature.providerId ?? resolvedDefaultModel.providerId,
             planningMode: effectivePlanningMode,
             requirePlanApproval: effectiveRequirePlanApproval,
             branchName,
@@ -141,26 +169,35 @@ export function createApplyHandler(settingsService?: SettingsService) {
 
           appliedChanges.push(`added:${newFeature.id}`);
           featureMap.set(newFeature.id, newFeature);
-          logger.info(`[BacklogPlan] Created feature ${newFeature.id}: ${newFeature.title}`);
+          logger.info(
+            `[BacklogPlan] Created feature ${newFeature.id}: ${newFeature.title}`,
+          );
         } catch (error) {
-          logger.error(`[BacklogPlan] Failed to add feature:`, getErrorMessage(error));
+          logger.error(
+            `[BacklogPlan] Failed to add feature:`,
+            getErrorMessage(error),
+          );
         }
       }
 
       // 3. Third pass: Handle updates
-      const updates = plan.changes.filter((c) => c.type === 'update');
+      const updates = plan.changes.filter((c) => c.type === "update");
       for (const change of updates) {
         if (!change.featureId || !change.feature) continue;
 
         try {
-          const updated = await featureLoader.update(projectPath, change.featureId, change.feature);
+          const updated = await featureLoader.update(
+            projectPath,
+            change.featureId,
+            change.feature,
+          );
           appliedChanges.push(`updated:${change.featureId}`);
           featureMap.set(change.featureId, updated);
           logger.info(`[BacklogPlan] Updated feature ${change.featureId}`);
         } catch (error) {
           logger.error(
             `[BacklogPlan] Failed to update ${change.featureId}:`,
-            getErrorMessage(error)
+            getErrorMessage(error),
           );
         }
       }
@@ -174,17 +211,23 @@ export function createApplyHandler(settingsService?: SettingsService) {
               const currentDeps = feature.dependencies || [];
               const newDeps = currentDeps
                 .filter((d) => !depUpdate.removedDependencies.includes(d))
-                .concat(depUpdate.addedDependencies.filter((d) => !currentDeps.includes(d)));
+                .concat(
+                  depUpdate.addedDependencies.filter(
+                    (d) => !currentDeps.includes(d),
+                  ),
+                );
 
               await featureLoader.update(projectPath, depUpdate.featureId, {
                 dependencies: newDeps,
               });
-              logger.info(`[BacklogPlan] Updated dependencies for ${depUpdate.featureId}`);
+              logger.info(
+                `[BacklogPlan] Updated dependencies for ${depUpdate.featureId}`,
+              );
             }
           } catch (error) {
             logger.error(
               `[BacklogPlan] Failed to update dependencies for ${depUpdate.featureId}:`,
-              getErrorMessage(error)
+              getErrorMessage(error),
             );
           }
         }
@@ -196,7 +239,7 @@ export function createApplyHandler(settingsService?: SettingsService) {
       } catch (error) {
         logger.warn(
           `[BacklogPlan] Failed to clear backlog plan after apply:`,
-          getErrorMessage(error)
+          getErrorMessage(error),
         );
         // Don't throw - operation succeeded, just cleanup failed
       }
@@ -206,7 +249,7 @@ export function createApplyHandler(settingsService?: SettingsService) {
         appliedChanges,
       });
     } catch (error) {
-      logError(error, 'Apply backlog plan failed');
+      logError(error, "Apply backlog plan failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

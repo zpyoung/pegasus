@@ -7,17 +7,17 @@
  * - Caching of detected editors for performance
  */
 
-import { execFile, spawn, type ChildProcess } from 'child_process';
-import { promisify } from 'util';
-import { homedir } from 'os';
-import { join } from 'path';
-import { access } from 'fs/promises';
-import type { EditorInfo } from '@pegasus/types';
+import { execFile, spawn, type ChildProcess } from "child_process";
+import { promisify } from "util";
+import { homedir } from "os";
+import { join } from "path";
+import { access } from "fs/promises";
+import type { EditorInfo } from "@pegasus/types";
 const execFileAsync = promisify(execFile);
 
 // Platform detection
-const isWindows = process.platform === 'win32';
-const isMac = process.platform === 'darwin';
+const isWindows = process.platform === "win32";
+const isMac = process.platform === "darwin";
 
 /**
  * Escape a string for safe use in shell commands
@@ -55,7 +55,7 @@ export function clearEditorCache(): void {
  */
 export async function commandExists(cmd: string): Promise<boolean> {
   try {
-    const whichCmd = isWindows ? 'where' : 'which';
+    const whichCmd = isWindows ? "where" : "which";
     await execFileAsync(whichCmd, [cmd]);
     return true;
   } catch {
@@ -71,7 +71,7 @@ async function findMacApp(appName: string): Promise<string | null> {
   if (!isMac) return null;
 
   // Check /Applications first
-  const systemAppPath = join('/Applications', `${appName}.app`);
+  const systemAppPath = join("/Applications", `${appName}.app`);
   try {
     await access(systemAppPath);
     return systemAppPath;
@@ -80,7 +80,7 @@ async function findMacApp(appName: string): Promise<string | null> {
   }
 
   // Check ~/Applications (used by JetBrains Toolbox and others)
-  const userAppPath = join(homedir(), 'Applications', `${appName}.app`);
+  const userAppPath = join(homedir(), "Applications", `${appName}.app`);
   try {
     await access(userAppPath);
     return userAppPath;
@@ -101,34 +101,39 @@ interface EditorDefinition {
   macOnly?: boolean;
 }
 
-const ANTIGRAVITY_CLI_COMMANDS = ['antigravity', 'agy'] as const;
-const [PRIMARY_ANTIGRAVITY_COMMAND, ...LEGACY_ANTIGRAVITY_COMMANDS] = ANTIGRAVITY_CLI_COMMANDS;
+const ANTIGRAVITY_CLI_COMMANDS = ["antigravity", "agy"] as const;
+const [PRIMARY_ANTIGRAVITY_COMMAND, ...LEGACY_ANTIGRAVITY_COMMANDS] =
+  ANTIGRAVITY_CLI_COMMANDS;
 
 /**
  * List of supported editors in priority order
  */
 const SUPPORTED_EDITORS: EditorDefinition[] = [
-  { name: 'Cursor', cliCommand: 'cursor', macAppName: 'Cursor' },
-  { name: 'VS Code', cliCommand: 'code', macAppName: 'Visual Studio Code' },
+  { name: "Cursor", cliCommand: "cursor", macAppName: "Cursor" },
+  { name: "VS Code", cliCommand: "code", macAppName: "Visual Studio Code" },
   {
-    name: 'VS Code Insiders',
-    cliCommand: 'code-insiders',
-    macAppName: 'Visual Studio Code - Insiders',
+    name: "VS Code Insiders",
+    cliCommand: "code-insiders",
+    macAppName: "Visual Studio Code - Insiders",
   },
-  { name: 'Kiro', cliCommand: 'kiro', macAppName: 'Kiro' },
-  { name: 'Zed', cliCommand: 'zed', macAppName: 'Zed' },
-  { name: 'Sublime Text', cliCommand: 'subl', macAppName: 'Sublime Text' },
-  { name: 'Windsurf', cliCommand: 'windsurf', macAppName: 'Windsurf' },
-  { name: 'Trae', cliCommand: 'trae', macAppName: 'Trae' },
-  { name: 'Rider', cliCommand: 'rider', macAppName: 'Rider' },
-  { name: 'WebStorm', cliCommand: 'webstorm', macAppName: 'WebStorm' },
-  { name: 'Xcode', cliCommand: 'xed', macAppName: 'Xcode', macOnly: true },
-  { name: 'Android Studio', cliCommand: 'studio', macAppName: 'Android Studio' },
+  { name: "Kiro", cliCommand: "kiro", macAppName: "Kiro" },
+  { name: "Zed", cliCommand: "zed", macAppName: "Zed" },
+  { name: "Sublime Text", cliCommand: "subl", macAppName: "Sublime Text" },
+  { name: "Windsurf", cliCommand: "windsurf", macAppName: "Windsurf" },
+  { name: "Trae", cliCommand: "trae", macAppName: "Trae" },
+  { name: "Rider", cliCommand: "rider", macAppName: "Rider" },
+  { name: "WebStorm", cliCommand: "webstorm", macAppName: "WebStorm" },
+  { name: "Xcode", cliCommand: "xed", macAppName: "Xcode", macOnly: true },
   {
-    name: 'Antigravity',
+    name: "Android Studio",
+    cliCommand: "studio",
+    macAppName: "Android Studio",
+  },
+  {
+    name: "Antigravity",
     cliCommand: PRIMARY_ANTIGRAVITY_COMMAND,
     cliAliases: LEGACY_ANTIGRAVITY_COMMANDS,
-    macAppName: 'Antigravity',
+    macAppName: "Antigravity",
   },
 ];
 
@@ -141,24 +146,24 @@ async function isXcodeFullyInstalled(): Promise<boolean> {
 
   try {
     // Check if xcode-select points to full Xcode, not just CommandLineTools
-    const { stdout } = await execFileAsync('xcode-select', ['-p']);
+    const { stdout } = await execFileAsync("xcode-select", ["-p"]);
     const devPath = stdout.trim();
 
     // Full Xcode path: /Applications/Xcode.app/Contents/Developer
     // Command Line Tools: /Library/Developer/CommandLineTools
-    const isPointingToXcode = devPath.includes('Xcode.app');
+    const isPointingToXcode = devPath.includes("Xcode.app");
 
-    if (!isPointingToXcode && devPath.includes('CommandLineTools')) {
+    if (!isPointingToXcode && devPath.includes("CommandLineTools")) {
       // Check if xed command exists (indicates CLT are installed)
-      const xedExists = await commandExists('xed');
+      const xedExists = await commandExists("xed");
 
       // Check if Xcode.app actually exists
-      const xcodeAppPath = await findMacApp('Xcode');
+      const xcodeAppPath = await findMacApp("Xcode");
 
       if (xedExists && xcodeAppPath) {
         console.warn(
-          'Xcode is installed but xcode-select is pointing to Command Line Tools. ' +
-            'To use Xcode as an editor, run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer'
+          "Xcode is installed but xcode-select is pointing to Command Line Tools. " +
+            "To use Xcode as an editor, run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer",
         );
       }
     }
@@ -173,21 +178,26 @@ async function isXcodeFullyInstalled(): Promise<boolean> {
  * Try to find an editor - checks CLI first, then macOS app bundle
  * Returns EditorInfo if found, null otherwise
  */
-async function findEditor(definition: EditorDefinition): Promise<EditorInfo | null> {
+async function findEditor(
+  definition: EditorDefinition,
+): Promise<EditorInfo | null> {
   // Skip macOS-only editors on other platforms
   if (definition.macOnly && !isMac) {
     return null;
   }
 
   // Special handling for Xcode: verify full installation, not just xed command
-  if (definition.name === 'Xcode') {
+  if (definition.name === "Xcode") {
     if (!(await isXcodeFullyInstalled())) {
       return null;
     }
   }
 
   // Try CLI command first (works on all platforms)
-  const cliCandidates = [definition.cliCommand, ...(definition.cliAliases ?? [])];
+  const cliCandidates = [
+    definition.cliCommand,
+    ...(definition.cliAliases ?? []),
+  ];
   for (const cliCommand of cliCandidates) {
     if (await commandExists(cliCommand)) {
       return { name: definition.name, command: cliCommand };
@@ -211,11 +221,11 @@ async function findEditor(definition: EditorDefinition): Promise<EditorInfo | nu
  */
 function getFileManagerInfo(): EditorInfo {
   if (isMac) {
-    return { name: 'Finder', command: 'open' };
+    return { name: "Finder", command: "open" };
   } else if (isWindows) {
-    return { name: 'Explorer', command: 'explorer' };
+    return { name: "Explorer", command: "explorer" };
   } else {
-    return { name: 'File Manager', command: 'xdg-open' };
+    return { name: "File Manager", command: "xdg-open" };
   }
 }
 
@@ -260,7 +270,9 @@ export async function detectDefaultEditor(): Promise<EditorInfo> {
  * Find a specific editor by command
  * Returns the editor info if available, null otherwise
  */
-export async function findEditorByCommand(command: string): Promise<EditorInfo | null> {
+export async function findEditorByCommand(
+  command: string,
+): Promise<EditorInfo | null> {
   const editors = await detectAllEditors();
   return editors.find((e) => e.command === command) ?? null;
 }
@@ -279,7 +291,7 @@ export async function findEditorByCommand(command: string): Promise<EditorInfo |
  */
 export async function openInEditor(
   targetPath: string,
-  editorCommand?: string
+  editorCommand?: string,
 ): Promise<{ editorName: string }> {
   // Determine which editor to use
   let editor: EditorInfo;
@@ -306,11 +318,14 @@ export async function openInEditor(
  * Execute an editor command with a path argument
  * Handles platform-specific differences in command execution
  */
-async function executeEditorCommand(command: string, targetPath: string): Promise<void> {
+async function executeEditorCommand(
+  command: string,
+  targetPath: string,
+): Promise<void> {
   // Handle 'open -a "AppPath"' style commands (macOS app bundles)
-  if (command.startsWith('open -a ')) {
-    const appPath = command.replace('open -a ', '').replace(/"/g, '');
-    await execFileAsync('open', ['-a', appPath, targetPath]);
+  if (command.startsWith("open -a ")) {
+    const appPath = command.replace("open -a ", "").replace(/"/g, "");
+    await execFileAsync("open", ["-a", appPath, targetPath]);
     return;
   }
 
@@ -320,14 +335,14 @@ async function executeEditorCommand(command: string, targetPath: string): Promis
     return new Promise((resolve, reject) => {
       const child: ChildProcess = spawn(command, [targetPath], {
         shell: true,
-        stdio: 'ignore',
+        stdio: "ignore",
         detached: true,
       });
 
       // Unref to allow the parent process to exit independently
       child.unref();
 
-      child.on('error', (err) => {
+      child.on("error", (err) => {
         reject(err);
       });
 
@@ -345,7 +360,9 @@ async function executeEditorCommand(command: string, targetPath: string): Promis
  * Open a path in the platform's default file manager
  * Always available as a fallback option
  */
-export async function openInFileManager(targetPath: string): Promise<{ editorName: string }> {
+export async function openInFileManager(
+  targetPath: string,
+): Promise<{ editorName: string }> {
   const fileManager = getFileManagerInfo();
   await execFileAsync(fileManager.command, [targetPath]);
   return { editorName: fileManager.name };
@@ -362,7 +379,9 @@ export async function openInFileManager(targetPath: string): Promise<{ editorNam
  * @param targetPath - The directory path to open the terminal in
  * @returns Promise that resolves with terminal info when launched, rejects on error
  */
-export async function openInTerminal(targetPath: string): Promise<{ terminalName: string }> {
+export async function openInTerminal(
+  targetPath: string,
+): Promise<{ terminalName: string }> {
   if (isMac) {
     // Use AppleScript to open Terminal.app in the specified directory
     const script = `
@@ -371,69 +390,69 @@ export async function openInTerminal(targetPath: string): Promise<{ terminalName
         activate
       end tell
     `;
-    await execFileAsync('osascript', ['-e', script]);
-    return { terminalName: 'Terminal' };
+    await execFileAsync("osascript", ["-e", script]);
+    return { terminalName: "Terminal" };
   } else if (isWindows) {
     // Try Windows Terminal first - check if it exists before trying to spawn
-    const hasWindowsTerminal = await commandExists('wt');
+    const hasWindowsTerminal = await commandExists("wt");
     if (hasWindowsTerminal) {
       return await new Promise((resolve, reject) => {
-        const child: ChildProcess = spawn('wt', ['-d', targetPath], {
+        const child: ChildProcess = spawn("wt", ["-d", targetPath], {
           shell: true,
-          stdio: 'ignore',
+          stdio: "ignore",
           detached: true,
         });
         child.unref();
 
-        child.on('error', (err) => {
+        child.on("error", (err) => {
           reject(err);
         });
 
-        setTimeout(() => resolve({ terminalName: 'Windows Terminal' }), 100);
+        setTimeout(() => resolve({ terminalName: "Windows Terminal" }), 100);
       });
     }
     // Fall back to cmd
     return await new Promise((resolve, reject) => {
       const child: ChildProcess = spawn(
-        'cmd',
-        ['/c', 'start', 'cmd', '/k', `cd /d "${targetPath}"`],
+        "cmd",
+        ["/c", "start", "cmd", "/k", `cd /d "${targetPath}"`],
         {
           shell: true,
-          stdio: 'ignore',
+          stdio: "ignore",
           detached: true,
-        }
+        },
       );
       child.unref();
 
-      child.on('error', (err) => {
+      child.on("error", (err) => {
         reject(err);
       });
 
-      setTimeout(() => resolve({ terminalName: 'Command Prompt' }), 100);
+      setTimeout(() => resolve({ terminalName: "Command Prompt" }), 100);
     });
   } else {
     // Linux: Try common terminal emulators in order
     const terminals = [
       {
-        name: 'GNOME Terminal',
-        command: 'gnome-terminal',
-        args: ['--working-directory', targetPath],
+        name: "GNOME Terminal",
+        command: "gnome-terminal",
+        args: ["--working-directory", targetPath],
       },
-      { name: 'Konsole', command: 'konsole', args: ['--workdir', targetPath] },
+      { name: "Konsole", command: "konsole", args: ["--workdir", targetPath] },
       {
-        name: 'xfce4-terminal',
-        command: 'xfce4-terminal',
-        args: ['--working-directory', targetPath],
-      },
-      {
-        name: 'xterm',
-        command: 'xterm',
-        args: ['-e', 'sh', '-c', `cd ${escapeShellArg(targetPath)} && $SHELL`],
+        name: "xfce4-terminal",
+        command: "xfce4-terminal",
+        args: ["--working-directory", targetPath],
       },
       {
-        name: 'x-terminal-emulator',
-        command: 'x-terminal-emulator',
-        args: ['--working-directory', targetPath],
+        name: "xterm",
+        command: "xterm",
+        args: ["-e", "sh", "-c", `cd ${escapeShellArg(targetPath)} && $SHELL`],
+      },
+      {
+        name: "x-terminal-emulator",
+        command: "x-terminal-emulator",
+        args: ["--working-directory", targetPath],
       },
     ];
 
@@ -444,6 +463,6 @@ export async function openInTerminal(targetPath: string): Promise<{ terminalName
       }
     }
 
-    throw new Error('No terminal emulator found');
+    throw new Error("No terminal emulator found");
   }
 }

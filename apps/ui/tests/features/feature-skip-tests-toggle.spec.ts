@@ -7,9 +7,9 @@
  * toggle anything. We just verify the badge appears by default.
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -21,11 +21,11 @@ import {
   isSkipTestsBadgeVisible,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
-const TEST_TEMP_DIR = createTempDirPath('skip-tests-toggle-test');
+const TEST_TEMP_DIR = createTempDirPath("skip-tests-toggle-test");
 
-test.describe('Feature Skip Tests Badge', () => {
+test.describe("Feature Skip Tests Badge", () => {
   let projectPath: string;
   const projectName = `test-project-${Date.now()}`;
 
@@ -38,23 +38,23 @@ test.describe('Feature Skip Tests Badge', () => {
     fs.mkdirSync(projectPath, { recursive: true });
 
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: [] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: [] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for e2e testing.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for e2e testing.`,
     );
   });
 
@@ -62,19 +62,27 @@ test.describe('Feature Skip Tests Badge', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should show skip tests badge for new feature with default settings', async ({ page }) => {
+  test("should show skip tests badge for new feature with default settings", async ({
+    page,
+  }) => {
     const featureDescription = `Skip tests feature ${Date.now()}`;
 
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
 
     await authenticateForTests(page);
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
 
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('[data-testid="kanban-column-backlog"]')).toBeVisible({
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(
+      page.locator('[data-testid="kanban-column-backlog"]'),
+    ).toBeVisible({
       timeout: 5000,
     });
 
@@ -86,10 +94,14 @@ test.describe('Feature Skip Tests Badge', () => {
 
     // Wait for the feature to appear in the backlog
     await expect(async () => {
-      const backlogColumn = page.locator('[data-testid="kanban-column-backlog"]');
-      const featureCard = backlogColumn.locator('[data-testid^="kanban-card-"]').filter({
-        hasText: featureDescription,
-      });
+      const backlogColumn = page.locator(
+        '[data-testid="kanban-column-backlog"]',
+      );
+      const featureCard = backlogColumn
+        .locator('[data-testid^="kanban-card-"]')
+        .filter({
+          hasText: featureDescription,
+        });
       expect(await featureCard.count()).toBeGreaterThan(0);
     }).toPass({ timeout: 10000 });
 
@@ -99,8 +111,8 @@ test.describe('Feature Skip Tests Badge', () => {
       .locator('[data-testid^="kanban-card-"]')
       .filter({ hasText: featureDescription })
       .first();
-    const cardTestId = await featureCard.getAttribute('data-testid');
-    const featureId = cardTestId?.replace('kanban-card-', '');
+    const cardTestId = await featureCard.getAttribute("data-testid");
+    const featureId = cardTestId?.replace("kanban-card-", "");
 
     // Verify the skip tests badge is visible on the card (should be there by default)
     expect(featureId).toBeDefined();

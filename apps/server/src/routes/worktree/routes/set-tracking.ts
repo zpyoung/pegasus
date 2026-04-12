@@ -7,10 +7,10 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { execGitCommand } from '@pegasus/git-utils';
-import { getErrorMessage, logError } from '../common.js';
-import { getCurrentBranch } from '../../../lib/git.js';
+import type { Request, Response } from "express";
+import { execGitCommand } from "@pegasus/git-utils";
+import { getErrorMessage, logError } from "../common.js";
+import { getCurrentBranch } from "../../../lib/git.js";
 
 export function createSetTrackingHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -22,12 +22,14 @@ export function createSetTrackingHandler() {
       };
 
       if (!worktreePath) {
-        res.status(400).json({ success: false, error: 'worktreePath required' });
+        res
+          .status(400)
+          .json({ success: false, error: "worktreePath required" });
         return;
       }
 
       if (!remote) {
-        res.status(400).json({ success: false, error: 'remote required' });
+        res.status(400).json({ success: false, error: "remote required" });
         return;
       }
 
@@ -44,10 +46,10 @@ export function createSetTrackingHandler() {
           return;
         }
 
-        if (targetBranch === 'HEAD') {
+        if (targetBranch === "HEAD") {
           res.status(400).json({
             success: false,
-            error: 'Cannot set tracking in detached HEAD state.',
+            error: "Cannot set tracking in detached HEAD state.",
           });
           return;
         }
@@ -55,8 +57,13 @@ export function createSetTrackingHandler() {
 
       // Set upstream tracking (pass local branch name as final arg to be explicit)
       await execGitCommand(
-        ['branch', '--set-upstream-to', `${remote}/${targetBranch}`, targetBranch],
-        worktreePath
+        [
+          "branch",
+          "--set-upstream-to",
+          `${remote}/${targetBranch}`,
+          targetBranch,
+        ],
+        worktreePath,
       );
 
       res.json({
@@ -69,7 +76,7 @@ export function createSetTrackingHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Set tracking branch failed');
+      logError(error, "Set tracking branch failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

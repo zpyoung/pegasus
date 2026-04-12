@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, Trash2, Undo2 } from 'lucide-react';
+import { useState } from "react";
+import { X, Trash2, Undo2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import type { TrashedProject } from '@/lib/electron';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { TrashedProject } from "@/lib/electron";
 
 interface TrashDialogProps {
   open: boolean;
@@ -37,7 +37,8 @@ export function TrashDialog({
   isEmptyingTrash,
 }: TrashDialogProps) {
   // Confirmation dialog state (managed internally to avoid prop drilling)
-  const [deleteFromDiskProject, setDeleteFromDiskProject] = useState<TrashedProject | null>(null);
+  const [deleteFromDiskProject, setDeleteFromDiskProject] =
+    useState<TrashedProject | null>(null);
   const [showEmptyTrashConfirm, setShowEmptyTrashConfirm] = useState(false);
 
   // Reset confirmation dialog state when main dialog closes
@@ -76,12 +77,15 @@ export function TrashDialog({
           <DialogHeader>
             <DialogTitle>Recycle Bin</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Restore projects to the sidebar or delete their folders using your system Trash.
+              Restore projects to the sidebar or delete their folders using your
+              system Trash.
             </DialogDescription>
           </DialogHeader>
 
           {trashedProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Recycle bin is empty.</p>
+            <p className="text-sm text-muted-foreground">
+              Recycle bin is empty.
+            </p>
           ) : (
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
               {trashedProjects.map((project) => (
@@ -90,8 +94,12 @@ export function TrashDialog({
                   className="flex items-start justify-between gap-3 rounded-lg border border-border bg-card/50 p-4"
                 >
                   <div className="space-y-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{project.name}</p>
-                    <p className="text-xs text-muted-foreground break-all">{project.path}</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {project.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground break-all">
+                      {project.path}
+                    </p>
                     <p className="text-[11px] text-muted-foreground/80">
                       Trashed {new Date(project.trashedAt).toLocaleString()}
                     </p>
@@ -114,7 +122,9 @@ export function TrashDialog({
                       data-testid={`delete-project-disk-${project.id}`}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                      {activeTrashId === project.id ? 'Deleting...' : 'Delete from disk'}
+                      {activeTrashId === project.id
+                        ? "Deleting..."
+                        : "Delete from disk"}
                     </Button>
                     <Button
                       size="sm"
@@ -143,7 +153,7 @@ export function TrashDialog({
                 disabled={isEmptyingTrash}
                 data-testid="empty-trash"
               >
-                {isEmptyingTrash ? 'Clearing...' : 'Empty Recycle Bin'}
+                {isEmptyingTrash ? "Clearing..." : "Empty Recycle Bin"}
               </Button>
             )}
           </DialogFooter>

@@ -3,14 +3,14 @@
  * These tests verify the responsive detection behavior for terminal shortcuts bar
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 import {
   useMediaQuery,
   useIsMobile,
   useIsTablet,
   useIsCompact,
-} from '../../../src/hooks/use-media-query.ts';
+} from "../../../src/hooks/use-media-query.ts";
 
 /**
  * Creates a mock matchMedia implementation for testing
@@ -41,13 +41,17 @@ function createTrackingMatchMediaMock() {
       onchange: null,
       addListener: vi.fn(),
       removeListener: vi.fn(),
-      addEventListener: vi.fn((_event: string, listener: (e: MediaQueryListEvent) => void) => {
-        listeners.push(listener);
-      }),
-      removeEventListener: vi.fn((_event: string, listener: (e: MediaQueryListEvent) => void) => {
-        const index = listeners.indexOf(listener);
-        if (index > -1) listeners.splice(index, 1);
-      }),
+      addEventListener: vi.fn(
+        (_event: string, listener: (e: MediaQueryListEvent) => void) => {
+          listeners.push(listener);
+        },
+      ),
+      removeEventListener: vi.fn(
+        (_event: string, listener: (e: MediaQueryListEvent) => void) => {
+          const index = listeners.indexOf(listener);
+          if (index > -1) listeners.splice(index, 1);
+        },
+      ),
       dispatchEvent: vi.fn(),
     })),
     listeners,
@@ -71,7 +75,7 @@ function createMultiQueryMatchMediaMock(queries: string[] = []) {
   }));
 }
 
-describe('useMediaQuery', () => {
+describe("useMediaQuery", () => {
   let mockData: ReturnType<typeof createTrackingMatchMediaMock>;
 
   beforeEach(() => {
@@ -83,20 +87,20 @@ describe('useMediaQuery', () => {
     vi.clearAllMocks();
   });
 
-  it('should return false by default', () => {
-    const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
+  it("should return false by default", () => {
+    const { result } = renderHook(() => useMediaQuery("(max-width: 768px)"));
     expect(result.current).toBe(false);
   });
 
-  it('should return true when media query matches', () => {
-    window.matchMedia = createMatchMediaMock('(max-width: 768px)');
+  it("should return true when media query matches", () => {
+    window.matchMedia = createMatchMediaMock("(max-width: 768px)");
 
-    const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
+    const { result } = renderHook(() => useMediaQuery("(max-width: 768px)"));
     expect(result.current).toBe(true);
   });
 
-  it('should update when media query changes', () => {
-    const { result } = renderHook(() => useMediaQuery('(max-width: 768px)'));
+  it("should update when media query changes", () => {
+    const { result } = renderHook(() => useMediaQuery("(max-width: 768px)"));
 
     // Initial state is false
     expect(result.current).toBe(false);
@@ -105,15 +109,18 @@ describe('useMediaQuery', () => {
     act(() => {
       const listener = mockData.listeners[0];
       if (listener) {
-        listener({ matches: true, media: '(max-width: 768px)' } as MediaQueryListEvent);
+        listener({
+          matches: true,
+          media: "(max-width: 768px)",
+        } as MediaQueryListEvent);
       }
     });
 
     expect(result.current).toBe(true);
   });
 
-  it('should cleanup event listener on unmount', () => {
-    const { unmount } = renderHook(() => useMediaQuery('(max-width: 768px)'));
+  it("should cleanup event listener on unmount", () => {
+    const { unmount } = renderHook(() => useMediaQuery("(max-width: 768px)"));
 
     expect(mockData.listeners.length).toBe(1);
 
@@ -123,19 +130,19 @@ describe('useMediaQuery', () => {
   });
 });
 
-describe('useIsMobile', () => {
+describe("useIsMobile", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should return true when viewport is <= 768px', () => {
-    window.matchMedia = createMatchMediaMock('(max-width: 768px)');
+  it("should return true when viewport is <= 768px", () => {
+    window.matchMedia = createMatchMediaMock("(max-width: 768px)");
 
     const { result } = renderHook(() => useIsMobile());
     expect(result.current).toBe(true);
   });
 
-  it('should return false when viewport is > 768px', () => {
+  it("should return false when viewport is > 768px", () => {
     window.matchMedia = createMatchMediaMock(null);
 
     const { result } = renderHook(() => useIsMobile());
@@ -143,19 +150,19 @@ describe('useIsMobile', () => {
   });
 });
 
-describe('useIsTablet', () => {
+describe("useIsTablet", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should return true when viewport is <= 1024px (tablet or smaller)', () => {
-    window.matchMedia = createMatchMediaMock('(max-width: 1024px)');
+  it("should return true when viewport is <= 1024px (tablet or smaller)", () => {
+    window.matchMedia = createMatchMediaMock("(max-width: 1024px)");
 
     const { result } = renderHook(() => useIsTablet());
     expect(result.current).toBe(true);
   });
 
-  it('should return false when viewport is > 1024px (desktop)', () => {
+  it("should return false when viewport is > 1024px (desktop)", () => {
     window.matchMedia = createMatchMediaMock(null);
 
     const { result } = renderHook(() => useIsTablet());
@@ -163,19 +170,19 @@ describe('useIsTablet', () => {
   });
 });
 
-describe('useIsCompact', () => {
+describe("useIsCompact", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should return true when viewport is <= 1240px', () => {
-    window.matchMedia = createMatchMediaMock('(max-width: 1240px)');
+  it("should return true when viewport is <= 1240px", () => {
+    window.matchMedia = createMatchMediaMock("(max-width: 1240px)");
 
     const { result } = renderHook(() => useIsCompact());
     expect(result.current).toBe(true);
   });
 
-  it('should return false when viewport is > 1240px', () => {
+  it("should return false when viewport is > 1240px", () => {
     window.matchMedia = createMatchMediaMock(null);
 
     const { result } = renderHook(() => useIsCompact());
@@ -183,18 +190,18 @@ describe('useIsCompact', () => {
   });
 });
 
-describe('Responsive Viewport Combinations', () => {
+describe("Responsive Viewport Combinations", () => {
   // Test the logic that TerminalPanel uses: showShortcutsBar = isMobile || isTablet
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should show shortcuts bar on mobile viewport (< 768px)', () => {
+  it("should show shortcuts bar on mobile viewport (< 768px)", () => {
     // Mobile: matches both mobile and tablet queries (since 768px < 1024px)
     window.matchMedia = createMultiQueryMatchMediaMock([
-      '(max-width: 768px)',
-      '(max-width: 1024px)',
+      "(max-width: 768px)",
+      "(max-width: 1024px)",
     ]);
 
     const { result: mobileResult } = renderHook(() => useIsMobile());
@@ -208,9 +215,9 @@ describe('Responsive Viewport Combinations', () => {
     expect(mobileResult.current || tabletResult.current).toBe(true);
   });
 
-  it('should show shortcuts bar on tablet viewport (768px - 1024px)', () => {
+  it("should show shortcuts bar on tablet viewport (768px - 1024px)", () => {
     // Tablet: matches tablet query but not mobile (viewport > 768px but <= 1024px)
-    window.matchMedia = createMultiQueryMatchMediaMock(['(max-width: 1024px)']);
+    window.matchMedia = createMultiQueryMatchMediaMock(["(max-width: 1024px)"]);
 
     const { result: mobileResult } = renderHook(() => useIsMobile());
     const { result: tabletResult } = renderHook(() => useIsTablet());
@@ -223,7 +230,7 @@ describe('Responsive Viewport Combinations', () => {
     expect(mobileResult.current || tabletResult.current).toBe(true);
   });
 
-  it('should hide shortcuts bar on desktop viewport (> 1024px)', () => {
+  it("should hide shortcuts bar on desktop viewport (> 1024px)", () => {
     // Desktop: matches neither mobile nor tablet
     window.matchMedia = createMultiQueryMatchMediaMock([]);
 

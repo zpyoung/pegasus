@@ -10,8 +10,10 @@ export interface WorktreeSelection {
 /**
  * Check whether an unknown value is a valid worktree selection.
  */
-export function isValidWorktreeSelection(value: unknown): value is WorktreeSelection {
-  if (typeof value !== 'object' || value === null) {
+export function isValidWorktreeSelection(
+  value: unknown,
+): value is WorktreeSelection {
+  if (typeof value !== "object" || value === null) {
     return false;
   }
 
@@ -19,7 +21,7 @@ export function isValidWorktreeSelection(value: unknown): value is WorktreeSelec
   const branch = entry.branch;
   const path = entry.path;
 
-  if (typeof branch !== 'string' || branch.trim().length === 0) {
+  if (typeof branch !== "string" || branch.trim().length === 0) {
     return false;
   }
 
@@ -27,7 +29,7 @@ export function isValidWorktreeSelection(value: unknown): value is WorktreeSelec
     return true;
   }
 
-  return typeof path === 'string' && path.trim().length > 0;
+  return typeof path === "string" && path.trim().length > 0;
 }
 
 /**
@@ -41,7 +43,7 @@ export function isValidWorktreeSelection(value: unknown): value is WorktreeSelec
  * path or branch).
  */
 export function sanitizeWorktreeByProject(
-  raw: Record<string, unknown> | undefined
+  raw: Record<string, unknown> | undefined,
 ): Record<string, WorktreeSelection> {
   if (!raw) return {};
   const sanitized: Record<string, WorktreeSelection> = {};

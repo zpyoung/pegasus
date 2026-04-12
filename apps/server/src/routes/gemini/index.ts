@@ -1,31 +1,31 @@
-import { Router, Request, Response } from 'express';
-import { GeminiProvider } from '../../providers/gemini-provider.js';
-import { GeminiUsageService } from '../../services/gemini-usage-service.js';
-import { createLogger } from '@pegasus/utils';
-import type { EventEmitter } from '../../lib/events.js';
+import { Router, Request, Response } from "express";
+import { GeminiProvider } from "../../providers/gemini-provider.js";
+import { GeminiUsageService } from "../../services/gemini-usage-service.js";
+import { createLogger } from "@pegasus/utils";
+import type { EventEmitter } from "../../lib/events.js";
 
-const logger = createLogger('Gemini');
+const logger = createLogger("Gemini");
 
 export function createGeminiRoutes(
   usageService: GeminiUsageService,
-  _events: EventEmitter
+  _events: EventEmitter,
 ): Router {
   const router = Router();
 
   // Get current usage/quota data from Google Cloud API
-  router.get('/usage', async (_req: Request, res: Response) => {
+  router.get("/usage", async (_req: Request, res: Response) => {
     try {
       const usageData = await usageService.fetchUsageData();
 
       res.json(usageData);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Error fetching Gemini usage:', error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      logger.error("Error fetching Gemini usage:", error);
 
       // Return error in a format the UI expects
       res.status(200).json({
         authenticated: false,
-        authMethod: 'none',
+        authMethod: "none",
         usedPercent: 0,
         remainingPercent: 100,
         lastUpdated: new Date().toISOString(),
@@ -35,7 +35,7 @@ export function createGeminiRoutes(
   });
 
   // Check if Gemini is available
-  router.get('/status', async (_req: Request, res: Response) => {
+  router.get("/status", async (_req: Request, res: Response) => {
     try {
       const provider = new GeminiProvider();
       const status = await provider.detectInstallation();
@@ -43,9 +43,9 @@ export function createGeminiRoutes(
       // Derive authMethod from typed InstallationStatus fields
       const authMethod = status.authenticated
         ? status.hasApiKey
-          ? 'api_key'
-          : 'cli_login'
-        : 'none';
+          ? "api_key"
+          : "cli_login"
+        : "none";
 
       res.json({
         success: true,
@@ -57,7 +57,7 @@ export function createGeminiRoutes(
         hasCredentialsFile: false,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
+      const message = error instanceof Error ? error.message : "Unknown error";
       res.status(500).json({ success: false, error: message });
     }
   });

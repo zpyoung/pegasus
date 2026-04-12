@@ -1,18 +1,24 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
-import { useSetupStore } from '@/store/setup-store';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
+} from "@/components/ui/accordion";
+import { useSetupStore } from "@/store/setup-store";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
 import {
   ArrowRight,
   ArrowLeft,
@@ -27,10 +33,10 @@ import {
   AlertTriangle,
   Terminal,
   AlertCircle,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   AnthropicIcon,
   CursorIcon,
@@ -38,16 +44,22 @@ import {
   OpenCodeIcon,
   GeminiIcon,
   CopilotIcon,
-} from '@/components/ui/provider-icon';
-import { TerminalOutput } from '../components';
-import { useCliInstallation, useTokenSave } from '../hooks';
+} from "@/components/ui/provider-icon";
+import { TerminalOutput } from "../components";
+import { useCliInstallation, useTokenSave } from "../hooks";
 
 interface ProvidersSetupStepProps {
   onNext: () => void;
   onBack: () => void;
 }
 
-type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+type ProviderTab =
+  | "claude"
+  | "cursor"
+  | "codex"
+  | "opencode"
+  | "gemini"
+  | "copilot";
 
 // ============================================================================
 // Claude Content
@@ -63,18 +75,23 @@ function ClaudeContent() {
   } = useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
 
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null,
+  );
   const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
   const hasVerifiedRef = useRef(false);
 
   const installApi = useCallback(
     () => getElectronAPI().setup?.installClaude() || Promise.reject(),
-    []
+    [],
   );
-  const getStoreState = useCallback(() => useSetupStore.getState().claudeCliStatus, []);
+  const getStoreState = useCallback(
+    () => useSetupStore.getState().claudeCliStatus,
+    [],
+  );
 
   // Auto-verify CLI authentication
   const verifyAuth = useCallback(async () => {
@@ -91,10 +108,10 @@ function ClaudeContent() {
       if (!api.setup?.verifyClaudeAuth) {
         return;
       }
-      const result = await api.setup.verifyClaudeAuth('cli');
+      const result = await api.setup.verifyClaudeAuth("cli");
       const hasLimitReachedError =
-        result.error?.toLowerCase().includes('limit reached') ||
-        result.error?.toLowerCase().includes('rate limit');
+        result.error?.toLowerCase().includes("limit reached") ||
+        result.error?.toLowerCase().includes("rate limit");
 
       if (result.authenticated && !hasLimitReachedError) {
         hasVerifiedRef.current = true;
@@ -102,17 +119,18 @@ function ClaudeContent() {
         const currentAuthStatus = useSetupStore.getState().claudeAuthStatus;
         setClaudeAuthStatus({
           authenticated: true,
-          method: 'cli_authenticated',
+          method: "cli_authenticated",
           hasCredentialsFile: currentAuthStatus?.hasCredentialsFile || false,
         });
-        toast.success('Claude CLI authenticated!');
+        toast.success("Claude CLI authenticated!");
       } else if (hasLimitReachedError) {
-        setVerificationError('Rate limit reached. Please try again later.');
+        setVerificationError("Rate limit reached. Please try again later.");
       } else if (result.error) {
         setVerificationError(result.error);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+      const errorMessage =
+        error instanceof Error ? error.message : "Verification failed";
       setVerificationError(errorMessage);
     } finally {
       setIsVerifying(false);
@@ -135,11 +153,11 @@ function ClaudeContent() {
           installed: result.installed ?? false,
           version: result.version ?? null,
           path: result.path ?? null,
-          method: 'none',
+          method: "none",
         });
 
         if (result.installed) {
-          toast.success('Claude CLI installed!');
+          toast.success("Claude CLI installed!");
           // Auto-verify if CLI is installed
           setIsChecking(false);
           await verifyAuth();
@@ -159,52 +177,54 @@ function ClaudeContent() {
   }, [checkStatus]);
 
   const { isInstalling, installProgress, install } = useCliInstallation({
-    cliType: 'claude',
+    cliType: "claude",
     installApi,
     onProgressEvent: getElectronAPI().setup?.onInstallProgress,
     onSuccess: onInstallSuccess,
     getStoreState,
   });
 
-  const { isSaving: isSavingApiKey, saveToken: saveApiKeyToken } = useTokenSave({
-    provider: 'anthropic',
-    onSuccess: () => {
-      setClaudeAuthStatus({
-        authenticated: true,
-        method: 'api_key',
-        hasCredentialsFile: false,
-        apiKeyValid: true,
-      });
-      setApiKeys({ ...apiKeys, anthropic: apiKey });
-      toast.success('API key saved successfully!');
+  const { isSaving: isSavingApiKey, saveToken: saveApiKeyToken } = useTokenSave(
+    {
+      provider: "anthropic",
+      onSuccess: () => {
+        setClaudeAuthStatus({
+          authenticated: true,
+          method: "api_key",
+          hasCredentialsFile: false,
+          apiKeyValid: true,
+        });
+        setApiKeys({ ...apiKeys, anthropic: apiKey });
+        toast.success("API key saved successfully!");
+      },
     },
-  });
+  );
 
   const deleteApiKey = useCallback(async () => {
     setIsDeletingApiKey(true);
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error("Delete API not available");
         return;
       }
-      const result = await api.setup.deleteApiKey('anthropic');
+      const result = await api.setup.deleteApiKey("anthropic");
       if (result.success) {
-        setApiKey('');
-        setApiKeys({ ...apiKeys, anthropic: '' });
+        setApiKey("");
+        setApiKeys({ ...apiKeys, anthropic: "" });
         // Use getState() to avoid dependency on claudeAuthStatus
         const currentAuthStatus = useSetupStore.getState().claudeAuthStatus;
         setClaudeAuthStatus({
           authenticated: false,
-          method: 'none',
+          method: "none",
           hasCredentialsFile: currentAuthStatus?.hasCredentialsFile || false,
         });
         // Reset verification guard so next check can verify again
         hasVerifiedRef.current = false;
-        toast.success('API key deleted successfully');
+        toast.success("API key deleted successfully");
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error("Failed to delete API key");
     } finally {
       setIsDeletingApiKey(false);
     }
@@ -220,15 +240,15 @@ function ClaudeContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const hasApiKey =
     !!apiKeys.anthropic ||
-    claudeAuthStatus?.method === 'api_key' ||
-    claudeAuthStatus?.method === 'api_key_env';
+    claudeAuthStatus?.method === "api_key" ||
+    claudeAuthStatus?.method === "api_key_env";
 
-  const isCliAuthenticated = claudeAuthStatus?.method === 'cli_authenticated';
+  const isCliAuthenticated = claudeAuthStatus?.method === "cli_authenticated";
   const isReady = claudeCliStatus?.installed && claudeAuthStatus?.authenticated;
 
   return (
@@ -245,17 +265,21 @@ function ClaudeContent() {
             onClick={checkStatus}
             disabled={isChecking || isVerifying}
           >
-            {isChecking || isVerifying ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+            {isChecking || isVerifying ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {claudeCliStatus?.installed
             ? claudeAuthStatus?.authenticated
-              ? `Authenticated${claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : ''}`
+              ? `Authenticated${claudeCliStatus.version ? ` (v${claudeCliStatus.version})` : ""}`
               : isVerifying
-                ? 'Verifying authentication...'
-                : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+                ? "Verifying authentication..."
+                : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -267,14 +291,17 @@ function ClaudeContent() {
               <div>
                 <p className="font-medium text-foreground">CLI Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {claudeCliStatus?.version && `Version: ${claudeCliStatus.version}`}
+                  {claudeCliStatus?.version &&
+                    `Version: ${claudeCliStatus.version}`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <p className="font-medium text-foreground">
-                {isCliAuthenticated ? 'CLI Authenticated' : 'API Key Configured'}
+                {isCliAuthenticated
+                  ? "CLI Authenticated"
+                  : "API Key Configured"}
               </p>
             </div>
           </div>
@@ -285,7 +312,9 @@ function ClaudeContent() {
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
             <p className="font-medium text-foreground">
-              {isChecking ? 'Checking Claude CLI status...' : 'Verifying authentication...'}
+              {isChecking
+                ? "Checking Claude CLI status..."
+                : "Verifying authentication..."}
             </p>
           </div>
         )}
@@ -296,16 +325,22 @@ function ClaudeContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Claude CLI not found</p>
+                <p className="font-medium text-foreground">
+                  Claude CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Install Claude CLI to use Claude Code subscription.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Claude CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install Claude CLI:
+              </p>
               <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">macOS / Linux</Label>
+                <Label className="text-sm text-muted-foreground">
+                  macOS / Linux
+                </Label>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                     curl -fsSL https://claude.ai/install.sh | bash
@@ -313,13 +348,19 @@ function ClaudeContent() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => copyCommand('curl -fsSL https://claude.ai/install.sh | bash')}
+                    onClick={() =>
+                      copyCommand(
+                        "curl -fsSL https://claude.ai/install.sh | bash",
+                      )
+                    }
                   >
                     <Copy className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              {isInstalling && <TerminalOutput lines={installProgress.output} />}
+              {isInstalling && (
+                <TerminalOutput lines={installProgress.output} />
+              )}
               <Button
                 onClick={install}
                 disabled={isInstalling}
@@ -353,7 +394,8 @@ function ClaudeContent() {
                 <div>
                   <p className="font-medium text-foreground">CLI Installed</p>
                   <p className="text-sm text-muted-foreground">
-                    {claudeCliStatus?.version && `Version: ${claudeCliStatus.version}`}
+                    {claudeCliStatus?.version &&
+                      `Version: ${claudeCliStatus.version}`}
                   </p>
                 </div>
               </div>
@@ -363,8 +405,12 @@ function ClaudeContent() {
                 <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                   <XCircle className="w-5 h-5 text-red-500 shrink-0" />
                   <div>
-                    <p className="font-medium text-foreground">Authentication failed</p>
-                    <p className="text-sm text-red-400 mt-1">{verificationError}</p>
+                    <p className="font-medium text-foreground">
+                      Authentication failed
+                    </p>
+                    <p className="text-sm text-red-400 mt-1">
+                      {verificationError}
+                    </p>
                   </div>
                 </div>
               )}
@@ -373,10 +419,13 @@ function ClaudeContent() {
               <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="font-medium text-foreground">Claude CLI not authenticated</p>
+                  <p className="font-medium text-foreground">
+                    Claude CLI not authenticated
+                  </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Run <code className="bg-muted px-1 rounded">claude login</code> in your terminal
-                    or provide an API key below.
+                    Run{" "}
+                    <code className="bg-muted px-1 rounded">claude login</code>{" "}
+                    in your terminal or provide an API key below.
                   </p>
                 </div>
               </div>
@@ -387,12 +436,17 @@ function ClaudeContent() {
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-3">
                       <Key className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium">Use Anthropic API Key instead</span>
+                      <span className="font-medium">
+                        Use Anthropic API Key instead
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-4 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="anthropic-key" className="text-foreground">
+                      <Label
+                        htmlFor="anthropic-key"
+                        className="text-foreground"
+                      >
                         Anthropic API Key
                       </Label>
                       <Input
@@ -404,7 +458,7 @@ function ClaudeContent() {
                         className="bg-input border-border text-foreground"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Don&apos;t have an API key?{' '}
+                        Don&apos;t have an API key?{" "}
                         <a
                           href="https://console.anthropic.com/settings/keys"
                           target="_blank"
@@ -425,7 +479,7 @@ function ClaudeContent() {
                         {isSavingApiKey ? (
                           <Spinner size="sm" variant="foreground" />
                         ) : (
-                          'Save API Key'
+                          "Save API Key"
                         )}
                       </Button>
                       {hasApiKey && (
@@ -478,7 +532,7 @@ function CursorContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Cursor CLI is ready!');
+          toast.success("Cursor CLI is ready!");
         }
       }
     } catch {
@@ -497,15 +551,16 @@ function CursorContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = cursorCliStatus?.loginCommand || 'cursor-agent login';
+      const loginCommand =
+        cursorCliStatus?.loginCommand || "cursor-agent login";
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info("Login command copied! Paste in terminal to authenticate.");
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -527,7 +582,7 @@ function CursorContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Cursor!');
+            toast.success("Successfully logged in to Cursor!");
           }
         } catch {
           // Ignore
@@ -538,16 +593,17 @@ function CursorContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error("Login timed out. Please try again.");
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error("Failed to start login process");
       setIsLoggingIn(false);
     }
   };
 
-  const isReady = cursorCliStatus?.installed && cursorCliStatus?.auth?.authenticated;
+  const isReady =
+    cursorCliStatus?.installed && cursorCliStatus?.auth?.authenticated;
 
   return (
     <Card className="bg-card border-border">
@@ -557,16 +613,25 @@ function CursorContent() {
             <CursorIcon className="w-5 h-5" />
             Cursor CLI Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkStatus}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {cursorCliStatus?.installed
             ? cursorCliStatus.auth?.authenticated
-              ? `Authenticated${cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? `Authenticated${cursorCliStatus.version ? ` (v${cursorCliStatus.version})` : ""}`
+              : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -577,7 +642,8 @@ function CursorContent() {
               <div>
                 <p className="font-medium text-foreground">CLI Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version && `Version: ${cursorCliStatus.version}`}
+                  {cursorCliStatus?.version &&
+                    `Version: ${cursorCliStatus.version}`}
                 </p>
               </div>
             </div>
@@ -593,24 +659,30 @@ function CursorContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Cursor CLI not found</p>
+                <p className="font-medium text-foreground">
+                  Cursor CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Install Cursor IDE to use Cursor AI agent.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Cursor:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install Cursor:
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {cursorCliStatus?.installCommand || 'pnpm add -g @anthropic/cursor-agent'}
+                  {cursorCliStatus?.installCommand ||
+                    "pnpm add -g @anthropic/cursor-agent"}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() =>
                     copyCommand(
-                      cursorCliStatus?.installCommand || 'pnpm add -g @anthropic/cursor-agent'
+                      cursorCliStatus?.installCommand ||
+                        "pnpm add -g @anthropic/cursor-agent",
                     )
                   }
                 >
@@ -621,63 +693,78 @@ function CursorContent() {
           </div>
         )}
 
-        {cursorCliStatus?.installed && !cursorCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
-                <p className="text-sm text-muted-foreground">
-                  {cursorCliStatus?.version && `Version: ${cursorCliStatus.version}`}
-                </p>
+        {cursorCliStatus?.installed &&
+          !cursorCliStatus?.auth?.authenticated &&
+          !isChecking && (
+            <div className="space-y-4">
+              {/* Show CLI installed toast */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="font-medium text-foreground">CLI Installed</p>
+                  <p className="text-sm text-muted-foreground">
+                    {cursorCliStatus?.version &&
+                      `Version: ${cursorCliStatus.version}`}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Cursor CLI not authenticated</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command to authenticate.
-                </p>
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    Cursor CLI not authenticated
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Run the login command to authenticate.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {cursorCliStatus?.loginCommand || 'cursor-agent login'}
-                </code>
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    {cursorCliStatus?.loginCommand || "cursor-agent login"}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      copyCommand(
+                        cursorCliStatus?.loginCommand || "cursor-agent login",
+                      )
+                    }
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyCommand(cursorCliStatus?.loginCommand || 'cursor-agent login')}
+                  onClick={handleLogin}
+                  disabled={isLoggingIn}
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                 >
-                  <Copy className="w-4 h-4" />
+                  {isLoggingIn ? (
+                    <>
+                      <Spinner
+                        size="sm"
+                        variant="foreground"
+                        className="mr-2"
+                      />
+                      Waiting for login...
+                    </>
+                  ) : (
+                    "Copy Command & Wait for Login"
+                  )}
                 </Button>
               </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
-                  </>
-                ) : (
-                  'Copy Command & Wait for Login'
-                )}
-              </Button>
             </div>
-          </div>
-        )}
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Cursor CLI status...</p>
+            <p className="font-medium text-foreground">
+              Checking Cursor CLI status...
+            </p>
           </div>
         )}
       </CardContent>
@@ -689,11 +776,15 @@ function CursorContent() {
 // Codex Content
 // ============================================================================
 function CodexContent() {
-  const { codexCliStatus, codexAuthStatus, setCodexCliStatus, setCodexAuthStatus } =
-    useSetupStore();
+  const {
+    codexCliStatus,
+    codexAuthStatus,
+    setCodexCliStatus,
+    setCodexAuthStatus,
+  } = useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
   const [isChecking, setIsChecking] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -709,21 +800,26 @@ function CodexContent() {
           installed: result.installed ?? false,
           version: result.version ?? null,
           path: result.path ?? null,
-          method: 'none',
+          method: "none",
         });
         if (result.auth?.authenticated) {
-          const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
+          const validMethods = [
+            "api_key_env",
+            "api_key",
+            "cli_authenticated",
+            "none",
+          ] as const;
           type CodexAuthMethod = (typeof validMethods)[number];
           const method: CodexAuthMethod = validMethods.includes(
-            result.auth.method as CodexAuthMethod
+            result.auth.method as CodexAuthMethod,
           )
             ? (result.auth.method as CodexAuthMethod)
-            : 'cli_authenticated';
+            : "cli_authenticated";
           setCodexAuthStatus({
             authenticated: true,
             method,
           });
-          toast.success('Codex CLI is ready!');
+          toast.success("Codex CLI is ready!");
         }
       }
     } catch {
@@ -742,7 +838,7 @@ function CodexContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const handleSaveApiKey = async () => {
@@ -751,17 +847,17 @@ function CodexContent() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.saveApiKey) {
-        toast.error('Save API not available');
+        toast.error("Save API not available");
         return;
       }
-      const result = await api.setup.saveApiKey('openai', apiKey);
+      const result = await api.setup.saveApiKey("openai", apiKey);
       if (result.success) {
         setApiKeys({ ...apiKeys, openai: apiKey });
-        setCodexAuthStatus({ authenticated: true, method: 'api_key' });
-        toast.success('API key saved successfully!');
+        setCodexAuthStatus({ authenticated: true, method: "api_key" });
+        toast.success("API key saved successfully!");
       }
     } catch {
-      toast.error('Failed to save API key');
+      toast.error("Failed to save API key");
     } finally {
       setIsSaving(false);
     }
@@ -770,8 +866,8 @@ function CodexContent() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      await navigator.clipboard.writeText('codex login');
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      await navigator.clipboard.writeText("codex login");
+      toast.info("Login command copied! Paste in terminal to authenticate.");
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -785,9 +881,12 @@ function CodexContent() {
               clearInterval(pollIntervalRef.current);
               pollIntervalRef.current = null;
             }
-            setCodexAuthStatus({ authenticated: true, method: 'cli_authenticated' });
+            setCodexAuthStatus({
+              authenticated: true,
+              method: "cli_authenticated",
+            });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Codex!');
+            toast.success("Successfully logged in to Codex!");
           }
         } catch {
           // Ignore
@@ -798,11 +897,11 @@ function CodexContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error("Login timed out. Please try again.");
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error("Failed to start login process");
       setIsLoggingIn(false);
     }
   };
@@ -817,16 +916,25 @@ function CodexContent() {
             <OpenAIIcon className="w-5 h-5" />
             Codex CLI Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkStatus}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {codexCliStatus?.installed
             ? codexAuthStatus?.authenticated
-              ? `Authenticated${codexCliStatus.version ? ` (v${codexCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? `Authenticated${codexCliStatus.version ? ` (v${codexCliStatus.version})` : ""}`
+              : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -837,14 +945,17 @@ function CodexContent() {
               <div>
                 <p className="font-medium text-foreground">CLI Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {codexCliStatus?.version && `Version: ${codexCliStatus.version}`}
+                  {codexCliStatus?.version &&
+                    `Version: ${codexCliStatus.version}`}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <CheckCircle2 className="w-5 h-5 text-green-500" />
               <p className="font-medium text-foreground">
-                {codexAuthStatus?.method === 'api_key' ? 'API Key Configured' : 'Authenticated'}
+                {codexAuthStatus?.method === "api_key"
+                  ? "API Key Configured"
+                  : "Authenticated"}
               </p>
             </div>
           </div>
@@ -855,14 +966,18 @@ function CodexContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Codex CLI not found</p>
+                <p className="font-medium text-foreground">
+                  Codex CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Install the Codex CLI to use OpenAI models.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Codex CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install Codex CLI:
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   pnpm add -g @openai/codex
@@ -870,7 +985,7 @@ function CodexContent() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => copyCommand('pnpm add -g @openai/codex')}
+                  onClick={() => copyCommand("pnpm add -g @openai/codex")}
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
@@ -879,108 +994,127 @@ function CodexContent() {
           </div>
         )}
 
-        {codexCliStatus?.installed && !codexAuthStatus?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
-                <p className="text-sm text-muted-foreground">
-                  {codexCliStatus?.version && `Version: ${codexCliStatus.version}`}
-                </p>
+        {codexCliStatus?.installed &&
+          !codexAuthStatus?.authenticated &&
+          !isChecking && (
+            <div className="space-y-4">
+              {/* Show CLI installed toast */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="font-medium text-foreground">CLI Installed</p>
+                  <p className="text-sm text-muted-foreground">
+                    {codexCliStatus?.version &&
+                      `Version: ${codexCliStatus.version}`}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Codex CLI not authenticated</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command or provide an API key below.
-                </p>
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    Codex CLI not authenticated
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Run the login command or provide an API key below.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="cli" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Codex CLI Login</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                      codex login
-                    </code>
-                    <Button variant="ghost" size="icon" onClick={() => copyCommand('codex login')}>
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    onClick={handleLogin}
-                    disabled={isLoggingIn}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isLoggingIn ? (
-                      <>
-                        <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Waiting for login...
-                      </>
-                    ) : (
-                      'Copy Command & Wait for Login'
-                    )}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="api-key" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Key className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">OpenAI API Key</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      type="password"
-                      placeholder="sk-..."
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="bg-input border-border text-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-brand-500 hover:underline"
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="cli" className="border-border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Terminal className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">Codex CLI Login</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                        codex login
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyCommand("codex login")}
                       >
-                        Get an API key from OpenAI
-                        <ExternalLink className="w-3 h-3 inline ml-1" />
-                      </a>
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleSaveApiKey}
-                    disabled={isSaving || !apiKey.trim()}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isSaving ? <Spinner size="sm" variant="foreground" /> : 'Save API Key'}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        )}
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={handleLogin}
+                      disabled={isLoggingIn}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                    >
+                      {isLoggingIn ? (
+                        <>
+                          <Spinner
+                            size="sm"
+                            variant="foreground"
+                            className="mr-2"
+                          />
+                          Waiting for login...
+                        </>
+                      ) : (
+                        "Copy Command & Wait for Login"
+                      )}
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="api-key" className="border-border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Key className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">OpenAI API Key</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Input
+                        type="password"
+                        placeholder="sk-..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="bg-input border-border text-foreground"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <a
+                          href="https://platform.openai.com/api-keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-500 hover:underline"
+                        >
+                          Get an API key from OpenAI
+                          <ExternalLink className="w-3 h-3 inline ml-1" />
+                        </a>
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleSaveApiKey}
+                      disabled={isSaving || !apiKey.trim()}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                    >
+                      {isSaving ? (
+                        <Spinner size="sm" variant="foreground" />
+                      ) : (
+                        "Save API Key"
+                      )}
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Codex CLI status...</p>
+            <p className="font-medium text-foreground">
+              Checking Codex CLI status...
+            </p>
           </div>
         )}
       </CardContent>
@@ -1015,10 +1149,10 @@ function OpencodeContent() {
           path: result.path ?? null,
           auth: result.auth,
           installCommand,
-          loginCommand: 'opencode auth login',
+          loginCommand: "opencode auth login",
         });
         if (result.auth?.authenticated) {
-          toast.success('OpenCode CLI is ready!');
+          toast.success("OpenCode CLI is ready!");
         }
       }
     } catch {
@@ -1037,15 +1171,16 @@ function OpencodeContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = opencodeCliStatus?.loginCommand || 'opencode auth login';
+      const loginCommand =
+        opencodeCliStatus?.loginCommand || "opencode auth login";
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info("Login command copied! Paste in terminal to authenticate.");
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1067,7 +1202,7 @@ function OpencodeContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to OpenCode!');
+            toast.success("Successfully logged in to OpenCode!");
           }
         } catch {
           // Ignore
@@ -1078,16 +1213,17 @@ function OpencodeContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error("Login timed out. Please try again.");
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error("Failed to start login process");
       setIsLoggingIn(false);
     }
   };
 
-  const isReady = opencodeCliStatus?.installed && opencodeCliStatus?.auth?.authenticated;
+  const isReady =
+    opencodeCliStatus?.installed && opencodeCliStatus?.auth?.authenticated;
 
   return (
     <Card className="bg-card border-border">
@@ -1097,16 +1233,25 @@ function OpencodeContent() {
             <OpenCodeIcon className="w-5 h-5" />
             OpenCode CLI Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkStatus}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {opencodeCliStatus?.installed
             ? opencodeCliStatus.auth?.authenticated
-              ? `Authenticated${opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? `Authenticated${opencodeCliStatus.version ? ` (v${opencodeCliStatus.version})` : ""}`
+              : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1117,7 +1262,8 @@ function OpencodeContent() {
               <div>
                 <p className="font-medium text-foreground">CLI Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {opencodeCliStatus?.version && `Version: ${opencodeCliStatus.version}`}
+                  {opencodeCliStatus?.version &&
+                    `Version: ${opencodeCliStatus.version}`}
                 </p>
               </div>
             </div>
@@ -1133,18 +1279,23 @@ function OpencodeContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">OpenCode CLI not found</p>
+                <p className="font-medium text-foreground">
+                  OpenCode CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Install the OpenCode CLI for free tier models and connected providers.
+                  Install the OpenCode CLI for free tier models and connected
+                  providers.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install OpenCode CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install OpenCode CLI:
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
                   {opencodeCliStatus?.installCommand ||
-                    'curl -fsSL https://opencode.ai/install | bash'}
+                    "curl -fsSL https://opencode.ai/install | bash"}
                 </code>
                 <Button
                   variant="ghost"
@@ -1152,7 +1303,7 @@ function OpencodeContent() {
                   onClick={() =>
                     copyCommand(
                       opencodeCliStatus?.installCommand ||
-                        'curl -fsSL https://opencode.ai/install | bash'
+                        "curl -fsSL https://opencode.ai/install | bash",
                     )
                   }
                 >
@@ -1163,65 +1314,79 @@ function OpencodeContent() {
           </div>
         )}
 
-        {opencodeCliStatus?.installed && !opencodeCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
-                <p className="text-sm text-muted-foreground">
-                  {opencodeCliStatus?.version && `Version: ${opencodeCliStatus.version}`}
-                </p>
+        {opencodeCliStatus?.installed &&
+          !opencodeCliStatus?.auth?.authenticated &&
+          !isChecking && (
+            <div className="space-y-4">
+              {/* Show CLI installed toast */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="font-medium text-foreground">CLI Installed</p>
+                  <p className="text-sm text-muted-foreground">
+                    {opencodeCliStatus?.version &&
+                      `Version: ${opencodeCliStatus.version}`}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">OpenCode CLI not authenticated</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command to authenticate.
-                </p>
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    OpenCode CLI not authenticated
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Run the login command to authenticate.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {opencodeCliStatus?.loginCommand || 'opencode auth login'}
-                </code>
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    {opencodeCliStatus?.loginCommand || "opencode auth login"}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      copyCommand(
+                        opencodeCliStatus?.loginCommand ||
+                          "opencode auth login",
+                      )
+                    }
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    copyCommand(opencodeCliStatus?.loginCommand || 'opencode auth login')
-                  }
+                  onClick={handleLogin}
+                  disabled={isLoggingIn}
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                 >
-                  <Copy className="w-4 h-4" />
+                  {isLoggingIn ? (
+                    <>
+                      <Spinner
+                        size="sm"
+                        variant="foreground"
+                        className="mr-2"
+                      />
+                      Waiting for login...
+                    </>
+                  ) : (
+                    "Copy Command & Wait for Login"
+                  )}
                 </Button>
               </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
-                  </>
-                ) : (
-                  'Copy Command & Wait for Login'
-                )}
-              </Button>
             </div>
-          </div>
-        )}
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking OpenCode CLI status...</p>
+            <p className="font-medium text-foreground">
+              Checking OpenCode CLI status...
+            </p>
           </div>
         )}
       </CardContent>
@@ -1236,7 +1401,7 @@ function GeminiContent() {
   const { geminiCliStatus, setGeminiCliStatus } = useSetupStore();
   const { setApiKeys, apiKeys } = useAppStore();
   const [isChecking, setIsChecking] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -1257,7 +1422,7 @@ function GeminiContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Gemini CLI is ready!');
+          toast.success("Gemini CLI is ready!");
         }
       }
     } catch {
@@ -1276,7 +1441,7 @@ function GeminiContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const handleSaveApiKey = async () => {
@@ -1285,21 +1450,21 @@ function GeminiContent() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.saveApiKey) {
-        toast.error('Save API not available');
+        toast.error("Save API not available");
         return;
       }
-      const result = await api.setup.saveApiKey('google', apiKey);
+      const result = await api.setup.saveApiKey("google", apiKey);
       if (result.success) {
         setApiKeys({ ...apiKeys, google: apiKey });
         setGeminiCliStatus({
           ...geminiCliStatus,
           installed: geminiCliStatus?.installed ?? false,
-          auth: { authenticated: true, method: 'api_key' },
+          auth: { authenticated: true, method: "api_key" },
         });
-        toast.success('API key saved successfully!');
+        toast.success("API key saved successfully!");
       }
     } catch {
-      toast.error('Failed to save API key');
+      toast.error("Failed to save API key");
     } finally {
       setIsSaving(false);
     }
@@ -1308,9 +1473,9 @@ function GeminiContent() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = geminiCliStatus?.loginCommand || 'gemini auth login';
+      const loginCommand = geminiCliStatus?.loginCommand || "gemini auth login";
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info("Login command copied! Paste in terminal to authenticate.");
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1332,7 +1497,7 @@ function GeminiContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully logged in to Gemini!');
+            toast.success("Successfully logged in to Gemini!");
           }
         } catch {
           // Ignore
@@ -1343,16 +1508,17 @@ function GeminiContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error("Login timed out. Please try again.");
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error("Failed to start login process");
       setIsLoggingIn(false);
     }
   };
 
-  const isReady = geminiCliStatus?.installed && geminiCliStatus?.auth?.authenticated;
+  const isReady =
+    geminiCliStatus?.installed && geminiCliStatus?.auth?.authenticated;
 
   return (
     <Card className="bg-card border-border">
@@ -1362,16 +1528,25 @@ function GeminiContent() {
             <GeminiIcon className="w-5 h-5" />
             Gemini CLI Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkStatus}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {geminiCliStatus?.installed
             ? geminiCliStatus.auth?.authenticated
-              ? `Authenticated${geminiCliStatus.version ? ` (v${geminiCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? `Authenticated${geminiCliStatus.version ? ` (v${geminiCliStatus.version})` : ""}`
+              : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1382,7 +1557,8 @@ function GeminiContent() {
               <div>
                 <p className="font-medium text-foreground">CLI Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version && `Version: ${geminiCliStatus.version}`}
+                  {geminiCliStatus?.version &&
+                    `Version: ${geminiCliStatus.version}`}
                 </p>
               </div>
             </div>
@@ -1398,24 +1574,30 @@ function GeminiContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Gemini CLI not found</p>
+                <p className="font-medium text-foreground">
+                  Gemini CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Install the Gemini CLI to use Google Gemini models.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Gemini CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install Gemini CLI:
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {geminiCliStatus?.installCommand || 'pnpm add -g @google/gemini-cli'}
+                  {geminiCliStatus?.installCommand ||
+                    "pnpm add -g @google/gemini-cli"}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() =>
                     copyCommand(
-                      geminiCliStatus?.installCommand || 'pnpm add -g @google/gemini-cli'
+                      geminiCliStatus?.installCommand ||
+                        "pnpm add -g @google/gemini-cli",
                     )
                   }
                 >
@@ -1426,114 +1608,132 @@ function GeminiContent() {
           </div>
         )}
 
-        {geminiCliStatus?.installed && !geminiCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show CLI installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">CLI Installed</p>
-                <p className="text-sm text-muted-foreground">
-                  {geminiCliStatus?.version && `Version: ${geminiCliStatus.version}`}
-                </p>
+        {geminiCliStatus?.installed &&
+          !geminiCliStatus?.auth?.authenticated &&
+          !isChecking && (
+            <div className="space-y-4">
+              {/* Show CLI installed toast */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="font-medium text-foreground">CLI Installed</p>
+                  <p className="text-sm text-muted-foreground">
+                    {geminiCliStatus?.version &&
+                      `Version: ${geminiCliStatus.version}`}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Gemini CLI not authenticated</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Run the login command or provide a Google API key below.
-                </p>
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    Gemini CLI not authenticated
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Run the login command or provide a Google API key below.
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="cli" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Google OAuth Login</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                      {geminiCliStatus?.loginCommand || 'gemini auth login'}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        copyCommand(geminiCliStatus?.loginCommand || 'gemini auth login')
-                      }
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <Button
-                    onClick={handleLogin}
-                    disabled={isLoggingIn}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isLoggingIn ? (
-                      <>
-                        <Spinner size="sm" variant="foreground" className="mr-2" />
-                        Waiting for login...
-                      </>
-                    ) : (
-                      'Copy Command & Wait for Login'
-                    )}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="api-key" className="border-border">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-3">
-                    <Key className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Google API Key</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      type="password"
-                      placeholder="AIza..."
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      className="bg-input border-border text-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      <a
-                        href="https://aistudio.google.com/apikey"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-brand-500 hover:underline"
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="cli" className="border-border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Terminal className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">Google OAuth Login</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                        {geminiCliStatus?.loginCommand || "gemini auth login"}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          copyCommand(
+                            geminiCliStatus?.loginCommand ||
+                              "gemini auth login",
+                          )
+                        }
                       >
-                        Get an API key from Google AI Studio
-                        <ExternalLink className="w-3 h-3 inline ml-1" />
-                      </a>
-                    </p>
-                  </div>
-                  <Button
-                    onClick={handleSaveApiKey}
-                    disabled={isSaving || !apiKey.trim()}
-                    className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-                  >
-                    {isSaving ? <Spinner size="sm" variant="foreground" /> : 'Save API Key'}
-                  </Button>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        )}
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <Button
+                      onClick={handleLogin}
+                      disabled={isLoggingIn}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                    >
+                      {isLoggingIn ? (
+                        <>
+                          <Spinner
+                            size="sm"
+                            variant="foreground"
+                            className="mr-2"
+                          />
+                          Waiting for login...
+                        </>
+                      ) : (
+                        "Copy Command & Wait for Login"
+                      )}
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="api-key" className="border-border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <Key className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">Google API Key</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                      <Input
+                        type="password"
+                        placeholder="AIza..."
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        className="bg-input border-border text-foreground"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <a
+                          href="https://aistudio.google.com/apikey"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-500 hover:underline"
+                        >
+                          Get an API key from Google AI Studio
+                          <ExternalLink className="w-3 h-3 inline ml-1" />
+                        </a>
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleSaveApiKey}
+                      disabled={isSaving || !apiKey.trim()}
+                      className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+                    >
+                      {isSaving ? (
+                        <Spinner size="sm" variant="foreground" />
+                      ) : (
+                        "Save API Key"
+                      )}
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Gemini CLI status...</p>
+            <p className="font-medium text-foreground">
+              Checking Gemini CLI status...
+            </p>
           </div>
         )}
       </CardContent>
@@ -1566,7 +1766,7 @@ function CopilotContent() {
           loginCommand: result.loginCommand,
         });
         if (result.auth?.authenticated) {
-          toast.success('Copilot CLI is ready!');
+          toast.success("Copilot CLI is ready!");
         }
       }
     } catch {
@@ -1585,15 +1785,15 @@ function CopilotContent() {
 
   const copyCommand = (command: string) => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      const loginCommand = copilotCliStatus?.loginCommand || 'gh auth login';
+      const loginCommand = copilotCliStatus?.loginCommand || "gh auth login";
       await navigator.clipboard.writeText(loginCommand);
-      toast.info('Login command copied! Paste in terminal to authenticate.');
+      toast.info("Login command copied! Paste in terminal to authenticate.");
 
       let attempts = 0;
       pollIntervalRef.current = setInterval(async () => {
@@ -1615,7 +1815,7 @@ function CopilotContent() {
               auth: result.auth,
             });
             setIsLoggingIn(false);
-            toast.success('Successfully authenticated with GitHub!');
+            toast.success("Successfully authenticated with GitHub!");
           }
         } catch {
           // Ignore
@@ -1626,16 +1826,17 @@ function CopilotContent() {
             pollIntervalRef.current = null;
           }
           setIsLoggingIn(false);
-          toast.error('Login timed out. Please try again.');
+          toast.error("Login timed out. Please try again.");
         }
       }, 2000);
     } catch {
-      toast.error('Failed to start login process');
+      toast.error("Failed to start login process");
       setIsLoggingIn(false);
     }
   };
 
-  const isReady = copilotCliStatus?.installed && copilotCliStatus?.auth?.authenticated;
+  const isReady =
+    copilotCliStatus?.installed && copilotCliStatus?.auth?.authenticated;
 
   return (
     <Card className="bg-card border-border">
@@ -1645,16 +1846,25 @@ function CopilotContent() {
             <CopilotIcon className="w-5 h-5" />
             GitHub Copilot CLI Status
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={checkStatus}
+            disabled={isChecking}
+          >
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <CardDescription>
           {copilotCliStatus?.installed
             ? copilotCliStatus.auth?.authenticated
-              ? `Authenticated${copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : ''}`
-              : 'Installed but not authenticated'
-            : 'Not installed on your system'}
+              ? `Authenticated${copilotCliStatus.version ? ` (v${copilotCliStatus.version})` : ""}`
+              : "Installed but not authenticated"
+            : "Not installed on your system"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1665,7 +1875,8 @@ function CopilotContent() {
               <div>
                 <p className="font-medium text-foreground">SDK Installed</p>
                 <p className="text-sm text-muted-foreground">
-                  {copilotCliStatus?.version && `Version: ${copilotCliStatus.version}`}
+                  {copilotCliStatus?.version &&
+                    `Version: ${copilotCliStatus.version}`}
                 </p>
               </div>
             </div>
@@ -1688,24 +1899,30 @@ function CopilotContent() {
             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
               <XCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium text-foreground">Copilot CLI not found</p>
+                <p className="font-medium text-foreground">
+                  Copilot CLI not found
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Install the GitHub Copilot CLI to use Copilot models.
                 </p>
               </div>
             </div>
             <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <p className="font-medium text-foreground text-sm">Install Copilot CLI:</p>
+              <p className="font-medium text-foreground text-sm">
+                Install Copilot CLI:
+              </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground overflow-x-auto">
-                  {copilotCliStatus?.installCommand || 'pnpm add -g @github/copilot'}
+                  {copilotCliStatus?.installCommand ||
+                    "pnpm add -g @github/copilot"}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() =>
                     copyCommand(
-                      copilotCliStatus?.installCommand || 'pnpm add -g @github/copilot'
+                      copilotCliStatus?.installCommand ||
+                        "pnpm add -g @github/copilot",
                     )
                   }
                 >
@@ -1716,63 +1933,78 @@ function CopilotContent() {
           </div>
         )}
 
-        {copilotCliStatus?.installed && !copilotCliStatus?.auth?.authenticated && !isChecking && (
-          <div className="space-y-4">
-            {/* Show SDK installed toast */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              <div>
-                <p className="font-medium text-foreground">SDK Installed</p>
-                <p className="text-sm text-muted-foreground">
-                  {copilotCliStatus?.version && `Version: ${copilotCliStatus.version}`}
-                </p>
+        {copilotCliStatus?.installed &&
+          !copilotCliStatus?.auth?.authenticated &&
+          !isChecking && (
+            <div className="space-y-4">
+              {/* Show SDK installed toast */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <div>
+                  <p className="font-medium text-foreground">SDK Installed</p>
+                  <p className="text-sm text-muted-foreground">
+                    {copilotCliStatus?.version &&
+                      `Version: ${copilotCliStatus.version}`}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-medium text-foreground">GitHub not authenticated</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Run the GitHub CLI login command to authenticate.
-                </p>
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-foreground">
+                    GitHub not authenticated
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Run the GitHub CLI login command to authenticate.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
-                  {copilotCliStatus?.loginCommand || 'gh auth login'}
-                </code>
+              <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    {copilotCliStatus?.loginCommand || "gh auth login"}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      copyCommand(
+                        copilotCliStatus?.loginCommand || "gh auth login",
+                      )
+                    }
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => copyCommand(copilotCliStatus?.loginCommand || 'gh auth login')}
+                  onClick={handleLogin}
+                  disabled={isLoggingIn}
+                  className="w-full bg-brand-500 hover:bg-brand-600 text-white"
                 >
-                  <Copy className="w-4 h-4" />
+                  {isLoggingIn ? (
+                    <>
+                      <Spinner
+                        size="sm"
+                        variant="foreground"
+                        className="mr-2"
+                      />
+                      Waiting for login...
+                    </>
+                  ) : (
+                    "Copy Command & Wait for Login"
+                  )}
                 </Button>
               </div>
-              <Button
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
-              >
-                {isLoggingIn ? (
-                  <>
-                    <Spinner size="sm" variant="foreground" className="mr-2" />
-                    Waiting for login...
-                  </>
-                ) : (
-                  'Copy Command & Wait for Login'
-                )}
-              </Button>
             </div>
-          </div>
-        )}
+          )}
 
         {isChecking && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Spinner size="md" />
-            <p className="font-medium text-foreground">Checking Copilot CLI status...</p>
+            <p className="font-medium text-foreground">
+              Checking Copilot CLI status...
+            </p>
           </div>
         )}
       </CardContent>
@@ -1783,8 +2015,11 @@ function CopilotContent() {
 // ============================================================================
 // Main Component
 // ============================================================================
-export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) {
-  const [activeTab, setActiveTab] = useState<ProviderTab>('claude');
+export function ProvidersSetupStep({
+  onNext,
+  onBack,
+}: ProvidersSetupStepProps) {
+  const [activeTab, setActiveTab] = useState<ProviderTab>("claude");
   const [isInitialChecking, setIsInitialChecking] = useState(true);
   const hasCheckedRef = useRef(false);
 
@@ -1821,7 +2056,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             installed: result.installed ?? false,
             version: result.version ?? null,
             path: result.path ?? null,
-            method: 'none',
+            method: "none",
           });
           // Note: Auth verification is handled by ClaudeContent component to avoid duplicate calls
         }
@@ -1860,16 +2095,21 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             installed: result.installed ?? false,
             version: result.version ?? null,
             path: result.path ?? null,
-            method: 'none',
+            method: "none",
           });
           if (result.auth?.authenticated) {
-            const validMethods = ['api_key_env', 'api_key', 'cli_authenticated', 'none'] as const;
+            const validMethods = [
+              "api_key_env",
+              "api_key",
+              "cli_authenticated",
+              "none",
+            ] as const;
             type CodexAuthMethodType = (typeof validMethods)[number];
             const method: CodexAuthMethodType = validMethods.includes(
-              result.auth.method as CodexAuthMethodType
+              result.auth.method as CodexAuthMethodType,
             )
               ? (result.auth.method as CodexAuthMethodType)
-              : 'cli_authenticated';
+              : "cli_authenticated";
             setCodexAuthStatus({
               authenticated: true,
               method,
@@ -1898,7 +2138,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
             path: result.path ?? null,
             auth: result.auth,
             installCommand,
-            loginCommand: 'opencode auth login',
+            loginCommand: "opencode auth login",
           });
         }
       } catch {
@@ -1977,9 +2217,9 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const isClaudeInstalled = claudeCliStatus?.installed === true;
   const isClaudeAuthenticated =
     claudeAuthStatus?.authenticated === true &&
-    (claudeAuthStatus?.method === 'cli_authenticated' ||
-      claudeAuthStatus?.method === 'api_key' ||
-      claudeAuthStatus?.method === 'api_key_env');
+    (claudeAuthStatus?.method === "cli_authenticated" ||
+      claudeAuthStatus?.method === "api_key" ||
+      claudeAuthStatus?.method === "api_key_env");
 
   const isCursorInstalled = cursorCliStatus?.installed === true;
   const isCursorAuthenticated = cursorCliStatus?.auth?.authenticated === true;
@@ -1988,7 +2228,8 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const isCodexAuthenticated = codexAuthStatus?.authenticated === true;
 
   const isOpencodeInstalled = opencodeCliStatus?.installed === true;
-  const isOpencodeAuthenticated = opencodeCliStatus?.auth?.authenticated === true;
+  const isOpencodeAuthenticated =
+    opencodeCliStatus?.auth?.authenticated === true;
 
   const isGeminiInstalled = geminiCliStatus?.installed === true;
   const isGeminiAuthenticated = geminiCliStatus?.auth?.authenticated === true;
@@ -2004,75 +2245,86 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
     isGeminiAuthenticated ||
     isCopilotAuthenticated;
 
-  type ProviderStatus = 'not_installed' | 'installed_not_auth' | 'authenticated' | 'verifying';
+  type ProviderStatus =
+    | "not_installed"
+    | "installed_not_auth"
+    | "authenticated"
+    | "verifying";
 
   const getProviderStatus = (
     installed: boolean,
     authenticated: boolean,
-    isVerifying?: boolean
+    isVerifying?: boolean,
   ): ProviderStatus => {
-    if (!installed) return 'not_installed';
-    if (isVerifying) return 'verifying';
-    if (!authenticated) return 'installed_not_auth';
-    return 'authenticated';
+    if (!installed) return "not_installed";
+    if (isVerifying) return "verifying";
+    if (!authenticated) return "installed_not_auth";
+    return "authenticated";
   };
 
   const providers = [
     {
-      id: 'claude' as const,
-      label: 'Claude',
+      id: "claude" as const,
+      label: "Claude",
       icon: AnthropicIcon,
-      status: getProviderStatus(isClaudeInstalled, isClaudeAuthenticated, claudeIsVerifying),
-      color: 'text-brand-500',
+      status: getProviderStatus(
+        isClaudeInstalled,
+        isClaudeAuthenticated,
+        claudeIsVerifying,
+      ),
+      color: "text-brand-500",
     },
     {
-      id: 'cursor' as const,
-      label: 'Cursor',
+      id: "cursor" as const,
+      label: "Cursor",
       icon: CursorIcon,
       status: getProviderStatus(isCursorInstalled, isCursorAuthenticated),
-      color: 'text-blue-500',
+      color: "text-blue-500",
     },
     {
-      id: 'codex' as const,
-      label: 'Codex',
+      id: "codex" as const,
+      label: "Codex",
       icon: OpenAIIcon,
       status: getProviderStatus(isCodexInstalled, isCodexAuthenticated),
-      color: 'text-emerald-500',
+      color: "text-emerald-500",
     },
     {
-      id: 'opencode' as const,
-      label: 'OpenCode',
+      id: "opencode" as const,
+      label: "OpenCode",
       icon: OpenCodeIcon,
       status: getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
-      color: 'text-green-500',
+      color: "text-green-500",
     },
     {
-      id: 'gemini' as const,
-      label: 'Gemini',
+      id: "gemini" as const,
+      label: "Gemini",
       icon: GeminiIcon,
       status: getProviderStatus(isGeminiInstalled, isGeminiAuthenticated),
-      color: 'text-blue-500',
+      color: "text-blue-500",
     },
     {
-      id: 'copilot' as const,
-      label: 'Copilot',
+      id: "copilot" as const,
+      label: "Copilot",
       icon: CopilotIcon,
       status: getProviderStatus(isCopilotInstalled, isCopilotAuthenticated),
-      color: 'text-violet-500',
+      color: "text-violet-500",
     },
   ];
 
   const renderStatusIcon = (status: ProviderStatus) => {
     switch (status) {
-      case 'authenticated':
+      case "authenticated":
         return (
           <CheckCircle2 className="w-3 h-3 text-green-500 absolute -top-1 -right-1.5 bg-background rounded-full" />
         );
-      case 'verifying':
+      case "verifying":
         return (
-          <Spinner size="xs" className="absolute -top-1 -right-1.5 bg-background rounded-full" />
+          <Spinner
+            size="xs"
+            className="absolute -top-1 -right-1.5 bg-background rounded-full"
+          />
         );
-      case 'installed_not_auth':
+      case "installed_not_auth":
         return (
           <AlertCircle className="w-3 h-3 text-red-500 absolute -top-1 -right-1.5 bg-background rounded-full" />
         );
@@ -2084,18 +2336,27 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">AI Provider Setup</h2>
-        <p className="text-muted-foreground">Configure at least one AI provider to continue</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          AI Provider Setup
+        </h2>
+        <p className="text-muted-foreground">
+          Configure at least one AI provider to continue
+        </p>
       </div>
 
       {isInitialChecking && (
         <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
           <Spinner size="md" />
-          <p className="font-medium text-foreground">Checking provider status...</p>
+          <p className="font-medium text-foreground">
+            Checking provider status...
+          </p>
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProviderTab)}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as ProviderTab)}
+      >
         <TabsList className="grid w-full grid-cols-6 h-auto p-1">
           {providers.map((provider) => {
             const Icon = provider.icon;
@@ -2104,21 +2365,21 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
                 key={provider.id}
                 value={provider.id}
                 className={cn(
-                  'relative flex flex-col items-center gap-1 py-3 px-2',
-                  'data-[state=active]:bg-muted'
+                  "relative flex flex-col items-center gap-1 py-3 px-2",
+                  "data-[state=active]:bg-muted",
                 )}
               >
                 <div className="relative">
                   <Icon
                     className={cn(
-                      'w-5 h-5',
-                      provider.status === 'authenticated'
+                      "w-5 h-5",
+                      provider.status === "authenticated"
                         ? provider.color
-                        : provider.status === 'verifying'
-                          ? 'text-blue-500'
-                          : provider.status === 'installed_not_auth'
-                            ? 'text-amber-500'
-                            : 'text-muted-foreground'
+                        : provider.status === "verifying"
+                          ? "text-blue-500"
+                          : provider.status === "installed_not_auth"
+                            ? "text-amber-500"
+                            : "text-muted-foreground",
                     )}
                   />
                   {!isInitialChecking && renderStatusIcon(provider.status)}
@@ -2152,19 +2413,23 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       </Tabs>
 
       <div className="flex justify-between pt-4">
-        <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-muted-foreground"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
         <Button
           onClick={onNext}
           className={cn(
-            'bg-brand-500 hover:bg-brand-600 text-white',
-            !hasAtLeastOneProvider && 'opacity-50'
+            "bg-brand-500 hover:bg-brand-600 text-white",
+            !hasAtLeastOneProvider && "opacity-50",
           )}
           data-testid="providers-next-button"
         >
-          {hasAtLeastOneProvider ? 'Continue' : 'Skip for now'}
+          {hasAtLeastOneProvider ? "Continue" : "Skip for now"}
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

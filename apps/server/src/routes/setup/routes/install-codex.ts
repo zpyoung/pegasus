@@ -2,8 +2,8 @@
  * POST /install-codex endpoint - Install Codex CLI
  */
 
-import type { Request, Response } from 'express';
-import { logError, getErrorMessage } from '../common.js';
+import type { Request, Response } from "express";
+import { logError, getErrorMessage } from "../common.js";
 
 /**
  * Creates handler for POST /api/setup/install-codex
@@ -14,7 +14,7 @@ export function createInstallCodexHandler() {
     try {
       // For now, return manual installation instructions
       // In the future, this could potentially trigger pnpm global install
-      const installCommand = 'pnpm add -g @openai/codex';
+      const installCommand = "pnpm add -g @openai/codex";
 
       res.json({
         success: true,
@@ -23,7 +23,7 @@ export function createInstallCodexHandler() {
         installCommand,
       });
     } catch (error) {
-      logError(error, 'Install Codex failed');
+      logError(error, "Install Codex failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

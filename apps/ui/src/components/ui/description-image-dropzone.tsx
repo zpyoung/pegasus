@@ -1,14 +1,18 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { cn } from "@/lib/utils";
 
-const logger = createLogger('DescriptionImageDropZone');
-import { ImageIcon, X, FileText } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
-import { getElectronAPI } from '@/lib/electron';
-import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import { useAppStore, type FeatureImagePath, type FeatureTextFilePath } from '@/store/app-store';
+const logger = createLogger("DescriptionImageDropZone");
+import { ImageIcon, X, FileText } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import { getElectronAPI } from "@/lib/electron";
+import { getAuthenticatedImageUrl } from "@/lib/api-fetch";
+import {
+  useAppStore,
+  type FeatureImagePath,
+  type FeatureTextFilePath,
+} from "@/store/app-store";
 import {
   sanitizeFilename,
   fileToBase64,
@@ -23,7 +27,7 @@ import {
   DEFAULT_MAX_FILE_SIZE,
   DEFAULT_MAX_TEXT_FILE_SIZE,
   formatFileSize,
-} from '@/lib/image-utils';
+} from "@/lib/image-utils";
 
 // Map to store preview data by image ID (persisted across component re-mounts)
 export type ImagePreviewMap = Map<string, string>;
@@ -57,7 +61,7 @@ export function DescriptionImageDropZone({
   onImagesChange,
   textFiles = [],
   onTextFilesChange,
-  placeholder = 'Describe the feature...',
+  placeholder = "Describe the feature...",
   className,
   disabled = false,
   maxFiles = 5,
@@ -70,26 +74,34 @@ export function DescriptionImageDropZone({
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   // Use parent-provided preview map if available, otherwise use local state
-  const [localPreviewImages, setLocalPreviewImages] = useState<Map<string, string>>(
-    () => new Map()
-  );
+  const [localPreviewImages, setLocalPreviewImages] = useState<
+    Map<string, string>
+  >(() => new Map());
 
   // Determine which preview map to use - prefer parent-controlled state
-  const previewImages = previewMap !== undefined ? previewMap : localPreviewImages;
+  const previewImages =
+    previewMap !== undefined ? previewMap : localPreviewImages;
   const setPreviewImages = useCallback(
-    (updater: Map<string, string> | ((prev: Map<string, string>) => Map<string, string>)) => {
+    (
+      updater:
+        | Map<string, string>
+        | ((prev: Map<string, string>) => Map<string, string>),
+    ) => {
       if (onPreviewMapChange) {
-        const currentMap = previewMap !== undefined ? previewMap : localPreviewImages;
-        const newMap = typeof updater === 'function' ? updater(currentMap) : updater;
+        const currentMap =
+          previewMap !== undefined ? previewMap : localPreviewImages;
+        const newMap =
+          typeof updater === "function" ? updater(currentMap) : updater;
         onPreviewMapChange(newMap);
       } else {
         setLocalPreviewImages((prev) => {
-          const newMap = typeof updater === 'function' ? updater(prev) : updater;
+          const newMap =
+            typeof updater === "function" ? updater(prev) : updater;
           return newMap;
         });
       }
     },
-    [onPreviewMapChange, previewMap, localPreviewImages]
+    [onPreviewMapChange, previewMap, localPreviewImages],
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,37 +110,46 @@ export function DescriptionImageDropZone({
   // Construct server URL for loading saved images
   const getImageServerUrl = useCallback(
     (imagePath: string): string => {
-      const projectPath = currentProject?.path || '';
+      const projectPath = currentProject?.path || "";
       return getAuthenticatedImageUrl(imagePath, projectPath);
     },
-    [currentProject?.path]
+    [currentProject?.path],
   );
 
   const saveImageToTemp = useCallback(
-    async (base64Data: string, filename: string, mimeType: string): Promise<string | null> => {
+    async (
+      base64Data: string,
+      filename: string,
+      mimeType: string,
+    ): Promise<string | null> => {
       try {
         const api = getElectronAPI();
         // Check if saveImageToTemp method exists
         if (!api.saveImageToTemp) {
           // Fallback path when saveImageToTemp is not available
-          logger.info('Using fallback path for image');
+          logger.info("Using fallback path for image");
           return `.pegasus/images/${Date.now()}_${filename}`;
         }
 
         // Get projectPath from the store if available
         const projectPath = currentProject?.path;
-        const result = await api.saveImageToTemp(base64Data, filename, mimeType, projectPath);
+        const result = await api.saveImageToTemp(
+          base64Data,
+          filename,
+          mimeType,
+          projectPath,
+        );
         if (result.success && result.path) {
           return result.path;
         }
-        logger.error('Failed to save image:', result.error);
+        logger.error("Failed to save image:", result.error);
         return null;
       } catch (error) {
-        logger.error('Error saving image:', error);
+        logger.error("Error saving image:", error);
         return null;
       }
     },
-    [currentProject?.path]
+    [currentProject?.path],
   );
 
   const processFiles = useCallback(
@@ -154,7 +175,8 @@ export function DescriptionImageDropZone({
           }
 
           // Check if we've reached max files
-          const totalFiles = newImages.length + newTextFiles.length + currentTotalFiles;
+          const totalFiles =
+            newImages.length + newTextFiles.length + currentTotalFiles;
           if (totalFiles >= maxFiles) {
             errors.push(`Maximum ${maxFiles} files allowed.`);
             break;
@@ -165,7 +187,7 @@ export function DescriptionImageDropZone({
             const sanitizedName = sanitizeFilename(file.name);
             const textFilePath: FeatureTextFilePath = {
               id: generateFileId(),
-              path: '', // Text files don't need to be saved to disk
+              path: "", // Text files don't need to be saved to disk
               filename: sanitizedName,
               mimeType: getTextFileMimeType(file.name),
               content,
@@ -180,12 +202,15 @@ export function DescriptionImageDropZone({
           // Validate file size
           if (file.size > maxFileSize) {
             const maxSizeMB = maxFileSize / (1024 * 1024);
-            errors.push(`${file.name}: File too large. Maximum size is ${maxSizeMB}MB.`);
+            errors.push(
+              `${file.name}: File too large. Maximum size is ${maxSizeMB}MB.`,
+            );
             continue;
           }
 
           // Check if we've reached max files
-          const totalFiles = newImages.length + newTextFiles.length + currentTotalFiles;
+          const totalFiles =
+            newImages.length + newTextFiles.length + currentTotalFiles;
           if (totalFiles >= maxFiles) {
             errors.push(`Maximum ${maxFiles} files allowed.`);
             break;
@@ -194,7 +219,11 @@ export function DescriptionImageDropZone({
           try {
             const base64 = await fileToBase64(file);
             const sanitizedName = sanitizeFilename(file.name);
-            const tempPath = await saveImageToTemp(base64, sanitizedName, file.type);
+            const tempPath = await saveImageToTemp(
+              base64,
+              sanitizedName,
+              file.type,
+            );
 
             if (tempPath) {
               const imageId = `img-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
@@ -214,12 +243,14 @@ export function DescriptionImageDropZone({
             errors.push(`${file.name}: Failed to process image.`);
           }
         } else {
-          errors.push(`${file.name}: Unsupported file type. Use images, .txt, or .md files.`);
+          errors.push(
+            `${file.name}: Unsupported file type. Use images, .txt, or .md files.`,
+          );
         }
       }
 
       if (errors.length > 0) {
-        logger.warn('File upload errors:', errors);
+        logger.warn("File upload errors:", errors);
       }
 
       if (newImages.length > 0) {
@@ -245,7 +276,7 @@ export function DescriptionImageDropZone({
       previewImages,
       saveImageToTemp,
       setPreviewImages,
-    ]
+    ],
   );
 
   const handleDrop = useCallback(
@@ -261,7 +292,7 @@ export function DescriptionImageDropZone({
         processFiles(files);
       }
     },
-    [disabled, processFiles]
+    [disabled, processFiles],
   );
 
   const handleDragOver = useCallback(
@@ -272,7 +303,7 @@ export function DescriptionImageDropZone({
         setIsDragOver(true);
       }
     },
-    [disabled]
+    [disabled],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -289,10 +320,10 @@ export function DescriptionImageDropZone({
       }
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     },
-    [processFiles]
+    [processFiles],
   );
 
   const handleBrowseClick = useCallback(() => {
@@ -310,7 +341,7 @@ export function DescriptionImageDropZone({
         return newMap;
       });
     },
-    [images, onImagesChange, setPreviewImages]
+    [images, onImagesChange, setPreviewImages],
   );
 
   const removeTextFile = useCallback(
@@ -319,7 +350,7 @@ export function DescriptionImageDropZone({
         onTextFilesChange(textFiles.filter((file) => file.id !== fileId));
       }
     },
-    [textFiles, onTextFilesChange]
+    [textFiles, onTextFilesChange],
   );
 
   // Handle paste events to detect and process images from clipboard
@@ -338,15 +369,19 @@ export function DescriptionImageDropZone({
         const item = clipboardItems[i];
 
         // Check if the item is an image
-        if (item.type.startsWith('image/')) {
+        if (item.type.startsWith("image/")) {
           const file = item.getAsFile();
           if (file) {
             // Generate a filename for pasted images since they don't have one
-            const extension = item.type.split('/')[1] || 'png';
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const renamedFile = new File([file], `pasted-image-${timestamp}.${extension}`, {
-              type: file.type,
-            });
+            const extension = item.type.split("/")[1] || "png";
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const renamedFile = new File(
+              [file],
+              `pasted-image-${timestamp}.${extension}`,
+              {
+                type: file.type,
+              },
+            );
             imageFiles.push(renamedFile);
           }
         }
@@ -363,17 +398,19 @@ export function DescriptionImageDropZone({
       }
       // If no images found, let the default paste behavior happen (paste text)
     },
-    [disabled, isProcessing, processFiles]
+    [disabled, isProcessing, processFiles],
   );
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_TEXT_EXTENSIONS].join(',')}
+        accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_TEXT_EXTENSIONS].join(
+          ",",
+        )}
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}
@@ -385,8 +422,9 @@ export function DescriptionImageDropZone({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={cn('relative rounded-md transition-all duration-200', {
-          'ring-2 ring-blue-400 ring-offset-2 ring-offset-background': isDragOver && !disabled,
+        className={cn("relative rounded-md transition-all duration-200", {
+          "ring-2 ring-blue-400 ring-offset-2 ring-offset-background":
+            isDragOver && !disabled,
         })}
       >
         {/* Drag overlay */}
@@ -411,14 +449,17 @@ export function DescriptionImageDropZone({
           disabled={disabled}
           autoFocus={autoFocus}
           aria-invalid={error}
-          className={cn('min-h-[120px]', isProcessing && 'opacity-50 pointer-events-none')}
+          className={cn(
+            "min-h-[120px]",
+            isProcessing && "opacity-50 pointer-events-none",
+          )}
           data-testid="feature-description-input"
         />
       </div>
 
       {/* Hint text */}
       <p className="text-xs text-muted-foreground mt-1">
-        Paste, drag and drop files, or{' '}
+        Paste, drag and drop files, or{" "}
         <button
           type="button"
           onClick={handleBrowseClick}
@@ -426,7 +467,7 @@ export function DescriptionImageDropZone({
           disabled={disabled || isProcessing}
         >
           browse
-        </button>{' '}
+        </button>{" "}
         to attach context (images, .txt, .md)
       </p>
 
@@ -444,7 +485,7 @@ export function DescriptionImageDropZone({
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
               {images.length + textFiles.length} file
-              {images.length + textFiles.length > 1 ? 's' : ''} attached
+              {images.length + textFiles.length > 1 ? "s" : ""} attached
             </p>
             <button
               type="button"
@@ -484,7 +525,7 @@ export function DescriptionImageDropZone({
                       className="max-w-full max-h-full object-contain"
                       onError={(e) => {
                         // If image fails to load, hide it
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   )}
@@ -505,7 +546,9 @@ export function DescriptionImageDropZone({
                 )}
                 {/* Filename tooltip on hover */}
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[10px] text-white truncate">{image.filename}</p>
+                  <p className="text-[10px] text-white truncate">
+                    {image.filename}
+                  </p>
                 </div>
               </div>
             ))}
@@ -536,8 +579,12 @@ export function DescriptionImageDropZone({
                 )}
                 {/* Filename and size tooltip on hover */}
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[10px] text-white truncate">{file.filename}</p>
-                  <p className="text-[9px] text-white/70">{formatFileSize(file.content.length)}</p>
+                  <p className="text-[10px] text-white truncate">
+                    {file.filename}
+                  </p>
+                  <p className="text-[9px] text-white/70">
+                    {formatFileSize(file.content.length)}
+                  </p>
                 </div>
               </div>
             ))}

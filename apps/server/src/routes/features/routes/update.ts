@@ -2,19 +2,22 @@
  * POST /update endpoint - Update a feature
  */
 
-import type { Request, Response } from 'express';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import type { Feature, FeatureStatus } from '@pegasus/types';
-import type { EventEmitter } from '../../../lib/events.js';
-import { getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import type { Feature, FeatureStatus } from "@pegasus/types";
+import type { EventEmitter } from "../../../lib/events.js";
+import { getErrorMessage, logError } from "../common.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('features/update');
+const logger = createLogger("features/update");
 
 // Statuses that should trigger syncing to app_spec.txt
-const SYNC_TRIGGER_STATUSES: FeatureStatus[] = ['verified', 'completed'];
+const SYNC_TRIGGER_STATUSES: FeatureStatus[] = ["verified", "completed"];
 
-export function createUpdateHandler(featureLoader: FeatureLoader, events?: EventEmitter) {
+export function createUpdateHandler(
+  featureLoader: FeatureLoader,
+  events?: EventEmitter,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const {
@@ -28,15 +31,20 @@ export function createUpdateHandler(featureLoader: FeatureLoader, events?: Event
         projectPath: string;
         featureId: string;
         updates: Partial<Feature>;
-        descriptionHistorySource?: 'enhance' | 'edit';
-        enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer';
+        descriptionHistorySource?: "enhance" | "edit";
+        enhancementMode?:
+          | "improve"
+          | "technical"
+          | "simplify"
+          | "acceptance"
+          | "ux-reviewer";
         preEnhancementDescription?: string;
       };
 
       if (!projectPath || !featureId || !updates) {
         res.status(400).json({
           success: false,
-          error: 'projectPath, featureId, and updates are required',
+          error: "projectPath, featureId, and updates are required",
         });
         return;
       }
@@ -44,7 +52,9 @@ export function createUpdateHandler(featureLoader: FeatureLoader, events?: Event
       // Get the current feature to detect status changes
       const currentFeature = await featureLoader.get(projectPath, featureId);
       if (!currentFeature) {
-        res.status(404).json({ success: false, error: `Feature ${featureId} not found` });
+        res
+          .status(404)
+          .json({ success: false, error: `Feature ${featureId} not found` });
         return;
       }
       const previousStatus = currentFeature.status as FeatureStatus;
@@ -56,26 +66,35 @@ export function createUpdateHandler(featureLoader: FeatureLoader, events?: Event
         updates,
         descriptionHistorySource,
         enhancementMode,
-        preEnhancementDescription
+        preEnhancementDescription,
       );
 
       // Emit completion event and sync to app_spec.txt when status transitions to verified/completed
-      if (newStatus && SYNC_TRIGGER_STATUSES.includes(newStatus) && previousStatus !== newStatus) {
-        events?.emit('feature:completed', {
+      if (
+        newStatus &&
+        SYNC_TRIGGER_STATUSES.includes(newStatus) &&
+        previousStatus !== newStatus
+      ) {
+        events?.emit("feature:completed", {
           featureId,
           featureName: updated.title,
           projectPath,
           passes: true,
           message:
-            newStatus === 'verified' ? 'Feature verified manually' : 'Feature completed manually',
-          executionMode: 'manual',
+            newStatus === "verified"
+              ? "Feature verified manually"
+              : "Feature completed manually",
+          executionMode: "manual",
         });
 
         try {
-          const synced = await featureLoader.syncFeatureToAppSpec(projectPath, updated);
+          const synced = await featureLoader.syncFeatureToAppSpec(
+            projectPath,
+            updated,
+          );
           if (synced) {
             logger.info(
-              `Synced feature "${updated.title || updated.id}" to app_spec.txt on status change to ${newStatus}`
+              `Synced feature "${updated.title || updated.id}" to app_spec.txt on status change to ${newStatus}`,
             );
           }
         } catch (syncError) {
@@ -86,7 +105,7 @@ export function createUpdateHandler(featureLoader: FeatureLoader, events?: Event
 
       res.json({ success: true, feature: updated });
     } catch (error) {
-      logError(error, 'Update feature failed');
+      logError(error, "Update feature failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

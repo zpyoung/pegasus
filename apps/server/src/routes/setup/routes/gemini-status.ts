@@ -2,18 +2,22 @@
  * GET /gemini-status endpoint - Get Gemini CLI installation and auth status
  */
 
-import type { Request, Response } from 'express';
-import { GeminiProvider } from '../../../providers/gemini-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { GeminiProvider } from "../../../providers/gemini-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs/promises";
+import * as path from "path";
 
-const DISCONNECTED_MARKER_FILE = '.gemini-disconnected';
+const DISCONNECTED_MARKER_FILE = ".gemini-disconnected";
 
 async function isGeminiDisconnectedFromApp(): Promise<boolean> {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.pegasus', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(
+      projectRoot,
+      ".pegasus",
+      DISCONNECTED_MARKER_FILE,
+    );
     await fs.access(markerPath);
     return true;
   } catch {
@@ -26,8 +30,8 @@ async function isGeminiDisconnectedFromApp(): Promise<boolean> {
  * Returns Gemini CLI installation and authentication status
  */
 export function createGeminiStatusHandler() {
-  const installCommand = 'pnpm add -g @google/gemini-cli';
-  const loginCommand = 'gemini';
+  const installCommand = "pnpm add -g @google/gemini-cli";
+  const loginCommand = "gemini";
 
   return async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -40,7 +44,7 @@ export function createGeminiStatusHandler() {
           path: null,
           auth: {
             authenticated: false,
-            method: 'none',
+            method: "none",
             hasApiKey: false,
           },
           installCommand,
@@ -69,7 +73,7 @@ export function createGeminiStatusHandler() {
         loginCommand,
       });
     } catch (error) {
-      logError(error, 'Get Gemini status failed');
+      logError(error, "Get Gemini status failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

@@ -4,14 +4,25 @@
  * Displays Claude API usage statistics using React Query for data fetching.
  */
 
-import { useState, useMemo } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertTriangle, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { useSetupStore } from '@/store/setup-store';
-import { useClaudeUsage } from '@/hooks/queries';
+import { useState, useMemo } from "react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import {
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ExternalLink,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { useSetupStore } from "@/store/setup-store";
+import { useClaudeUsage } from "@/hooks/queries";
 
 export function ClaudeUsagePopover() {
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
@@ -19,7 +30,8 @@ export function ClaudeUsagePopover() {
 
   // Check if CLI is verified/authenticated
   const isCliVerified =
-    claudeAuthStatus?.authenticated && claudeAuthStatus?.method === 'cli_authenticated';
+    claudeAuthStatus?.authenticated &&
+    claudeAuthStatus?.method === "cli_authenticated";
 
   // Use React Query for usage data
   const {
@@ -38,17 +50,28 @@ export function ClaudeUsagePopover() {
 
   // Derived status color/icon helper
   const getStatusInfo = (percentage: number) => {
-    if (percentage >= 75) return { color: 'text-red-500', icon: XCircle, bg: 'bg-red-500' };
+    if (percentage >= 75)
+      return { color: "text-red-500", icon: XCircle, bg: "bg-red-500" };
     if (percentage >= 50)
-      return { color: 'text-orange-500', icon: AlertTriangle, bg: 'bg-orange-500' };
-    return { color: 'text-green-500', icon: CheckCircle, bg: 'bg-green-500' };
+      return {
+        color: "text-orange-500",
+        icon: AlertTriangle,
+        bg: "bg-orange-500",
+      };
+    return { color: "text-green-500", icon: CheckCircle, bg: "bg-green-500" };
   };
 
   // Helper component for the progress bar
-  const ProgressBar = ({ percentage, colorClass }: { percentage: number; colorClass: string }) => (
+  const ProgressBar = ({
+    percentage,
+    colorClass,
+  }: {
+    percentage: number;
+    colorClass: string;
+  }) => (
     <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden">
       <div
-        className={cn('h-full transition-all duration-500', colorClass)}
+        className={cn("h-full transition-all duration-500", colorClass)}
         style={{ width: `${Math.min(percentage, 100)}%` }}
       />
     </div>
@@ -70,7 +93,9 @@ export function ClaudeUsagePopover() {
     stale?: boolean;
   }) => {
     const isValidPercentage =
-      typeof percentage === 'number' && !isNaN(percentage) && isFinite(percentage);
+      typeof percentage === "number" &&
+      !isNaN(percentage) &&
+      isFinite(percentage);
     const safePercentage = isValidPercentage ? percentage : 0;
 
     const status = getStatusInfo(safePercentage);
@@ -79,24 +104,28 @@ export function ClaudeUsagePopover() {
     return (
       <div
         className={cn(
-          'rounded-xl border bg-card/50 p-4 transition-opacity',
-          isPrimary ? 'border-border/60 shadow-sm' : 'border-border/40',
-          (stale || !isValidPercentage) && 'opacity-50'
+          "rounded-xl border bg-card/50 p-4 transition-opacity",
+          isPrimary ? "border-border/60 shadow-sm" : "border-border/40",
+          (stale || !isValidPercentage) && "opacity-50",
         )}
       >
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h4 className={cn('font-semibold', isPrimary ? 'text-sm' : 'text-xs')}>{title}</h4>
+            <h4
+              className={cn("font-semibold", isPrimary ? "text-sm" : "text-xs")}
+            >
+              {title}
+            </h4>
             <p className="text-[10px] text-muted-foreground">{subtitle}</p>
           </div>
           {isValidPercentage ? (
             <div className="flex items-center gap-1.5">
-              <StatusIcon className={cn('w-3.5 h-3.5', status.color)} />
+              <StatusIcon className={cn("w-3.5 h-3.5", status.color)} />
               <span
                 className={cn(
-                  'font-mono font-bold',
+                  "font-mono font-bold",
                   status.color,
-                  isPrimary ? 'text-base' : 'text-sm'
+                  isPrimary ? "text-base" : "text-sm",
                 )}
               >
                 {Math.round(safePercentage)}%
@@ -108,12 +137,12 @@ export function ClaudeUsagePopover() {
         </div>
         <ProgressBar
           percentage={safePercentage}
-          colorClass={isValidPercentage ? status.bg : 'bg-muted-foreground/30'}
+          colorClass={isValidPercentage ? status.bg : "bg-muted-foreground/30"}
         />
         {resetText && (
           <div className="mt-2 flex justify-end">
             <p className="text-xs text-muted-foreground flex items-center gap-1">
-              {title === 'Session Usage' && <Clock className="w-3 h-3" />}
+              {title === "Session Usage" && <Clock className="w-3 h-3" />}
               {resetText}
             </p>
           </div>
@@ -124,27 +153,37 @@ export function ClaudeUsagePopover() {
 
   // Header Button
   const maxPercentage = claudeUsage
-    ? Math.max(claudeUsage.sessionPercentage || 0, claudeUsage.weeklyPercentage || 0)
+    ? Math.max(
+        claudeUsage.sessionPercentage || 0,
+        claudeUsage.weeklyPercentage || 0,
+      )
     : 0;
 
   const getProgressBarColor = (percentage: number) => {
-    if (percentage >= 80) return 'bg-red-500';
-    if (percentage >= 50) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage >= 80) return "bg-red-500";
+    if (percentage >= 50) return "bg-yellow-500";
+    return "bg-green-500";
   };
 
   const trigger = (
-    <Button variant="ghost" size="sm" className="h-9 gap-3 bg-secondary border border-border px-3">
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-9 gap-3 bg-secondary border border-border px-3"
+    >
       <span className="text-sm font-medium">Usage</span>
       {claudeUsage && (
         <div
           className={cn(
-            'h-1.5 w-16 bg-muted-foreground/20 rounded-full overflow-hidden transition-opacity',
-            isStale && 'opacity-60'
+            "h-1.5 w-16 bg-muted-foreground/20 rounded-full overflow-hidden transition-opacity",
+            isStale && "opacity-60",
           )}
         >
           <div
-            className={cn('h-full transition-all duration-500', getProgressBarColor(maxPercentage))}
+            className={cn(
+              "h-full transition-all duration-500",
+              getProgressBarColor(maxPercentage),
+            )}
             style={{ width: `${Math.min(maxPercentage, 100)}%` }}
           />
         </div>
@@ -169,10 +208,12 @@ export function ClaudeUsagePopover() {
             <Button
               variant="ghost"
               size="icon"
-              className={cn('h-6 w-6', isFetching && 'opacity-80')}
+              className={cn("h-6 w-6", isFetching && "opacity-80")}
               onClick={() => !isFetching && refetch()}
             >
-              <RefreshCw className={cn('w-3.5 h-3.5', isFetching && 'animate-spin')} />
+              <RefreshCw
+                className={cn("w-3.5 h-3.5", isFetching && "animate-spin")}
+              />
             </Button>
           )}
         </div>
@@ -184,18 +225,24 @@ export function ClaudeUsagePopover() {
               <AlertTriangle className="w-8 h-8 text-yellow-500/80" />
               <div className="space-y-1 flex flex-col items-center">
                 <p className="text-sm font-medium">
-                  {error instanceof Error ? error.message : 'Failed to fetch usage'}
+                  {error instanceof Error
+                    ? error.message
+                    : "Failed to fetch usage"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Make sure Claude CLI is installed and authenticated via{' '}
-                  <code className="font-mono bg-muted px-1 rounded">claude login</code>
+                  Make sure Claude CLI is installed and authenticated via{" "}
+                  <code className="font-mono bg-muted px-1 rounded">
+                    claude login
+                  </code>
                 </p>
               </div>
             </div>
           ) : isLoading || !claudeUsage ? (
             <div className="flex flex-col items-center justify-center py-8 space-y-2">
               <Spinner size="lg" />
-              <p className="text-xs text-muted-foreground">Loading usage data...</p>
+              <p className="text-xs text-muted-foreground">
+                Loading usage data...
+              </p>
             </div>
           ) : (
             <>
@@ -231,10 +278,11 @@ export function ClaudeUsagePopover() {
               {claudeUsage.costLimit && claudeUsage.costLimit > 0 && (
                 <UsageCard
                   title="Extra Usage"
-                  subtitle={`${claudeUsage.costUsed ?? 0} / ${claudeUsage.costLimit} ${claudeUsage.costCurrency ?? ''}`}
+                  subtitle={`${claudeUsage.costUsed ?? 0} / ${claudeUsage.costLimit} ${claudeUsage.costCurrency ?? ""}`}
                   percentage={
                     claudeUsage.costLimit > 0
-                      ? ((claudeUsage.costUsed ?? 0) / claudeUsage.costLimit) * 100
+                      ? ((claudeUsage.costUsed ?? 0) / claudeUsage.costLimit) *
+                        100
                       : 0
                   }
                   stale={isStale}
@@ -255,7 +303,9 @@ export function ClaudeUsagePopover() {
             Claude Status <ExternalLink className="w-2.5 h-2.5" />
           </a>
 
-          <span className="text-[10px] text-muted-foreground">Updates every minute</span>
+          <span className="text-[10px] text-muted-foreground">
+            Updates every minute
+          </span>
         </div>
       </PopoverContent>
     </Popover>

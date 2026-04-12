@@ -4,7 +4,7 @@
  * Displays pull requests using React Query for data fetching.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import {
   GitPullRequest,
   RefreshCw,
@@ -15,26 +15,26 @@ import {
   MoreHorizontal,
   Zap,
   ArrowLeft,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI, type GitHubPR } from '@/lib/electron';
-import { useAppStore, type Feature } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
-import { Markdown } from '@/components/ui/markdown';
-import { cn, generateUUID } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-media-query';
-import { useGitHubPRs } from '@/hooks/queries';
-import { useCreateFeature } from '@/hooks/mutations/use-feature-mutations';
-import { PRCommentResolutionDialog } from '@/components/dialogs';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI, type GitHubPR } from "@/lib/electron";
+import { useAppStore, type Feature } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
+import { cn, generateUUID } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-media-query";
+import { useGitHubPRs } from "@/hooks/queries";
+import { useCreateFeature } from "@/hooks/mutations/use-feature-mutations";
+import { PRCommentResolutionDialog } from "@/components/dialogs";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 export function GitHubPRsView() {
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
@@ -62,13 +62,13 @@ export function GitHubPRsView() {
     api.openExternalLink(url);
   }, []);
 
-  const createFeature = useCreateFeature(currentProject?.path ?? '');
+  const createFeature = useCreateFeature(currentProject?.path ?? "");
 
   const handleAutoAddressComments = useCallback(
     async (pr: GitHubPR) => {
       if (!pr.number || !currentProject?.path) {
-        toast.error('Cannot address PR comments', {
-          description: 'No PR number or project available.',
+        toast.error("Cannot address PR comments", {
+          description: "No PR number or project available.",
         });
         return;
       }
@@ -77,13 +77,13 @@ export function GitHubPRsView() {
       const feature: Feature = {
         id: featureId,
         title: `Address PR #${pr.number} Review Comments`,
-        category: 'bug-fix',
+        category: "bug-fix",
         description: `Read the review requests on PR #${pr.number} and address any feedback the best you can.`,
         steps: [],
-        status: 'backlog',
-        model: resolveModelString('opus'),
-        thinkingLevel: 'none',
-        planningMode: 'skip',
+        status: "backlog",
+        model: resolveModelString("opus"),
+        thinkingLevel: "none",
+        planningMode: "skip",
         requirePlanApproval: false,
         dependencies: [],
         ...(pr.url ? { prUrl: pr.url } : {}),
@@ -100,52 +100,66 @@ export function GitHubPRsView() {
             await api.autoMode.runFeature(
               currentProject.path,
               featureId,
-              getEffectiveUseWorktrees(currentProject.path)
+              getEffectiveUseWorktrees(currentProject.path),
             );
-            toast.success('Feature created and started', {
+            toast.success("Feature created and started", {
               description: `Addressing review comments on PR #${pr.number}`,
             });
           } catch (runError) {
-            toast.error('Feature created but failed to start', {
+            toast.error("Feature created but failed to start", {
               description:
                 runError instanceof Error
                   ? runError.message
-                  : 'An error occurred while starting the feature',
+                  : "An error occurred while starting the feature",
             });
           }
         } else {
-          toast.error('Cannot start feature', {
+          toast.error("Cannot start feature", {
             description:
-              'Feature API is not available. The feature was created but could not be started.',
+              "Feature API is not available. The feature was created but could not be started.",
           });
         }
       } catch (error) {
-        toast.error('Failed to create feature', {
-          description: error instanceof Error ? error.message : 'An error occurred',
+        toast.error("Failed to create feature", {
+          description:
+            error instanceof Error ? error.message : "An error occurred",
         });
       }
     },
-    [currentProject, createFeature, getEffectiveUseWorktrees]
+    [currentProject, createFeature, getEffectiveUseWorktrees],
   );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getReviewStatus = (pr: GitHubPR) => {
-    if (pr.isDraft) return { label: 'Draft', color: 'text-muted-foreground', bg: 'bg-muted' };
+    if (pr.isDraft)
+      return { label: "Draft", color: "text-muted-foreground", bg: "bg-muted" };
     switch (pr.reviewDecision) {
-      case 'APPROVED':
-        return { label: 'Approved', color: 'text-green-500', bg: 'bg-green-500/10' };
-      case 'CHANGES_REQUESTED':
-        return { label: 'Changes requested', color: 'text-orange-500', bg: 'bg-orange-500/10' };
-      case 'REVIEW_REQUIRED':
-        return { label: 'Review required', color: 'text-yellow-500', bg: 'bg-yellow-500/10' };
+      case "APPROVED":
+        return {
+          label: "Approved",
+          color: "text-green-500",
+          bg: "bg-green-500/10",
+        };
+      case "CHANGES_REQUESTED":
+        return {
+          label: "Changes requested",
+          color: "text-orange-500",
+          bg: "bg-orange-500/10",
+        };
+      case "REVIEW_REQUIRED":
+        return {
+          label: "Review required",
+          color: "text-yellow-500",
+          bg: "bg-yellow-500/10",
+        };
       default:
         return null;
     }
@@ -165,9 +179,13 @@ export function GitHubPRsView() {
         <div className="p-4 rounded-full bg-destructive/10 mb-4">
           <GitPullRequest className="h-12 w-12 text-destructive" />
         </div>
-        <h2 className="text-lg font-medium mb-2">Failed to Load Pull Requests</h2>
+        <h2 className="text-lg font-medium mb-2">
+          Failed to Load Pull Requests
+        </h2>
         <p className="text-muted-foreground max-w-md mb-4">
-          {error instanceof Error ? error.message : 'Failed to fetch pull requests'}
+          {error instanceof Error
+            ? error.message
+            : "Failed to fetch pull requests"}
         </p>
         <Button variant="outline" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -184,9 +202,9 @@ export function GitHubPRsView() {
       {/* PR List - hidden on mobile when a PR is selected */}
       <div
         className={cn(
-          'flex flex-col overflow-hidden border-r border-border',
-          selectedPR ? 'w-80' : 'flex-1',
-          isMobile && selectedPR && 'hidden'
+          "flex flex-col overflow-hidden border-r border-border",
+          selectedPR ? "w-80" : "flex-1",
+          isMobile && selectedPR && "hidden",
         )}
       >
         {/* Header */}
@@ -199,13 +217,22 @@ export function GitHubPRsView() {
               <h1 className="text-lg font-bold">Pull Requests</h1>
               <p className="text-xs text-muted-foreground">
                 {totalPRs === 0
-                  ? 'No pull requests found'
+                  ? "No pull requests found"
                   : `${openPRs.length} open, ${mergedPRs.length} merged`}
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
           </Button>
         </div>
 
@@ -252,7 +279,9 @@ export function GitHubPRsView() {
                       onClick={() => setSelectedPR(pr)}
                       onOpenExternal={() => handleOpenInGitHub(pr.url)}
                       onManageComments={() => setCommentDialogPR(pr)}
-                      onAutoAddressComments={() => handleAutoAddressComments(pr)}
+                      onAutoAddressComments={() =>
+                        handleAutoAddressComments(pr)
+                      }
                       formatDate={formatDate}
                       getReviewStatus={getReviewStatus}
                     />
@@ -283,7 +312,7 @@ export function GitHubPRsView() {
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                   )}
-                  {selectedPR.state === 'MERGED' ? (
+                  {selectedPR.state === "MERGED" ? (
                     <GitMerge className="h-4 w-4 text-purple-500 shrink-0" />
                   ) : (
                     <GitPullRequest className="h-4 w-4 text-green-500 shrink-0" />
@@ -297,7 +326,12 @@ export function GitHubPRsView() {
                     </span>
                   )}
                 </div>
-                <div className={cn('flex items-center gap-2 shrink-0', isMobile && 'gap-1')}>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 shrink-0",
+                    isMobile && "gap-1",
+                  )}
+                >
                   {!isMobile && (
                     <Button
                       variant="outline"
@@ -317,7 +351,11 @@ export function GitHubPRsView() {
                     {!isMobile && <span className="ml-1">Open in GitHub</span>}
                   </Button>
                   {!isMobile && (
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedPR(null)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedPR(null)}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   )}
@@ -325,7 +363,9 @@ export function GitHubPRsView() {
               </div>
 
               {/* PR Detail Content */}
-              <div className={cn('flex-1 overflow-auto', isMobile ? 'p-4' : 'p-6')}>
+              <div
+                className={cn("flex-1 overflow-auto", isMobile ? "p-4" : "p-6")}
+              >
                 {/* Title */}
                 <h1 className="text-xl font-bold mb-2">{selectedPR.title}</h1>
 
@@ -333,41 +373,46 @@ export function GitHubPRsView() {
                 <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4 flex-wrap">
                   <span
                     className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
-                      selectedPR.state === 'MERGED'
-                        ? 'bg-purple-500/10 text-purple-500'
+                      "px-2 py-0.5 rounded-full text-xs font-medium",
+                      selectedPR.state === "MERGED"
+                        ? "bg-purple-500/10 text-purple-500"
                         : selectedPR.isDraft
-                          ? 'bg-muted text-muted-foreground'
-                          : 'bg-green-500/10 text-green-500'
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-green-500/10 text-green-500",
                     )}
                   >
-                    {selectedPR.state === 'MERGED'
-                      ? 'Merged'
+                    {selectedPR.state === "MERGED"
+                      ? "Merged"
                       : selectedPR.isDraft
-                        ? 'Draft'
-                        : 'Open'}
+                        ? "Draft"
+                        : "Open"}
                   </span>
                   {reviewStatus && (
                     <span
                       className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
+                        "px-2 py-0.5 rounded-full text-xs font-medium",
                         reviewStatus.bg,
-                        reviewStatus.color
+                        reviewStatus.color,
                       )}
                     >
                       {reviewStatus.label}
                     </span>
                   )}
                   <span>
-                    #{selectedPR.number} opened {formatDate(selectedPR.createdAt)} by{' '}
-                    <span className="font-medium text-foreground">{selectedPR.author.login}</span>
+                    #{selectedPR.number} opened{" "}
+                    {formatDate(selectedPR.createdAt)} by{" "}
+                    <span className="font-medium text-foreground">
+                      {selectedPR.author.login}
+                    </span>
                   </span>
                 </div>
 
                 {/* Branch info */}
                 {selectedPR.headRefName && (
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xs text-muted-foreground">Branch:</span>
+                    <span className="text-xs text-muted-foreground">
+                      Branch:
+                    </span>
                     <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
                       {selectedPR.headRefName}
                     </span>
@@ -397,7 +442,9 @@ export function GitHubPRsView() {
                 {selectedPR.body ? (
                   <Markdown className="text-sm">{selectedPR.body}</Markdown>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No description provided.</p>
+                  <p className="text-sm text-muted-foreground italic">
+                    No description provided.
+                  </p>
                 )}
 
                 {/* Review Comments CTA */}
@@ -407,15 +454,26 @@ export function GitHubPRsView() {
                     <span className="text-sm font-medium">Review Comments</span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Manage review comments individually or let AI address all feedback
-                    automatically.
+                    Manage review comments individually or let AI address all
+                    feedback automatically.
                   </p>
-                  <div className={cn('flex gap-2', isMobile ? 'flex-col' : 'items-center')}>
-                    <Button variant="outline" onClick={() => setCommentDialogPR(selectedPR)}>
+                  <div
+                    className={cn(
+                      "flex gap-2",
+                      isMobile ? "flex-col" : "items-center",
+                    )}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={() => setCommentDialogPR(selectedPR)}
+                    >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       Manage Review Comments
                     </Button>
-                    <Button variant="outline" onClick={() => handleAutoAddressComments(selectedPR)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleAutoAddressComments(selectedPR)}
+                    >
                       <Zap className="h-4 w-4 mr-2" />
                       Address Review Comments
                     </Button>
@@ -459,7 +517,9 @@ interface PRRowProps {
   onManageComments: () => void;
   onAutoAddressComments: () => void;
   formatDate: (date: string) => string;
-  getReviewStatus: (pr: GitHubPR) => { label: string; color: string; bg: string } | null;
+  getReviewStatus: (
+    pr: GitHubPR,
+  ) => { label: string; color: string; bg: string } | null;
 }
 
 function PRRow({
@@ -477,12 +537,12 @@ function PRRow({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors',
-        isSelected && 'bg-accent'
+        "flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors",
+        isSelected && "bg-accent",
       )}
       onClick={onClick}
     >
-      {pr.state === 'MERGED' ? (
+      {pr.state === "MERGED" ? (
         <GitMerge className="h-4 w-4 text-purple-500 mt-0.5 shrink-0" />
       ) : (
         <GitPullRequest className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
@@ -514,9 +574,9 @@ function PRRow({
           {reviewStatus && (
             <span
               className={cn(
-                'px-1.5 py-0.5 text-[10px] font-medium rounded',
+                "px-1.5 py-0.5 text-[10px] font-medium rounded",
                 reviewStatus.bg,
-                reviewStatus.color
+                reviewStatus.color,
               )}
             >
               {reviewStatus.label}

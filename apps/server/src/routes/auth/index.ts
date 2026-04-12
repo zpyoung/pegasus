@@ -12,8 +12,8 @@
  * Mounted at /api/auth in the main server (BEFORE auth middleware).
  */
 
-import { Router } from 'express';
-import type { Request } from 'express';
+import { Router } from "express";
+import type { Request } from "express";
 import {
   validateApiKey,
   createSession,
@@ -22,14 +22,14 @@ import {
   getSessionCookieName,
   isRequestAuthenticated,
   createWsConnectionToken,
-} from '../../lib/auth.js';
+} from "../../lib/auth.js";
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 const RATE_LIMIT_MAX_ATTEMPTS = 5; // Max 5 attempts per window
 
 // Check if we're in test mode - disable rate limiting for E2E tests
-const isTestMode = process.env.PEGASUS_MOCK_AGENT === 'true';
+const isTestMode = process.env.PEGASUS_MOCK_AGENT === "true";
 
 // In-memory rate limit tracking (resets on server restart)
 const loginAttempts = new Map<string, { count: number; windowStart: number }>();
@@ -44,7 +44,7 @@ setInterval(
       }
     });
   },
-  5 * 60 * 1000
+  5 * 60 * 1000,
 );
 
 /**
@@ -52,13 +52,15 @@ setInterval(
  * Handles X-Forwarded-For header for reverse proxy setups
  */
 function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
+  const forwarded = req.headers["x-forwarded-for"];
   if (forwarded) {
     // X-Forwarded-For can be a comma-separated list; take the first (original client)
-    const forwardedIp = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+    const forwardedIp = Array.isArray(forwarded)
+      ? forwarded[0]
+      : forwarded.split(",")[0];
     return forwardedIp.trim();
   }
-  return req.ip || req.socket.remoteAddress || 'unknown';
+  return req.ip || req.socket.remoteAddress || "unknown";
 }
 
 /**
@@ -81,7 +83,9 @@ function checkRateLimit(ip: string): { limited: boolean; retryAfter?: number } {
 
   // Check if over limit
   if (attempt.count >= RATE_LIMIT_MAX_ATTEMPTS) {
-    const retryAfter = Math.ceil((RATE_LIMIT_WINDOW_MS - (now - attempt.windowStart)) / 1000);
+    const retryAfter = Math.ceil(
+      (RATE_LIMIT_WINDOW_MS - (now - attempt.windowStart)) / 1000,
+    );
     return { limited: true, retryAfter };
   }
 
@@ -121,20 +125,24 @@ export function createAuthRoutes(): Router {
    * If PEGASUS_AUTO_LOGIN=true is set, automatically creates a session
    * for unauthenticated requests (useful for development).
    */
-  router.get('/status', async (req, res) => {
+  router.get("/status", async (req, res) => {
     let authenticated = isRequestAuthenticated(req);
 
     // Clear legacy non-port-scoped cookie if present (migrating to port-scoped names)
-    if (req.cookies?.['pegasus_session']) {
-      res.cookie('pegasus_session', '', { ...getSessionCookieOptions(), maxAge: 0, expires: new Date(0) });
+    if (req.cookies?.["pegasus_session"]) {
+      res.cookie("pegasus_session", "", {
+        ...getSessionCookieOptions(),
+        maxAge: 0,
+        expires: new Date(0),
+      });
     }
 
     // Auto-login for development: create session automatically if enabled
     // Only works in non-production environments as a safeguard
     if (
       !authenticated &&
-      process.env.PEGASUS_AUTO_LOGIN === 'true' &&
-      process.env.NODE_ENV !== 'production'
+      process.env.PEGASUS_AUTO_LOGIN === "true" &&
+      process.env.NODE_ENV !== "production"
     ) {
       const sessionToken = await createSession();
       const cookieOptions = getSessionCookieOptions();
@@ -158,7 +166,7 @@ export function createAuthRoutes(): Router {
    *
    * Rate limited to 5 attempts per minute per IP to prevent brute force attacks.
    */
-  router.post('/login', async (req, res) => {
+  router.post("/login", async (req, res) => {
     const clientIp = getClientIp(req);
 
     // Skip rate limiting in test mode to allow parallel E2E tests
@@ -168,7 +176,7 @@ export function createAuthRoutes(): Router {
       if (rateLimit.limited) {
         res.status(429).json({
           success: false,
-          error: 'Too many login attempts. Please try again later.',
+          error: "Too many login attempts. Please try again later.",
           retryAfter: rateLimit.retryAfter,
         });
         return;
@@ -180,7 +188,7 @@ export function createAuthRoutes(): Router {
     if (!apiKey) {
       res.status(400).json({
         success: false,
-        error: 'API key is required.',
+        error: "API key is required.",
       });
       return;
     }
@@ -193,7 +201,7 @@ export function createAuthRoutes(): Router {
     if (!validateApiKey(apiKey)) {
       res.status(401).json({
         success: false,
-        error: 'Invalid API key.',
+        error: "Invalid API key.",
       });
       return;
     }
@@ -206,7 +214,7 @@ export function createAuthRoutes(): Router {
     res.cookie(cookieName, sessionToken, cookieOptions);
     res.json({
       success: true,
-      message: 'Logged in successfully.',
+      message: "Logged in successfully.",
       // Return token for explicit header-based auth (works around cross-origin cookie issues)
       token: sessionToken,
     });
@@ -219,12 +227,12 @@ export function createAuthRoutes(): Router {
    * This token is used for initial WebSocket handshake authentication and expires in 5 minutes.
    * The token is NOT the session cookie value - it's a separate, short-lived token.
    */
-  router.get('/token', (req, res) => {
+  router.get("/token", (req, res) => {
     // Validate the session is still valid (via cookie, API key, or session token header)
     if (!isRequestAuthenticated(req)) {
       res.status(401).json({
         success: false,
-        error: 'Authentication required.',
+        error: "Authentication required.",
       });
       return;
     }
@@ -244,7 +252,7 @@ export function createAuthRoutes(): Router {
    *
    * Clears the session cookie and invalidates the session.
    */
-  router.post('/logout', async (req, res) => {
+  router.post("/logout", async (req, res) => {
     const cookieName = getSessionCookieName();
     const sessionToken = req.cookies?.[cookieName] as string | undefined;
 
@@ -255,7 +263,7 @@ export function createAuthRoutes(): Router {
     // Clear the cookie by setting it to empty with immediate expiration
     // Using res.cookie() with maxAge: 0 is more reliable than clearCookie()
     // in cross-origin development environments
-    res.cookie(cookieName, '', {
+    res.cookie(cookieName, "", {
       ...getSessionCookieOptions(),
       maxAge: 0,
       expires: new Date(0),
@@ -263,7 +271,7 @@ export function createAuthRoutes(): Router {
 
     res.json({
       success: true,
-      message: 'Logged out successfully.',
+      message: "Logged out successfully.",
     });
   });
 

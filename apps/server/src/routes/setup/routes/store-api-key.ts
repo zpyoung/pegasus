@@ -2,11 +2,16 @@
  * POST /store-api-key endpoint - Store API key
  */
 
-import type { Request, Response } from 'express';
-import { setApiKey, persistApiKeyToEnv, getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import {
+  setApiKey,
+  persistApiKeyToEnv,
+  getErrorMessage,
+  logError,
+} from "../common.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('Setup');
+const logger = createLogger("Setup");
 
 export function createStoreApiKeyHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -17,14 +22,16 @@ export function createStoreApiKeyHandler() {
       };
 
       if (!provider || !apiKey) {
-        res.status(400).json({ success: false, error: 'provider and apiKey required' });
+        res
+          .status(400)
+          .json({ success: false, error: "provider and apiKey required" });
         return;
       }
 
       const providerEnvMap: Record<string, string> = {
-        anthropic: 'ANTHROPIC_API_KEY',
-        anthropic_oauth_token: 'ANTHROPIC_API_KEY',
-        openai: 'OPENAI_API_KEY',
+        anthropic: "ANTHROPIC_API_KEY",
+        anthropic_oauth_token: "ANTHROPIC_API_KEY",
+        openai: "OPENAI_API_KEY",
       };
       const envKey = providerEnvMap[provider];
       if (!envKey) {
@@ -42,7 +49,7 @@ export function createStoreApiKeyHandler() {
 
       res.json({ success: true });
     } catch (error) {
-      logError(error, 'Store API key failed');
+      logError(error, "Store API key failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

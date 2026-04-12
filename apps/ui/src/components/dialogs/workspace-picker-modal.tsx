@@ -5,11 +5,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Folder, FolderOpen, AlertCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useWorkspaceDirectories } from '@/hooks/queries';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Folder, FolderOpen, AlertCircle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useWorkspaceDirectories } from "@/hooks/queries";
 
 interface WorkspaceDirectory {
   name: string;
@@ -22,9 +22,18 @@ interface WorkspacePickerModalProps {
   onSelect: (path: string, name: string) => void;
 }
 
-export function WorkspacePickerModal({ open, onOpenChange, onSelect }: WorkspacePickerModalProps) {
+export function WorkspacePickerModal({
+  open,
+  onOpenChange,
+  onSelect,
+}: WorkspacePickerModalProps) {
   // React Query hook - only fetch when modal is open
-  const { data: directories = [], isLoading, error, refetch } = useWorkspaceDirectories(open);
+  const {
+    data: directories = [],
+    isLoading,
+    error,
+    refetch,
+  } = useWorkspaceDirectories(open);
 
   const handleSelect = (dir: WorkspaceDirectory) => {
     onSelect(dir.path, dir.name);
@@ -49,7 +58,9 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <Spinner size="xl" />
-              <p className="text-sm text-muted-foreground">Loading projects...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading projects...
+              </p>
             </div>
           )}
 
@@ -59,7 +70,12 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
                 <AlertCircle className="w-6 h-6 text-destructive" />
               </div>
               <p className="text-sm text-destructive">{errorMessage}</p>
-              <Button variant="secondary" size="sm" onClick={() => refetch()} className="mt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => refetch()}
+                className="mt-2"
+              >
                 Try Again
               </Button>
             </div>
@@ -92,7 +108,9 @@ export function WorkspacePickerModal({ open, onOpenChange, onSelect }: Workspace
                     <p className="font-medium text-foreground truncate group-hover:text-brand-500 transition-colors">
                       {dir.name}
                     </p>
-                    <p className="text-xs text-muted-foreground/70 truncate">{dir.path}</p>
+                    <p className="text-xs text-muted-foreground/70 truncate">
+                      {dir.path}
+                    </p>
                   </div>
                 </button>
               ))}

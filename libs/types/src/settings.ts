@@ -6,18 +6,24 @@
  * (for file I/O via SettingsService) and the UI (for state management and sync).
  */
 
-import type { ModelAlias, ModelId } from './model.js';
-import type { CursorModelId } from './cursor-models.js';
-import { CURSOR_MODEL_MAP, getAllCursorModelIds } from './cursor-models.js';
-import type { OpencodeModelId } from './opencode-models.js';
-import { getAllOpencodeModelIds, DEFAULT_OPENCODE_MODEL } from './opencode-models.js';
-import type { GeminiModelId } from './gemini-models.js';
-import { getAllGeminiModelIds, DEFAULT_GEMINI_MODEL } from './gemini-models.js';
-import type { CopilotModelId } from './copilot-models.js';
-import { getAllCopilotModelIds, DEFAULT_COPILOT_MODEL } from './copilot-models.js';
-import type { PromptCustomization } from './prompts.js';
-import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
-import type { ReasoningEffort } from './provider.js';
+import type { ModelAlias, ModelId } from "./model.js";
+import type { CursorModelId } from "./cursor-models.js";
+import { CURSOR_MODEL_MAP, getAllCursorModelIds } from "./cursor-models.js";
+import type { OpencodeModelId } from "./opencode-models.js";
+import {
+  getAllOpencodeModelIds,
+  DEFAULT_OPENCODE_MODEL,
+} from "./opencode-models.js";
+import type { GeminiModelId } from "./gemini-models.js";
+import { getAllGeminiModelIds, DEFAULT_GEMINI_MODEL } from "./gemini-models.js";
+import type { CopilotModelId } from "./copilot-models.js";
+import {
+  getAllCopilotModelIds,
+  DEFAULT_COPILOT_MODEL,
+} from "./copilot-models.js";
+import type { PromptCustomization } from "./prompts.js";
+import type { CodexSandboxMode, CodexApprovalPolicy } from "./codex.js";
+import type { ReasoningEffort } from "./provider.js";
 
 // Re-export ModelAlias for convenience
 export type { ModelAlias };
@@ -35,179 +41,179 @@ export type { ModelAlias };
  *   ayu-light, onelight, bluloco, feather
  */
 export type ThemeMode =
-  | 'system'
+  | "system"
   // Dark themes (20)
-  | 'dark'
-  | 'retro'
-  | 'dracula'
-  | 'nord'
-  | 'monokai'
-  | 'tokyonight'
-  | 'solarized'
-  | 'gruvbox'
-  | 'catppuccin'
-  | 'onedark'
-  | 'synthwave'
-  | 'red'
-  | 'sunset'
-  | 'gray'
-  | 'forest'
-  | 'ocean'
-  | 'ember'
-  | 'ayu-dark'
-  | 'ayu-mirage'
-  | 'matcha'
+  | "dark"
+  | "retro"
+  | "dracula"
+  | "nord"
+  | "monokai"
+  | "tokyonight"
+  | "solarized"
+  | "gruvbox"
+  | "catppuccin"
+  | "onedark"
+  | "synthwave"
+  | "red"
+  | "sunset"
+  | "gray"
+  | "forest"
+  | "ocean"
+  | "ember"
+  | "ayu-dark"
+  | "ayu-mirage"
+  | "matcha"
   // Light themes (20)
-  | 'light'
-  | 'cream'
-  | 'solarizedlight'
-  | 'github'
-  | 'paper'
-  | 'rose'
-  | 'mint'
-  | 'lavender'
-  | 'sand'
-  | 'sky'
-  | 'peach'
-  | 'snow'
-  | 'sepia'
-  | 'gruvboxlight'
-  | 'nordlight'
-  | 'blossom'
-  | 'ayu-light'
-  | 'onelight'
-  | 'bluloco'
-  | 'feather';
+  | "light"
+  | "cream"
+  | "solarizedlight"
+  | "github"
+  | "paper"
+  | "rose"
+  | "mint"
+  | "lavender"
+  | "sand"
+  | "sky"
+  | "peach"
+  | "snow"
+  | "sepia"
+  | "gruvboxlight"
+  | "nordlight"
+  | "blossom"
+  | "ayu-light"
+  | "onelight"
+  | "bluloco"
+  | "feather";
 
 export type TerminalPromptTheme =
-  | 'custom'
-  | 'omp-1_shell'
-  | 'omp-agnoster'
-  | 'omp-agnoster.minimal'
-  | 'omp-agnosterplus'
-  | 'omp-aliens'
-  | 'omp-amro'
-  | 'omp-atomic'
-  | 'omp-atomicBit'
-  | 'omp-avit'
-  | 'omp-blue-owl'
-  | 'omp-blueish'
-  | 'omp-bubbles'
-  | 'omp-bubblesextra'
-  | 'omp-bubblesline'
-  | 'omp-capr4n'
-  | 'omp-catppuccin'
-  | 'omp-catppuccin_frappe'
-  | 'omp-catppuccin_latte'
-  | 'omp-catppuccin_macchiato'
-  | 'omp-catppuccin_mocha'
-  | 'omp-cert'
-  | 'omp-chips'
-  | 'omp-cinnamon'
-  | 'omp-clean-detailed'
-  | 'omp-cloud-context'
-  | 'omp-cloud-native-azure'
-  | 'omp-cobalt2'
-  | 'omp-craver'
-  | 'omp-darkblood'
-  | 'omp-devious-diamonds'
-  | 'omp-di4am0nd'
-  | 'omp-dracula'
-  | 'omp-easy-term'
-  | 'omp-emodipt'
-  | 'omp-emodipt-extend'
-  | 'omp-fish'
-  | 'omp-free-ukraine'
-  | 'omp-froczh'
-  | 'omp-gmay'
-  | 'omp-glowsticks'
-  | 'omp-grandpa-style'
-  | 'omp-gruvbox'
-  | 'omp-half-life'
-  | 'omp-honukai'
-  | 'omp-hotstick.minimal'
-  | 'omp-hul10'
-  | 'omp-hunk'
-  | 'omp-huvix'
-  | 'omp-if_tea'
-  | 'omp-illusi0n'
-  | 'omp-iterm2'
-  | 'omp-jandedobbeleer'
-  | 'omp-jblab_2021'
-  | 'omp-jonnychipz'
-  | 'omp-json'
-  | 'omp-jtracey93'
-  | 'omp-jv_sitecorian'
-  | 'omp-kali'
-  | 'omp-kushal'
-  | 'omp-lambda'
-  | 'omp-lambdageneration'
-  | 'omp-larserikfinholt'
-  | 'omp-lightgreen'
-  | 'omp-M365Princess'
-  | 'omp-marcduiker'
-  | 'omp-markbull'
-  | 'omp-material'
-  | 'omp-microverse-power'
-  | 'omp-mojada'
-  | 'omp-montys'
-  | 'omp-mt'
-  | 'omp-multiverse-neon'
-  | 'omp-negligible'
-  | 'omp-neko'
-  | 'omp-night-owl'
-  | 'omp-nordtron'
-  | 'omp-nu4a'
-  | 'omp-onehalf.minimal'
-  | 'omp-paradox'
-  | 'omp-pararussel'
-  | 'omp-patriksvensson'
-  | 'omp-peru'
-  | 'omp-pixelrobots'
-  | 'omp-plague'
-  | 'omp-poshmon'
-  | 'omp-powerlevel10k_classic'
-  | 'omp-powerlevel10k_lean'
-  | 'omp-powerlevel10k_modern'
-  | 'omp-powerlevel10k_rainbow'
-  | 'omp-powerline'
-  | 'omp-probua.minimal'
-  | 'omp-pure'
-  | 'omp-quick-term'
-  | 'omp-remk'
-  | 'omp-robbyrussell'
-  | 'omp-rudolfs-dark'
-  | 'omp-rudolfs-light'
-  | 'omp-sim-web'
-  | 'omp-slim'
-  | 'omp-slimfat'
-  | 'omp-smoothie'
-  | 'omp-sonicboom_dark'
-  | 'omp-sonicboom_light'
-  | 'omp-sorin'
-  | 'omp-space'
-  | 'omp-spaceship'
-  | 'omp-star'
-  | 'omp-stelbent-compact.minimal'
-  | 'omp-stelbent.minimal'
-  | 'omp-takuya'
-  | 'omp-the-unnamed'
-  | 'omp-thecyberden'
-  | 'omp-tiwahu'
-  | 'omp-tokyo'
-  | 'omp-tokyonight_storm'
-  | 'omp-tonybaloney'
-  | 'omp-uew'
-  | 'omp-unicorn'
-  | 'omp-velvet'
-  | 'omp-wholespace'
-  | 'omp-wopian'
-  | 'omp-xtoys'
-  | 'omp-ys'
-  | 'omp-zash';
+  | "custom"
+  | "omp-1_shell"
+  | "omp-agnoster"
+  | "omp-agnoster.minimal"
+  | "omp-agnosterplus"
+  | "omp-aliens"
+  | "omp-amro"
+  | "omp-atomic"
+  | "omp-atomicBit"
+  | "omp-avit"
+  | "omp-blue-owl"
+  | "omp-blueish"
+  | "omp-bubbles"
+  | "omp-bubblesextra"
+  | "omp-bubblesline"
+  | "omp-capr4n"
+  | "omp-catppuccin"
+  | "omp-catppuccin_frappe"
+  | "omp-catppuccin_latte"
+  | "omp-catppuccin_macchiato"
+  | "omp-catppuccin_mocha"
+  | "omp-cert"
+  | "omp-chips"
+  | "omp-cinnamon"
+  | "omp-clean-detailed"
+  | "omp-cloud-context"
+  | "omp-cloud-native-azure"
+  | "omp-cobalt2"
+  | "omp-craver"
+  | "omp-darkblood"
+  | "omp-devious-diamonds"
+  | "omp-di4am0nd"
+  | "omp-dracula"
+  | "omp-easy-term"
+  | "omp-emodipt"
+  | "omp-emodipt-extend"
+  | "omp-fish"
+  | "omp-free-ukraine"
+  | "omp-froczh"
+  | "omp-gmay"
+  | "omp-glowsticks"
+  | "omp-grandpa-style"
+  | "omp-gruvbox"
+  | "omp-half-life"
+  | "omp-honukai"
+  | "omp-hotstick.minimal"
+  | "omp-hul10"
+  | "omp-hunk"
+  | "omp-huvix"
+  | "omp-if_tea"
+  | "omp-illusi0n"
+  | "omp-iterm2"
+  | "omp-jandedobbeleer"
+  | "omp-jblab_2021"
+  | "omp-jonnychipz"
+  | "omp-json"
+  | "omp-jtracey93"
+  | "omp-jv_sitecorian"
+  | "omp-kali"
+  | "omp-kushal"
+  | "omp-lambda"
+  | "omp-lambdageneration"
+  | "omp-larserikfinholt"
+  | "omp-lightgreen"
+  | "omp-M365Princess"
+  | "omp-marcduiker"
+  | "omp-markbull"
+  | "omp-material"
+  | "omp-microverse-power"
+  | "omp-mojada"
+  | "omp-montys"
+  | "omp-mt"
+  | "omp-multiverse-neon"
+  | "omp-negligible"
+  | "omp-neko"
+  | "omp-night-owl"
+  | "omp-nordtron"
+  | "omp-nu4a"
+  | "omp-onehalf.minimal"
+  | "omp-paradox"
+  | "omp-pararussel"
+  | "omp-patriksvensson"
+  | "omp-peru"
+  | "omp-pixelrobots"
+  | "omp-plague"
+  | "omp-poshmon"
+  | "omp-powerlevel10k_classic"
+  | "omp-powerlevel10k_lean"
+  | "omp-powerlevel10k_modern"
+  | "omp-powerlevel10k_rainbow"
+  | "omp-powerline"
+  | "omp-probua.minimal"
+  | "omp-pure"
+  | "omp-quick-term"
+  | "omp-remk"
+  | "omp-robbyrussell"
+  | "omp-rudolfs-dark"
+  | "omp-rudolfs-light"
+  | "omp-sim-web"
+  | "omp-slim"
+  | "omp-slimfat"
+  | "omp-smoothie"
+  | "omp-sonicboom_dark"
+  | "omp-sonicboom_light"
+  | "omp-sorin"
+  | "omp-space"
+  | "omp-spaceship"
+  | "omp-star"
+  | "omp-stelbent-compact.minimal"
+  | "omp-stelbent.minimal"
+  | "omp-takuya"
+  | "omp-the-unnamed"
+  | "omp-thecyberden"
+  | "omp-tiwahu"
+  | "omp-tokyo"
+  | "omp-tokyonight_storm"
+  | "omp-tonybaloney"
+  | "omp-uew"
+  | "omp-unicorn"
+  | "omp-velvet"
+  | "omp-wholespace"
+  | "omp-wopian"
+  | "omp-xtoys"
+  | "omp-ys"
+  | "omp-zash";
 
 /** PlanningMode - Planning levels for feature generation workflows */
-export type PlanningMode = 'skip' | 'lite' | 'spec' | 'full';
+export type PlanningMode = "skip" | "lite" | "spec" | "full";
 
 /**
  * FeatureTemplate - Pre-configured task prompts for quick feature creation
@@ -235,55 +241,55 @@ export interface FeatureTemplate {
 /** Default built-in feature templates */
 export const DEFAULT_FEATURE_TEMPLATES: FeatureTemplate[] = [
   {
-    id: 'run-tests-lint-format',
-    name: 'Run tests, lint, and format',
+    id: "run-tests-lint-format",
+    name: "Run tests, lint, and format",
     prompt:
-      'Run all tests, lint checks, and format the codebase. Fix any issues found. Ensure the code passes all quality checks before marking complete.',
+      "Run all tests, lint checks, and format the codebase. Fix any issues found. Ensure the code passes all quality checks before marking complete.",
     isBuiltIn: true,
     enabled: true,
     order: 0,
   },
   {
-    id: 'write-tests-for-changes',
-    name: 'Write tests for current changes',
+    id: "write-tests-for-changes",
+    name: "Write tests for current changes",
     prompt:
-      'Analyze the current uncommitted changes and write comprehensive tests for the modified code. Focus on edge cases and ensure good test coverage.',
+      "Analyze the current uncommitted changes and write comprehensive tests for the modified code. Focus on edge cases and ensure good test coverage.",
     isBuiltIn: true,
     enabled: true,
     order: 1,
   },
   {
-    id: 'review-recent-changes',
-    name: 'Review and summarize recent changes',
+    id: "review-recent-changes",
+    name: "Review and summarize recent changes",
     prompt:
-      'Review the recent commits and changes in this codebase. Provide a summary of what was changed, identify any potential issues, and suggest improvements.',
+      "Review the recent commits and changes in this codebase. Provide a summary of what was changed, identify any potential issues, and suggest improvements.",
     isBuiltIn: true,
     enabled: true,
     order: 2,
   },
   {
-    id: 'fix-lint-errors',
-    name: 'Fix lint errors',
+    id: "fix-lint-errors",
+    name: "Fix lint errors",
     prompt:
-      'Run the linter and fix all reported errors. Ensure the codebase passes lint checks without warnings.',
+      "Run the linter and fix all reported errors. Ensure the codebase passes lint checks without warnings.",
     isBuiltIn: true,
     enabled: true,
     order: 3,
   },
   {
-    id: 'update-dependencies',
-    name: 'Update and test dependencies',
+    id: "update-dependencies",
+    name: "Update and test dependencies",
     prompt:
-      'Check for outdated dependencies, update them to their latest stable versions, and run tests to ensure nothing breaks. Document any breaking changes or migration steps required.',
+      "Check for outdated dependencies, update them to their latest stable versions, and run tests to ensure nothing breaks. Document any breaking changes or migration steps required.",
     isBuiltIn: true,
     enabled: true,
     order: 4,
   },
   {
-    id: 'code-review-and-fix',
-    name: 'Code review and fix issues',
+    id: "code-review-and-fix",
+    name: "Code review and fix issues",
     prompt:
-      'Perform a thorough code review of the current codebase. Identify and fix any issues found, including: code quality problems, potential bugs, security vulnerabilities, performance bottlenecks, and violations of best practices. After fixing all issues, run tests and lint to verify everything passes.',
+      "Perform a thorough code review of the current codebase. Identify and fix any issues found, including: code quality problems, potential bugs, security vulnerabilities, performance bottlenecks, and violations of best practices. After fixing all issues, run tests and lint to verify everything passes.",
     isBuiltIn: true,
     enabled: true,
     order: 5,
@@ -291,10 +297,16 @@ export const DEFAULT_FEATURE_TEMPLATES: FeatureTemplate[] = [
 ];
 
 /** ServerLogLevel - Log verbosity level for the API server */
-export type ServerLogLevel = 'error' | 'warn' | 'info' | 'debug';
+export type ServerLogLevel = "error" | "warn" | "info" | "debug";
 
 /** ThinkingLevel - Extended thinking levels for Claude models (reasoning intensity) */
-export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high' | 'ultrathink' | 'adaptive';
+export type ThinkingLevel =
+  | "none"
+  | "low"
+  | "medium"
+  | "high"
+  | "ultrathink"
+  | "adaptive";
 
 /**
  * SidebarStyle - Sidebar layout style options
@@ -302,7 +314,7 @@ export type ThinkingLevel = 'none' | 'low' | 'medium' | 'high' | 'ultrathink' | 
  * - 'unified': Single sidebar with integrated project dropdown (default, modern)
  * - 'discord': Two sidebars - narrow project switcher + expandable navigation sidebar (classic)
  */
-export type SidebarStyle = 'unified' | 'discord';
+export type SidebarStyle = "unified" | "discord";
 
 /**
  * Thinking token budget mapping based on Claude SDK documentation.
@@ -312,20 +324,23 @@ export type SidebarStyle = 'unified' | 'discord';
  * - Complex tasks starting point: 16,000+ tokens
  * - Above 32,000: Risk of timeouts (batch processing recommended)
  */
-export const THINKING_TOKEN_BUDGET: Record<ThinkingLevel, number | undefined> = {
-  none: undefined, // Thinking disabled
-  low: 1024, // Minimum per docs
-  medium: 10000, // Light reasoning
-  high: 16000, // Complex tasks (recommended starting point)
-  ultrathink: 32000, // Maximum safe (above this risks timeouts)
-  adaptive: undefined, // Adaptive thinking (Opus 4.6) - SDK handles token allocation
-};
+export const THINKING_TOKEN_BUDGET: Record<ThinkingLevel, number | undefined> =
+  {
+    none: undefined, // Thinking disabled
+    low: 1024, // Minimum per docs
+    medium: 10000, // Light reasoning
+    high: 16000, // Complex tasks (recommended starting point)
+    ultrathink: 32000, // Maximum safe (above this risks timeouts)
+    adaptive: undefined, // Adaptive thinking (Opus 4.6) - SDK handles token allocation
+  };
 
 /**
  * Convert thinking level to SDK maxThinkingTokens value
  */
-export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number | undefined {
-  if (!level || level === 'none') return undefined;
+export function getThinkingTokenBudget(
+  level: ThinkingLevel | undefined,
+): number | undefined {
+  if (!level || level === "none") return undefined;
   return THINKING_TOKEN_BUDGET[level];
 }
 
@@ -334,7 +349,7 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
  * Adaptive thinking models let the SDK decide token allocation automatically.
  */
 export function isAdaptiveThinkingModel(model: string): boolean {
-  return model.includes('opus-4-6') || model === 'claude-opus';
+  return model.includes("opus-4-6") || model === "claude-opus";
 }
 
 /**
@@ -344,9 +359,9 @@ export function isAdaptiveThinkingModel(model: string): boolean {
  */
 export function getThinkingLevelsForModel(model: string): ThinkingLevel[] {
   if (isAdaptiveThinkingModel(model)) {
-    return ['none', 'adaptive'];
+    return ["none", "adaptive"];
   }
-  return ['none', 'low', 'medium', 'high', 'ultrathink'];
+  return ["none", "low", "medium", "high", "ultrathink"];
 }
 
 /**
@@ -355,17 +370,17 @@ export function getThinkingLevelsForModel(model: string): ThinkingLevel[] {
  */
 export function normalizeThinkingLevelForModel(
   model: string,
-  thinkingLevel: ThinkingLevel | undefined
+  thinkingLevel: ThinkingLevel | undefined,
 ): ThinkingLevel {
   const availableLevels = getThinkingLevelsForModel(model);
-  const currentLevel = thinkingLevel || 'none';
+  const currentLevel = thinkingLevel || "none";
 
   if (availableLevels.includes(currentLevel)) {
     return currentLevel;
   }
 
-  if (availableLevels.includes('none')) {
-    return 'none';
+  if (availableLevels.includes("none")) {
+    return "none";
   }
 
   return availableLevels[0];
@@ -379,13 +394,19 @@ export function normalizeThinkingLevelForModel(
  */
 export function getDefaultThinkingLevel(model: string): ThinkingLevel {
   if (isAdaptiveThinkingModel(model)) {
-    return 'adaptive';
+    return "adaptive";
   }
-  return 'none';
+  return "none";
 }
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+export type ModelProvider =
+  | "claude"
+  | "cursor"
+  | "codex"
+  | "opencode"
+  | "gemini"
+  | "copilot";
 
 // ============================================================================
 // Claude-Compatible Providers - Configuration for Claude-compatible API endpoints
@@ -398,7 +419,7 @@ export type ModelProvider = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini
  * - 'env': Use ANTHROPIC_API_KEY environment variable
  * - 'credentials': Use the Anthropic key from Settings → API Keys (credentials.json)
  */
-export type ApiKeySource = 'inline' | 'env' | 'credentials';
+export type ApiKeySource = "inline" | "env" | "credentials";
 
 /**
  * ClaudeCompatibleProviderType - Type of Claude-compatible provider
@@ -406,16 +427,16 @@ export type ApiKeySource = 'inline' | 'env' | 'credentials';
  * Used to determine provider-specific UI screens and default configurations.
  */
 export type ClaudeCompatibleProviderType =
-  | 'anthropic' // Direct Anthropic API (built-in)
-  | 'glm' // z.AI GLM
-  | 'minimax' // MiniMax
-  | 'openrouter' // OpenRouter proxy
-  | 'custom'; // User-defined custom provider
+  | "anthropic" // Direct Anthropic API (built-in)
+  | "glm" // z.AI GLM
+  | "minimax" // MiniMax
+  | "openrouter" // OpenRouter proxy
+  | "custom"; // User-defined custom provider
 
 /**
  * ClaudeModelAlias - The three main Claude model aliases for mapping
  */
-export type ClaudeModelAlias = 'haiku' | 'sonnet' | 'opus';
+export type ClaudeModelAlias = "haiku" | "sonnet" | "opus";
 
 /**
  * ProviderModel - A model exposed by a Claude-compatible provider
@@ -551,93 +572,139 @@ export interface ClaudeCompatibleProviderTemplate {
 /** Predefined templates for known Claude-compatible providers */
 export const CLAUDE_PROVIDER_TEMPLATES: ClaudeCompatibleProviderTemplate[] = [
   {
-    templateId: 'anthropic',
-    name: 'Direct Anthropic',
-    providerType: 'anthropic',
-    baseUrl: 'https://api.anthropic.com',
-    defaultApiKeySource: 'credentials',
+    templateId: "anthropic",
+    name: "Direct Anthropic",
+    providerType: "anthropic",
+    baseUrl: "https://api.anthropic.com",
+    defaultApiKeySource: "credentials",
     useAuthToken: false,
-    description: 'Standard Anthropic API with your API key',
-    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+    description: "Standard Anthropic API with your API key",
+    apiKeyUrl: "https://console.anthropic.com/settings/keys",
     defaultModels: [
-      { id: 'claude-haiku', displayName: 'Claude Haiku', mapsToClaudeModel: 'haiku' },
-      { id: 'claude-sonnet', displayName: 'Claude Sonnet', mapsToClaudeModel: 'sonnet' },
-      { id: 'claude-opus', displayName: 'Claude Opus', mapsToClaudeModel: 'opus' },
+      {
+        id: "claude-haiku",
+        displayName: "Claude Haiku",
+        mapsToClaudeModel: "haiku",
+      },
+      {
+        id: "claude-sonnet",
+        displayName: "Claude Sonnet",
+        mapsToClaudeModel: "sonnet",
+      },
+      {
+        id: "claude-opus",
+        displayName: "Claude Opus",
+        mapsToClaudeModel: "opus",
+      },
     ],
   },
   {
-    templateId: 'openrouter',
-    name: 'OpenRouter',
-    providerType: 'openrouter',
-    baseUrl: 'https://openrouter.ai/api',
-    defaultApiKeySource: 'inline',
+    templateId: "openrouter",
+    name: "OpenRouter",
+    providerType: "openrouter",
+    baseUrl: "https://openrouter.ai/api",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
-    description: 'Access Claude and 300+ models via OpenRouter',
-    apiKeyUrl: 'https://openrouter.ai/keys',
+    description: "Access Claude and 300+ models via OpenRouter",
+    apiKeyUrl: "https://openrouter.ai/keys",
     defaultModels: [
       // OpenRouter users manually add model IDs
       {
-        id: 'anthropic/claude-3.5-haiku',
-        displayName: 'Claude 3.5 Haiku',
-        mapsToClaudeModel: 'haiku',
+        id: "anthropic/claude-3.5-haiku",
+        displayName: "Claude 3.5 Haiku",
+        mapsToClaudeModel: "haiku",
       },
       {
-        id: 'anthropic/claude-3.5-sonnet',
-        displayName: 'Claude 3.5 Sonnet',
-        mapsToClaudeModel: 'sonnet',
+        id: "anthropic/claude-3.5-sonnet",
+        displayName: "Claude 3.5 Sonnet",
+        mapsToClaudeModel: "sonnet",
       },
-      { id: 'anthropic/claude-3-opus', displayName: 'Claude 3 Opus', mapsToClaudeModel: 'opus' },
+      {
+        id: "anthropic/claude-3-opus",
+        displayName: "Claude 3 Opus",
+        mapsToClaudeModel: "opus",
+      },
     ],
   },
   {
-    templateId: 'glm',
-    name: 'z.AI GLM',
-    providerType: 'glm',
-    baseUrl: 'https://api.z.ai/api/anthropic',
-    defaultApiKeySource: 'inline',
+    templateId: "glm",
+    name: "z.AI GLM",
+    providerType: "glm",
+    baseUrl: "https://api.z.ai/api/anthropic",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
     timeoutMs: 3000000,
     disableNonessentialTraffic: true,
-    description: '3× usage at fraction of cost via GLM Coding Plan',
-    apiKeyUrl: 'https://z.ai/manage-apikey/apikey-list',
+    description: "3× usage at fraction of cost via GLM Coding Plan",
+    apiKeyUrl: "https://z.ai/manage-apikey/apikey-list",
     defaultModels: [
-      { id: 'GLM-4.5-Air', displayName: 'GLM 4.5 Air', mapsToClaudeModel: 'haiku' },
-      { id: 'GLM-4.7', displayName: 'GLM 4.7', mapsToClaudeModel: 'sonnet' },
-      { id: 'GLM-5', displayName: 'GLM 5', mapsToClaudeModel: 'opus' },
+      {
+        id: "GLM-4.5-Air",
+        displayName: "GLM 4.5 Air",
+        mapsToClaudeModel: "haiku",
+      },
+      { id: "GLM-4.7", displayName: "GLM 4.7", mapsToClaudeModel: "sonnet" },
+      { id: "GLM-5", displayName: "GLM 5", mapsToClaudeModel: "opus" },
     ],
   },
   {
-    templateId: 'minimax',
-    name: 'MiniMax',
-    providerType: 'minimax',
-    baseUrl: 'https://api.minimax.io/anthropic',
-    defaultApiKeySource: 'inline',
+    templateId: "minimax",
+    name: "MiniMax",
+    providerType: "minimax",
+    baseUrl: "https://api.minimax.io/anthropic",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
     timeoutMs: 3000000,
     disableNonessentialTraffic: true,
-    description: 'MiniMax M2.1 coding model with extended context',
-    apiKeyUrl: 'https://platform.minimax.io/user-center/basic-information/interface-key',
+    description: "MiniMax M2.1 coding model with extended context",
+    apiKeyUrl:
+      "https://platform.minimax.io/user-center/basic-information/interface-key",
     defaultModels: [
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'haiku' },
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'sonnet' },
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'opus' },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "haiku",
+      },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "sonnet",
+      },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "opus",
+      },
     ],
   },
   {
-    templateId: 'minimax',
-    name: 'MiniMax (China)',
-    providerType: 'minimax',
-    baseUrl: 'https://api.minimaxi.com/anthropic',
-    defaultApiKeySource: 'inline',
+    templateId: "minimax",
+    name: "MiniMax (China)",
+    providerType: "minimax",
+    baseUrl: "https://api.minimaxi.com/anthropic",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
     timeoutMs: 3000000,
     disableNonessentialTraffic: true,
-    description: 'MiniMax M2.1 for users in China',
-    apiKeyUrl: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
+    description: "MiniMax M2.1 for users in China",
+    apiKeyUrl:
+      "https://platform.minimaxi.com/user-center/basic-information/interface-key",
     defaultModels: [
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'haiku' },
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'sonnet' },
-      { id: 'MiniMax-M2.1', displayName: 'MiniMax M2.1', mapsToClaudeModel: 'opus' },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "haiku",
+      },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "sonnet",
+      },
+      {
+        id: "MiniMax-M2.1",
+        displayName: "MiniMax M2.1",
+        mapsToClaudeModel: "opus",
+      },
     ],
   },
 ];
@@ -651,7 +718,7 @@ export interface ClaudeApiProfileTemplate {
   defaultApiKeySource?: ApiKeySource;
   useAuthToken: boolean;
   timeoutMs?: number;
-  modelMappings?: ClaudeApiProfile['modelMappings'];
+  modelMappings?: ClaudeApiProfile["modelMappings"];
   disableNonessentialTraffic?: boolean;
   description: string;
   apiKeyUrl?: string;
@@ -662,65 +729,67 @@ export interface ClaudeApiProfileTemplate {
  */
 export const CLAUDE_API_PROFILE_TEMPLATES: ClaudeApiProfileTemplate[] = [
   {
-    name: 'Direct Anthropic',
-    baseUrl: 'https://api.anthropic.com',
-    defaultApiKeySource: 'credentials',
+    name: "Direct Anthropic",
+    baseUrl: "https://api.anthropic.com",
+    defaultApiKeySource: "credentials",
     useAuthToken: false,
-    description: 'Standard Anthropic API with your API key',
-    apiKeyUrl: 'https://console.anthropic.com/settings/keys',
+    description: "Standard Anthropic API with your API key",
+    apiKeyUrl: "https://console.anthropic.com/settings/keys",
   },
   {
-    name: 'OpenRouter',
-    baseUrl: 'https://openrouter.ai/api',
-    defaultApiKeySource: 'inline',
+    name: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
-    description: 'Access Claude and 300+ models via OpenRouter',
-    apiKeyUrl: 'https://openrouter.ai/keys',
+    description: "Access Claude and 300+ models via OpenRouter",
+    apiKeyUrl: "https://openrouter.ai/keys",
   },
   {
-    name: 'z.AI GLM',
-    baseUrl: 'https://api.z.ai/api/anthropic',
-    defaultApiKeySource: 'inline',
-    useAuthToken: true,
-    timeoutMs: 3000000,
-    modelMappings: {
-      haiku: 'GLM-4.5-Air',
-      sonnet: 'GLM-4.7',
-      opus: 'GLM-5',
-    },
-    disableNonessentialTraffic: true,
-    description: '3× usage at fraction of cost via GLM Coding Plan',
-    apiKeyUrl: 'https://z.ai/manage-apikey/apikey-list',
-  },
-  {
-    name: 'MiniMax',
-    baseUrl: 'https://api.minimax.io/anthropic',
-    defaultApiKeySource: 'inline',
+    name: "z.AI GLM",
+    baseUrl: "https://api.z.ai/api/anthropic",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
     timeoutMs: 3000000,
     modelMappings: {
-      haiku: 'MiniMax-M2.1',
-      sonnet: 'MiniMax-M2.1',
-      opus: 'MiniMax-M2.1',
+      haiku: "GLM-4.5-Air",
+      sonnet: "GLM-4.7",
+      opus: "GLM-5",
     },
     disableNonessentialTraffic: true,
-    description: 'MiniMax M2.1 coding model with extended context',
-    apiKeyUrl: 'https://platform.minimax.io/user-center/basic-information/interface-key',
+    description: "3× usage at fraction of cost via GLM Coding Plan",
+    apiKeyUrl: "https://z.ai/manage-apikey/apikey-list",
   },
   {
-    name: 'MiniMax (China)',
-    baseUrl: 'https://api.minimaxi.com/anthropic',
-    defaultApiKeySource: 'inline',
+    name: "MiniMax",
+    baseUrl: "https://api.minimax.io/anthropic",
+    defaultApiKeySource: "inline",
     useAuthToken: true,
     timeoutMs: 3000000,
     modelMappings: {
-      haiku: 'MiniMax-M2.1',
-      sonnet: 'MiniMax-M2.1',
-      opus: 'MiniMax-M2.1',
+      haiku: "MiniMax-M2.1",
+      sonnet: "MiniMax-M2.1",
+      opus: "MiniMax-M2.1",
     },
     disableNonessentialTraffic: true,
-    description: 'MiniMax M2.1 for users in China',
-    apiKeyUrl: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
+    description: "MiniMax M2.1 coding model with extended context",
+    apiKeyUrl:
+      "https://platform.minimax.io/user-center/basic-information/interface-key",
+  },
+  {
+    name: "MiniMax (China)",
+    baseUrl: "https://api.minimaxi.com/anthropic",
+    defaultApiKeySource: "inline",
+    useAuthToken: true,
+    timeoutMs: 3000000,
+    modelMappings: {
+      haiku: "MiniMax-M2.1",
+      sonnet: "MiniMax-M2.1",
+      opus: "MiniMax-M2.1",
+    },
+    disableNonessentialTraffic: true,
+    description: "MiniMax M2.1 for users in China",
+    apiKeyUrl:
+      "https://platform.minimaxi.com/user-center/basic-information/interface-key",
   },
 ];
 
@@ -738,14 +807,14 @@ export const CLAUDE_API_PROFILE_TEMPLATES: ClaudeApiProfileTemplate[] = [
  * - auto_mode_error: Auto mode encountered a critical error and paused
  */
 export type EventHookTrigger =
-  | 'feature_created'
-  | 'feature_success'
-  | 'feature_error'
-  | 'auto_mode_complete'
-  | 'auto_mode_error';
+  | "feature_created"
+  | "feature_success"
+  | "feature_error"
+  | "auto_mode_complete"
+  | "auto_mode_error";
 
 /** HTTP methods supported for webhook requests */
-export type EventHookHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH';
+export type EventHookHttpMethod = "GET" | "POST" | "PUT" | "PATCH";
 
 /**
  * NtfyAuthenticationType - Authentication methods for ntfy.sh
@@ -754,7 +823,7 @@ export type EventHookHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH';
  * - 'basic': Username and password authentication
  * - 'token': Access token authentication
  */
-export type NtfyAuthenticationType = 'none' | 'basic' | 'token';
+export type NtfyAuthenticationType = "none" | "basic" | "token";
 
 /**
  * NtfyEndpointConfig - Configuration for a ntfy.sh notification endpoint
@@ -797,7 +866,7 @@ export interface NtfyEndpointConfig {
  * Supports variable substitution using {{variableName}} syntax.
  */
 export interface EventHookShellAction {
-  type: 'shell';
+  type: "shell";
   /** Shell command to execute. Supports {{variable}} substitution. */
   command: string;
   /** Timeout in milliseconds (default: 30000) */
@@ -810,7 +879,7 @@ export interface EventHookShellAction {
  * Supports variable substitution in URL, headers, and body.
  */
 export interface EventHookHttpAction {
-  type: 'http';
+  type: "http";
   /** URL to send the request to. Supports {{variable}} substitution. */
   url: string;
   /** HTTP method to use */
@@ -828,7 +897,7 @@ export interface EventHookHttpAction {
  * Supports variable substitution in title and body.
  */
 export interface EventHookNtfyAction {
-  type: 'ntfy';
+  type: "ntfy";
   /** ID of the NtfyEndpointConfig to use */
   endpointId: string;
   /** Notification title (supports {{variable}} substitution, defaults to event name) */
@@ -846,7 +915,10 @@ export interface EventHookNtfyAction {
 }
 
 /** Union type for all hook action configurations */
-export type EventHookAction = EventHookShellAction | EventHookHttpAction | EventHookNtfyAction;
+export type EventHookAction =
+  | EventHookShellAction
+  | EventHookHttpAction
+  | EventHookNtfyAction;
 
 /**
  * EventHook - Configuration for a single event hook
@@ -878,11 +950,11 @@ export interface EventHook {
 
 /** Human-readable labels for event hook triggers */
 export const EVENT_HOOK_TRIGGER_LABELS: Record<EventHookTrigger, string> = {
-  feature_created: 'Feature created',
-  feature_success: 'Feature completed successfully',
-  feature_error: 'Feature failed with error',
-  auto_mode_complete: 'Auto mode completed all features',
-  auto_mode_error: 'Auto mode paused due to error',
+  feature_created: "Feature created",
+  feature_success: "Feature completed successfully",
+  feature_error: "Feature failed with error",
+  auto_mode_complete: "Auto mode completed all features",
+  auto_mode_error: "Auto mode paused due to error",
 };
 
 /**
@@ -911,8 +983,8 @@ export interface EventHookContext {
 }
 
 const DEFAULT_CODEX_AUTO_LOAD_AGENTS = false;
-const DEFAULT_CODEX_SANDBOX_MODE: CodexSandboxMode = 'workspace-write';
-const DEFAULT_CODEX_APPROVAL_POLICY: CodexApprovalPolicy = 'on-request';
+const DEFAULT_CODEX_SANDBOX_MODE: CodexSandboxMode = "workspace-write";
+const DEFAULT_CODEX_APPROVAL_POLICY: CodexApprovalPolicy = "on-request";
 const DEFAULT_CODEX_ENABLE_WEB_SEARCH = false;
 const DEFAULT_CODEX_ENABLE_IMAGES = true;
 const DEFAULT_CODEX_ADDITIONAL_DIRS: string[] = [];
@@ -1091,7 +1163,7 @@ export interface MCPServerConfig {
   /** User-friendly description of what this server provides */
   description?: string;
   /** Transport type: stdio (default), sse, or http */
-  type?: 'stdio' | 'sse' | 'http';
+  type?: "stdio" | "sse" | "http";
   /** For stdio: command to execute (e.g., 'node', 'python', 'npx') */
   command?: string;
   /** For stdio: arguments to pass to the command */
@@ -1217,7 +1289,7 @@ export interface GlobalSettings {
 
   // Terminal Configuration
   /** How to open terminals from "Open in Terminal" worktree action */
-  openTerminalMode?: 'newTab' | 'split';
+  openTerminalMode?: "newTab" | "split";
   /** Custom terminal configuration settings (prompt theming, aliases, env vars) */
   terminalConfig?: {
     /** Enable custom terminal configurations (default: false) */
@@ -1225,7 +1297,7 @@ export interface GlobalSettings {
     /** Enable custom prompt (default: true when enabled) */
     customPrompt: boolean;
     /** Prompt format template */
-    promptFormat: 'standard' | 'minimal' | 'powerline' | 'starship';
+    promptFormat: "standard" | "minimal" | "powerline" | "starship";
     /** Prompt theme preset */
     promptTheme?: TerminalPromptTheme;
     /** Show git branch in prompt (default: true) */
@@ -1237,7 +1309,7 @@ export interface GlobalSettings {
     /** Show path in prompt (default: true) */
     showPath: boolean;
     /** Path display style */
-    pathStyle: 'full' | 'short' | 'basename';
+    pathStyle: "full" | "short" | "basename";
     /** Limit path depth (0 = full path) */
     pathDepth: number;
     /** Show current time in prompt (default: false) */
@@ -1272,7 +1344,7 @@ export interface GlobalSettings {
   /** Skip verification requirement in auto-mode (treat 'completed' same as 'verified') */
   skipVerificationInAutoMode: boolean;
   /** User's preferred action after a clean merge (null = ask every time) */
-  mergePostAction: 'commit' | 'manual' | null;
+  mergePostAction: "commit" | "manual" | null;
   /** Default: use git worktrees for feature branches */
   useWorktrees: boolean;
   /** Default: planning approach (skip/lite/spec/full) */
@@ -1414,7 +1486,10 @@ export interface GlobalSettings {
 
   // Worktree Selection Tracking
   /** Maps project path -> last selected worktree (path + branch) for restoring on PWA reload */
-  currentWorktreeByProject?: Record<string, { path: string | null; branch: string }>;
+  currentWorktreeByProject?: Record<
+    string,
+    { path: string | null; branch: string }
+  >;
 
   // Window State (Electron only)
   /** Persisted window bounds for restoring position/size across sessions */
@@ -1473,7 +1548,7 @@ export interface GlobalSettings {
    * - 'project': .claude/skills/ (project-specific skills)
    * @default ['user', 'project']
    */
-  skillsSources?: Array<'user' | 'project'>;
+  skillsSources?: Array<"user" | "project">;
 
   // Subagents Configuration
   /**
@@ -1488,14 +1563,14 @@ export interface GlobalSettings {
    * - 'project': .claude/agents/ (project-specific agents)
    * @default ['user', 'project']
    */
-  subagentsSources?: Array<'user' | 'project'>;
+  subagentsSources?: Array<"user" | "project">;
 
   /**
    * Custom subagent definitions for specialized task delegation (programmatic)
    * Key: agent name (e.g., 'code-reviewer', 'test-runner')
    * Value: agent configuration
    */
-  customSubagents?: Record<string, import('./provider.js').AgentDefinition>;
+  customSubagents?: Record<string, import("./provider.js").AgentDefinition>;
 
   // Event Hooks Configuration
   /**
@@ -1720,7 +1795,7 @@ export interface ProjectSettings {
    * Key: agent name (e.g., 'code-reviewer', 'test-runner')
    * Value: agent configuration
    */
-  customSubagents?: Record<string, import('./provider.js').AgentDefinition>;
+  customSubagents?: Record<string, import("./provider.js").AgentDefinition>;
 
   // Auto Mode Configuration (per-project)
   /** Whether auto mode is enabled for this project (backend-controlled loop) */
@@ -1786,7 +1861,7 @@ export interface ProjectSettings {
     /** Override showing path */
     showPath?: boolean;
     /** Override path style */
-    pathStyle?: 'full' | 'short' | 'basename';
+    pathStyle?: "full" | "short" | "basename";
     /** Override path depth (0 = full path) */
     pathDepth?: number;
     /** Override showing time */
@@ -1819,27 +1894,27 @@ export interface ProjectSettings {
  */
 export const DEFAULT_PHASE_MODELS: PhaseModelConfig = {
   // Quick tasks - use fast models for speed and cost
-  enhancementModel: { model: 'claude-sonnet' },
-  fileDescriptionModel: { model: 'claude-haiku' },
-  imageDescriptionModel: { model: 'claude-haiku' },
+  enhancementModel: { model: "claude-sonnet" },
+  fileDescriptionModel: { model: "claude-haiku" },
+  imageDescriptionModel: { model: "claude-haiku" },
 
   // Validation - use smart models for accuracy
-  validationModel: { model: 'claude-sonnet' },
+  validationModel: { model: "claude-sonnet" },
 
   // Generation - use powerful models for quality
-  specGenerationModel: { model: 'claude-opus', thinkingLevel: 'adaptive' },
-  featureGenerationModel: { model: 'claude-sonnet' },
-  backlogPlanningModel: { model: 'claude-sonnet' },
-  projectAnalysisModel: { model: 'claude-sonnet' },
-  ideationModel: { model: 'claude-sonnet' },
+  specGenerationModel: { model: "claude-opus", thinkingLevel: "adaptive" },
+  featureGenerationModel: { model: "claude-sonnet" },
+  backlogPlanningModel: { model: "claude-sonnet" },
+  projectAnalysisModel: { model: "claude-sonnet" },
+  ideationModel: { model: "claude-sonnet" },
 
   // Memory - use fast model for learning extraction (cost-effective)
-  memoryExtractionModel: { model: 'claude-haiku' },
+  memoryExtractionModel: { model: "claude-haiku" },
 
   // Commit messages - use fast model for speed
-  commitMessageModel: { model: 'claude-haiku' },
+  commitMessageModel: { model: "claude-haiku" },
   // PR descriptions - use balanced model for better quality descriptions
-  prDescriptionModel: { model: 'claude-sonnet' },
+  prDescriptionModel: { model: "claude-sonnet" },
 };
 
 /** Current version of the global settings schema */
@@ -1854,26 +1929,26 @@ export const DEFAULT_MAX_CONCURRENCY = 1;
 
 /** Default keyboard shortcut bindings */
 export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
-  board: 'K',
-  agent: 'A',
-  spec: 'D',
-  context: 'C',
-  settings: 'S',
-  projectSettings: 'Shift+S',
-  terminal: 'T',
-  notifications: 'X',
-  toggleSidebar: '`',
-  addFeature: 'N',
-  addContextFile: 'N',
-  startNext: 'G',
-  newSession: 'N',
-  openProject: 'O',
-  projectPicker: 'P',
-  cyclePrevProject: 'Q',
-  cycleNextProject: 'E',
-  splitTerminalRight: 'Alt+D',
-  splitTerminalDown: 'Alt+S',
-  closeTerminal: 'Alt+W',
+  board: "K",
+  agent: "A",
+  spec: "D",
+  context: "C",
+  settings: "S",
+  projectSettings: "Shift+S",
+  terminal: "T",
+  notifications: "X",
+  toggleSidebar: "`",
+  addFeature: "N",
+  addContextFile: "N",
+  startNext: "G",
+  newSession: "N",
+  openProject: "O",
+  projectPicker: "P",
+  cyclePrevProject: "Q",
+  cycleNextProject: "E",
+  splitTerminalRight: "Alt+D",
+  splitTerminalDown: "Alt+S",
+  closeTerminal: "Alt+W",
 };
 
 /** Default global settings used when no settings file exists */
@@ -1882,9 +1957,9 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   setupComplete: false,
   isFirstRun: true,
   skipClaudeSetup: false,
-  theme: 'dark',
+  theme: "dark",
   sidebarOpen: true,
-  sidebarStyle: 'unified',
+  sidebarStyle: "unified",
   collapsedNavSections: {},
   chatHistoryOpen: false,
   maxConcurrency: DEFAULT_MAX_CONCURRENCY,
@@ -1893,24 +1968,24 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   skipVerificationInAutoMode: false,
   mergePostAction: null,
   useWorktrees: true,
-  defaultPlanningMode: 'skip',
+  defaultPlanningMode: "skip",
   defaultRequirePlanApproval: false,
-  defaultFeatureModel: { model: 'claude-opus', thinkingLevel: 'adaptive' }, // Use canonical ID with adaptive thinking
+  defaultFeatureModel: { model: "claude-opus", thinkingLevel: "adaptive" }, // Use canonical ID with adaptive thinking
   muteDoneSound: false,
   disableSplashScreen: false,
   defaultSortNewestCardOnTop: false,
-  serverLogLevel: 'info',
+  serverLogLevel: "info",
   enableRequestLogging: true,
   showQueryDevtools: true,
   enableAiCommitMessages: true,
   phaseModels: DEFAULT_PHASE_MODELS,
-  defaultThinkingLevel: 'adaptive',
-  defaultReasoningEffort: 'none',
+  defaultThinkingLevel: "adaptive",
+  defaultReasoningEffort: "none",
   defaultMaxTurns: 10000,
-  enhancementModel: 'sonnet', // Legacy alias still supported
-  validationModel: 'opus', // Legacy alias still supported
+  enhancementModel: "sonnet", // Legacy alias still supported
+  validationModel: "opus", // Legacy alias still supported
   enabledCursorModels: getAllCursorModelIds(), // Returns prefixed IDs
-  cursorDefaultModel: 'cursor-sonnet-4.6', // Use canonical prefixed ID
+  cursorDefaultModel: "cursor-sonnet-4.6", // Use canonical prefixed ID
   enabledOpencodeModels: getAllOpencodeModelIds(), // Returns prefixed IDs
   opencodeDefaultModel: DEFAULT_OPENCODE_MODEL, // Already prefixed
   enabledDynamicModelIds: [],
@@ -1945,9 +2020,9 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   defaultEditorCommand: null,
   defaultTerminalId: null,
   enableSkills: true,
-  skillsSources: ['user', 'project'],
+  skillsSources: ["user", "project"],
   enableSubagents: true,
-  subagentsSources: ['user', 'project'],
+  subagentsSources: ["user", "project"],
   // Event hooks
   eventHooks: [],
   // Ntfy.sh notification endpoints
@@ -1966,10 +2041,10 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
 export const DEFAULT_CREDENTIALS: Credentials = {
   version: CREDENTIALS_VERSION,
   apiKeys: {
-    anthropic: '',
-    google: '',
-    openai: '',
-    zai: '',
+    anthropic: "",
+    google: "",
+    openai: "",
+    zai: "",
   },
 };
 

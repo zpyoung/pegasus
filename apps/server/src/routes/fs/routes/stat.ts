@@ -2,10 +2,10 @@
  * POST /stat endpoint - Get file stats
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createStatHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -13,7 +13,7 @@ export function createStatHandler() {
       const { filePath } = req.body as { filePath: string };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: 'filePath is required' });
+        res.status(400).json({ success: false, error: "filePath is required" });
         return;
       }
 
@@ -37,15 +37,17 @@ export function createStatHandler() {
 
       // File or directory does not exist - return 404 so UI can handle missing paths
       const code =
-        error && typeof error === 'object' && 'code' in error
+        error && typeof error === "object" && "code" in error
           ? (error as { code: string }).code
-          : '';
-      if (code === 'ENOENT') {
-        res.status(404).json({ success: false, error: 'File or directory not found' });
+          : "";
+      if (code === "ENOENT") {
+        res
+          .status(404)
+          .json({ success: false, error: "File or directory not found" });
         return;
       }
 
-      logError(error, 'Get file stats failed');
+      logError(error, "Get file stats failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

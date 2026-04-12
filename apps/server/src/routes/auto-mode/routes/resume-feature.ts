@@ -2,14 +2,16 @@
  * POST /resume-feature endpoint - Resume a feature
  */
 
-import type { Request, Response } from 'express';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
-const logger = createLogger('AutoMode');
+const logger = createLogger("AutoMode");
 
-export function createResumeFeatureHandler(autoModeService: AutoModeServiceCompat) {
+export function createResumeFeatureHandler(
+  autoModeService: AutoModeServiceCompat,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath, featureId, useWorktrees } = req.body as {
@@ -21,7 +23,7 @@ export function createResumeFeatureHandler(autoModeService: AutoModeServiceCompa
       if (!projectPath || !featureId) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and featureId are required',
+          error: "projectPath and featureId are required",
         });
         return;
       }
@@ -36,7 +38,7 @@ export function createResumeFeatureHandler(autoModeService: AutoModeServiceCompa
 
       res.json({ success: true });
     } catch (error) {
-      logError(error, 'Resume feature failed');
+      logError(error, "Resume feature failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

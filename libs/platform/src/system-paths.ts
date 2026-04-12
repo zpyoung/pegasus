@@ -16,10 +16,10 @@
  * 5. Script directories: node_modules, logs (relative to script)
  */
 
-import os from 'os';
-import path from 'path';
-import fsSync from 'fs';
-import fs from 'fs/promises';
+import os from "os";
+import path from "path";
+import fsSync from "fs";
+import fs from "fs/promises";
 
 // =============================================================================
 // System Tool Path Definitions
@@ -32,27 +32,36 @@ import fs from 'fs/promises';
 function getNvmWindowsCliPaths(cliName: string): string[] {
   const nvmSymlink = process.env.NVM_SYMLINK;
   if (!nvmSymlink) return [];
-  return [path.join(nvmSymlink, `${cliName}.cmd`), path.join(nvmSymlink, cliName)];
+  return [
+    path.join(nvmSymlink, `${cliName}.cmd`),
+    path.join(nvmSymlink, cliName),
+  ];
 }
 
 /**
  * Get common paths where GitHub CLI might be installed
  */
 export function getGitHubCliPaths(): string[] {
-  const isWindows = process.platform === 'win32';
+  const isWindows = process.platform === "win32";
 
   if (isWindows) {
     return [
-      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'gh', 'bin', 'gh.exe'),
-      path.join(process.env.ProgramFiles || '', 'GitHub CLI', 'gh.exe'),
+      path.join(
+        process.env.LOCALAPPDATA || "",
+        "Programs",
+        "gh",
+        "bin",
+        "gh.exe",
+      ),
+      path.join(process.env.ProgramFiles || "", "GitHub CLI", "gh.exe"),
     ].filter(Boolean);
   }
 
   return [
-    '/opt/homebrew/bin/gh',
-    '/usr/local/bin/gh',
-    path.join(os.homedir(), '.local', 'bin', 'gh'),
-    '/home/linuxbrew/.linuxbrew/bin/gh',
+    "/opt/homebrew/bin/gh",
+    "/usr/local/bin/gh",
+    path.join(os.homedir(), ".local", "bin", "gh"),
+    "/home/linuxbrew/.linuxbrew/bin/gh",
   ];
 }
 
@@ -60,25 +69,26 @@ export function getGitHubCliPaths(): string[] {
  * Get common paths where Claude CLI might be installed
  */
 export function getClaudeCliPaths(): string[] {
-  const isWindows = process.platform === 'win32';
+  const isWindows = process.platform === "win32";
 
   if (isWindows) {
-    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    const appData =
+      process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
     return [
-      path.join(os.homedir(), '.local', 'bin', 'claude.exe'),
-      path.join(appData, 'npm', 'claude.cmd'),
-      path.join(appData, 'npm', 'claude'),
-      path.join(appData, '.npm-global', 'bin', 'claude.cmd'),
-      path.join(appData, '.npm-global', 'bin', 'claude'),
-      ...getNvmWindowsCliPaths('claude'),
+      path.join(os.homedir(), ".local", "bin", "claude.exe"),
+      path.join(appData, "npm", "claude.cmd"),
+      path.join(appData, "npm", "claude"),
+      path.join(appData, ".npm-global", "bin", "claude.cmd"),
+      path.join(appData, ".npm-global", "bin", "claude"),
+      ...getNvmWindowsCliPaths("claude"),
     ];
   }
 
   return [
-    path.join(os.homedir(), '.local', 'bin', 'claude'),
-    path.join(os.homedir(), '.claude', 'local', 'claude'),
-    '/usr/local/bin/claude',
-    path.join(os.homedir(), '.npm-global', 'bin', 'claude'),
+    path.join(os.homedir(), ".local", "bin", "claude"),
+    path.join(os.homedir(), ".claude", "local", "claude"),
+    "/usr/local/bin/claude",
+    path.join(os.homedir(), ".npm-global", "bin", "claude"),
   ];
 }
 
@@ -86,15 +96,15 @@ export function getClaudeCliPaths(): string[] {
  * Get NVM-installed Node.js bin paths for CLI tools
  */
 function getNvmBinPaths(): string[] {
-  const nvmDir = process.env.NVM_DIR || path.join(os.homedir(), '.nvm');
-  const versionsDir = path.join(nvmDir, 'versions', 'node');
+  const nvmDir = process.env.NVM_DIR || path.join(os.homedir(), ".nvm");
+  const versionsDir = path.join(nvmDir, "versions", "node");
 
   try {
     if (!fsSync.existsSync(versionsDir)) {
       return [];
     }
     const versions = fsSync.readdirSync(versionsDir);
-    return versions.map((version) => path.join(versionsDir, version, 'bin'));
+    return versions.map((version) => path.join(versionsDir, version, "bin"));
   } catch {
     return [];
   }
@@ -106,10 +116,16 @@ function getNvmBinPaths(): string[] {
 function getFnmBinPaths(): string[] {
   const homeDir = os.homedir();
   const possibleFnmDirs = [
-    path.join(homeDir, '.local', 'share', 'fnm', 'node-versions'),
-    path.join(homeDir, '.fnm', 'node-versions'),
+    path.join(homeDir, ".local", "share", "fnm", "node-versions"),
+    path.join(homeDir, ".fnm", "node-versions"),
     // macOS
-    path.join(homeDir, 'Library', 'Application Support', 'fnm', 'node-versions'),
+    path.join(
+      homeDir,
+      "Library",
+      "Application Support",
+      "fnm",
+      "node-versions",
+    ),
   ];
 
   const binPaths: string[] = [];
@@ -121,7 +137,7 @@ function getFnmBinPaths(): string[] {
       }
       const versions = fsSync.readdirSync(fnmDir);
       for (const version of versions) {
-        binPaths.push(path.join(fnmDir, version, 'installation', 'bin'));
+        binPaths.push(path.join(fnmDir, version, "installation", "bin"));
       }
     } catch {
       // Ignore errors for this directory
@@ -135,54 +151,69 @@ function getFnmBinPaths(): string[] {
  * Get common paths where Codex CLI might be installed
  */
 export function getCodexCliPaths(): string[] {
-  const isWindows = process.platform === 'win32';
+  const isWindows = process.platform === "win32";
   const homeDir = os.homedir();
 
   if (isWindows) {
-    const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
-    const localAppData = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
+    const appData =
+      process.env.APPDATA || path.join(homeDir, "AppData", "Roaming");
+    const localAppData =
+      process.env.LOCALAPPDATA || path.join(homeDir, "AppData", "Local");
     return [
-      path.join(homeDir, '.local', 'bin', 'codex.exe'),
-      path.join(appData, 'npm', 'codex.cmd'),
-      path.join(appData, 'npm', 'codex'),
-      path.join(appData, '.npm-global', 'bin', 'codex.cmd'),
-      path.join(appData, '.npm-global', 'bin', 'codex'),
+      path.join(homeDir, ".local", "bin", "codex.exe"),
+      path.join(appData, "npm", "codex.cmd"),
+      path.join(appData, "npm", "codex"),
+      path.join(appData, ".npm-global", "bin", "codex.cmd"),
+      path.join(appData, ".npm-global", "bin", "codex"),
       // Volta on Windows
-      path.join(homeDir, '.volta', 'bin', 'codex.exe'),
+      path.join(homeDir, ".volta", "bin", "codex.exe"),
       // pnpm on Windows
-      path.join(localAppData, 'pnpm', 'codex.cmd'),
-      path.join(localAppData, 'pnpm', 'codex'),
-      ...getNvmWindowsCliPaths('codex'),
+      path.join(localAppData, "pnpm", "codex.cmd"),
+      path.join(localAppData, "pnpm", "codex"),
+      ...getNvmWindowsCliPaths("codex"),
     ];
   }
 
   // Include NVM bin paths for codex installed via npm global under NVM
-  const nvmBinPaths = getNvmBinPaths().map((binPath) => path.join(binPath, 'codex'));
+  const nvmBinPaths = getNvmBinPaths().map((binPath) =>
+    path.join(binPath, "codex"),
+  );
 
   // Include fnm bin paths
-  const fnmBinPaths = getFnmBinPaths().map((binPath) => path.join(binPath, 'codex'));
+  const fnmBinPaths = getFnmBinPaths().map((binPath) =>
+    path.join(binPath, "codex"),
+  );
 
   // pnpm global bin path
-  const pnpmHome = process.env.PNPM_HOME || path.join(homeDir, '.local', 'share', 'pnpm');
+  const pnpmHome =
+    process.env.PNPM_HOME || path.join(homeDir, ".local", "share", "pnpm");
 
   return [
     // Standard locations
-    path.join(homeDir, '.local', 'bin', 'codex'),
-    '/opt/homebrew/bin/codex',
-    '/usr/local/bin/codex',
-    '/usr/bin/codex',
-    path.join(homeDir, '.npm-global', 'bin', 'codex'),
+    path.join(homeDir, ".local", "bin", "codex"),
+    "/opt/homebrew/bin/codex",
+    "/usr/local/bin/codex",
+    "/usr/bin/codex",
+    path.join(homeDir, ".npm-global", "bin", "codex"),
     // Linuxbrew
-    '/home/linuxbrew/.linuxbrew/bin/codex',
+    "/home/linuxbrew/.linuxbrew/bin/codex",
     // Volta
-    path.join(homeDir, '.volta', 'bin', 'codex'),
+    path.join(homeDir, ".volta", "bin", "codex"),
     // pnpm global
-    path.join(pnpmHome, 'codex'),
+    path.join(pnpmHome, "codex"),
     // Yarn global
-    path.join(homeDir, '.yarn', 'bin', 'codex'),
-    path.join(homeDir, '.config', 'yarn', 'global', 'node_modules', '.bin', 'codex'),
+    path.join(homeDir, ".yarn", "bin", "codex"),
+    path.join(
+      homeDir,
+      ".config",
+      "yarn",
+      "global",
+      "node_modules",
+      ".bin",
+      "codex",
+    ),
     // Snap packages
-    '/snap/bin/codex',
+    "/snap/bin/codex",
     // NVM paths
     ...nvmBinPaths,
     // fnm paths
@@ -190,9 +221,9 @@ export function getCodexCliPaths(): string[] {
   ];
 }
 
-const CODEX_CONFIG_DIR_NAME = '.codex';
-const CODEX_AUTH_FILENAME = 'auth.json';
-const CODEX_TOKENS_KEY = 'tokens';
+const CODEX_CONFIG_DIR_NAME = ".codex";
+const CODEX_AUTH_FILENAME = "auth.json";
+const CODEX_TOKENS_KEY = "tokens";
 
 /**
  * Get the Codex configuration directory path
@@ -212,7 +243,7 @@ export function getCodexAuthPath(): string {
  * Get the Claude configuration directory path
  */
 export function getClaudeConfigDir(): string {
-  return path.join(os.homedir(), '.claude');
+  return path.join(os.homedir(), ".claude");
 }
 
 /**
@@ -220,28 +251,31 @@ export function getClaudeConfigDir(): string {
  */
 export function getClaudeCredentialPaths(): string[] {
   const claudeDir = getClaudeConfigDir();
-  return [path.join(claudeDir, '.credentials.json'), path.join(claudeDir, 'credentials.json')];
+  return [
+    path.join(claudeDir, ".credentials.json"),
+    path.join(claudeDir, "credentials.json"),
+  ];
 }
 
 /**
  * Get path to Claude settings file
  */
 export function getClaudeSettingsPath(): string {
-  return path.join(getClaudeConfigDir(), 'settings.json');
+  return path.join(getClaudeConfigDir(), "settings.json");
 }
 
 /**
  * Get path to Claude stats cache file
  */
 export function getClaudeStatsCachePath(): string {
-  return path.join(getClaudeConfigDir(), 'stats-cache.json');
+  return path.join(getClaudeConfigDir(), "stats-cache.json");
 }
 
 /**
  * Get path to Claude projects/sessions directory
  */
 export function getClaudeProjectsDir(): string {
-  return path.join(getClaudeConfigDir(), 'projects');
+  return path.join(getClaudeConfigDir(), "projects");
 }
 
 /**
@@ -259,7 +293,9 @@ function enumerateMatchingPaths(
     }
     const entries = fsSync.readdirSync(parentDir);
     const matching = entries.filter((entry) => entry.startsWith(prefix));
-    return matching.map((entry) => path.join(parentDir, entry, ...subPathParts));
+    return matching.map((entry) =>
+      path.join(parentDir, entry, ...subPathParts),
+    );
   } catch {
     return [];
   }
@@ -270,53 +306,53 @@ function enumerateMatchingPaths(
  * Git Bash is needed for running shell scripts cross-platform
  */
 export function getGitBashPaths(): string[] {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return [];
   }
 
   const homeDir = os.homedir();
-  const localAppData = process.env.LOCALAPPDATA || '';
+  const localAppData = process.env.LOCALAPPDATA || "";
 
   // Dynamic paths that require directory enumeration
   // winget installs to: LocalAppData\Microsoft\WinGet\Packages\Git.Git_<hash>\bin\bash.exe
   const wingetGitPaths = localAppData
     ? enumerateMatchingPaths(
-        path.join(localAppData, 'Microsoft', 'WinGet', 'Packages'),
-        'Git.Git_',
-        'bin',
-        'bash.exe'
+        path.join(localAppData, "Microsoft", "WinGet", "Packages"),
+        "Git.Git_",
+        "bin",
+        "bash.exe",
       )
     : [];
 
   // GitHub Desktop bundles Git at: LocalAppData\GitHubDesktop\app-<version>\resources\app\git\cmd\bash.exe
   const githubDesktopPaths = localAppData
     ? enumerateMatchingPaths(
-        path.join(localAppData, 'GitHubDesktop'),
-        'app-',
-        'resources',
-        'app',
-        'git',
-        'cmd',
-        'bash.exe'
+        path.join(localAppData, "GitHubDesktop"),
+        "app-",
+        "resources",
+        "app",
+        "git",
+        "cmd",
+        "bash.exe",
       )
     : [];
 
   return [
     // Standard Git for Windows installations
-    'C:\\Program Files\\Git\\bin\\bash.exe',
-    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+    "C:\\Program Files\\Git\\bin\\bash.exe",
+    "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
     // User-local installations
-    path.join(localAppData, 'Programs', 'Git', 'bin', 'bash.exe'),
+    path.join(localAppData, "Programs", "Git", "bin", "bash.exe"),
     // Scoop package manager
-    path.join(homeDir, 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe'),
+    path.join(homeDir, "scoop", "apps", "git", "current", "bin", "bash.exe"),
     // Chocolatey
     path.join(
-      process.env.ChocolateyInstall || 'C:\\ProgramData\\chocolatey',
-      'lib',
-      'git',
-      'tools',
-      'bin',
-      'bash.exe'
+      process.env.ChocolateyInstall || "C:\\ProgramData\\chocolatey",
+      "lib",
+      "git",
+      "tools",
+      "bin",
+      "bash.exe",
     ),
     // winget installations (dynamically resolved)
     ...wingetGitPaths,
@@ -330,41 +366,41 @@ export function getGitBashPaths(): string[] {
  * Includes both full paths and short names to match $SHELL or PATH entries
  */
 export function getShellPaths(): string[] {
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return [
       // Full paths (most specific first)
-      'C:\\Program Files\\PowerShell\\7\\pwsh.exe',
-      'C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe',
-      'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+      "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe",
+      "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
       // COMSPEC environment variable (typically cmd.exe)
-      process.env.COMSPEC || 'C:\\Windows\\System32\\cmd.exe',
+      process.env.COMSPEC || "C:\\Windows\\System32\\cmd.exe",
       // Short names (for PATH resolution)
-      'pwsh.exe',
-      'pwsh',
-      'powershell.exe',
-      'powershell',
-      'cmd.exe',
-      'cmd',
+      "pwsh.exe",
+      "pwsh",
+      "powershell.exe",
+      "powershell",
+      "cmd.exe",
+      "cmd",
     ];
   }
 
   // POSIX (macOS, Linux)
   return [
     // Full paths
-    '/bin/zsh',
-    '/bin/bash',
-    '/bin/sh',
-    '/usr/bin/zsh',
-    '/usr/bin/bash',
-    '/usr/bin/sh',
-    '/usr/local/bin/zsh',
-    '/usr/local/bin/bash',
-    '/opt/homebrew/bin/zsh',
-    '/opt/homebrew/bin/bash',
+    "/bin/zsh",
+    "/bin/bash",
+    "/bin/sh",
+    "/usr/bin/zsh",
+    "/usr/bin/bash",
+    "/usr/bin/sh",
+    "/usr/local/bin/zsh",
+    "/usr/local/bin/bash",
+    "/opt/homebrew/bin/zsh",
+    "/opt/homebrew/bin/bash",
     // Short names (for PATH resolution or $SHELL matching)
-    'zsh',
-    'bash',
-    'sh',
+    "zsh",
+    "bash",
+    "sh",
   ];
 }
 
@@ -378,12 +414,13 @@ export function getShellPaths(): string[] {
 export function getNvmPaths(): string[] {
   const homeDir = os.homedir();
 
-  if (process.platform === 'win32') {
-    const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
-    return [path.join(appData, 'nvm')];
+  if (process.platform === "win32") {
+    const appData =
+      process.env.APPDATA || path.join(homeDir, "AppData", "Roaming");
+    return [path.join(appData, "nvm")];
   }
 
-  return [path.join(homeDir, '.nvm', 'versions', 'node')];
+  return [path.join(homeDir, ".nvm", "versions", "node")];
 }
 
 /**
@@ -392,24 +429,31 @@ export function getNvmPaths(): string[] {
 export function getFnmPaths(): string[] {
   const homeDir = os.homedir();
 
-  if (process.platform === 'win32') {
-    const localAppData = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
+  if (process.platform === "win32") {
+    const localAppData =
+      process.env.LOCALAPPDATA || path.join(homeDir, "AppData", "Local");
     return [
-      path.join(homeDir, '.fnm', 'node-versions'),
-      path.join(localAppData, 'fnm', 'node-versions'),
+      path.join(homeDir, ".fnm", "node-versions"),
+      path.join(localAppData, "fnm", "node-versions"),
     ];
   }
 
-  if (process.platform === 'darwin') {
+  if (process.platform === "darwin") {
     return [
-      path.join(homeDir, '.local', 'share', 'fnm', 'node-versions'),
-      path.join(homeDir, 'Library', 'Application Support', 'fnm', 'node-versions'),
+      path.join(homeDir, ".local", "share", "fnm", "node-versions"),
+      path.join(
+        homeDir,
+        "Library",
+        "Application Support",
+        "fnm",
+        "node-versions",
+      ),
     ];
   }
 
   return [
-    path.join(homeDir, '.local', 'share', 'fnm', 'node-versions'),
-    path.join(homeDir, '.fnm', 'node-versions'),
+    path.join(homeDir, ".local", "share", "fnm", "node-versions"),
+    path.join(homeDir, ".fnm", "node-versions"),
   ];
 }
 
@@ -417,30 +461,41 @@ export function getFnmPaths(): string[] {
  * Get common Node.js installation paths (not version managers)
  */
 export function getNodeSystemPaths(): string[] {
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return [
-      path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'nodejs', 'node.exe'),
       path.join(
-        process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)',
-        'nodejs',
-        'node.exe'
+        process.env.PROGRAMFILES || "C:\\Program Files",
+        "nodejs",
+        "node.exe",
+      ),
+      path.join(
+        process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
+        "nodejs",
+        "node.exe",
       ),
     ];
   }
 
-  if (process.platform === 'darwin') {
-    return ['/opt/homebrew/bin/node', '/usr/local/bin/node', '/usr/bin/node'];
+  if (process.platform === "darwin") {
+    return ["/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node"];
   }
 
   // Linux
-  return ['/usr/bin/node', '/usr/local/bin/node', '/snap/bin/node'];
+  return ["/usr/bin/node", "/usr/local/bin/node", "/snap/bin/node"];
 }
 
 /**
  * Get Scoop installation path for Node.js (Windows)
  */
 export function getScoopNodePath(): string {
-  return path.join(os.homedir(), 'scoop', 'apps', 'nodejs', 'current', 'node.exe');
+  return path.join(
+    os.homedir(),
+    "scoop",
+    "apps",
+    "nodejs",
+    "current",
+    "node.exe",
+  );
 }
 
 /**
@@ -448,9 +503,9 @@ export function getScoopNodePath(): string {
  */
 export function getChocolateyNodePath(): string {
   return path.join(
-    process.env.ChocolateyInstall || 'C:\\ProgramData\\chocolatey',
-    'bin',
-    'node.exe'
+    process.env.ChocolateyInstall || "C:\\ProgramData\\chocolatey",
+    "bin",
+    "node.exe",
   );
 }
 
@@ -458,7 +513,7 @@ export function getChocolateyNodePath(): string {
  * Get WSL detection path
  */
 export function getWslVersionPath(): string {
-  return '/proc/version';
+  return "/proc/version";
 }
 
 /**
@@ -467,13 +522,13 @@ export function getWslVersionPath(): string {
 export function getExtendedPath(): string {
   const paths = [
     process.env.PATH,
-    '/opt/homebrew/bin',
-    '/usr/local/bin',
-    '/home/linuxbrew/.linuxbrew/bin',
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/home/linuxbrew/.linuxbrew/bin",
     `${process.env.HOME}/.local/bin`,
   ];
 
-  return paths.filter(Boolean).join(process.platform === 'win32' ? ';' : ':');
+  return paths.filter(Boolean).join(process.platform === "win32" ? ";" : ":");
 }
 
 // =============================================================================
@@ -487,7 +542,9 @@ export function getExtendedPath(): string {
  */
 export function systemPathExists(filePath: string): boolean {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   return fsSync.existsSync(filePath);
 }
@@ -499,7 +556,9 @@ export function systemPathExists(filePath: string): boolean {
  */
 export async function systemPathAccess(filePath: string): Promise<boolean> {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   try {
     await fs.access(filePath);
@@ -515,10 +574,12 @@ export async function systemPathAccess(filePath: string): Promise<boolean> {
  */
 export function systemPathIsExecutable(filePath: string): boolean {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   try {
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       fsSync.accessSync(filePath, fsSync.constants.F_OK);
     } else {
       fsSync.accessSync(filePath, fsSync.constants.X_OK);
@@ -536,10 +597,12 @@ export function systemPathIsExecutable(filePath: string): boolean {
  */
 export async function systemPathReadFile(
   filePath: string,
-  encoding: BufferEncoding = 'utf-8'
+  encoding: BufferEncoding = "utf-8",
 ): Promise<string> {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   return fs.readFile(filePath, encoding);
 }
@@ -549,10 +612,12 @@ export async function systemPathReadFile(
  */
 export function systemPathReadFileSync(
   filePath: string,
-  encoding: BufferEncoding = 'utf-8'
+  encoding: BufferEncoding = "utf-8",
 ): string {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   return fsSync.readFileSync(filePath, encoding);
 }
@@ -563,10 +628,12 @@ export function systemPathReadFileSync(
 export function systemPathWriteFileSync(
   filePath: string,
   data: string,
-  options?: { encoding?: BufferEncoding; mode?: number }
+  options?: { encoding?: BufferEncoding; mode?: number },
 ): void {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   fsSync.writeFileSync(filePath, data, options);
 }
@@ -577,7 +644,9 @@ export function systemPathWriteFileSync(
  */
 export async function systemPathReaddir(dirPath: string): Promise<string[]> {
   if (!isAllowedSystemPath(dirPath)) {
-    throw new Error(`[SystemPaths] Access denied: ${dirPath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${dirPath} is not an allowed system path`,
+    );
   }
   return fs.readdir(dirPath);
 }
@@ -587,7 +656,9 @@ export async function systemPathReaddir(dirPath: string): Promise<string[]> {
  */
 export function systemPathReaddirSync(dirPath: string): string[] {
   if (!isAllowedSystemPath(dirPath)) {
-    throw new Error(`[SystemPaths] Access denied: ${dirPath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${dirPath} is not an allowed system path`,
+    );
   }
   return fsSync.readdirSync(dirPath);
 }
@@ -597,7 +668,9 @@ export function systemPathReaddirSync(dirPath: string): string[] {
  */
 export function systemPathStatSync(filePath: string): fsSync.Stats {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   return fsSync.statSync(filePath);
 }
@@ -607,7 +680,9 @@ export function systemPathStatSync(filePath: string): fsSync.Stats {
  */
 export async function systemPathStat(filePath: string): Promise<fsSync.Stats> {
   if (!isAllowedSystemPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not an allowed system path`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not an allowed system path`,
+    );
   }
   return fs.stat(filePath);
 }
@@ -741,10 +816,10 @@ export function isElectronUserDataPath(filePath: string): boolean {
  */
 export function electronUserDataReadFileSync(
   relativePath: string,
-  encoding: BufferEncoding = 'utf-8'
+  encoding: BufferEncoding = "utf-8",
 ): string {
   if (!electronUserDataPath) {
-    throw new Error('[SystemPaths] Electron userData path not initialized');
+    throw new Error("[SystemPaths] Electron userData path not initialized");
   }
   const fullPath = path.join(electronUserDataPath, relativePath);
   return fsSync.readFileSync(fullPath, encoding);
@@ -756,10 +831,10 @@ export function electronUserDataReadFileSync(
 export function electronUserDataWriteFileSync(
   relativePath: string,
   data: string,
-  options?: { encoding?: BufferEncoding; mode?: number }
+  options?: { encoding?: BufferEncoding; mode?: number },
 ): void {
   if (!electronUserDataPath) {
-    throw new Error('[SystemPaths] Electron userData path not initialized');
+    throw new Error("[SystemPaths] Electron userData path not initialized");
   }
   const fullPath = path.join(electronUserDataPath, relativePath);
   // Ensure parent directory exists (may not exist on first launch)
@@ -803,7 +878,7 @@ export function getScriptBaseDir(): string | null {
  */
 export function scriptDirExists(relativePath: string): boolean {
   if (!scriptBaseDir) {
-    throw new Error('[SystemPaths] Script base directory not initialized');
+    throw new Error("[SystemPaths] Script base directory not initialized");
   }
   const fullPath = path.join(scriptBaseDir, relativePath);
   return fsSync.existsSync(fullPath);
@@ -812,9 +887,12 @@ export function scriptDirExists(relativePath: string): boolean {
 /**
  * Create a directory relative to script base directory
  */
-export function scriptDirMkdirSync(relativePath: string, options?: { recursive?: boolean }): void {
+export function scriptDirMkdirSync(
+  relativePath: string,
+  options?: { recursive?: boolean },
+): void {
   if (!scriptBaseDir) {
-    throw new Error('[SystemPaths] Script base directory not initialized');
+    throw new Error("[SystemPaths] Script base directory not initialized");
   }
   const fullPath = path.join(scriptBaseDir, relativePath);
   fsSync.mkdirSync(fullPath, options);
@@ -823,9 +901,11 @@ export function scriptDirMkdirSync(relativePath: string, options?: { recursive?:
 /**
  * Create a write stream for a file relative to script base directory
  */
-export function scriptDirCreateWriteStream(relativePath: string): fsSync.WriteStream {
+export function scriptDirCreateWriteStream(
+  relativePath: string,
+): fsSync.WriteStream {
   if (!scriptBaseDir) {
-    throw new Error('[SystemPaths] Script base directory not initialized');
+    throw new Error("[SystemPaths] Script base directory not initialized");
   }
   const fullPath = path.join(scriptBaseDir, relativePath);
   return fsSync.createWriteStream(fullPath);
@@ -847,7 +927,10 @@ let electronResourcesPath: string | null = null;
  * @param appDirOrDirs - Single directory or array of directories to allow
  * @param resourcesPath - Optional resources path (for packaged apps)
  */
-export function setElectronAppPaths(appDirOrDirs: string | string[], resourcesPath?: string): void {
+export function setElectronAppPaths(
+  appDirOrDirs: string | string[],
+  resourcesPath?: string,
+): void {
   electronAppDirs = Array.isArray(appDirOrDirs) ? appDirOrDirs : [appDirOrDirs];
   electronResourcesPath = resourcesPath || null;
 }
@@ -888,7 +971,9 @@ function isElectronAppPath(filePath: string): boolean {
  */
 export function electronAppExists(filePath: string): boolean {
   if (!isElectronAppPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`,
+    );
   }
   return fsSync.existsSync(filePath);
 }
@@ -898,7 +983,9 @@ export function electronAppExists(filePath: string): boolean {
  */
 export function electronAppReadFileSync(filePath: string): Buffer {
   if (!isElectronAppPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`,
+    );
   }
   return fsSync.readFileSync(filePath);
 }
@@ -908,7 +995,9 @@ export function electronAppReadFileSync(filePath: string): Buffer {
  */
 export function electronAppStatSync(filePath: string): fsSync.Stats {
   if (!isElectronAppPath(filePath)) {
-    throw new Error(`[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`);
+    throw new Error(
+      `[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`,
+    );
   }
   return fsSync.statSync(filePath);
 }
@@ -918,12 +1007,17 @@ export function electronAppStatSync(filePath: string): fsSync.Stats {
  */
 export function electronAppStat(
   filePath: string,
-  callback: (err: NodeJS.ErrnoException | null, stats: fsSync.Stats | undefined) => void
+  callback: (
+    err: NodeJS.ErrnoException | null,
+    stats: fsSync.Stats | undefined,
+  ) => void,
 ): void {
   if (!isElectronAppPath(filePath)) {
     callback(
-      new Error(`[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`),
-      undefined
+      new Error(
+        `[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`,
+      ),
+      undefined,
     );
     return;
   }
@@ -935,12 +1029,17 @@ export function electronAppStat(
  */
 export function electronAppReadFile(
   filePath: string,
-  callback: (err: NodeJS.ErrnoException | null, data: Buffer | undefined) => void
+  callback: (
+    err: NodeJS.ErrnoException | null,
+    data: Buffer | undefined,
+  ) => void,
 ): void {
   if (!isElectronAppPath(filePath)) {
     callback(
-      new Error(`[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`),
-      undefined
+      new Error(
+        `[SystemPaths] Access denied: ${filePath} is not within Electron app bundle`,
+      ),
+      undefined,
     );
     return;
   }
@@ -954,7 +1053,9 @@ export function electronAppReadFile(
 /**
  * Find the first existing path from a list of system paths
  */
-export async function findFirstExistingPath(paths: string[]): Promise<string | null> {
+export async function findFirstExistingPath(
+  paths: string[],
+): Promise<string | null> {
   for (const p of paths) {
     if (await systemPathAccess(p)) {
       return p;
@@ -1113,7 +1214,7 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
       statsCacheCheck.error = `JSON parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
     }
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       statsCacheCheck.exists = false;
     } else {
       statsCacheCheck.error = err instanceof Error ? err.message : String(err);
@@ -1130,7 +1231,7 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
       result.hasProjectsSessions = true;
     }
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       projectsDirCheck.exists = false;
     } else {
       projectsDirCheck.error = err instanceof Error ? err.message : String(err);
@@ -1155,7 +1256,9 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
         // 2. Legacy format: { oauth_token } or { access_token }
         // 3. API key format: { api_key }
         const hasClaudeOauth = !!credentials.claudeAiOauth?.accessToken;
-        const hasLegacyOauth = !!(credentials.oauth_token || credentials.access_token);
+        const hasLegacyOauth = !!(
+          credentials.oauth_token || credentials.access_token
+        );
         const hasOAuthToken = hasClaudeOauth || hasLegacyOauth;
         const hasApiKey = !!credentials.api_key;
 
@@ -1175,7 +1278,7 @@ export async function getClaudeAuthIndicators(): Promise<ClaudeAuthIndicators> {
         credCheck.error = `JSON parse error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
       }
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         credCheck.exists = false;
       } else {
         credCheck.error = err instanceof Error ? err.message : String(err);
@@ -1192,16 +1295,21 @@ export interface CodexAuthIndicators {
   hasApiKey: boolean;
 }
 
-const CODEX_OAUTH_KEYS = ['access_token', 'oauth_token'] as const;
-const CODEX_API_KEY_KEYS = ['api_key', 'OPENAI_API_KEY'] as const;
+const CODEX_OAUTH_KEYS = ["access_token", "oauth_token"] as const;
+const CODEX_API_KEY_KEYS = ["api_key", "OPENAI_API_KEY"] as const;
 
-function hasNonEmptyStringField(record: Record<string, unknown>, keys: readonly string[]): boolean {
-  return keys.some((key) => typeof record[key] === 'string' && record[key]);
+function hasNonEmptyStringField(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.some((key) => typeof record[key] === "string" && record[key]);
 }
 
-function getNestedTokens(record: Record<string, unknown>): Record<string, unknown> | null {
+function getNestedTokens(
+  record: Record<string, unknown>,
+): Record<string, unknown> | null {
   const tokens = record[CODEX_TOKENS_KEY];
-  if (tokens && typeof tokens === 'object' && !Array.isArray(tokens)) {
+  if (tokens && typeof tokens === "object" && !Array.isArray(tokens)) {
     return tokens as Record<string, unknown>;
   }
   return null;
@@ -1225,9 +1333,11 @@ export async function getCodexAuthIndicators(): Promise<CodexAuthIndicators> {
       const nestedTokens = getNestedTokens(authJson);
       if (nestedTokens) {
         result.hasOAuthToken =
-          result.hasOAuthToken || hasNonEmptyStringField(nestedTokens, CODEX_OAUTH_KEYS);
+          result.hasOAuthToken ||
+          hasNonEmptyStringField(nestedTokens, CODEX_OAUTH_KEYS);
         result.hasApiKey =
-          result.hasApiKey || hasNonEmptyStringField(nestedTokens, CODEX_API_KEY_KEYS);
+          result.hasApiKey ||
+          hasNonEmptyStringField(nestedTokens, CODEX_API_KEY_KEYS);
       }
     } catch {
       // Ignore parse errors; file exists but contents are unreadable
@@ -1243,72 +1353,95 @@ export async function getCodexAuthIndicators(): Promise<CodexAuthIndicators> {
 // OpenCode CLI Detection
 // =============================================================================
 
-const OPENCODE_DATA_DIR = '.local/share/opencode';
-const OPENCODE_AUTH_FILENAME = 'auth.json';
-const OPENCODE_TOKENS_KEY = 'tokens';
+const OPENCODE_DATA_DIR = ".local/share/opencode";
+const OPENCODE_AUTH_FILENAME = "auth.json";
+const OPENCODE_TOKENS_KEY = "tokens";
 
 /**
  * Get common paths where OpenCode CLI might be installed
  */
 export function getOpenCodeCliPaths(): string[] {
-  const isWindows = process.platform === 'win32';
+  const isWindows = process.platform === "win32";
   const homeDir = os.homedir();
 
   if (isWindows) {
-    const appData = process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming');
-    const localAppData = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
+    const appData =
+      process.env.APPDATA || path.join(homeDir, "AppData", "Roaming");
+    const localAppData =
+      process.env.LOCALAPPDATA || path.join(homeDir, "AppData", "Local");
     return [
       // OpenCode's default installation directory
-      path.join(homeDir, '.opencode', 'bin', 'opencode.exe'),
-      path.join(homeDir, '.local', 'bin', 'opencode.exe'),
-      path.join(appData, 'npm', 'opencode.cmd'),
-      path.join(appData, 'npm', 'opencode'),
-      path.join(appData, '.npm-global', 'bin', 'opencode.cmd'),
-      path.join(appData, '.npm-global', 'bin', 'opencode'),
+      path.join(homeDir, ".opencode", "bin", "opencode.exe"),
+      path.join(homeDir, ".local", "bin", "opencode.exe"),
+      path.join(appData, "npm", "opencode.cmd"),
+      path.join(appData, "npm", "opencode"),
+      path.join(appData, ".npm-global", "bin", "opencode.cmd"),
+      path.join(appData, ".npm-global", "bin", "opencode"),
       // Volta on Windows
-      path.join(homeDir, '.volta', 'bin', 'opencode.exe'),
+      path.join(homeDir, ".volta", "bin", "opencode.exe"),
       // pnpm on Windows
-      path.join(localAppData, 'pnpm', 'opencode.cmd'),
-      path.join(localAppData, 'pnpm', 'opencode'),
+      path.join(localAppData, "pnpm", "opencode.cmd"),
+      path.join(localAppData, "pnpm", "opencode"),
       // Go installation (if OpenCode is a Go binary)
-      path.join(homeDir, 'go', 'bin', 'opencode.exe'),
-      path.join(process.env.GOPATH || path.join(homeDir, 'go'), 'bin', 'opencode.exe'),
-      ...getNvmWindowsCliPaths('opencode'),
+      path.join(homeDir, "go", "bin", "opencode.exe"),
+      path.join(
+        process.env.GOPATH || path.join(homeDir, "go"),
+        "bin",
+        "opencode.exe",
+      ),
+      ...getNvmWindowsCliPaths("opencode"),
     ];
   }
 
   // Include NVM bin paths for opencode installed via npm global under NVM
-  const nvmBinPaths = getNvmBinPaths().map((binPath) => path.join(binPath, 'opencode'));
+  const nvmBinPaths = getNvmBinPaths().map((binPath) =>
+    path.join(binPath, "opencode"),
+  );
 
   // Include fnm bin paths
-  const fnmBinPaths = getFnmBinPaths().map((binPath) => path.join(binPath, 'opencode'));
+  const fnmBinPaths = getFnmBinPaths().map((binPath) =>
+    path.join(binPath, "opencode"),
+  );
 
   // pnpm global bin path
-  const pnpmHome = process.env.PNPM_HOME || path.join(homeDir, '.local', 'share', 'pnpm');
+  const pnpmHome =
+    process.env.PNPM_HOME || path.join(homeDir, ".local", "share", "pnpm");
 
   return [
     // OpenCode's default installation directory
-    path.join(homeDir, '.opencode', 'bin', 'opencode'),
+    path.join(homeDir, ".opencode", "bin", "opencode"),
     // Standard locations
-    path.join(homeDir, '.local', 'bin', 'opencode'),
-    '/opt/homebrew/bin/opencode',
-    '/usr/local/bin/opencode',
-    '/usr/bin/opencode',
-    path.join(homeDir, '.npm-global', 'bin', 'opencode'),
+    path.join(homeDir, ".local", "bin", "opencode"),
+    "/opt/homebrew/bin/opencode",
+    "/usr/local/bin/opencode",
+    "/usr/bin/opencode",
+    path.join(homeDir, ".npm-global", "bin", "opencode"),
     // Linuxbrew
-    '/home/linuxbrew/.linuxbrew/bin/opencode',
+    "/home/linuxbrew/.linuxbrew/bin/opencode",
     // Volta
-    path.join(homeDir, '.volta', 'bin', 'opencode'),
+    path.join(homeDir, ".volta", "bin", "opencode"),
     // pnpm global
-    path.join(pnpmHome, 'opencode'),
+    path.join(pnpmHome, "opencode"),
     // Yarn global
-    path.join(homeDir, '.yarn', 'bin', 'opencode'),
-    path.join(homeDir, '.config', 'yarn', 'global', 'node_modules', '.bin', 'opencode'),
+    path.join(homeDir, ".yarn", "bin", "opencode"),
+    path.join(
+      homeDir,
+      ".config",
+      "yarn",
+      "global",
+      "node_modules",
+      ".bin",
+      "opencode",
+    ),
     // Go installation (if OpenCode is a Go binary)
-    path.join(homeDir, 'go', 'bin', 'opencode'),
-    path.join(process.env.GOPATH || path.join(homeDir, 'go'), 'bin', 'opencode'),
+    path.join(homeDir, "go", "bin", "opencode"),
+    path.join(
+      process.env.GOPATH || path.join(homeDir, "go"),
+      "bin",
+      "opencode",
+    ),
     // Snap packages
-    '/snap/bin/opencode',
+    "/snap/bin/opencode",
     // NVM paths
     ...nvmBinPaths,
     // fnm paths
@@ -1345,24 +1478,30 @@ export interface OpenCodeAuthIndicators {
   hasApiKey: boolean;
 }
 
-const OPENCODE_OAUTH_KEYS = ['access_token', 'oauth_token'] as const;
-const OPENCODE_API_KEY_KEYS = ['api_key', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'] as const;
+const OPENCODE_OAUTH_KEYS = ["access_token", "oauth_token"] as const;
+const OPENCODE_API_KEY_KEYS = [
+  "api_key",
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+] as const;
 
 // Provider names that OpenCode uses for provider-specific auth entries
 // NOTE: github-copilot uses refresh tokens, so 'access' may be empty but 'refresh' is valid
 const OPENCODE_PROVIDERS = [
-  'anthropic',
-  'openai',
-  'google',
-  'bedrock',
-  'amazon-bedrock',
-  'github-copilot',
-  'copilot',
+  "anthropic",
+  "openai",
+  "google",
+  "bedrock",
+  "amazon-bedrock",
+  "github-copilot",
+  "copilot",
 ] as const;
 
-function getOpenCodeNestedTokens(record: Record<string, unknown>): Record<string, unknown> | null {
+function getOpenCodeNestedTokens(
+  record: Record<string, unknown>,
+): Record<string, unknown> | null {
   const tokens = record[OPENCODE_TOKENS_KEY];
-  if (tokens && typeof tokens === 'object' && !Array.isArray(tokens)) {
+  if (tokens && typeof tokens === "object" && !Array.isArray(tokens)) {
     return tokens as Record<string, unknown>;
   }
   return null;
@@ -1376,23 +1515,27 @@ function getOpenCodeNestedTokens(record: Record<string, unknown>): Record<string
 function hasProviderOAuth(authJson: Record<string, unknown>): boolean {
   for (const provider of OPENCODE_PROVIDERS) {
     const providerAuth = authJson[provider];
-    if (providerAuth && typeof providerAuth === 'object' && !Array.isArray(providerAuth)) {
+    if (
+      providerAuth &&
+      typeof providerAuth === "object" &&
+      !Array.isArray(providerAuth)
+    ) {
       const auth = providerAuth as Record<string, unknown>;
       // Check for OAuth type with access token OR refresh token (GitHub Copilot uses refresh tokens)
-      if (auth.type === 'oauth') {
+      if (auth.type === "oauth") {
         if (
-          (typeof auth.access === 'string' && auth.access) ||
-          (typeof auth.refresh === 'string' && auth.refresh)
+          (typeof auth.access === "string" && auth.access) ||
+          (typeof auth.refresh === "string" && auth.refresh)
         ) {
           return true;
         }
       }
       // Also check for access_token field directly
-      if (typeof auth.access_token === 'string' && auth.access_token) {
+      if (typeof auth.access_token === "string" && auth.access_token) {
         return true;
       }
       // Check for refresh_token field directly
-      if (typeof auth.refresh_token === 'string' && auth.refresh_token) {
+      if (typeof auth.refresh_token === "string" && auth.refresh_token) {
         return true;
       }
     }
@@ -1406,14 +1549,18 @@ function hasProviderOAuth(authJson: Record<string, unknown>): boolean {
 function hasProviderApiKey(authJson: Record<string, unknown>): boolean {
   for (const provider of OPENCODE_PROVIDERS) {
     const providerAuth = authJson[provider];
-    if (providerAuth && typeof providerAuth === 'object' && !Array.isArray(providerAuth)) {
+    if (
+      providerAuth &&
+      typeof providerAuth === "object" &&
+      !Array.isArray(providerAuth)
+    ) {
       const auth = providerAuth as Record<string, unknown>;
       // Check for API key type
-      if (auth.type === 'api_key' && typeof auth.key === 'string' && auth.key) {
+      if (auth.type === "api_key" && typeof auth.key === "string" && auth.key) {
         return true;
       }
       // Also check for api_key field directly
-      if (typeof auth.api_key === 'string' && auth.api_key) {
+      if (typeof auth.api_key === "string" && auth.api_key) {
         return true;
       }
     }
@@ -1439,16 +1586,24 @@ export async function getOpenCodeAuthIndicators(): Promise<OpenCodeAuthIndicator
       const authJson = JSON.parse(authContent) as Record<string, unknown>;
 
       // Check for legacy top-level keys
-      result.hasOAuthToken = hasNonEmptyStringField(authJson, OPENCODE_OAUTH_KEYS);
-      result.hasApiKey = hasNonEmptyStringField(authJson, OPENCODE_API_KEY_KEYS);
+      result.hasOAuthToken = hasNonEmptyStringField(
+        authJson,
+        OPENCODE_OAUTH_KEYS,
+      );
+      result.hasApiKey = hasNonEmptyStringField(
+        authJson,
+        OPENCODE_API_KEY_KEYS,
+      );
 
       // Check for nested tokens object (legacy format)
       const nestedTokens = getOpenCodeNestedTokens(authJson);
       if (nestedTokens) {
         result.hasOAuthToken =
-          result.hasOAuthToken || hasNonEmptyStringField(nestedTokens, OPENCODE_OAUTH_KEYS);
+          result.hasOAuthToken ||
+          hasNonEmptyStringField(nestedTokens, OPENCODE_OAUTH_KEYS);
         result.hasApiKey =
-          result.hasApiKey || hasNonEmptyStringField(nestedTokens, OPENCODE_API_KEY_KEYS);
+          result.hasApiKey ||
+          hasNonEmptyStringField(nestedTokens, OPENCODE_API_KEY_KEYS);
       }
 
       // Check for provider-specific auth entries (current OpenCode format)

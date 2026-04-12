@@ -6,11 +6,11 @@
  * make the behaviour testable in isolation.
  */
 
-import path from 'path';
-import fs from 'fs/promises';
-import { execGitCommand } from '@pegasus/git-utils';
-import type { EventEmitter } from '../lib/events.js';
-import type { SettingsService } from './settings-service.js';
+import path from "path";
+import fs from "fs/promises";
+import { execGitCommand } from "@pegasus/git-utils";
+import type { EventEmitter } from "../lib/events.js";
+import type { SettingsService } from "./settings-service.js";
 
 /**
  * Get the list of remote names that have a branch matching the given branch name.
@@ -31,7 +31,7 @@ import type { SettingsService } from './settings-service.js';
 export async function getRemotesWithBranch(
   worktreePath: string,
   currentBranch: string,
-  hasAnyRemotes: boolean
+  hasAnyRemotes: boolean,
 ): Promise<string[]> {
   if (!hasAnyRemotes) {
     return [];
@@ -39,8 +39,12 @@ export async function getRemotesWithBranch(
 
   try {
     const remoteRefsOutput = await execGitCommand(
-      ['for-each-ref', '--format=%(refname:short)', `refs/remotes/*/${currentBranch}`],
-      worktreePath
+      [
+        "for-each-ref",
+        "--format=%(refname:short)",
+        `refs/remotes/*/${currentBranch}`,
+      ],
+      worktreePath,
     );
 
     if (!remoteRefsOutput.trim()) {
@@ -49,10 +53,10 @@ export async function getRemotesWithBranch(
 
     return remoteRefsOutput
       .trim()
-      .split('\n')
+      .split("\n")
       .map((ref) => {
         // Extract remote name from "remote/branch" format
-        const slashIdx = ref.indexOf('/');
+        const slashIdx = ref.indexOf("/");
         return slashIdx !== -1 ? ref.slice(0, slashIdx) : ref;
       })
       .filter((name) => name.length > 0);
@@ -67,9 +71,13 @@ export async function getRemotesWithBranch(
  * `copyConfiguredFiles`.  The caller can inspect `failures` for details.
  */
 export class CopyFilesError extends Error {
-  constructor(public readonly failures: Array<{ path: string; error: string }>) {
-    super(`Failed to copy ${failures.length} file(s): ${failures.map((f) => f.path).join(', ')}`);
-    this.name = 'CopyFilesError';
+  constructor(
+    public readonly failures: Array<{ path: string; error: string }>,
+  ) {
+    super(
+      `Failed to copy ${failures.length} file(s): ${failures.map((f) => f.path).join(", ")}`,
+    );
+    this.name = "CopyFilesError";
   }
 }
 
@@ -78,11 +86,13 @@ export class CopyFilesError extends Error {
  * `symlinkConfiguredFiles`.  The caller can inspect `failures` for details.
  */
 export class SymlinkFilesError extends Error {
-  constructor(public readonly failures: Array<{ path: string; error: string }>) {
+  constructor(
+    public readonly failures: Array<{ path: string; error: string }>,
+  ) {
     super(
-      `Failed to symlink ${failures.length} file(s): ${failures.map((f) => f.path).join(', ')}`
+      `Failed to symlink ${failures.length} file(s): ${failures.map((f) => f.path).join(", ")}`,
     );
-    this.name = 'SymlinkFilesError';
+    this.name = "SymlinkFilesError";
   }
 }
 
@@ -113,11 +123,12 @@ export class WorktreeService {
     projectPath: string,
     worktreePath: string,
     settingsService: SettingsService | undefined,
-    emitter: EventEmitter
+    emitter: EventEmitter,
   ): Promise<void> {
     if (!settingsService) return;
 
-    const projectSettings = await settingsService.getProjectSettings(projectPath);
+    const projectSettings =
+      await settingsService.getProjectSettings(projectPath);
     const copyFiles = projectSettings.worktreeCopyFiles;
 
     if (!copyFiles || copyFiles.length === 0) return;
@@ -127,17 +138,17 @@ export class WorktreeService {
     for (const relativePath of copyFiles) {
       // Security: prevent path traversal
       const normalized = path.normalize(relativePath);
-      if (normalized === '' || normalized === '.') {
-        const reason = 'Suspicious path rejected (empty or current-dir)';
-        emitter.emit('worktree:copy-files:skipped', {
+      if (normalized === "" || normalized === ".") {
+        const reason = "Suspicious path rejected (empty or current-dir)";
+        emitter.emit("worktree:copy-files:skipped", {
           path: relativePath,
           reason,
         });
         continue;
       }
-      if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
-        const reason = 'Suspicious path rejected (traversal or absolute)';
-        emitter.emit('worktree:copy-files:skipped', {
+      if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
+        const reason = "Suspicious path rejected (traversal or absolute)";
+        emitter.emit("worktree:copy-files:skipped", {
           path: relativePath,
           reason,
         });
@@ -163,19 +174,19 @@ export class WorktreeService {
           await fs.copyFile(sourcePath, destPath);
         }
 
-        emitter.emit('worktree:copy-files:copied', {
+        emitter.emit("worktree:copy-files:copied", {
           path: normalized,
-          type: stat.isDirectory() ? 'directory' : 'file',
+          type: stat.isDirectory() ? "directory" : "file",
         });
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          emitter.emit('worktree:copy-files:skipped', {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+          emitter.emit("worktree:copy-files:skipped", {
             path: normalized,
-            reason: 'File not found in project root',
+            reason: "File not found in project root",
           });
         } else {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          emitter.emit('worktree:copy-files:failed', {
+          emitter.emit("worktree:copy-files:failed", {
             path: normalized,
             error: errorMessage,
           });
@@ -214,11 +225,12 @@ export class WorktreeService {
     projectPath: string,
     worktreePath: string,
     settingsService: SettingsService | undefined,
-    emitter: EventEmitter
+    emitter: EventEmitter,
   ): Promise<void> {
     if (!settingsService) return;
 
-    const projectSettings = await settingsService.getProjectSettings(projectPath);
+    const projectSettings =
+      await settingsService.getProjectSettings(projectPath);
     const symlinkFiles = projectSettings.worktreeSymlinkFiles;
 
     if (!symlinkFiles || symlinkFiles.length === 0) return;
@@ -228,17 +240,17 @@ export class WorktreeService {
     for (const relativePath of symlinkFiles) {
       // Security: prevent path traversal
       const normalized = path.normalize(relativePath);
-      if (normalized === '' || normalized === '.') {
-        emitter.emit('worktree:symlink-files:skipped', {
+      if (normalized === "" || normalized === ".") {
+        emitter.emit("worktree:symlink-files:skipped", {
           path: relativePath,
-          reason: 'Suspicious path rejected (empty or current-dir)',
+          reason: "Suspicious path rejected (empty or current-dir)",
         });
         continue;
       }
-      if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
-        emitter.emit('worktree:symlink-files:skipped', {
+      if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
+        emitter.emit("worktree:symlink-files:skipped", {
           path: relativePath,
-          reason: 'Suspicious path rejected (traversal or absolute)',
+          reason: "Suspicious path rejected (traversal or absolute)",
         });
         continue;
       }
@@ -262,30 +274,40 @@ export class WorktreeService {
 
         try {
           // Pass 'dir' type on Windows for directory symlinks; ignored on macOS/Linux
-          await fs.symlink(symlinkTarget, destPath, stat.isDirectory() ? 'dir' : 'file');
-          emitter.emit('worktree:symlink-files:linked', {
+          await fs.symlink(
+            symlinkTarget,
+            destPath,
+            stat.isDirectory() ? "dir" : "file",
+          );
+          emitter.emit("worktree:symlink-files:linked", {
             path: normalized,
             target: symlinkTarget,
-            type: stat.isDirectory() ? 'directory' : 'file',
+            type: stat.isDirectory() ? "directory" : "file",
           });
         } catch (symlinkErr) {
           // Symlink failed — fall back to copying
           const symlinkErrMsg =
-            symlinkErr instanceof Error ? symlinkErr.message : String(symlinkErr);
+            symlinkErr instanceof Error
+              ? symlinkErr.message
+              : String(symlinkErr);
           try {
             if (stat.isDirectory()) {
-              await fs.cp(sourcePath, destPath, { recursive: true, force: true });
+              await fs.cp(sourcePath, destPath, {
+                recursive: true,
+                force: true,
+              });
             } else {
               await fs.copyFile(sourcePath, destPath);
             }
-            emitter.emit('worktree:symlink-files:fallback-copied', {
+            emitter.emit("worktree:symlink-files:fallback-copied", {
               path: normalized,
-              type: stat.isDirectory() ? 'directory' : 'file',
+              type: stat.isDirectory() ? "directory" : "file",
               reason: `Symlink failed (${symlinkErrMsg}); copied instead`,
             });
           } catch (copyErr) {
-            const copyErrMsg = copyErr instanceof Error ? copyErr.message : String(copyErr);
-            emitter.emit('worktree:symlink-files:failed', {
+            const copyErrMsg =
+              copyErr instanceof Error ? copyErr.message : String(copyErr);
+            emitter.emit("worktree:symlink-files:failed", {
               path: normalized,
               error: copyErrMsg,
             });
@@ -293,14 +315,14 @@ export class WorktreeService {
           }
         }
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-          emitter.emit('worktree:symlink-files:skipped', {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+          emitter.emit("worktree:symlink-files:skipped", {
             path: normalized,
-            reason: 'File not found in project root',
+            reason: "File not found in project root",
           });
         } else {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          emitter.emit('worktree:symlink-files:failed', {
+          emitter.emit("worktree:symlink-files:failed", {
             path: normalized,
             error: errorMessage,
           });

@@ -5,16 +5,23 @@
  * Uses Git Bash on Windows for cross-platform shell script compatibility.
  */
 
-import { spawn } from 'child_process';
-import path from 'path';
-import { createLogger } from '@pegasus/utils';
-import { systemPathExists, getShellPaths, findGitBashPath } from '@pegasus/platform';
-import { findCommand } from '../lib/cli-detection.js';
-import type { EventEmitter } from '../lib/events.js';
-import { readWorktreeMetadata, writeWorktreeMetadata } from '../lib/worktree-metadata.js';
-import * as secureFs from '../lib/secure-fs.js';
+import { spawn } from "child_process";
+import path from "path";
+import { createLogger } from "@pegasus/utils";
+import {
+  systemPathExists,
+  getShellPaths,
+  findGitBashPath,
+} from "@pegasus/platform";
+import { findCommand } from "../lib/cli-detection.js";
+import type { EventEmitter } from "../lib/events.js";
+import {
+  readWorktreeMetadata,
+  writeWorktreeMetadata,
+} from "../lib/worktree-metadata.js";
+import * as secureFs from "../lib/secure-fs.js";
 
-const logger = createLogger('InitScript');
+const logger = createLogger("InitScript");
 
 export interface InitScriptOptions {
   /** Absolute path to the project root */
@@ -45,13 +52,16 @@ export class InitScriptService {
    * Get the path to the init script for a project
    */
   getInitScriptPath(projectPath: string): string {
-    return path.join(projectPath, '.pegasus', 'worktree-init.sh');
+    return path.join(projectPath, ".pegasus", "worktree-init.sh");
   }
 
   /**
    * Check if the init script has already been run for a worktree
    */
-  async hasInitScriptRun(projectPath: string, branch: string): Promise<boolean> {
+  async hasInitScriptRun(
+    projectPath: string,
+    branch: string,
+  ): Promise<boolean> {
     const metadata = await readWorktreeMetadata(projectPath, branch);
     return metadata?.initScriptRan === true;
   }
@@ -66,7 +76,7 @@ export class InitScriptService {
       return this.cachedShellCommand;
     }
 
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       // On Windows, prioritize Git Bash over WSL bash (C:\Windows\System32\bash.exe)
       // WSL bash may not be properly configured and causes ENOENT errors
 
@@ -79,14 +89,16 @@ export class InitScriptService {
       }
 
       // Fall back to finding bash in PATH, but skip WSL bash
-      const bashInPath = await findCommand(['bash']);
-      if (bashInPath && !bashInPath.toLowerCase().includes('system32')) {
+      const bashInPath = await findCommand(["bash"]);
+      if (bashInPath && !bashInPath.toLowerCase().includes("system32")) {
         logger.debug(`Found bash in PATH at: ${bashInPath}`);
         this.cachedShellCommand = { shell: bashInPath, args: [] };
         return this.cachedShellCommand;
       }
 
-      logger.warn('Git Bash not found. WSL bash was skipped to avoid compatibility issues.');
+      logger.warn(
+        "Git Bash not found. WSL bash was skipped to avoid compatibility issues.",
+      );
       this.cachedShellCommand = null;
       return null;
     }
@@ -94,7 +106,7 @@ export class InitScriptService {
     // Unix-like systems: use getShellPaths() and check existence
     const shellPaths = getShellPaths();
     const posixShells = shellPaths.filter(
-      (p) => p.includes('bash') || p === '/bin/sh' || p === '/usr/bin/sh'
+      (p) => p.includes("bash") || p === "/bin/sh" || p === "/usr/bin/sh",
     );
 
     for (const shellPath of posixShells) {
@@ -109,8 +121,8 @@ export class InitScriptService {
     }
 
     // Ultimate fallback
-    if (systemPathExists('/bin/sh')) {
-      this.cachedShellCommand = { shell: '/bin/sh', args: [] };
+    if (systemPathExists("/bin/sh")) {
+      this.cachedShellCommand = { shell: "/bin/sh", args: [] };
       return this.cachedShellCommand;
     }
 
@@ -145,9 +157,9 @@ export class InitScriptService {
     const shellCmd = await this.findShellCommand();
     if (!shellCmd) {
       const error =
-        process.platform === 'win32'
-          ? 'Git Bash not found. Please install Git for Windows to run init scripts.'
-          : 'No shell found (/bin/bash or /bin/sh)';
+        process.platform === "win32"
+          ? "Git Bash not found. Please install Git for Windows to run init scripts."
+          : "No shell found (/bin/bash or /bin/sh)";
       logger.error(error);
 
       // Update metadata with error, preserving existing metadata
@@ -157,11 +169,11 @@ export class InitScriptService {
         createdAt: existingMetadata?.createdAt || new Date().toISOString(),
         pr: existingMetadata?.pr,
         initScriptRan: true,
-        initScriptStatus: 'failed',
+        initScriptStatus: "failed",
         initScriptError: error,
       });
 
-      emitter.emit('worktree:init-completed', {
+      emitter.emit("worktree:init-completed", {
         projectPath,
         worktreePath,
         branch,
@@ -171,7 +183,9 @@ export class InitScriptService {
       return;
     }
 
-    logger.info(`Running init script for branch "${branch}" in ${worktreePath}`);
+    logger.info(
+      `Running init script for branch "${branch}" in ${worktreePath}`,
+    );
     logger.debug(`Using shell: ${shellCmd.shell}`);
 
     // Update metadata to mark as running
@@ -181,11 +195,11 @@ export class InitScriptService {
       createdAt: existingMetadata?.createdAt || new Date().toISOString(),
       pr: existingMetadata?.pr,
       initScriptRan: false,
-      initScriptStatus: 'running',
+      initScriptStatus: "running",
     });
 
     // Emit started event
-    emitter.emit('worktree:init-started', {
+    emitter.emit("worktree:init-started", {
       projectPath,
       worktreePath,
       branch,
@@ -200,69 +214,72 @@ export class InitScriptService {
       PEGASUS_BRANCH: branch,
 
       // Essential system variables
-      PATH: process.env.PATH || '',
-      HOME: process.env.HOME || '',
-      USER: process.env.USER || '',
-      TMPDIR: process.env.TMPDIR || process.env.TEMP || process.env.TMP || '/tmp',
+      PATH: process.env.PATH || "",
+      HOME: process.env.HOME || "",
+      USER: process.env.USER || "",
+      TMPDIR:
+        process.env.TMPDIR || process.env.TEMP || process.env.TMP || "/tmp",
 
       // Shell and locale
-      SHELL: process.env.SHELL || '',
-      LANG: process.env.LANG || 'en_US.UTF-8',
-      LC_ALL: process.env.LC_ALL || '',
+      SHELL: process.env.SHELL || "",
+      LANG: process.env.LANG || "en_US.UTF-8",
+      LC_ALL: process.env.LC_ALL || "",
 
       // Force color output even though we're not a TTY
-      FORCE_COLOR: '1',
-      npm_config_color: 'always',
-      CLICOLOR_FORCE: '1',
+      FORCE_COLOR: "1",
+      npm_config_color: "always",
+      CLICOLOR_FORCE: "1",
 
       // Git configuration
-      GIT_TERMINAL_PROMPT: '0',
+      GIT_TERMINAL_PROMPT: "0",
     };
 
     // Platform-specific additions
-    if (process.platform === 'win32') {
-      safeEnv.USERPROFILE = process.env.USERPROFILE || '';
-      safeEnv.APPDATA = process.env.APPDATA || '';
-      safeEnv.LOCALAPPDATA = process.env.LOCALAPPDATA || '';
-      safeEnv.SystemRoot = process.env.SystemRoot || 'C:\\Windows';
-      safeEnv.TEMP = process.env.TEMP || '';
+    if (process.platform === "win32") {
+      safeEnv.USERPROFILE = process.env.USERPROFILE || "";
+      safeEnv.APPDATA = process.env.APPDATA || "";
+      safeEnv.LOCALAPPDATA = process.env.LOCALAPPDATA || "";
+      safeEnv.SystemRoot = process.env.SystemRoot || "C:\\Windows";
+      safeEnv.TEMP = process.env.TEMP || "";
     }
 
     // Spawn the script with safe environment
     const child = spawn(shellCmd.shell, [...shellCmd.args, scriptPath], {
       cwd: worktreePath,
       env: safeEnv,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
     // Stream stdout
-    child.stdout?.on('data', (data: Buffer) => {
+    child.stdout?.on("data", (data: Buffer) => {
       const content = data.toString();
-      emitter.emit('worktree:init-output', {
+      emitter.emit("worktree:init-output", {
         projectPath,
         branch,
-        type: 'stdout',
+        type: "stdout",
         content,
       });
     });
 
     // Stream stderr
-    child.stderr?.on('data', (data: Buffer) => {
+    child.stderr?.on("data", (data: Buffer) => {
       const content = data.toString();
-      emitter.emit('worktree:init-output', {
+      emitter.emit("worktree:init-output", {
         projectPath,
         branch,
-        type: 'stderr',
+        type: "stderr",
         content,
       });
     });
 
     // Handle completion
-    child.on('exit', async (code) => {
+    child.on("exit", async (code) => {
       const success = code === 0;
-      const status = success ? 'success' : 'failed';
+      const status = success ? "success" : "failed";
 
-      logger.info(`Init script for branch "${branch}" ${status} with exit code ${code}`);
+      logger.info(
+        `Init script for branch "${branch}" ${status} with exit code ${code}`,
+      );
 
       // Update metadata
       const metadata = await readWorktreeMetadata(projectPath, branch);
@@ -276,7 +293,7 @@ export class InitScriptService {
       });
 
       // Emit completion event
-      emitter.emit('worktree:init-completed', {
+      emitter.emit("worktree:init-completed", {
         projectPath,
         worktreePath,
         branch,
@@ -285,7 +302,7 @@ export class InitScriptService {
       });
     });
 
-    child.on('error', async (error) => {
+    child.on("error", async (error) => {
       logger.error(`Init script error for branch "${branch}":`, error);
 
       // Update metadata
@@ -295,12 +312,12 @@ export class InitScriptService {
         createdAt: metadata?.createdAt || new Date().toISOString(),
         pr: metadata?.pr,
         initScriptRan: true,
-        initScriptStatus: 'failed',
+        initScriptStatus: "failed",
         initScriptError: error.message,
       });
 
       // Emit completion with error
-      emitter.emit('worktree:init-completed', {
+      emitter.emit("worktree:init-completed", {
         projectPath,
         worktreePath,
         branch,

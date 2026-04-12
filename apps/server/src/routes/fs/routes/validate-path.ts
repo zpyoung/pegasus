@@ -2,11 +2,11 @@
  * POST /validate-path endpoint - Validate and add path to allowed list
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { isPathAllowed, getAllowedRootDirectory } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { isPathAllowed, getAllowedRootDirectory } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createValidatePathHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -14,7 +14,7 @@ export function createValidatePathHandler() {
       const { filePath } = req.body as { filePath: string };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: 'filePath is required' });
+        res.status(400).json({ success: false, error: "filePath is required" });
         return;
       }
 
@@ -39,7 +39,9 @@ export function createValidatePathHandler() {
         const stats = await secureFs.stat(resolvedPath);
 
         if (!stats.isDirectory()) {
-          res.status(400).json({ success: false, error: 'Path is not a directory' });
+          res
+            .status(400)
+            .json({ success: false, error: "Path is not a directory" });
           return;
         }
 
@@ -49,10 +51,10 @@ export function createValidatePathHandler() {
           isAllowed: true,
         });
       } catch {
-        res.status(400).json({ success: false, error: 'Path does not exist' });
+        res.status(400).json({ success: false, error: "Path does not exist" });
       }
     } catch (error) {
-      logError(error, 'Validate path failed');
+      logError(error, "Validate path failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -301,7 +301,7 @@ services:
       # Linux/macOS
       - ~/.config/gh:/home/pegasus/.config/gh
       # Windows
-      - 'C:/Users/YourName/AppData/Roaming/GitHub CLI:/home/pegasus/.config/gh'
+      - "C:/Users/YourName/AppData/Roaming/GitHub CLI:/home/pegasus/.config/gh"
 
       # Mount git config for user identity (name, email)
       - ~/.gitconfig:/home/pegasus/.gitconfig:ro

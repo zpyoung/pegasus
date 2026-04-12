@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquareText, RotateCcw, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { PromptCustomization, CustomPrompt } from '@pegasus/types';
-import { TAB_CONFIGS } from './tab-configs';
-import { Banner, PromptFieldList } from './components';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MessageSquareText, RotateCcw, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { PromptCustomization, CustomPrompt } from "@pegasus/types";
+import { TAB_CONFIGS } from "./tab-configs";
+import { Banner, PromptFieldList } from "./components";
 
 interface PromptCustomizationSectionProps {
   promptCustomization?: PromptCustomization;
@@ -26,12 +26,12 @@ export function PromptCustomizationSection({
   promptCustomization = {},
   onPromptCustomizationChange,
 }: PromptCustomizationSectionProps) {
-  const [activeTab, setActiveTab] = useState('auto-mode');
+  const [activeTab, setActiveTab] = useState("auto-mode");
 
   const updatePrompt = (
     category: keyof PromptCustomization,
     field: string,
-    value: CustomPrompt | undefined
+    value: CustomPrompt | undefined,
   ) => {
     const updated = {
       ...promptCustomization,
@@ -58,10 +58,10 @@ export function PromptCustomizationSection({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
       data-testid="prompt-customization-section"
     >
@@ -76,7 +76,12 @@ export function PromptCustomizationSection({
               Prompt Customization
             </h2>
           </div>
-          <Button variant="outline" size="sm" onClick={resetAllToDefaults} className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetAllToDefaults}
+            className="gap-2"
+          >
             <RotateCcw className="w-4 h-4" />
             Reset All to Defaults
           </Button>
@@ -91,11 +96,13 @@ export function PromptCustomizationSection({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
           <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="text-sm text-foreground font-medium">How to Customize Prompts</p>
+            <p className="text-sm text-foreground font-medium">
+              How to Customize Prompts
+            </p>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Toggle the switch to enable custom mode and edit the prompt. When disabled, the
-              default built-in prompt is used. You can use the default as a starting point by
-              enabling the toggle.
+              Toggle the switch to enable custom mode and edit the prompt. When
+              disabled, the default built-in prompt is used. You can use the
+              default as a starting point by enabling the toggle.
             </p>
           </div>
         </div>
@@ -117,7 +124,9 @@ export function PromptCustomizationSection({
             <TabsContent key={tab.id} value={tab.id} className="space-y-6 mt-6">
               {/* Tab Header */}
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-foreground">{tab.title}</h3>
+                <h3 className="text-sm font-medium text-foreground">
+                  {tab.title}
+                </h3>
                 <Button
                   variant="ghost"
                   size="sm"

@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   xmlToSpec,
   isValidSpecXml,
   type ParseResult,
   type SpecOutput,
-} from '@pegasus/spec-parser';
+} from "@pegasus/spec-parser";
 
 /**
  * Result of the spec parsing hook.
@@ -33,7 +33,7 @@ export function useSpecParser(xmlContent: string): UseSpecParserResult {
       return {
         isValid: false,
         parsedSpec: null,
-        errors: ['No spec content provided'],
+        errors: ["No spec content provided"],
         parseResult: null,
       };
     }
@@ -43,7 +43,7 @@ export function useSpecParser(xmlContent: string): UseSpecParserResult {
       return {
         isValid: false,
         parsedSpec: null,
-        errors: ['Invalid XML structure - missing required elements'],
+        errors: ["Invalid XML structure - missing required elements"],
         parseResult: null,
       };
     }

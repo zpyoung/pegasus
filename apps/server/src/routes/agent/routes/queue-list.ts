@@ -2,9 +2,9 @@
  * POST /queue/list endpoint - List queued prompts
  */
 
-import type { Request, Response } from 'express';
-import { AgentService } from '../../../services/agent-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { AgentService } from "../../../services/agent-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createQueueListHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -14,7 +14,7 @@ export function createQueueListHandler(agentService: AgentService) {
       if (!sessionId) {
         res.status(400).json({
           success: false,
-          error: 'sessionId is required',
+          error: "sessionId is required",
         });
         return;
       }
@@ -22,7 +22,7 @@ export function createQueueListHandler(agentService: AgentService) {
       const result = await agentService.getQueue(sessionId);
       res.json(result);
     } catch (error) {
-      logError(error, 'List queue failed');
+      logError(error, "List queue failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

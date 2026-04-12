@@ -1,9 +1,9 @@
-import { Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { useRef, useState, useEffect } from 'react';
-import { generateUUID } from '@/lib/utils';
+import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { useRef, useState, useEffect } from "react";
+import { generateUUID } from "@/lib/utils";
 
 interface ArrayFieldEditorProps {
   values: string[];
@@ -21,13 +21,13 @@ interface ItemWithId {
 export function ArrayFieldEditor({
   values,
   onChange,
-  placeholder = 'Enter value...',
-  addLabel = 'Add Item',
-  emptyMessage = 'No items added yet.',
+  placeholder = "Enter value...",
+  addLabel = "Add Item",
+  emptyMessage = "No items added yet.",
 }: ArrayFieldEditorProps) {
   // Track items with stable IDs
   const [items, setItems] = useState<ItemWithId[]>(() =>
-    values.map((value) => ({ id: generateUUID(), value }))
+    values.map((value) => ({ id: generateUUID(), value })),
   );
 
   // Track if we're making an internal change to avoid sync loops
@@ -45,7 +45,7 @@ export function ArrayFieldEditor({
   }, [values]);
 
   const handleAdd = () => {
-    const newItems = [...items, { id: generateUUID(), value: '' }];
+    const newItems = [...items, { id: generateUUID(), value: "" }];
     setItems(newItems);
     isInternalChange.current = true;
     onChange(newItems.map((item) => item.value));
@@ -59,7 +59,9 @@ export function ArrayFieldEditor({
   };
 
   const handleChange = (id: string, value: string) => {
-    const newItems = items.map((item) => (item.id === id ? { ...item, value } : item));
+    const newItems = items.map((item) =>
+      item.id === id ? { ...item, value } : item,
+    );
     setItems(newItems);
     isInternalChange.current = true;
     onChange(newItems.map((item) => item.value));
@@ -94,7 +96,13 @@ export function ArrayFieldEditor({
           ))}
         </div>
       )}
-      <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleAdd}
+        className="gap-1"
+      >
         <Plus className="w-4 h-4" />
         {addLabel}
       </Button>

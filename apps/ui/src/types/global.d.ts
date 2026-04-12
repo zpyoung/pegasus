@@ -5,8 +5,8 @@
  * used in testing and development contexts.
  */
 
-import type { Feature } from '@pegasus/types';
-import type { ElectronAPI } from '../lib/electron';
+import type { Feature } from "@pegasus/types";
+import type { ElectronAPI } from "../lib/electron";
 
 /**
  * Mock context file data for testing
@@ -60,7 +60,9 @@ declare global {
       getServerUrl?: () => Promise<string>;
       getApiKey?: () => Promise<string | null>;
       isExternalServerMode?: () => Promise<boolean>;
-      getPath?: (name: 'documents' | 'home' | 'appData' | 'userData') => Promise<string>;
+      getPath?: (
+        name: "documents" | "home" | "appData" | "userData",
+      ) => Promise<string>;
     };
   }
 }

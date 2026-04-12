@@ -1,7 +1,7 @@
 export const securityReviewTemplate = {
-  id: 'security-review',
-  name: 'Security Review',
-  colorClass: 'bg-red-500/20',
+  id: "security-review",
+  name: "Security Review",
+  colorClass: "bg-red-500/20",
   instructions: `## Security Review & Update
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODE TO FIX SECURITY ISSUES ⚠️

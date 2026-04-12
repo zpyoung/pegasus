@@ -5,16 +5,16 @@
  * Handles feature loading, categories, and auto-mode event notifications.
  */
 
-import { useState, useCallback, useEffect } from 'react';
-import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
-import { createLogger } from '@pegasus/utils/logger';
-import { useFeatures } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
+import { useState, useCallback, useEffect } from "react";
+import { useQueryClient, useIsRestoring } from "@tanstack/react-query";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
+import { createLogger } from "@pegasus/utils/logger";
+import { useFeatures } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
 
-const logger = createLogger('BoardFeatures');
+const logger = createLogger("BoardFeatures");
 
 interface UseBoardFeaturesProps {
   currentProject: { path: string; id: string } | null;
@@ -32,7 +32,9 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
   const isRestoring = useIsRestoring();
 
   // Use React Query for features
-  const { data: features = [], isLoading: isQueryLoading } = useFeatures(currentProject?.path);
+  const { data: features = [], isLoading: isQueryLoading } = useFeatures(
+    currentProject?.path,
+  );
 
   // Don't report loading while IDB cache restore is in progress —
   // features will appear momentarily once the restore completes.
@@ -44,7 +46,9 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
 
     try {
       const api = getElectronAPI();
-      const result = await api.readFile(`${currentProject.path}/.pegasus/categories.json`);
+      const result = await api.readFile(
+        `${currentProject.path}/.pegasus/categories.json`,
+      );
 
       if (result.success && result.content) {
         const parsed = JSON.parse(result.content);
@@ -74,16 +78,16 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
 
           await api.writeFile(
             `${currentProject.path}/.pegasus/categories.json`,
-            JSON.stringify(categories, null, 2)
+            JSON.stringify(categories, null, 2),
           );
 
           setPersistedCategories(categories);
         }
       } catch (error) {
-        logger.error('Failed to save category:', error);
+        logger.error("Failed to save category:", error);
       }
     },
-    [currentProject, persistedCategories]
+    [currentProject, persistedCategories],
   );
 
   // Subscribe to auto mode events for notifications (ding sound, toasts)
@@ -98,35 +102,39 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
 
     const unsubscribe = api.autoMode.onEvent((event) => {
       // Check if event is for the current project by matching projectPath
-      const eventProjectPath = ('projectPath' in event && event.projectPath) as string | undefined;
+      const eventProjectPath = ("projectPath" in event && event.projectPath) as
+        | string
+        | undefined;
       if (eventProjectPath && eventProjectPath !== projectPath) {
         return;
       }
 
-      if (event.type === 'auto_mode_feature_complete') {
+      if (event.type === "auto_mode_feature_complete") {
         // Play ding sound when feature is done (unless muted)
         const { muteDoneSound } = useAppStore.getState();
         if (!muteDoneSound) {
-          const audio = new Audio('/sounds/ding.mp3');
-          audio.play().catch((err) => logger.warn('Could not play ding sound:', err));
+          const audio = new Audio("/sounds/ding.mp3");
+          audio
+            .play()
+            .catch((err) => logger.warn("Could not play ding sound:", err));
         }
-      } else if (event.type === 'auto_mode_error') {
+      } else if (event.type === "auto_mode_error") {
         // Show error toast (removeRunningTask is handled by useAutoMode, not here)
         const isAuthError =
-          event.errorType === 'authentication' ||
+          event.errorType === "authentication" ||
           (event.error &&
-            (event.error.includes('Authentication failed') ||
-              event.error.includes('Invalid API key')));
+            (event.error.includes("Authentication failed") ||
+              event.error.includes("Invalid API key")));
 
         if (isAuthError) {
-          toast.error('Authentication Failed', {
+          toast.error("Authentication Failed", {
             description:
               "Your API key is invalid or expired. Please check Settings or run 'claude login' in terminal.",
             duration: 10000,
           });
         } else {
-          toast.error('Agent encountered an error', {
-            description: event.error || 'Check the logs for details',
+          toast.error("Agent encountered an error", {
+            description: event.error || "Check the logs for details",
           });
         }
       }
@@ -144,9 +152,9 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
       if (api.autoMode?.resumeInterrupted) {
         try {
           await api.autoMode.resumeInterrupted(currentProject.path);
-          logger.info('Checked for interrupted features');
+          logger.info("Checked for interrupted features");
         } catch (error) {
-          logger.warn('Failed to check for interrupted features:', error);
+          logger.warn("Failed to check for interrupted features:", error);
         }
       }
     };
@@ -170,7 +178,7 @@ export function useBoardFeatures({ currentProject }: UseBoardFeaturesProps) {
     persistedCategories,
     loadFeatures: async () => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.features.all(currentProject?.path ?? ''),
+        queryKey: queryKeys.features.all(currentProject?.path ?? ""),
       });
     },
     loadCategories,

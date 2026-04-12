@@ -11,20 +11,24 @@
  * - Delete old events to manage disk space
  */
 
-import { createLogger } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import { getEventHistoryIndexPath, getEventPath, ensureEventHistoryDir } from '@pegasus/platform';
+import { createLogger } from "@pegasus/utils";
+import * as secureFs from "../lib/secure-fs.js";
+import {
+  getEventHistoryIndexPath,
+  getEventPath,
+  ensureEventHistoryDir,
+} from "@pegasus/platform";
 import type {
   StoredEvent,
   StoredEventIndex,
   StoredEventSummary,
   EventHistoryFilter,
   EventHookTrigger,
-} from '@pegasus/types';
-import { DEFAULT_EVENT_HISTORY_INDEX } from '@pegasus/types';
-import { randomUUID } from 'crypto';
+} from "@pegasus/types";
+import { DEFAULT_EVENT_HISTORY_INDEX } from "@pegasus/types";
+import { randomUUID } from "crypto";
 
-const logger = createLogger('EventHistoryService');
+const logger = createLogger("EventHistoryService");
 
 /** Maximum events to keep in the index (oldest are pruned) */
 const MAX_EVENTS_IN_INDEX = 1000;
@@ -37,7 +41,7 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
   const content = JSON.stringify(data, null, 2);
 
   try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
+    await secureFs.writeFile(tempPath, content, "utf-8");
     await secureFs.rename(tempPath, filePath);
   } catch (error) {
     try {
@@ -54,10 +58,10 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
  */
 async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(filePath, "utf-8")) as string;
     return JSON.parse(content) as T;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return defaultValue;
     }
     logger.error(`Error reading ${filePath}:`, error);
@@ -90,8 +94,16 @@ export class EventHistoryService {
    * @returns Promise resolving to the stored event
    */
   async storeEvent(input: StoreEventInput): Promise<StoredEvent> {
-    const { projectPath, trigger, featureId, featureName, error, errorType, passes, metadata } =
-      input;
+    const {
+      projectPath,
+      trigger,
+      featureId,
+      featureName,
+      error,
+      errorType,
+      passes,
+      metadata,
+    } = input;
 
     // Ensure events directory exists
     await ensureEventHistoryDir(projectPath);
@@ -121,7 +133,9 @@ export class EventHistoryService {
     // Update the index
     await this.addToIndex(projectPath, event);
 
-    logger.info(`Stored event ${eventId} (${trigger}) for project ${projectName}`);
+    logger.info(
+      `Stored event ${eventId} (${trigger}) for project ${projectName}`,
+    );
 
     return event;
   }
@@ -133,9 +147,15 @@ export class EventHistoryService {
    * @param filter - Optional filter criteria
    * @returns Promise resolving to array of event summaries
    */
-  async getEvents(projectPath: string, filter?: EventHistoryFilter): Promise<StoredEventSummary[]> {
+  async getEvents(
+    projectPath: string,
+    filter?: EventHistoryFilter,
+  ): Promise<StoredEventSummary[]> {
     const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+    const index = await readJsonFile<StoredEventIndex>(
+      indexPath,
+      DEFAULT_EVENT_HISTORY_INDEX,
+    );
 
     let events = [...index.events];
 
@@ -149,16 +169,23 @@ export class EventHistoryService {
       }
       if (filter.since) {
         const sinceDate = new Date(filter.since).getTime();
-        events = events.filter((e) => new Date(e.timestamp).getTime() >= sinceDate);
+        events = events.filter(
+          (e) => new Date(e.timestamp).getTime() >= sinceDate,
+        );
       }
       if (filter.until) {
         const untilDate = new Date(filter.until).getTime();
-        events = events.filter((e) => new Date(e.timestamp).getTime() <= untilDate);
+        events = events.filter(
+          (e) => new Date(e.timestamp).getTime() <= untilDate,
+        );
       }
     }
 
     // Sort by timestamp (newest first)
-    events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    events.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
 
     // Apply pagination
     if (filter?.offset) {
@@ -178,13 +205,16 @@ export class EventHistoryService {
    * @param eventId - Event identifier
    * @returns Promise resolving to the full event or null if not found
    */
-  async getEvent(projectPath: string, eventId: string): Promise<StoredEvent | null> {
+  async getEvent(
+    projectPath: string,
+    eventId: string,
+  ): Promise<StoredEvent | null> {
     const eventPath = getEventPath(projectPath, eventId);
     try {
-      const content = (await secureFs.readFile(eventPath, 'utf-8')) as string;
+      const content = (await secureFs.readFile(eventPath, "utf-8")) as string;
       return JSON.parse(content) as StoredEvent;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
       logger.error(`Error reading event ${eventId}:`, error);
@@ -202,7 +232,10 @@ export class EventHistoryService {
   async deleteEvent(projectPath: string, eventId: string): Promise<boolean> {
     // Remove from index
     const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+    const index = await readJsonFile<StoredEventIndex>(
+      indexPath,
+      DEFAULT_EVENT_HISTORY_INDEX,
+    );
 
     const initialLength = index.events.length;
     index.events = index.events.filter((e) => e.id !== eventId);
@@ -218,7 +251,7 @@ export class EventHistoryService {
     try {
       await secureFs.unlink(eventPath);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         logger.error(`Error deleting event file ${eventId}:`, error);
       }
     }
@@ -235,7 +268,10 @@ export class EventHistoryService {
    */
   async clearEvents(projectPath: string): Promise<number> {
     const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+    const index = await readJsonFile<StoredEventIndex>(
+      indexPath,
+      DEFAULT_EVENT_HISTORY_INDEX,
+    );
 
     const count = index.events.length;
 
@@ -245,7 +281,7 @@ export class EventHistoryService {
       try {
         await secureFs.unlink(eventPath);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
           logger.error(`Error deleting event file ${event.id}:`, error);
         }
       }
@@ -265,7 +301,10 @@ export class EventHistoryService {
    * @param filter - Optional filter criteria
    * @returns Promise resolving to event count
    */
-  async getEventCount(projectPath: string, filter?: EventHistoryFilter): Promise<number> {
+  async getEventCount(
+    projectPath: string,
+    filter?: EventHistoryFilter,
+  ): Promise<number> {
     const events = await this.getEvents(projectPath, {
       ...filter,
       limit: undefined,
@@ -277,9 +316,15 @@ export class EventHistoryService {
   /**
    * Add an event to the index (internal)
    */
-  private async addToIndex(projectPath: string, event: StoredEvent): Promise<void> {
+  private async addToIndex(
+    projectPath: string,
+    event: StoredEvent,
+  ): Promise<void> {
     const indexPath = getEventHistoryIndexPath(projectPath);
-    const index = await readJsonFile<StoredEventIndex>(indexPath, DEFAULT_EVENT_HISTORY_INDEX);
+    const index = await readJsonFile<StoredEventIndex>(
+      indexPath,
+      DEFAULT_EVENT_HISTORY_INDEX,
+    );
 
     const summary: StoredEventSummary = {
       id: event.id,

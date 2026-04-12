@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useSearch } from '@tanstack/react-router';
-import { useAppStore } from '@/store/app-store';
+import { useState, useEffect } from "react";
+import { useSearch } from "@tanstack/react-router";
+import { useAppStore } from "@/store/app-store";
 
-import { useSettingsView, type SettingsViewId } from './settings-view/hooks';
-import { NAV_ITEMS } from './settings-view/config/navigation';
-import { SettingsHeader } from './settings-view/components/settings-header';
-import { KeyboardMapDialog } from './settings-view/components/keyboard-map-dialog';
-import { SettingsNavigation } from './settings-view/components/settings-navigation';
-import { ApiKeysSection } from './settings-view/api-keys/api-keys-section';
-import { ModelDefaultsSection } from './settings-view/model-defaults';
-import { AppearanceSection } from './settings-view/appearance/appearance-section';
-import { EditorSection } from './settings-view/editor';
-import { TerminalSection } from './settings-view/terminal/terminal-section';
-import { AudioSection } from './settings-view/audio/audio-section';
-import { KeyboardShortcutsSection } from './settings-view/keyboard-shortcuts/keyboard-shortcuts-section';
-import { FeatureDefaultsSection } from './settings-view/feature-defaults/feature-defaults-section';
-import { WorktreesSection } from './settings-view/worktrees';
-import { AccountSection } from './settings-view/account';
-import { SecuritySection } from './settings-view/security';
-import { DeveloperSection } from './settings-view/developer/developer-section';
+import { useSettingsView, type SettingsViewId } from "./settings-view/hooks";
+import { NAV_ITEMS } from "./settings-view/config/navigation";
+import { SettingsHeader } from "./settings-view/components/settings-header";
+import { KeyboardMapDialog } from "./settings-view/components/keyboard-map-dialog";
+import { SettingsNavigation } from "./settings-view/components/settings-navigation";
+import { ApiKeysSection } from "./settings-view/api-keys/api-keys-section";
+import { ModelDefaultsSection } from "./settings-view/model-defaults";
+import { AppearanceSection } from "./settings-view/appearance/appearance-section";
+import { EditorSection } from "./settings-view/editor";
+import { TerminalSection } from "./settings-view/terminal/terminal-section";
+import { AudioSection } from "./settings-view/audio/audio-section";
+import { KeyboardShortcutsSection } from "./settings-view/keyboard-shortcuts/keyboard-shortcuts-section";
+import { FeatureDefaultsSection } from "./settings-view/feature-defaults/feature-defaults-section";
+import { WorktreesSection } from "./settings-view/worktrees";
+import { AccountSection } from "./settings-view/account";
+import { SecuritySection } from "./settings-view/security";
+import { DeveloperSection } from "./settings-view/developer/developer-section";
 import {
   ClaudeSettingsTab,
   CursorSettingsTab,
@@ -26,13 +26,13 @@ import {
   OpencodeSettingsTab,
   GeminiSettingsTab,
   CopilotSettingsTab,
-} from './settings-view/providers';
-import { MCPServersSection } from './settings-view/mcp-servers';
-import { PromptCustomizationSection } from './settings-view/prompts';
-import { EventHooksSection } from './settings-view/event-hooks';
-import { TemplatesSection } from './settings-view/templates/templates-section';
-import { ImportExportDialog } from './settings-view/components/import-export-dialog';
-import type { Theme } from './settings-view/shared/types';
+} from "./settings-view/providers";
+import { MCPServersSection } from "./settings-view/mcp-servers";
+import { PromptCustomizationSection } from "./settings-view/prompts";
+import { EventHooksSection } from "./settings-view/event-hooks";
+import { TemplatesSection } from "./settings-view/templates/templates-section";
+import { ImportExportDialog } from "./settings-view/components/import-export-dialog";
+import type { Theme } from "./settings-view/shared/types";
 
 // Breakpoint constant for mobile (matches Tailwind lg breakpoint)
 const LG_BREAKPOINT = 1024;
@@ -77,15 +77,15 @@ export function SettingsView() {
   const globalTheme = theme as Theme;
 
   // Get initial view from URL search params
-  const { view: initialView } = useSearch({ from: '/settings' });
+  const { view: initialView } = useSearch({ from: "/settings" });
 
   // Use settings view navigation hook
   const { activeView, navigateTo } = useSettingsView({ initialView });
 
   // Handle navigation - if navigating to 'providers', default to 'claude-provider'
   const handleNavigate = (viewId: SettingsViewId) => {
-    if (viewId === 'providers') {
-      navigateTo('claude-provider');
+    if (viewId === "providers") {
+      navigateTo("claude-provider");
     } else {
       navigateTo(viewId);
     }
@@ -96,7 +96,7 @@ export function SettingsView() {
 
   // Mobile navigation state - default to showing on desktop, hidden on mobile
   const [showNavigation, setShowNavigation] = useState(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       return window.innerWidth >= LG_BREAKPOINT;
     }
     return true; // Default to showing on SSR
@@ -104,7 +104,7 @@ export function SettingsView() {
 
   // Auto-close navigation on mobile when a section is selected
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < LG_BREAKPOINT) {
+    if (typeof window !== "undefined" && window.innerWidth < LG_BREAKPOINT) {
       setShowNavigation(false);
     }
   }, [activeView]);
@@ -117,38 +117,38 @@ export function SettingsView() {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Render the active section based on current view
   const renderActiveSection = () => {
     switch (activeView) {
-      case 'claude-provider':
+      case "claude-provider":
         return <ClaudeSettingsTab />;
-      case 'cursor-provider':
+      case "cursor-provider":
         return <CursorSettingsTab />;
-      case 'codex-provider':
+      case "codex-provider":
         return <CodexSettingsTab />;
-      case 'opencode-provider':
+      case "opencode-provider":
         return <OpencodeSettingsTab />;
-      case 'gemini-provider':
+      case "gemini-provider":
         return <GeminiSettingsTab />;
-      case 'copilot-provider':
+      case "copilot-provider":
         return <CopilotSettingsTab />;
-      case 'providers':
-      case 'claude': // Backwards compatibility - redirect to claude-provider
+      case "providers":
+      case "claude": // Backwards compatibility - redirect to claude-provider
         return <ClaudeSettingsTab />;
-      case 'mcp-servers':
+      case "mcp-servers":
         return <MCPServersSection />;
-      case 'prompts':
+      case "prompts":
         return (
           <PromptCustomizationSection
             promptCustomization={promptCustomization}
             onPromptCustomizationChange={setPromptCustomization}
           />
         );
-      case 'templates':
+      case "templates":
         return (
           <TemplatesSection
             templates={featureTemplates}
@@ -158,30 +158,35 @@ export function SettingsView() {
             onReorderTemplates={reorderFeatureTemplates}
           />
         );
-      case 'model-defaults':
+      case "model-defaults":
         return <ModelDefaultsSection />;
-      case 'appearance':
+      case "appearance":
         return (
           <AppearanceSection
             effectiveTheme={globalTheme}
             onThemeChange={(newTheme) => setTheme(newTheme as typeof theme)}
           />
         );
-      case 'editor':
+      case "editor":
         return <EditorSection />;
-      case 'terminal':
+      case "terminal":
         return <TerminalSection />;
-      case 'keyboard':
+      case "keyboard":
         return (
-          <KeyboardShortcutsSection onOpenKeyboardMap={() => setShowKeyboardMapDialog(true)} />
+          <KeyboardShortcutsSection
+            onOpenKeyboardMap={() => setShowKeyboardMapDialog(true)}
+          />
         );
-      case 'audio':
+      case "audio":
         return (
-          <AudioSection muteDoneSound={muteDoneSound} onMuteDoneSoundChange={setMuteDoneSound} />
+          <AudioSection
+            muteDoneSound={muteDoneSound}
+            onMuteDoneSoundChange={setMuteDoneSound}
+          />
         );
-      case 'event-hooks':
+      case "event-hooks":
         return <EventHooksSection />;
-      case 'defaults':
+      case "defaults":
         return (
           <FeatureDefaultsSection
             defaultSkipTests={defaultSkipTests}
@@ -202,20 +207,23 @@ export function SettingsView() {
             onDefaultMaxTurnsChange={setDefaultMaxTurns}
           />
         );
-      case 'worktrees':
+      case "worktrees":
         return (
-          <WorktreesSection useWorktrees={useWorktrees} onUseWorktreesChange={setUseWorktrees} />
+          <WorktreesSection
+            useWorktrees={useWorktrees}
+            onUseWorktreesChange={setUseWorktrees}
+          />
         );
-      case 'account':
+      case "account":
         return <AccountSection />;
-      case 'security':
+      case "security":
         return (
           <SecuritySection
             skipSandboxWarning={skipSandboxWarning}
             onSkipSandboxWarningChange={setSkipSandboxWarning}
           />
         );
-      case 'developer':
+      case "developer":
         return <DeveloperSection />;
       default:
         return <ApiKeysSection />;
@@ -223,7 +231,10 @@ export function SettingsView() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="settings-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="settings-view"
+    >
       {/* Header Section */}
       <SettingsHeader
         showNavigation={showNavigation}
@@ -250,10 +261,16 @@ export function SettingsView() {
       </div>
 
       {/* Keyboard Map Dialog */}
-      <KeyboardMapDialog open={showKeyboardMapDialog} onOpenChange={setShowKeyboardMapDialog} />
+      <KeyboardMapDialog
+        open={showKeyboardMapDialog}
+        onOpenChange={setShowKeyboardMapDialog}
+      />
 
       {/* Import/Export Settings Dialog */}
-      <ImportExportDialog open={showImportExportDialog} onOpenChange={setShowImportExportDialog} />
+      <ImportExportDialog
+        open={showImportExportDialog}
+        onOpenChange={setShowImportExportDialog}
+      />
     </div>
   );
 }

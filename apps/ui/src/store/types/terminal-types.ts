@@ -1,11 +1,22 @@
 // Terminal panel layout types (recursive for splits)
 export type TerminalPanelContent =
-  | { type: 'terminal'; sessionId: string; size?: number; fontSize?: number; branchName?: string }
-  | { type: 'testRunner'; sessionId: string; size?: number; worktreePath: string }
   | {
-      type: 'split';
+      type: "terminal";
+      sessionId: string;
+      size?: number;
+      fontSize?: number;
+      branchName?: string;
+    }
+  | {
+      type: "testRunner";
+      sessionId: string;
+      size?: number;
+      worktreePath: string;
+    }
+  | {
+      type: "split";
       id: string; // Stable ID for React key stability
-      direction: 'horizontal' | 'vertical';
+      direction: "horizontal" | "vertical";
       panels: TerminalPanelContent[];
       size?: number;
     };
@@ -32,7 +43,7 @@ export interface TerminalState {
   lineHeight: number; // Line height multiplier for terminal text
   maxSessions: number; // Maximum concurrent terminal sessions (server setting)
   lastActiveProjectPath: string | null; // Last project path to detect route changes vs project switches
-  openTerminalMode: 'newTab' | 'split'; // How to open terminals from "Open in Terminal" action
+  openTerminalMode: "newTab" | "split"; // How to open terminals from "Open in Terminal" action
   customBackgroundColor: string | null; // Custom background color override (hex color string, null = use theme default)
   customForegroundColor: string | null; // Custom foreground/text color override (hex color string, null = use theme default)
 }
@@ -40,12 +51,23 @@ export interface TerminalState {
 // Persisted terminal layout - now includes sessionIds for reconnection
 // Used to restore terminal layout structure when switching projects
 export type PersistedTerminalPanel =
-  | { type: 'terminal'; size?: number; fontSize?: number; sessionId?: string; branchName?: string }
-  | { type: 'testRunner'; size?: number; sessionId?: string; worktreePath?: string }
   | {
-      type: 'split';
+      type: "terminal";
+      size?: number;
+      fontSize?: number;
+      sessionId?: string;
+      branchName?: string;
+    }
+  | {
+      type: "testRunner";
+      size?: number;
+      sessionId?: string;
+      worktreePath?: string;
+    }
+  | {
+      type: "split";
       id?: string; // Optional for backwards compatibility with older persisted layouts
-      direction: 'horizontal' | 'vertical';
+      direction: "horizontal" | "vertical";
       panels: PersistedTerminalPanel[];
       size?: number;
     };
@@ -80,7 +102,7 @@ export interface PersistedTerminalSettings {
   scrollbackLines: number;
   lineHeight: number;
   maxSessions: number;
-  openTerminalMode: 'newTab' | 'split';
+  openTerminalMode: "newTab" | "split";
   customBackgroundColor: string | null; // Custom background color override (hex color string, null = use theme default)
   customForegroundColor: string | null; // Custom foreground/text color override (hex color string, null = use theme default)
 }

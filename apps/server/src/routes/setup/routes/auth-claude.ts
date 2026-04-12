@@ -2,22 +2,26 @@
  * POST /auth-claude endpoint - Auth Claude
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs";
+import * as path from "path";
 
 export function createAuthClaudeHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.pegasus', '.claude-disconnected');
+      const markerPath = path.join(
+        process.cwd(),
+        ".pegasus",
+        ".claude-disconnected",
+      );
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }
 
       // Check if CLI is already authenticated by checking auth indicators
-      const { getClaudeAuthIndicators } = await import('@pegasus/platform');
+      const { getClaudeAuthIndicators } = await import("@pegasus/platform");
       const indicators = await getClaudeAuthIndicators();
       const isAlreadyAuthenticated =
         indicators.hasStatsCacheWithActivity ||
@@ -28,7 +32,7 @@ export function createAuthClaudeHandler() {
         // CLI is already authenticated, just reconnect
         res.json({
           success: true,
-          message: 'Claude CLI is now linked with the app',
+          message: "Claude CLI is now linked with the app",
           wasAlreadyAuthenticated: true,
         });
       } else {
@@ -42,11 +46,11 @@ export function createAuthClaudeHandler() {
         });
       }
     } catch (error) {
-      logError(error, 'Auth Claude failed');
+      logError(error, "Auth Claude failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
-        message: 'Failed to link Claude CLI with the app',
+        message: "Failed to link Claude CLI with the app",
       });
     }
   };

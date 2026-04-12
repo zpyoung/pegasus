@@ -2,13 +2,13 @@
  * GET/PUT /settings endpoint - Get/Update terminal settings
  */
 
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 import {
   getTerminalService,
   MIN_MAX_SESSIONS,
   MAX_MAX_SESSIONS,
-} from '../../../services/terminal-service.js';
-import { getErrorMessage, logError } from '../common.js';
+} from "../../../services/terminal-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createSettingsGetHandler() {
   return (_req: Request, res: Response): void => {
@@ -22,10 +22,10 @@ export function createSettingsGetHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Get terminal settings failed');
+      logError(error, "Get terminal settings failed");
       res.status(500).json({
         success: false,
-        error: 'Failed to get terminal settings',
+        error: "Failed to get terminal settings",
         details: getErrorMessage(error),
       });
     }
@@ -40,17 +40,17 @@ export function createSettingsUpdateHandler() {
 
       // Validate maxSessions if provided
       if (maxSessions !== undefined) {
-        if (typeof maxSessions !== 'number') {
+        if (typeof maxSessions !== "number") {
           res.status(400).json({
             success: false,
-            error: 'maxSessions must be a number',
+            error: "maxSessions must be a number",
           });
           return;
         }
         if (!Number.isInteger(maxSessions)) {
           res.status(400).json({
             success: false,
-            error: 'maxSessions must be an integer',
+            error: "maxSessions must be an integer",
           });
           return;
         }
@@ -72,10 +72,10 @@ export function createSettingsUpdateHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Update terminal settings failed');
+      logError(error, "Update terminal settings failed");
       res.status(500).json({
         success: false,
-        error: 'Failed to update terminal settings',
+        error: "Failed to update terminal settings",
         details: getErrorMessage(error),
       });
     }

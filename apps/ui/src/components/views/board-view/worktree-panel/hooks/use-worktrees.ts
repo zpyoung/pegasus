@@ -1,15 +1,23 @@
-import { useEffect, useCallback, useRef, startTransition, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useAppStore } from '@/store/app-store';
-import { useWorktrees as useWorktreesQuery } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import { pathsEqual } from '@/lib/utils';
-import type { WorktreeInfo } from '../types';
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  startTransition,
+  useMemo,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAppStore } from "@/store/app-store";
+import { useWorktrees as useWorktreesQuery } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import { pathsEqual } from "@/lib/utils";
+import type { WorktreeInfo } from "../types";
 
 interface UseWorktreesOptions {
   projectPath: string;
   refreshTrigger?: number;
-  onRemovedWorktrees?: (removedWorktrees: Array<{ path: string; branch: string }>) => void;
+  onRemovedWorktrees?: (
+    removedWorktrees: Array<{ path: string; branch: string }>,
+  ) => void;
 }
 
 export function useWorktrees({
@@ -26,7 +34,10 @@ export function useWorktrees({
 
   // Use the React Query hook
   const { data, isLoading, refetch } = useWorktreesQuery(projectPath);
-  const worktrees = useMemo(() => (data?.worktrees ?? []) as WorktreeInfo[], [data?.worktrees]);
+  const worktrees = useMemo(
+    () => (data?.worktrees ?? []) as WorktreeInfo[],
+    [data?.worktrees],
+  );
 
   // Sync worktrees to Zustand store when they change.
   // Use a ref to track the previous worktrees and skip the store update when the
@@ -34,7 +45,7 @@ export function useWorktrees({
   // (triggered by WebSocket event invalidations) would update the store even when
   // the worktree list is identical, causing a cascade of re-renders in BoardView →
   // selectedWorktree → useAutoMode → refreshStatus that can trigger React error #185.
-  const prevWorktreesJsonRef = useRef<string>('');
+  const prevWorktreesJsonRef = useRef<string>("");
   useEffect(() => {
     if (worktrees.length > 0) {
       // Compare serialized worktrees to skip no-op store updates
@@ -92,7 +103,7 @@ export function useWorktrees({
         // Find the primary worktree and get its branch name
         // Fallback to "main" only if worktrees haven't loaded yet
         const mainWorktree = worktrees.find((w) => w.isMain);
-        const mainBranch = mainWorktree?.branch || 'main';
+        const mainBranch = mainWorktree?.branch || "main";
         // Note: Zustand uses useSyncExternalStore so setCurrentWorktree updates
         // are flushed synchronously. The real guard against React error #185 is
         // dependency isolation — currentWorktree is intentionally excluded from
@@ -113,7 +124,7 @@ export function useWorktrees({
       // Skip invalidation when re-selecting the already-active worktree
       const isSameWorktree = worktree.isMain
         ? currentWorktreePath === null
-        : pathsEqual(worktree.path, currentWorktreePath ?? '');
+        : pathsEqual(worktree.path, currentWorktreePath ?? "");
 
       if (isSameWorktree) return;
 
@@ -125,7 +136,11 @@ export function useWorktrees({
       // batch unrelated concurrent React state updates but should not be relied
       // upon for Zustand update ordering.
       startTransition(() => {
-        setCurrentWorktree(projectPath, worktree.isMain ? null : worktree.path, worktree.branch);
+        setCurrentWorktree(
+          projectPath,
+          worktree.isMain ? null : worktree.path,
+          worktree.branch,
+        );
       });
 
       // Defer feature query invalidation so the store update and client-side
@@ -140,7 +155,7 @@ export function useWorktrees({
         });
       }, 100);
     },
-    [projectPath, setCurrentWorktree, queryClient, currentWorktreePath]
+    [projectPath, setCurrentWorktree, queryClient, currentWorktreePath],
   );
 
   // fetchWorktrees for backward compatibility - now just triggers a refetch
@@ -156,7 +171,7 @@ export function useWorktrees({
       const result = await refetch();
       return result.data?.removedWorktrees;
     },
-    [projectPath, queryClient, refetch]
+    [projectPath, queryClient, refetch],
   );
 
   const selectedWorktree = currentWorktreePath

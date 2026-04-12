@@ -10,13 +10,13 @@
  * blank screens, reloads, and battery drain on flaky mobile connections.
  */
 
-import { QueryClient, keepPreviousData } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { createLogger } from '@pegasus/utils/logger';
-import { isConnectionError, handleServerOffline } from './http-api-client';
-import { isMobileDevice } from './mobile-detect';
+import { QueryClient, keepPreviousData } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { createLogger } from "@pegasus/utils/logger";
+import { isConnectionError, handleServerOffline } from "./http-api-client";
+import { isMobileDevice } from "./mobile-detect";
 
-const logger = createLogger('QueryClient');
+const logger = createLogger("QueryClient");
 
 /**
  * Mobile multiplier for stale times.
@@ -73,7 +73,7 @@ export const GC_TIMES = {
  * Global error handler for queries
  */
 const handleQueryError = (error: Error) => {
-  logger.error('Query error:', error);
+  logger.error("Query error:", error);
 
   // Check for connection errors (server offline)
   if (isConnectionError(error)) {
@@ -82,7 +82,7 @@ const handleQueryError = (error: Error) => {
   }
 
   // Don't toast for auth errors - those are handled by http-api-client
-  if (error.message === 'Unauthorized') {
+  if (error.message === "Unauthorized") {
     return;
   }
 };
@@ -91,7 +91,7 @@ const handleQueryError = (error: Error) => {
  * Global error handler for mutations
  */
 const handleMutationError = (error: Error) => {
-  logger.error('Mutation error:', error);
+  logger.error("Mutation error:", error);
 
   // Check for connection errors
   if (isConnectionError(error)) {
@@ -100,13 +100,13 @@ const handleMutationError = (error: Error) => {
   }
 
   // Don't toast for auth errors
-  if (error.message === 'Unauthorized') {
+  if (error.message === "Unauthorized") {
     return;
   }
 
   // Show error toast for other errors
-  toast.error('Operation failed', {
-    description: error.message || 'An unexpected error occurred',
+  toast.error("Operation failed", {
+    description: error.message || "An unexpected error occurred",
   });
 };
 
@@ -128,7 +128,7 @@ export const queryClient = new QueryClient({
       gcTime: GC_TIMES.DEFAULT,
       retry: (failureCount, error) => {
         // Don't retry on auth errors
-        if (error instanceof Error && error.message === 'Unauthorized') {
+        if (error instanceof Error && error.message === "Unauthorized") {
           return false;
         }
         // Retry connection errors a few times before declaring server offline.
@@ -155,7 +155,7 @@ export const queryClient = new QueryClient({
       // On desktop, always refetch on mount for freshest data ('always' = refetch even if fresh).
       // This prevents unnecessary network requests when navigating between
       // routes, which was causing blank screen flickers on mobile.
-      refetchOnMount: isMobileDevice ? true : 'always',
+      refetchOnMount: isMobileDevice ? true : "always",
       // Keep previous data visible while refetching to prevent blank flashes.
       // This is especially important on mobile where network is slower.
       placeholderData: isMobileDevice ? keepPreviousData : undefined,
@@ -172,7 +172,7 @@ export const queryClient = new QueryClient({
  * This catches errors that aren't handled by individual queries
  */
 queryClient.getQueryCache().subscribe((event) => {
-  if (event.type === 'updated' && event.query.state.status === 'error') {
+  if (event.type === "updated" && event.query.state.status === "error") {
     const error = event.query.state.error;
     if (error instanceof Error) {
       handleQueryError(error);

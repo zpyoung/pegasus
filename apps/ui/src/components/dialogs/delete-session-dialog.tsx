@@ -1,6 +1,6 @@
-import { MessageSquare } from 'lucide-react';
-import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
-import type { SessionListItem } from '@/types/electron';
+import { MessageSquare } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import type { SessionListItem } from "@/types/electron";
 
 interface DeleteSessionDialogProps {
   open: boolean;
@@ -38,8 +38,12 @@ export function DeleteSessionDialog({
             <MessageSquare className="w-5 h-5 text-brand-500" />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-foreground truncate">{session.name}</p>
-            <p className="text-xs text-muted-foreground">{session.messageCount} messages</p>
+            <p className="font-medium text-foreground truncate">
+              {session.name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {session.messageCount} messages
+            </p>
           </div>
         </div>
       )}

@@ -4,13 +4,13 @@
  * Displays active AI agents with their status and quick access to features.
  */
 
-import { useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useAppStore } from '@/store/app-store';
-import { initializeProject } from '@/lib/project-init';
-import { toast } from 'sonner';
-import type { ProjectStatus } from '@pegasus/types';
-import { Bot, Activity, GitBranch, ArrowRight } from 'lucide-react';
+import { useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useAppStore } from "@/store/app-store";
+import { initializeProject } from "@/lib/project-init";
+import { toast } from "sonner";
+import type { ProjectStatus } from "@pegasus/types";
+import { Bot, Activity, GitBranch, ArrowRight } from "lucide-react";
 
 interface RunningAgentsPanelProps {
   projects: ProjectStatus[];
@@ -46,31 +46,31 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
       try {
         const initResult = await initializeProject(agent.projectPath);
         if (!initResult.success) {
-          toast.error('Failed to open project', {
-            description: initResult.error || 'Unknown error',
+          toast.error("Failed to open project", {
+            description: initResult.error || "Unknown error",
           });
           return;
         }
 
         upsertAndSetCurrentProject(agent.projectPath, agent.projectName);
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       } catch (error) {
-        toast.error('Failed to navigate to agent', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        toast.error("Failed to navigate to agent", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [navigate, upsertAndSetCurrentProject]
+    [navigate, upsertAndSetCurrentProject],
   );
 
   const handleAgentKeyDown = useCallback(
     (e: React.KeyboardEvent, agent: RunningAgent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         handleAgentClick(agent);
       }
     },
-    [handleAgentClick]
+    [handleAgentClick],
   );
 
   if (runningAgents.length === 0) {
@@ -78,7 +78,9 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
         <Bot className="w-8 h-8 mb-2 opacity-50" />
         <p className="text-sm">No agents running</p>
-        <p className="text-xs mt-1">Start auto-mode on a project to see activity here</p>
+        <p className="text-xs mt-1">
+          Start auto-mode on a project to see activity here
+        </p>
       </div>
     );
   }
@@ -118,7 +120,8 @@ export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
               {agent.featureCount > 0 && (
                 <span className="flex items-center gap-1">
                   <Activity className="w-3 h-3" />
-                  {agent.featureCount} feature{agent.featureCount !== 1 ? 's' : ''} running
+                  {agent.featureCount} feature
+                  {agent.featureCount !== 1 ? "s" : ""} running
                 </span>
               )}
               {agent.activeBranch && (

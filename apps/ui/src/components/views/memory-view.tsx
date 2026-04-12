@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { useEffect, useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   HeaderActionsPanel,
   HeaderActionsPanelTrigger,
-} from '@/components/ui/header-actions-panel';
+} from "@/components/ui/header-actions-panel";
 import {
   RefreshCw,
   FileText,
@@ -19,9 +19,9 @@ import {
   FilePlus,
   MoreVertical,
   ArrowLeft,
-} from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-media-query';
-import { Spinner } from '@/components/ui/spinner';
+} from "lucide-react";
+import { useIsMobile } from "@/hooks/use-media-query";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -29,30 +29,31 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import { isMarkdownFilename } from '@/lib/image-utils';
-import { Markdown } from '../ui/markdown';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { isMarkdownFilename } from "@/lib/image-utils";
+import { Markdown } from "../ui/markdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
-const logger = createLogger('MemoryView');
+const logger = createLogger("MemoryView");
 
 // Responsive layout classes
-const FILE_LIST_BASE_CLASSES = 'border-r border-border flex flex-col overflow-hidden';
-const FILE_LIST_DESKTOP_CLASSES = 'w-64';
-const FILE_LIST_EXPANDED_CLASSES = 'flex-1';
-const FILE_LIST_MOBILE_NO_SELECTION_CLASSES = 'w-full border-r-0';
-const FILE_LIST_MOBILE_SELECTION_CLASSES = 'hidden';
+const FILE_LIST_BASE_CLASSES =
+  "border-r border-border flex flex-col overflow-hidden";
+const FILE_LIST_DESKTOP_CLASSES = "w-64";
+const FILE_LIST_EXPANDED_CLASSES = "flex-1";
+const FILE_LIST_MOBILE_NO_SELECTION_CLASSES = "w-full border-r-0";
+const FILE_LIST_MOBILE_SELECTION_CLASSES = "hidden";
 
-const EDITOR_PANEL_BASE_CLASSES = 'flex-1 flex flex-col overflow-hidden';
-const EDITOR_PANEL_MOBILE_HIDDEN_CLASSES = 'hidden';
+const EDITOR_PANEL_BASE_CLASSES = "flex-1 flex flex-col overflow-hidden";
+const EDITOR_PANEL_MOBILE_HIDDEN_CLASSES = "hidden";
 
 interface MemoryFile {
   name: string;
@@ -67,16 +68,16 @@ export function MemoryView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
+  const [editedContent, setEditedContent] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [renameFileName, setRenameFileName] = useState('');
+  const [renameFileName, setRenameFileName] = useState("");
   const [isPreviewMode, setIsPreviewMode] = useState(true);
 
   // Create Memory file modal state
   const [isCreateMemoryOpen, setIsCreateMemoryOpen] = useState(false);
-  const [newMemoryName, setNewMemoryName] = useState('');
-  const [newMemoryContent, setNewMemoryContent] = useState('');
+  const [newMemoryName, setNewMemoryName] = useState("");
+  const [newMemoryContent, setNewMemoryContent] = useState("");
 
   // Actions panel state (for tablet/mobile)
   const [showActionsPanel, setShowActionsPanel] = useState(false);
@@ -114,7 +115,7 @@ export function MemoryView() {
         setMemoryFiles(files);
       }
     } catch (error) {
-      logger.error('Failed to load memory files:', error);
+      logger.error("Failed to load memory files:", error);
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +136,7 @@ export function MemoryView() {
         setHasChanges(false);
       }
     } catch (error) {
-      logger.error('Failed to load file content:', error);
+      logger.error("Failed to load file content:", error);
     }
   }, []);
 
@@ -158,7 +159,7 @@ export function MemoryView() {
       setSelectedFile({ ...selectedFile, content: editedContent });
       setHasChanges(false);
     } catch (error) {
-      logger.error('Failed to save file:', error);
+      logger.error("Failed to save file:", error);
     } finally {
       setIsSaving(false);
     }
@@ -180,8 +181,8 @@ export function MemoryView() {
       let filename = newMemoryName.trim();
 
       // Add .md extension if not provided
-      if (!filename.includes('.')) {
-        filename += '.md';
+      if (!filename.includes(".")) {
+        filename += ".md";
       }
 
       const filePath = `${memoryPath}/${filename}`;
@@ -194,13 +195,13 @@ export function MemoryView() {
 
       // Reset and close modal
       setIsCreateMemoryOpen(false);
-      setNewMemoryName('');
-      setNewMemoryContent('');
+      setNewMemoryName("");
+      setNewMemoryContent("");
     } catch (error) {
-      logger.error('Failed to create memory file:', error);
+      logger.error("Failed to create memory file:", error);
       setIsCreateMemoryOpen(false);
-      setNewMemoryName('');
-      setNewMemoryContent('');
+      setNewMemoryName("");
+      setNewMemoryContent("");
     }
   };
 
@@ -214,11 +215,11 @@ export function MemoryView() {
 
       setIsDeleteDialogOpen(false);
       setSelectedFile(null);
-      setEditedContent('');
+      setEditedContent("");
       setHasChanges(false);
       await loadMemoryFiles();
     } catch (error) {
-      logger.error('Failed to delete file:', error);
+      logger.error("Failed to delete file:", error);
     }
   };
 
@@ -229,8 +230,8 @@ export function MemoryView() {
 
     let newName = renameFileName.trim();
     // Add .md extension if not provided
-    if (!newName.includes('.')) {
-      newName += '.md';
+    if (!newName.includes(".")) {
+      newName += ".md";
     }
 
     if (newName === selectedFile.name) {
@@ -245,14 +246,14 @@ export function MemoryView() {
       // Check if file with new name already exists
       const exists = await api.exists(newPath);
       if (exists) {
-        logger.error('A file with this name already exists');
+        logger.error("A file with this name already exists");
         return;
       }
 
       // Read current file content
       const result = await api.readFile(selectedFile.path);
       if (!result.success || result.content === undefined) {
-        logger.error('Failed to read file for rename');
+        logger.error("Failed to read file for rename");
         return;
       }
 
@@ -263,7 +264,7 @@ export function MemoryView() {
       await api.deleteFile(selectedFile.path);
 
       setIsRenameDialogOpen(false);
-      setRenameFileName('');
+      setRenameFileName("");
 
       // Reload files and select the renamed file
       await loadMemoryFiles();
@@ -276,7 +277,7 @@ export function MemoryView() {
       };
       setSelectedFile(renamedFile);
     } catch (error) {
-      logger.error('Failed to rename file:', error);
+      logger.error("Failed to rename file:", error);
     }
   };
 
@@ -289,19 +290,22 @@ export function MemoryView() {
       // Clear selection if this was the selected file
       if (selectedFile?.path === file.path) {
         setSelectedFile(null);
-        setEditedContent('');
+        setEditedContent("");
         setHasChanges(false);
       }
 
       await loadMemoryFiles();
     } catch (error) {
-      logger.error('Failed to delete file:', error);
+      logger.error("Failed to delete file:", error);
     }
   };
 
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="memory-view-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="memory-view-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -309,14 +313,20 @@ export function MemoryView() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="memory-view-loading">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="memory-view-loading"
+      >
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="memory-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="memory-view"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-glass backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -399,7 +409,7 @@ export function MemoryView() {
             FILE_LIST_DESKTOP_CLASSES,
             !selectedFile && FILE_LIST_EXPANDED_CLASSES,
             isMobile && !selectedFile && FILE_LIST_MOBILE_NO_SELECTION_CLASSES,
-            isMobile && selectedFile && FILE_LIST_MOBILE_SELECTION_CLASSES
+            isMobile && selectedFile && FILE_LIST_MOBILE_SELECTION_CLASSES,
           )}
         >
           <div className="p-3 border-b border-border">
@@ -407,7 +417,10 @@ export function MemoryView() {
               Memory Files ({memoryFiles.length})
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-2" data-testid="memory-file-list">
+          <div
+            className="flex-1 overflow-y-auto p-2"
+            data-testid="memory-file-list"
+          >
             {memoryFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center p-4">
                 <Brain className="w-8 h-8 text-muted-foreground mb-2" />
@@ -424,16 +437,18 @@ export function MemoryView() {
                     key={file.path}
                     onClick={() => handleSelectFile(file)}
                     className={cn(
-                      'group w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer',
+                      "group w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer",
                       selectedFile?.path === file.path
-                        ? 'bg-primary/20 text-foreground border border-primary/30'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        ? "bg-primary/20 text-foreground border border-primary/30"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                     data-testid={`memory-file-${file.name}`}
                   >
                     <FileText className="w-4 h-4 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <span className="truncate text-sm block">{file.name}</span>
+                      <span className="truncate text-sm block">
+                        {file.name}
+                      </span>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -479,7 +494,7 @@ export function MemoryView() {
         <div
           className={cn(
             EDITOR_PANEL_BASE_CLASSES,
-            isMobile && !selectedFile && EDITOR_PANEL_MOBILE_HIDDEN_CLASSES
+            isMobile && !selectedFile && EDITOR_PANEL_MOBILE_HIDDEN_CLASSES,
           )}
         >
           {selectedFile ? (
@@ -501,17 +516,19 @@ export function MemoryView() {
                     </Button>
                   )}
                   <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span className="text-sm font-medium truncate">{selectedFile.name}</span>
+                  <span className="text-sm font-medium truncate">
+                    {selectedFile.name}
+                  </span>
                 </div>
-                <div className={cn('flex gap-2', isMobile && 'gap-1')}>
+                <div className={cn("flex gap-2", isMobile && "gap-1")}>
                   {/* Mobile: Icon-only buttons with aria-labels for accessibility */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsPreviewMode(!isPreviewMode)}
                     data-testid="toggle-preview-mode"
-                    aria-label={isPreviewMode ? 'Edit' : 'Preview'}
-                    title={isPreviewMode ? 'Edit' : 'Preview'}
+                    aria-label={isPreviewMode ? "Edit" : "Preview"}
+                    title={isPreviewMode ? "Edit" : "Preview"}
                   >
                     {isPreviewMode ? (
                       <>
@@ -536,7 +553,7 @@ export function MemoryView() {
                     <Save className="w-4 h-4" />
                     {!isMobile && (
                       <span className="ml-2">
-                        {isSaving ? 'Saving...' : hasChanges ? 'Save' : 'Saved'}
+                        {isSaving ? "Saving..." : hasChanges ? "Save" : "Saved"}
                       </span>
                     )}
                   </Button>
@@ -560,7 +577,10 @@ export function MemoryView() {
               {/* Content area */}
               <div className="flex-1 overflow-hidden p-4">
                 {isPreviewMode ? (
-                  <Card className="h-full overflow-auto p-4" data-testid="markdown-preview">
+                  <Card
+                    className="h-full overflow-auto p-4"
+                    data-testid="markdown-preview"
+                  >
                     <Markdown>{editedContent}</Markdown>
                   </Card>
                 ) : (
@@ -581,7 +601,9 @@ export function MemoryView() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <Brain className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                <p className="text-foreground-secondary">Select a file to view or edit</p>
+                <p className="text-foreground-secondary">
+                  Select a file to view or edit
+                </p>
                 <p className="text-muted-foreground text-sm mt-1">
                   Memory files help AI agents learn from past interactions
                 </p>
@@ -600,7 +622,8 @@ export function MemoryView() {
           <DialogHeader>
             <DialogTitle>Create Memory File</DialogTitle>
             <DialogDescription>
-              Create a new memory file to store learnings and patterns for AI agents.
+              Create a new memory file to store learnings and patterns for AI
+              agents.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 flex-1 overflow-auto">
@@ -633,8 +656,8 @@ export function MemoryView() {
               variant="outline"
               onClick={() => {
                 setIsCreateMemoryOpen(false);
-                setNewMemoryName('');
-                setNewMemoryContent('');
+                setNewMemoryName("");
+                setNewMemoryContent("");
               }}
             >
               Cancel
@@ -656,11 +679,15 @@ export function MemoryView() {
           <DialogHeader>
             <DialogTitle>Delete Memory File</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{selectedFile?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{selectedFile?.name}"? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -680,7 +707,9 @@ export function MemoryView() {
         <DialogContent data-testid="rename-memory-dialog">
           <DialogHeader>
             <DialogTitle>Rename Memory File</DialogTitle>
-            <DialogDescription>Enter a new name for "{selectedFile?.name}".</DialogDescription>
+            <DialogDescription>
+              Enter a new name for "{selectedFile?.name}".
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
@@ -692,7 +721,7 @@ export function MemoryView() {
                 placeholder="Enter new filename"
                 data-testid="rename-file-input"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && renameFileName.trim()) {
+                  if (e.key === "Enter" && renameFileName.trim()) {
                     handleRenameFile();
                   }
                 }}
@@ -704,14 +733,16 @@ export function MemoryView() {
               variant="outline"
               onClick={() => {
                 setIsRenameDialogOpen(false);
-                setRenameFileName('');
+                setRenameFileName("");
               }}
             >
               Cancel
             </Button>
             <Button
               onClick={handleRenameFile}
-              disabled={!renameFileName.trim() || renameFileName === selectedFile?.name}
+              disabled={
+                !renameFileName.trim() || renameFileName === selectedFile?.name
+              }
               data-testid="confirm-rename-file"
             >
               Rename

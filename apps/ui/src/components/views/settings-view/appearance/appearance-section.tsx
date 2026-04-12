@@ -1,24 +1,36 @@
-import { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Palette, Moon, Sun, Type, Sparkles, PanelLeft, Columns2, LayoutList } from 'lucide-react';
-import { darkThemes, lightThemes } from '@/config/theme-options';
+import { useState, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Palette,
+  Moon,
+  Sun,
+  Type,
+  Sparkles,
+  PanelLeft,
+  Columns2,
+  LayoutList,
+} from "lucide-react";
+import { darkThemes, lightThemes } from "@/config/theme-options";
 import {
   UI_SANS_FONT_OPTIONS,
   UI_MONO_FONT_OPTIONS,
   DEFAULT_FONT_VALUE,
-} from '@/config/ui-font-options';
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { FontSelector } from '@/components/shared';
-import type { Theme } from '../shared/types';
+} from "@/config/ui-font-options";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { FontSelector } from "@/components/shared";
+import type { Theme } from "../shared/types";
 
 interface AppearanceSectionProps {
   effectiveTheme: Theme;
   onThemeChange: (theme: Theme) => void;
 }
 
-export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceSectionProps) {
+export function AppearanceSection({
+  effectiveTheme,
+  onThemeChange,
+}: AppearanceSectionProps) {
   const {
     fontFamilySans,
     fontFamilyMono,
@@ -34,15 +46,17 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
 
   // Determine if current theme is light or dark
   const isLightTheme = lightThemes.some((t) => t.value === effectiveTheme);
-  const [activeTab, setActiveTab] = useState<'dark' | 'light'>(isLightTheme ? 'light' : 'dark');
+  const [activeTab, setActiveTab] = useState<"dark" | "light">(
+    isLightTheme ? "light" : "dark",
+  );
 
   // Sync active tab when theme changes
   useEffect(() => {
     const currentIsLight = lightThemes.some((t) => t.value === effectiveTheme);
-    setActiveTab(currentIsLight ? 'light' : 'dark');
+    setActiveTab(currentIsLight ? "light" : "dark");
   }, [effectiveTheme]);
 
-  const themesToShow = activeTab === 'dark' ? darkThemes : lightThemes;
+  const themesToShow = activeTab === "dark" ? darkThemes : lightThemes;
 
   // Convert null to 'default' for Select component
   // Also fallback to default if the stored font is not in the available options
@@ -55,9 +69,13 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
     return UI_MONO_FONT_OPTIONS.some((opt) => opt.value === font);
   };
   const fontSansValue =
-    fontFamilySans && isValidSansFont(fontFamilySans) ? fontFamilySans : DEFAULT_FONT_VALUE;
+    fontFamilySans && isValidSansFont(fontFamilySans)
+      ? fontFamilySans
+      : DEFAULT_FONT_VALUE;
   const fontMonoValue =
-    fontFamilyMono && isValidMonoFont(fontFamilyMono) ? fontFamilyMono : DEFAULT_FONT_VALUE;
+    fontFamilyMono && isValidMonoFont(fontFamilyMono)
+      ? fontFamilyMono
+      : DEFAULT_FONT_VALUE;
 
   const handleFontSansChange = (value: string) => {
     setFontSans(value === DEFAULT_FONT_VALUE ? null : value);
@@ -70,10 +88,10 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -81,7 +99,9 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Palette className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Appearance</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Appearance
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
           Customize the look and feel of your application.
@@ -95,24 +115,24 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
             {/* Dark/Light Tabs */}
             <div className="flex gap-1 p-1 rounded-lg bg-accent/30">
               <button
-                onClick={() => setActiveTab('dark')}
+                onClick={() => setActiveTab("dark")}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
-                  activeTab === 'dark'
-                    ? 'bg-brand-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
+                  activeTab === "dark"
+                    ? "bg-brand-500 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Moon className="w-3.5 h-3.5" />
                 Dark
               </button>
               <button
-                onClick={() => setActiveTab('light')}
+                onClick={() => setActiveTab("light")}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200',
-                  activeTab === 'light'
-                    ? 'bg-brand-500 text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
+                  activeTab === "light"
+                    ? "bg-brand-500 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Sun className="w-3.5 h-3.5" />
@@ -128,26 +148,29 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
                   key={value}
                   onClick={() => onThemeChange(value)}
                   className={cn(
-                    'group flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl',
-                    'text-sm font-medium transition-all duration-200 ease-out',
+                    "group flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl",
+                    "text-sm font-medium transition-all duration-200 ease-out",
                     isActive
                       ? [
-                          'bg-gradient-to-br from-brand-500/15 to-brand-600/10',
-                          'border-2 border-brand-500/40',
-                          'text-foreground',
-                          'shadow-md shadow-brand-500/10',
+                          "bg-gradient-to-br from-brand-500/15 to-brand-600/10",
+                          "border-2 border-brand-500/40",
+                          "text-foreground",
+                          "shadow-md shadow-brand-500/10",
                         ]
                       : [
-                          'bg-accent/30 hover:bg-accent/50',
-                          'border border-border/50 hover:border-border',
-                          'text-muted-foreground hover:text-foreground',
-                          'hover:shadow-sm',
+                          "bg-accent/30 hover:bg-accent/50",
+                          "border border-border/50 hover:border-border",
+                          "text-muted-foreground hover:text-foreground",
+                          "hover:shadow-sm",
                         ],
-                    'hover:scale-[1.02] active:scale-[0.98]'
+                    "hover:scale-[1.02] active:scale-[0.98]",
                   )}
                   data-testid={testId}
                 >
-                  <Icon className="w-4 h-4 transition-all duration-200" style={{ color }} />
+                  <Icon
+                    className="w-4 h-4 transition-all duration-200"
+                    style={{ color }}
+                  />
                   <span>{label}</span>
                 </button>
               );
@@ -162,7 +185,8 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
             <Label className="text-foreground font-medium">Fonts</Label>
           </div>
           <p className="text-xs text-muted-foreground -mt-2 mb-4">
-            Set default fonts for all projects. Individual projects can override these settings.
+            Set default fonts for all projects. Individual projects can override
+            these settings.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -230,41 +254,45 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
         <div className="space-y-4 pt-6 border-t border-border/50">
           <div className="flex items-center gap-2 mb-4">
             <PanelLeft className="w-4 h-4 text-muted-foreground" />
-            <Label className="text-foreground font-medium">Sidebar Layout</Label>
+            <Label className="text-foreground font-medium">
+              Sidebar Layout
+            </Label>
           </div>
           <p className="text-xs text-muted-foreground -mt-2 mb-4">
-            Choose between a modern unified sidebar or classic Discord-style layout with a separate
-            project switcher.
+            Choose between a modern unified sidebar or classic Discord-style
+            layout with a separate project switcher.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Unified Sidebar Option */}
             <button
-              onClick={() => setSidebarStyle('unified')}
+              onClick={() => setSidebarStyle("unified")}
               className={cn(
-                'group flex flex-col items-center gap-3 p-4 rounded-xl',
-                'text-sm font-medium transition-all duration-200 ease-out',
-                sidebarStyle === 'unified'
+                "group flex flex-col items-center gap-3 p-4 rounded-xl",
+                "text-sm font-medium transition-all duration-200 ease-out",
+                sidebarStyle === "unified"
                   ? [
-                      'bg-gradient-to-br from-brand-500/15 to-brand-600/10',
-                      'border-2 border-brand-500/40',
-                      'text-foreground',
-                      'shadow-md shadow-brand-500/10',
+                      "bg-gradient-to-br from-brand-500/15 to-brand-600/10",
+                      "border-2 border-brand-500/40",
+                      "text-foreground",
+                      "shadow-md shadow-brand-500/10",
                     ]
                   : [
-                      'bg-accent/30 hover:bg-accent/50',
-                      'border border-border/50 hover:border-border',
-                      'text-muted-foreground hover:text-foreground',
-                      'hover:shadow-sm',
+                      "bg-accent/30 hover:bg-accent/50",
+                      "border border-border/50 hover:border-border",
+                      "text-muted-foreground hover:text-foreground",
+                      "hover:shadow-sm",
                     ],
-                'hover:scale-[1.02] active:scale-[0.98]'
+                "hover:scale-[1.02] active:scale-[0.98]",
               )}
               data-testid="sidebar-style-unified"
             >
               <PanelLeft
                 className={cn(
-                  'w-8 h-8 transition-all duration-200',
-                  sidebarStyle === 'unified' ? 'text-brand-500' : 'text-muted-foreground'
+                  "w-8 h-8 transition-all duration-200",
+                  sidebarStyle === "unified"
+                    ? "text-brand-500"
+                    : "text-muted-foreground",
                 )}
               />
               <div className="text-center">
@@ -277,31 +305,33 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
 
             {/* Discord-style Sidebar Option */}
             <button
-              onClick={() => setSidebarStyle('discord')}
+              onClick={() => setSidebarStyle("discord")}
               className={cn(
-                'group flex flex-col items-center gap-3 p-4 rounded-xl',
-                'text-sm font-medium transition-all duration-200 ease-out',
-                sidebarStyle === 'discord'
+                "group flex flex-col items-center gap-3 p-4 rounded-xl",
+                "text-sm font-medium transition-all duration-200 ease-out",
+                sidebarStyle === "discord"
                   ? [
-                      'bg-gradient-to-br from-brand-500/15 to-brand-600/10',
-                      'border-2 border-brand-500/40',
-                      'text-foreground',
-                      'shadow-md shadow-brand-500/10',
+                      "bg-gradient-to-br from-brand-500/15 to-brand-600/10",
+                      "border-2 border-brand-500/40",
+                      "text-foreground",
+                      "shadow-md shadow-brand-500/10",
                     ]
                   : [
-                      'bg-accent/30 hover:bg-accent/50',
-                      'border border-border/50 hover:border-border',
-                      'text-muted-foreground hover:text-foreground',
-                      'hover:shadow-sm',
+                      "bg-accent/30 hover:bg-accent/50",
+                      "border border-border/50 hover:border-border",
+                      "text-muted-foreground hover:text-foreground",
+                      "hover:shadow-sm",
                     ],
-                'hover:scale-[1.02] active:scale-[0.98]'
+                "hover:scale-[1.02] active:scale-[0.98]",
               )}
               data-testid="sidebar-style-discord"
             >
               <Columns2
                 className={cn(
-                  'w-8 h-8 transition-all duration-200',
-                  sidebarStyle === 'discord' ? 'text-brand-500' : 'text-muted-foreground'
+                  "w-8 h-8 transition-all duration-200",
+                  sidebarStyle === "discord"
+                    ? "text-brand-500"
+                    : "text-muted-foreground",
                 )}
               />
               <div className="text-center">
@@ -323,12 +353,15 @@ export function AppearanceSection({ effectiveTheme, onThemeChange }: AppearanceS
 
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 flex-1">
-              <Label htmlFor="default-sort-newest-card-on-top" className="text-sm">
+              <Label
+                htmlFor="default-sort-newest-card-on-top"
+                className="text-sm"
+              >
                 Sort Newest First
               </Label>
               <p className="text-xs text-muted-foreground">
-                Sort all cards by creation date (newest on top) across all board columns and list
-                view.
+                Sort all cards by creation date (newest on top) across all board
+                columns and list view.
               </p>
             </div>
             <Switch

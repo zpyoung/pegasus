@@ -5,11 +5,11 @@
  * stopping features, and plan approval.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { Feature } from '@/store/app-store';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type { Feature } from "@/store/app-store";
 
 /**
  * Start running a feature in auto mode
@@ -37,24 +37,28 @@ export function useStartFeature(projectPath: string) {
       worktreePath?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.runFeature(
         projectPath,
         featureId,
         useWorktrees,
-        worktreePath
+        worktreePath,
       );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start feature');
+        throw new Error(result.error || "Failed to start feature");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
     },
     onError: (error: Error) => {
-      toast.error('Failed to start feature', {
+      toast.error("Failed to start feature", {
         description: error.message,
       });
     },
@@ -79,19 +83,27 @@ export function useResumeFeature(projectPath: string) {
       useWorktrees?: boolean;
     }) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
-      const result = await api.autoMode.resumeFeature(projectPath, featureId, useWorktrees);
+      if (!api.autoMode) throw new Error("AutoMode API not available");
+      const result = await api.autoMode.resumeFeature(
+        projectPath,
+        featureId,
+        useWorktrees,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to resume feature');
+        throw new Error(result.error || "Failed to resume feature");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
     },
     onError: (error: Error) => {
-      toast.error('Failed to resume feature', {
+      toast.error("Failed to resume feature", {
         description: error.message,
       });
     },
@@ -116,27 +128,36 @@ export function useStopFeature() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: string | { featureId: string; projectPath?: string }) => {
-      const featureId = typeof input === 'string' ? input : input.featureId;
+    mutationFn: async (
+      input: string | { featureId: string; projectPath?: string },
+    ) => {
+      const featureId = typeof input === "string" ? input : input.featureId;
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.stopFeature(featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to stop feature');
+        throw new Error(result.error || "Failed to stop feature");
       }
       // Return projectPath for use in onSuccess
-      return { ...result, projectPath: typeof input === 'string' ? undefined : input.projectPath };
+      return {
+        ...result,
+        projectPath: typeof input === "string" ? undefined : input.projectPath,
+      };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
       // Also invalidate features cache if projectPath is provided
       if (data.projectPath) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.features.all(data.projectPath) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.features.all(data.projectPath),
+        });
       }
-      toast.success('Feature stopped');
+      toast.success("Feature stopped");
     },
     onError: (error: Error) => {
-      toast.error('Failed to stop feature', {
+      toast.error("Failed to stop feature", {
         description: error.message,
       });
     },
@@ -155,10 +176,10 @@ export function useVerifyFeature(projectPath: string) {
   return useMutation({
     mutationFn: async (featureId: string) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.verifyFeature(projectPath, featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to verify feature');
+        throw new Error(result.error || "Failed to verify feature");
       }
       return { ...result, featureId };
     },
@@ -167,23 +188,29 @@ export function useVerifyFeature(projectPath: string) {
       // to move the feature to 'verified' status immediately
       if (data.passes) {
         const previousFeatures = queryClient.getQueryData<Feature[]>(
-          queryKeys.features.all(projectPath)
+          queryKeys.features.all(projectPath),
         );
         if (previousFeatures) {
           queryClient.setQueryData<Feature[]>(
             queryKeys.features.all(projectPath),
             previousFeatures.map((f) =>
               f.id === data.featureId
-                ? { ...f, status: 'verified' as const, justFinishedAt: undefined }
-                : f
-            )
+                ? {
+                    ...f,
+                    status: "verified" as const,
+                    justFinishedAt: undefined,
+                  }
+                : f,
+            ),
           );
         }
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
     },
     onError: (error: Error) => {
-      toast.error('Failed to verify feature', {
+      toast.error("Failed to verify feature", {
         description: error.message,
       });
     },
@@ -218,29 +245,31 @@ export function useApprovePlan(projectPath: string) {
       feedback?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.approvePlan(
         projectPath,
         featureId,
         approved,
         editedPlan,
-        feedback
+        feedback,
       );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to submit plan decision');
+        throw new Error(result.error || "Failed to submit plan decision");
       }
       return result;
     },
     onSuccess: (_, { approved }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
       if (approved) {
-        toast.success('Plan approved');
+        toast.success("Plan approved");
       } else {
-        toast.info('Plan rejected');
+        toast.info("Plan rejected");
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to submit plan decision', {
+      toast.error("Failed to submit plan decision", {
         description: error.message,
       });
     },
@@ -269,25 +298,29 @@ export function useFollowUpFeature(projectPath: string) {
       useWorktrees?: boolean;
     }) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.followUpFeature(
         projectPath,
         featureId,
         prompt,
         imagePaths,
-        useWorktrees
+        useWorktrees,
       );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to send follow-up');
+        throw new Error(result.error || "Failed to send follow-up");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
     },
     onError: (error: Error) => {
-      toast.error('Failed to send follow-up', {
+      toast.error("Failed to send follow-up", {
         description: error.message,
       });
     },
@@ -306,20 +339,24 @@ export function useCommitFeature(projectPath: string) {
   return useMutation({
     mutationFn: async (featureId: string) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.commitFeature(projectPath, featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to commit changes');
+        throw new Error(result.error || "Failed to commit changes");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Changes committed');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.all(projectPath),
+      });
+      toast.success("Changes committed");
     },
     onError: (error: Error) => {
-      toast.error('Failed to commit changes', {
+      toast.error("Failed to commit changes", {
         description: error.message,
       });
     },
@@ -335,18 +372,18 @@ export function useAnalyzeProject() {
   return useMutation({
     mutationFn: async (projectPath: string) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.analyzeProject(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to analyze project');
+        throw new Error(result.error || "Failed to analyze project");
       }
       return result;
     },
     onSuccess: () => {
-      toast.success('Project analysis started');
+      toast.success("Project analysis started");
     },
     onError: (error: Error) => {
-      toast.error('Failed to analyze project', {
+      toast.error("Failed to analyze project", {
         description: error.message,
       });
     },
@@ -365,19 +402,25 @@ export function useStartAutoMode(projectPath: string) {
   return useMutation({
     mutationFn: async (maxConcurrency?: number) => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
-      const result = await api.autoMode.start(projectPath, undefined, maxConcurrency);
+      if (!api.autoMode) throw new Error("AutoMode API not available");
+      const result = await api.autoMode.start(
+        projectPath,
+        undefined,
+        maxConcurrency,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start auto mode');
+        throw new Error(result.error || "Failed to start auto mode");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      toast.success('Auto mode started');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
+      toast.success("Auto mode started");
     },
     onError: (error: Error) => {
-      toast.error('Failed to start auto mode', {
+      toast.error("Failed to start auto mode", {
         description: error.message,
       });
     },
@@ -396,19 +439,21 @@ export function useStopAutoMode(projectPath: string) {
   return useMutation({
     mutationFn: async () => {
       const api = getElectronAPI();
-      if (!api.autoMode) throw new Error('AutoMode API not available');
+      if (!api.autoMode) throw new Error("AutoMode API not available");
       const result = await api.autoMode.stop(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to stop auto mode');
+        throw new Error(result.error || "Failed to stop auto mode");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.runningAgents.all() });
-      toast.success('Auto mode stopped');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.runningAgents.all(),
+      });
+      toast.success("Auto mode stopped");
     },
     onError: (error: Error) => {
-      toast.error('Failed to stop auto mode', {
+      toast.error("Failed to stop auto mode", {
         description: error.message,
       });
     },

@@ -9,8 +9,8 @@ import type {
   ParsedTask,
   ClaudeCompatibleProvider,
   Credentials,
-} from '@pegasus/types';
-import type { BaseProvider } from '../providers/base-provider.js';
+} from "@pegasus/types";
+import type { BaseProvider } from "../providers/base-provider.js";
 
 export interface AgentExecutionOptions {
   workDir: string;
@@ -36,8 +36,10 @@ export interface AgentExecutionOptions {
   sdkOptions?: {
     maxTurns?: number;
     allowedTools?: string[];
-    systemPrompt?: string | { type: 'preset'; preset: 'claude_code'; append?: string };
-    settingSources?: Array<'user' | 'project' | 'local'>;
+    systemPrompt?:
+      | string
+      | { type: "preset"; preset: "claude_code"; append?: string };
+    settingSources?: Array<"user" | "project" | "local">;
   };
   provider: BaseProvider;
   effectiveBareModel: string;
@@ -57,19 +59,19 @@ export interface AgentExecutionResult {
 
 export type WaitForApprovalFn = (
   featureId: string,
-  projectPath: string
+  projectPath: string,
 ) => Promise<{ approved: boolean; feedback?: string; editedPlan?: string }>;
 
 export type SaveFeatureSummaryFn = (
   projectPath: string,
   featureId: string,
-  summary: string
+  summary: string,
 ) => Promise<void>;
 
 export type UpdateFeatureSummaryFn = (
   projectPath: string,
   featureId: string,
-  summary: string
+  summary: string,
 ) => Promise<void>;
 
 export type BuildTaskPromptFn = (
@@ -78,7 +80,7 @@ export type BuildTaskPromptFn = (
   taskIndex: number,
   planContent: string,
   taskPromptTemplate: string,
-  userFeedback?: string
+  userFeedback?: string,
 ) => string;
 
 export interface AgentExecutorCallbacks {

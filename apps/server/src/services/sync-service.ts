@@ -8,13 +8,13 @@
  * Follows the same pattern as pull-service.ts and push-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { performPull } from './pull-service.js';
-import { performPush } from './push-service.js';
-import type { PullResult } from './pull-service.js';
-import type { PushResult } from './push-service.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { performPull } from "./pull-service.js";
+import { performPush } from "./push-service.js";
+import type { PullResult } from "./pull-service.js";
+import type { PushResult } from "./push-service.js";
 
-const logger = createLogger('SyncService');
+const logger = createLogger("SyncService");
 
 // ============================================================================
 // Types
@@ -38,7 +38,7 @@ export interface SyncResult {
   /** Files with merge conflicts */
   conflictFiles?: string[];
   /** Source of conflicts ('pull' | 'stash') */
-  conflictSource?: 'pull' | 'stash';
+  conflictSource?: "pull" | "stash";
   /** Whether the pull was a fast-forward */
   isFastForward?: boolean;
   /** Whether the pull resulted in a merge commit */
@@ -67,12 +67,12 @@ export interface SyncResult {
  */
 export async function performSync(
   worktreePath: string,
-  options?: SyncOptions
+  options?: SyncOptions,
 ): Promise<SyncResult> {
-  const targetRemote = options?.remote || 'origin';
+  const targetRemote = options?.remote || "origin";
 
   // 1. Pull from remote
-  logger.info('Sync: starting pull', { worktreePath, remote: targetRemote });
+  logger.info("Sync: starting pull", { worktreePath, remote: targetRemote });
 
   let pullResult: PullResult;
   try {
@@ -112,13 +112,17 @@ export async function performSync(
       conflictSource: pullResult.conflictSource,
       isFastForward: pullResult.isFastForward,
       isMerge: pullResult.isMerge,
-      error: 'Sync stopped: pull resulted in merge conflicts. Resolve conflicts and try again.',
+      error:
+        "Sync stopped: pull resulted in merge conflicts. Resolve conflicts and try again.",
       message: pullResult.message,
     };
   }
 
   // 3. Push to remote
-  logger.info('Sync: pull succeeded, starting push', { worktreePath, remote: targetRemote });
+  logger.info("Sync: pull succeeded, starting push", {
+    worktreePath,
+    remote: targetRemote,
+  });
 
   let pushResult: PushResult;
   try {
@@ -140,7 +144,7 @@ export async function performSync(
   if (!pushResult.success) {
     // 4. If push diverged after pull, retry once with autoResolve
     if (pushResult.diverged) {
-      logger.info('Sync: push diverged after pull, retrying with autoResolve', {
+      logger.info("Sync: push diverged after pull, retrying with autoResolve", {
         worktreePath,
         remote: targetRemote,
       });
@@ -160,7 +164,7 @@ export async function performSync(
             autoResolved: true,
             isFastForward: pullResult.isFastForward,
             isMerge: pullResult.isMerge,
-            message: 'Sync completed (push required auto-resolve).',
+            message: "Sync completed (push required auto-resolve).",
           };
         }
 
@@ -203,7 +207,7 @@ export async function performSync(
     isFastForward: pullResult.isFastForward,
     isMerge: pullResult.isMerge,
     message: pullResult.pulled
-      ? 'Sync completed: pulled latest changes and pushed.'
-      : 'Sync completed: already up to date, pushed local commits.',
+      ? "Sync completed: pulled latest changes and pushed."
+      : "Sync completed: already up to date, pushed local commits.",
   };
 }

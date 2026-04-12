@@ -1,9 +1,14 @@
-import { useState, useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { Spinner } from '@/components/ui/spinner';
+import { useState, useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { Spinner } from "@/components/ui/spinner";
 
 // Extracted hooks
-import { useSpecLoading, useSpecSave, useSpecGeneration, useSpecParser } from './spec-view/hooks';
+import {
+  useSpecLoading,
+  useSpecSave,
+  useSpecGeneration,
+  useSpecParser,
+} from "./spec-view/hooks";
 
 // Extracted components
 import {
@@ -13,31 +18,36 @@ import {
   SpecViewMode,
   SpecEditMode,
   SpecModeTabs,
-} from './spec-view/components';
+} from "./spec-view/components";
 
 // Extracted dialogs
-import { CreateSpecDialog, RegenerateSpecDialog } from './spec-view/dialogs';
+import { CreateSpecDialog, RegenerateSpecDialog } from "./spec-view/dialogs";
 
 // Types
-import type { SpecViewMode as SpecViewModeType } from './spec-view/types';
+import type { SpecViewMode as SpecViewModeType } from "./spec-view/types";
 
 export function SpecView() {
   const { currentProject, appSpec } = useAppStore();
 
   // View mode state - default to 'view'
-  const [mode, setMode] = useState<SpecViewModeType>('view');
+  const [mode, setMode] = useState<SpecViewModeType>("view");
 
   // Actions panel state (for tablet/mobile)
   const [showActionsPanel, setShowActionsPanel] = useState(false);
 
   // Loading state
-  const { isLoading, specExists, isGenerationRunning, loadSpec } = useSpecLoading();
+  const { isLoading, specExists, isGenerationRunning, loadSpec } =
+    useSpecLoading();
 
   // Save state
   const { isSaving, hasChanges, saveSpec, handleChange } = useSpecSave();
 
   // Parse the spec XML
-  const { isValid: isParseValid, parsedSpec, errors: parseErrors } = useSpecParser(appSpec);
+  const {
+    isValid: isParseValid,
+    parsedSpec,
+    errors: parseErrors,
+  } = useSpecParser(appSpec);
 
   // Generation state and handlers
   const {
@@ -89,19 +99,22 @@ export function SpecView() {
   // Handle mode change - if parse is invalid, force source mode
   const handleModeChange = useCallback(
     (newMode: SpecViewModeType) => {
-      if ((newMode === 'view' || newMode === 'edit') && !isParseValid) {
+      if ((newMode === "view" || newMode === "edit") && !isParseValid) {
         // Can't switch to view/edit if parse is invalid
         return;
       }
       setMode(newMode);
     },
-    [isParseValid]
+    [isParseValid],
   );
 
   // No project selected
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="spec-view-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="spec-view-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -110,7 +123,10 @@ export function SpecView() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="spec-view-loading">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="spec-view-loading"
+      >
         <Spinner size="lg" />
       </div>
     );
@@ -128,7 +144,9 @@ export function SpecView() {
           projectPath={currentProject.path}
           isCreating={showAsGenerating}
           isRegenerating={isRegenerating || isGenerationRunning}
-          currentPhase={currentPhase || (isGenerationRunning ? 'initialization' : '')}
+          currentPhase={
+            currentPhase || (isGenerationRunning ? "initialization" : "")
+          }
           errorMessage={errorMessage}
           onCreateClick={() => setShowCreateDialog(true)}
         />
@@ -160,22 +178,29 @@ export function SpecView() {
     }
 
     switch (mode) {
-      case 'view':
+      case "view":
         return <SpecViewMode spec={parsedSpec} />;
-      case 'edit':
+      case "edit":
         return <SpecEditMode spec={parsedSpec} onChange={handleChange} />;
-      case 'source':
+      case "source":
       default:
         return <SpecEditor value={appSpec} onChange={handleChange} />;
     }
   };
 
   const isProcessing =
-    isRegenerating || isGenerationRunning || isCreating || isGeneratingFeatures || isSyncing;
+    isRegenerating ||
+    isGenerationRunning ||
+    isCreating ||
+    isGeneratingFeatures ||
+    isSyncing;
 
   // Main view - spec exists
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="spec-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="spec-view"
+    >
       <SpecHeader
         projectPath={currentProject.path}
         isRegenerating={isRegenerating || isGenerationRunning}
@@ -184,7 +209,7 @@ export function SpecView() {
         isSyncing={isSyncing}
         isSaving={isSaving}
         hasChanges={hasChanges}
-        currentPhase={currentPhase || (isGenerationRunning ? 'working' : '')}
+        currentPhase={currentPhase || (isGenerationRunning ? "working" : "")}
         errorMessage={errorMessage}
         onRegenerateClick={() => setShowRegenerateDialog(true)}
         onGenerateFeaturesClick={handleGenerateFeatures}
@@ -192,7 +217,7 @@ export function SpecView() {
         onSaveClick={saveSpec}
         showActionsPanel={showActionsPanel}
         onToggleActionsPanel={() => setShowActionsPanel(!showActionsPanel)}
-        showSaveButton={mode !== 'view'}
+        showSaveButton={mode !== "view"}
       />
 
       {/* Mode tabs and content container */}
@@ -200,7 +225,11 @@ export function SpecView() {
         {/* Mode tabs bar - inside the content area, centered */}
         {!isProcessing && (
           <div className="flex items-center justify-center px-4 py-2 border-b border-border bg-muted/30 relative">
-            <SpecModeTabs mode={mode} onModeChange={handleModeChange} isParseValid={isParseValid} />
+            <SpecModeTabs
+              mode={mode}
+              onModeChange={handleModeChange}
+              isParseValid={isParseValid}
+            />
             {/* Show parse error indicator - positioned to the right */}
             {!isParseValid && parseErrors.length > 0 && (
               <span className="absolute right-4 text-xs text-destructive">
@@ -211,9 +240,10 @@ export function SpecView() {
         )}
 
         {/* Show parse error banner if in source mode with errors */}
-        {!isParseValid && parseErrors.length > 0 && mode === 'source' && (
+        {!isParseValid && parseErrors.length > 0 && mode === "source" && (
           <div className="px-4 py-2 bg-destructive/10 border-b border-destructive/20 text-sm text-destructive">
-            <span className="font-medium">XML Parse Errors:</span> {parseErrors.join(', ')}
+            <span className="font-medium">XML Parse Errors:</span>{" "}
+            {parseErrors.join(", ")}
           </div>
         )}
 

@@ -9,10 +9,10 @@
  * using a library like 'fast-xml-parser' or 'xml2js'.
  */
 
-import { createLogger } from '@pegasus/utils';
-import type { SpecOutput } from '@pegasus/types';
+import { createLogger } from "@pegasus/utils";
+import type { SpecOutput } from "@pegasus/types";
 
-const logger = createLogger('XmlExtractor');
+const logger = createLogger("XmlExtractor");
 
 /**
  * Represents an implemented feature extracted from XML
@@ -45,14 +45,14 @@ export interface ExtractXmlOptions {
  */
 export function escapeXml(str: string | undefined | null): string {
   if (str == null) {
-    return '';
+    return "";
   }
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 /**
@@ -62,9 +62,9 @@ export function unescapeXml(str: string): string {
   return str
     .replace(/&apos;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&gt;/g, '>')
-    .replace(/&lt;/g, '<')
-    .replace(/&amp;/g, '&');
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
 }
 
 /**
@@ -78,11 +78,11 @@ export function unescapeXml(str: string): string {
 export function extractXmlSection(
   xmlContent: string,
   tagName: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string | null {
   const log = options.logger || logger;
 
-  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, 'i');
+  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, "i");
   const match = xmlContent.match(regex);
 
   if (match) {
@@ -105,12 +105,12 @@ export function extractXmlSection(
 export function extractXmlElements(
   xmlContent: string,
   tagName: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string[] {
   const log = options.logger || logger;
   const values: string[] = [];
 
-  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, 'g');
+  const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, "g");
   const matches = xmlContent.matchAll(regex);
 
   for (const match of matches) {
@@ -130,16 +130,20 @@ export function extractXmlElements(
  */
 export function extractImplementedFeatures(
   specContent: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): ImplementedFeature[] {
   const log = options.logger || logger;
   const features: ImplementedFeature[] = [];
 
   // Match <implemented_features>...</implemented_features> section
-  const implementedSection = extractXmlSection(specContent, 'implemented_features', options);
+  const implementedSection = extractXmlSection(
+    specContent,
+    "implemented_features",
+    options,
+  );
 
   if (!implementedSection) {
-    log.debug('No implemented_features section found');
+    log.debug("No implemented_features section found");
     return features;
   }
 
@@ -152,23 +156,31 @@ export function extractImplementedFeatures(
 
     // Extract name
     const nameMatch = featureContent.match(/<name>([\s\S]*?)<\/name>/);
-    const name = nameMatch ? unescapeXml(nameMatch[1].trim()) : '';
+    const name = nameMatch ? unescapeXml(nameMatch[1].trim()) : "";
 
     // Extract description
-    const descMatch = featureContent.match(/<description>([\s\S]*?)<\/description>/);
-    const description = descMatch ? unescapeXml(descMatch[1].trim()) : '';
+    const descMatch = featureContent.match(
+      /<description>([\s\S]*?)<\/description>/,
+    );
+    const description = descMatch ? unescapeXml(descMatch[1].trim()) : "";
 
     // Extract file_locations if present
-    const locationsSection = extractXmlSection(featureContent, 'file_locations', options);
+    const locationsSection = extractXmlSection(
+      featureContent,
+      "file_locations",
+      options,
+    );
     const file_locations = locationsSection
-      ? extractXmlElements(locationsSection, 'location', options)
+      ? extractXmlElements(locationsSection, "location", options)
       : undefined;
 
     if (name) {
       features.push({
         name,
         description,
-        ...(file_locations && file_locations.length > 0 ? { file_locations } : {}),
+        ...(file_locations && file_locations.length > 0
+          ? { file_locations }
+          : {}),
       });
     }
   }
@@ -186,7 +198,7 @@ export function extractImplementedFeatures(
  */
 export function extractImplementedFeatureNames(
   specContent: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string[] {
   const features = extractImplementedFeatures(specContent, options);
   return features.map((f) => f.name);
@@ -199,7 +211,10 @@ export function extractImplementedFeatureNames(
  * @param indent - The base indentation level (default: 2 spaces)
  * @returns XML string for the feature
  */
-export function featureToXml(feature: ImplementedFeature, indent: string = '  '): string {
+export function featureToXml(
+  feature: ImplementedFeature,
+  indent: string = "  ",
+): string {
   const i2 = indent.repeat(2);
   const i3 = indent.repeat(3);
   const i4 = indent.repeat(4);
@@ -211,7 +226,7 @@ ${i3}<description>${escapeXml(feature.description)}</description>`;
   if (feature.file_locations && feature.file_locations.length > 0) {
     xml += `
 ${i3}<file_locations>
-${feature.file_locations.map((loc) => `${i4}<location>${escapeXml(loc)}</location>`).join('\n')}
+${feature.file_locations.map((loc) => `${i4}<location>${escapeXml(loc)}</location>`).join("\n")}
 ${i3}</file_locations>`;
   }
 
@@ -228,8 +243,11 @@ ${i2}</feature>`;
  * @param indent - The base indentation level (default: 2 spaces)
  * @returns XML string for the implemented_features section content
  */
-export function featuresToXml(features: ImplementedFeature[], indent: string = '  '): string {
-  return features.map((f) => featureToXml(f, indent)).join('\n');
+export function featuresToXml(
+  features: ImplementedFeature[],
+  indent: string = "  ",
+): string {
+  return features.map((f) => featureToXml(f, indent)).join("\n");
 }
 
 /**
@@ -243,10 +261,10 @@ export function featuresToXml(features: ImplementedFeature[], indent: string = '
 export function updateImplementedFeaturesSection(
   specContent: string,
   newFeatures: ImplementedFeature[],
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
-  const indent = '  ';
+  const indent = "  ";
 
   // Generate new section content
   const newSectionContent = featuresToXml(newFeatures, indent);
@@ -260,20 +278,20 @@ ${indent}</implemented_features>`;
   const sectionRegex = /<implemented_features>[\s\S]*?<\/implemented_features>/;
 
   if (sectionRegex.test(specContent)) {
-    log.debug('Replacing existing implemented_features section');
+    log.debug("Replacing existing implemented_features section");
     return specContent.replace(sectionRegex, newSection);
   }
 
   // If section doesn't exist, try to insert after core_capabilities
-  const coreCapabilitiesEnd = '</core_capabilities>';
+  const coreCapabilitiesEnd = "</core_capabilities>";
   const insertIndex = specContent.indexOf(coreCapabilitiesEnd);
 
   if (insertIndex !== -1) {
     const insertPosition = insertIndex + coreCapabilitiesEnd.length;
-    log.debug('Inserting implemented_features after core_capabilities');
+    log.debug("Inserting implemented_features after core_capabilities");
     return (
       specContent.slice(0, insertPosition) +
-      '\n\n' +
+      "\n\n" +
       indent +
       newSection +
       specContent.slice(insertPosition)
@@ -281,22 +299,26 @@ ${indent}</implemented_features>`;
   }
 
   // As a fallback, insert before </project_specification>
-  const projectSpecEnd = '</project_specification>';
+  const projectSpecEnd = "</project_specification>";
   const fallbackIndex = specContent.indexOf(projectSpecEnd);
 
   if (fallbackIndex !== -1) {
-    log.debug('Inserting implemented_features before </project_specification>');
+    log.debug("Inserting implemented_features before </project_specification>");
     return (
       specContent.slice(0, fallbackIndex) +
       indent +
       newSection +
-      '\n' +
+      "\n" +
       specContent.slice(fallbackIndex)
     );
   }
 
-  log.warn?.('Could not find appropriate insertion point for implemented_features');
-  log.debug('Could not find appropriate insertion point for implemented_features');
+  log.warn?.(
+    "Could not find appropriate insertion point for implemented_features",
+  );
+  log.debug(
+    "Could not find appropriate insertion point for implemented_features",
+  );
   return specContent;
 }
 
@@ -311,7 +333,7 @@ ${indent}</implemented_features>`;
 export function addImplementedFeature(
   specContent: string,
   newFeature: ImplementedFeature,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
 
@@ -320,7 +342,7 @@ export function addImplementedFeature(
 
   // Check for duplicates by name
   const isDuplicate = existingFeatures.some(
-    (f) => f.name.toLowerCase() === newFeature.name.toLowerCase()
+    (f) => f.name.toLowerCase() === newFeature.name.toLowerCase(),
   );
 
   if (isDuplicate) {
@@ -332,7 +354,11 @@ export function addImplementedFeature(
   const updatedFeatures = [...existingFeatures, newFeature];
 
   log.debug(`Adding feature "${newFeature.name}"`);
-  return updateImplementedFeaturesSection(specContent, updatedFeatures, options);
+  return updateImplementedFeaturesSection(
+    specContent,
+    updatedFeatures,
+    options,
+  );
 }
 
 /**
@@ -346,7 +372,7 @@ export function addImplementedFeature(
 export function removeImplementedFeature(
   specContent: string,
   featureName: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
 
@@ -355,7 +381,7 @@ export function removeImplementedFeature(
 
   // Filter out the feature to remove
   const updatedFeatures = existingFeatures.filter(
-    (f) => f.name.toLowerCase() !== featureName.toLowerCase()
+    (f) => f.name.toLowerCase() !== featureName.toLowerCase(),
   );
 
   if (updatedFeatures.length === existingFeatures.length) {
@@ -364,7 +390,11 @@ export function removeImplementedFeature(
   }
 
   log.debug(`Removing feature "${featureName}"`);
-  return updateImplementedFeaturesSection(specContent, updatedFeatures, options);
+  return updateImplementedFeaturesSection(
+    specContent,
+    updatedFeatures,
+    options,
+  );
 }
 
 /**
@@ -380,7 +410,7 @@ export function updateImplementedFeature(
   specContent: string,
   featureName: string,
   updates: Partial<ImplementedFeature>,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
 
@@ -408,7 +438,11 @@ export function updateImplementedFeature(
   }
 
   log.debug(`Updating feature "${featureName}"`);
-  return updateImplementedFeaturesSection(specContent, updatedFeatures, options);
+  return updateImplementedFeaturesSection(
+    specContent,
+    updatedFeatures,
+    options,
+  );
 }
 
 /**
@@ -422,10 +456,12 @@ export function updateImplementedFeature(
 export function hasImplementedFeature(
   specContent: string,
   featureName: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): boolean {
   const features = extractImplementedFeatures(specContent, options);
-  return features.some((f) => f.name.toLowerCase() === featureName.toLowerCase());
+  return features.some(
+    (f) => f.name.toLowerCase() === featureName.toLowerCase(),
+  );
 }
 
 /**
@@ -435,8 +471,8 @@ export function hasImplementedFeature(
  * @returns Features in SpecOutput format
  */
 export function toSpecOutputFeatures(
-  features: ImplementedFeature[]
-): SpecOutput['implemented_features'] {
+  features: ImplementedFeature[],
+): SpecOutput["implemented_features"] {
   return features.map((f) => ({
     name: f.name,
     description: f.description,
@@ -453,7 +489,7 @@ export function toSpecOutputFeatures(
  * @returns Features in ImplementedFeature format
  */
 export function fromSpecOutputFeatures(
-  specFeatures: SpecOutput['implemented_features']
+  specFeatures: SpecOutput["implemented_features"],
 ): ImplementedFeature[] {
   return specFeatures.map((f) => ({
     name: f.name,
@@ -482,17 +518,21 @@ export interface RoadmapPhase {
  */
 export function extractTechnologyStack(
   specContent: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string[] {
   const log = options.logger || logger;
 
-  const techSection = extractXmlSection(specContent, 'technology_stack', options);
+  const techSection = extractXmlSection(
+    specContent,
+    "technology_stack",
+    options,
+  );
   if (!techSection) {
-    log.debug('No technology_stack section found');
+    log.debug("No technology_stack section found");
     return [];
   }
 
-  const technologies = extractXmlElements(techSection, 'technology', options);
+  const technologies = extractXmlElements(techSection, "technology", options);
   log.debug(`Extracted ${technologies.length} technologies`);
   return technologies;
 }
@@ -508,27 +548,27 @@ export function extractTechnologyStack(
 export function updateTechnologyStack(
   specContent: string,
   technologies: string[],
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
-  const indent = '  ';
+  const indent = "  ";
   const i2 = indent.repeat(2);
 
   // Generate new section content
   const techXml = technologies
     .map((t) => `${i2}<technology>${escapeXml(t)}</technology>`)
-    .join('\n');
+    .join("\n");
   const newSection = `<technology_stack>\n${techXml}\n${indent}</technology_stack>`;
 
   // Check if section exists
   const sectionRegex = /<technology_stack>[\s\S]*?<\/technology_stack>/;
 
   if (sectionRegex.test(specContent)) {
-    log.debug('Replacing existing technology_stack section');
+    log.debug("Replacing existing technology_stack section");
     return specContent.replace(sectionRegex, newSection);
   }
 
-  log.debug('No technology_stack section found to update');
+  log.debug("No technology_stack section found to update");
   return specContent;
 }
 
@@ -541,14 +581,18 @@ export function updateTechnologyStack(
  */
 export function extractRoadmapPhases(
   specContent: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): RoadmapPhase[] {
   const log = options.logger || logger;
   const phases: RoadmapPhase[] = [];
 
-  const roadmapSection = extractXmlSection(specContent, 'implementation_roadmap', options);
+  const roadmapSection = extractXmlSection(
+    specContent,
+    "implementation_roadmap",
+    options,
+  );
   if (!roadmapSection) {
-    log.debug('No implementation_roadmap section found');
+    log.debug("No implementation_roadmap section found");
     return phases;
   }
 
@@ -560,13 +604,17 @@ export function extractRoadmapPhases(
     const phaseContent = phaseMatch[1];
 
     const nameMatch = phaseContent.match(/<name>([\s\S]*?)<\/name>/);
-    const name = nameMatch ? unescapeXml(nameMatch[1].trim()) : '';
+    const name = nameMatch ? unescapeXml(nameMatch[1].trim()) : "";
 
     const statusMatch = phaseContent.match(/<status>([\s\S]*?)<\/status>/);
-    const status = statusMatch ? unescapeXml(statusMatch[1].trim()) : 'pending';
+    const status = statusMatch ? unescapeXml(statusMatch[1].trim()) : "pending";
 
-    const descMatch = phaseContent.match(/<description>([\s\S]*?)<\/description>/);
-    const description = descMatch ? unescapeXml(descMatch[1].trim()) : undefined;
+    const descMatch = phaseContent.match(
+      /<description>([\s\S]*?)<\/description>/,
+    );
+    const description = descMatch
+      ? unescapeXml(descMatch[1].trim())
+      : undefined;
 
     if (name) {
       phases.push({ name, status, description });
@@ -590,7 +638,7 @@ export function updateRoadmapPhaseStatus(
   specContent: string,
   phaseName: string,
   newStatus: string,
-  options: ExtractXmlOptions = {}
+  options: ExtractXmlOptions = {},
 ): string {
   const log = options.logger || logger;
 
@@ -598,7 +646,7 @@ export function updateRoadmapPhaseStatus(
   // Match the phase block containing the specific name
   const phaseRegex = new RegExp(
     `(<phase>\\s*<name>\\s*${escapeXml(phaseName)}\\s*<\\/name>\\s*<status>)[\\s\\S]*?(<\\/status>)`,
-    'i'
+    "i",
   );
 
   if (phaseRegex.test(specContent)) {

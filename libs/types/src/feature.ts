@@ -2,11 +2,11 @@
  * Feature types for Pegasus feature management
  */
 
-import type { PlanningMode, ThinkingLevel } from './settings.js';
-import type { ReasoningEffort } from './provider.js';
+import type { PlanningMode, ThinkingLevel } from "./settings.js";
+import type { ReasoningEffort } from "./provider.js";
 
 /** Question types supported by the agent question system */
-export type QuestionType = 'free-text' | 'single-select' | 'multi-select';
+export type QuestionType = "free-text" | "single-select" | "multi-select";
 
 /** A single question option for select types */
 export interface QuestionOption {
@@ -23,7 +23,7 @@ export interface AgentQuestion {
   options?: QuestionOption[];
   header?: string;
   answer?: string;
-  status: 'pending' | 'answered';
+  status: "pending" | "answered";
   askedAt: string;
   answeredAt?: string;
   /**
@@ -34,13 +34,13 @@ export interface AgentQuestion {
    *   answers are injected as a "Previous User Q&A" block in the resume prompt.
    * Defaults to 'yaml' when omitted (for backward compatibility with existing data).
    */
-  source?: 'yaml' | 'agent';
+  source?: "yaml" | "agent";
 }
 
 /** Question state persisted on the Feature object */
 export interface FeatureQuestionState {
   questions: AgentQuestion[];
-  status: 'pending' | 'answered' | 'cancelled';
+  status: "pending" | "answered" | "cancelled";
 }
 
 /**
@@ -49,8 +49,13 @@ export interface FeatureQuestionState {
 export interface DescriptionHistoryEntry {
   description: string;
   timestamp: string; // ISO date string
-  source: 'initial' | 'enhance' | 'edit'; // What triggered this version
-  enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer'; // Only for 'enhance' source
+  source: "initial" | "enhance" | "edit"; // What triggered this version
+  enhancementMode?:
+    | "improve"
+    | "technical"
+    | "simplify"
+    | "acceptance"
+    | "ux-reviewer"; // Only for 'enhance' source
 }
 
 export interface FeatureImagePath {
@@ -84,7 +89,7 @@ export interface ParsedTask {
   /** Optional phase name for full mode, e.g., "Phase 1: Foundation" */
   phase?: string;
   /** Task execution status */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  status: "pending" | "in_progress" | "completed" | "failed";
   /** Optional task summary, e.g., "Created User model with email and password fields" */
   summary?: string;
 }
@@ -95,7 +100,7 @@ export interface ParsedTask {
  */
 export interface PlanSpec {
   /** Current status of the plan */
-  status: 'pending' | 'generating' | 'generated' | 'approved' | 'rejected';
+  status: "pending" | "generating" | "generated" | "approved" | "rejected";
   /** The actual spec/plan markdown content */
   content?: string;
   /** Version number for tracking plan revisions */
@@ -128,7 +133,9 @@ export interface Feature {
   dependencies?: string[];
   spec?: string;
   model?: string;
-  imagePaths?: Array<string | FeatureImagePath | { path: string; [key: string]: unknown }>;
+  imagePaths?: Array<
+    string | FeatureImagePath | { path: string; [key: string]: unknown }
+  >;
   textFilePaths?: FeatureTextFilePath[];
   // Branch info - worktree path is derived at runtime from branchName
   branchName?: string | null; // Name of the feature branch (undefined/null = use current worktree)
@@ -151,7 +158,12 @@ export interface Feature {
   [key: string]: unknown; // Keep catch-all for extensibility
 }
 
-export type FeatureStatus = 'pending' | 'running' | 'completed' | 'failed' | 'verified';
+export type FeatureStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "verified";
 
 /**
  * Export format for a feature, used when exporting features to share or backup

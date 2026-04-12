@@ -51,7 +51,7 @@ export {
   getIdeationDraftsDir,
   getIdeationAnalysisPath,
   ensureIdeationDir,
-} from './paths.js';
+} from "./paths.js";
 
 // Subprocess management
 export {
@@ -59,7 +59,7 @@ export {
   spawnProcess,
   type SubprocessOptions,
   type SubprocessResult,
-} from './subprocess.js';
+} from "./subprocess.js";
 
 // Security
 export {
@@ -71,10 +71,10 @@ export {
   getAllowedRootDirectory,
   getDataDirectory,
   getAllowedPaths,
-} from './security.js';
+} from "./security.js";
 
 // Secure file system (validates paths before I/O operations)
-export * as secureFs from './secure-fs.js';
+export * as secureFs from "./secure-fs.js";
 
 // Node.js executable finder (cross-platform)
 export {
@@ -82,7 +82,7 @@ export {
   buildEnhancedPath,
   type NodeFinderResult,
   type NodeFinderOptions,
-} from './node-finder.js';
+} from "./node-finder.js";
 
 // WSL (Windows Subsystem for Linux) utilities
 export {
@@ -97,10 +97,10 @@ export {
   wslToWindowsPath,
   type WslCliResult,
   type WslOptions,
-} from './wsl.js';
+} from "./wsl.js";
 
 // System paths for tool detection (GitHub CLI, Claude CLI, Node.js, etc.)
-export * as systemPaths from './system-paths.js';
+export * as systemPaths from "./system-paths.js";
 export {
   // CLI tool paths
   getGitHubCliPaths,
@@ -173,10 +173,10 @@ export {
   electronAppStatSync,
   electronAppStat,
   electronAppReadFile,
-} from './system-paths.js';
+} from "./system-paths.js";
 
 // Port configuration
-export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from './config/ports.js';
+export { STATIC_PORT, SERVER_PORT, RESERVED_PORTS } from "./config/ports.js";
 
 // Editor detection and launching (cross-platform)
 export {
@@ -188,7 +188,7 @@ export {
   openInEditor,
   openInFileManager,
   openInTerminal,
-} from './editor.js';
+} from "./editor.js";
 
 // External terminal detection and launching
 export {
@@ -197,7 +197,7 @@ export {
   detectDefaultTerminal,
   findTerminalById,
   openInExternalTerminal,
-} from './terminal.js';
+} from "./terminal.js";
 
 // RC Generator - Shell configuration file generation
 export {
@@ -211,7 +211,7 @@ export {
   type TerminalConfig,
   type TerminalTheme,
   type ANSIColors,
-} from './rc-generator.js';
+} from "./rc-generator.js";
 
 // RC File Manager - Shell configuration file I/O
 export {
@@ -228,7 +228,10 @@ export {
   ensureRcFilesUpToDate,
   deleteTerminalDir,
   ensureUserCustomFile,
-} from './rc-file-manager.js';
+} from "./rc-file-manager.js";
 
 // Terminal Theme Colors - Raw theme color data for all 40 themes
-export { terminalThemeColors, getTerminalThemeColors } from './terminal-theme-colors.js';
+export {
+  terminalThemeColors,
+  getTerminalThemeColors,
+} from "./terminal-theme-colors.js";

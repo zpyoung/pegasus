@@ -10,14 +10,14 @@
  * - stagesContext is correctly built from feature.questionState.questions
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Feature, ResolvedStage, AgentQuestion } from '@pegasus/types';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Feature, ResolvedStage, AgentQuestion } from "@pegasus/types";
 
 // ============================================================================
 // Mocks
 // ============================================================================
 
-vi.mock('@pegasus/utils', () => ({
+vi.mock("@pegasus/utils", () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -26,25 +26,29 @@ vi.mock('@pegasus/utils', () => ({
   }),
 }));
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   getFeatureDir: (projectPath: string, featureId: string) =>
     `${projectPath}/.pegasus/features/${featureId}`,
   getPipelineStatePath: (projectPath: string, featureId: string) =>
     `${projectPath}/.pegasus/features/${featureId}/pipeline-state.json`,
   getStageOutputsDir: (projectPath: string, featureId: string) =>
     `${projectPath}/.pegasus/features/${featureId}/stage-outputs`,
-  getStageOutputPath: (projectPath: string, featureId: string, stageId: string) =>
+  getStageOutputPath: (
+    projectPath: string,
+    featureId: string,
+    stageId: string,
+  ) =>
     `${projectPath}/.pegasus/features/${featureId}/stage-outputs/${stageId}.md`,
 }));
 
-vi.mock('@/lib/secure-fs.js', () => ({
-  readFile: vi.fn().mockRejectedValue(new Error('ENOENT')),
+vi.mock("@/lib/secure-fs.js", () => ({
+  readFile: vi.fn().mockRejectedValue(new Error("ENOENT")),
   writeFile: vi.fn().mockResolvedValue(undefined),
   mkdir: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/services/pipeline-compiler.js', () => ({
+vi.mock("@/services/pipeline-compiler.js", () => ({
   compileStage: vi.fn((stage: ResolvedStage) => ({
     stage,
     missingVariables: [],
@@ -53,19 +57,22 @@ vi.mock('@/services/pipeline-compiler.js', () => ({
 }));
 
 // Import after mocks
-import { StageRunner } from '@/services/stage-runner.js';
-import { PauseExecutionError } from '@/services/pause-execution-error.js';
-import type { StageRunnerConfig, StageRunAgentFn } from '@/services/stage-runner.js';
-import type { QuestionService } from '@/services/question-service.js';
-import type { TypedEventBus } from '@/services/typed-event-bus.js';
+import { StageRunner } from "@/services/stage-runner.js";
+import { PauseExecutionError } from "@/services/pause-execution-error.js";
+import type {
+  StageRunnerConfig,
+  StageRunAgentFn,
+} from "@/services/stage-runner.js";
+import type { QuestionService } from "@/services/question-service.js";
+import type { TypedEventBus } from "@/services/typed-event-bus.js";
 
 // ============================================================================
 // Fixtures
 // ============================================================================
 
-const PROJECT_PATH = '/test/project';
-const FEATURE_ID = 'feat-123';
-const PIPELINE_NAME = 'Feature';
+const PROJECT_PATH = "/test/project";
+const FEATURE_ID = "feat-123";
+const PIPELINE_NAME = "Feature";
 
 function createMockEventBus() {
   return {
@@ -84,13 +91,17 @@ function createMockQuestionService(): QuestionService {
   } as unknown as QuestionService;
 }
 
-function createMockStage(id: string, name: string, extra?: Partial<ResolvedStage>): ResolvedStage {
+function createMockStage(
+  id: string,
+  name: string,
+  extra?: Partial<ResolvedStage>,
+): ResolvedStage {
   return {
     id,
     name,
     prompt: `Execute ${name}`,
-    model: 'sonnet',
-    permission_mode: 'plan',
+    model: "sonnet",
+    permission_mode: "plan",
     max_turns: 10,
     requires_approval: false,
     ...extra,
@@ -100,31 +111,37 @@ function createMockStage(id: string, name: string, extra?: Partial<ResolvedStage
 function createMockFeature(overrides?: Partial<Feature>): Feature {
   return {
     id: FEATURE_ID,
-    title: 'Test Feature',
-    description: 'A test feature',
-    status: 'in_progress',
+    title: "Test Feature",
+    description: "A test feature",
+    status: "in_progress",
     ...overrides,
   };
 }
 
-function createMockConfig(overrides?: Partial<StageRunnerConfig>): StageRunnerConfig {
+function createMockConfig(
+  overrides?: Partial<StageRunnerConfig>,
+): StageRunnerConfig {
   return {
     projectPath: PROJECT_PATH,
     featureId: FEATURE_ID,
     feature: createMockFeature(),
     stages: [
-      createMockStage('plan', 'Planning'),
-      createMockStage('implement', 'Implementation'),
+      createMockStage("plan", "Planning"),
+      createMockStage("implement", "Implementation"),
     ],
-    workDir: '/test/workdir',
+    workDir: "/test/workdir",
     worktreePath: null,
-    branchName: 'feat/test',
+    branchName: "feat/test",
     abortController: new AbortController(),
-    pipelineDefaults: { model: 'sonnet', max_turns: 10, permission_mode: 'plan' },
+    pipelineDefaults: {
+      model: "sonnet",
+      max_turns: 10,
+      permission_mode: "plan",
+    },
     pipelineName: PIPELINE_NAME,
     compilationContext: {
-      task: { description: 'Test task' },
-      project: { language: 'TypeScript' },
+      task: { description: "Test task" },
+      project: { language: "TypeScript" },
     },
     ...overrides,
   };
@@ -134,7 +151,7 @@ function createMockConfig(overrides?: Partial<StageRunnerConfig>): StageRunnerCo
 // Tests
 // ============================================================================
 
-describe('StageRunner — YAML question handling', () => {
+describe("StageRunner — YAML question handling", () => {
   let eventBus: ReturnType<typeof createMockEventBus>;
   let runAgentFn: ReturnType<typeof vi.fn<StageRunAgentFn>>;
   let questionService: QuestionService;
@@ -152,14 +169,14 @@ describe('StageRunner — YAML question handling', () => {
   // Pause on unanswered question
   // ==========================================================================
 
-  describe('pause execution when question is unanswered', () => {
-    it('should throw PauseExecutionError when stage has question and no answer exists', async () => {
+  describe("pause execution when question is unanswered", () => {
+    it("should throw PauseExecutionError when stage has question and no answer exists", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', {
-            question: 'What approach should we use?',
+          createMockStage("plan", "Planning", {
+            question: "What approach should we use?",
           }),
-          createMockStage('implement', 'Implementation'),
+          createMockStage("implement", "Implementation"),
         ],
         feature: createMockFeature({ questionState: undefined }),
       });
@@ -167,10 +184,10 @@ describe('StageRunner — YAML question handling', () => {
       await expect(runner.run(config)).rejects.toThrow(PauseExecutionError);
     });
 
-    it('should throw PauseExecutionError with correct featureId', async () => {
+    it("should throw PauseExecutionError with correct featureId", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }),
+          createMockStage("plan", "Planning", { question: "Approach?" }),
         ],
       });
 
@@ -187,7 +204,9 @@ describe('StageRunner — YAML question handling', () => {
 
     it('should throw PauseExecutionError with reason "question"', async () => {
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning', { question: 'Approach?' })],
+        stages: [
+          createMockStage("plan", "Planning", { question: "Approach?" }),
+        ],
       });
 
       let thrownError: unknown;
@@ -197,13 +216,13 @@ describe('StageRunner — YAML question handling', () => {
         thrownError = err;
       }
 
-      expect((thrownError as PauseExecutionError).reason).toBe('question');
+      expect((thrownError as PauseExecutionError).reason).toBe("question");
     });
 
-    it('should call questionService.askQuestion before throwing', async () => {
+    it("should call questionService.askQuestion before throwing", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'What approach?' }),
+          createMockStage("plan", "Planning", { question: "What approach?" }),
         ],
       });
 
@@ -214,21 +233,24 @@ describe('StageRunner — YAML question handling', () => {
         FEATURE_ID,
         expect.arrayContaining([
           expect.objectContaining({
-            stageId: 'plan',
-            question: 'What approach?',
-            type: 'free-text', // default type
-            status: 'pending',
+            stageId: "plan",
+            question: "What approach?",
+            type: "free-text", // default type
+            status: "pending",
           }),
-        ])
+        ]),
       );
     });
 
-    it('should pass question_meta type to askQuestion', async () => {
+    it("should pass question_meta type to askQuestion", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', {
-            question: 'Which approach?',
-            question_meta: { type: 'single-select', options: ['Option A', 'Option B'] },
+          createMockStage("plan", "Planning", {
+            question: "Which approach?",
+            question_meta: {
+              type: "single-select",
+              options: ["Option A", "Option B"],
+            },
           }),
         ],
       });
@@ -240,18 +262,18 @@ describe('StageRunner — YAML question handling', () => {
         FEATURE_ID,
         expect.arrayContaining([
           expect.objectContaining({
-            type: 'single-select',
-            options: [{ label: 'Option A' }, { label: 'Option B' }],
+            type: "single-select",
+            options: [{ label: "Option A" }, { label: "Option B" }],
           }),
-        ])
+        ]),
       );
     });
 
-    it('should not call runAgentFn for the question stage before pausing', async () => {
+    it("should not call runAgentFn for the question stage before pausing", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }),
-          createMockStage('implement', 'Implementation'),
+          createMockStage("plan", "Planning", { question: "Approach?" }),
+          createMockStage("implement", "Implementation"),
         ],
       });
 
@@ -261,12 +283,12 @@ describe('StageRunner — YAML question handling', () => {
       expect(runAgentFn).not.toHaveBeenCalled();
     });
 
-    it('should pause at the first unanswered question stage, not execute later stages', async () => {
+    it("should pause at the first unanswered question stage, not execute later stages", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }),
-          createMockStage('implement', 'Implementation'),
-          createMockStage('test', 'Testing'),
+          createMockStage("plan", "Planning", { question: "Approach?" }),
+          createMockStage("implement", "Implementation"),
+          createMockStage("test", "Testing"),
         ],
       });
 
@@ -281,28 +303,28 @@ describe('StageRunner — YAML question handling', () => {
   // Proceed when question is already answered
   // ==========================================================================
 
-  describe('proceed when question already answered', () => {
-    it('should execute stage normally when answer exists in questionState', async () => {
+  describe("proceed when question already answered", () => {
+    it("should execute stage normally when answer exists in questionState", async () => {
       const answeredQuestion: AgentQuestion = {
-        id: 'q-001',
-        stageId: 'plan',
-        question: 'Approach?',
-        type: 'free-text',
-        status: 'answered',
-        answer: 'Use factory pattern',
-        askedAt: '2024-01-01T00:00:00Z',
-        answeredAt: '2024-01-01T01:00:00Z',
+        id: "q-001",
+        stageId: "plan",
+        question: "Approach?",
+        type: "free-text",
+        status: "answered",
+        answer: "Use factory pattern",
+        askedAt: "2024-01-01T00:00:00Z",
+        answeredAt: "2024-01-01T01:00:00Z",
       };
 
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }),
-          createMockStage('implement', 'Implementation'),
+          createMockStage("plan", "Planning", { question: "Approach?" }),
+          createMockStage("implement", "Implementation"),
         ],
         feature: createMockFeature({
           questionState: {
             questions: [answeredQuestion],
-            status: 'answered',
+            status: "answered",
           },
         }),
       });
@@ -313,23 +335,25 @@ describe('StageRunner — YAML question handling', () => {
       expect(runAgentFn).toHaveBeenCalledTimes(2);
     });
 
-    it('should not call askQuestion when answer already exists', async () => {
+    it("should not call askQuestion when answer already exists", async () => {
       const answeredQuestion: AgentQuestion = {
-        id: 'q-001',
-        stageId: 'plan',
-        question: 'Approach?',
-        type: 'free-text',
-        status: 'answered',
-        answer: 'Use factory pattern',
-        askedAt: '2024-01-01T00:00:00Z',
+        id: "q-001",
+        stageId: "plan",
+        question: "Approach?",
+        type: "free-text",
+        status: "answered",
+        answer: "Use factory pattern",
+        askedAt: "2024-01-01T00:00:00Z",
       };
 
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning', { question: 'Approach?' })],
+        stages: [
+          createMockStage("plan", "Planning", { question: "Approach?" }),
+        ],
         feature: createMockFeature({
           questionState: {
             questions: [answeredQuestion],
-            status: 'answered',
+            status: "answered",
           },
         }),
       });
@@ -344,12 +368,12 @@ describe('StageRunner — YAML question handling', () => {
   // No regression: stages without questions
   // ==========================================================================
 
-  describe('no regression for stages without questions', () => {
-    it('should execute stages without question field normally', async () => {
+  describe("no regression for stages without questions", () => {
+    it("should execute stages without question field normally", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning'),
-          createMockStage('implement', 'Implementation'),
+          createMockStage("plan", "Planning"),
+          createMockStage("implement", "Implementation"),
         ],
       });
 
@@ -360,9 +384,9 @@ describe('StageRunner — YAML question handling', () => {
       expect(runAgentFn).toHaveBeenCalledTimes(2);
     });
 
-    it('should not call askQuestion for stages without question', async () => {
+    it("should not call askQuestion for stages without question", async () => {
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning')],
+        stages: [createMockStage("plan", "Planning")],
       });
 
       await runner.run(config);
@@ -375,12 +399,12 @@ describe('StageRunner — YAML question handling', () => {
   // No QuestionService injected
   // ==========================================================================
 
-  describe('no QuestionService injected', () => {
-    it('should skip question check when questionService is not provided', async () => {
+  describe("no QuestionService injected", () => {
+    it("should skip question check when questionService is not provided", async () => {
       const runnerWithoutQS = new StageRunner(eventBus, runAgentFn);
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }),
+          createMockStage("plan", "Planning", { question: "Approach?" }),
         ],
       });
 
@@ -396,8 +420,8 @@ describe('StageRunner — YAML question handling', () => {
   // PauseExecutionError thrown from runAgentFn (mid-stage agent question)
   // ==========================================================================
 
-  describe('PauseExecutionError from runAgentFn (mid-stage AskUserQuestion)', () => {
-    it('rethrows PauseExecutionError instead of swallowing it as an aborted return', async () => {
+  describe("PauseExecutionError from runAgentFn (mid-stage AskUserQuestion)", () => {
+    it("rethrows PauseExecutionError instead of swallowing it as an aborted return", async () => {
       // Regression guard: when the agent calls AskUserQuestion mid-stage,
       // AgentExecutor's tool_use handler throws PauseExecutionError out of
       // runAgentFn. StageRunner.run() must rethrow it so ExecutionService's
@@ -410,56 +434,64 @@ describe('StageRunner — YAML question handling', () => {
       // `interrupted` (visible as Backlog) instead of `waiting_question`.
       const runAgentFnThatPauses = vi
         .fn<StageRunAgentFn>()
-        .mockRejectedValue(new PauseExecutionError(FEATURE_ID, 'question'));
-      const pausingRunner = new StageRunner(eventBus, runAgentFnThatPauses, questionService);
+        .mockRejectedValue(new PauseExecutionError(FEATURE_ID, "question"));
+      const pausingRunner = new StageRunner(
+        eventBus,
+        runAgentFnThatPauses,
+        questionService,
+      );
 
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning')], // no YAML pre-stage question
+        stages: [createMockStage("plan", "Planning")], // no YAML pre-stage question
       });
 
-      await expect(pausingRunner.run(config)).rejects.toThrow(PauseExecutionError);
+      await expect(pausingRunner.run(config)).rejects.toThrow(
+        PauseExecutionError,
+      );
       expect(runAgentFnThatPauses).toHaveBeenCalledTimes(1);
     });
 
-    it('rethrows PauseExecutionError even when the abort controller has been signaled', async () => {
+    it("rethrows PauseExecutionError even when the abort controller has been signaled", async () => {
       // Defense-in-depth: even if some future change re-introduces the abort,
       // PauseExecutionError must still take precedence over the aborted-signal
       // check in StageRunner's catch block.
       const sharedAbort = new AbortController();
       const runAgentFnThatPausesAndAborts = vi.fn<StageRunAgentFn>(async () => {
         sharedAbort.abort();
-        throw new PauseExecutionError(FEATURE_ID, 'question');
+        throw new PauseExecutionError(FEATURE_ID, "question");
       });
       const pausingRunner = new StageRunner(
         eventBus,
         runAgentFnThatPausesAndAborts,
-        questionService
+        questionService,
       );
 
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning')],
+        stages: [createMockStage("plan", "Planning")],
         abortController: sharedAbort,
       });
 
-      await expect(pausingRunner.run(config)).rejects.toThrow(PauseExecutionError);
+      await expect(pausingRunner.run(config)).rejects.toThrow(
+        PauseExecutionError,
+      );
     });
 
-    it('still treats genuine user aborts as aborted (no regression)', async () => {
+    it("still treats genuine user aborts as aborted (no regression)", async () => {
       // Sanity check: a genuine user-initiated abort (not a PauseExecutionError)
       // should still be returned as { aborted: true }, not rethrown.
       const sharedAbort = new AbortController();
       const runAgentFnThatAborts = vi.fn<StageRunAgentFn>(async () => {
         sharedAbort.abort();
-        throw new Error('Stream aborted by user');
+        throw new Error("Stream aborted by user");
       });
       const abortingRunner = new StageRunner(
         eventBus,
         runAgentFnThatAborts,
-        questionService
+        questionService,
       );
 
       const config = createMockConfig({
-        stages: [createMockStage('plan', 'Planning')],
+        stages: [createMockStage("plan", "Planning")],
         abortController: sharedAbort,
       });
 
@@ -473,38 +505,38 @@ describe('StageRunner — YAML question handling', () => {
   // stagesContext building from questionState
   // ==========================================================================
 
-  describe('stagesContext built from feature.questionState', () => {
-    it('should include only answered questions in stagesContext', async () => {
+  describe("stagesContext built from feature.questionState", () => {
+    it("should include only answered questions in stagesContext", async () => {
       // We'll verify this indirectly: if answer exists for stage 'plan',
       // then stage 'plan' with a question will proceed (not throw PauseExecutionError)
       const mixedQuestions: AgentQuestion[] = [
         {
-          id: 'q-001',
-          stageId: 'plan',
-          question: 'Approach?',
-          type: 'free-text',
-          status: 'answered',
-          answer: 'Factory pattern',
-          askedAt: '2024-01-01T00:00:00Z',
+          id: "q-001",
+          stageId: "plan",
+          question: "Approach?",
+          type: "free-text",
+          status: "answered",
+          answer: "Factory pattern",
+          askedAt: "2024-01-01T00:00:00Z",
         },
         {
-          id: 'q-002',
-          stageId: 'review',
-          question: 'Review notes?',
-          type: 'free-text',
-          status: 'pending', // not answered
-          askedAt: '2024-01-01T00:00:00Z',
+          id: "q-002",
+          stageId: "review",
+          question: "Review notes?",
+          type: "free-text",
+          status: "pending", // not answered
+          askedAt: "2024-01-01T00:00:00Z",
         },
       ];
 
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', { question: 'Approach?' }), // answered → proceed
-          createMockStage('implement', 'Implementation'), // no question → proceed
-          createMockStage('review', 'Review', { question: 'Review notes?' }), // pending → pause
+          createMockStage("plan", "Planning", { question: "Approach?" }), // answered → proceed
+          createMockStage("implement", "Implementation"), // no question → proceed
+          createMockStage("review", "Review", { question: "Review notes?" }), // pending → pause
         ],
         feature: createMockFeature({
-          questionState: { questions: mixedQuestions, status: 'pending' },
+          questionState: { questions: mixedQuestions, status: "pending" },
         }),
       });
 
@@ -518,7 +550,9 @@ describe('StageRunner — YAML question handling', () => {
       expect(questionService.askQuestion).toHaveBeenCalledWith(
         PROJECT_PATH,
         FEATURE_ID,
-        expect.arrayContaining([expect.objectContaining({ stageId: 'review' })])
+        expect.arrayContaining([
+          expect.objectContaining({ stageId: "review" }),
+        ]),
       );
     });
   });
@@ -527,15 +561,15 @@ describe('StageRunner — YAML question handling', () => {
   // Multi-select question options conversion
   // ==========================================================================
 
-  describe('question options conversion', () => {
-    it('should convert string options array to QuestionOption objects', async () => {
+  describe("question options conversion", () => {
+    it("should convert string options array to QuestionOption objects", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', {
-            question: 'Pick an approach',
+          createMockStage("plan", "Planning", {
+            question: "Pick an approach",
             question_meta: {
-              type: 'multi-select',
-              options: ['Microservices', 'Monolith', 'Serverless'],
+              type: "multi-select",
+              options: ["Microservices", "Monolith", "Serverless"],
             },
           }),
         ],
@@ -549,21 +583,21 @@ describe('StageRunner — YAML question handling', () => {
         expect.arrayContaining([
           expect.objectContaining({
             options: [
-              { label: 'Microservices' },
-              { label: 'Monolith' },
-              { label: 'Serverless' },
+              { label: "Microservices" },
+              { label: "Monolith" },
+              { label: "Serverless" },
             ],
           }),
-        ])
+        ]),
       );
     });
 
-    it('should set options to undefined when question_meta has no options', async () => {
+    it("should set options to undefined when question_meta has no options", async () => {
       const config = createMockConfig({
         stages: [
-          createMockStage('plan', 'Planning', {
-            question: 'Describe the approach',
-            question_meta: { type: 'free-text' },
+          createMockStage("plan", "Planning", {
+            question: "Describe the approach",
+            question_meta: { type: "free-text" },
           }),
         ],
       });
@@ -575,7 +609,7 @@ describe('StageRunner — YAML question handling', () => {
         FEATURE_ID,
         expect.arrayContaining([
           expect.objectContaining({ options: undefined }),
-        ])
+        ]),
       );
     });
   });

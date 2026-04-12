@@ -20,10 +20,10 @@
  * - View preferences (board view mode, collapsed sections)
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { sanitizeWorktreeByProject } from '@/lib/settings-utils';
-import { useAppStore } from '@/store/app-store';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { sanitizeWorktreeByProject } from "@/lib/settings-utils";
+import { useAppStore } from "@/store/app-store";
 
 interface UICacheState {
   /** ID of the currently selected project */
@@ -31,13 +31,16 @@ interface UICacheState {
   /** Whether sidebar is open */
   cachedSidebarOpen: boolean;
   /** Sidebar style (unified or discord) */
-  cachedSidebarStyle: 'unified' | 'discord';
+  cachedSidebarStyle: "unified" | "discord";
   /** Whether worktree panel is collapsed */
   cachedWorktreePanelCollapsed: boolean;
   /** Collapsed nav sections */
   cachedCollapsedNavSections: Record<string, boolean>;
   /** Selected worktree per project (path + branch) for instant restore on PWA reload */
-  cachedCurrentWorktreeByProject: Record<string, { path: string | null; branch: string }>;
+  cachedCurrentWorktreeByProject: Record<
+    string,
+    { path: string | null; branch: string }
+  >;
 }
 
 interface UICacheActions {
@@ -45,14 +48,14 @@ interface UICacheActions {
   updateFromAppStore: (state: Partial<UICacheState>) => void;
 }
 
-const STORE_NAME = 'pegasus-ui-cache';
+const STORE_NAME = "pegasus-ui-cache";
 
 export const useUICacheStore = create<UICacheState & UICacheActions>()(
   persist(
     (set) => ({
       cachedProjectId: null,
       cachedSidebarOpen: true,
-      cachedSidebarStyle: 'unified',
+      cachedSidebarStyle: "unified",
       cachedWorktreePanelCollapsed: false,
       cachedCollapsedNavSections: {},
       cachedCurrentWorktreeByProject: {},
@@ -78,8 +81,8 @@ export const useUICacheStore = create<UICacheState & UICacheActions>()(
         }
         return state as unknown as UICacheState & UICacheActions;
       },
-    }
-  )
+    },
+  ),
 );
 
 /**
@@ -92,36 +95,42 @@ export const useUICacheStore = create<UICacheState & UICacheActions>()(
 export function syncUICache(appState: {
   currentProject?: { id: string } | null;
   sidebarOpen?: boolean;
-  sidebarStyle?: 'unified' | 'discord';
+  sidebarStyle?: "unified" | "discord";
   worktreePanelCollapsed?: boolean;
   collapsedNavSections?: Record<string, boolean>;
-  currentWorktreeByProject?: Record<string, { path: string | null; branch: string }>;
+  currentWorktreeByProject?: Record<
+    string,
+    { path: string | null; branch: string }
+  >;
 }): void {
   const update: Partial<UICacheState> = {};
 
-  if ('currentProject' in appState) {
+  if ("currentProject" in appState) {
     update.cachedProjectId = appState.currentProject?.id ?? null;
   }
-  if ('sidebarOpen' in appState) {
+  if ("sidebarOpen" in appState) {
     update.cachedSidebarOpen = appState.sidebarOpen;
   }
-  if ('sidebarStyle' in appState) {
+  if ("sidebarStyle" in appState) {
     update.cachedSidebarStyle = appState.sidebarStyle;
   }
-  if ('worktreePanelCollapsed' in appState) {
+  if ("worktreePanelCollapsed" in appState) {
     update.cachedWorktreePanelCollapsed = appState.worktreePanelCollapsed;
   }
-  if ('collapsedNavSections' in appState) {
+  if ("collapsedNavSections" in appState) {
     update.cachedCollapsedNavSections = appState.collapsedNavSections;
   }
-  if ('currentWorktreeByProject' in appState && appState.currentWorktreeByProject) {
+  if (
+    "currentWorktreeByProject" in appState &&
+    appState.currentWorktreeByProject
+  ) {
     // Persist all valid worktree selections (both main branch and feature worktrees).
     // Validation against actual worktrees happens at restore time in:
     // 1. restoreFromUICache() - early restore with validation
     // 2. use-worktrees.ts - runtime validation that resets to main if deleted
     // This allows users to have their feature worktree selection persist across refreshes.
     update.cachedCurrentWorktreeByProject = sanitizeWorktreeByProject(
-      appState.currentWorktreeByProject as Record<string, unknown>
+      appState.currentWorktreeByProject as Record<string, unknown>,
     );
   }
 
@@ -142,7 +151,7 @@ export function syncUICache(appState: {
  * @param appStoreSetState - The setState function from the app store
  */
 export function restoreFromUICache(
-  appStoreSetState: (state: Record<string, unknown>) => void
+  appStoreSetState: (state: Record<string, unknown>) => void,
 ): boolean {
   const cache = useUICacheStore.getState();
 
@@ -157,7 +166,8 @@ export function restoreFromUICache(
   // this will restore the project context immediately so tab-discard recovery
   // does not lose the selected project when cached settings are missing.
   const existingProjects = useAppStore.getState().projects;
-  const cachedProject = existingProjects.find((p) => p.id === cache.cachedProjectId) ?? null;
+  const cachedProject =
+    existingProjects.find((p) => p.id === cache.cachedProjectId) ?? null;
 
   const stateUpdate: Record<string, unknown> = {
     sidebarOpen: cache.cachedSidebarOpen,
@@ -179,7 +189,7 @@ export function restoreFromUICache(
     // Validate structure only - keep both null (main) and non-null (worktree) paths
     // Runtime validation in use-worktrees.ts handles deleted worktrees gracefully
     const sanitized = sanitizeWorktreeByProject(
-      cache.cachedCurrentWorktreeByProject as Record<string, unknown>
+      cache.cachedCurrentWorktreeByProject as Record<string, unknown>,
     );
     if (Object.keys(sanitized).length > 0) {
       stateUpdate.currentWorktreeByProject = sanitized;

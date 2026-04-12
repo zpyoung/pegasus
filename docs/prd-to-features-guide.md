@@ -72,27 +72,27 @@ This guide helps Claude generate properly structured Pegasus features from a Pro
 | `category`      | string | Yes      | Grouping category for the feature                                                 |
 | `title`         | string | Yes      | Short, descriptive title (3-8 words)                                              |
 | `description`   | string | Yes      | Detailed implementation requirements                                              |
-| `status`        | string | Yes      | Current state. **Must be `backlog` for Pegasus to execute**                     |
+| `status`        | string | Yes      | Current state. **Must be `backlog` for Pegasus to execute**                       |
 | `priority`      | number | Yes      | Execution priority (1 = highest, higher numbers = lower priority)                 |
-| `imagePaths`    | array  | Yes      | Must be empty `[]` - Pegasus populates this automatically                       |
-| `textFilePaths` | array  | Yes      | Must be empty `[]` - Pegasus populates this automatically                       |
+| `imagePaths`    | array  | Yes      | Must be empty `[]` - Pegasus populates this automatically                         |
+| `textFilePaths` | array  | Yes      | Must be empty `[]` - Pegasus populates this automatically                         |
 
 ### Optional Fields
 
-| Field                 | Type     | Default  | Description                                                                            |
-| --------------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
-| `complexity`          | string   | moderate | `simple` (< 1 hour), `moderate` (1-4 hours), `complex` (> 4 hours)                     |
-| `dependencies`        | string[] | []       | Array of feature IDs that must complete first                                          |
-| `skipTests`           | boolean  | false    | Skip test execution during verification                                                |
-| `model`               | string   | -        | AI model: `claude-sonnet` (balanced), `claude-opus` (complex), `claude-haiku` (simple) |
-| `thinkingLevel`         | string   | adaptive | Extended thinking: `none`, `low`, `medium`, `high`, `ultrathink`, `adaptive`          |
+| Field                   | Type     | Default  | Description                                                                                           |
+| ----------------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| `complexity`            | string   | moderate | `simple` (< 1 hour), `moderate` (1-4 hours), `complex` (> 4 hours)                                    |
+| `dependencies`          | string[] | []       | Array of feature IDs that must complete first                                                         |
+| `skipTests`             | boolean  | false    | Skip test execution during verification                                                               |
+| `model`                 | string   | -        | AI model: `claude-sonnet` (balanced), `claude-opus` (complex), `claude-haiku` (simple)                |
+| `thinkingLevel`         | string   | adaptive | Extended thinking: `none`, `low`, `medium`, `high`, `ultrathink`, `adaptive`                          |
 | `planningMode`          | string   | skip     | `skip` (direct), `lite` (lightweight), `spec` (generate spec first), `full` (spec + tool exploration) |
-| `requirePlanApproval`   | boolean  | false    | Pause for human approval before execution                                              |
-| `workMode`              | string   | current  | `current` (use current worktree), `auto` (create new worktree), `custom` (specify branch) |
-| `pipeline`              | string   | -        | Pipeline slug to use (e.g., `feature`, `bug-fix`)                                     |
-| `pipelineInputs`        | object   | {}       | User-provided input values for pipeline declared inputs                                |
-| `excludedPipelineSteps` | string[] | []       | Array of pipeline step IDs to skip for this feature                                   |
-| `providerId`            | string   | -        | AI provider ID override (e.g., `anthropic`)                                            |
+| `requirePlanApproval`   | boolean  | false    | Pause for human approval before execution                                                             |
+| `workMode`              | string   | current  | `current` (use current worktree), `auto` (create new worktree), `custom` (specify branch)             |
+| `pipeline`              | string   | -        | Pipeline slug to use (e.g., `feature`, `bug-fix`)                                                     |
+| `pipelineInputs`        | object   | {}       | User-provided input values for pipeline declared inputs                                               |
+| `excludedPipelineSteps` | string[] | []       | Array of pipeline step IDs to skip for this feature                                                   |
+| `providerId`            | string   | -        | AI provider ID override (e.g., `anthropic`)                                                           |
 
 ---
 

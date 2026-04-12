@@ -16,8 +16,8 @@
  * non-TS files to dist/).
  */
 
-import { parse as yamlParse } from 'yaml';
-import type { YamlPipelineConfig, DiscoveredPipeline } from '@pegasus/types';
+import { parse as yamlParse } from "yaml";
+import type { YamlPipelineConfig, DiscoveredPipeline } from "@pegasus/types";
 
 // ============================================================================
 // Embedded YAML Content
@@ -191,8 +191,8 @@ stages:
 
 /** Map of built-in pipeline slug → raw YAML string */
 export const BUILT_IN_YAML_MAP: Record<string, string> = {
-  'bug-fix': BUG_FIX_YAML,
-  'feature': FEATURE_YAML,
+  "bug-fix": BUG_FIX_YAML,
+  feature: FEATURE_YAML,
 };
 
 /** List of all built-in pipeline slugs */
@@ -215,7 +215,9 @@ function parseBuiltInYaml(yamlContent: string): YamlPipelineConfig {
  * @param slug - Pipeline slug (e.g., "bug-fix", "feature")
  * @returns The parsed config, or undefined if slug is not a built-in pipeline
  */
-export function getBuiltInPipelineConfig(slug: string): YamlPipelineConfig | undefined {
+export function getBuiltInPipelineConfig(
+  slug: string,
+): YamlPipelineConfig | undefined {
   const yaml = BUILT_IN_YAML_MAP[slug];
   if (!yaml) return undefined;
   return parseBuiltInYaml(yaml);
@@ -250,7 +252,7 @@ export function getBuiltInPipelines(): DiscoveredPipeline[] {
       config,
       stageCount: config.stages.length,
       isBuiltIn: true,
-      source: 'user' as const, // Use 'user' source so project-level can override
+      source: "user" as const, // Use 'user' source so project-level can override
     };
   });
 }

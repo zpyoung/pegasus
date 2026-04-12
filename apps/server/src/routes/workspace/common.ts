@@ -2,10 +2,13 @@
  * Common utilities for workspace routes
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
-const logger = createLogger('Workspace');
+const logger = createLogger("Workspace");
 
 // Re-export shared utilities
 export { getErrorMessageShared as getErrorMessage };

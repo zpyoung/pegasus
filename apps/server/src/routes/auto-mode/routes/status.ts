@@ -5,9 +5,9 @@
  * If no projectPath, returns global status for backward compatibility.
  */
 
-import type { Request, Response } from 'express';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create status handler.
@@ -27,7 +27,7 @@ export function createStatusHandler(autoModeService: AutoModeServiceCompat) {
 
         const projectStatus = await autoModeService.getStatusForProject(
           projectPath,
-          normalizedBranchName
+          normalizedBranchName,
         );
         res.json({
           success: true,
@@ -53,7 +53,7 @@ export function createStatusHandler(autoModeService: AutoModeServiceCompat) {
         activeAutoLoopWorktrees: activeWorktrees,
       });
     } catch (error) {
-      logError(error, 'Get status failed');
+      logError(error, "Get status failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

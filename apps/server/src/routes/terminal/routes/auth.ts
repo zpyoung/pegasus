@@ -2,21 +2,21 @@
  * POST /auth endpoint - Authenticate with password to get a session token
  */
 
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 import {
   getTerminalEnabledConfigValue,
   getTerminalPasswordConfig,
   generateToken,
   addToken,
   getTokenExpiryMs,
-} from '../common.js';
+} from "../common.js";
 
 export function createAuthHandler() {
   return (req: Request, res: Response): void => {
     if (!getTerminalEnabledConfigValue()) {
       res.status(403).json({
         success: false,
-        error: 'Terminal access is disabled',
+        error: "Terminal access is disabled",
       });
       return;
     }
@@ -40,7 +40,7 @@ export function createAuthHandler() {
     if (!password || password !== terminalPassword) {
       res.status(401).json({
         success: false,
-        error: 'Invalid password',
+        error: "Invalid password",
       });
       return;
     }

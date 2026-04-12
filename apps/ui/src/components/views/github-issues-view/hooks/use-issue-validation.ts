@@ -1,6 +1,6 @@
 // @ts-nocheck - GitHub issue validation with Electron API integration and async state
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   getElectronAPI,
   GitHubIssue,
@@ -8,14 +8,14 @@ import {
   IssueValidationResult,
   IssueValidationEvent,
   StoredValidation,
-} from '@/lib/electron';
-import type { LinkedPRInfo, PhaseModelEntry, ModelId } from '@pegasus/types';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
-import { isValidationStale } from '../utils';
-import { useValidateIssue, useMarkValidationViewed } from '@/hooks/mutations';
+} from "@/lib/electron";
+import type { LinkedPRInfo, PhaseModelEntry, ModelId } from "@pegasus/types";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
+import { isValidationStale } from "../utils";
+import { useValidateIssue, useMarkValidationViewed } from "@/hooks/mutations";
 
-const logger = createLogger('IssueValidation');
+const logger = createLogger("IssueValidation");
 
 interface UseIssueValidationOptions {
   selectedIssue: GitHubIssue | null;
@@ -31,15 +31,19 @@ export function useIssueValidation({
   onShowValidationDialogChange,
 }: UseIssueValidationOptions) {
   const { currentProject, phaseModels, muteDoneSound } = useAppStore();
-  const [validatingIssues, setValidatingIssues] = useState<Set<number>>(new Set());
-  const [cachedValidations, setCachedValidations] = useState<Map<number, StoredValidation>>(
-    new Map()
+  const [validatingIssues, setValidatingIssues] = useState<Set<number>>(
+    new Set(),
   );
+  const [cachedValidations, setCachedValidations] = useState<
+    Map<number, StoredValidation>
+  >(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // React Query mutations
-  const validateIssueMutation = useValidateIssue(currentProject?.path ?? '');
-  const markViewedMutation = useMarkValidationViewed(currentProject?.path ?? '');
+  const validateIssueMutation = useValidateIssue(currentProject?.path ?? "");
+  const markViewedMutation = useMarkValidationViewed(
+    currentProject?.path ?? "",
+  );
   // Refs for stable event handler (avoids re-subscribing on state changes)
   const selectedIssueRef = useRef<GitHubIssue | null>(null);
   const showValidationDialogRef = useRef(false);
@@ -74,7 +78,7 @@ export function useIssueValidation({
         }
       } catch (err) {
         if (isMounted) {
-          logger.error('Failed to load cached validations:', err);
+          logger.error("Failed to load cached validations:", err);
         }
       }
     };
@@ -96,14 +100,16 @@ export function useIssueValidation({
       try {
         const api = getElectronAPI();
         if (api.github?.getValidationStatus) {
-          const result = await api.github.getValidationStatus(currentProject.path);
+          const result = await api.github.getValidationStatus(
+            currentProject.path,
+          );
           if (isMounted && result.success && result.runningIssues) {
             setValidatingIssues(new Set(result.runningIssues));
           }
         }
       } catch (err) {
         if (isMounted) {
-          logger.error('Failed to load running validations:', err);
+          logger.error("Failed to load running validations:", err);
         }
       }
     };
@@ -125,11 +131,11 @@ export function useIssueValidation({
       if (event.projectPath !== currentProject?.path) return;
 
       switch (event.type) {
-        case 'issue_validation_start':
+        case "issue_validation_start":
           setValidatingIssues((prev) => new Set([...prev, event.issueNumber]));
           break;
 
-        case 'issue_validation_complete':
+        case "issue_validation_complete":
           setValidatingIssues((prev) => {
             const next = new Set(prev);
             next.delete(event.issueNumber);
@@ -150,20 +156,23 @@ export function useIssueValidation({
           });
 
           // Show toast notification
-          toast.success(`Issue #${event.issueNumber} validated: ${event.result.verdict}`, {
-            description:
-              event.result.verdict === 'valid'
-                ? 'Issue is ready to be converted to a task'
-                : event.result.verdict === 'invalid'
-                  ? 'Issue may have problems'
-                  : 'Issue needs clarification',
-          });
+          toast.success(
+            `Issue #${event.issueNumber} validated: ${event.result.verdict}`,
+            {
+              description:
+                event.result.verdict === "valid"
+                  ? "Issue is ready to be converted to a task"
+                  : event.result.verdict === "invalid"
+                    ? "Issue may have problems"
+                    : "Issue needs clarification",
+            },
+          );
 
           // Play audio notification (if not muted)
           if (!muteDoneSound) {
             try {
               if (!audioRef.current) {
-                audioRef.current = new Audio('/sounds/ding.mp3');
+                audioRef.current = new Audio("/sounds/ding.mp3");
               }
               audioRef.current.play().catch(() => {
                 // Audio play might fail due to browser restrictions
@@ -182,7 +191,7 @@ export function useIssueValidation({
           }
           break;
 
-        case 'issue_validation_error':
+        case "issue_validation_error":
           setValidatingIssues((prev) => {
             const next = new Set(prev);
             next.delete(event.issueNumber);
@@ -203,7 +212,12 @@ export function useIssueValidation({
 
     const unsubscribe = api.github.onValidationEvent(handleValidationEvent);
     return () => unsubscribe();
-  }, [currentProject?.path, muteDoneSound, onValidationResultChange, onShowValidationDialogChange]);
+  }, [
+    currentProject?.path,
+    muteDoneSound,
+    onValidationResultChange,
+    onShowValidationDialogChange,
+  ]);
 
   // Cleanup audio element on unmount to prevent memory leaks
   useEffect(() => {
@@ -224,24 +238,37 @@ export function useIssueValidation({
         modelEntry?: PhaseModelEntry; // New preferred way to pass model with thinking/reasoning
         comments?: GitHubComment[];
         linkedPRs?: LinkedPRInfo[];
-      } = {}
+      } = {},
     ) => {
-      const { forceRevalidate = false, model, modelEntry, comments, linkedPRs } = options;
+      const {
+        forceRevalidate = false,
+        model,
+        modelEntry,
+        comments,
+        linkedPRs,
+      } = options;
 
       if (!currentProject?.path) {
-        toast.error('No project selected');
+        toast.error("No project selected");
         return;
       }
 
       // Check if already validating this issue
-      if (validatingIssues.has(issue.number) || validateIssueMutation.isPending) {
+      if (
+        validatingIssues.has(issue.number) ||
+        validateIssueMutation.isPending
+      ) {
         toast.info(`Validation already in progress for issue #${issue.number}`);
         return;
       }
 
       // Check for cached result - if fresh, show it directly (unless force revalidate)
       const cached = cachedValidations.get(issue.number);
-      if (cached && !forceRevalidate && !isValidationStale(cached.validatedAt)) {
+      if (
+        cached &&
+        !forceRevalidate &&
+        !isValidationStale(cached.validatedAt)
+      ) {
         // Show cached result directly
         onValidationResultChange(cached.result);
         onShowValidationDialogChange(true);
@@ -253,12 +280,12 @@ export function useIssueValidation({
       const effectiveModelEntry = modelEntry
         ? modelEntry
         : model
-          ? typeof model === 'string'
+          ? typeof model === "string"
             ? { model: model as ModelId }
             : model
           : phaseModels.validationModel;
       const normalizedEntry =
-        typeof effectiveModelEntry === 'string'
+        typeof effectiveModelEntry === "string"
           ? { model: effectiveModelEntry as ModelId }
           : effectiveModelEntry;
       const modelToUse = normalizedEntry.model;
@@ -285,7 +312,7 @@ export function useIssueValidation({
       validateIssueMutation,
       onValidationResultChange,
       onShowValidationDialogChange,
-    ]
+    ],
   );
 
   // View cached validation result
@@ -323,7 +350,7 @@ export function useIssueValidation({
       markViewedMutation,
       onValidationResultChange,
       onShowValidationDialogChange,
-    ]
+    ],
   );
 
   return {

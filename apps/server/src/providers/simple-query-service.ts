@@ -14,15 +14,15 @@
  * - Eliminates duplicate extractTextFromStream() functions
  */
 
-import { ProviderFactory } from './provider-factory.js';
+import { ProviderFactory } from "./provider-factory.js";
 import type {
   ThinkingLevel,
   ReasoningEffort,
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   Credentials,
-} from '@pegasus/types';
-import { stripProviderPrefix } from '@pegasus/types';
+} from "@pegasus/types";
+import { stripProviderPrefix } from "@pegasus/types";
 
 /**
  * Options for simple query execution
@@ -44,7 +44,7 @@ export interface SimpleQueryOptions {
   abortController?: AbortController;
   /** Structured output format for JSON responses */
   outputFormat?: {
-    type: 'json_schema';
+    type: "json_schema";
     schema: Record<string, unknown>;
   };
   /** Thinking level for Claude models */
@@ -54,7 +54,7 @@ export interface SimpleQueryOptions {
   /** If true, runs in read-only mode (no file writes) */
   readOnly?: boolean;
   /** Setting sources for CLAUDE.md loading */
-  settingSources?: Array<'user' | 'project' | 'local'>;
+  settingSources?: Array<"user" | "project" | "local">;
   /**
    * Active Claude API profile for alternative endpoint configuration
    * @deprecated Use claudeCompatibleProvider instead
@@ -94,7 +94,7 @@ export interface StreamingQueryOptions extends SimpleQueryOptions {
 /**
  * Default model to use when none specified
  */
-const DEFAULT_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 /**
  * Execute a simple query and return the text result
@@ -115,12 +115,14 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
  * console.log(result.text); // "Add user authentication"
  * ```
  */
-export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQueryResult> {
+export async function simpleQuery(
+  options: SimpleQueryOptions,
+): Promise<SimpleQueryResult> {
   const model = options.model || DEFAULT_MODEL;
   const provider = ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
-  let responseText = '';
+  let responseText = "";
   let structuredOutput: Record<string, unknown> | undefined;
 
   // Build provider options
@@ -145,23 +147,23 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
 
   for await (const msg of provider.executeQuery(providerOptions)) {
     // Handle error messages
-    if (msg.type === 'error') {
-      const errorMessage = msg.error || 'Provider returned an error';
+    if (msg.type === "error") {
+      const errorMessage = msg.error || "Provider returned an error";
       throw new Error(errorMessage);
     }
 
     // Extract text from assistant messages
-    if (msg.type === 'assistant' && msg.message?.content) {
+    if (msg.type === "assistant" && msg.message?.content) {
       for (const block of msg.message.content) {
-        if (block.type === 'text' && block.text) {
+        if (block.type === "text" && block.text) {
           responseText += block.text;
         }
       }
     }
 
     // Handle result messages
-    if (msg.type === 'result') {
-      if (msg.subtype === 'success') {
+    if (msg.type === "result") {
+      if (msg.subtype === "success") {
         // Use result text if longer than accumulated text
         if (msg.result && msg.result.length > responseText.length) {
           responseText = msg.result;
@@ -170,11 +172,13 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
         if (msg.structured_output) {
           structuredOutput = msg.structured_output;
         }
-      } else if (msg.subtype === 'error_max_turns') {
+      } else if (msg.subtype === "error_max_turns") {
         // Max turns reached - return what we have
         break;
-      } else if (msg.subtype === 'error_max_structured_output_retries') {
-        throw new Error('Could not produce valid structured output after retries');
+      } else if (msg.subtype === "error_max_structured_output_retries") {
+        throw new Error(
+          "Could not produce valid structured output after retries",
+        );
       }
     }
   }
@@ -200,12 +204,14 @@ export async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQu
  * });
  * ```
  */
-export async function streamingQuery(options: StreamingQueryOptions): Promise<SimpleQueryResult> {
+export async function streamingQuery(
+  options: StreamingQueryOptions,
+): Promise<SimpleQueryResult> {
   const model = options.model || DEFAULT_MODEL;
   const provider = ProviderFactory.getProviderForModel(model);
   const bareModel = stripProviderPrefix(model);
 
-  let responseText = '';
+  let responseText = "";
   let structuredOutput: Record<string, unknown> | undefined;
 
   // Build provider options
@@ -216,7 +222,7 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
     cwd: options.cwd,
     systemPrompt: options.systemPrompt,
     maxTurns: options.maxTurns ?? 250,
-    allowedTools: options.allowedTools ?? ['Read', 'Glob', 'Grep'],
+    allowedTools: options.allowedTools ?? ["Read", "Glob", "Grep"],
     abortController: options.abortController,
     outputFormat: options.outputFormat,
     thinkingLevel: options.thinkingLevel,
@@ -230,28 +236,28 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
 
   for await (const msg of provider.executeQuery(providerOptions)) {
     // Handle error messages
-    if (msg.type === 'error') {
-      const errorMessage = msg.error || 'Provider returned an error';
+    if (msg.type === "error") {
+      const errorMessage = msg.error || "Provider returned an error";
       throw new Error(errorMessage);
     }
 
     // Extract content from assistant messages
-    if (msg.type === 'assistant' && msg.message?.content) {
+    if (msg.type === "assistant" && msg.message?.content) {
       for (const block of msg.message.content) {
-        if (block.type === 'text' && block.text) {
+        if (block.type === "text" && block.text) {
           responseText += block.text;
           options.onText?.(block.text);
-        } else if (block.type === 'tool_use' && block.name) {
+        } else if (block.type === "tool_use" && block.name) {
           options.onToolUse?.(block.name, block.input);
-        } else if (block.type === 'thinking' && block.thinking) {
+        } else if (block.type === "thinking" && block.thinking) {
           options.onThinking?.(block.thinking);
         }
       }
     }
 
     // Handle result messages
-    if (msg.type === 'result') {
-      if (msg.subtype === 'success') {
+    if (msg.type === "result") {
+      if (msg.subtype === "success") {
         // Use result text if longer than accumulated text
         if (msg.result && msg.result.length > responseText.length) {
           responseText = msg.result;
@@ -260,11 +266,13 @@ export async function streamingQuery(options: StreamingQueryOptions): Promise<Si
         if (msg.structured_output) {
           structuredOutput = msg.structured_output;
         }
-      } else if (msg.subtype === 'error_max_turns') {
+      } else if (msg.subtype === "error_max_turns") {
         // Max turns reached - return what we have
         break;
-      } else if (msg.subtype === 'error_max_structured_output_retries') {
-        throw new Error('Could not produce valid structured output after retries');
+      } else if (msg.subtype === "error_max_structured_output_retries") {
+        throw new Error(
+          "Could not produce valid structured output after retries",
+        );
       }
     }
   }

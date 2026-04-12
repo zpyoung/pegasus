@@ -1,14 +1,22 @@
-import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore } from '@/store/app-store';
-import { getElectronAPI } from '@/lib/electron';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { File, Folder, FolderOpen, ChevronRight, ChevronDown, Code, RefreshCw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+import { useEffect, useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore } from "@/store/app-store";
+import { getElectronAPI } from "@/lib/electron";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  File,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  Code,
+  RefreshCw,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
-const logger = createLogger('CodeView');
+const logger = createLogger("CodeView");
 
 interface FileTreeNode {
   name: string;
@@ -18,11 +26,19 @@ interface FileTreeNode {
   isExpanded?: boolean;
 }
 
-const IGNORE_PATTERNS = ['node_modules', '.git', '.next', 'dist', 'build', '.DS_Store', '*.log'];
+const IGNORE_PATTERNS = [
+  "node_modules",
+  ".git",
+  ".next",
+  "dist",
+  "build",
+  ".DS_Store",
+  "*.log",
+];
 
 const shouldIgnore = (name: string) => {
   return IGNORE_PATTERNS.some((pattern) => {
-    if (pattern.startsWith('*')) {
+    if (pattern.startsWith("*")) {
       return name.endsWith(pattern.slice(1));
     }
     return name === pattern;
@@ -33,9 +49,11 @@ export function CodeView() {
   const { currentProject } = useAppStore();
   const [fileTree, setFileTree] = useState<FileTreeNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState<string>('');
+  const [fileContent, setFileContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Load directory tree
   const loadTree = useCallback(async () => {
@@ -64,7 +82,7 @@ export function CodeView() {
         setFileTree(entries);
       }
     } catch (error) {
-      logger.error('Failed to load file tree:', error);
+      logger.error("Failed to load file tree:", error);
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +113,7 @@ export function CodeView() {
           }));
       }
     } catch (error) {
-      logger.error('Failed to load subdirectory:', error);
+      logger.error("Failed to load subdirectory:", error);
     }
     return [];
   };
@@ -111,7 +129,7 @@ export function CodeView() {
         setSelectedFile(path);
       }
     } catch (error) {
-      logger.error('Failed to load file:', error);
+      logger.error("Failed to load file:", error);
     }
   };
 
@@ -155,8 +173,8 @@ export function CodeView() {
       <div key={node.path}>
         <div
           className={cn(
-            'flex items-center gap-2 py-1 px-2 rounded cursor-pointer hover:bg-muted/50',
-            isSelected && 'bg-muted'
+            "flex items-center gap-2 py-1 px-2 rounded cursor-pointer hover:bg-muted/50",
+            isSelected && "bg-muted",
           )}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => {
@@ -190,7 +208,9 @@ export function CodeView() {
           <span className="text-sm truncate">{node.name}</span>
         </div>
         {node.isDirectory && isExpanded && node.children && (
-          <div>{node.children.map((child) => renderNode(child, depth + 1))}</div>
+          <div>
+            {node.children.map((child) => renderNode(child, depth + 1))}
+          </div>
         )}
       </div>
     );
@@ -198,7 +218,10 @@ export function CodeView() {
 
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="code-view-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="code-view-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -206,24 +229,37 @@ export function CodeView() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="code-view-loading">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="code-view-loading"
+      >
         <Spinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="code-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="code-view"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10 bg-zinc-950/50 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <Code className="w-5 h-5 text-muted-foreground" />
           <div>
             <h1 className="text-xl font-bold">Code Explorer</h1>
-            <p className="text-sm text-muted-foreground">{currentProject.name}</p>
+            <p className="text-sm text-muted-foreground">
+              {currentProject.name}
+            </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={loadTree} data-testid="refresh-tree">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadTree}
+          data-testid="refresh-tree"
+        >
           <RefreshCw className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -242,7 +278,7 @@ export function CodeView() {
             <div className="h-full flex flex-col">
               <div className="px-4 py-2 border-b bg-muted/30">
                 <p className="text-sm font-mono text-muted-foreground truncate">
-                  {selectedFile.replace(currentProject.path, '')}
+                  {selectedFile.replace(currentProject.path, "")}
                 </p>
               </div>
               <Card className="flex-1 m-4 overflow-hidden">
@@ -255,7 +291,9 @@ export function CodeView() {
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-muted-foreground">Select a file to view its contents</p>
+              <p className="text-muted-foreground">
+                Select a file to view its contents
+              </p>
             </div>
           )}
         </div>

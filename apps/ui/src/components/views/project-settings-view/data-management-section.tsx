@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Database, Download, Upload } from 'lucide-react';
-import { ExportFeaturesDialog } from '../board-view/dialogs/export-features-dialog';
-import { ImportFeaturesDialog } from '../board-view/dialogs/import-features-dialog';
-import { useBoardFeatures } from '../board-view/hooks';
-import type { Project } from '@/lib/electron';
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Database, Download, Upload } from "lucide-react";
+import { ExportFeaturesDialog } from "../board-view/dialogs/export-features-dialog";
+import { ImportFeaturesDialog } from "../board-view/dialogs/import-features-dialog";
+import { useBoardFeatures } from "../board-view/hooks";
+import type { Project } from "@/lib/electron";
 
 interface DataManagementSectionProps {
   project: Project;
@@ -24,10 +24,10 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
     <>
       <div
         className={cn(
-          'rounded-2xl overflow-hidden',
-          'border border-border/50',
-          'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-          'shadow-sm shadow-black/5'
+          "rounded-2xl overflow-hidden",
+          "border border-border/50",
+          "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+          "shadow-sm shadow-black/5",
         )}
       >
         <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -40,16 +40,20 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
             </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Export and import features to backup your data or share with other projects.
+            Export and import features to backup your data or share with other
+            projects.
           </p>
         </div>
         <div className="p-6 space-y-6">
           {/* Export Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Export Features</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                Export Features
+              </h3>
               <p className="text-xs text-muted-foreground mt-1">
-                Download all features as a JSON or YAML file for backup or sharing.
+                Download all features as a JSON or YAML file for backup or
+                sharing.
               </p>
             </div>
             <Button
@@ -69,7 +73,9 @@ export function DataManagementSection({ project }: DataManagementSectionProps) {
           {/* Import Section */}
           <div className="space-y-3">
             <div>
-              <h3 className="text-sm font-medium text-foreground">Import Features</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                Import Features
+              </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Import features from a previously exported JSON or YAML file.
               </p>

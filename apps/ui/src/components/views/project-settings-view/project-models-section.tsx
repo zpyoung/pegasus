@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
-import { Workflow, RotateCcw, Globe, Check, Replace, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Project } from '@/lib/electron';
-import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import { ProjectBulkReplaceDialog } from './project-bulk-replace-dialog';
-import type { PhaseModelKey, PhaseModelEntry } from '@pegasus/types';
-import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from '@pegasus/types';
+import { useState } from "react";
+import { useAppStore } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
+import {
+  Workflow,
+  RotateCcw,
+  Globe,
+  Check,
+  Replace,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Project } from "@/lib/electron";
+import { PhaseModelSelector } from "@/components/views/settings-view/model-defaults/phase-model-selector";
+import { ProjectBulkReplaceDialog } from "./project-bulk-replace-dialog";
+import type { PhaseModelKey, PhaseModelEntry } from "@pegasus/types";
+import { DEFAULT_PHASE_MODELS, DEFAULT_GLOBAL_SETTINGS } from "@pegasus/types";
 
 interface ProjectModelsSectionProps {
   project: Project;
@@ -21,68 +28,68 @@ interface PhaseConfig {
 
 const QUICK_TASKS: PhaseConfig[] = [
   {
-    key: 'enhancementModel',
-    label: 'Feature Enhancement',
-    description: 'Improves feature names and descriptions',
+    key: "enhancementModel",
+    label: "Feature Enhancement",
+    description: "Improves feature names and descriptions",
   },
   {
-    key: 'fileDescriptionModel',
-    label: 'File Descriptions',
-    description: 'Generates descriptions for context files',
+    key: "fileDescriptionModel",
+    label: "File Descriptions",
+    description: "Generates descriptions for context files",
   },
   {
-    key: 'imageDescriptionModel',
-    label: 'Image Descriptions',
-    description: 'Analyzes and describes context images',
+    key: "imageDescriptionModel",
+    label: "Image Descriptions",
+    description: "Analyzes and describes context images",
   },
   {
-    key: 'commitMessageModel',
-    label: 'Commit Messages',
-    description: 'Generates git commit messages from diffs',
+    key: "commitMessageModel",
+    label: "Commit Messages",
+    description: "Generates git commit messages from diffs",
   },
 ];
 
 const VALIDATION_TASKS: PhaseConfig[] = [
   {
-    key: 'validationModel',
-    label: 'GitHub Issue Validation',
-    description: 'Validates and improves GitHub issues',
+    key: "validationModel",
+    label: "GitHub Issue Validation",
+    description: "Validates and improves GitHub issues",
   },
 ];
 
 const GENERATION_TASKS: PhaseConfig[] = [
   {
-    key: 'specGenerationModel',
-    label: 'App Specification',
-    description: 'Generates full application specifications',
+    key: "specGenerationModel",
+    label: "App Specification",
+    description: "Generates full application specifications",
   },
   {
-    key: 'featureGenerationModel',
-    label: 'Feature Generation',
-    description: 'Creates features from specifications',
+    key: "featureGenerationModel",
+    label: "Feature Generation",
+    description: "Creates features from specifications",
   },
   {
-    key: 'backlogPlanningModel',
-    label: 'Backlog Planning',
-    description: 'Reorganizes and prioritizes backlog',
+    key: "backlogPlanningModel",
+    label: "Backlog Planning",
+    description: "Reorganizes and prioritizes backlog",
   },
   {
-    key: 'projectAnalysisModel',
-    label: 'Project Analysis',
-    description: 'Analyzes project structure for suggestions',
+    key: "projectAnalysisModel",
+    label: "Project Analysis",
+    description: "Analyzes project structure for suggestions",
   },
   {
-    key: 'ideationModel',
-    label: 'Ideation',
-    description: 'Model for ideation view (generating AI suggestions)',
+    key: "ideationModel",
+    label: "Ideation",
+    description: "Model for ideation view (generating AI suggestions)",
   },
 ];
 
 const MEMORY_TASKS: PhaseConfig[] = [
   {
-    key: 'memoryExtractionModel',
-    label: 'Memory Extraction',
-    description: 'Extracts learnings from completed agent sessions',
+    key: "memoryExtractionModel",
+    label: "Memory Extraction",
+    description: "Extracts learnings from completed agent sessions",
   },
 ];
 
@@ -108,7 +115,9 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
    */
   const getModelDisplayName = (entry: PhaseModelEntry): string => {
     if (entry.providerId) {
-      const provider = (claudeCompatibleProviders || []).find((p) => p.id === entry.providerId);
+      const provider = (claudeCompatibleProviders || []).find(
+        (p) => p.id === entry.providerId,
+      );
       if (provider) {
         const model = provider.models?.find((m) => m.id === entry.model);
         if (model) {
@@ -118,12 +127,12 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
     }
     // Default to model ID for built-in models (both short aliases and canonical IDs)
     const modelMap: Record<string, string> = {
-      haiku: 'Claude Haiku',
-      sonnet: 'Claude Sonnet',
-      opus: 'Claude Opus',
-      'claude-haiku': 'Claude Haiku',
-      'claude-sonnet': 'Claude Sonnet',
-      'claude-opus': 'Claude Opus',
+      haiku: "Claude Haiku",
+      sonnet: "Claude Sonnet",
+      opus: "Claude Opus",
+      "claude-haiku": "Claude Haiku",
+      "claude-sonnet": "Claude Sonnet",
+      "claude-opus": "Claude Opus",
     };
     return modelMap[entry.model] || entry.model;
   };
@@ -145,7 +154,9 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Feature Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">
+          Feature Defaults
+        </h3>
         <p className="text-xs text-muted-foreground">
           Default model for new feature cards in this project
         </p>
@@ -153,10 +164,12 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
       <div className="space-y-3">
         <div
           className={cn(
-            'flex items-center justify-between p-4 rounded-xl',
-            'bg-accent/20 border',
-            hasOverride ? 'border-brand-500/30 bg-brand-500/5' : 'border-border/30',
-            'hover:bg-accent/30 transition-colors'
+            "flex items-center justify-between p-4 rounded-xl",
+            "bg-accent/20 border",
+            hasOverride
+              ? "border-brand-500/30 bg-brand-500/5"
+              : "border-border/30",
+            "hover:bg-accent/30 transition-colors",
           )}
         >
           <div className="flex-1 pr-4">
@@ -164,7 +177,9 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
               <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-brand-500" />
               </div>
-              <h4 className="text-sm font-medium text-foreground">Default Feature Model</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                Default Feature Model
+              </h4>
               {hasOverride ? (
                 <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-brand-500/20 text-brand-500">
                   Override
@@ -231,7 +246,8 @@ function PhaseOverrideItem({
   globalValue: PhaseModelEntry;
   projectOverride?: PhaseModelEntry;
 }) {
-  const { setProjectPhaseModelOverride, claudeCompatibleProviders } = useAppStore();
+  const { setProjectPhaseModelOverride, claudeCompatibleProviders } =
+    useAppStore();
 
   const hasOverride = !!projectOverride;
   const effectiveValue = projectOverride || globalValue;
@@ -242,7 +258,9 @@ function PhaseOverrideItem({
    */
   const getModelDisplayName = (entry: PhaseModelEntry): string => {
     if (entry.providerId) {
-      const provider = (claudeCompatibleProviders || []).find((p) => p.id === entry.providerId);
+      const provider = (claudeCompatibleProviders || []).find(
+        (p) => p.id === entry.providerId,
+      );
       if (provider) {
         const model = provider.models?.find((m) => m.id === entry.model);
         if (model) {
@@ -252,12 +270,12 @@ function PhaseOverrideItem({
     }
     // Default to model ID for built-in models (both short aliases and canonical IDs)
     const modelMap: Record<string, string> = {
-      haiku: 'Claude Haiku',
-      sonnet: 'Claude Sonnet',
-      opus: 'Claude Opus',
-      'claude-haiku': 'Claude Haiku',
-      'claude-sonnet': 'Claude Sonnet',
-      'claude-opus': 'Claude Opus',
+      haiku: "Claude Haiku",
+      sonnet: "Claude Sonnet",
+      opus: "Claude Opus",
+      "claude-haiku": "Claude Haiku",
+      "claude-sonnet": "Claude Sonnet",
+      "claude-opus": "Claude Opus",
     };
     return modelMap[entry.model] || entry.model;
   };
@@ -279,10 +297,10 @@ function PhaseOverrideItem({
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-4 rounded-xl',
-        'bg-accent/20 border',
-        hasOverride ? 'border-brand-500/30 bg-brand-500/5' : 'border-border/30',
-        'hover:bg-accent/30 transition-colors'
+        "flex items-center justify-between p-4 rounded-xl",
+        "bg-accent/20 border",
+        hasOverride ? "border-brand-500/30 bg-brand-500/5" : "border-border/30",
+        "hover:bg-accent/30 transition-colors",
       )}
     >
       <div className="flex-1 pr-4">
@@ -365,7 +383,9 @@ function PhaseGroup({
             key={phase.key}
             phase={phase}
             project={project}
-            globalValue={phaseModels[phase.key] ?? DEFAULT_PHASE_MODELS[phase.key]}
+            globalValue={
+              phaseModels[phase.key] ?? DEFAULT_PHASE_MODELS[phase.key]
+            }
             projectOverride={projectOverrides[phase.key]}
           />
         ))}
@@ -378,17 +398,22 @@ function PhaseGroup({
  * Renders the per-project model overrides UI for all phase models.
  */
 export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
-  const { clearAllProjectPhaseModelOverrides, claudeCompatibleProviders } = useAppStore();
+  const { clearAllProjectPhaseModelOverrides, claudeCompatibleProviders } =
+    useAppStore();
   const [showBulkReplace, setShowBulkReplace] = useState(false);
 
   // Count how many overrides are set (including defaultFeatureModel)
-  const phaseOverrideCount = Object.keys(project.phaseModelOverrides || {}).length;
+  const phaseOverrideCount = Object.keys(
+    project.phaseModelOverrides || {},
+  ).length;
   const hasDefaultFeatureModelOverride = !!project.defaultFeatureModel;
-  const overrideCount = phaseOverrideCount + (hasDefaultFeatureModelOverride ? 1 : 0);
+  const overrideCount =
+    phaseOverrideCount + (hasDefaultFeatureModelOverride ? 1 : 0);
 
   // Check if there are any enabled ClaudeCompatibleProviders
   const hasEnabledProviders =
-    claudeCompatibleProviders && claudeCompatibleProviders.some((p) => p.enabled !== false);
+    claudeCompatibleProviders &&
+    claudeCompatibleProviders.some((p) => p.enabled !== false);
 
   /**
    * Clears all project-level phase model overrides for this project.
@@ -400,10 +425,10 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -435,7 +460,12 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
               </Button>
             )}
             {overrideCount > 0 && (
-              <Button variant="outline" size="sm" onClick={handleClearAll} className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearAll}
+                className="gap-2"
+              >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Reset All ({overrideCount})
               </Button>
@@ -456,10 +486,12 @@ export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
         <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 text-sm text-muted-foreground">
           <div className="flex items-center gap-2 mb-1">
             <Check className="w-4 h-4 text-brand-500" />
-            <span className="font-medium text-foreground">Per-Phase Overrides</span>
+            <span className="font-medium text-foreground">
+              Per-Phase Overrides
+            </span>
           </div>
-          Override specific phases to use different models for this project. Phases without
-          overrides use the global settings.
+          Override specific phases to use different models for this project.
+          Phases without overrides use the global settings.
         </div>
       </div>
 

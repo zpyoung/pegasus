@@ -6,20 +6,20 @@
  * Defaults to Claude Haiku for speed.
  */
 
-import type { Request, Response } from 'express';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { existsSync } from 'fs';
-import { join } from 'path';
-import { createLogger } from '@pegasus/utils';
-import { isCursorModel, stripProviderPrefix } from '@pegasus/types';
-import { resolvePhaseModel } from '@pegasus/model-resolver';
-import { ProviderFactory } from '../../../providers/provider-factory.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getErrorMessage, logError } from '../common.js';
-import { getPhaseModelWithOverrides } from '../../../lib/settings-helpers.js';
+import type { Request, Response } from "express";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { existsSync } from "fs";
+import { join } from "path";
+import { createLogger } from "@pegasus/utils";
+import { isCursorModel, stripProviderPrefix } from "@pegasus/types";
+import { resolvePhaseModel } from "@pegasus/model-resolver";
+import { ProviderFactory } from "../../../providers/provider-factory.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getErrorMessage, logError } from "../common.js";
+import { getPhaseModelWithOverrides } from "../../../lib/settings-helpers.js";
 
-const logger = createLogger('GeneratePRDescription');
+const logger = createLogger("GeneratePRDescription");
 const execFileAsync = promisify(execFile);
 
 /** Timeout for AI provider calls in milliseconds (30 seconds) */
@@ -62,14 +62,14 @@ Rules:
  */
 async function* withTimeout<T>(
   generator: AsyncIterable<T>,
-  timeoutMs: number
+  timeoutMs: number,
 ): AsyncGenerator<T, void, unknown> {
   let timerId: ReturnType<typeof setTimeout> | undefined;
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     timerId = setTimeout(
       () => reject(new Error(`AI provider timed out after ${timeoutMs}ms`)),
-      timeoutMs
+      timeoutMs,
     );
   });
 
@@ -78,7 +78,10 @@ async function* withTimeout<T>(
 
   try {
     while (!done) {
-      const result = await Promise.race([iterator.next(), timeoutPromise]).catch(async (err) => {
+      const result = await Promise.race([
+        iterator.next(),
+        timeoutPromise,
+      ]).catch(async (err) => {
         // Timeout (or other error) — attempt to gracefully close the source generator
         await iterator.return?.();
         throw err;
@@ -111,16 +114,17 @@ interface GeneratePRDescriptionErrorResponse {
 }
 
 export function createGeneratePRDescriptionHandler(
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { worktreePath, baseBranch } = req.body as GeneratePRDescriptionRequestBody;
+      const { worktreePath, baseBranch } =
+        req.body as GeneratePRDescriptionRequestBody;
 
-      if (!worktreePath || typeof worktreePath !== 'string') {
+      if (!worktreePath || typeof worktreePath !== "string") {
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'worktreePath is required and must be a string',
+          error: "worktreePath is required and must be a string",
         };
         res.status(400).json(response);
         return;
@@ -130,18 +134,18 @@ export function createGeneratePRDescriptionHandler(
       if (!existsSync(worktreePath)) {
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'worktreePath does not exist',
+          error: "worktreePath does not exist",
         };
         res.status(400).json(response);
         return;
       }
 
       // Validate that it's a git repository
-      const gitPath = join(worktreePath, '.git');
+      const gitPath = join(worktreePath, ".git");
       if (!existsSync(gitPath)) {
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'worktreePath is not a git repository',
+          error: "worktreePath is not a git repository",
         };
         res.status(400).json(response);
         return;
@@ -151,7 +155,7 @@ export function createGeneratePRDescriptionHandler(
       if (baseBranch !== undefined && !/^[\w.\-/]+$/.test(baseBranch)) {
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'baseBranch contains invalid characters',
+          error: "baseBranch contains invalid characters",
         };
         res.status(400).json(response);
         return;
@@ -161,14 +165,14 @@ export function createGeneratePRDescriptionHandler(
 
       // Get current branch name
       const { stdout: branchOutput } = await execFileAsync(
-        'git',
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        { cwd: worktreePath }
+        "git",
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        { cwd: worktreePath },
       );
       const branchName = branchOutput.trim();
 
       // Determine the base branch for comparison
-      const base = baseBranch || 'main';
+      const base = baseBranch || "main";
 
       // Collect diffs in three layers and combine them:
       //   1. Committed changes on the branch: `git diff base...HEAD`
@@ -196,13 +200,15 @@ export function createGeneratePRDescriptionHandler(
           // correctly handling paths that contain " b/" in their name.
           // Falls back to a two-capture pattern to handle renames (a/ and b/ differ).
           const backrefMatch = section.match(/^diff --git a\/(.+) b\/\1$/m);
-          const renameMatch = !backrefMatch ? section.match(/^diff --git a\/(.+) b\/(.+)$/m) : null;
+          const renameMatch = !backrefMatch
+            ? section.match(/^diff --git a\/(.+) b\/(.+)$/m)
+            : null;
           const match = backrefMatch || renameMatch;
           if (match) {
             // Prefer the backref capture (identical paths); for renames use the destination (match[2])
             const filePath = backrefMatch ? match[1] : match[2];
             // Merge hunks if the same file appears in multiple diff sources
-            const existing = fileHunks.get(filePath) ?? '';
+            const existing = fileHunks.get(filePath) ?? "";
             fileHunks.set(filePath, existing + section);
           }
         }
@@ -210,52 +216,62 @@ export function createGeneratePRDescriptionHandler(
       }
 
       // --- Step 1: committed changes (branch vs base) ---
-      let committedDiff = '';
+      let committedDiff = "";
       try {
-        const { stdout } = await execFileAsync('git', ['diff', `${base}...HEAD`], {
-          cwd: worktreePath,
-          maxBuffer: 1024 * 1024 * 5,
-        });
+        const { stdout } = await execFileAsync(
+          "git",
+          ["diff", `${base}...HEAD`],
+          {
+            cwd: worktreePath,
+            maxBuffer: 1024 * 1024 * 5,
+          },
+        );
         committedDiff = stdout;
       } catch {
         // Base branch may not exist locally; try the remote tracking branch
         try {
-          const { stdout } = await execFileAsync('git', ['diff', `origin/${base}...HEAD`], {
-            cwd: worktreePath,
-            maxBuffer: 1024 * 1024 * 5,
-          });
+          const { stdout } = await execFileAsync(
+            "git",
+            ["diff", `origin/${base}...HEAD`],
+            {
+              cwd: worktreePath,
+              maxBuffer: 1024 * 1024 * 5,
+            },
+          );
           committedDiff = stdout;
         } catch {
           // Cannot compare against base — leave committedDiff empty; the uncommitted
           // changes gathered below will still be included.
-          logger.warn(`Could not get committed diff against ${base} or origin/${base}`);
+          logger.warn(
+            `Could not get committed diff against ${base} or origin/${base}`,
+          );
         }
       }
 
       // --- Step 2: staged changes (tracked files only) ---
-      let stagedDiff = '';
+      let stagedDiff = "";
       try {
-        const { stdout } = await execFileAsync('git', ['diff', '--cached'], {
+        const { stdout } = await execFileAsync("git", ["diff", "--cached"], {
           cwd: worktreePath,
           maxBuffer: 1024 * 1024 * 5,
         });
         stagedDiff = stdout;
       } catch (err) {
         // Non-fatal — staged diff is a best-effort supplement
-        logger.debug('Failed to get staged diff', err);
+        logger.debug("Failed to get staged diff", err);
       }
 
       // --- Step 3: unstaged changes (tracked files only) ---
-      let unstagedDiff = '';
+      let unstagedDiff = "";
       try {
-        const { stdout } = await execFileAsync('git', ['diff'], {
+        const { stdout } = await execFileAsync("git", ["diff"], {
           cwd: worktreePath,
           maxBuffer: 1024 * 1024 * 5,
         });
         unstagedDiff = stdout;
       } catch (err) {
         // Non-fatal — unstaged diff is a best-effort supplement
-        logger.debug('Failed to get unstaged diff', err);
+        logger.debug("Failed to get unstaged diff", err);
       }
 
       // --- Combine and deduplicate ---
@@ -268,20 +284,23 @@ export function createGeneratePRDescriptionHandler(
         const hunks = parseDiffIntoFileHunks(source);
         for (const [filePath, hunk] of hunks) {
           if (combinedFileHunks.has(filePath)) {
-            combinedFileHunks.set(filePath, combinedFileHunks.get(filePath)! + hunk);
+            combinedFileHunks.set(
+              filePath,
+              combinedFileHunks.get(filePath)! + hunk,
+            );
           } else {
             combinedFileHunks.set(filePath, hunk);
           }
         }
       }
 
-      const diff = Array.from(combinedFileHunks.values()).join('');
+      const diff = Array.from(combinedFileHunks.values()).join("");
 
       // Log what files were included for observability
       if (combinedFileHunks.size > 0) {
         logger.info(`PR description scope: ${combinedFileHunks.size} file(s)`);
         logger.debug(
-          `PR description scope files: ${Array.from(combinedFileHunks.keys()).join(', ')}`
+          `PR description scope files: ${Array.from(combinedFileHunks.keys()).join(", ")}`,
         );
       }
 
@@ -289,40 +308,42 @@ export function createGeneratePRDescriptionHandler(
       // so the log only contains commits that are part of this PR.
       // We do NOT fall back to an unscoped `git log` because that would include commits
       // from the base branch itself and produce misleading AI context.
-      let commitLog = '';
+      let commitLog = "";
       try {
         const { stdout: logOutput } = await execFileAsync(
-          'git',
-          ['log', `${base}..HEAD`, '--oneline', '--no-decorate'],
+          "git",
+          ["log", `${base}..HEAD`, "--oneline", "--no-decorate"],
           {
             cwd: worktreePath,
             maxBuffer: 1024 * 1024,
-          }
+          },
         );
         commitLog = logOutput.trim();
       } catch {
         // Base branch not available locally — try the remote tracking branch
         try {
           const { stdout: logOutput } = await execFileAsync(
-            'git',
-            ['log', `origin/${base}..HEAD`, '--oneline', '--no-decorate'],
+            "git",
+            ["log", `origin/${base}..HEAD`, "--oneline", "--no-decorate"],
             {
               cwd: worktreePath,
               maxBuffer: 1024 * 1024,
-            }
+            },
           );
           commitLog = logOutput.trim();
         } catch {
           // Cannot scope commit log to base branch — leave empty rather than
           // including unscoped commits that would pollute the AI context.
-          logger.warn(`Could not get commit log against ${base} or origin/${base}`);
+          logger.warn(
+            `Could not get commit log against ${base} or origin/${base}`,
+          );
         }
       }
 
       if (!diff.trim() && !commitLog.trim()) {
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'No changes found to generate a PR description from',
+          error: "No changes found to generate a PR description from",
         };
         res.status(400).json(response);
         return;
@@ -331,7 +352,7 @@ export function createGeneratePRDescriptionHandler(
       // Truncate diff if too long
       const truncatedDiff =
         diff.length > MAX_DIFF_SIZE
-          ? diff.substring(0, MAX_DIFF_SIZE) + '\n\n[... diff truncated ...]'
+          ? diff.substring(0, MAX_DIFF_SIZE) + "\n\n[... diff truncated ...]"
           : diff;
 
       // Build the user prompt
@@ -351,16 +372,18 @@ export function createGeneratePRDescriptionHandler(
         provider: claudeCompatibleProvider,
         credentials,
       } = await getPhaseModelWithOverrides(
-        'commitMessageModel',
+        "commitMessageModel",
         settingsService,
         worktreePath,
-        '[GeneratePRDescription]'
+        "[GeneratePRDescription]",
       );
       const { model, thinkingLevel } = resolvePhaseModel(phaseModelEntry);
 
       logger.info(
         `Using model for PR description: ${model}`,
-        claudeCompatibleProvider ? `via provider: ${claudeCompatibleProvider.name}` : 'direct API'
+        claudeCompatibleProvider
+          ? `via provider: ${claudeCompatibleProvider.name}`
+          : "direct API",
       );
 
       // Get provider for the model type
@@ -371,11 +394,13 @@ export function createGeneratePRDescriptionHandler(
       const effectivePrompt = isCursorModel(model)
         ? `${PR_DESCRIPTION_SYSTEM_PROMPT}\n\n${userPrompt}`
         : userPrompt;
-      const effectiveSystemPrompt = isCursorModel(model) ? undefined : PR_DESCRIPTION_SYSTEM_PROMPT;
+      const effectiveSystemPrompt = isCursorModel(model)
+        ? undefined
+        : PR_DESCRIPTION_SYSTEM_PROMPT;
 
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
-      let responseText = '';
+      let responseText = "";
       const stream = aiProvider.executeQuery({
         prompt: effectivePrompt,
         model: bareModel,
@@ -391,13 +416,17 @@ export function createGeneratePRDescriptionHandler(
 
       // Wrap with timeout
       for await (const msg of withTimeout(stream, AI_TIMEOUT_MS)) {
-        if (msg.type === 'assistant' && msg.message?.content) {
+        if (msg.type === "assistant" && msg.message?.content) {
           for (const block of msg.message.content) {
-            if (block.type === 'text' && block.text) {
+            if (block.type === "text" && block.text) {
               responseText += block.text;
             }
           }
-        } else if (msg.type === 'result' && msg.subtype === 'success' && msg.result) {
+        } else if (
+          msg.type === "result" &&
+          msg.subtype === "success" &&
+          msg.result
+        ) {
           // Use result text if longer than accumulated text (consistent with simpleQuery pattern)
           if (msg.result.length > responseText.length) {
             responseText = msg.result;
@@ -408,10 +437,10 @@ export function createGeneratePRDescriptionHandler(
       const fullResponse = responseText.trim();
 
       if (!fullResponse || fullResponse.length === 0) {
-        logger.warn('Received empty response from model');
+        logger.warn("Received empty response from model");
         const response: GeneratePRDescriptionErrorResponse = {
           success: false,
-          error: 'Failed to generate PR description - empty response',
+          error: "Failed to generate PR description - empty response",
         };
         res.status(500).json(response);
         return;
@@ -420,10 +449,12 @@ export function createGeneratePRDescriptionHandler(
       // Parse the response to extract title and body.
       // The model may include conversational preamble before the structured markers,
       // so we search for the markers anywhere in the response, not just at the start.
-      let title = '';
-      let body = '';
+      let title = "";
+      let body = "";
 
-      const titleMatch = fullResponse.match(/---TITLE---\s*\n([\s\S]*?)(?=---BODY---|$)/);
+      const titleMatch = fullResponse.match(
+        /---TITLE---\s*\n([\s\S]*?)(?=---BODY---|$)/,
+      );
       const bodyMatch = fullResponse.match(/---BODY---\s*\n([\s\S]*?)$/);
 
       if (titleMatch && bodyMatch) {
@@ -432,7 +463,9 @@ export function createGeneratePRDescriptionHandler(
       } else {
         // Fallback: try to extract meaningful content, skipping any conversational preamble.
         // Common preamble patterns start with "I'll", "I will", "Here", "Let me", "Based on", etc.
-        const lines = fullResponse.split('\n').filter((line) => line.trim().length > 0);
+        const lines = fullResponse
+          .split("\n")
+          .filter((line) => line.trim().length > 0);
 
         // Skip lines that look like conversational preamble
         let startIndex = 0;
@@ -441,10 +474,10 @@ export function createGeneratePRDescriptionHandler(
           // Check if this line looks like conversational AI preamble
           if (
             /^(I'll|I will|Here('s| is| are)|Let me|Based on|Looking at|Analyzing|Sure|OK|Okay|Of course)/i.test(
-              line
+              line,
             ) ||
             /^(The following|Below is|This (is|will)|After (analyzing|reviewing|looking))/i.test(
-              line
+              line,
             )
           ) {
             startIndex = i + 1;
@@ -457,19 +490,19 @@ export function createGeneratePRDescriptionHandler(
         const contentLines = lines.slice(startIndex);
         if (contentLines.length > 0) {
           title = contentLines[0].trim();
-          body = contentLines.slice(1).join('\n').trim();
+          body = contentLines.slice(1).join("\n").trim();
         } else {
           // If all lines were filtered as preamble, use the original first non-empty line
-          title = lines[0]?.trim() || '';
-          body = lines.slice(1).join('\n').trim();
+          title = lines[0]?.trim() || "";
+          body = lines.slice(1).join("\n").trim();
         }
       }
 
       // Clean up title - remove any markdown headings, quotes, or marker artifacts
       title = title
-        .replace(/^#+\s*/, '')
-        .replace(/^["']|["']$/g, '')
-        .replace(/^---\w+---\s*/, '');
+        .replace(/^#+\s*/, "")
+        .replace(/^["']|["']$/g, "")
+        .replace(/^---\w+---\s*/, "");
 
       logger.info(`Generated PR title: ${title.substring(0, 100)}...`);
 
@@ -480,7 +513,7 @@ export function createGeneratePRDescriptionHandler(
       };
       res.json(response);
     } catch (error) {
-      logError(error, 'Generate PR description failed');
+      logError(error, "Generate PR description failed");
       const response: GeneratePRDescriptionErrorResponse = {
         success: false,
         error: getErrorMessage(error),

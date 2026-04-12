@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page } from "@playwright/test";
 
 /**
  * Simulate drag and drop of a file onto an element
@@ -8,7 +8,7 @@ export async function simulateFileDrop(
   targetSelector: string,
   fileName: string,
   fileContent: string,
-  mimeType: string = 'text/plain'
+  mimeType: string = "text/plain",
 ): Promise<void> {
   await page.evaluate(
     ({ selector, content, name, mime }) => {
@@ -21,20 +21,20 @@ export async function simulateFileDrop(
 
       // Create events and explicitly define the dataTransfer property
       // to ensure it's accessible (some browsers don't properly set it from constructor)
-      const dragOverEvent = new DragEvent('dragover', {
+      const dragOverEvent = new DragEvent("dragover", {
         bubbles: true,
         cancelable: true,
       });
-      Object.defineProperty(dragOverEvent, 'dataTransfer', {
+      Object.defineProperty(dragOverEvent, "dataTransfer", {
         value: dataTransfer,
         writable: false,
       });
 
-      const dropEvent = new DragEvent('drop', {
+      const dropEvent = new DragEvent("drop", {
         bubbles: true,
         cancelable: true,
       });
-      Object.defineProperty(dropEvent, 'dataTransfer', {
+      Object.defineProperty(dropEvent, "dataTransfer", {
         value: dataTransfer,
         writable: false,
       });
@@ -43,7 +43,12 @@ export async function simulateFileDrop(
       target.dispatchEvent(dragOverEvent);
       target.dispatchEvent(dropEvent);
     },
-    { selector: targetSelector, content: fileContent, name: fileName, mime: mimeType }
+    {
+      selector: targetSelector,
+      content: fileContent,
+      name: fileName,
+      mime: mimeType,
+    },
   );
 }
 
@@ -55,7 +60,7 @@ export async function simulateImagePaste(
   page: Page,
   targetSelector: string,
   imageBase64: string,
-  mimeType: string = 'image/png'
+  mimeType: string = "image/png",
 ): Promise<void> {
   await page.evaluate(
     ({ selector, base64, mime }) => {
@@ -72,14 +77,14 @@ export async function simulateImagePaste(
       const blob = new Blob([byteArray], { type: mime });
 
       // Create a File from Blob
-      const file = new File([blob], 'pasted-image.png', { type: mime });
+      const file = new File([blob], "pasted-image.png", { type: mime });
 
       // Create a DataTransfer with clipboard items
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
 
       // Create ClipboardEvent with the image data
-      const clipboardEvent = new ClipboardEvent('paste', {
+      const clipboardEvent = new ClipboardEvent("paste", {
         bubbles: true,
         cancelable: true,
         clipboardData: dataTransfer,
@@ -87,6 +92,6 @@ export async function simulateImagePaste(
 
       target.dispatchEvent(clipboardEvent);
     },
-    { selector: targetSelector, base64: imageBase64, mime: mimeType }
+    { selector: targetSelector, base64: imageBase64, mime: mimeType },
   );
 }

@@ -2,11 +2,11 @@
  * POST /issue-comments endpoint - Fetch comments for a GitHub issue
  */
 
-import { spawn } from 'child_process';
-import type { Request, Response } from 'express';
-import type { GitHubComment, IssueCommentsResult } from '@pegasus/types';
-import { execEnv, getErrorMessage, logError } from './common.js';
-import { checkGitHubRemote } from './check-github-remote.js';
+import { spawn } from "child_process";
+import type { Request, Response } from "express";
+import type { GitHubComment, IssueCommentsResult } from "@pegasus/types";
+import { execEnv, getErrorMessage, logError } from "./common.js";
+import { checkGitHubRemote } from "./check-github-remote.js";
 
 interface ListCommentsRequest {
   projectPath: string;
@@ -35,7 +35,7 @@ interface GraphQLCommentConnection {
 }
 
 interface GraphQLIssueOrPullRequest {
-  __typename: 'Issue' | 'PullRequest';
+  __typename: "Issue" | "PullRequest";
   comments: GraphQLCommentConnection;
 }
 
@@ -67,11 +67,11 @@ async function fetchIssueComments(
   owner: string,
   repo: string,
   issueNumber: number,
-  cursor?: string
+  cursor?: string,
 ): Promise<IssueCommentsResult> {
   // Validate cursor format to prevent potential injection
   if (cursor && !isValidCursor(cursor)) {
-    throw new Error('Invalid cursor format');
+    throw new Error("Invalid cursor format");
   }
 
   // Use GraphQL variables instead of string interpolation for safety
@@ -139,7 +139,7 @@ async function fetchIssueComments(
   const requestBody = JSON.stringify({ query, variables });
 
   const response = await new Promise<GraphQLResponse>((resolve, reject) => {
-    const gh = spawn('gh', ['api', 'graphql', '--input', '-'], {
+    const gh = spawn("gh", ["api", "graphql", "--input", "-"], {
       cwd: projectPath,
       env: execEnv,
     });
@@ -147,18 +147,20 @@ async function fetchIssueComments(
     // Add timeout to prevent hanging indefinitely
     const timeoutId = setTimeout(() => {
       gh.kill();
-      reject(new Error('GitHub API request timed out'));
+      reject(new Error("GitHub API request timed out"));
     }, GITHUB_API_TIMEOUT_MS);
 
-    let stdout = '';
-    let stderr = '';
-    gh.stdout.on('data', (data: Buffer) => (stdout += data.toString()));
-    gh.stderr.on('data', (data: Buffer) => (stderr += data.toString()));
+    let stdout = "";
+    let stderr = "";
+    gh.stdout.on("data", (data: Buffer) => (stdout += data.toString()));
+    gh.stderr.on("data", (data: Buffer) => (stderr += data.toString()));
 
-    gh.on('close', (code) => {
+    gh.on("close", (code) => {
       clearTimeout(timeoutId);
       if (code !== 0) {
-        return reject(new Error(`gh process exited with code ${code}: ${stderr}`));
+        return reject(
+          new Error(`gh process exited with code ${code}: ${stderr}`),
+        );
       }
       try {
         resolve(JSON.parse(stdout));
@@ -178,13 +180,15 @@ async function fetchIssueComments(
   const commentsData = response.data?.repository?.issueOrPullRequest?.comments;
 
   if (!commentsData) {
-    throw new Error('Issue or pull request not found or no comments data available');
+    throw new Error(
+      "Issue or pull request not found or no comments data available",
+    );
   }
 
   const comments: GitHubComment[] = commentsData.nodes.map((node) => ({
     id: node.id,
     author: {
-      login: node.author?.login || 'ghost',
+      login: node.author?.login || "ghost",
       avatarUrl: node.author?.avatarUrl,
     },
     body: node.body,
@@ -203,26 +207,34 @@ async function fetchIssueComments(
 export function createListCommentsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, issueNumber, cursor } = req.body as ListCommentsRequest;
+      const { projectPath, issueNumber, cursor } =
+        req.body as ListCommentsRequest;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!issueNumber || typeof issueNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
+      if (!issueNumber || typeof issueNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "issueNumber is required and must be a number",
+        });
         return;
       }
 
       // First check if this is a GitHub repo and get owner/repo
       const remoteStatus = await checkGitHubRemote(projectPath);
-      if (!remoteStatus.hasGitHubRemote || !remoteStatus.owner || !remoteStatus.repo) {
+      if (
+        !remoteStatus.hasGitHubRemote ||
+        !remoteStatus.owner ||
+        !remoteStatus.repo
+      ) {
         res.status(400).json({
           success: false,
-          error: 'Project does not have a GitHub remote',
+          error: "Project does not have a GitHub remote",
         });
         return;
       }
@@ -232,7 +244,7 @@ export function createListCommentsHandler() {
         remoteStatus.owner,
         remoteStatus.repo,
         issueNumber,
-        cursor
+        cursor,
       );
 
       res.json({

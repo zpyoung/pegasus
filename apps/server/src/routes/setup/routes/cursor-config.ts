@@ -13,16 +13,16 @@
  * - DELETE /api/setup/cursor-permissions - Delete project permissions (use global)
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import { CursorConfigManager } from '../../../providers/cursor-config-manager.js';
+import type { Request, Response } from "express";
+import path from "path";
+import { CursorConfigManager } from "../../../providers/cursor-config-manager.js";
 import {
   CURSOR_MODEL_MAP,
   CURSOR_PERMISSION_PROFILES,
   type CursorModelId,
   type CursorPermissionProfile,
   type CursorCliPermissions,
-} from '@pegasus/types';
+} from "@pegasus/types";
 import {
   readGlobalConfig,
   readProjectConfig,
@@ -35,8 +35,8 @@ import {
   hasProjectConfig,
   getAvailableProfiles,
   generateExampleConfig,
-} from '../../../services/cursor-config-service.js';
-import { getErrorMessage, logError } from '../common.js';
+} from "../../../services/cursor-config-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Validate that a project path is safe (no path traversal)
@@ -48,14 +48,14 @@ function validateProjectPath(projectPath: string): void {
   const normalized = path.normalize(projectPath);
 
   // Check for obvious traversal attempts
-  if (normalized.includes('..') || projectPath.includes('..')) {
-    throw new Error('Invalid project path: path traversal not allowed');
+  if (normalized.includes("..") || projectPath.includes("..")) {
+    throw new Error("Invalid project path: path traversal not allowed");
   }
 
   // Ensure the resolved path doesn't escape intended boundaries
   // by checking if it starts with the normalized path components
   if (!resolved.startsWith(path.resolve(normalized))) {
-    throw new Error('Invalid project path: path traversal detected');
+    throw new Error("Invalid project path: path traversal detected");
   }
 }
 
@@ -71,7 +71,7 @@ export function createGetCursorConfigHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath query parameter is required',
+          error: "projectPath query parameter is required",
         });
         return;
       }
@@ -87,7 +87,7 @@ export function createGetCursorConfigHandler() {
         availableModels: Object.values(CURSOR_MODEL_MAP),
       });
     } catch (error) {
-      logError(error, 'Get Cursor config failed');
+      logError(error, "Get Cursor config failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -108,7 +108,7 @@ export function createSetCursorDefaultModelHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -119,7 +119,7 @@ export function createSetCursorDefaultModelHandler() {
       if (!model || !(model in CURSOR_MODEL_MAP)) {
         res.status(400).json({
           success: false,
-          error: `Invalid model ID. Valid models: ${Object.keys(CURSOR_MODEL_MAP).join(', ')}`,
+          error: `Invalid model ID. Valid models: ${Object.keys(CURSOR_MODEL_MAP).join(", ")}`,
         });
         return;
       }
@@ -129,7 +129,7 @@ export function createSetCursorDefaultModelHandler() {
 
       res.json({ success: true, model });
     } catch (error) {
-      logError(error, 'Set Cursor default model failed');
+      logError(error, "Set Cursor default model failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -150,7 +150,7 @@ export function createSetCursorModelsHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -161,18 +161,20 @@ export function createSetCursorModelsHandler() {
       if (!Array.isArray(models)) {
         res.status(400).json({
           success: false,
-          error: 'Models must be an array',
+          error: "Models must be an array",
         });
         return;
       }
 
       // Filter to valid models only
-      const validModels = models.filter((m): m is CursorModelId => m in CURSOR_MODEL_MAP);
+      const validModels = models.filter(
+        (m): m is CursorModelId => m in CURSOR_MODEL_MAP,
+      );
 
       if (validModels.length === 0) {
         res.status(400).json({
           success: false,
-          error: 'No valid models provided',
+          error: "No valid models provided",
         });
         return;
       }
@@ -182,7 +184,7 @@ export function createSetCursorModelsHandler() {
 
       res.json({ success: true, models: validModels });
     } catch (error) {
-      logError(error, 'Set Cursor models failed');
+      logError(error, "Set Cursor models failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -213,7 +215,9 @@ export function createGetCursorPermissionsHandler() {
       const globalConfig = await readGlobalConfig();
 
       // Get project config if path provided
-      const projectConfig = projectPath ? await readProjectConfig(projectPath) : null;
+      const projectConfig = projectPath
+        ? await readProjectConfig(projectPath)
+        : null;
 
       // Get effective permissions
       const effectivePermissions = await getEffectivePermissions(projectPath);
@@ -222,7 +226,9 @@ export function createGetCursorPermissionsHandler() {
       const activeProfile = detectProfile(effectivePermissions);
 
       // Check if project has its own config
-      const hasProject = projectPath ? await hasProjectConfig(projectPath) : false;
+      const hasProject = projectPath
+        ? await hasProjectConfig(projectPath)
+        : false;
 
       res.json({
         success: true,
@@ -234,7 +240,7 @@ export function createGetCursorPermissionsHandler() {
         availableProfiles: getAvailableProfiles(),
       });
     } catch (error) {
-      logError(error, 'Get Cursor permissions failed');
+      logError(error, "Get Cursor permissions failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -253,7 +259,7 @@ export function createApplyPermissionProfileHandler() {
       const { profileId, projectPath, scope } = req.body as {
         profileId: CursorPermissionProfile;
         projectPath?: string;
-        scope: 'global' | 'project';
+        scope: "global" | "project";
       };
 
       // Validate profile
@@ -261,16 +267,16 @@ export function createApplyPermissionProfileHandler() {
       if (!validProfiles.includes(profileId)) {
         res.status(400).json({
           success: false,
-          error: `Invalid profile. Valid profiles: ${validProfiles.join(', ')}`,
+          error: `Invalid profile. Valid profiles: ${validProfiles.join(", ")}`,
         });
         return;
       }
 
-      if (scope === 'project') {
+      if (scope === "project") {
         if (!projectPath) {
           res.status(400).json({
             success: false,
-            error: 'projectPath is required for project scope',
+            error: "projectPath is required for project scope",
           });
           return;
         }
@@ -288,7 +294,7 @@ export function createApplyPermissionProfileHandler() {
         profileId,
       });
     } catch (error) {
-      logError(error, 'Apply Cursor permission profile failed');
+      logError(error, "Apply Cursor permission profile failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -312,7 +318,7 @@ export function createSetCustomPermissionsHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -320,10 +326,14 @@ export function createSetCustomPermissionsHandler() {
       // Validate path to prevent traversal attacks
       validateProjectPath(projectPath);
 
-      if (!permissions || !Array.isArray(permissions.allow) || !Array.isArray(permissions.deny)) {
+      if (
+        !permissions ||
+        !Array.isArray(permissions.allow) ||
+        !Array.isArray(permissions.deny)
+      ) {
         res.status(400).json({
           success: false,
-          error: 'permissions must have allow and deny arrays',
+          error: "permissions must have allow and deny arrays",
         });
         return;
       }
@@ -335,11 +345,11 @@ export function createSetCustomPermissionsHandler() {
 
       res.json({
         success: true,
-        message: 'Custom permissions saved',
+        message: "Custom permissions saved",
         permissions,
       });
     } catch (error) {
-      logError(error, 'Set custom Cursor permissions failed');
+      logError(error, "Set custom Cursor permissions failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -360,7 +370,7 @@ export function createDeleteProjectPermissionsHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath query parameter is required',
+          error: "projectPath query parameter is required",
         });
         return;
       }
@@ -372,10 +382,10 @@ export function createDeleteProjectPermissionsHandler() {
 
       res.json({
         success: true,
-        message: 'Project permissions deleted, using global config',
+        message: "Project permissions deleted, using global config",
       });
     } catch (error) {
-      logError(error, 'Delete Cursor project permissions failed');
+      logError(error, "Delete Cursor project permissions failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -391,7 +401,8 @@ export function createDeleteProjectPermissionsHandler() {
 export function createGetExampleConfigHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const profileId = (req.query.profileId as CursorPermissionProfile) || 'development';
+      const profileId =
+        (req.query.profileId as CursorPermissionProfile) || "development";
 
       const exampleConfig = generateExampleConfig(profileId);
 
@@ -401,7 +412,7 @@ export function createGetExampleConfigHandler() {
         config: exampleConfig,
       });
     } catch (error) {
-      logError(error, 'Get example Cursor config failed');
+      logError(error, "Get example Cursor config failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

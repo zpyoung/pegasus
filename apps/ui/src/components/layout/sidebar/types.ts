@@ -1,5 +1,5 @@
-import type { Project } from '@/lib/electron';
-import type React from 'react';
+import type { Project } from "@/lib/electron";
+import type React from "react";
 
 export interface NavSection {
   label?: string;
@@ -32,7 +32,10 @@ export interface ThemeMenuItemProps {
   option: {
     value: string;
     label: string;
-    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+    icon: React.ComponentType<{
+      className?: string;
+      style?: React.CSSProperties;
+    }>;
     color: string;
   };
   onPreviewEnter: (value: string) => void;

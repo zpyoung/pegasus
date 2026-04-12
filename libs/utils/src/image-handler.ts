@@ -8,19 +8,19 @@
  * - Path resolution (relative/absolute)
  */
 
-import { secureFs } from '@pegasus/platform';
-import path from 'path';
-import type { ImageData, ImageContentBlock } from '@pegasus/types';
+import { secureFs } from "@pegasus/platform";
+import path from "path";
+import type { ImageData, ImageContentBlock } from "@pegasus/types";
 
 /**
  * MIME type mapping for image file extensions
  */
 const IMAGE_MIME_TYPES: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
 } as const;
 
 /**
@@ -31,7 +31,7 @@ const IMAGE_MIME_TYPES: Record<string, string> = {
  */
 export function getMimeTypeForImage(imagePath: string): string {
   const ext = path.extname(imagePath).toLowerCase();
-  return IMAGE_MIME_TYPES[ext] || 'image/png';
+  return IMAGE_MIME_TYPES[ext] || "image/png";
 }
 
 /**
@@ -43,7 +43,7 @@ export function getMimeTypeForImage(imagePath: string): string {
  */
 export async function readImageAsBase64(imagePath: string): Promise<ImageData> {
   const imageBuffer = (await secureFs.readFile(imagePath)) as Buffer;
-  const base64Data = imageBuffer.toString('base64');
+  const base64Data = imageBuffer.toString("base64");
   const mimeType = getMimeTypeForImage(imagePath);
 
   return {
@@ -64,7 +64,7 @@ export async function readImageAsBase64(imagePath: string): Promise<ImageData> {
  */
 export async function convertImagesToContentBlocks(
   imagePaths: string[],
-  workDir?: string
+  workDir?: string,
 ): Promise<ImageContentBlock[]> {
   const blocks: ImageContentBlock[] = [];
 
@@ -72,14 +72,16 @@ export async function convertImagesToContentBlocks(
     try {
       // Resolve to absolute path if needed
       const absolutePath =
-        workDir && !path.isAbsolute(imagePath) ? path.join(workDir, imagePath) : imagePath;
+        workDir && !path.isAbsolute(imagePath)
+          ? path.join(workDir, imagePath)
+          : imagePath;
 
       const imageData = await readImageAsBase64(absolutePath);
 
       blocks.push({
-        type: 'image',
+        type: "image",
         source: {
-          type: 'base64',
+          type: "base64",
           media_type: imageData.mimeType,
           data: imageData.base64,
         },
@@ -102,10 +104,10 @@ export async function convertImagesToContentBlocks(
  */
 export function formatImagePathsForPrompt(imagePaths: string[]): string {
   if (imagePaths.length === 0) {
-    return '';
+    return "";
   }
 
-  let text = '\n\nAttached images:\n';
+  let text = "\n\nAttached images:\n";
   for (const imagePath of imagePaths) {
     text += `- ${imagePath}\n`;
   }

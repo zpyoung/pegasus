@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import {
   useKeyboardShortcuts,
   useKeyboardShortcutsConfig,
   type KeyboardShortcut,
-} from '@/hooks/use-keyboard-shortcuts';
+} from "@/hooks/use-keyboard-shortcuts";
 
 interface UseAgentShortcutsOptions {
   currentProject: { path: string; name: string } | null;
@@ -29,7 +29,7 @@ export function useAgentShortcuts({
             quickCreateSessionRef.current();
           }
         },
-        description: 'Create new session',
+        description: "Create new session",
       });
     }
 

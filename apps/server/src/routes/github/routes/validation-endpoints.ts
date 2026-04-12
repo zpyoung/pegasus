@@ -2,9 +2,9 @@
  * Additional validation endpoints for status, stop, and retrieving stored validations
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import type { IssueValidationEvent } from '@pegasus/types';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import type { IssueValidationEvent } from "@pegasus/types";
 import {
   getValidationStatus,
   getRunningValidations,
@@ -12,13 +12,13 @@ import {
   getErrorMessage,
   logError,
   logger,
-} from './validation-common.js';
+} from "./validation-common.js";
 import {
   getAllValidations,
   getValidationWithFreshness,
   deleteValidation,
   markValidationViewed,
-} from '../../../lib/validation-storage.js';
+} from "../../../lib/validation-storage.js";
 
 /**
  * POST /validation-status - Check if validation is running for an issue
@@ -32,7 +32,9 @@ export function createValidationStatusHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -54,7 +56,7 @@ export function createValidationStatusHandler() {
         runningIssues,
       });
     } catch (error) {
-      logError(error, 'Validation status check failed');
+      logError(error, "Validation status check failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -72,14 +74,17 @@ export function createValidationStopHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!issueNumber || typeof issueNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
+      if (!issueNumber || typeof issueNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "issueNumber is required and must be a number",
+        });
         return;
       }
 
@@ -98,7 +103,7 @@ export function createValidationStopHandler() {
         });
       }
     } catch (error) {
-      logError(error, 'Validation stop failed');
+      logError(error, "Validation stop failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -116,13 +121,18 @@ export function createGetValidationsHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       // If issueNumber provided, get specific validation with freshness info
       if (issueNumber !== undefined) {
-        const result = await getValidationWithFreshness(projectPath, issueNumber);
+        const result = await getValidationWithFreshness(
+          projectPath,
+          issueNumber,
+        );
 
         if (!result) {
           res.json({
@@ -148,7 +158,7 @@ export function createGetValidationsHandler() {
         validations,
       });
     } catch (error) {
-      logError(error, 'Get validations failed');
+      logError(error, "Get validations failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -166,14 +176,17 @@ export function createDeleteValidationHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!issueNumber || typeof issueNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
+      if (!issueNumber || typeof issueNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "issueNumber is required and must be a number",
+        });
         return;
       }
 
@@ -184,7 +197,7 @@ export function createDeleteValidationHandler() {
         deleted,
       });
     } catch (error) {
-      logError(error, 'Delete validation failed');
+      logError(error, "Delete validation failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -202,14 +215,17 @@ export function createMarkViewedHandler(events: EventEmitter) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!issueNumber || typeof issueNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
+      if (!issueNumber || typeof issueNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "issueNumber is required and must be a number",
+        });
         return;
       }
 
@@ -218,16 +234,16 @@ export function createMarkViewedHandler(events: EventEmitter) {
       if (success) {
         // Emit event so UI can update the unviewed count
         const viewedEvent: IssueValidationEvent = {
-          type: 'issue_validation_viewed',
+          type: "issue_validation_viewed",
           issueNumber,
           projectPath,
         };
-        events.emit('issue-validation:event', viewedEvent);
+        events.emit("issue-validation:event", viewedEvent);
       }
 
       res.json({ success });
     } catch (error) {
-      logError(error, 'Mark validation viewed failed');
+      logError(error, "Mark validation viewed failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

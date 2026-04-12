@@ -9,7 +9,7 @@ import type {
   CursorAssistantEvent,
   CursorToolCallEvent,
   CursorResultEvent,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 /**
  * Cleans up fragmented streaming text by removing spurious newlines
@@ -19,62 +19,62 @@ import type {
 function cleanFragmentedText(content: string): string {
   // Remove newlines that break up words (newline between letters)
   // e.g., "sum\n\nmary" -> "summary"
-  let cleaned = content.replace(/([a-zA-Z])\n+([a-zA-Z])/g, '$1$2');
+  let cleaned = content.replace(/([a-zA-Z])\n+([a-zA-Z])/g, "$1$2");
 
   // Also clean up fragmented XML-like tags
   // e.g., "<sum\n\nmary>" -> "<summary>"
-  cleaned = cleaned.replace(/<([a-zA-Z]+)\n*([a-zA-Z]*)\n*>/g, '<$1$2>');
-  cleaned = cleaned.replace(/<\/([a-zA-Z]+)\n*([a-zA-Z]*)\n*>/g, '</$1$2>');
+  cleaned = cleaned.replace(/<([a-zA-Z]+)\n*([a-zA-Z]*)\n*>/g, "<$1$2>");
+  cleaned = cleaned.replace(/<\/([a-zA-Z]+)\n*([a-zA-Z]*)\n*>/g, "</$1$2>");
 
   return cleaned;
 }
 
 export type LogEntryType =
-  | 'prompt'
-  | 'tool_call'
-  | 'tool_result'
-  | 'phase'
-  | 'error'
-  | 'success'
-  | 'info'
-  | 'debug'
-  | 'warning'
-  | 'thinking';
+  | "prompt"
+  | "tool_call"
+  | "tool_result"
+  | "phase"
+  | "error"
+  | "success"
+  | "info"
+  | "debug"
+  | "warning"
+  | "thinking";
 
 export type ToolCategory =
-  | 'read'
-  | 'edit'
-  | 'write'
-  | 'bash'
-  | 'search'
-  | 'todo'
-  | 'task'
-  | 'other';
+  | "read"
+  | "edit"
+  | "write"
+  | "bash"
+  | "search"
+  | "todo"
+  | "task"
+  | "other";
 
 const TOOL_CATEGORIES: Record<string, ToolCategory> = {
-  Read: 'read',
-  Edit: 'edit',
-  Write: 'write',
-  Bash: 'bash',
-  Grep: 'search',
-  Glob: 'search',
-  Ls: 'read',
-  Delete: 'write',
-  WebSearch: 'search',
-  WebFetch: 'read',
-  TodoWrite: 'todo',
-  Task: 'task',
-  NotebookEdit: 'edit',
-  KillShell: 'bash',
-  SemanticSearch: 'search',
-  ReadLints: 'read',
+  Read: "read",
+  Edit: "edit",
+  Write: "write",
+  Bash: "bash",
+  Grep: "search",
+  Glob: "search",
+  Ls: "read",
+  Delete: "write",
+  WebSearch: "search",
+  WebFetch: "read",
+  TodoWrite: "todo",
+  Task: "task",
+  NotebookEdit: "edit",
+  KillShell: "bash",
+  SemanticSearch: "search",
+  ReadLints: "read",
 };
 
 /**
  * Categorizes a tool name into a predefined category
  */
 export function categorizeToolName(toolName: string): ToolCategory {
-  return TOOL_CATEGORIES[toolName] || 'other';
+  return TOOL_CATEGORIES[toolName] || "other";
 }
 
 export interface LogEntryMetadata {
@@ -103,18 +103,21 @@ export interface LogEntry {
  * Uses only the first 200 characters of content to ensure stability
  * even when entries are merged (which appends content at the end)
  */
-const generateDeterministicId = (content: string, lineIndex: number): string => {
+const generateDeterministicId = (
+  content: string,
+  lineIndex: number,
+): string => {
   // Use first 200 chars to ensure stability when entries are merged
   const stableContent = content.slice(0, 200);
   // Simple hash function for the content
   let hash = 0;
-  const str = stableContent + '|' + lineIndex.toString();
+  const str = stableContent + "|" + lineIndex.toString();
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
-  return 'log_' + Math.abs(hash).toString(36);
+  return "log_" + Math.abs(hash).toString(36);
 };
 
 /**
@@ -126,29 +129,29 @@ function detectEntryType(content: string): LogEntryType {
   const cleaned = cleanFragmentedText(trimmed);
 
   // Tool calls
-  if (trimmed.startsWith('🔧 Tool:') || trimmed.match(/^Tool:\s*/)) {
-    return 'tool_call';
+  if (trimmed.startsWith("🔧 Tool:") || trimmed.match(/^Tool:\s*/)) {
+    return "tool_call";
   }
 
   // Tool results / Input
   if (
-    trimmed.startsWith('Input:') ||
-    trimmed.startsWith('Result:') ||
-    trimmed.startsWith('Output:')
+    trimmed.startsWith("Input:") ||
+    trimmed.startsWith("Result:") ||
+    trimmed.startsWith("Output:")
   ) {
-    return 'tool_result';
+    return "tool_result";
   }
 
   // Phase changes
   if (
-    trimmed.startsWith('📋') ||
-    trimmed.startsWith('⚡') ||
-    trimmed.startsWith('✅') ||
+    trimmed.startsWith("📋") ||
+    trimmed.startsWith("⚡") ||
+    trimmed.startsWith("✅") ||
     trimmed.match(/^(Planning|Action|Verification)/i) ||
     trimmed.match(/\[Phase:\s*([^\]]+)\]/) ||
     trimmed.match(/Phase:\s*\w+/i)
   ) {
-    return 'phase';
+    return "phase";
   }
 
   // Feature creation events
@@ -157,61 +160,63 @@ function detectEntryType(content: string): LogEntryType {
     trimmed.match(/Feature Creation/i) ||
     trimmed.match(/Creating feature/i)
   ) {
-    return 'success';
+    return "success";
   }
 
   // Errors
-  if (trimmed.startsWith('❌') || trimmed.toLowerCase().includes('error:')) {
-    return 'error';
+  if (trimmed.startsWith("❌") || trimmed.toLowerCase().includes("error:")) {
+    return "error";
   }
 
   // Success messages and summary sections
   // Check both raw and cleaned content for summary tags (handles fragmented streaming)
   if (
-    trimmed.startsWith('✅') ||
-    trimmed.toLowerCase().includes('success') ||
-    trimmed.toLowerCase().includes('completed') ||
+    trimmed.startsWith("✅") ||
+    trimmed.toLowerCase().includes("success") ||
+    trimmed.toLowerCase().includes("completed") ||
     // Summary tags (preferred format from agent) - check both raw and cleaned
-    trimmed.startsWith('<summary>') ||
-    cleaned.startsWith('<summary>') ||
+    trimmed.startsWith("<summary>") ||
+    cleaned.startsWith("<summary>") ||
     // Markdown summary headers (fallback)
     trimmed.match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
     cleaned.match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
-    trimmed.match(/^(I've|I have) (successfully |now )?(completed|finished|implemented)/i)
+    trimmed.match(
+      /^(I've|I have) (successfully |now )?(completed|finished|implemented)/i,
+    )
   ) {
-    return 'success';
+    return "success";
   }
 
   // Warnings
-  if (trimmed.startsWith('⚠️') || trimmed.toLowerCase().includes('warning:')) {
-    return 'warning';
+  if (trimmed.startsWith("⚠️") || trimmed.toLowerCase().includes("warning:")) {
+    return "warning";
   }
 
   // Thinking/Preparation info (be specific to avoid matching summary content)
   if (
-    trimmed.toLowerCase().includes('ultrathink') ||
+    trimmed.toLowerCase().includes("ultrathink") ||
     trimmed.match(/thinking level[:\s]*(low|medium|high|none|\d)/i) ||
     trimmed.match(/^thinking level\s*$/i) ||
-    trimmed.toLowerCase().includes('estimated cost') ||
-    trimmed.toLowerCase().includes('estimated time') ||
-    trimmed.toLowerCase().includes('budget tokens') ||
+    trimmed.toLowerCase().includes("estimated cost") ||
+    trimmed.toLowerCase().includes("estimated time") ||
+    trimmed.toLowerCase().includes("budget tokens") ||
     trimmed.match(/thinking.*preparation/i)
   ) {
-    return 'thinking';
+    return "thinking";
   }
 
   // Debug info (JSON, stack traces, etc.)
   if (
-    trimmed.startsWith('{') ||
-    trimmed.startsWith('[') ||
-    trimmed.includes('at ') ||
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("[") ||
+    trimmed.includes("at ") ||
     trimmed.match(/^\s*\d+\s*\|/)
   ) {
-    return 'debug';
+    return "debug";
   }
 
   // Default to info
-  return 'info';
+  return "info";
 }
 
 /**
@@ -228,9 +233,9 @@ function extractToolName(content: string): string | undefined {
  * Extracts phase name from a phase entry
  */
 function extractPhase(content: string): string | undefined {
-  if (content.includes('📋')) return 'planning';
-  if (content.includes('⚡')) return 'action';
-  if (content.includes('✅')) return 'verification';
+  if (content.includes("📋")) return "planning";
+  if (content.includes("⚡")) return "action";
+  if (content.includes("✅")) return "verification";
 
   // Extract from [Phase: ...] format
   const phaseMatch = content.match(/\[Phase:\s*([^\]]+)\]/);
@@ -253,9 +258,9 @@ function extractFilePath(content: string): string | undefined {
     const jsonStr = inputMatch[1].trim();
     const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
 
-    if (typeof parsed.file_path === 'string') return parsed.file_path;
-    if (typeof parsed.path === 'string') return parsed.path;
-    if (typeof parsed.notebook_path === 'string') return parsed.notebook_path;
+    if (typeof parsed.file_path === "string") return parsed.file_path;
+    if (typeof parsed.path === "string") return parsed.path;
+    if (typeof parsed.notebook_path === "string") return parsed.notebook_path;
 
     return undefined;
   } catch {
@@ -266,7 +271,10 @@ function extractFilePath(content: string): string | undefined {
 /**
  * Generates a smart summary for tool calls based on the tool name and input
  */
-export function generateToolSummary(toolName: string, content: string): string | undefined {
+export function generateToolSummary(
+  toolName: string,
+  content: string,
+): string | undefined {
   try {
     // Try to parse JSON input
     const inputMatch = content.match(/Input:\s*([\s\S]*)/);
@@ -276,62 +284,62 @@ export function generateToolSummary(toolName: string, content: string): string |
     const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
 
     switch (toolName) {
-      case 'Read': {
+      case "Read": {
         const filePath = parsed.file_path as string | undefined;
-        return `Reading ${filePath?.split('/').pop() || 'file'}`;
+        return `Reading ${filePath?.split("/").pop() || "file"}`;
       }
-      case 'Edit': {
+      case "Edit": {
         const filePath = parsed.file_path as string | undefined;
-        const fileName = filePath?.split('/').pop() || 'file';
+        const fileName = filePath?.split("/").pop() || "file";
         return `Editing ${fileName}`;
       }
-      case 'Write': {
+      case "Write": {
         const filePath = parsed.file_path as string | undefined;
-        return `Writing ${filePath?.split('/').pop() || 'file'}`;
+        return `Writing ${filePath?.split("/").pop() || "file"}`;
       }
-      case 'Bash': {
+      case "Bash": {
         const command = parsed.command as string | undefined;
-        const cmd = command?.slice(0, 50) || '';
-        return `Running: ${cmd}${(command?.length || 0) > 50 ? '...' : ''}`;
+        const cmd = command?.slice(0, 50) || "";
+        return `Running: ${cmd}${(command?.length || 0) > 50 ? "..." : ""}`;
       }
-      case 'Grep': {
+      case "Grep": {
         const pattern = parsed.pattern as string | undefined;
-        return `Searching for "${pattern?.slice(0, 30) || ''}"`;
+        return `Searching for "${pattern?.slice(0, 30) || ""}"`;
       }
-      case 'Glob': {
+      case "Glob": {
         const pattern = parsed.pattern as string | undefined;
-        return `Finding files: ${pattern || ''}`;
+        return `Finding files: ${pattern || ""}`;
       }
-      case 'TodoWrite': {
+      case "TodoWrite": {
         const todos = parsed.todos as unknown[] | undefined;
         const todoCount = todos?.length || 0;
-        return `${todoCount} todo item${todoCount !== 1 ? 's' : ''}`;
+        return `${todoCount} todo item${todoCount !== 1 ? "s" : ""}`;
       }
-      case 'Task': {
+      case "Task": {
         const subagentType = parsed.subagent_type as string | undefined;
         const description = parsed.description as string | undefined;
-        return `${subagentType || 'Agent'}: ${description || ''}`;
+        return `${subagentType || "Agent"}: ${description || ""}`;
       }
-      case 'WebSearch': {
+      case "WebSearch": {
         const query = parsed.query as string | undefined;
-        return `Searching: "${query?.slice(0, 40) || ''}"`;
+        return `Searching: "${query?.slice(0, 40) || ""}"`;
       }
-      case 'WebFetch': {
+      case "WebFetch": {
         const url = parsed.url as string | undefined;
-        return `Fetching: ${url?.slice(0, 40) || ''}`;
+        return `Fetching: ${url?.slice(0, 40) || ""}`;
       }
-      case 'NotebookEdit': {
+      case "NotebookEdit": {
         const notebookPath = parsed.notebook_path as string | undefined;
-        return `Editing notebook: ${notebookPath?.split('/').pop() || 'notebook'}`;
+        return `Editing notebook: ${notebookPath?.split("/").pop() || "notebook"}`;
       }
-      case 'KillShell': {
-        return 'Terminating shell session';
+      case "KillShell": {
+        return "Terminating shell session";
       }
-      case 'SemanticSearch': {
+      case "SemanticSearch": {
         const query = parsed.query as string | undefined;
-        return `Semantic search: "${query?.slice(0, 30) || ''}"`;
+        return `Semantic search: "${query?.slice(0, 30) || ""}"`;
       }
-      case 'ReadLints': {
+      case "ReadLints": {
         const paths = parsed.paths as string[] | undefined;
         const pathCount = paths?.length || 0;
         return `Reading lints for ${pathCount} file(s)`;
@@ -354,11 +362,11 @@ export function generateToolSummary(toolName: string, content: string): string |
 function isCursorEvent(obj: unknown): obj is CursorStreamEvent {
   return (
     obj !== null &&
-    typeof obj === 'object' &&
-    'type' in obj &&
-    'session_id' in obj &&
-    ['system', 'user', 'assistant', 'tool_call', 'result'].includes(
-      (obj as Record<string, unknown>).type as string
+    typeof obj === "object" &&
+    "type" in obj &&
+    "session_id" in obj &&
+    ["system", "user", "assistant", "tool_call", "result"].includes(
+      (obj as Record<string, unknown>).type as string,
     )
   );
 }
@@ -368,21 +376,21 @@ function isCursorEvent(obj: unknown): obj is CursorStreamEvent {
  */
 function normalizeCursorToolCall(
   event: CursorToolCallEvent,
-  baseEntry: { id: string; timestamp: string }
+  baseEntry: { id: string; timestamp: string },
 ): LogEntry | null {
   const toolCall = event.tool_call;
-  const isStarted = event.subtype === 'started';
-  const isCompleted = event.subtype === 'completed';
+  const isStarted = event.subtype === "started";
+  const isCompleted = event.subtype === "completed";
 
   // Read tool
   if (toolCall.readToolCall) {
-    const path = toolCall.readToolCall.args?.path || 'unknown';
+    const path = toolCall.readToolCall.args?.path || "unknown";
     const result = toolCall.readToolCall.result?.success;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Reading ${path}` : `Read ${path}`,
       content:
         isCompleted && result
@@ -390,10 +398,12 @@ function normalizeCursorToolCall(
           : `Path: ${path}`,
       collapsed: true,
       metadata: {
-        toolName: 'Read',
-        toolCategory: 'read' as ToolCategory,
+        toolName: "Read",
+        toolCategory: "read" as ToolCategory,
         filePath: path,
-        summary: isCompleted ? `Read ${result?.totalLines || 0} lines` : `Reading file...`,
+        summary: isCompleted
+          ? `Read ${result?.totalLines || 0} lines`
+          : `Reading file...`,
       },
     };
   }
@@ -403,13 +413,13 @@ function normalizeCursorToolCall(
     const path =
       toolCall.writeToolCall.args?.path ||
       toolCall.writeToolCall.result?.success?.path ||
-      'unknown';
+      "unknown";
     const result = toolCall.writeToolCall.result?.success;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Writing ${path}` : `Wrote ${path}`,
       content:
         isCompleted && result
@@ -417,28 +427,30 @@ function normalizeCursorToolCall(
           : `Path: ${path}`,
       collapsed: true,
       metadata: {
-        toolName: 'Write',
-        toolCategory: 'write' as ToolCategory,
+        toolName: "Write",
+        toolCategory: "write" as ToolCategory,
         filePath: path,
-        summary: isCompleted ? `Wrote ${result?.linesCreated || 0} lines` : `Writing file...`,
+        summary: isCompleted
+          ? `Wrote ${result?.linesCreated || 0} lines`
+          : `Writing file...`,
       },
     };
   }
 
   // Edit tool
   if (toolCall.editToolCall) {
-    const path = toolCall.editToolCall.args?.path || 'unknown';
+    const path = toolCall.editToolCall.args?.path || "unknown";
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Editing ${path}` : `Edited ${path}`,
       content: `Path: ${path}`,
       collapsed: true,
       metadata: {
-        toolName: 'Edit',
-        toolCategory: 'edit' as ToolCategory,
+        toolName: "Edit",
+        toolCategory: "edit" as ToolCategory,
         filePath: path,
         summary: isCompleted ? `Edited file` : `Editing file...`,
       },
@@ -447,9 +459,10 @@ function normalizeCursorToolCall(
 
   // Shell/Bash tool
   if (toolCall.shellToolCall) {
-    const command = toolCall.shellToolCall.args?.command || '';
+    const command = toolCall.shellToolCall.args?.command || "";
     const result = toolCall.shellToolCall.result;
-    const shortCmd = command.length > 50 ? command.slice(0, 50) + '...' : command;
+    const shortCmd =
+      command.length > 50 ? command.slice(0, 50) + "..." : command;
 
     let content = `Command: ${command}`;
     if (isCompleted && result?.success) {
@@ -461,19 +474,19 @@ function normalizeCursorToolCall(
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Running: ${shortCmd}` : `Ran: ${shortCmd}`,
       content,
       collapsed: true,
       metadata: {
-        toolName: 'Bash',
-        toolCategory: 'bash' as ToolCategory,
+        toolName: "Bash",
+        toolCategory: "bash" as ToolCategory,
         summary: isCompleted
           ? result?.success
             ? `Exit ${result.success.exitCode}`
             : result?.rejected
-              ? 'Rejected'
-              : 'Completed'
+              ? "Rejected"
+              : "Completed"
           : `Running...`,
       },
     };
@@ -481,7 +494,7 @@ function normalizeCursorToolCall(
 
   // Delete tool
   if (toolCall.deleteToolCall) {
-    const path = toolCall.deleteToolCall.args?.path || 'unknown';
+    const path = toolCall.deleteToolCall.args?.path || "unknown";
     const result = toolCall.deleteToolCall.result;
 
     let content = `Path: ${path}`;
@@ -492,61 +505,67 @@ function normalizeCursorToolCall(
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Deleting ${path}` : `Deleted ${path}`,
       content,
       collapsed: true,
       metadata: {
-        toolName: 'Delete',
-        toolCategory: 'write' as ToolCategory,
+        toolName: "Delete",
+        toolCategory: "write" as ToolCategory,
         filePath: path,
-        summary: isCompleted ? (result?.rejected ? 'Rejected' : 'Deleted') : `Deleting...`,
+        summary: isCompleted
+          ? result?.rejected
+            ? "Rejected"
+            : "Deleted"
+          : `Deleting...`,
       },
     };
   }
 
   // Grep tool
   if (toolCall.grepToolCall) {
-    const pattern = toolCall.grepToolCall.args?.pattern || '';
+    const pattern = toolCall.grepToolCall.args?.pattern || "";
     const searchPath = toolCall.grepToolCall.args?.path;
     const result = toolCall.grepToolCall.result?.success;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Searching: "${pattern}"` : `Searched: "${pattern}"`,
-      content: `Pattern: ${pattern}${searchPath ? `\nPath: ${searchPath}` : ''}${
-        isCompleted && result ? `\nMatched ${result.matchedLines} lines` : ''
+      content: `Pattern: ${pattern}${searchPath ? `\nPath: ${searchPath}` : ""}${
+        isCompleted && result ? `\nMatched ${result.matchedLines} lines` : ""
       }`,
       collapsed: true,
       metadata: {
-        toolName: 'Grep',
-        toolCategory: 'search' as ToolCategory,
-        summary: isCompleted ? `Found ${result?.matchedLines || 0} matches` : `Searching...`,
+        toolName: "Grep",
+        toolCategory: "search" as ToolCategory,
+        summary: isCompleted
+          ? `Found ${result?.matchedLines || 0} matches`
+          : `Searching...`,
       },
     };
   }
 
   // Ls tool
   if (toolCall.lsToolCall) {
-    const path = toolCall.lsToolCall.args?.path || '.';
+    const path = toolCall.lsToolCall.args?.path || ".";
     const result = toolCall.lsToolCall.result?.success;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Listing ${path}` : `Listed ${path}`,
       content: `Path: ${path}${
         isCompleted && result
           ? `\n${result.childrenFiles} files, ${result.childrenDirs} directories`
-          : ''
+          : ""
       }`,
       collapsed: true,
       metadata: {
-        toolName: 'Ls',
-        toolCategory: 'read' as ToolCategory,
+        toolName: "Ls",
+        toolCategory: "read" as ToolCategory,
         filePath: path,
         summary: isCompleted
           ? `${result?.childrenFiles || 0} files, ${result?.childrenDirs || 0} dirs`
@@ -557,53 +576,57 @@ function normalizeCursorToolCall(
 
   // Glob tool
   if (toolCall.globToolCall) {
-    const pattern = toolCall.globToolCall.args?.globPattern || '';
+    const pattern = toolCall.globToolCall.args?.globPattern || "";
     const targetDir = toolCall.globToolCall.args?.targetDirectory;
     const result = toolCall.globToolCall.result?.success;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
+      type: "tool_call" as LogEntryType,
       title: isStarted ? `Finding: ${pattern}` : `Found: ${pattern}`,
-      content: `Pattern: ${pattern}${targetDir ? `\nDirectory: ${targetDir}` : ''}${
-        isCompleted && result ? `\nFound ${result.totalFiles} files` : ''
+      content: `Pattern: ${pattern}${targetDir ? `\nDirectory: ${targetDir}` : ""}${
+        isCompleted && result ? `\nFound ${result.totalFiles} files` : ""
       }`,
       collapsed: true,
       metadata: {
-        toolName: 'Glob',
-        toolCategory: 'search' as ToolCategory,
-        summary: isCompleted ? `Found ${result?.totalFiles || 0} files` : `Finding...`,
+        toolName: "Glob",
+        toolCategory: "search" as ToolCategory,
+        summary: isCompleted
+          ? `Found ${result?.totalFiles || 0} files`
+          : `Finding...`,
       },
     };
   }
 
   // Semantic Search tool
   if (toolCall.semSearchToolCall) {
-    const query = toolCall.semSearchToolCall.args?.query || '';
+    const query = toolCall.semSearchToolCall.args?.query || "";
     const targetDirs = toolCall.semSearchToolCall.args?.targetDirectories;
     const result = toolCall.semSearchToolCall.result?.success;
-    const shortQuery = query.length > 40 ? query.slice(0, 40) + '...' : query;
+    const shortQuery = query.length > 40 ? query.slice(0, 40) + "..." : query;
     const resultCount = result?.codeResults?.length || 0;
 
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
-      title: isStarted ? `Semantic search: "${shortQuery}"` : `Searched: "${shortQuery}"`,
-      content: `Query: ${query}${targetDirs?.length ? `\nDirectories: ${targetDirs.join(', ')}` : ''}${
+      type: "tool_call" as LogEntryType,
+      title: isStarted
+        ? `Semantic search: "${shortQuery}"`
+        : `Searched: "${shortQuery}"`,
+      content: `Query: ${query}${targetDirs?.length ? `\nDirectories: ${targetDirs.join(", ")}` : ""}${
         isCompleted
-          ? `\n${resultCount > 0 ? `Found ${resultCount} result(s)` : result?.results || 'No results'}`
-          : ''
+          ? `\n${resultCount > 0 ? `Found ${resultCount} result(s)` : result?.results || "No results"}`
+          : ""
       }`,
       collapsed: true,
       metadata: {
-        toolName: 'SemanticSearch',
-        toolCategory: 'search' as ToolCategory,
+        toolName: "SemanticSearch",
+        toolCategory: "search" as ToolCategory,
         summary: isCompleted
           ? resultCount > 0
             ? `Found ${resultCount} result(s)`
-            : 'No results'
+            : "No results"
           : `Searching...`,
       },
     };
@@ -618,17 +641,19 @@ function normalizeCursorToolCall(
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
-      title: isStarted ? `Reading lints for ${pathCount} file(s)` : `Read lints`,
-      content: `Paths: ${paths.join(', ')}${
+      type: "tool_call" as LogEntryType,
+      title: isStarted
+        ? `Reading lints for ${pathCount} file(s)`
+        : `Read lints`,
+      content: `Paths: ${paths.join(", ")}${
         isCompleted && result
           ? `\nFound ${result.totalDiagnostics} diagnostic(s) in ${result.totalFiles} file(s)`
-          : ''
+          : ""
       }`,
       collapsed: true,
       metadata: {
-        toolName: 'ReadLints',
-        toolCategory: 'read' as ToolCategory,
+        toolName: "ReadLints",
+        toolCategory: "read" as ToolCategory,
         summary: isCompleted
           ? `${result?.totalDiagnostics || 0} diagnostic(s)`
           : `Reading lints...`,
@@ -647,9 +672,9 @@ function normalizeCursorToolCall(
     return {
       ...baseEntry,
       id: `${baseEntry.id}-${event.call_id}`,
-      type: 'tool_call' as LogEntryType,
-      title: `${name} ${isStarted ? 'started' : 'completed'}`,
-      content: args || '',
+      type: "tool_call" as LogEntryType,
+      title: `${name} ${isStarted ? "started" : "completed"}`,
+      content: args || "",
       collapsed: true,
       metadata: {
         toolName: name,
@@ -665,7 +690,9 @@ function normalizeCursorToolCall(
 /**
  * Normalize Cursor stream event to log entry
  */
-export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null {
+export function normalizeCursorEvent(
+  event: CursorStreamEvent,
+): LogEntry | null {
   const timestamp = new Date().toISOString();
   const baseEntry = {
     id: `cursor-${event.session_id}-${Date.now()}`,
@@ -673,60 +700,60 @@ export function normalizeCursorEvent(event: CursorStreamEvent): LogEntry | null 
   };
 
   switch (event.type) {
-    case 'system': {
+    case "system": {
       const sysEvent = event as CursorSystemEvent;
       return {
         ...baseEntry,
-        type: 'info' as LogEntryType,
-        title: 'Session Started',
+        type: "info" as LogEntryType,
+        title: "Session Started",
         content: `Model: ${sysEvent.model}\nAuth: ${sysEvent.apiKeySource}\nCWD: ${sysEvent.cwd}`,
         collapsed: true,
         metadata: {
-          phase: 'init',
+          phase: "init",
         },
       };
     }
 
-    case 'assistant': {
+    case "assistant": {
       const assistEvent = event as CursorAssistantEvent;
       const text = assistEvent.message.content
-        .filter((c) => c.type === 'text')
+        .filter((c) => c.type === "text")
         .map((c) => c.text)
-        .join('');
+        .join("");
 
       if (!text.trim()) return null;
 
       return {
         ...baseEntry,
-        type: 'info' as LogEntryType,
-        title: 'Assistant',
+        type: "info" as LogEntryType,
+        title: "Assistant",
         content: text,
         collapsed: false,
       };
     }
 
-    case 'tool_call': {
+    case "tool_call": {
       const toolEvent = event as CursorToolCallEvent;
       return normalizeCursorToolCall(toolEvent, baseEntry);
     }
 
-    case 'result': {
+    case "result": {
       const resultEvent = event as CursorResultEvent;
 
       if (resultEvent.is_error) {
         return {
           ...baseEntry,
-          type: 'error' as LogEntryType,
-          title: 'Error',
-          content: resultEvent.error || resultEvent.result || 'Unknown error',
+          type: "error" as LogEntryType,
+          title: "Error",
+          content: resultEvent.error || resultEvent.result || "Unknown error",
           collapsed: false,
         };
       }
 
       return {
         ...baseEntry,
-        type: 'success' as LogEntryType,
-        title: 'Completed',
+        type: "success" as LogEntryType,
+        title: "Completed",
         content: `Duration: ${resultEvent.duration_ms}ms`,
         collapsed: true,
       };
@@ -755,8 +782,8 @@ export function parseLogLine(line: string): LogEntry | null {
     // For other JSON, treat as debug info
     return {
       id: `json-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      type: 'debug',
-      title: 'Debug Info',
+      type: "debug",
+      title: "Debug Info",
       content: line,
       timestamp: new Date().toISOString(),
       collapsed: true,
@@ -765,8 +792,8 @@ export function parseLogLine(line: string): LogEntry | null {
     // Non-JSON line - treat as plain text
     return {
       id: `text-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      type: 'info',
-      title: 'Output',
+      type: "info",
+      title: "Output",
       content: line,
       timestamp: new Date().toISOString(),
       collapsed: false,
@@ -777,19 +804,22 @@ export function parseLogLine(line: string): LogEntry | null {
 /**
  * Get provider-specific styling for log entries
  */
-export function getProviderStyle(entry: LogEntry): { badge?: string; icon?: string } {
+export function getProviderStyle(entry: LogEntry): {
+  badge?: string;
+  icon?: string;
+} {
   // Check if entry has Cursor session ID pattern
-  if (entry.id.startsWith('cursor-')) {
+  if (entry.id.startsWith("cursor-")) {
     return {
-      badge: 'Cursor',
-      icon: 'terminal',
+      badge: "Cursor",
+      icon: "terminal",
     };
   }
 
   // Default (Claude/Pegasus)
   return {
-    badge: 'Claude',
-    icon: 'bot',
+    badge: "Claude",
+    icon: "bot",
   };
 }
 
@@ -801,17 +831,23 @@ export function shouldCollapseByDefault(entry: LogEntry): boolean {
   if (entry.content.length > 200) return true;
 
   // Collapse if contains multi-line JSON (> 5 lines)
-  const lineCount = entry.content.split('\n').length;
-  if (lineCount > 5 && (entry.content.includes('{') || entry.content.includes('['))) {
+  const lineCount = entry.content.split("\n").length;
+  if (
+    lineCount > 5 &&
+    (entry.content.includes("{") || entry.content.includes("["))
+  ) {
     return true;
   }
 
   // Collapse TodoWrite with multiple items
-  if (entry.metadata?.toolName === 'TodoWrite') {
+  if (entry.metadata?.toolName === "TodoWrite") {
     try {
       const inputMatch = entry.content.match(/Input:\s*([\s\S]*)/);
       if (inputMatch) {
-        const parsed = JSON.parse(inputMatch[1].trim()) as Record<string, unknown>;
+        const parsed = JSON.parse(inputMatch[1].trim()) as Record<
+          string,
+          unknown
+        >;
         const todos = parsed.todos as unknown[] | undefined;
         if (todos && todos.length > 1) return true;
       }
@@ -821,7 +857,10 @@ export function shouldCollapseByDefault(entry: LogEntry): boolean {
   }
 
   // Collapse Edit with code blocks
-  if (entry.metadata?.toolName === 'Edit' && entry.content.includes('old_string')) {
+  if (
+    entry.metadata?.toolName === "Edit" &&
+    entry.content.includes("old_string")
+  ) {
     return true;
   }
 
@@ -836,67 +875,72 @@ function generateTitle(type: LogEntryType, content: string): string {
   const cleaned = cleanFragmentedText(content);
 
   switch (type) {
-    case 'tool_call': {
+    case "tool_call": {
       const toolName = extractToolName(content);
-      return toolName ? `Tool Call: ${toolName}` : 'Tool Call';
+      return toolName ? `Tool Call: ${toolName}` : "Tool Call";
     }
-    case 'tool_result':
-      return 'Tool Input/Result';
-    case 'phase': {
+    case "tool_result":
+      return "Tool Input/Result";
+    case "phase": {
       const phase = extractPhase(content);
       if (phase) {
         // Capitalize first letter of each word
         const formatted = phase
           .split(/\s+/)
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+          .join(" ");
         return `Phase: ${formatted}`;
       }
-      return 'Phase Change';
+      return "Phase Change";
     }
-    case 'error':
-      return 'Error';
-    case 'success': {
+    case "error":
+      return "Error";
+    case "success": {
       // Check if it's a summary section (check both raw and cleaned)
       if (
-        content.startsWith('<summary>') ||
-        content.includes('<summary>') ||
-        cleaned.startsWith('<summary>') ||
-        cleaned.includes('<summary>')
+        content.startsWith("<summary>") ||
+        content.includes("<summary>") ||
+        cleaned.startsWith("<summary>") ||
+        cleaned.includes("<summary>")
       ) {
-        return 'Summary';
+        return "Summary";
       }
       if (
         content.match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
         cleaned.match(/^##\s+(Summary|Feature|Changes|Implementation)/i)
       ) {
-        return 'Summary';
+        return "Summary";
       }
       if (
         content.match(/^All tasks completed/i) ||
-        content.match(/^(I've|I have) (successfully |now )?(completed|finished|implemented)/i)
+        content.match(
+          /^(I've|I have) (successfully |now )?(completed|finished|implemented)/i,
+        )
       ) {
-        return 'Summary';
+        return "Summary";
       }
-      return 'Success';
+      return "Success";
     }
-    case 'warning':
-      return 'Warning';
-    case 'thinking':
-      return 'Thinking Level';
-    case 'debug':
-      return 'Debug Info';
-    case 'prompt':
-      return 'Prompt';
+    case "warning":
+      return "Warning";
+    case "thinking":
+      return "Thinking Level";
+    case "debug":
+      return "Debug Info";
+    case "prompt":
+      return "Prompt";
     default:
-      return 'Info';
+      return "Info";
   }
 }
 
 /**
  * Tracks bracket depth for JSON accumulation
  */
-function calculateBracketDepth(line: string): { braceChange: number; bracketChange: number } {
+function calculateBracketDepth(line: string): {
+  braceChange: number;
+  bracketChange: number;
+} {
   let braceChange = 0;
   let bracketChange = 0;
   let inString = false;
@@ -907,7 +951,7 @@ function calculateBracketDepth(line: string): { braceChange: number; bracketChan
       escapeNext = false;
       continue;
     }
-    if (char === '\\') {
+    if (char === "\\") {
       escapeNext = true;
       continue;
     }
@@ -917,10 +961,10 @@ function calculateBracketDepth(line: string): { braceChange: number; bracketChan
     }
     if (inString) continue;
 
-    if (char === '{') braceChange++;
-    else if (char === '}') braceChange--;
-    else if (char === '[') bracketChange++;
-    else if (char === ']') bracketChange--;
+    if (char === "{") braceChange++;
+    else if (char === "}") braceChange--;
+    else if (char === "[") bracketChange++;
+    else if (char === "]") bracketChange--;
   }
 
   return { braceChange, bracketChange };
@@ -935,9 +979,9 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
   }
 
   const entries: LogEntry[] = [];
-  const lines = rawOutput.split('\n');
+  const lines = rawOutput.split("\n");
 
-  let currentEntry: (Omit<LogEntry, 'id'> & { id?: string }) | null = null;
+  let currentEntry: (Omit<LogEntry, "id"> & { id?: string }) | null = null;
   let currentContent: string[] = [];
   let entryStartLine = 0; // Track the starting line for deterministic ID generation
 
@@ -951,11 +995,11 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
 
   const finalizeEntry = () => {
     if (currentEntry && currentContent.length > 0) {
-      currentEntry.content = currentContent.join('\n').trim();
+      currentEntry.content = currentContent.join("\n").trim();
       if (currentEntry.content) {
         // Populate enhanced metadata for tool calls
         const toolName = currentEntry.metadata?.toolName;
-        if (toolName && currentEntry.type === 'tool_call') {
+        if (toolName && currentEntry.type === "tool_call") {
           const toolCategory = categorizeToolName(toolName);
           const filePath = extractFilePath(currentEntry.content);
           const summary = generateToolSummary(toolName, currentEntry.content);
@@ -970,7 +1014,7 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
 
         // Generate deterministic ID based on content and position
         const entryWithId: LogEntry = {
-          ...(currentEntry as Omit<LogEntry, 'id'>),
+          ...(currentEntry as Omit<LogEntry, "id">),
           id: generateDeterministicId(currentEntry.content, entryStartLine),
         };
         entries.push(entryWithId);
@@ -995,7 +1039,7 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
 
     // Check for Cursor stream events (NDJSON lines)
     // These are complete JSON objects on a single line
-    if (trimmedLine.startsWith('{') && trimmedLine.endsWith('}')) {
+    if (trimmedLine.startsWith("{") && trimmedLine.endsWith("}")) {
       try {
         const parsed = JSON.parse(trimmedLine);
         if (isCursorEvent(parsed)) {
@@ -1034,7 +1078,7 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
     if (inSummaryAccumulation) {
       currentContent.push(line);
       // Summary is complete when we see closing tag
-      if (trimmedLine.includes('</summary>')) {
+      if (trimmedLine.includes("</summary>")) {
         inSummaryAccumulation = false;
         // Don't finalize here - let normal flow handle it
       }
@@ -1045,13 +1089,13 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
     // Detect if this line starts a new entry
     const lineType = detectEntryType(trimmedLine);
     const isNewEntry =
-      trimmedLine.startsWith('🔧') ||
-      trimmedLine.startsWith('📋') ||
-      trimmedLine.startsWith('⚡') ||
-      trimmedLine.startsWith('✅') ||
-      trimmedLine.startsWith('❌') ||
-      trimmedLine.startsWith('⚠️') ||
-      trimmedLine.startsWith('🧠') ||
+      trimmedLine.startsWith("🔧") ||
+      trimmedLine.startsWith("📋") ||
+      trimmedLine.startsWith("⚡") ||
+      trimmedLine.startsWith("✅") ||
+      trimmedLine.startsWith("❌") ||
+      trimmedLine.startsWith("⚠️") ||
+      trimmedLine.startsWith("🧠") ||
       trimmedLine.match(/\[Phase:\s*([^\]]+)\]/) ||
       trimmedLine.match(/\[Feature Creation\]/i) ||
       trimmedLine.match(/\[Tool\]/i) ||
@@ -1059,20 +1103,25 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       trimmedLine.match(/\[Complete\]/i) ||
       trimmedLine.match(/\[ERROR\]/i) ||
       trimmedLine.match(/\[Status\]/i) ||
-      trimmedLine.toLowerCase().includes('ultrathink preparation') ||
+      trimmedLine.toLowerCase().includes("ultrathink preparation") ||
       trimmedLine.match(/thinking level[:\s]*(low|medium|high|none|\d)/i) ||
       // Summary tags (preferred format from agent) - check both raw and cleaned for fragmented streaming
-      trimmedLine.startsWith('<summary>') ||
-      cleanFragmentedText(trimmedLine).startsWith('<summary>') ||
+      trimmedLine.startsWith("<summary>") ||
+      cleanFragmentedText(trimmedLine).startsWith("<summary>") ||
       // Agent summary sections (markdown headers - fallback)
       trimmedLine.match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
-      cleanFragmentedText(trimmedLine).match(/^##\s+(Summary|Feature|Changes|Implementation)/i) ||
+      cleanFragmentedText(trimmedLine).match(
+        /^##\s+(Summary|Feature|Changes|Implementation)/i,
+      ) ||
       // Summary introduction lines
       trimmedLine.match(/^All tasks completed/i) ||
-      trimmedLine.match(/^(I've|I have) (successfully |now )?(completed|finished|implemented)/i);
+      trimmedLine.match(
+        /^(I've|I have) (successfully |now )?(completed|finished|implemented)/i,
+      );
 
     // Check if this is an Input: line that should trigger JSON accumulation
-    const isInputLine = trimmedLine.startsWith('Input:') && currentEntry?.type === 'tool_call';
+    const isInputLine =
+      trimmedLine.startsWith("Input:") && currentEntry?.type === "tool_call";
 
     if (isNewEntry) {
       // Finalize previous entry
@@ -1085,7 +1134,7 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       currentEntry = {
         type: lineType,
         title: generateTitle(lineType, trimmedLine),
-        content: '',
+        content: "",
         metadata: {
           toolName: extractToolName(trimmedLine),
           phase: extractPhase(trimmedLine),
@@ -1097,9 +1146,10 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       // Check both raw and cleaned for fragmented streaming
       const cleanedTrimmed = cleanFragmentedText(trimmedLine);
       if (
-        (trimmedLine.startsWith('<summary>') || cleanedTrimmed.startsWith('<summary>')) &&
-        !trimmedLine.includes('</summary>') &&
-        !cleanedTrimmed.includes('</summary>')
+        (trimmedLine.startsWith("<summary>") ||
+          cleanedTrimmed.startsWith("<summary>")) &&
+        !trimmedLine.includes("</summary>") &&
+        !cleanedTrimmed.includes("</summary>")
       ) {
         inSummaryAccumulation = true;
       }
@@ -1108,9 +1158,10 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       currentContent.push(trimmedLine);
 
       // Check if there's JSON on the same line after "Input:"
-      const inputContent = trimmedLine.replace(/^Input:\s*/, '');
+      const inputContent = trimmedLine.replace(/^Input:\s*/, "");
       if (inputContent) {
-        const { braceChange, bracketChange } = calculateBracketDepth(inputContent);
+        const { braceChange, bracketChange } =
+          calculateBracketDepth(inputContent);
         jsonBraceDepth = braceChange;
         jsonBracketDepth = bracketChange;
 
@@ -1127,8 +1178,9 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
       currentContent.push(line);
 
       // Check if this line starts a JSON block
-      if (trimmedLine.startsWith('{') || trimmedLine.startsWith('[')) {
-        const { braceChange, bracketChange } = calculateBracketDepth(trimmedLine);
+      if (trimmedLine.startsWith("{") || trimmedLine.startsWith("[")) {
+        const { braceChange, bracketChange } =
+          calculateBracketDepth(trimmedLine);
         if (braceChange > 0 || bracketChange > 0) {
           jsonBraceDepth = braceChange;
           jsonBracketDepth = bracketChange;
@@ -1143,9 +1195,9 @@ export function parseLogOutput(rawOutput: string): LogEntry[] {
 
       // No current entry, create a default info entry
       currentEntry = {
-        type: 'info',
-        title: 'Info',
-        content: '',
+        type: "info",
+        title: "Info",
+        content: "",
       };
       currentContent.push(line);
     }
@@ -1174,11 +1226,11 @@ function mergeConsecutiveEntries(entries: LogEntry[]): LogEntry[] {
   for (const entry of entries) {
     if (
       current &&
-      (current.type === 'debug' || current.type === 'info') &&
+      (current.type === "debug" || current.type === "info") &&
       current.type === entry.type
     ) {
       // Merge into current - regenerate ID based on merged content
-      current.content += '\n\n' + entry.content;
+      current.content += "\n\n" + entry.content;
       current.id = generateDeterministicId(current.content, mergeIndex);
     } else {
       if (current) {
@@ -1218,9 +1270,13 @@ export function extractSummary(rawOutput: string): string | null {
     processor: (m: RegExpMatchArray) => string;
   }> = [
     { regex: /<summary>([\s\S]*?)<\/summary>/gi, processor: (m) => m[1] },
-    { regex: /^##\s+Summary[^\n]*\n([\s\S]*?)(?=\n##\s+[^#]|\n🔧|$)/gm, processor: (m) => m[1] },
     {
-      regex: /^##\s+(Feature|Changes|Implementation)[^\n]*\n([\s\S]*?)(?=\n##\s+[^#]|\n🔧|$)/gm,
+      regex: /^##\s+Summary[^\n]*\n([\s\S]*?)(?=\n##\s+[^#]|\n🔧|$)/gm,
+      processor: (m) => m[1],
+    },
+    {
+      regex:
+        /^##\s+(Feature|Changes|Implementation)[^\n]*\n([\s\S]*?)(?=\n##\s+[^#]|\n🔧|$)/gm,
       processor: (m) => `## ${m[1]}\n${m[2]}`,
     },
     {
@@ -1266,7 +1322,7 @@ export function extractSummary(rawOutput: string): string | null {
  * @param summary - The accumulated summary string to parse
  * @returns A map of phase names (lowercase) to their content, or empty map if not parseable
  */
-const PHASE_SEPARATOR = '\n\n---\n\n';
+const PHASE_SEPARATOR = "\n\n---\n\n";
 const PHASE_SEPARATOR_REGEX = /\n\n---\n\n/;
 const PHASE_HEADER_REGEX = /^###\s+(.+?)(?:\n|$)/;
 const PHASE_HEADER_WITH_PREFIX_REGEX = /^(###\s+)(.+?)(?:\n|$)/;
@@ -1277,17 +1333,24 @@ function getPhaseSections(summary: string): {
 } {
   const sections = summary.split(PHASE_SEPARATOR_REGEX);
   const hasSeparator = summary.includes(PHASE_SEPARATOR);
-  const hasAnyHeader = sections.some((section) => PHASE_HEADER_REGEX.test(section.trim()));
-  const firstSection = sections[0]?.trim() ?? '';
+  const hasAnyHeader = sections.some((section) =>
+    PHASE_HEADER_REGEX.test(section.trim()),
+  );
+  const firstSection = sections[0]?.trim() ?? "";
   const leadingImplementationSection =
-    hasSeparator && hasAnyHeader && firstSection && !PHASE_HEADER_REGEX.test(firstSection)
+    hasSeparator &&
+    hasAnyHeader &&
+    firstSection &&
+    !PHASE_HEADER_REGEX.test(firstSection)
       ? firstSection
       : null;
 
   return { sections, leadingImplementationSection };
 }
 
-export function parsePhaseSummaries(summary: string | undefined): Map<string, string> {
+export function parsePhaseSummaries(
+  summary: string | undefined,
+): Map<string, string> {
   const phaseSummaries = new Map<string, string>();
 
   if (!summary || !summary.trim()) {
@@ -1300,7 +1363,7 @@ export function parsePhaseSummaries(summary: string | undefined): Map<string, st
   // [implementation summary without header] + --- + [### Pipeline Step ...]
   // Treat the leading headerless section as "Implementation".
   if (leadingImplementationSection) {
-    phaseSummaries.set('implementation', leadingImplementationSection);
+    phaseSummaries.set("implementation", leadingImplementationSection);
   }
 
   for (const section of sections) {
@@ -1324,7 +1387,10 @@ export function parsePhaseSummaries(summary: string | undefined): Map<string, st
  * @param phaseName - The phase name to extract (case-insensitive, e.g., "Implementation", "implementation")
  * @returns The content for the specified phase, or null if not found
  */
-export function extractPhaseSummary(summary: string | undefined, phaseName: string): string | null {
+export function extractPhaseSummary(
+  summary: string | undefined,
+  phaseName: string,
+): string | null {
   const phaseSummaries = parsePhaseSummaries(summary);
   const normalizedPhaseName = phaseName.toLowerCase();
   return phaseSummaries.get(normalizedPhaseName) || null;
@@ -1341,7 +1407,9 @@ export function extractPhaseSummary(summary: string | undefined, phaseName: stri
  * @param summary - The accumulated summary string
  * @returns The implementation phase content, or null if not found
  */
-export function extractImplementationSummary(summary: string | undefined): string | null {
+export function extractImplementationSummary(
+  summary: string | undefined,
+): string | null {
   if (!summary || !summary.trim()) {
     return null;
   }
@@ -1349,14 +1417,14 @@ export function extractImplementationSummary(summary: string | undefined): strin
   const phaseSummaries = parsePhaseSummaries(summary);
 
   // Try exact match first
-  const implementationContent = phaseSummaries.get('implementation');
+  const implementationContent = phaseSummaries.get("implementation");
   if (implementationContent) {
     return implementationContent;
   }
 
   // Fallback: find any phase containing "implement"
   for (const [phaseName, content] of phaseSummaries) {
-    if (phaseName.includes('implement')) {
+    if (phaseName.includes("implement")) {
       return content;
     }
   }
@@ -1364,7 +1432,7 @@ export function extractImplementationSummary(summary: string | undefined): strin
   // If no phase summaries found, the summary might not be in accumulated format
   // (legacy or non-pipeline feature). In this case, return the whole summary
   // if it looks like a single summary (no phase headers).
-  if (!summary.includes('### ') && !summary.includes(PHASE_SEPARATOR)) {
+  if (!summary.includes("### ") && !summary.includes(PHASE_SEPARATOR)) {
     return summary;
   }
 
@@ -1384,7 +1452,8 @@ export function isAccumulatedSummary(summary: string | undefined): boolean {
 
   // Check for the presence of phase headers with separator
   const hasMultiplePhases =
-    summary.includes(PHASE_SEPARATOR) && (summary.match(/###\s+.+/g)?.length ?? 0) > 0;
+    summary.includes(PHASE_SEPARATOR) &&
+    (summary.match(/###\s+.+/g)?.length ?? 0) > 0;
 
   return hasMultiplePhases;
 }
@@ -1402,7 +1471,7 @@ export interface PhaseSummaryEntry {
 }
 
 /** Default phase name used for non-accumulated summaries */
-const DEFAULT_PHASE_NAME = 'Summary';
+const DEFAULT_PHASE_NAME = "Summary";
 
 /**
  * Parses an accumulated summary into individual phase entries.
@@ -1424,7 +1493,9 @@ const DEFAULT_PHASE_NAME = 'Summary';
  * @param summary - The accumulated summary string to parse
  * @returns Array of PhaseSummaryEntry objects, or empty array if not parseable
  */
-export function parseAllPhaseSummaries(summary: string | undefined): PhaseSummaryEntry[] {
+export function parseAllPhaseSummaries(
+  summary: string | undefined,
+): PhaseSummaryEntry[] {
   const entries: PhaseSummaryEntry[] = [];
 
   if (!summary || !summary.trim()) {
@@ -1437,7 +1508,11 @@ export function parseAllPhaseSummaries(summary: string | undefined): PhaseSummar
   if (!hasPhaseHeaders) {
     // Not an accumulated summary - return as single entry with generic name
     return [
-      { phaseName: DEFAULT_PHASE_NAME, content: summary, header: `### ${DEFAULT_PHASE_NAME}` },
+      {
+        phaseName: DEFAULT_PHASE_NAME,
+        content: summary,
+        header: `### ${DEFAULT_PHASE_NAME}`,
+      },
     ];
   }
 
@@ -1447,9 +1522,9 @@ export function parseAllPhaseSummaries(summary: string | undefined): PhaseSummar
   // [implementation summary without header] + --- + [### Pipeline Step ...]
   if (leadingImplementationSection) {
     entries.push({
-      phaseName: 'Implementation',
+      phaseName: "Implementation",
       content: leadingImplementationSection,
-      header: '### Implementation',
+      header: "### Implementation",
     });
   }
 
@@ -1469,7 +1544,11 @@ export function parseAllPhaseSummaries(summary: string | undefined): PhaseSummar
   // treat the entire summary as a single entry to avoid showing "No summary available"
   if (entries.length === 0) {
     return [
-      { phaseName: DEFAULT_PHASE_NAME, content: summary, header: `### ${DEFAULT_PHASE_NAME}` },
+      {
+        phaseName: DEFAULT_PHASE_NAME,
+        content: summary,
+        header: `### ${DEFAULT_PHASE_NAME}`,
+      },
     ];
   }
 
@@ -1484,93 +1563,93 @@ export function getLogTypeColors(type: LogEntryType): {
   badge: string;
 } {
   switch (type) {
-    case 'prompt':
+    case "prompt":
       return {
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/30',
-        text: 'text-blue-300',
-        icon: 'text-blue-400',
-        badge: 'bg-blue-500/20 text-blue-300',
+        bg: "bg-blue-500/10",
+        border: "border-blue-500/30",
+        text: "text-blue-300",
+        icon: "text-blue-400",
+        badge: "bg-blue-500/20 text-blue-300",
       };
-    case 'tool_call':
+    case "tool_call":
       return {
-        bg: 'bg-amber-500/10',
-        border: 'border-amber-500/30',
-        text: 'text-amber-300',
-        icon: 'text-amber-400',
-        badge: 'bg-amber-500/20 text-amber-300',
+        bg: "bg-amber-500/10",
+        border: "border-amber-500/30",
+        text: "text-amber-300",
+        icon: "text-amber-400",
+        badge: "bg-amber-500/20 text-amber-300",
       };
-    case 'tool_result':
+    case "tool_result":
       return {
-        bg: 'bg-slate-500/10',
-        border: 'border-slate-400/30',
-        text: 'text-slate-300',
-        icon: 'text-slate-400',
-        badge: 'bg-slate-500/20 text-slate-300',
+        bg: "bg-slate-500/10",
+        border: "border-slate-400/30",
+        text: "text-slate-300",
+        icon: "text-slate-400",
+        badge: "bg-slate-500/20 text-slate-300",
       };
-    case 'phase':
+    case "phase":
       return {
-        bg: 'bg-cyan-500/10',
-        border: 'border-cyan-500/30',
-        text: 'text-cyan-300',
-        icon: 'text-cyan-400',
-        badge: 'bg-cyan-500/20 text-cyan-300',
+        bg: "bg-cyan-500/10",
+        border: "border-cyan-500/30",
+        text: "text-cyan-300",
+        icon: "text-cyan-400",
+        badge: "bg-cyan-500/20 text-cyan-300",
       };
-    case 'error':
+    case "error":
       return {
-        bg: 'bg-red-500/10',
-        border: 'border-red-500/30',
-        text: 'text-red-300',
-        icon: 'text-red-400',
-        badge: 'bg-red-500/20 text-red-300',
+        bg: "bg-red-500/10",
+        border: "border-red-500/30",
+        text: "text-red-300",
+        icon: "text-red-400",
+        badge: "bg-red-500/20 text-red-300",
       };
-    case 'success':
+    case "success":
       return {
-        bg: 'bg-emerald-500/20',
-        border: 'border-emerald-500/40',
-        text: 'text-emerald-200',
-        icon: 'text-emerald-400',
-        badge: 'bg-emerald-500/30 text-emerald-200',
+        bg: "bg-emerald-500/20",
+        border: "border-emerald-500/40",
+        text: "text-emerald-200",
+        icon: "text-emerald-400",
+        badge: "bg-emerald-500/30 text-emerald-200",
       };
-    case 'warning':
+    case "warning":
       return {
-        bg: 'bg-orange-500/10',
-        border: 'border-orange-500/30',
-        text: 'text-orange-300',
-        icon: 'text-orange-400',
-        badge: 'bg-orange-500/20 text-orange-300',
+        bg: "bg-orange-500/10",
+        border: "border-orange-500/30",
+        text: "text-orange-300",
+        icon: "text-orange-400",
+        badge: "bg-orange-500/20 text-orange-300",
       };
-    case 'thinking':
+    case "thinking":
       return {
-        bg: 'bg-indigo-500/10',
-        border: 'border-indigo-500/30',
-        text: 'text-indigo-300',
-        icon: 'text-indigo-400',
-        badge: 'bg-indigo-500/20 text-indigo-300',
+        bg: "bg-indigo-500/10",
+        border: "border-indigo-500/30",
+        text: "text-indigo-300",
+        icon: "text-indigo-400",
+        badge: "bg-indigo-500/20 text-indigo-300",
       };
-    case 'debug':
+    case "debug":
       return {
-        bg: 'bg-primary/10',
-        border: 'border-primary/30',
-        text: 'text-primary',
-        icon: 'text-primary',
-        badge: 'bg-primary/20 text-primary',
+        bg: "bg-primary/10",
+        border: "border-primary/30",
+        text: "text-primary",
+        icon: "text-primary",
+        badge: "bg-primary/20 text-primary",
       };
-    case 'info':
+    case "info":
       return {
-        bg: 'bg-zinc-500/10',
-        border: 'border-zinc-500/30',
-        text: 'text-primary',
-        icon: 'text-zinc-400',
-        badge: 'bg-zinc-500/20 text-primary',
+        bg: "bg-zinc-500/10",
+        border: "border-zinc-500/30",
+        text: "text-primary",
+        icon: "text-zinc-400",
+        badge: "bg-zinc-500/20 text-primary",
       };
     default:
       return {
-        bg: 'bg-zinc-500/10',
-        border: 'border-zinc-500/30',
-        text: 'text-black',
-        icon: 'text-zinc-400',
-        badge: 'bg-zinc-500/20 text-black',
+        bg: "bg-zinc-500/10",
+        border: "border-zinc-500/30",
+        text: "text-black",
+        icon: "text-zinc-400",
+        badge: "bg-zinc-500/20 text-black",
       };
   }
 }

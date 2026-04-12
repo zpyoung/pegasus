@@ -1,24 +1,35 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore, Feature } from '@/store/app-store';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Bot, Send, User, Sparkles, FileText, ArrowLeft, CheckCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn, generateUUID } from '@/lib/utils';
-import { getElectronAPI } from '@/lib/electron';
-import { Markdown } from '@/components/ui/markdown';
-import { useFileBrowser } from '@/contexts/file-browser-context';
-import { toast } from 'sonner';
-import { useNavigate } from '@tanstack/react-router';
-import { getDefaultWorkspaceDirectory, saveLastProjectDirectory } from '@/lib/workspace-config';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore, Feature } from "@/store/app-store";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Bot,
+  Send,
+  User,
+  Sparkles,
+  FileText,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn, generateUUID } from "@/lib/utils";
+import { getElectronAPI } from "@/lib/electron";
+import { Markdown } from "@/components/ui/markdown";
+import { useFileBrowser } from "@/contexts/file-browser-context";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  getDefaultWorkspaceDirectory,
+  saveLastProjectDirectory,
+} from "@/lib/workspace-config";
 
-const logger = createLogger('InterviewView');
+const logger = createLogger("InterviewView");
 
 interface InterviewMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
@@ -34,28 +45,28 @@ interface InterviewState {
 // Interview questions flow
 const INTERVIEW_QUESTIONS = [
   {
-    id: 'project-description',
-    question: 'What do you want to build?',
-    hint: 'Describe your project idea in a few sentences',
-    field: 'projectDescription' as const,
+    id: "project-description",
+    question: "What do you want to build?",
+    hint: "Describe your project idea in a few sentences",
+    field: "projectDescription" as const,
   },
   {
-    id: 'tech-stack',
-    question: 'What tech stack would you like to use?',
-    hint: 'e.g., React, Next.js, Node.js, Python, etc.',
-    field: 'techStack' as const,
+    id: "tech-stack",
+    question: "What tech stack would you like to use?",
+    hint: "e.g., React, Next.js, Node.js, Python, etc.",
+    field: "techStack" as const,
   },
   {
-    id: 'core-features',
-    question: 'What are the core features you want to include?',
-    hint: 'List the main functionalities your app should have',
-    field: 'features' as const,
+    id: "core-features",
+    question: "What are the core features you want to include?",
+    hint: "List the main functionalities your app should have",
+    field: "features" as const,
   },
   {
-    id: 'additional',
-    question: 'Any additional requirements or preferences?',
-    hint: 'Design preferences, integrations, deployment needs, etc.',
-    field: 'additionalNotes' as const,
+    id: "additional",
+    question: "Any additional requirements or preferences?",
+    hint: "Design preferences, integrations, deployment needs, etc.",
+    field: "additionalNotes" as const,
   },
 ];
 
@@ -63,21 +74,21 @@ export function InterviewView() {
   const { addProject, setCurrentProject, setAppSpec } = useAppStore();
   const { openFileBrowser } = useFileBrowser();
   const navigate = useNavigate();
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [interviewData, setInterviewData] = useState<InterviewState>({
-    projectName: '',
-    projectDescription: '',
+    projectName: "",
+    projectDescription: "",
     techStack: [],
     features: [],
-    additionalNotes: '',
+    additionalNotes: "",
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [generatedSpec, setGeneratedSpec] = useState<string | null>(null);
-  const [projectPath, setProjectPath] = useState('');
-  const [projectName, setProjectName] = useState('');
+  const [projectPath, setProjectPath] = useState("");
+  const [projectName, setProjectName] = useState("");
   const [showProjectSetup, setShowProjectSetup] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -101,7 +112,7 @@ export function InterviewView() {
           setProjectPath(defaultDir);
         }
       } catch (error) {
-        logger.error('Failed to load default workspace directory:', error);
+        logger.error("Failed to load default workspace directory:", error);
       }
     };
 
@@ -116,8 +127,8 @@ export function InterviewView() {
   useEffect(() => {
     if (messages.length === 0) {
       const welcomeMessage: InterviewMessage = {
-        id: 'welcome',
-        role: 'assistant',
+        id: "welcome",
+        role: "assistant",
         content: `Hello! I'm here to help you plan your new project. Let's go through a few questions to understand what you want to build.\n\n**${INTERVIEW_QUESTIONS[0].question}**\n\n_${INTERVIEW_QUESTIONS[0].hint}_`,
         timestamp: new Date(),
       };
@@ -134,7 +145,7 @@ export function InterviewView() {
         if (messagesContainerRef.current) {
           messagesContainerRef.current.scrollTo({
             top: messagesContainerRef.current.scrollHeight,
-            behavior: 'smooth',
+            behavior: "smooth",
           });
         }
       }, 100);
@@ -158,7 +169,7 @@ export function InterviewView() {
 
     const userMessage: InterviewMessage = {
       id: `user-${Date.now()}`,
-      role: 'user',
+      role: "user",
       content: input,
       timestamp: new Date(),
     };
@@ -170,20 +181,25 @@ export function InterviewView() {
     if (currentQuestion) {
       setInterviewData((prev) => {
         const newData = { ...prev };
-        if (currentQuestion.field === 'techStack' || currentQuestion.field === 'features') {
+        if (
+          currentQuestion.field === "techStack" ||
+          currentQuestion.field === "features"
+        ) {
           // Parse comma-separated values into array
           newData[currentQuestion.field] = input
-            .split(',')
+            .split(",")
             .map((s) => s.trim())
             .filter(Boolean);
         } else {
-          (newData as Record<string, string | string[]>)[currentQuestion.field] = input;
+          (newData as Record<string, string | string[]>)[
+            currentQuestion.field
+          ] = input;
         }
         return newData;
       });
     }
 
-    setInput('');
+    setInput("");
 
     // Move to next question or complete
     const nextIndex = currentQuestionIndex + 1;
@@ -193,7 +209,7 @@ export function InterviewView() {
         const nextQuestion = INTERVIEW_QUESTIONS[nextIndex];
         const assistantMessage: InterviewMessage = {
           id: `assistant-${Date.now()}`,
-          role: 'assistant',
+          role: "assistant",
           content: `Great! **${nextQuestion.question}**\n\n_${nextQuestion.hint}_`,
           timestamp: new Date(),
         };
@@ -203,30 +219,34 @@ export function InterviewView() {
         // All questions answered - generate spec
         const summaryMessage: InterviewMessage = {
           id: `assistant-summary-${Date.now()}`,
-          role: 'assistant',
+          role: "assistant",
           content:
-            'Perfect! I have all the information I need. Now let me generate your project specification...',
+            "Perfect! I have all the information I need. Now let me generate your project specification...",
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, summaryMessage]);
         generateSpec({
           ...interviewData,
-          projectDescription: currentQuestionIndex === 0 ? input : interviewData.projectDescription,
+          projectDescription:
+            currentQuestionIndex === 0
+              ? input
+              : interviewData.projectDescription,
           techStack:
             currentQuestionIndex === 1
               ? input
-                  .split(',')
+                  .split(",")
                   .map((s) => s.trim())
                   .filter(Boolean)
               : interviewData.techStack,
           features:
             currentQuestionIndex === 2
               ? input
-                  .split(',')
+                  .split(",")
                   .map((s) => s.trim())
                   .filter(Boolean)
               : interviewData.features,
-          additionalNotes: currentQuestionIndex === 3 ? input : interviewData.additionalNotes,
+          additionalNotes:
+            currentQuestionIndex === 3 ? input : interviewData.additionalNotes,
         });
       }
     }, 500);
@@ -249,7 +269,7 @@ export function InterviewView() {
 
     const completionMessage: InterviewMessage = {
       id: `assistant-complete-${Date.now()}`,
-      role: 'assistant',
+      role: "assistant",
       content: `I've generated a draft project specification based on our conversation!\n\nPlease provide a project name and choose where to save your project, then click "Create Project" to get started.`,
       timestamp: new Date(),
     };
@@ -258,15 +278,15 @@ export function InterviewView() {
 
   const generateAppSpec = (data: InterviewState): string => {
     const projectName = data.projectDescription
-      .split(' ')
+      .split(" ")
       .slice(0, 3)
-      .join('-')
+      .join("-")
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '');
+      .replace(/[^a-z0-9-]/g, "");
 
     // Note: Must follow XML format as defined in apps/server/src/lib/app-spec-format.ts
     return `<project_specification>
-  <project_name>${projectName || 'my-project'}</project_name>
+  <project_name>${projectName || "my-project"}</project_name>
 
   <overview>
     ${data.projectDescription}
@@ -275,21 +295,25 @@ export function InterviewView() {
   <technology_stack>
     ${
       data.techStack.length > 0
-        ? data.techStack.map((tech) => `<technology>${tech}</technology>`).join('\n    ')
-        : '<!-- Define your tech stack -->'
+        ? data.techStack
+            .map((tech) => `<technology>${tech}</technology>`)
+            .join("\n    ")
+        : "<!-- Define your tech stack -->"
     }
   </technology_stack>
 
   <core_capabilities>
     ${
       data.features.length > 0
-        ? data.features.map((feature) => `<capability>${feature}</capability>`).join('\n    ')
-        : '<!-- List core features -->'
+        ? data.features
+            .map((feature) => `<capability>${feature}</capability>`)
+            .join("\n    ")
+        : "<!-- List core features -->"
     }
   </core_capabilities>
 
   <additional_requirements>
-    ${data.additionalNotes || 'None specified'}
+    ${data.additionalNotes || "None specified"}
   </additional_requirements>
 
   <development_guidelines>
@@ -303,8 +327,9 @@ export function InterviewView() {
 
   const handleSelectDirectory = async () => {
     const selectedPath = await openFileBrowser({
-      title: 'Select Base Directory',
-      description: 'Choose the parent directory where your new project will be created',
+      title: "Select Base Directory",
+      description:
+        "Choose the parent directory where your new project will be created",
       initialPath: projectPath || undefined,
     });
 
@@ -324,38 +349,41 @@ export function InterviewView() {
       const api = getElectronAPI();
       // Use platform-specific path separator
       const pathSep =
-        typeof window !== 'undefined' && window.electronAPI
-          ? navigator.platform.indexOf('Win') !== -1
-            ? '\\'
-            : '/'
-          : '/';
+        typeof window !== "undefined" && window.electronAPI
+          ? navigator.platform.indexOf("Win") !== -1
+            ? "\\"
+            : "/"
+          : "/";
       const fullProjectPath = `${projectPath}${pathSep}${projectName}`;
 
       // Create project directory
       const mkdirResult = await api.mkdir(fullProjectPath);
       if (!mkdirResult.success) {
-        toast.error('Failed to create project directory', {
-          description: mkdirResult.error || 'Unknown error occurred',
+        toast.error("Failed to create project directory", {
+          description: mkdirResult.error || "Unknown error occurred",
         });
         setIsGenerating(false);
         return;
       }
 
       // Write app_spec.txt with generated content
-      await api.writeFile(`${fullProjectPath}/.pegasus/app_spec.txt`, generatedSpec);
+      await api.writeFile(
+        `${fullProjectPath}/.pegasus/app_spec.txt`,
+        generatedSpec,
+      );
 
       // Create initial feature in the features folder
       const initialFeature: Feature = {
         id: generateUUID(),
-        category: 'Core',
-        description: 'Initial project setup',
-        status: 'backlog',
+        category: "Core",
+        description: "Initial project setup",
+        status: "backlog",
         skipTests: true,
         steps: [],
       };
 
       if (!api.features) {
-        throw new Error('Features API not available');
+        throw new Error("Features API not available");
       }
       await api.features.create(fullProjectPath, initialFeature);
 
@@ -373,24 +401,27 @@ export function InterviewView() {
       addProject(project);
       setCurrentProject(project);
     } catch (error) {
-      logger.error('Failed to create project:', error);
+      logger.error("Failed to create project:", error);
       setIsGenerating(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
   const handleGoBack = () => {
-    navigate({ to: '/' });
+    navigate({ to: "/" });
   };
 
   return (
-    <div className="flex-1 flex flex-col content-bg min-h-0" data-testid="interview-view">
+    <div
+      className="flex-1 flex flex-col content-bg min-h-0"
+      data-testid="interview-view"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-glass backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -408,7 +439,7 @@ export function InterviewView() {
             <h1 className="text-xl font-bold">New Project Interview</h1>
             <p className="text-sm text-muted-foreground">
               {isComplete
-                ? 'Specification generated!'
+                ? "Specification generated!"
                 : `Question ${currentQuestionIndex + 1} of ${INTERVIEW_QUESTIONS.length}`}
             </p>
           </div>
@@ -420,16 +451,18 @@ export function InterviewView() {
             <div
               key={index}
               className={cn(
-                'w-2 h-2 rounded-full transition-colors',
+                "w-2 h-2 rounded-full transition-colors",
                 index < currentQuestionIndex
-                  ? 'bg-green-500'
+                  ? "bg-green-500"
                   : index === currentQuestionIndex
-                    ? 'bg-primary'
-                    : 'bg-zinc-700'
+                    ? "bg-primary"
+                    : "bg-zinc-700",
               )}
             />
           ))}
-          {isComplete && <CheckCircle className="w-4 h-4 text-green-500 ml-2" />}
+          {isComplete && (
+            <CheckCircle className="w-4 h-4 text-green-500 ml-2" />
+          )}
         </div>
       </div>
 
@@ -442,15 +475,18 @@ export function InterviewView() {
         {messages.map((message) => (
           <div
             key={message.id}
-            className={cn('flex gap-3', message.role === 'user' && 'flex-row-reverse')}
+            className={cn(
+              "flex gap-3",
+              message.role === "user" && "flex-row-reverse",
+            )}
           >
             <div
               className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                message.role === 'assistant' ? 'bg-primary/10' : 'bg-muted'
+                "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                message.role === "assistant" ? "bg-primary/10" : "bg-muted",
               )}
             >
-              {message.role === 'assistant' ? (
+              {message.role === "assistant" ? (
                 <Bot className="w-4 h-4 text-primary" />
               ) : (
                 <User className="w-4 h-4" />
@@ -458,24 +494,28 @@ export function InterviewView() {
             </div>
             <Card
               className={cn(
-                'max-w-[80%]',
-                message.role === 'user'
-                  ? 'bg-transparent border border-primary text-foreground'
-                  : 'border border-primary/30 bg-card'
+                "max-w-[80%]",
+                message.role === "user"
+                  ? "bg-transparent border border-primary text-foreground"
+                  : "border border-primary/30 bg-card",
               )}
             >
               <CardContent className="px-3 py-2">
-                {message.role === 'assistant' ? (
+                {message.role === "assistant" ? (
                   <Markdown className="text-sm text-primary prose-headings:text-primary prose-strong:text-primary prose-code:text-primary">
                     {message.content}
                   </Markdown>
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {message.content}
+                  </p>
                 )}
                 <p
                   className={cn(
-                    'text-xs mt-1',
-                    message.role === 'user' ? 'text-muted-foreground' : 'text-primary/70'
+                    "text-xs mt-1",
+                    message.role === "user"
+                      ? "text-muted-foreground"
+                      : "text-primary/70",
                   )}
                 >
                   {message.timestamp.toLocaleTimeString()}
@@ -494,7 +534,9 @@ export function InterviewView() {
               <CardContent className="p-3">
                 <div className="flex items-center gap-2">
                   <Spinner size="sm" />
-                  <span className="text-sm text-primary">Generating specification...</span>
+                  <span className="text-sm text-primary">
+                    Generating specification...
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -504,7 +546,10 @@ export function InterviewView() {
         {/* Project Setup Form */}
         {showProjectSetup && (
           <div className="mt-6">
-            <Card className="bg-zinc-900/50 border-white/10" data-testid="project-setup-form">
+            <Card
+              className="bg-zinc-900/50 border-white/10"
+              data-testid="project-setup-form"
+            >
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <FileText className="w-5 h-5 text-primary" />
@@ -513,7 +558,10 @@ export function InterviewView() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="project-name" className="text-sm font-medium text-zinc-300">
+                    <label
+                      htmlFor="project-name"
+                      className="text-sm font-medium text-zinc-300"
+                    >
                       Project Name
                     </label>
                     <Input
@@ -527,7 +575,10 @@ export function InterviewView() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="project-path" className="text-sm font-medium text-zinc-300">
+                    <label
+                      htmlFor="project-path"
+                      className="text-sm font-medium text-zinc-300"
+                    >
                       Parent Directory
                     </label>
                     <div className="flex gap-2">
@@ -573,7 +624,11 @@ export function InterviewView() {
                   >
                     {isGenerating ? (
                       <>
-                        <Spinner size="sm" variant="foreground" className="mr-2" />
+                        <Spinner
+                          size="sm"
+                          variant="foreground"
+                          className="mr-2"
+                        />
                         Creating...
                       </>
                     ) : (

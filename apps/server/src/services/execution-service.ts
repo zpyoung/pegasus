@@ -2,35 +2,43 @@
  * ExecutionService - Feature execution lifecycle coordination
  */
 
-import path from 'path';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import type { Feature, StageCompilationContext } from '@pegasus/types';
-import { createLogger, classifyError, loadContextFiles, recordMemoryUsage } from '@pegasus/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import { getFeatureDir } from '@pegasus/platform';
-import { parseGitStatus } from '@pegasus/git-utils';
-import { ProviderFactory } from '../providers/provider-factory.js';
-import * as secureFs from '../lib/secure-fs.js';
+import path from "path";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import type { Feature, StageCompilationContext } from "@pegasus/types";
+import {
+  createLogger,
+  classifyError,
+  loadContextFiles,
+  recordMemoryUsage,
+} from "@pegasus/utils";
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import { getFeatureDir } from "@pegasus/platform";
+import { parseGitStatus } from "@pegasus/git-utils";
+import { ProviderFactory } from "../providers/provider-factory.js";
+import * as secureFs from "../lib/secure-fs.js";
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
   filterClaudeMdFromContext,
-} from '../lib/settings-helpers.js';
-import { validateWorkingDirectory } from '../lib/sdk-options.js';
-import { extractSummary } from './spec-parser.js';
-import { PauseExecutionError } from './pause-execution-error.js';
-import { formatAnsweredAgentQuestions } from './question-service.js';
-import type { TypedEventBus } from './typed-event-bus.js';
-import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
-import type { WorktreeResolver } from './worktree-resolver.js';
-import type { SettingsService } from './settings-service.js';
-import { pipelineService } from './pipeline-service.js';
-import { loadPipeline, compilePipeline } from './pipeline-compiler.js';
-import { StageRunner } from './stage-runner.js';
-import type { StageRunAgentFn } from './stage-runner.js';
-import type { QuestionService } from './question-service.js';
+} from "../lib/settings-helpers.js";
+import { validateWorkingDirectory } from "../lib/sdk-options.js";
+import { extractSummary } from "./spec-parser.js";
+import { PauseExecutionError } from "./pause-execution-error.js";
+import { formatAnsweredAgentQuestions } from "./question-service.js";
+import type { TypedEventBus } from "./typed-event-bus.js";
+import type {
+  ConcurrencyManager,
+  RunningFeature,
+} from "./concurrency-manager.js";
+import type { WorktreeResolver } from "./worktree-resolver.js";
+import type { SettingsService } from "./settings-service.js";
+import { pipelineService } from "./pipeline-service.js";
+import { loadPipeline, compilePipeline } from "./pipeline-compiler.js";
+import { StageRunner } from "./stage-runner.js";
+import type { StageRunAgentFn } from "./stage-runner.js";
+import type { QuestionService } from "./question-service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -50,7 +58,7 @@ export type {
   RecordSuccessFn,
   SaveExecutionStateFn,
   LoadContextFilesFn,
-} from './execution-types.js';
+} from "./execution-types.js";
 
 import type {
   RunAgentFn,
@@ -67,12 +75,12 @@ import type {
   RecordSuccessFn,
   SaveExecutionStateFn,
   LoadContextFilesFn,
-} from './execution-types.js';
+} from "./execution-types.js";
 
-const logger = createLogger('ExecutionService');
+const logger = createLogger("ExecutionService");
 
 /** Marker written by agent-executor for each tool invocation. */
-const TOOL_USE_MARKER = '🔧 Tool:';
+const TOOL_USE_MARKER = "🔧 Tool:";
 
 /** Minimum trimmed output length to consider agent work meaningful. */
 const MIN_MEANINGFUL_OUTPUT_LENGTH = 200;
@@ -98,7 +106,7 @@ export class ExecutionService {
     private recordSuccessFn: RecordSuccessFn,
     private saveExecutionStateFn: SaveExecutionStateFn,
     private loadContextFilesFn: LoadContextFilesFn,
-    private questionService?: QuestionService
+    private questionService?: QuestionService,
   ) {}
 
   private acquireRunningFeature(options: {
@@ -110,7 +118,10 @@ export class ExecutionService {
     return this.concurrencyManager.acquire(options);
   }
 
-  private releaseRunningFeature(featureId: string, options?: { force?: boolean }): void {
+  private releaseRunningFeature(
+    featureId: string,
+    options?: { force?: boolean },
+  ): void {
     this.concurrencyManager.release(featureId, options);
   }
 
@@ -120,27 +131,29 @@ export class ExecutionService {
    * modified by the agent, and correctly ignores pre-existing untracked files
    * whose content didn't change.
    */
-  private async captureFileStates(workDir: string): Promise<Map<string, string>> {
+  private async captureFileStates(
+    workDir: string,
+  ): Promise<Map<string, string>> {
     try {
-      const { stdout } = await execFileAsync('git', ['status', '--porcelain'], {
+      const { stdout } = await execFileAsync("git", ["status", "--porcelain"], {
         cwd: workDir,
         maxBuffer: 10 * 1024 * 1024,
       });
       const files = parseGitStatus(stdout);
       const states = new Map<string, string>();
       for (const f of files) {
-        if (f.status === 'D') {
-          states.set(f.path, 'DELETED');
+        if (f.status === "D") {
+          states.set(f.path, "DELETED");
         } else {
           try {
             const { stdout: hash } = await execFileAsync(
-              'git',
-              ['hash-object', f.path],
-              { cwd: workDir }
+              "git",
+              ["hash-object", f.path],
+              { cwd: workDir },
             );
             states.set(f.path, hash.trim());
           } catch {
-            states.set(f.path, 'UNREADABLE');
+            states.set(f.path, "UNREADABLE");
           }
         }
       }
@@ -151,9 +164,11 @@ export class ExecutionService {
   }
 
   private extractTitleFromDescription(description: string | undefined): string {
-    if (!description?.trim()) return 'Untitled Feature';
-    const firstLine = description.split('\n')[0].trim();
-    return firstLine.length <= 60 ? firstLine : firstLine.substring(0, 57) + '...';
+    if (!description?.trim()) return "Untitled Feature";
+    const firstLine = description.split("\n")[0].trim();
+    return firstLine.length <= 60
+      ? firstLine
+      : firstLine.substring(0, 57) + "...";
   }
 
   /**
@@ -180,15 +195,16 @@ ${feature.spec}
     if (feature.imagePaths && feature.imagePaths.length > 0) {
       const imagesList = feature.imagePaths
         .map((img, idx) => {
-          const imgPath = typeof img === 'string' ? img : img.path;
+          const imgPath = typeof img === "string" ? img : img.path;
           const filename =
-            typeof img === 'string'
-              ? imgPath.split('/').pop()
-              : img.filename || imgPath.split('/').pop();
-          const mimeType = typeof img === 'string' ? 'image/*' : img.mimeType || 'image/*';
+            typeof img === "string"
+              ? imgPath.split("/").pop()
+              : img.filename || imgPath.split("/").pop();
+          const mimeType =
+            typeof img === "string" ? "image/*" : img.mimeType || "image/*";
           return `   ${idx + 1}. ${filename} (${mimeType})\n      Path: ${imgPath}`;
         })
-        .join('\n');
+        .join("\n");
       prompt += `\n**Context Images Attached:**\n${feature.imagePaths.length} image(s) attached:\n${imagesList}\n`;
     }
 
@@ -209,7 +225,7 @@ ${feature.spec}
     taskExecutionPrompts: {
       implementationInstructions: string;
       playwrightVerificationInstructions: string;
-    }
+    },
   ): string {
     let prompt = this.buildFeatureDescription(feature);
 
@@ -225,7 +241,7 @@ ${feature.spec}
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean }
+    options?: { continuationPrompt?: string; _calledInternally?: boolean },
   ): Promise<void> {
     const tempRunningFeature = this.acquireRunningFeature({
       featureId,
@@ -250,48 +266,67 @@ ${feature.spec}
       // redundantly update the status).
       if (
         !options?._calledInternally &&
-        (feature.status === 'backlog' ||
-          feature.status === 'ready' ||
-          feature.status === 'interrupted')
+        (feature.status === "backlog" ||
+          feature.status === "ready" ||
+          feature.status === "interrupted")
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        await this.updateFeatureStatusFn(projectPath, featureId, "in_progress");
       }
 
       if (!options?.continuationPrompt) {
-        if (feature.planSpec?.status === 'approved') {
-          const prompts = await getPromptCustomization(this.settingsService, '[ExecutionService]');
-          let continuationPrompt = prompts.taskExecution.continuationAfterApprovalTemplate;
+        if (feature.planSpec?.status === "approved") {
+          const prompts = await getPromptCustomization(
+            this.settingsService,
+            "[ExecutionService]",
+          );
+          let continuationPrompt =
+            prompts.taskExecution.continuationAfterApprovalTemplate;
           continuationPrompt = continuationPrompt
-            .replace(/\{\{userFeedback\}\}/g, '')
-            .replace(/\{\{approvedPlan\}\}/g, feature.planSpec.content || '');
+            .replace(/\{\{userFeedback\}\}/g, "")
+            .replace(/\{\{approvedPlan\}\}/g, feature.planSpec.content || "");
           return await this.executeFeature(
             projectPath,
             featureId,
             useWorktrees,
             isAutoMode,
             providedWorktreePath,
-            { continuationPrompt, _calledInternally: true }
+            { continuationPrompt, _calledInternally: true },
           );
         }
         // Skip legacy context-based resumption for YAML pipeline features.
         // StageRunner handles its own resumption via persisted pipeline-state.json.
-        if (!feature.pipeline && await this.contextExistsFn(projectPath, featureId)) {
-          return await this.resumeFeatureFn(projectPath, featureId, useWorktrees, true);
+        if (
+          !feature.pipeline &&
+          (await this.contextExistsFn(projectPath, featureId))
+        ) {
+          return await this.resumeFeatureFn(
+            projectPath,
+            featureId,
+            useWorktrees,
+            true,
+          );
         }
       }
 
       let worktreePath: string | null = providedWorktreePath ?? null;
       const branchName = feature.branchName;
       if (!worktreePath && useWorktrees && branchName) {
-        worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
+        worktreePath = await this.worktreeResolver.findWorktreeForBranch(
+          projectPath,
+          branchName,
+        );
         if (!worktreePath) {
           throw new Error(
-            `Worktree enabled but no worktree found for feature branch "${branchName}".`
+            `Worktree enabled but no worktree found for feature branch "${branchName}".`,
           );
         }
-        logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
+        logger.info(
+          `Using worktree for branch "${branchName}": ${worktreePath}`,
+        );
       }
-      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
+      const workDir = worktreePath
+        ? path.resolve(worktreePath)
+        : path.resolve(projectPath);
       validateWorkingDirectory(workDir);
 
       // Capture baseline file states (path → content hash) before agent execution
@@ -305,43 +340,52 @@ ${feature.spec}
       // backlog, ready, or interrupted to avoid overwriting a concurrent terminal status.
       if (
         options?._calledInternally &&
-        (feature.status === 'backlog' ||
-          feature.status === 'ready' ||
-          feature.status === 'interrupted')
+        (feature.status === "backlog" ||
+          feature.status === "ready" ||
+          feature.status === "interrupted")
       ) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
+        await this.updateFeatureStatusFn(projectPath, featureId, "in_progress");
       }
-      this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
+      this.eventBus.emitAutoModeEvent("auto_mode_feature_start", {
         featureId,
         projectPath,
         branchName: feature.branchName ?? null,
         feature: {
           id: featureId,
-          title: feature.title || 'Loading...',
-          description: feature.description || 'Feature is starting',
+          title: feature.title || "Loading...",
+          description: feature.description || "Feature is starting",
         },
       });
 
       const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
         projectPath,
         this.settingsService,
-        '[ExecutionService]'
+        "[ExecutionService]",
       );
-      const useClaudeCodeSystemPrompt = await getUseClaudeCodeSystemPromptSetting(
-        projectPath,
+      const useClaudeCodeSystemPrompt =
+        await getUseClaudeCodeSystemPromptSetting(
+          projectPath,
+          this.settingsService,
+          "[ExecutionService]",
+        );
+      const prompts = await getPromptCustomization(
         this.settingsService,
-        '[ExecutionService]'
+        "[ExecutionService]",
       );
-      const prompts = await getPromptCustomization(this.settingsService, '[ExecutionService]');
       const contextResult = await this.loadContextFilesFn({
         projectPath,
-        fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+        fsModule: secureFs as Parameters<
+          typeof loadContextFiles
+        >[0]["fsModule"],
         taskContext: {
-          title: feature.title ?? '',
-          description: feature.description ?? '',
+          title: feature.title ?? "",
+          description: feature.description ?? "",
         },
       });
-      const combinedSystemPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
+      const combinedSystemPrompt = filterClaudeMdFromContext(
+        contextResult,
+        autoLoadClaudeMd,
+      );
 
       // ====================================================================
       // YAML Pipeline Execution Branch
@@ -362,19 +406,22 @@ ${feature.spec}
 
         logger.info(
           `[executeFeature] Feature ${featureId} uses YAML pipeline "${feature.pipeline}". ` +
-            `Bypassing legacy flow and executing via StageRunner.`
+            `Bypassing legacy flow and executing via StageRunner.`,
         );
 
         // Load and compile the YAML pipeline definition
-        const yamlPipelineConfig = await loadPipeline(projectPath, feature.pipeline);
+        const yamlPipelineConfig = await loadPipeline(
+          projectPath,
+          feature.pipeline,
+        );
         const resolvedStages = compilePipeline(yamlPipelineConfig);
 
         // Build the stage compilation context for Handlebars template resolution.
         // Provides task/project/input variables to stage prompt templates.
         const compilationContext: StageCompilationContext = {
           task: {
-            description: feature.description ?? '',
-            title: feature.title ?? '',
+            description: feature.description ?? "",
+            title: feature.title ?? "",
           },
           project: {},
           inputs: feature.pipelineInputs,
@@ -383,9 +430,11 @@ ${feature.spec}
         // Enrich project context from project settings when available
         if (this.settingsService) {
           try {
-            const projectSettings = await this.settingsService.getProjectSettings(projectPath);
+            const projectSettings =
+              await this.settingsService.getProjectSettings(projectPath);
             if (projectSettings.testCommand) {
-              compilationContext.project.test_command = projectSettings.testCommand;
+              compilationContext.project.test_command =
+                projectSettings.testCommand;
             }
           } catch {
             // Project settings may not exist — proceed with empty project context
@@ -395,13 +444,14 @@ ${feature.spec}
         // Resolve model for the running feature metadata
         const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
         tempRunningFeature.model = model;
-        tempRunningFeature.provider = ProviderFactory.getProviderNameForModel(model);
+        tempRunningFeature.provider =
+          ProviderFactory.getProviderNameForModel(model);
 
         // Create StageRunner and execute all pipeline stages sequentially
         const stageRunner = new StageRunner(
           this.eventBus,
           this.runAgentFn as StageRunAgentFn,
-          this.questionService
+          this.questionService,
         );
 
         const runResult = await stageRunner.run({
@@ -421,22 +471,26 @@ ${feature.spec}
         logger.info(
           `[executeFeature] YAML pipeline "${yamlPipelineConfig.name}" for feature ${featureId}: ` +
             `${runResult.stagesCompleted}/${runResult.totalStages} stages completed` +
-            (runResult.stagesSkipped > 0 ? ` (${runResult.stagesSkipped} resumed)` : '') +
-            (runResult.aborted ? ' (aborted)' : '') +
-            (!runResult.success && !runResult.aborted ? ` (failed: ${runResult.error})` : '')
+            (runResult.stagesSkipped > 0
+              ? ` (${runResult.stagesSkipped} resumed)`
+              : "") +
+            (runResult.aborted ? " (aborted)" : "") +
+            (!runResult.success && !runResult.aborted
+              ? ` (failed: ${runResult.error})`
+              : ""),
         );
 
         pipelineCompleted = runResult.success;
 
         if (runResult.aborted) {
           // Re-throw as an error so the outer catch block handles abort status
-          throw new Error('Pipeline execution aborted');
+          throw new Error("Pipeline execution aborted");
         }
 
         if (!runResult.success) {
           throw new Error(
             runResult.error ||
-              `Pipeline "${yamlPipelineConfig.name}" failed at stage "${runResult.failedStageId}"`
+              `Pipeline "${yamlPipelineConfig.name}" failed at stage "${runResult.failedStageId}"`,
           );
         }
       }
@@ -446,94 +500,102 @@ ${feature.spec}
       // ====================================================================
       // Skipped when a YAML pipeline was used (handled above).
       if (!usedYamlPipeline) {
-      let prompt: string;
+        let prompt: string;
 
-      if (options?.continuationPrompt) {
-        prompt = options.continuationPrompt;
-      } else {
-        const planningPrefix = await this.getPlanningPromptPrefixFn(feature);
-        if (planningPrefix) {
-          // Planning mode active: use planning instructions + feature description only.
-          // Do NOT include implementationInstructions — they conflict with the planning
-          // prompt's "DO NOT proceed with implementation until approval" directive.
-          prompt = planningPrefix + '\n\n' + this.buildFeatureDescription(feature);
+        if (options?.continuationPrompt) {
+          prompt = options.continuationPrompt;
         } else {
-          prompt = this.buildFeaturePrompt(feature, prompts.taskExecution);
+          const planningPrefix = await this.getPlanningPromptPrefixFn(feature);
+          if (planningPrefix) {
+            // Planning mode active: use planning instructions + feature description only.
+            // Do NOT include implementationInstructions — they conflict with the planning
+            // prompt's "DO NOT proceed with implementation until approval" directive.
+            prompt =
+              planningPrefix + "\n\n" + this.buildFeatureDescription(feature);
+          } else {
+            prompt = this.buildFeaturePrompt(feature, prompts.taskExecution);
+          }
+          if (feature.planningMode && feature.planningMode !== "skip") {
+            this.eventBus.emitAutoModeEvent("planning_started", {
+              featureId: feature.id,
+              mode: feature.planningMode,
+              message: `Starting ${feature.planningMode} planning phase`,
+            });
+          }
         }
-        if (feature.planningMode && feature.planningMode !== 'skip') {
-          this.eventBus.emitAutoModeEvent('planning_started', {
-            featureId: feature.id,
-            mode: feature.planningMode,
-            message: `Starting ${feature.planningMode} planning phase`,
-          });
-        }
-      }
 
-      const imagePaths = feature.imagePaths?.map((img) =>
-        typeof img === 'string' ? img : img.path
-      );
-      const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
-      tempRunningFeature.model = model;
-      tempRunningFeature.provider = ProviderFactory.getProviderNameForModel(model);
-
-      await this.runAgentFn(
-        workDir,
-        featureId,
-        prompt,
-        abortController,
-        projectPath,
-        imagePaths,
-        model,
-        {
-          projectPath,
-          planningMode: feature.planningMode,
-          requirePlanApproval: feature.requirePlanApproval,
-          systemPrompt: combinedSystemPrompt || undefined,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          thinkingLevel: feature.thinkingLevel,
-          reasoningEffort: feature.reasoningEffort,
-          providerId: feature.providerId,
-          branchName: feature.branchName ?? null,
-        }
-      );
-
-      // Check for incomplete tasks after agent execution.
-      // The agent may have finished early (hit max turns, decided it was done, etc.)
-      // while tasks are still pending. If so, re-run the agent to complete remaining tasks.
-      const MAX_TASK_RETRY_ATTEMPTS = 3;
-      let taskRetryAttempts = 0;
-      while (!abortController.signal.aborted && taskRetryAttempts < MAX_TASK_RETRY_ATTEMPTS) {
-        const currentFeature = await this.loadFeatureFn(projectPath, featureId);
-        if (!currentFeature?.planSpec?.tasks) break;
-
-        const pendingTasks = currentFeature.planSpec.tasks.filter(
-          (t) => t.status === 'pending' || t.status === 'in_progress'
+        const imagePaths = feature.imagePaths?.map((img) =>
+          typeof img === "string" ? img : img.path,
         );
-        if (pendingTasks.length === 0) break;
+        const model = resolveModelString(feature.model, DEFAULT_MODELS.claude);
+        tempRunningFeature.model = model;
+        tempRunningFeature.provider =
+          ProviderFactory.getProviderNameForModel(model);
 
-        taskRetryAttempts++;
-        const totalTasks = currentFeature.planSpec.tasks.length;
-        const completedTasks = currentFeature.planSpec.tasks.filter(
-          (t) => t.status === 'completed'
-        ).length;
-        logger.info(
-          `[executeFeature] Feature ${featureId} has ${pendingTasks.length} incomplete tasks (${completedTasks}/${totalTasks} completed). Re-running agent (attempt ${taskRetryAttempts}/${MAX_TASK_RETRY_ATTEMPTS})`
-        );
-
-        this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+        await this.runAgentFn(
+          workDir,
           featureId,
-          branchName: feature.branchName ?? null,
-          content: `Agent finished with ${pendingTasks.length} tasks remaining. Re-running to complete tasks (attempt ${taskRetryAttempts}/${MAX_TASK_RETRY_ATTEMPTS})...`,
+          prompt,
+          abortController,
           projectPath,
-        });
+          imagePaths,
+          model,
+          {
+            projectPath,
+            planningMode: feature.planningMode,
+            requirePlanApproval: feature.requirePlanApproval,
+            systemPrompt: combinedSystemPrompt || undefined,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            thinkingLevel: feature.thinkingLevel,
+            reasoningEffort: feature.reasoningEffort,
+            providerId: feature.providerId,
+            branchName: feature.branchName ?? null,
+          },
+        );
 
-        // Build a continuation prompt that tells the agent to finish remaining tasks
-        const remainingTasksList = pendingTasks
-          .map((t) => `- ${t.id}: ${t.description} (${t.status})`)
-          .join('\n');
+        // Check for incomplete tasks after agent execution.
+        // The agent may have finished early (hit max turns, decided it was done, etc.)
+        // while tasks are still pending. If so, re-run the agent to complete remaining tasks.
+        const MAX_TASK_RETRY_ATTEMPTS = 3;
+        let taskRetryAttempts = 0;
+        while (
+          !abortController.signal.aborted &&
+          taskRetryAttempts < MAX_TASK_RETRY_ATTEMPTS
+        ) {
+          const currentFeature = await this.loadFeatureFn(
+            projectPath,
+            featureId,
+          );
+          if (!currentFeature?.planSpec?.tasks) break;
 
-        const continuationPrompt = `## Continue Implementation - Incomplete Tasks
+          const pendingTasks = currentFeature.planSpec.tasks.filter(
+            (t) => t.status === "pending" || t.status === "in_progress",
+          );
+          if (pendingTasks.length === 0) break;
+
+          taskRetryAttempts++;
+          const totalTasks = currentFeature.planSpec.tasks.length;
+          const completedTasks = currentFeature.planSpec.tasks.filter(
+            (t) => t.status === "completed",
+          ).length;
+          logger.info(
+            `[executeFeature] Feature ${featureId} has ${pendingTasks.length} incomplete tasks (${completedTasks}/${totalTasks} completed). Re-running agent (attempt ${taskRetryAttempts}/${MAX_TASK_RETRY_ATTEMPTS})`,
+          );
+
+          this.eventBus.emitAutoModeEvent("auto_mode_progress", {
+            featureId,
+            branchName: feature.branchName ?? null,
+            content: `Agent finished with ${pendingTasks.length} tasks remaining. Re-running to complete tasks (attempt ${taskRetryAttempts}/${MAX_TASK_RETRY_ATTEMPTS})...`,
+            projectPath,
+          });
+
+          // Build a continuation prompt that tells the agent to finish remaining tasks
+          const remainingTasksList = pendingTasks
+            .map((t) => `- ${t.id}: ${t.description} (${t.status})`)
+            .join("\n");
+
+          const continuationPrompt = `## Continue Implementation - Incomplete Tasks
 
 The previous agent session ended before all tasks were completed. Please continue implementing the remaining tasks.
 
@@ -543,69 +605,70 @@ ${remainingTasksList}
 
 Please continue from where you left off and complete all remaining tasks. Use the same [TASK_START:ID] and [TASK_COMPLETE:ID] markers for each task.`;
 
-        await this.runAgentFn(
-          workDir,
-          featureId,
-          continuationPrompt,
-          abortController,
-          projectPath,
-          undefined,
-          model,
-          {
+          await this.runAgentFn(
+            workDir,
+            featureId,
+            continuationPrompt,
+            abortController,
             projectPath,
-            planningMode: 'skip',
-            requirePlanApproval: false,
-            systemPrompt: combinedSystemPrompt || undefined,
-            autoLoadClaudeMd,
-            useClaudeCodeSystemPrompt,
-            thinkingLevel: feature.thinkingLevel,
-            reasoningEffort: feature.reasoningEffort,
-            providerId: feature.providerId,
-            branchName: feature.branchName ?? null,
-          }
-        );
-      }
-
-      // Log if tasks are still incomplete after retry attempts
-      if (taskRetryAttempts >= MAX_TASK_RETRY_ATTEMPTS) {
-        const finalFeature = await this.loadFeatureFn(projectPath, featureId);
-        const stillPending = finalFeature?.planSpec?.tasks?.filter(
-          (t) => t.status === 'pending' || t.status === 'in_progress'
-        );
-        if (stillPending && stillPending.length > 0) {
-          logger.warn(
-            `[executeFeature] Feature ${featureId} still has ${stillPending.length} incomplete tasks after ${MAX_TASK_RETRY_ATTEMPTS} retry attempts. Moving to final status.`
+            undefined,
+            model,
+            {
+              projectPath,
+              planningMode: "skip",
+              requirePlanApproval: false,
+              systemPrompt: combinedSystemPrompt || undefined,
+              autoLoadClaudeMd,
+              useClaudeCodeSystemPrompt,
+              thinkingLevel: feature.thinkingLevel,
+              reasoningEffort: feature.reasoningEffort,
+              providerId: feature.providerId,
+              branchName: feature.branchName ?? null,
+            },
           );
         }
-      }
 
-      const legacyPipelineConfig = await pipelineService.getPipelineConfig(projectPath);
-      const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
-      const sortedSteps = [...(legacyPipelineConfig?.steps || [])]
-        .sort((a, b) => a.order - b.order)
-        .filter((step) => !excludedStepIds.has(step.id));
-      if (sortedSteps.length > 0) {
-        await this.executePipelineFn({
-          projectPath,
-          featureId,
-          feature,
-          steps: sortedSteps,
-          workDir,
-          worktreePath,
-          branchName: feature.branchName ?? null,
-          abortController,
-          autoLoadClaudeMd,
-          useClaudeCodeSystemPrompt,
-          testAttempts: 0,
-          maxTestAttempts: 5,
-        });
-        pipelineCompleted = true;
-        // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it
-        const refreshed = await this.loadFeatureFn(projectPath, featureId);
-        if (refreshed?.status === 'merge_conflict') {
-          return;
+        // Log if tasks are still incomplete after retry attempts
+        if (taskRetryAttempts >= MAX_TASK_RETRY_ATTEMPTS) {
+          const finalFeature = await this.loadFeatureFn(projectPath, featureId);
+          const stillPending = finalFeature?.planSpec?.tasks?.filter(
+            (t) => t.status === "pending" || t.status === "in_progress",
+          );
+          if (stillPending && stillPending.length > 0) {
+            logger.warn(
+              `[executeFeature] Feature ${featureId} still has ${stillPending.length} incomplete tasks after ${MAX_TASK_RETRY_ATTEMPTS} retry attempts. Moving to final status.`,
+            );
+          }
         }
-      }
+
+        const legacyPipelineConfig =
+          await pipelineService.getPipelineConfig(projectPath);
+        const excludedStepIds = new Set(feature.excludedPipelineSteps || []);
+        const sortedSteps = [...(legacyPipelineConfig?.steps || [])]
+          .sort((a, b) => a.order - b.order)
+          .filter((step) => !excludedStepIds.has(step.id));
+        if (sortedSteps.length > 0) {
+          await this.executePipelineFn({
+            projectPath,
+            featureId,
+            feature,
+            steps: sortedSteps,
+            workDir,
+            worktreePath,
+            branchName: feature.branchName ?? null,
+            abortController,
+            autoLoadClaudeMd,
+            useClaudeCodeSystemPrompt,
+            testAttempts: 0,
+            maxTestAttempts: 5,
+          });
+          pipelineCompleted = true;
+          // Check if pipeline set a terminal status (e.g., merge_conflict) — don't overwrite it
+          const refreshed = await this.loadFeatureFn(projectPath, featureId);
+          if (refreshed?.status === "merge_conflict") {
+            return;
+          }
+        }
       } // end legacy flow
 
       // Compute agent-modified files by comparing content hashes before/after
@@ -629,34 +692,40 @@ Please continue from where you left off and complete all remaining tasks. Use th
           }
         }
         if (agentModifiedFiles.length > 0) {
-          const currentFeature = await this.loadFeatureFn(projectPath, featureId);
+          const currentFeature = await this.loadFeatureFn(
+            projectPath,
+            featureId,
+          );
           if (currentFeature) {
             currentFeature.agentModifiedFiles = agentModifiedFiles;
             const featurePath = path.join(
               getFeatureDir(projectPath, featureId),
-              'feature.json'
+              "feature.json",
             );
             await secureFs.writeFile(
               featurePath,
               JSON.stringify(currentFeature, null, 2),
-              'utf-8'
+              "utf-8",
             );
           }
         }
       } catch (err) {
         logger.warn(
           `[executeFeature] Failed to capture agent-modified files for ${featureId}:`,
-          err
+          err,
         );
       }
 
       // Read agent output before determining final status.
       // CLI-based providers (Cursor, Codex, etc.) may exit quickly without doing
       // meaningful work. Check output to avoid prematurely marking as 'verified'.
-      const outputPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
-      let agentOutput = '';
+      const outputPath = path.join(
+        getFeatureDir(projectPath, featureId),
+        "agent-output.md",
+      );
+      let agentOutput = "";
       try {
-        agentOutput = (await secureFs.readFile(outputPath, 'utf-8')) as string;
+        agentOutput = (await secureFs.readFile(outputPath, "utf-8")) as string;
       } catch {
         /* */
       }
@@ -666,23 +735,24 @@ Please continue from where you left off and complete all remaining tasks. Use th
       // each time a tool is invoked. No tool usage suggests the CLI exited
       // without performing implementation work.
       const hasToolUsage = agentOutput.includes(TOOL_USE_MARKER);
-      const isOutputTooShort = agentOutput.trim().length < MIN_MEANINGFUL_OUTPUT_LENGTH;
+      const isOutputTooShort =
+        agentOutput.trim().length < MIN_MEANINGFUL_OUTPUT_LENGTH;
       const agentDidWork = hasToolUsage && !isOutputTooShort;
 
-      let finalStatus: 'verified' | 'waiting_approval';
+      let finalStatus: "verified" | "waiting_approval";
       if (feature.skipTests) {
-        finalStatus = 'waiting_approval';
+        finalStatus = "waiting_approval";
       } else if (!agentDidWork) {
         // Agent didn't produce meaningful output (e.g., CLI exited quickly).
         // Route to waiting_approval so the user can review and re-run.
-        finalStatus = 'waiting_approval';
+        finalStatus = "waiting_approval";
         logger.warn(
           `[executeFeature] Feature ${featureId}: agent produced insufficient output ` +
             `(${agentOutput.trim().length}/${MIN_MEANINGFUL_OUTPUT_LENGTH} chars, toolUsage=${hasToolUsage}). ` +
-            `Setting status to waiting_approval instead of verified.`
+            `Setting status to waiting_approval instead of verified.`,
         );
       } else {
-        finalStatus = 'verified';
+        finalStatus = "verified";
       }
 
       await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
@@ -692,7 +762,9 @@ Please continue from where you left off and complete all remaining tasks. Use th
       const completedFeature = await this.loadFeatureFn(projectPath, featureId);
       const totalTasks = completedFeature?.planSpec?.tasks?.length ?? 0;
       const completedTasks =
-        completedFeature?.planSpec?.tasks?.filter((t) => t.status === 'completed').length ?? 0;
+        completedFeature?.planSpec?.tasks?.filter(
+          (t) => t.status === "completed",
+        ).length ?? 0;
       const hasIncompleteTasks = totalTasks > 0 && completedTasks < totalTasks;
 
       try {
@@ -701,7 +773,8 @@ Please continue from where you left off and complete all remaining tasks. Use th
         // The agent-executor already extracts and saves summaries during execution
         if (agentOutput && !completedFeature?.summary) {
           const summary = extractSummary(agentOutput);
-          if (summary) await this.saveFeatureSummaryFn(projectPath, featureId, summary);
+          if (summary)
+            await this.saveFeatureSummaryFn(projectPath, featureId, summary);
         }
         if (contextResult.memoryFiles.length > 0 && agentOutput) {
           await recordMemoryUsage(
@@ -709,7 +782,7 @@ Please continue from where you left off and complete all remaining tasks. Use th
             contextResult.memoryFiles,
             agentOutput,
             true,
-            secureFs as Parameters<typeof recordMemoryUsage>[4]
+            secureFs as Parameters<typeof recordMemoryUsage>[4],
           );
         }
         await this.recordLearningsFn(projectPath, feature, agentOutput);
@@ -717,18 +790,20 @@ Please continue from where you left off and complete all remaining tasks. Use th
         /* learnings recording failed */
       }
 
-      const elapsedSeconds = Math.round((Date.now() - tempRunningFeature.startTime) / 1000);
+      const elapsedSeconds = Math.round(
+        (Date.now() - tempRunningFeature.startTime) / 1000,
+      );
       let completionMessage = `Feature completed in ${elapsedSeconds}s`;
-      if (finalStatus === 'verified') completionMessage += ' - auto-verified';
+      if (finalStatus === "verified") completionMessage += " - auto-verified";
       if (hasIncompleteTasks)
         completionMessage += ` (${completedTasks}/${totalTasks} tasks completed)`;
 
       if (isAutoMode) {
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           featureName: feature.title,
           branchName: feature.branchName ?? null,
-          executionMode: 'auto',
+          executionMode: "auto",
           passes: true,
           message: completionMessage,
           projectPath,
@@ -740,22 +815,28 @@ Please continue from where you left off and complete all remaining tasks. Use th
       // PauseExecutionError signals an intentional pause (question asked or approval needed).
       // This is not a failure — release resources and set status to waiting_question.
       if (error instanceof PauseExecutionError) {
-        logger.info(`Feature ${featureId} paused for ${error.reason} — setting waiting_question`);
-        await this.updateFeatureStatusFn(projectPath, featureId, 'waiting_question');
+        logger.info(
+          `Feature ${featureId} paused for ${error.reason} — setting waiting_question`,
+        );
+        await this.updateFeatureStatusFn(
+          projectPath,
+          featureId,
+          "waiting_question",
+        );
         // Fall through to finally block (resource release). Do not track failure or emit error.
         return;
       }
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
-        await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
+        await this.updateFeatureStatusFn(projectPath, featureId, "interrupted");
         if (isAutoMode) {
-          this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+          this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
             featureId,
             featureName: feature?.title,
             branchName: feature?.branchName ?? null,
-            executionMode: 'auto',
+            executionMode: "auto",
             passes: false,
-            message: 'Feature stopped by user',
+            message: "Feature stopped by user",
             projectPath,
           });
         }
@@ -763,29 +844,38 @@ Please continue from where you left off and complete all remaining tasks. Use th
         logger.error(`Feature ${featureId} failed:`, error);
         // If pipeline steps completed successfully, don't send the feature back to backlog.
         // The pipeline work is done — set to waiting_approval so the user can review.
-        const fallbackStatus = pipelineCompleted ? 'waiting_approval' : 'backlog';
+        const fallbackStatus = pipelineCompleted
+          ? "waiting_approval"
+          : "backlog";
         if (pipelineCompleted) {
           logger.info(
             `[executeFeature] Feature ${featureId} failed after pipeline completed. ` +
-              `Setting status to waiting_approval instead of backlog to preserve pipeline work.`
+              `Setting status to waiting_approval instead of backlog to preserve pipeline work.`,
           );
         }
         // Don't overwrite terminal states like 'merge_conflict' that were set during pipeline execution
         let currentStatus: string | undefined;
         try {
-          const currentFeature = await this.loadFeatureFn(projectPath, featureId);
+          const currentFeature = await this.loadFeatureFn(
+            projectPath,
+            featureId,
+          );
           currentStatus = currentFeature?.status;
         } catch (loadErr) {
           // If loading fails, log it and proceed with the status update anyway
           logger.warn(
             `[executeFeature] Failed to reload feature ${featureId} for status check:`,
-            loadErr
+            loadErr,
           );
         }
-        if (currentStatus !== 'merge_conflict') {
-          await this.updateFeatureStatusFn(projectPath, featureId, fallbackStatus);
+        if (currentStatus !== "merge_conflict") {
+          await this.updateFeatureStatusFn(
+            projectPath,
+            featureId,
+            fallbackStatus,
+          );
         }
-        this.eventBus.emitAutoModeEvent('auto_mode_error', {
+        this.eventBus.emitAutoModeEvent("auto_mode_error", {
           featureId,
           featureName: feature?.title,
           branchName: feature?.branchName ?? null,
@@ -793,13 +883,22 @@ Please continue from where you left off and complete all remaining tasks. Use th
           errorType: errorInfo.type,
           projectPath,
         });
-        if (this.trackFailureFn({ type: errorInfo.type, message: errorInfo.message })) {
-          this.signalPauseFn({ type: errorInfo.type, message: errorInfo.message });
+        if (
+          this.trackFailureFn({
+            type: errorInfo.type,
+            message: errorInfo.message,
+          })
+        ) {
+          this.signalPauseFn({
+            type: errorInfo.type,
+            message: errorInfo.message,
+          });
         }
       }
     } finally {
       this.releaseRunningFeature(featureId);
-      if (isAutoMode && projectPath) await this.saveExecutionStateFn(projectPath);
+      if (isAutoMode && projectPath)
+        await this.saveExecutionStateFn(projectPath);
     }
   }
 
@@ -815,11 +914,14 @@ Please continue from where you left off and complete all remaining tasks. Use th
     // eventually runs. By persisting and emitting the status change here, the
     // board updates immediately regardless of how long the subprocess takes to stop.
     try {
-      await this.updateFeatureStatusFn(projectPath, featureId, 'interrupted');
+      await this.updateFeatureStatusFn(projectPath, featureId, "interrupted");
     } catch (err) {
       // Non-fatal: the abort still proceeds and executeFeature's catch block
       // will attempt the same update once the subprocess terminates.
-      logger.warn(`stopFeature: failed to immediately update status for ${featureId}:`, err);
+      logger.warn(
+        `stopFeature: failed to immediately update status for ${featureId}:`,
+        err,
+      );
     }
 
     running.abortController.abort();

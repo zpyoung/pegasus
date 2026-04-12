@@ -1,16 +1,19 @@
-import { RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+import { RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { UI_MONO_FONT_OPTIONS, DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  UI_MONO_FONT_OPTIONS,
+  DEFAULT_FONT_VALUE,
+} from "@/config/ui-font-options";
 
 interface EditorSettingsFormProps {
   editorFontSize: number;
@@ -35,7 +38,9 @@ export function EditorSettingsForm({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs font-medium">Font Size</Label>
-          <span className="text-xs text-muted-foreground">{editorFontSize}px</span>
+          <span className="text-xs text-muted-foreground">
+            {editorFontSize}px
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Slider
@@ -74,7 +79,10 @@ export function EditorSettingsForm({
               <SelectItem key={option.value} value={option.value}>
                 <span
                   style={{
-                    fontFamily: option.value === DEFAULT_FONT_VALUE ? undefined : option.value,
+                    fontFamily:
+                      option.value === DEFAULT_FONT_VALUE
+                        ? undefined
+                        : option.value,
                   }}
                 >
                   {option.label}

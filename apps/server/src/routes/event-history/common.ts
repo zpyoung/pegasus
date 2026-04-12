@@ -2,11 +2,14 @@
  * Common utilities for event history routes
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
 /** Logger instance for event history operations */
-export const logger = createLogger('EventHistory');
+export const logger = createLogger("EventHistory");
 
 /**
  * Extract user-friendly error message from error objects

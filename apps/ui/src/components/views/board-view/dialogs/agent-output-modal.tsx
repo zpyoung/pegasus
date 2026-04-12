@@ -1,32 +1,39 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { List, FileText, GitBranch, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { LogViewer } from '@/components/ui/log-viewer';
-import { GitDiffPanel } from '@/components/ui/git-diff-panel';
-import { TaskProgressPanel } from '@/components/ui/task-progress-panel';
-import { Markdown } from '@/components/ui/markdown';
-import { useAppStore } from '@/store/app-store';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  List,
+  FileText,
+  GitBranch,
+  ClipboardList,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { LogViewer } from "@/components/ui/log-viewer";
+import { GitDiffPanel } from "@/components/ui/git-diff-panel";
+import { TaskProgressPanel } from "@/components/ui/task-progress-panel";
+import { Markdown } from "@/components/ui/markdown";
+import { useAppStore } from "@/store/app-store";
 import {
   extractSummary,
   parseAllPhaseSummaries,
   isAccumulatedSummary,
   type PhaseSummaryEntry,
-} from '@/lib/log-parser';
-import { getFirstNonEmptySummary } from '@/lib/summary-selection';
-import { useAgentOutput, useFeature } from '@/hooks/queries';
-import { cn } from '@/lib/utils';
-import { MODAL_CONSTANTS } from '@/components/views/board-view/dialogs/agent-output-modal.constants';
-import type { AutoModeEvent } from '@/types/electron';
-import type { BacklogPlanEvent } from '@pegasus/types';
+} from "@/lib/log-parser";
+import { getFirstNonEmptySummary } from "@/lib/summary-selection";
+import { useAgentOutput, useFeature } from "@/hooks/queries";
+import { cn } from "@/lib/utils";
+import { MODAL_CONSTANTS } from "@/components/views/board-view/dialogs/agent-output-modal.constants";
+import type { AutoModeEvent } from "@/types/electron";
+import type { BacklogPlanEvent } from "@pegasus/types";
 
 interface AgentOutputModalProps {
   open: boolean;
@@ -43,7 +50,8 @@ interface AgentOutputModalProps {
   branchName?: string;
 }
 
-type ViewMode = (typeof MODAL_CONSTANTS.VIEW_MODES)[keyof typeof MODAL_CONSTANTS.VIEW_MODES];
+type ViewMode =
+  (typeof MODAL_CONSTANTS.VIEW_MODES)[keyof typeof MODAL_CONSTANTS.VIEW_MODES];
 
 /**
  * Renders a single phase entry card with header and content.
@@ -64,7 +72,7 @@ function PhaseEntryCard({
   onClick?: () => void;
 }) {
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (onClick && (event.key === 'Enter' || event.key === ' ')) {
+    if (onClick && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       onClick();
     }
@@ -73,24 +81,26 @@ function PhaseEntryCard({
   return (
     <div
       className={cn(
-        'p-4 bg-card rounded-lg border border-border/50 transition-all',
-        isActive && 'ring-2 ring-primary/50 border-primary/50',
-        onClick && 'cursor-pointer'
+        "p-4 bg-card rounded-lg border border-border/50 transition-all",
+        isActive && "ring-2 ring-primary/50 border-primary/50",
+        onClick && "cursor-pointer",
       )}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      role={onClick ? 'button' : undefined}
+      role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/30">
-        <span className="text-sm font-semibold text-primary">{entry.phaseName}</span>
+        <span className="text-sm font-semibold text-primary">
+          {entry.phaseName}
+        </span>
         {hasMultiplePhases && (
           <span className="text-xs text-muted-foreground">
             Step {index + 1} of {totalPhases}
           </span>
         )}
       </div>
-      <Markdown>{entry.content || 'No summary available'}</Markdown>
+      <Markdown>{entry.content || "No summary available"}</Markdown>
     </div>
   );
 }
@@ -127,10 +137,10 @@ function StepNavigator({
             key={`step-nav-${index}`}
             onClick={() => onIndexChange(index)}
             className={cn(
-              'px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap',
+              "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap",
               index === activeIndex
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent",
             )}
           >
             {entry.phaseName}
@@ -142,7 +152,9 @@ function StepNavigator({
         variant="ghost"
         size="sm"
         className="h-7 w-7 p-0"
-        onClick={() => onIndexChange(Math.min(phaseEntries.length - 1, activeIndex + 1))}
+        onClick={() =>
+          onIndexChange(Math.min(phaseEntries.length - 1, activeIndex + 1))
+        }
         disabled={activeIndex === phaseEntries.length - 1}
       >
         <ChevronRight className="w-4 h-4" />
@@ -161,18 +173,19 @@ export function AgentOutputModal({
   projectPath: projectPathProp,
   branchName,
 }: AgentOutputModalProps) {
-  const isBacklogPlan = featureId.startsWith('backlog-plan:');
+  const isBacklogPlan = featureId.startsWith("backlog-plan:");
 
   // Resolve project path - prefer prop, fallback to window.__currentProject
-  const resolvedProjectPath = projectPathProp || window.__currentProject?.path || undefined;
+  const resolvedProjectPath =
+    projectPathProp || window.__currentProject?.path || undefined;
 
   // Track view mode state
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
-  const [streamedContent, setStreamedContent] = useState<string>('');
+  const [streamedContent, setStreamedContent] = useState<string>("");
 
   // Use React Query for initial output loading
   const {
-    data: initialOutput = '',
+    data: initialOutput = "",
     isLoading,
     refetch: refetchAgentOutput,
   } = useAgentOutput(resolvedProjectPath, featureId, {
@@ -182,9 +195,13 @@ export function AgentOutputModal({
   // Fetch feature data to access the server-side accumulated summary.
   // Also used to show fresh description/status instead of potentially stale props
   // (e.g. when opening via deep link from a notification click).
-  const { data: feature, refetch: refetchFeature } = useFeature(resolvedProjectPath, featureId, {
-    enabled: open && !!resolvedProjectPath && !isBacklogPlan,
-  });
+  const { data: feature, refetch: refetchFeature } = useFeature(
+    resolvedProjectPath,
+    featureId,
+    {
+      enabled: open && !!resolvedProjectPath && !isBacklogPlan,
+    },
+  );
 
   // Prefer fresh data from server over potentially stale props passed at open time.
   const resolvedDescription = feature?.description ?? featureDescription;
@@ -194,7 +211,7 @@ export function AgentOutputModal({
   // Reset streamed content when modal opens or featureId changes
   useEffect(() => {
     if (open) {
-      setStreamedContent('');
+      setStreamedContent("");
     }
   }, [open, featureId]);
 
@@ -214,11 +231,11 @@ export function AgentOutputModal({
   // Parse summary into phases for multi-step navigation
   const phaseEntries = useMemo(
     () => parseAllPhaseSummaries(normalizedSummary),
-    [normalizedSummary]
+    [normalizedSummary],
   );
   const hasMultiplePhases = useMemo(
     () => isAccumulatedSummary(normalizedSummary),
-    [normalizedSummary]
+    [normalizedSummary],
   );
   const [activePhaseIndex, setActivePhaseIndex] = useState(0);
 
@@ -229,7 +246,10 @@ export function AgentOutputModal({
 
   // Determine the effective view mode - default to summary if available, otherwise parsed
   const effectiveViewMode =
-    viewMode ?? (summary ? MODAL_CONSTANTS.VIEW_MODES.SUMMARY : MODAL_CONSTANTS.VIEW_MODES.PARSED);
+    viewMode ??
+    (summary
+      ? MODAL_CONSTANTS.VIEW_MODES.SUMMARY
+      : MODAL_CONSTANTS.VIEW_MODES.PARSED);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
   const useWorktrees = useAppStore((state) => state.useWorktrees);
@@ -241,7 +261,14 @@ export function AgentOutputModal({
       void refetchFeature();
     }
     void refetchAgentOutput();
-  }, [open, resolvedProjectPath, featureId, isBacklogPlan, refetchFeature, refetchAgentOutput]);
+  }, [
+    open,
+    resolvedProjectPath,
+    featureId,
+    isBacklogPlan,
+    refetchFeature,
+    refetchAgentOutput,
+  ]);
 
   // Auto-scroll to bottom when output changes
   useEffect(() => {
@@ -257,7 +284,8 @@ export function AgentOutputModal({
   // Auto-scroll summary panel to bottom when summary is updated
   useEffect(() => {
     if (summaryAutoScroll && summaryScrollRef.current && normalizedSummary) {
-      summaryScrollRef.current.scrollTop = summaryScrollRef.current.scrollHeight;
+      summaryScrollRef.current.scrollTop =
+        summaryScrollRef.current.scrollHeight;
     }
   }, [normalizedSummary, summaryAutoScroll]);
 
@@ -267,19 +295,21 @@ export function AgentOutputModal({
 
     const { scrollTop, scrollHeight, clientHeight } = summaryScrollRef.current;
     const isAtBottom =
-      scrollHeight - scrollTop - clientHeight < MODAL_CONSTANTS.AUTOSCROLL_THRESHOLD;
+      scrollHeight - scrollTop - clientHeight <
+      MODAL_CONSTANTS.AUTOSCROLL_THRESHOLD;
     setSummaryAutoScroll(isAtBottom);
   };
 
   // Scroll to active phase when it changes or when summary changes
   useEffect(() => {
     if (summaryScrollRef.current && hasMultiplePhases) {
-      const phaseCards = summaryScrollRef.current.querySelectorAll('[data-phase-index]');
+      const phaseCards =
+        summaryScrollRef.current.querySelectorAll("[data-phase-index]");
       // Ensure index is within bounds
       const safeIndex = Math.min(activePhaseIndex, phaseCards.length - 1);
       const targetCard = phaseCards[safeIndex];
       if (targetCard) {
-        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
   }, [activePhaseIndex, hasMultiplePhases, normalizedSummary]);
@@ -291,46 +321,55 @@ export function AgentOutputModal({
     const api = getElectronAPI();
     if (!api?.autoMode || isBacklogPlan) return;
 
-    console.log('[AgentOutputModal] Subscribing to events for featureId:', featureId);
+    console.log(
+      "[AgentOutputModal] Subscribing to events for featureId:",
+      featureId,
+    );
 
     const unsubscribe = api.autoMode.onEvent((event) => {
       console.log(
-        '[AgentOutputModal] Received event:',
+        "[AgentOutputModal] Received event:",
         event.type,
-        'featureId:',
-        'featureId' in event ? event.featureId : 'none',
-        'modalFeatureId:',
-        featureId
+        "featureId:",
+        "featureId" in event ? event.featureId : "none",
+        "modalFeatureId:",
+        featureId,
       );
 
       // Filter events for this specific feature only (skip events without featureId)
-      if ('featureId' in event && event.featureId !== featureId) {
-        console.log('[AgentOutputModal] Skipping event - featureId mismatch');
+      if ("featureId" in event && event.featureId !== featureId) {
+        console.log("[AgentOutputModal] Skipping event - featureId mismatch");
         return;
       }
 
-      let newContent = '';
+      let newContent = "";
 
       switch (event.type) {
-        case 'auto_mode_progress':
-          newContent = event.content || '';
+        case "auto_mode_progress":
+          newContent = event.content || "";
           break;
-        case 'auto_mode_tool': {
-          const toolName = event.tool || 'Unknown Tool';
-          const toolInput = event.input ? JSON.stringify(event.input, null, 2) : '';
-          newContent = `\n🔧 Tool: ${toolName}\n${toolInput ? `Input: ${toolInput}\n` : ''}`;
+        case "auto_mode_tool": {
+          const toolName = event.tool || "Unknown Tool";
+          const toolInput = event.input
+            ? JSON.stringify(event.input, null, 2)
+            : "";
+          newContent = `\n🔧 Tool: ${toolName}\n${toolInput ? `Input: ${toolInput}\n` : ""}`;
           break;
         }
-        case 'auto_mode_phase': {
+        case "auto_mode_phase": {
           const phaseEmoji =
-            event.phase === 'planning' ? '📋' : event.phase === 'action' ? '⚡' : '✅';
+            event.phase === "planning"
+              ? "📋"
+              : event.phase === "action"
+                ? "⚡"
+                : "✅";
           newContent = `\n${phaseEmoji} ${event.message}\n`;
           break;
         }
-        case 'auto_mode_error':
+        case "auto_mode_error":
           newContent = `\n❌ Error: ${event.error}\n`;
           break;
-        case 'auto_mode_ultrathink_preparation': {
+        case "auto_mode_ultrathink_preparation": {
           // Format thinking level preparation information
           let prepContent = `\n🧠 Ultrathink Preparation\n`;
 
@@ -350,7 +389,7 @@ export function AgentOutputModal({
 
           if (event.estimatedCost !== undefined) {
             prepContent += `\n💰 Estimated Cost: ~$${event.estimatedCost.toFixed(
-              2
+              2,
             )} per execution\n`;
           }
 
@@ -361,73 +400,87 @@ export function AgentOutputModal({
           newContent = prepContent;
           break;
         }
-        case 'planning_started': {
+        case "planning_started": {
           // Show when planning mode begins
-          if ('mode' in event && 'message' in event) {
+          if ("mode" in event && "message" in event) {
             const modeLabel =
-              event.mode === 'lite' ? 'Lite' : event.mode === 'spec' ? 'Spec' : 'Full';
+              event.mode === "lite"
+                ? "Lite"
+                : event.mode === "spec"
+                  ? "Spec"
+                  : "Full";
             newContent = `\n📋 Planning Mode: ${modeLabel}\n${event.message}\n`;
           }
           break;
         }
-        case 'plan_approval_required':
+        case "plan_approval_required":
           // Show when plan requires approval
-          if ('planningMode' in event) {
+          if ("planningMode" in event) {
             newContent = `\n⏸️ Plan generated - waiting for your approval...\n`;
           }
           break;
-        case 'plan_approved':
+        case "plan_approved":
           // Show when plan is manually approved
-          if ('hasEdits' in event) {
+          if ("hasEdits" in event) {
             newContent = event.hasEdits
               ? `\n✅ Plan approved (with edits) - continuing to implementation...\n`
               : `\n✅ Plan approved - continuing to implementation...\n`;
           }
           break;
-        case 'plan_auto_approved':
+        case "plan_auto_approved":
           // Show when plan is auto-approved
           newContent = `\n✅ Plan auto-approved - continuing to implementation...\n`;
           break;
-        case 'plan_revision_requested': {
+        case "plan_revision_requested": {
           // Show when user requests plan revision
-          if ('planVersion' in event) {
+          if ("planVersion" in event) {
             const revisionEvent = event as Extract<
               AutoModeEvent,
-              { type: 'plan_revision_requested' }
+              { type: "plan_revision_requested" }
             >;
             newContent = `\n🔄 Revising plan based on your feedback (v${revisionEvent.planVersion})...\n`;
           }
           break;
         }
-        case 'auto_mode_task_started': {
+        case "auto_mode_task_started": {
           // Show when a task starts
-          if ('taskId' in event && 'taskDescription' in event) {
-            const taskEvent = event as Extract<AutoModeEvent, { type: 'auto_mode_task_started' }>;
+          if ("taskId" in event && "taskDescription" in event) {
+            const taskEvent = event as Extract<
+              AutoModeEvent,
+              { type: "auto_mode_task_started" }
+            >;
             newContent = `\n▶ Starting ${taskEvent.taskId}: ${taskEvent.taskDescription}\n`;
           }
           break;
         }
-        case 'auto_mode_task_complete': {
+        case "auto_mode_task_complete": {
           // Show task completion progress
-          if ('taskId' in event && 'tasksCompleted' in event && 'tasksTotal' in event) {
-            const taskEvent = event as Extract<AutoModeEvent, { type: 'auto_mode_task_complete' }>;
+          if (
+            "taskId" in event &&
+            "tasksCompleted" in event &&
+            "tasksTotal" in event
+          ) {
+            const taskEvent = event as Extract<
+              AutoModeEvent,
+              { type: "auto_mode_task_complete" }
+            >;
             newContent = `\n✓ ${taskEvent.taskId} completed (${taskEvent.tasksCompleted}/${taskEvent.tasksTotal})\n`;
           }
           break;
         }
-        case 'auto_mode_phase_complete': {
+        case "auto_mode_phase_complete": {
           // Show phase completion for full mode
-          if ('phaseNumber' in event) {
+          if ("phaseNumber" in event) {
             const phaseEvent = event as Extract<
               AutoModeEvent,
-              { type: 'auto_mode_phase_complete' }
+              { type: "auto_mode_phase_complete" }
             >;
             newContent = `\n🏁 Phase ${phaseEvent.phaseNumber} complete\n`;
           }
           break;
         }
-        case 'auto_mode_feature_complete': {
-          const emoji = event.passes ? '✅' : '⚠️';
+        case "auto_mode_feature_complete": {
+          const emoji = event.passes ? "✅" : "⚠️";
           newContent = `\n${emoji} Task completed: ${event.message}\n`;
 
           // Close the modal when the feature is verified (passes = true)
@@ -463,15 +516,15 @@ export function AgentOutputModal({
       const event = data as BacklogPlanEvent;
       if (!event?.type) return;
 
-      let newContent = '';
+      let newContent = "";
       switch (event.type) {
-        case 'backlog_plan_progress':
-          newContent = `\n🧭 ${event.content || 'Backlog plan progress update'}\n`;
+        case "backlog_plan_progress":
+          newContent = `\n🧭 ${event.content || "Backlog plan progress update"}\n`;
           break;
-        case 'backlog_plan_error':
-          newContent = `\n❌ Backlog plan error: ${event.error || 'Unknown error'}\n`;
+        case "backlog_plan_error":
+          newContent = `\n❌ Backlog plan error: ${event.error || "Unknown error"}\n`;
           break;
-        case 'backlog_plan_complete':
+        case "backlog_plan_complete":
           newContent = `\n✅ Backlog plan completed\n`;
           break;
         default:
@@ -495,7 +548,8 @@ export function AgentOutputModal({
 
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
     const isAtBottom =
-      scrollHeight - scrollTop - clientHeight < MODAL_CONSTANTS.AUTOSCROLL_THRESHOLD;
+      scrollHeight - scrollTop - clientHeight <
+      MODAL_CONSTANTS.AUTOSCROLL_THRESHOLD;
     autoScrollRef.current = isAtBottom;
   };
 
@@ -505,15 +559,20 @@ export function AgentOutputModal({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Check if a number key (0-9) was pressed without modifiers
-      if (!event.ctrlKey && !event.altKey && !event.metaKey && /^[0-9]$/.test(event.key)) {
+      if (
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        /^[0-9]$/.test(event.key)
+      ) {
         event.preventDefault();
         onNumberKeyPress(event.key);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open, onNumberKeyPress]);
 
@@ -526,19 +585,18 @@ export function AgentOutputModal({
         <DialogHeader className="shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pr-10">
             <DialogTitle className="flex items-center gap-2">
-              {resolvedStatus !== 'verified' && resolvedStatus !== 'waiting_approval' && (
-                <Spinner size="md" />
-              )}
+              {resolvedStatus !== "verified" &&
+                resolvedStatus !== "waiting_approval" && <Spinner size="md" />}
               Agent Output
             </DialogTitle>
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
               {summary && (
                 <button
-                  onClick={() => setViewMode('summary')}
+                  onClick={() => setViewMode("summary")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                    effectiveViewMode === 'summary'
-                      ? 'bg-primary/20 text-primary shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    effectiveViewMode === "summary"
+                      ? "bg-primary/20 text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                   data-testid="view-mode-summary"
                 >
@@ -547,11 +605,11 @@ export function AgentOutputModal({
                 </button>
               )}
               <button
-                onClick={() => setViewMode('parsed')}
+                onClick={() => setViewMode("parsed")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                  effectiveViewMode === 'parsed'
-                    ? 'bg-primary/20 text-primary shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  effectiveViewMode === "parsed"
+                    ? "bg-primary/20 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
                 data-testid="view-mode-parsed"
               >
@@ -559,11 +617,11 @@ export function AgentOutputModal({
                 Logs
               </button>
               <button
-                onClick={() => setViewMode('changes')}
+                onClick={() => setViewMode("changes")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                  effectiveViewMode === 'changes'
-                    ? 'bg-primary/20 text-primary shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  effectiveViewMode === "changes"
+                    ? "bg-primary/20 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
                 data-testid="view-mode-changes"
               >
@@ -571,11 +629,11 @@ export function AgentOutputModal({
                 Changes
               </button>
               <button
-                onClick={() => setViewMode('raw')}
+                onClick={() => setViewMode("raw")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
-                  effectiveViewMode === 'raw'
-                    ? 'bg-primary/20 text-primary shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  effectiveViewMode === "raw"
+                    ? "bg-primary/20 text-primary shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
                 data-testid="view-mode-raw"
               >
@@ -601,7 +659,7 @@ export function AgentOutputModal({
           />
         )}
 
-        {effectiveViewMode === 'changes' ? (
+        {effectiveViewMode === "changes" ? (
           <div
             className={`flex-1 min-h-0 ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MIN} ${MODAL_CONSTANTS.COMPONENT_HEIGHTS.SMALL_MAX} overflow-y-auto scrollbar-visible`}
           >
@@ -620,7 +678,7 @@ export function AgentOutputModal({
               </div>
             )}
           </div>
-        ) : effectiveViewMode === 'summary' && summary ? (
+        ) : effectiveViewMode === "summary" && summary ? (
           <>
             {/* Step navigator for multi-phase summaries */}
             {hasMultiplePhases && (
@@ -639,7 +697,10 @@ export function AgentOutputModal({
               {hasMultiplePhases ? (
                 // Multi-phase: render individual phase cards
                 phaseEntries.map((entry, index) => (
-                  <div key={`phase-${index}-${entry.phaseName}`} data-phase-index={index}>
+                  <div
+                    key={`phase-${index}-${entry.phaseName}`}
+                    data-phase-index={index}
+                  >
                     <PhaseEntryCard
                       entry={entry}
                       index={index}
@@ -660,8 +721,8 @@ export function AgentOutputModal({
 
             <div className="text-xs text-muted-foreground text-center shrink-0">
               {summaryAutoScroll
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
+                ? "Auto-scrolling enabled"
+                : "Scroll to bottom to enable auto-scroll"}
             </div>
           </>
         ) : (
@@ -680,7 +741,7 @@ export function AgentOutputModal({
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   No output yet. The agent will stream output here as it works.
                 </div>
-              ) : effectiveViewMode === 'parsed' ? (
+              ) : effectiveViewMode === "parsed" ? (
                 <LogViewer output={output} />
               ) : (
                 <div className="whitespace-pre-wrap wrap-break-word text-foreground/80">
@@ -691,8 +752,8 @@ export function AgentOutputModal({
 
             <div className="text-xs text-muted-foreground text-center shrink-0">
               {autoScrollRef.current
-                ? 'Auto-scrolling enabled'
-                : 'Scroll to bottom to enable auto-scroll'}
+                ? "Auto-scrolling enabled"
+                : "Scroll to bottom to enable auto-scroll"}
             </div>
           </>
         )}

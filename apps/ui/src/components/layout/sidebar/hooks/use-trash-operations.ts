@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { toast } from "sonner";
 
-const logger = createLogger('TrashOperations');
-import { getElectronAPI, type TrashedProject } from '@/lib/electron';
+const logger = createLogger("TrashOperations");
+import { getElectronAPI, type TrashedProject } from "@/lib/electron";
 
 interface UseTrashOperationsProps {
   restoreTrashedProject: (projectId: string) => void;
@@ -23,17 +23,17 @@ export function useTrashOperations({
     (projectId: string) => {
       try {
         restoreTrashedProject(projectId);
-        toast.success('Project restored', {
-          description: 'Added back to your project list.',
+        toast.success("Project restored", {
+          description: "Added back to your project list.",
         });
       } catch (error) {
-        logger.error('Failed to restore project:', error);
-        toast.error('Failed to restore project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to restore project:", error);
+        toast.error("Failed to restore project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     },
-    [restoreTrashedProject]
+    [restoreTrashedProject],
   );
 
   const handleDeleteProjectFromDisk = useCallback(
@@ -42,39 +42,39 @@ export function useTrashOperations({
       try {
         const api = getElectronAPI();
         if (!api.trashItem) {
-          throw new Error('System Trash is not available in this build.');
+          throw new Error("System Trash is not available in this build.");
         }
 
         const result = await api.trashItem(trashedProject.path);
         if (!result.success) {
-          throw new Error(result.error || 'Failed to delete project folder');
+          throw new Error(result.error || "Failed to delete project folder");
         }
 
         deleteTrashedProject(trashedProject.id);
-        toast.success('Project folder sent to system Trash', {
+        toast.success("Project folder sent to system Trash", {
           description: trashedProject.path,
         });
       } catch (error) {
-        logger.error('Failed to delete project from disk:', error);
-        toast.error('Failed to delete project folder', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        logger.error("Failed to delete project from disk:", error);
+        toast.error("Failed to delete project folder", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
         setActiveTrashId(null);
       }
     },
-    [deleteTrashedProject]
+    [deleteTrashedProject],
   );
 
   const handleEmptyTrash = useCallback(() => {
     setIsEmptyingTrash(true);
     try {
       emptyTrash();
-      toast.success('Recycle bin cleared');
+      toast.success("Recycle bin cleared");
     } catch (error) {
-      logger.error('Failed to empty trash:', error);
-      toast.error('Failed to clear recycle bin', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      logger.error("Failed to empty trash:", error);
+      toast.error("Failed to clear recycle bin", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsEmptyingTrash(false);

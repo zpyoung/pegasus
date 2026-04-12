@@ -7,10 +7,13 @@
  * - Preventing duplicate validations for the same issue
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../../common.js";
 
-const logger = createLogger('IssueValidation');
+const logger = createLogger("IssueValidation");
 
 /**
  * Status of a validation in progress
@@ -42,7 +45,10 @@ function getValidationKey(projectPath: string, issueNumber: number): string {
 /**
  * Check if a validation is currently running for an issue
  */
-export function isValidationRunning(projectPath: string, issueNumber: number): boolean {
+export function isValidationRunning(
+  projectPath: string,
+  issueNumber: number,
+): boolean {
   const key = getValidationKey(projectPath, issueNumber);
   const status = validationStatusMap.get(key);
   return status?.isRunning ?? false;
@@ -53,7 +59,7 @@ export function isValidationRunning(projectPath: string, issueNumber: number): b
  */
 export function getValidationStatus(
   projectPath: string,
-  issueNumber: number
+  issueNumber: number,
 ): { isRunning: boolean; startedAt?: Date } | null {
   const key = getValidationKey(projectPath, issueNumber);
   const status = validationStatusMap.get(key);
@@ -89,7 +95,7 @@ export function getRunningValidations(projectPath: string): number[] {
 export function setValidationRunning(
   projectPath: string,
   issueNumber: number,
-  abortController: AbortController
+  abortController: AbortController,
 ): void {
   const key = getValidationKey(projectPath, issueNumber);
   validationStatusMap.set(key, {
@@ -108,7 +114,7 @@ export function setValidationRunning(
 export function trySetValidationRunning(
   projectPath: string,
   issueNumber: number,
-  abortController: AbortController
+  abortController: AbortController,
 ): boolean {
   const key = getValidationKey(projectPath, issueNumber);
   if (validationStatusMap.has(key)) {
@@ -145,7 +151,10 @@ export function cleanupStaleValidations(): number {
 /**
  * Clear validation status (call when validation completes or errors)
  */
-export function clearValidationStatus(projectPath: string, issueNumber: number): void {
+export function clearValidationStatus(
+  projectPath: string,
+  issueNumber: number,
+): void {
   const key = getValidationKey(projectPath, issueNumber);
   validationStatusMap.delete(key);
 }
@@ -155,7 +164,10 @@ export function clearValidationStatus(projectPath: string, issueNumber: number):
  *
  * @returns true if validation was aborted, false if not running
  */
-export function abortValidation(projectPath: string, issueNumber: number): boolean {
+export function abortValidation(
+  projectPath: string,
+  issueNumber: number,
+): boolean {
   const key = getValidationKey(projectPath, issueNumber);
   const status = validationStatusMap.get(key);
 

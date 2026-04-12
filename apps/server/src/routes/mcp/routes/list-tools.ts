@@ -14,9 +14,9 @@
  * Response: { success: boolean, tools?: MCPToolInfo[], error?: string }
  */
 
-import type { Request, Response } from 'express';
-import type { MCPTestService } from '../../../services/mcp-test-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { MCPTestService } from "../../../services/mcp-test-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 interface ListToolsRequest {
   serverId: string;
@@ -30,10 +30,10 @@ export function createListToolsHandler(mcpTestService: MCPTestService) {
     try {
       const body = req.body as ListToolsRequest;
 
-      if (!body.serverId || typeof body.serverId !== 'string') {
+      if (!body.serverId || typeof body.serverId !== "string") {
         res.status(400).json({
           success: false,
-          error: 'serverId is required',
+          error: "serverId is required",
         });
         return;
       }
@@ -47,7 +47,7 @@ export function createListToolsHandler(mcpTestService: MCPTestService) {
         error: result.error,
       });
     } catch (error) {
-      logError(error, 'List tools failed');
+      logError(error, "List tools failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

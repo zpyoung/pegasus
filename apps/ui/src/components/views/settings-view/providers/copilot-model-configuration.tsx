@@ -1,7 +1,10 @@
-import type { CopilotModelId } from '@pegasus/types';
-import { CopilotIcon } from '@/components/ui/provider-icon';
-import { COPILOT_MODEL_MAP } from '@pegasus/types';
-import { BaseModelConfiguration, type BaseModelInfo } from './shared/base-model-configuration';
+import type { CopilotModelId } from "@pegasus/types";
+import { CopilotIcon } from "@/components/ui/provider-icon";
+import { COPILOT_MODEL_MAP } from "@pegasus/types";
+import {
+  BaseModelConfiguration,
+  type BaseModelInfo,
+} from "./shared/base-model-configuration";
 
 interface CopilotModelConfigurationProps {
   enabledCopilotModels: CopilotModelId[];
@@ -16,14 +19,14 @@ interface CopilotModelInfo extends BaseModelInfo<CopilotModelId> {
 }
 
 // Build model info from the COPILOT_MODEL_MAP
-const COPILOT_MODELS: CopilotModelInfo[] = Object.entries(COPILOT_MODEL_MAP).map(
-  ([id, config]) => ({
-    id: id as CopilotModelId,
-    label: config.label,
-    description: config.description,
-    supportsVision: config.supportsVision,
-  })
-);
+const COPILOT_MODELS: CopilotModelInfo[] = Object.entries(
+  COPILOT_MODEL_MAP,
+).map(([id, config]) => ({
+  id: id as CopilotModelId,
+  label: config.label,
+  description: config.description,
+  supportsVision: config.supportsVision,
+}));
 
 export function CopilotModelConfiguration({
   enabledCopilotModels,
@@ -46,7 +49,9 @@ export function CopilotModelConfiguration({
       onModelToggle={onModelToggle}
       getFeatureBadge={(model) => {
         const copilotModel = model as CopilotModelInfo;
-        return copilotModel.supportsVision ? { show: true, label: 'Vision' } : null;
+        return copilotModel.supportsVision
+          ? { show: true, label: "Vision" }
+          : null;
       }}
     />
   );

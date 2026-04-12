@@ -8,9 +8,9 @@
  * Claude responses when structured output is not available.
  */
 
-import { createLogger } from '@pegasus/utils';
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('JsonExtractor');
+const logger = createLogger("JsonExtractor");
 
 /**
  * Logger interface for optional custom logging
@@ -48,7 +48,7 @@ export interface ExtractJsonOptions {
  */
 export function extractJson<T = Record<string, unknown>>(
   responseText: string,
-  options: ExtractJsonOptions = {}
+  options: ExtractJsonOptions = {},
 ): T | null {
   const log = options.logger || logger;
   const requiredKey = options.requiredKey;
@@ -58,7 +58,7 @@ export function extractJson<T = Record<string, unknown>>(
    * Validate that the result has the required key/structure
    */
   const validateResult = (result: unknown): result is T => {
-    if (!result || typeof result !== 'object') return false;
+    if (!result || typeof result !== "object") return false;
     if (requiredKey) {
       const obj = result as Record<string, unknown>;
       if (!(requiredKey in obj)) return false;
@@ -73,8 +73,8 @@ export function extractJson<T = Record<string, unknown>>(
   const findMatchingBrace = (text: string, startIdx: number): number => {
     let depth = 0;
     for (let i = startIdx; i < text.length; i++) {
-      if (text[i] === '{') depth++;
-      if (text[i] === '}') {
+      if (text[i] === "{") depth++;
+      if (text[i] === "}") {
         depth--;
         if (depth === 0) {
           return i + 1;
@@ -89,7 +89,7 @@ export function extractJson<T = Record<string, unknown>>(
     () => {
       const match = responseText.match(/```json\s*([\s\S]*?)```/);
       if (match) {
-        log.debug('Extracting JSON from ```json code block');
+        log.debug("Extracting JSON from ```json code block");
         return JSON.parse(match[1].trim());
       }
       return null;
@@ -101,8 +101,8 @@ export function extractJson<T = Record<string, unknown>>(
       if (match) {
         const content = match[1].trim();
         // Only try if it looks like JSON (starts with { or [)
-        if (content.startsWith('{') || content.startsWith('[')) {
-          log.debug('Extracting JSON from ``` code block');
+        if (content.startsWith("{") || content.startsWith("[")) {
+          log.debug("Extracting JSON from ``` code block");
           return JSON.parse(content);
         }
       }
@@ -127,12 +127,12 @@ export function extractJson<T = Record<string, unknown>>(
 
     // Strategy 4: Find any JSON object by matching braces
     () => {
-      const startIdx = responseText.indexOf('{');
+      const startIdx = responseText.indexOf("{");
       if (startIdx === -1) return null;
 
       const endIdx = findMatchingBrace(responseText, startIdx);
       if (endIdx > startIdx) {
-        log.debug('Extracting JSON by brace matching');
+        log.debug("Extracting JSON by brace matching");
         return JSON.parse(responseText.slice(startIdx, endIdx));
       }
       return null;
@@ -140,10 +140,10 @@ export function extractJson<T = Record<string, unknown>>(
 
     // Strategy 5: Find JSON using first { to last } (may be less accurate)
     () => {
-      const firstBrace = responseText.indexOf('{');
-      const lastBrace = responseText.lastIndexOf('}');
+      const firstBrace = responseText.indexOf("{");
+      const lastBrace = responseText.lastIndexOf("}");
       if (firstBrace !== -1 && lastBrace > firstBrace) {
-        log.debug('Extracting JSON from first { to last }');
+        log.debug("Extracting JSON from first { to last }");
         return JSON.parse(responseText.slice(firstBrace, lastBrace + 1));
       }
       return null;
@@ -152,8 +152,8 @@ export function extractJson<T = Record<string, unknown>>(
     // Strategy 6: Try parsing the entire response as JSON
     () => {
       const trimmed = responseText.trim();
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        log.debug('Parsing entire response as JSON');
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        log.debug("Parsing entire response as JSON");
         return JSON.parse(trimmed);
       }
       return null;
@@ -164,7 +164,7 @@ export function extractJson<T = Record<string, unknown>>(
     try {
       const result = strategy();
       if (validateResult(result)) {
-        log.debug('Successfully extracted JSON');
+        log.debug("Successfully extracted JSON");
         return result as T;
       }
     } catch {
@@ -172,7 +172,7 @@ export function extractJson<T = Record<string, unknown>>(
     }
   }
 
-  log.debug('Failed to extract JSON from response');
+  log.debug("Failed to extract JSON from response");
   return null;
 }
 
@@ -188,7 +188,7 @@ export function extractJson<T = Record<string, unknown>>(
 export function extractJsonWithKey<T = Record<string, unknown>>(
   responseText: string,
   requiredKey: string,
-  options: Omit<ExtractJsonOptions, 'requiredKey'> = {}
+  options: Omit<ExtractJsonOptions, "requiredKey"> = {},
 ): T | null {
   return extractJson<T>(responseText, { ...options, requiredKey });
 }
@@ -205,7 +205,11 @@ export function extractJsonWithKey<T = Record<string, unknown>>(
 export function extractJsonWithArray<T = Record<string, unknown>>(
   responseText: string,
   arrayKey: string,
-  options: Omit<ExtractJsonOptions, 'requiredKey' | 'requireArray'> = {}
+  options: Omit<ExtractJsonOptions, "requiredKey" | "requireArray"> = {},
 ): T | null {
-  return extractJson<T>(responseText, { ...options, requiredKey: arrayKey, requireArray: true });
+  return extractJson<T>(responseText, {
+    ...options,
+    requiredKey: arrayKey,
+    requireArray: true,
+  });
 }

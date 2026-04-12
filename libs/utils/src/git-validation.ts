@@ -33,13 +33,16 @@ export const MAX_BRANCH_NAME_LENGTH = 250;
  */
 export function isValidBranchName(name: string): boolean {
   // Must not contain NUL bytes
-  if (name.includes('\0')) return false;
+  if (name.includes("\0")) return false;
   // Must not contain path-traversal sequences
-  if (name.includes('..')) return false;
+  if (name.includes("..")) return false;
   // First char must be alphanumeric, dot, underscore, or slash (not dash).
   // Remaining chars may also include dash.
   // Must be within the length limit.
-  return /^[a-zA-Z0-9._/][a-zA-Z0-9._\-/]*$/.test(name) && name.length < MAX_BRANCH_NAME_LENGTH;
+  return (
+    /^[a-zA-Z0-9._/][a-zA-Z0-9._\-/]*$/.test(name) &&
+    name.length < MAX_BRANCH_NAME_LENGTH
+  );
 }
 
 /**
@@ -65,9 +68,9 @@ export function isValidBranchName(name: string): boolean {
  */
 export function isValidRemoteName(name: string): boolean {
   if (!name || name.length >= MAX_BRANCH_NAME_LENGTH) return false;
-  if (name.startsWith('-') || name.startsWith('.')) return false;
-  if (name.includes('..')) return false;
-  if (name.includes('/')) return false;
-  if (name.includes('\0')) return false;
+  if (name.startsWith("-") || name.startsWith(".")) return false;
+  if (name.includes("..")) return false;
+  if (name.includes("/")) return false;
+  if (name.includes("\0")) return false;
   return /^[a-zA-Z0-9._-]+$/.test(name);
 }

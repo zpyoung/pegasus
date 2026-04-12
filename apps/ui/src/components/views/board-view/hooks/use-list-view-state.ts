@@ -1,15 +1,21 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { getJSON, setJSON } from '@/lib/storage';
-import type { ViewMode } from '../components/view-toggle';
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { getJSON, setJSON } from "@/lib/storage";
+import type { ViewMode } from "../components/view-toggle";
 
 // Re-export ViewMode for convenience
 export type { ViewMode };
 
 /** Columns that can be sorted in the list view */
-export type SortColumn = 'title' | 'status' | 'category' | 'priority' | 'createdAt' | 'updatedAt';
+export type SortColumn =
+  | "title"
+  | "status"
+  | "category"
+  | "priority"
+  | "createdAt"
+  | "updatedAt";
 
 /** Sort direction */
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = "asc" | "desc";
 
 /** Sort configuration */
 export interface SortConfig {
@@ -24,17 +30,17 @@ interface ListViewPersistedState {
 }
 
 /** Storage key for list view preferences */
-const STORAGE_KEY = 'pegasus:list-view-state';
+const STORAGE_KEY = "pegasus:list-view-state";
 
 /** Default sort configuration */
 const DEFAULT_SORT_CONFIG: SortConfig = {
-  column: 'createdAt',
-  direction: 'desc',
+  column: "createdAt",
+  direction: "desc",
 };
 
 /** Default persisted state */
 const DEFAULT_STATE: ListViewPersistedState = {
-  viewMode: 'kanban',
+  viewMode: "kanban",
   sortConfig: DEFAULT_SORT_CONFIG,
 };
 
@@ -42,10 +48,10 @@ const DEFAULT_STATE: ListViewPersistedState = {
  * Validates and returns a valid ViewMode, defaulting to 'kanban' if invalid
  */
 function validateViewMode(value: unknown): ViewMode {
-  if (value === 'kanban' || value === 'list') {
+  if (value === "kanban" || value === "list") {
     return value;
   }
-  return 'kanban';
+  return "kanban";
 }
 
 /**
@@ -53,27 +59,27 @@ function validateViewMode(value: unknown): ViewMode {
  */
 function validateSortColumn(value: unknown): SortColumn {
   const validColumns: SortColumn[] = [
-    'title',
-    'status',
-    'category',
-    'priority',
-    'createdAt',
-    'updatedAt',
+    "title",
+    "status",
+    "category",
+    "priority",
+    "createdAt",
+    "updatedAt",
   ];
-  if (typeof value === 'string' && validColumns.includes(value as SortColumn)) {
+  if (typeof value === "string" && validColumns.includes(value as SortColumn)) {
     return value as SortColumn;
   }
-  return 'createdAt';
+  return "createdAt";
 }
 
 /**
  * Validates and returns a valid SortDirection, defaulting to 'desc' if invalid
  */
 function validateSortDirection(value: unknown): SortDirection {
-  if (value === 'asc' || value === 'desc') {
+  if (value === "asc" || value === "desc") {
     return value;
   }
-  return 'desc';
+  return "desc";
 }
 
 /**
@@ -145,14 +151,16 @@ export interface UseListViewStateReturn {
  */
 export function useListViewState(): UseListViewStateReturn {
   // Initialize state from localStorage
-  const [viewMode, setViewModeState] = useState<ViewMode>(() => loadPersistedState().viewMode);
+  const [viewMode, setViewModeState] = useState<ViewMode>(
+    () => loadPersistedState().viewMode,
+  );
   const [sortConfig, setSortConfigState] = useState<SortConfig>(
-    () => loadPersistedState().sortConfig
+    () => loadPersistedState().sortConfig,
   );
 
   // Derived state
-  const isListView = viewMode === 'list';
-  const isKanbanView = viewMode === 'kanban';
+  const isListView = viewMode === "list";
+  const isKanbanView = viewMode === "kanban";
 
   // Persist state changes to localStorage
   useEffect(() => {
@@ -166,7 +174,7 @@ export function useListViewState(): UseListViewStateReturn {
 
   // Toggle between kanban and list views
   const toggleViewMode = useCallback(() => {
-    setViewModeState((prev) => (prev === 'kanban' ? 'list' : 'kanban'));
+    setViewModeState((prev) => (prev === "kanban" ? "list" : "kanban"));
   }, []);
 
   // Set sort column - toggles direction if same column is clicked
@@ -176,12 +184,12 @@ export function useListViewState(): UseListViewStateReturn {
         // Toggle direction if same column
         return {
           column,
-          direction: prev.direction === 'asc' ? 'desc' : 'asc',
+          direction: prev.direction === "asc" ? "desc" : "asc",
         };
       }
       // New column - default to descending for dates, ascending for others
       const defaultDirection: SortDirection =
-        column === 'createdAt' || column === 'updatedAt' ? 'desc' : 'asc';
+        column === "createdAt" || column === "updatedAt" ? "desc" : "asc";
       return { column, direction: defaultDirection };
     });
   }, []);
@@ -218,6 +226,6 @@ export function useListViewState(): UseListViewStateReturn {
       setSortColumn,
       setSortConfig,
       resetSort,
-    ]
+    ],
   );
 }

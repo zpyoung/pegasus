@@ -1,20 +1,21 @@
-import { useAppStore } from '@/store/app-store';
-import { useSetupStore } from '@/store/setup-store';
-import { Button } from '@/components/ui/button';
-import { Key, CheckCircle2, Trash2, Info } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { ApiKeyField } from './api-key-field';
-import { buildProviderConfigs } from '@/config/api-providers';
-import { SecurityNotice } from './security-notice';
-import { useApiKeyManagement } from './hooks/use-api-key-management';
-import { cn } from '@/lib/utils';
-import { useState, useCallback } from 'react';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+import { useAppStore } from "@/store/app-store";
+import { useSetupStore } from "@/store/setup-store";
+import { Button } from "@/components/ui/button";
+import { Key, CheckCircle2, Trash2, Info } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { ApiKeyField } from "./api-key-field";
+import { buildProviderConfigs } from "@/config/api-providers";
+import { SecurityNotice } from "./security-notice";
+import { useApiKeyManagement } from "./hooks/use-api-key-management";
+import { cn } from "@/lib/utils";
+import { useState, useCallback } from "react";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
 
 export function ApiKeysSection() {
   const { apiKeys, setApiKeys } = useAppStore();
-  const { claudeAuthStatus, setClaudeAuthStatus, setCodexAuthStatus } = useSetupStore();
+  const { claudeAuthStatus, setClaudeAuthStatus, setCodexAuthStatus } =
+    useSetupStore();
   const [isDeletingAnthropicKey, setIsDeletingAnthropicKey] = useState(false);
   const [isDeletingOpenaiKey, setIsDeletingOpenaiKey] = useState(false);
 
@@ -28,24 +29,24 @@ export function ApiKeysSection() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error("Delete API not available");
         return;
       }
 
-      const result = await api.setup.deleteApiKey('anthropic');
+      const result = await api.setup.deleteApiKey("anthropic");
       if (result.success) {
-        setApiKeys({ ...apiKeys, anthropic: '' });
+        setApiKeys({ ...apiKeys, anthropic: "" });
         setClaudeAuthStatus({
           authenticated: false,
-          method: 'none',
+          method: "none",
           hasCredentialsFile: claudeAuthStatus?.hasCredentialsFile || false,
         });
-        toast.success('Anthropic API key deleted');
+        toast.success("Anthropic API key deleted");
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || "Failed to delete API key");
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error("Failed to delete API key");
     } finally {
       setIsDeletingAnthropicKey(false);
     }
@@ -57,23 +58,23 @@ export function ApiKeysSection() {
     try {
       const api = getElectronAPI();
       if (!api.setup?.deleteApiKey) {
-        toast.error('Delete API not available');
+        toast.error("Delete API not available");
         return;
       }
 
-      const result = await api.setup.deleteApiKey('openai');
+      const result = await api.setup.deleteApiKey("openai");
       if (result.success) {
-        setApiKeys({ ...apiKeys, openai: '' });
+        setApiKeys({ ...apiKeys, openai: "" });
         setCodexAuthStatus({
           authenticated: false,
-          method: 'none',
+          method: "none",
         });
-        toast.success('OpenAI API key deleted');
+        toast.success("OpenAI API key deleted");
       } else {
-        toast.error(result.error || 'Failed to delete API key');
+        toast.error(result.error || "Failed to delete API key");
       }
     } catch {
-      toast.error('Failed to delete API key');
+      toast.error("Failed to delete API key");
     } finally {
       setIsDeletingOpenaiKey(false);
     }
@@ -82,10 +83,10 @@ export function ApiKeysSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -93,10 +94,13 @@ export function ApiKeysSection() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Key className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">API Keys</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            API Keys
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure your AI provider API keys. Keys are stored locally in your browser.
+          Configure your AI provider API keys. Keys are stored locally in your
+          browser.
         </p>
       </div>
       <div className="p-6 space-y-6">
@@ -105,7 +109,7 @@ export function ApiKeysSection() {
           <div key={provider.key}>
             <ApiKeyField config={provider} />
             {/* Anthropic-specific provider info */}
-            {provider.key === 'anthropic' && (
+            {provider.key === "anthropic" && (
               <div className="mt-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
                 <div className="flex gap-2">
                   <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -113,17 +117,23 @@ export function ApiKeysSection() {
                     <p>
                       <span className="font-medium text-foreground/80">
                         Using Claude Compatible Providers?
-                      </span>{' '}
-                      Add a provider in <span className="text-blue-500">AI Providers → Claude</span>{' '}
-                      with{' '}
+                      </span>{" "}
+                      Add a provider in{" "}
+                      <span className="text-blue-500">
+                        AI Providers → Claude
+                      </span>{" "}
+                      with{" "}
                       <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">
                         credentials
-                      </span>{' '}
+                      </span>{" "}
                       as the API key source to use this key.
                     </p>
                     <p>
-                      For alternative providers (z.AI GLM, MiniMax, OpenRouter), add a provider with{' '}
-                      <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">inline</span>{' '}
+                      For alternative providers (z.AI GLM, MiniMax, OpenRouter),
+                      add a provider with{" "}
+                      <span className="font-mono text-[10px] bg-muted/50 px-1 rounded">
+                        inline
+                      </span>{" "}
                       key source and enter the provider's API key directly.
                     </p>
                   </div>
@@ -142,13 +152,13 @@ export function ApiKeysSection() {
             onClick={handleSave}
             data-testid="save-settings"
             className={cn(
-              'min-w-[140px] h-10',
-              'bg-gradient-to-r from-brand-500 to-brand-600',
-              'hover:from-brand-600 hover:to-brand-600',
-              'text-white font-medium border-0',
-              'shadow-md shadow-brand-500/20 hover:shadow-lg hover:shadow-brand-500/25',
-              'transition-all duration-200 ease-out',
-              'hover:scale-[1.02] active:scale-[0.98]'
+              "min-w-[140px] h-10",
+              "bg-gradient-to-r from-brand-500 to-brand-600",
+              "hover:from-brand-600 hover:to-brand-600",
+              "text-white font-medium border-0",
+              "shadow-md shadow-brand-500/20 hover:shadow-lg hover:shadow-brand-500/25",
+              "transition-all duration-200 ease-out",
+              "hover:scale-[1.02] active:scale-[0.98]",
             )}
           >
             {saved ? (
@@ -157,7 +167,7 @@ export function ApiKeysSection() {
                 Saved!
               </>
             ) : (
-              'Save API Keys'
+              "Save API Keys"
             )}
           </Button>
 

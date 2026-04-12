@@ -12,20 +12,20 @@
  * settings were saved but never loaded when switching projects.
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
 // Create unique temp dirs for this test run
-const TEST_TEMP_DIR = createTempDirPath('board-bg-test');
+const TEST_TEMP_DIR = createTempDirPath("board-bg-test");
 
-test.describe('Board Background Persistence', () => {
+test.describe("Board Background Persistence", () => {
   test.beforeAll(async () => {
     // Create test temp directory
     if (!fs.existsSync(TEST_TEMP_DIR)) {
@@ -38,7 +38,9 @@ test.describe('Board Background Persistence', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should load board background settings when switching projects', async ({ page }) => {
+  test("should load board background settings when switching projects", async ({
+    page,
+  }) => {
     const projectAName = `project-a-${Date.now()}`;
     const projectBName = `project-b-${Date.now()}`;
     const projectAPath = path.resolve(TEST_TEMP_DIR, projectAName);
@@ -56,26 +58,26 @@ test.describe('Board Background Persistence', () => {
       [projectBName, projectBPath],
     ]) {
       fs.writeFileSync(
-        path.join(projectPath, 'package.json'),
-        JSON.stringify({ name, version: '1.0.0' }, null, 2)
+        path.join(projectPath, "package.json"),
+        JSON.stringify({ name, version: "1.0.0" }, null, 2),
       );
-      fs.writeFileSync(path.join(projectPath, 'README.md'), `# ${name}\n`);
+      fs.writeFileSync(path.join(projectPath, "README.md"), `# ${name}\n`);
     }
 
     // Create .pegasus directory for project A with background settings
-    const pegasusDirA = path.join(projectAPath, '.pegasus');
+    const pegasusDirA = path.join(projectAPath, ".pegasus");
     fs.mkdirSync(pegasusDirA, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDirA, 'board'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDirA, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDirA, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDirA, "board"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDirA, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDirA, "context"), { recursive: true });
 
     // Copy actual background image from test fixtures
-    const backgroundPath = path.join(pegasusDirA, 'board', 'background.jpg');
-    const testImagePath = path.join(__dirname, '..', 'img', 'background.jpg');
+    const backgroundPath = path.join(pegasusDirA, "board", "background.jpg");
+    const testImagePath = path.join(__dirname, "..", "img", "background.jpg");
     fs.copyFileSync(testImagePath, backgroundPath);
 
     // Create settings.json with board background configuration
-    const settingsPath = path.join(pegasusDirA, 'settings.json');
+    const settingsPath = path.join(pegasusDirA, "settings.json");
     const backgroundSettings = {
       version: 1,
       boardBackground: {
@@ -93,13 +95,13 @@ test.describe('Board Background Persistence', () => {
     fs.writeFileSync(settingsPath, JSON.stringify(backgroundSettings, null, 2));
 
     // Create minimal .pegasus directory for project B (no background)
-    const pegasusDirB = path.join(projectBPath, '.pegasus');
+    const pegasusDirB = path.join(projectBPath, ".pegasus");
     fs.mkdirSync(pegasusDirB, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDirB, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDirB, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDirB, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDirB, "context"), { recursive: true });
     fs.writeFileSync(
-      path.join(pegasusDirB, 'settings.json'),
-      JSON.stringify({ version: 1 }, null, 2)
+      path.join(pegasusDirB, "settings.json"),
+      JSON.stringify({ version: 1 }, null, 2),
     );
 
     // Set up project A as the current project directly (skip welcome view).
@@ -123,18 +125,23 @@ test.describe('Board Background Persistence', () => {
         projects,
         versions,
       }: {
-        projects: Array<{ id: string; name: string; path: string; lastOpened: string }>;
+        projects: Array<{
+          id: string;
+          name: string;
+          path: string;
+          lastOpened: string;
+        }>;
         versions: { APP_STORE: number; SETUP_STORE: number };
       }) => {
         const appState = {
           state: {
             projects: projects,
             currentProject: projects[0],
-            currentView: 'board',
-            theme: 'dark',
+            currentView: "board",
+            theme: "dark",
             sidebarOpen: true,
             skipSandboxWarning: true,
-            apiKeys: { anthropic: '', google: '' },
+            apiKeys: { anthropic: "", google: "" },
             chatSessions: [],
             chatHistoryOpen: false,
             maxConcurrency: 3,
@@ -142,7 +149,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: versions.APP_STORE,
         };
-        localStorage.setItem('pegasus-storage', JSON.stringify(appState));
+        localStorage.setItem("pegasus-storage", JSON.stringify(appState));
 
         const setupState = {
           state: {
@@ -152,7 +159,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: versions.SETUP_STORE,
         };
-        localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+        localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
         const settingsCache = {
           setupComplete: true,
@@ -164,65 +171,79 @@ test.describe('Board Background Persistence', () => {
             lastOpened: p.lastOpened,
           })),
           currentProjectId: projects[0].id,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          sidebarStyle: 'unified',
+          sidebarStyle: "unified",
           maxConcurrency: 3,
         };
-        localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+        localStorage.setItem(
+          "pegasus-settings-cache",
+          JSON.stringify(settingsCache),
+        );
 
         // Force unified sidebar (project-dropdown-trigger exists only in unified mode)
         const uiCache = {
           state: {
             cachedProjectId: projects[0].id,
             cachedSidebarOpen: true,
-            cachedSidebarStyle: 'unified',
+            cachedSidebarStyle: "unified",
             cachedWorktreePanelCollapsed: false,
             cachedCollapsedNavSections: {},
             cachedCurrentWorktreeByProject: {},
           },
           version: 2,
         };
-        localStorage.setItem('pegasus-ui-cache', JSON.stringify(uiCache));
+        localStorage.setItem("pegasus-ui-cache", JSON.stringify(uiCache));
 
-        localStorage.setItem('pegasus-disable-splash', 'true');
+        localStorage.setItem("pegasus-disable-splash", "true");
       },
-      { projects: [projectA, projectB], versions: { APP_STORE: 2, SETUP_STORE: 1 } }
+      {
+        projects: [projectA, projectB],
+        versions: { APP_STORE: 2, SETUP_STORE: 1 },
+      },
     );
 
     // Fast-track initializeProject API calls for test project paths.
     // initializeProject makes ~8 sequential HTTP calls (exists, stat, mkdir, etc.) that
     // can take 10+ seconds under parallel load, blocking setCurrentProject entirely.
-    await page.route('**/api/fs/**', async (route) => {
+    await page.route("**/api/fs/**", async (route) => {
       const body = route.request().postDataJSON?.() ?? {};
-      const filePath = body?.filePath || body?.dirPath || '';
-      if (filePath.startsWith(projectAPath) || filePath.startsWith(projectBPath)) {
+      const filePath = body?.filePath || body?.dirPath || "";
+      if (
+        filePath.startsWith(projectAPath) ||
+        filePath.startsWith(projectBPath)
+      ) {
         const url = route.request().url();
-        if (url.includes('/api/fs/exists')) {
+        if (url.includes("/api/fs/exists")) {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({ success: true, exists: true }),
           });
-        } else if (url.includes('/api/fs/stat')) {
+        } else if (url.includes("/api/fs/stat")) {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({
               success: true,
-              stats: { isDirectory: true, isFile: false, size: 0, mtime: new Date().toISOString() },
+              stats: {
+                isDirectory: true,
+                isFile: false,
+                size: 0,
+                mtime: new Date().toISOString(),
+              },
             }),
           });
-        } else if (url.includes('/api/fs/mkdir')) {
+        } else if (url.includes("/api/fs/mkdir")) {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({ success: true }),
           });
-        } else if (url.includes('/api/fs/write')) {
+        } else if (url.includes("/api/fs/write")) {
           await route.fulfill({
             status: 200,
-            contentType: 'application/json',
+            contentType: "application/json",
             body: JSON.stringify({ success: true }),
           });
         } else {
@@ -234,7 +255,7 @@ test.describe('Board Background Persistence', () => {
     });
 
     // Also fast-track git init for test projects
-    await page.route('**/api/worktree/init-git', async (route) => {
+    await page.route("**/api/worktree/init-git", async (route) => {
       const body = route.request().postDataJSON?.() ?? {};
       if (
         body?.projectPath?.startsWith(projectAPath) ||
@@ -242,8 +263,11 @@ test.describe('Board Background Persistence', () => {
       ) {
         await route.fulfill({
           status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ success: true, result: { initialized: false } }),
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            result: { initialized: false },
+          }),
         });
       } else {
         await route.continue();
@@ -255,12 +279,15 @@ test.describe('Board Background Persistence', () => {
     // overwriting back to A (which would prevent the dropdown from ever showing B).
     let effectiveCurrentProjectId = projectAId;
     let cachedSettingsJson: Record<string, unknown> | null = null;
-    await page.route('**/api/settings/global', async (route) => {
+    await page.route("**/api/settings/global", async (route) => {
       const method = route.request().method();
-      if (method === 'PUT') {
+      if (method === "PUT") {
         try {
           const body = route.request().postDataJSON();
-          if (body?.currentProjectId === projectAId || body?.currentProjectId === projectBId) {
+          if (
+            body?.currentProjectId === projectAId ||
+            body?.currentProjectId === projectBId
+          ) {
             effectiveCurrentProjectId = body.currentProjectId;
           }
         } catch {
@@ -269,46 +296,59 @@ test.describe('Board Background Persistence', () => {
         await route.continue();
         return;
       }
-      if (method !== 'GET') {
+      if (method !== "GET") {
         await route.continue();
         return;
       }
       if (!cachedSettingsJson) {
         try {
           const response = await route.fetch();
-          cachedSettingsJson = (await response.json()) as Record<string, unknown>;
+          cachedSettingsJson = (await response.json()) as Record<
+            string,
+            unknown
+          >;
         } catch {
           // route.fetch() can fail during navigation; fall through to continue
           await route.continue().catch(() => {});
           return;
         }
       }
-      const json = JSON.parse(JSON.stringify(cachedSettingsJson)) as Record<string, unknown>;
-      if (!json.settings || typeof json.settings !== 'object') {
+      const json = JSON.parse(JSON.stringify(cachedSettingsJson)) as Record<
+        string,
+        unknown
+      >;
+      if (!json.settings || typeof json.settings !== "object") {
         json.settings = {};
       }
       const settings = json.settings as Record<string, unknown>;
       settings.currentProjectId = effectiveCurrentProjectId;
       settings.projects = [projectA, projectB];
       settings.sidebarOpen = true;
-      settings.sidebarStyle = 'unified';
+      settings.sidebarStyle = "unified";
       await route
         .fulfill({
           status: 200,
-          contentType: 'application/json',
+          contentType: "application/json",
           body: JSON.stringify(json),
         })
         .catch(() => {});
     });
 
     // Track API calls to /api/settings/project to verify settings are being loaded
-    const settingsApiCalls: Array<{ url: string; method: string; body: string }> = [];
-    page.on('request', (request) => {
-      if (request.url().includes('/api/settings/project') && request.method() === 'POST') {
+    const settingsApiCalls: Array<{
+      url: string;
+      method: string;
+      body: string;
+    }> = [];
+    page.on("request", (request) => {
+      if (
+        request.url().includes("/api/settings/project") &&
+        request.method() === "POST"
+      ) {
         settingsApiCalls.push({
           url: request.url(),
           method: request.method(),
-          body: request.postData() || '',
+          body: request.postData() || "",
         });
       }
     });
@@ -316,12 +356,14 @@ test.describe('Board Background Persistence', () => {
     await authenticateForTests(page);
 
     // Navigate to the board directly with project A
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
 
     // Wait for board view
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 15000,
+    });
 
     // Wait for settings to be loaded (useProjectSettingsLoader hook)
     // Poll for the board view to be fully rendered and stable
@@ -334,27 +376,35 @@ test.describe('Board Background Persistence', () => {
     }).toPass({ timeout: 10000 });
 
     // Ensure sidebar is expanded before interacting with project selector
-    const expandSidebarButton = page.locator('button:has-text("Expand sidebar")');
+    const expandSidebarButton = page.locator(
+      'button:has-text("Expand sidebar")',
+    );
     if (await expandSidebarButton.isVisible()) {
       await expandSidebarButton.click();
       await page
         .locator('button:has-text("Collapse sidebar")')
-        .waitFor({ state: 'visible', timeout: 5000 })
+        .waitFor({ state: "visible", timeout: 5000 })
         .catch(() => {});
     }
 
     // Switch to project B (no background)
     // Use retry pattern: background re-renders (worktree loading, settings sync) can
     // swallow clicks or close the dropdown immediately after it opens.
-    const projectSelector = page.locator('[data-testid="project-dropdown-trigger"]');
+    const projectSelector = page.locator(
+      '[data-testid="project-dropdown-trigger"]',
+    );
     await expect(async () => {
       await projectSelector.click();
-      await expect(page.locator('[data-testid="project-dropdown-content"]')).toBeVisible({
+      await expect(
+        page.locator('[data-testid="project-dropdown-content"]'),
+      ).toBeVisible({
         timeout: 2000,
       });
     }).toPass({ timeout: 10000 });
 
-    const projectPickerB = page.locator(`[data-testid="project-item-${projectBId}"]`);
+    const projectPickerB = page.locator(
+      `[data-testid="project-item-${projectBId}"]`,
+    );
     await expect(projectPickerB).toBeVisible({ timeout: 5000 });
 
     // Update effectiveCurrentProjectId eagerly BEFORE clicking so any in-flight GET
@@ -366,7 +416,9 @@ test.describe('Board Background Persistence', () => {
     // With initializeProject API calls fast-tracked, setCurrentProject runs quickly
     // and the startTransition commits within a few seconds.
     await expect(
-      page.locator('[data-testid="project-dropdown-trigger"]').getByText(projectBName)
+      page
+        .locator('[data-testid="project-dropdown-trigger"]')
+        .getByText(projectBName),
     ).toBeVisible({ timeout: 15000 });
 
     // Ensure sidebar stays expanded after navigation (it may collapse when switching projects)
@@ -375,7 +427,7 @@ test.describe('Board Background Persistence', () => {
       await expandBtn.click();
       await page
         .locator('button:has-text("Collapse sidebar")')
-        .waitFor({ state: 'visible', timeout: 5000 })
+        .waitFor({ state: "visible", timeout: 5000 })
         .catch(() => {});
     }
 
@@ -386,7 +438,9 @@ test.describe('Board Background Persistence', () => {
     const trigger = page.locator('[data-testid="project-dropdown-trigger"]');
     await expect(async () => {
       await trigger.click();
-      await expect(page.locator('[data-testid="project-dropdown-content"]')).toBeVisible({
+      await expect(
+        page.locator('[data-testid="project-dropdown-content"]'),
+      ).toBeVisible({
         timeout: 2000,
       });
       await page
@@ -396,7 +450,9 @@ test.describe('Board Background Persistence', () => {
 
     // Verify we're back on project A
     await expect(
-      page.locator('[data-testid="project-dropdown-trigger"]').getByText(projectAName)
+      page
+        .locator('[data-testid="project-dropdown-trigger"]')
+        .getByText(projectAName),
     ).toBeVisible({ timeout: 15000 });
 
     // Wait for settings to be re-loaded for project A
@@ -412,20 +468,20 @@ test.describe('Board Background Persistence', () => {
     // Verify that the settings API was called for project A at least once (initial load).
     // Note: When switching back, the app may use cached settings and skip re-fetching.
     const projectASettingsCalls = settingsApiCalls.filter((call) =>
-      call.body.includes(projectAPath)
+      call.body.includes(projectAPath),
     );
 
     // Debug: log all API calls if test fails
     if (projectASettingsCalls.length < 1) {
-      console.log('Total settings API calls:', settingsApiCalls.length);
-      console.log('API calls:', JSON.stringify(settingsApiCalls, null, 2));
-      console.log('Looking for path:', projectAPath);
+      console.log("Total settings API calls:", settingsApiCalls.length);
+      console.log("API calls:", JSON.stringify(settingsApiCalls, null, 2));
+      console.log("Looking for path:", projectAPath);
     }
 
     expect(projectASettingsCalls.length).toBeGreaterThanOrEqual(1);
 
     // Verify settings file still exists with correct data
-    const loadedSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    const loadedSettings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
     expect(loadedSettings.boardBackground).toBeDefined();
     expect(loadedSettings.boardBackground.imagePath).toBe(backgroundPath);
     expect(loadedSettings.boardBackground.cardOpacity).toBe(85);
@@ -433,7 +489,7 @@ test.describe('Board Background Persistence', () => {
     expect(loadedSettings.boardBackground.hideScrollbar).toBe(true);
 
     // Clean up route handlers to avoid "route in flight" errors during teardown
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.unrouteAll({ behavior: "ignoreErrors" });
 
     // The test passing means:
     // 1. The useProjectSettingsLoader hook is working
@@ -441,7 +497,7 @@ test.describe('Board Background Persistence', () => {
     // 3. The API call to /api/settings/project is made correctly
   });
 
-  test('should load background settings on app restart', async ({ page }) => {
+  test("should load background settings on app restart", async ({ page }) => {
     const projectName = `restart-test-${Date.now()}`;
     const projectPath = path.join(TEST_TEMP_DIR, projectName);
     const projectId = `project-${Date.now()}`;
@@ -449,23 +505,23 @@ test.describe('Board Background Persistence', () => {
     // Create project directory
     fs.mkdirSync(projectPath, { recursive: true });
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
     // Create .pegasus with background settings
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'board'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "board"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     // Copy actual background image from test fixtures
-    const backgroundPath = path.join(pegasusDir, 'board', 'background.jpg');
-    const testImagePath = path.join(__dirname, '..', 'img', 'background.jpg');
+    const backgroundPath = path.join(pegasusDir, "board", "background.jpg");
+    const testImagePath = path.join(__dirname, "..", "img", "background.jpg");
     fs.copyFileSync(testImagePath, backgroundPath);
 
-    const settingsPath = path.join(pegasusDir, 'settings.json');
+    const settingsPath = path.join(pegasusDir, "settings.json");
     fs.writeFileSync(
       settingsPath,
       JSON.stringify(
@@ -479,8 +535,8 @@ test.describe('Board Background Persistence', () => {
           },
         },
         null,
-        2
-      )
+        2,
+      ),
     );
 
     // Set up with project as current using direct localStorage
@@ -497,11 +553,11 @@ test.describe('Board Background Persistence', () => {
           state: {
             projects: [projectObj],
             currentProject: projectObj,
-            currentView: 'board',
-            theme: 'dark',
+            currentView: "board",
+            theme: "dark",
             sidebarOpen: true,
             skipSandboxWarning: true,
-            apiKeys: { anthropic: '', google: '' },
+            apiKeys: { anthropic: "", google: "" },
             chatSessions: [],
             chatHistoryOpen: false,
             maxConcurrency: 3,
@@ -509,7 +565,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: 2,
         };
-        localStorage.setItem('pegasus-storage', JSON.stringify(appState));
+        localStorage.setItem("pegasus-storage", JSON.stringify(appState));
 
         // Setup complete - use correct key name
         const setupState = {
@@ -520,7 +576,7 @@ test.describe('Board Background Persistence', () => {
           },
           version: 1,
         };
-        localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+        localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
         const settingsCache = {
           setupComplete: true,
@@ -534,22 +590,25 @@ test.describe('Board Background Persistence', () => {
             },
           ],
           currentProjectId: projectObj.id,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
           maxConcurrency: 3,
         };
-        localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+        localStorage.setItem(
+          "pegasus-settings-cache",
+          JSON.stringify(settingsCache),
+        );
 
         // Disable splash screen in tests
-        localStorage.setItem('pegasus-disable-splash', 'true');
+        localStorage.setItem("pegasus-disable-splash", "true");
       },
-      { project: [projectId, projectName, projectPath] }
+      { project: [projectId, projectName, projectPath] },
     );
 
     // Intercept settings API to use our test project instead of the E2E fixture.
     // Only intercept GET requests - let PUT requests pass through unmodified.
-    await page.route('**/api/settings/global', async (route) => {
-      if (route.request().method() !== 'GET') {
+    await page.route("**/api/settings/global", async (route) => {
+      if (route.request().method() !== "GET") {
         await route.continue();
         return;
       }
@@ -581,13 +640,20 @@ test.describe('Board Background Persistence', () => {
     });
 
     // Track API calls to /api/settings/project to verify settings are being loaded
-    const settingsApiCalls: Array<{ url: string; method: string; body: string }> = [];
-    page.on('request', (request) => {
-      if (request.url().includes('/api/settings/project') && request.method() === 'POST') {
+    const settingsApiCalls: Array<{
+      url: string;
+      method: string;
+      body: string;
+    }> = [];
+    page.on("request", (request) => {
+      if (
+        request.url().includes("/api/settings/project") &&
+        request.method() === "POST"
+      ) {
         settingsApiCalls.push({
           url: request.url(),
           method: request.method(),
-          body: request.postData() || '',
+          body: request.postData() || "",
         });
       }
     });
@@ -595,40 +661,46 @@ test.describe('Board Background Persistence', () => {
     await authenticateForTests(page);
 
     // Navigate to the app
-    await page.goto('/');
-    await page.waitForLoadState('load');
+    await page.goto("/");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
 
     // Should go straight to board view (not welcome) since we have currentProject
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 15000,
+    });
 
     // Wait for settings to load by checking API calls
     await expect(async () => {
-      const calls = settingsApiCalls.filter((call) => call.body.includes(projectPath));
+      const calls = settingsApiCalls.filter((call) =>
+        call.body.includes(projectPath),
+      );
       expect(calls.length).toBeGreaterThanOrEqual(1);
     }).toPass({ timeout: 10000 });
 
     // Verify that the settings API was called for this project
-    const projectSettingsCalls = settingsApiCalls.filter((call) => call.body.includes(projectPath));
+    const projectSettingsCalls = settingsApiCalls.filter((call) =>
+      call.body.includes(projectPath),
+    );
 
     // Debug: log all API calls if test fails
     if (projectSettingsCalls.length < 1) {
-      console.log('Total settings API calls:', settingsApiCalls.length);
-      console.log('API calls:', JSON.stringify(settingsApiCalls, null, 2));
-      console.log('Looking for path:', projectPath);
+      console.log("Total settings API calls:", settingsApiCalls.length);
+      console.log("API calls:", JSON.stringify(settingsApiCalls, null, 2));
+      console.log("Looking for path:", projectPath);
     }
 
     expect(projectSettingsCalls.length).toBeGreaterThanOrEqual(1);
 
     // Verify settings file exists with correct data
-    const loadedSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    const loadedSettings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
     expect(loadedSettings.boardBackground).toBeDefined();
     expect(loadedSettings.boardBackground.imagePath).toBe(backgroundPath);
     expect(loadedSettings.boardBackground.cardOpacity).toBe(90);
     expect(loadedSettings.boardBackground.columnOpacity).toBe(70);
 
     // Clean up route handlers to avoid "route in flight" errors during teardown
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.unrouteAll({ behavior: "ignoreErrors" });
 
     // The test passing means:
     // 1. The useProjectSettingsLoader hook is working

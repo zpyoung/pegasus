@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { FileText, FilePlus2 } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { PHASE_LABELS } from '../constants';
+import { Button } from "@/components/ui/button";
+import { FileText, FilePlus2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { PHASE_LABELS } from "../constants";
 
 interface SpecEmptyStateProps {
   projectPath: string;
@@ -24,14 +24,19 @@ export function SpecEmptyState({
   const phaseLabel = PHASE_LABELS[currentPhase] || currentPhase;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="spec-view-empty">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="spec-view-empty"
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-glass backdrop-blur-md">
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-muted-foreground" />
           <div>
             <h1 className="text-xl font-bold">App Specification</h1>
-            <p className="text-sm text-muted-foreground">{projectPath}/.pegasus/app_spec.txt</p>
+            <p className="text-sm text-muted-foreground">
+              {projectPath}/.pegasus/app_spec.txt
+            </p>
           </div>
         </div>
         {isProcessing && (
@@ -42,7 +47,9 @@ export function SpecEmptyState({
             </div>
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-sm font-semibold text-primary leading-tight tracking-tight">
-                {isCreating ? 'Generating Specification' : 'Regenerating Specification'}
+                {isCreating
+                  ? "Generating Specification"
+                  : "Regenerating Specification"}
               </span>
               {currentPhase && (
                 <span className="text-xs text-muted-foreground/90 leading-tight font-medium">
@@ -86,13 +93,13 @@ export function SpecEmptyState({
                 )}
               </>
             ) : (
-              'No App Specification Found'
+              "No App Specification Found"
             )}
           </h2>
           <p className="text-muted-foreground mb-6">
             {isCreating
-              ? currentPhase === 'feature_generation'
-                ? 'The app specification has been created! Now generating features from the implementation roadmap...'
+              ? currentPhase === "feature_generation"
+                ? "The app specification has been created! Now generating features from the implementation roadmap..."
                 : "We're analyzing your project and generating a comprehensive specification. This may take a few moments..."
               : "Create an app specification to help our system understand your project. We'll analyze your codebase and generate a comprehensive spec based on your description."}
           </p>

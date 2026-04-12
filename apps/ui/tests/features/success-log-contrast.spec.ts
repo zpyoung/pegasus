@@ -3,9 +3,9 @@
  * Verifies that success tool output has better visual contrast in the parsed log view
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -14,7 +14,7 @@ import {
   authenticateForTests,
   handleLoginScreenIfPresent,
   dismissSandboxWarningIfVisible,
-} from '../utils';
+} from "../utils";
 
 /**
  * Create a test feature with agent output for contrast verification
@@ -23,34 +23,38 @@ function createTestFeature(
   projectPath: string,
   featureId: string,
   outputContent: string,
-  title: string = 'Test Success Contrast',
-  description: string = 'Testing success log output contrast'
+  title: string = "Test Success Contrast",
+  description: string = "Testing success log output contrast",
 ): void {
-  const featureDir = path.join(projectPath, '.pegasus', 'features', featureId);
+  const featureDir = path.join(projectPath, ".pegasus", "features", featureId);
   fs.mkdirSync(featureDir, { recursive: true });
 
   // Write agent output
-  fs.writeFileSync(path.join(featureDir, 'agent-output.md'), outputContent, {
-    encoding: 'utf-8',
+  fs.writeFileSync(path.join(featureDir, "agent-output.md"), outputContent, {
+    encoding: "utf-8",
   });
 
   // Write feature metadata with all required fields
   const featureData = {
     id: featureId,
     title,
-    category: 'default',
+    category: "default",
     description,
-    status: 'verified',
+    status: "verified",
   };
 
-  fs.writeFileSync(path.join(featureDir, 'feature.json'), JSON.stringify(featureData, null, 2), {
-    encoding: 'utf-8',
-  });
+  fs.writeFileSync(
+    path.join(featureDir, "feature.json"),
+    JSON.stringify(featureData, null, 2),
+    {
+      encoding: "utf-8",
+    },
+  );
 }
 
-const TEST_TEMP_DIR = createTempDirPath('success-log-contrast');
+const TEST_TEMP_DIR = createTempDirPath("success-log-contrast");
 
-test.describe('Success log output contrast', () => {
+test.describe("Success log output contrast", () => {
   let projectPath: string;
   const projectName = `test-contrast-${Date.now()}`;
 
@@ -64,23 +68,23 @@ test.describe('Success log output contrast', () => {
 
     // Create minimal project structure
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
     // Create .pegasus directory structure
-    const pegasusDir = path.join(projectPath, '.pegasus');
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    const pegasusDir = path.join(projectPath, ".pegasus");
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: [] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: [] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for success log contrast verification.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for success log contrast verification.`,
     );
   });
 
@@ -93,32 +97,46 @@ test.describe('Success log output contrast', () => {
    * and open the agent output modal with the parsed/logs view active.
    */
   async function setupAndOpenLogsView(
-    page: import('@playwright/test').Page,
+    page: import("@playwright/test").Page,
     featureId: string,
     outputContent: string,
     title: string,
-    description: string
+    description: string,
   ): Promise<void> {
-    createTestFeature(projectPath, featureId, outputContent, title, description);
+    createTestFeature(
+      projectPath,
+      featureId,
+      outputContent,
+      title,
+      description,
+    );
 
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
     await authenticateForTests(page);
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
 
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Dismiss sandbox warning dialog if it appears (blocks pointer events)
     await dismissSandboxWarningIfVisible(page);
 
     // Wait for the verified feature card to appear
-    const featureCard = page.locator(`[data-testid="kanban-card-${featureId}"]`);
+    const featureCard = page.locator(
+      `[data-testid="kanban-card-${featureId}"]`,
+    );
     await expect(featureCard).toBeVisible({ timeout: 10000 });
 
     // Click the Logs button on the verified feature card
-    const logsButton = page.locator(`[data-testid="view-output-verified-${featureId}"]`);
+    const logsButton = page.locator(
+      `[data-testid="view-output-verified-${featureId}"]`,
+    );
     await expect(logsButton).toBeVisible({ timeout: 5000 });
     await logsButton.click();
 
@@ -127,11 +145,13 @@ test.describe('Success log output contrast', () => {
     await expect(modal).toBeVisible({ timeout: 10000 });
 
     // The modal opens in Logs view by default. Verify the Logs tab is active.
-    const parsedButton = page.getByTestId('view-mode-parsed');
+    const parsedButton = page.getByTestId("view-mode-parsed");
     await expect(parsedButton).toBeVisible({ timeout: 5000 });
   }
 
-  test('should display success log output with improved contrast', async ({ page }) => {
+  test("should display success log output with improved contrast", async ({
+    page,
+  }) => {
     const testFeatureId = `test-success-contrast-${Date.now()}`;
 
     const mockOutput = `## Summary
@@ -149,8 +169,8 @@ The feature is complete and ready for review.
       page,
       testFeatureId,
       mockOutput,
-      'Test Success Contrast',
-      'Testing success log output contrast'
+      "Test Success Contrast",
+      "Testing success log output contrast",
     );
 
     const modal = page.locator('[data-testid="agent-output-modal"]');
@@ -158,17 +178,21 @@ The feature is complete and ready for review.
     // Verify the modal shows the parsed log view with log entries
     // The log viewer should display entries parsed from the agent output
     // Use .first() because "Summary" appears in both the badge and the content preview
-    await expect(modal.locator('text=Summary').first()).toBeVisible({ timeout: 5000 });
+    await expect(modal.locator("text=Summary").first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify the description is shown
-    await expect(modal.locator('text=Testing success log output contrast')).toBeVisible();
+    await expect(
+      modal.locator("text=Testing success log output contrast"),
+    ).toBeVisible();
 
     // Close modal
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
     await expect(modal).not.toBeVisible({ timeout: 5000 });
   });
 
-  test('should maintain consistency across all log types', async ({ page }) => {
+  test("should maintain consistency across all log types", async ({ page }) => {
     const testFeatureId = `test-all-logs-${Date.now()}`;
 
     const mixedOutput = `## Planning Phase
@@ -188,25 +212,29 @@ Feature implementation complete with all tests passing.
       page,
       testFeatureId,
       mixedOutput,
-      'Test All Logs',
-      'Testing all log types'
+      "Test All Logs",
+      "Testing all log types",
     );
 
     const modal = page.locator('[data-testid="agent-output-modal"]');
 
     // Verify log entries are displayed in the parsed view
     // Use .first() because "Summary" appears in both the badge and the content preview
-    await expect(modal.locator('text=Summary').first()).toBeVisible({ timeout: 5000 });
+    await expect(modal.locator("text=Summary").first()).toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify the description is shown
-    await expect(modal.locator('text=Testing all log types')).toBeVisible();
+    await expect(modal.locator("text=Testing all log types")).toBeVisible();
 
     // Close modal
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
     await expect(modal).not.toBeVisible({ timeout: 5000 });
   });
 
-  test('should have consistent badge styling with improved contrast', async ({ page }) => {
+  test("should have consistent badge styling with improved contrast", async ({
+    page,
+  }) => {
     const testFeatureId = `test-badge-contrast-${Date.now()}`;
 
     const badgeOutput = `## Summary
@@ -221,17 +249,19 @@ All tasks completed successfully.
       page,
       testFeatureId,
       badgeOutput,
-      'Test Badge Contrast',
-      'Testing badge contrast in success logs'
+      "Test Badge Contrast",
+      "Testing badge contrast in success logs",
     );
 
     const modal = page.locator('[data-testid="agent-output-modal"]');
 
     // Verify the parsed log view shows content
-    await expect(modal.locator('text=Summary')).toBeVisible({ timeout: 5000 });
+    await expect(modal.locator("text=Summary")).toBeVisible({ timeout: 5000 });
 
     // Verify the description is shown
-    await expect(modal.locator('text=Testing badge contrast in success logs')).toBeVisible();
+    await expect(
+      modal.locator("text=Testing badge contrast in success logs"),
+    ).toBeVisible();
 
     // Verify the filter badges are displayed (showing log type counts)
     // The log viewer shows filter badges like "success: 1" to indicate log types
@@ -242,7 +272,7 @@ All tasks completed successfully.
     }
 
     // Close modal
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
     await expect(modal).not.toBeVisible({ timeout: 5000 });
   });
 });

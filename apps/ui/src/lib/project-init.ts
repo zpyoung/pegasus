@@ -5,10 +5,10 @@
  * new or existing projects.
  */
 
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from './electron';
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "./electron";
 
-const logger = createLogger('ProjectInit');
+const logger = createLogger("ProjectInit");
 
 export interface ProjectInitResult {
   success: boolean;
@@ -26,9 +26,14 @@ const REQUIRED_STRUCTURE: {
   directories: string[];
   files: Record<string, string>;
 } = {
-  directories: ['.pegasus', '.pegasus/context', '.pegasus/features', '.pegasus/images'],
+  directories: [
+    ".pegasus",
+    ".pegasus/context",
+    ".pegasus/features",
+    ".pegasus/images",
+  ],
   files: {
-    '.pegasus/categories.json': '[]',
+    ".pegasus/categories.json": "[]",
   },
 };
 
@@ -37,20 +42,20 @@ const REQUIRED_STRUCTURE: {
  * Tracked items (config.yaml, pipelines/, context/) are NOT listed here.
  */
 const PEGASUS_GITIGNORE_ENTRIES = [
-  '# Pegasus runtime files',
-  '.pegasus/pegasus.db',
-  '.pegasus/pegasus.db-wal',
-  '.pegasus/pegasus.db-shm',
-  '.pegasus/logs/',
-  '.pegasus/categories.json',
-  '.pegasus/events/',
-  '.pegasus/memory/',
-  '.pegasus/features/',
-  '.pegasus/images/',
-  '.pegasus/settings.json',
-  '.pegasus/settings.json.*',
-  '.pegasus/active-branches.json',
-  '.pegasus/notifications.json',
+  "# Pegasus runtime files",
+  ".pegasus/pegasus.db",
+  ".pegasus/pegasus.db-wal",
+  ".pegasus/pegasus.db-shm",
+  ".pegasus/logs/",
+  ".pegasus/categories.json",
+  ".pegasus/events/",
+  ".pegasus/memory/",
+  ".pegasus/features/",
+  ".pegasus/images/",
+  ".pegasus/settings.json",
+  ".pegasus/settings.json.*",
+  ".pegasus/active-branches.json",
+  ".pegasus/notifications.json",
 ];
 
 /**
@@ -59,7 +64,9 @@ const PEGASUS_GITIGNORE_ENTRIES = [
  * @param projectPath - The root path of the project
  * @returns Result indicating what was created or if the project was already initialized
  */
-export async function initializeProject(projectPath: string): Promise<ProjectInitResult> {
+export async function initializeProject(
+  projectPath: string,
+): Promise<ProjectInitResult> {
   const api = getElectronAPI();
   const createdFiles: string[] = [];
   const existingFiles: string[] = [];
@@ -81,7 +88,9 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
       return {
         success: false,
         isNewProject: false,
-        error: projectStat.error || `Failed to stat project directory: ${projectPath}`,
+        error:
+          projectStat.error ||
+          `Failed to stat project directory: ${projectPath}`,
       };
     }
 
@@ -96,53 +105,58 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
     // Initialize git repository if it doesn't exist
     const gitDirExists = await api.exists(`${projectPath}/.git`);
     if (!gitDirExists) {
-      logger.info('Initializing git repository...');
+      logger.info("Initializing git repository...");
       try {
         // Initialize git and create an initial empty commit via server route
         const result = await api.worktree?.initGit(projectPath);
         if (result?.success && result.result?.initialized) {
-          createdFiles.push('.git');
-          logger.info('Git repository initialized with initial commit');
+          createdFiles.push(".git");
+          logger.info("Git repository initialized with initial commit");
         } else if (result?.success && !result.result?.initialized) {
           // Git already existed (shouldn't happen since we checked, but handle it)
-          existingFiles.push('.git');
-          logger.info('Git repository already exists');
+          existingFiles.push(".git");
+          logger.info("Git repository already exists");
         } else {
-          logger.warn('Failed to initialize git repository:', result?.error);
+          logger.warn("Failed to initialize git repository:", result?.error);
         }
       } catch (gitError) {
-        logger.warn('Failed to initialize git repository:', gitError);
+        logger.warn("Failed to initialize git repository:", gitError);
         // Don't fail the whole initialization if git init fails
       }
     } else {
-      existingFiles.push('.git');
+      existingFiles.push(".git");
     }
 
     // Create all required directories in parallel
     await Promise.all(
-      REQUIRED_STRUCTURE.directories.map((dir) => api.mkdir(`${projectPath}/${dir}`))
+      REQUIRED_STRUCTURE.directories.map((dir) =>
+        api.mkdir(`${projectPath}/${dir}`),
+      ),
     );
 
     // Check and create required files in parallel
     await Promise.all(
-      Object.entries(REQUIRED_STRUCTURE.files).map(async ([relativePath, defaultContent]) => {
-        const fullPath = `${projectPath}/${relativePath}`;
-        const exists = await api.exists(fullPath);
+      Object.entries(REQUIRED_STRUCTURE.files).map(
+        async ([relativePath, defaultContent]) => {
+          const fullPath = `${projectPath}/${relativePath}`;
+          const exists = await api.exists(fullPath);
 
-        if (!exists) {
-          await api.writeFile(fullPath, defaultContent as string);
-          createdFiles.push(relativePath);
-        } else {
-          existingFiles.push(relativePath);
-        }
-      })
+          if (!exists) {
+            await api.writeFile(fullPath, defaultContent as string);
+            createdFiles.push(relativePath);
+          } else {
+            existingFiles.push(relativePath);
+          }
+        },
+      ),
     );
 
     // Ensure .gitignore has pegasus entries
     await ensureGitignoreEntries(projectPath, api);
 
     // Determine if this is a new project (no files needed to be created since features/ is empty by default)
-    const isNewProject = createdFiles.length === 0 && existingFiles.length === 0;
+    const isNewProject =
+      createdFiles.length === 0 && existingFiles.length === 0;
 
     return {
       success: true,
@@ -151,11 +165,11 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
       existingFiles,
     };
   } catch (error) {
-    logger.error('Failed to initialize project:', error);
+    logger.error("Failed to initialize project:", error);
     return {
       success: false,
       isNewProject: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -166,31 +180,35 @@ export async function initializeProject(projectPath: string): Promise<ProjectIni
  */
 async function ensureGitignoreEntries(
   projectPath: string,
-  api: ReturnType<typeof getElectronAPI>
+  api: ReturnType<typeof getElectronAPI>,
 ): Promise<void> {
   const gitignorePath = `${projectPath}/.gitignore`;
 
   try {
-    let content = '';
+    let content = "";
     const exists = await api.exists(gitignorePath);
     if (exists) {
       const result = await api.readFile(gitignorePath);
-      content = result.content || '';
+      content = result.content || "";
     }
 
-    const existingLines = new Set(content.split('\n').map((line) => line.trim()));
-    const missing = PEGASUS_GITIGNORE_ENTRIES.filter((entry) => !existingLines.has(entry));
+    const existingLines = new Set(
+      content.split("\n").map((line) => line.trim()),
+    );
+    const missing = PEGASUS_GITIGNORE_ENTRIES.filter(
+      (entry) => !existingLines.has(entry),
+    );
 
     if (missing.length === 0) {
       return;
     }
 
-    const suffix = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
-    const block = missing.join('\n') + '\n';
+    const suffix = content.length > 0 && !content.endsWith("\n") ? "\n" : "";
+    const block = missing.join("\n") + "\n";
     await api.writeFile(gitignorePath, content + suffix + block);
     logger.info(`Added ${missing.length} entries to .gitignore`);
   } catch (error) {
-    logger.warn('Failed to update .gitignore:', error);
+    logger.warn("Failed to update .gitignore:", error);
   }
 }
 
@@ -200,7 +218,9 @@ async function ensureGitignoreEntries(
  * @param projectPath - The root path of the project
  * @returns true if all required files/directories exist
  */
-export async function isProjectInitialized(projectPath: string): Promise<boolean> {
+export async function isProjectInitialized(
+  projectPath: string,
+): Promise<boolean> {
   const api = getElectronAPI();
 
   try {
@@ -215,7 +235,7 @@ export async function isProjectInitialized(projectPath: string): Promise<boolean
 
     return true;
   } catch (error) {
-    logger.error('Error checking project initialization:', error);
+    logger.error("Error checking project initialization:", error);
     return false;
   }
 }
@@ -253,7 +273,7 @@ export async function getProjectInitStatus(projectPath: string): Promise<{
       existingFiles,
     };
   } catch (error) {
-    logger.error('Error getting project status:', error);
+    logger.error("Error getting project status:", error);
     return {
       initialized: false,
       missingFiles: REQUIRED_STRUCTURE.directories,
@@ -274,7 +294,7 @@ export async function hasAppSpec(projectPath: string): Promise<boolean> {
     const fullPath = `${projectPath}/.pegasus/app_spec.txt`;
     return await api.exists(fullPath);
   } catch (error) {
-    logger.error('Error checking app_spec.txt:', error);
+    logger.error("Error checking app_spec.txt:", error);
     return false;
   }
 }
@@ -291,7 +311,7 @@ export async function hasPegasusDir(projectPath: string): Promise<boolean> {
     const fullPath = `${projectPath}/.pegasus`;
     return await api.exists(fullPath);
   } catch (error) {
-    logger.error('Error checking .pegasus dir:', error);
+    logger.error("Error checking .pegasus dir:", error);
     return false;
   }
 }

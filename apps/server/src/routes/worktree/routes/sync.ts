@@ -10,9 +10,9 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { performSync } from '../../../services/sync-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { performSync } from "../../../services/sync-service.js";
 
 export function createSyncHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -25,7 +25,7 @@ export function createSyncHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -59,7 +59,7 @@ export function createSyncHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Sync worktree failed');
+      logError(error, "Sync worktree failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

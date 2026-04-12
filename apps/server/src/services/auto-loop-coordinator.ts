@@ -2,15 +2,15 @@
  * AutoLoopCoordinator - Manages the auto-mode loop lifecycle and failure tracking
  */
 
-import type { Feature } from '@pegasus/types';
-import { createLogger, classifyError } from '@pegasus/utils';
-import { areDependenciesSatisfied } from '@pegasus/dependency-resolver';
-import type { TypedEventBus } from './typed-event-bus.js';
-import type { ConcurrencyManager } from './concurrency-manager.js';
-import type { SettingsService } from './settings-service.js';
-import { DEFAULT_MAX_CONCURRENCY } from '@pegasus/types';
+import type { Feature } from "@pegasus/types";
+import { createLogger, classifyError } from "@pegasus/utils";
+import { areDependenciesSatisfied } from "@pegasus/dependency-resolver";
+import type { TypedEventBus } from "./typed-event-bus.js";
+import type { ConcurrencyManager } from "./concurrency-manager.js";
+import type { SettingsService } from "./settings-service.js";
+import { DEFAULT_MAX_CONCURRENCY } from "@pegasus/types";
 
-const logger = createLogger('AutoLoopCoordinator');
+const logger = createLogger("AutoLoopCoordinator");
 
 const CONSECUTIVE_FAILURE_THRESHOLD = 3;
 const FAILURE_WINDOW_MS = 60000;
@@ -45,29 +45,32 @@ export interface ProjectAutoLoopState {
  * The string 'main' is also normalized to '__main__' for consistency.
  * Named branches always use their exact name.
  */
-export function getWorktreeAutoLoopKey(projectPath: string, branchName: string | null): string {
-  const normalizedBranch = branchName === 'main' ? null : branchName;
-  return `${projectPath}::${normalizedBranch ?? '__main__'}`;
+export function getWorktreeAutoLoopKey(
+  projectPath: string,
+  branchName: string | null,
+): string {
+  const normalizedBranch = branchName === "main" ? null : branchName;
+  return `${projectPath}::${normalizedBranch ?? "__main__"}`;
 }
 
 export type ExecuteFeatureFn = (
   projectPath: string,
   featureId: string,
   useWorktrees: boolean,
-  isAutoMode: boolean
+  isAutoMode: boolean,
 ) => Promise<void>;
 export type LoadPendingFeaturesFn = (
   projectPath: string,
-  branchName: string | null
+  branchName: string | null,
 ) => Promise<Feature[]>;
 export type SaveExecutionStateFn = (
   projectPath: string,
   branchName: string | null,
-  maxConcurrency: number
+  maxConcurrency: number,
 ) => Promise<void>;
 export type ClearExecutionStateFn = (
   projectPath: string,
-  branchName: string | null
+  branchName: string | null,
 ) => Promise<void>;
 export type ResetStuckFeaturesFn = (projectPath: string) => Promise<void>;
 export type IsFeatureFinishedFn = (feature: Feature) => boolean;
@@ -87,7 +90,7 @@ export class AutoLoopCoordinator {
     private resetStuckFeaturesFn: ResetStuckFeaturesFn,
     private isFeatureFinishedFn: IsFeatureFinishedFn,
     private isFeatureRunningFn: (featureId: string) => boolean,
-    private loadAllFeaturesFn?: LoadAllFeaturesFn
+    private loadAllFeaturesFn?: LoadAllFeaturesFn,
   ) {}
 
   /**
@@ -99,12 +102,12 @@ export class AutoLoopCoordinator {
   async startAutoLoopForProject(
     projectPath: string,
     branchName: string | null = null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
   ): Promise<number> {
     const resolvedMaxConcurrency = await this.resolveMaxConcurrency(
       projectPath,
       branchName,
-      maxConcurrency
+      maxConcurrency,
     );
 
     // Use worktree-scoped key
@@ -113,9 +116,11 @@ export class AutoLoopCoordinator {
     // Check if this project/worktree already has an active autoloop
     const existingState = this.autoLoopsByProject.get(worktreeKey);
     if (existingState?.isRunning) {
-      const worktreeDesc = branchName ? `worktree ${branchName}` : 'main worktree';
+      const worktreeDesc = branchName
+        ? `worktree ${branchName}`
+        : "main worktree";
       throw new Error(
-        `Auto mode is already running for ${worktreeDesc} in project: ${projectPath}`
+        `Auto mode is already running for ${worktreeDesc} in project: ${projectPath}`,
       );
     }
 
@@ -144,16 +149,20 @@ export class AutoLoopCoordinator {
     } catch {
       /* ignore */
     }
-    this.eventBus.emitAutoModeEvent('auto_mode_started', {
+    this.eventBus.emitAutoModeEvent("auto_mode_started", {
       message: `Auto mode started with max ${resolvedMaxConcurrency} concurrent features`,
       projectPath,
       branchName,
       maxConcurrency: resolvedMaxConcurrency,
     });
-    await this.saveExecutionStateFn(projectPath, branchName, resolvedMaxConcurrency);
+    await this.saveExecutionStateFn(
+      projectPath,
+      branchName,
+      resolvedMaxConcurrency,
+    );
     this.runAutoLoopForProject(worktreeKey).catch((error) => {
       const errorInfo = classifyError(error);
-      this.eventBus.emitAutoModeEvent('auto_mode_error', {
+      this.eventBus.emitAutoModeEvent("auto_mode_error", {
         error: errorInfo.message,
         errorType: errorInfo.type,
         projectPath,
@@ -167,40 +176,56 @@ export class AutoLoopCoordinator {
     const projectState = this.autoLoopsByProject.get(worktreeKey);
     if (!projectState) return;
     const { projectPath, branchName } = projectState.config;
-    while (projectState.isRunning && !projectState.abortController.signal.aborted) {
+    while (
+      projectState.isRunning &&
+      !projectState.abortController.signal.aborted
+    ) {
       try {
         // Count ALL running features (both auto and manual) against the concurrency limit.
         // This ensures auto mode is aware of the total system load and does not over-subscribe
         // resources. Manual tasks always bypass the limit and run immediately, but their
         // presence is accounted for when deciding whether to dispatch new auto-mode tasks.
-        const runningCount = await this.getRunningCountForWorktree(projectPath, branchName);
+        const runningCount = await this.getRunningCountForWorktree(
+          projectPath,
+          branchName,
+        );
         if (runningCount >= projectState.config.maxConcurrency) {
-          await this.sleep(SLEEP_INTERVAL_CAPACITY_MS, projectState.abortController.signal);
+          await this.sleep(
+            SLEEP_INTERVAL_CAPACITY_MS,
+            projectState.abortController.signal,
+          );
           continue;
         }
-        const pendingFeatures = await this.loadPendingFeaturesFn(projectPath, branchName);
+        const pendingFeatures = await this.loadPendingFeaturesFn(
+          projectPath,
+          branchName,
+        );
         if (pendingFeatures.length === 0) {
           if (runningCount === 0 && !projectState.hasEmittedIdleEvent) {
             // Double-check that we have no features in 'in_progress' state that might
             // have been released from the concurrency manager but not yet updated to
             // their final status. This prevents auto_mode_idle from firing prematurely
             // when features are transitioning states (e.g., during status update).
-            const hasInProgressFeatures = await this.hasInProgressFeaturesForWorktree(
-              projectPath,
-              branchName
-            );
+            const hasInProgressFeatures =
+              await this.hasInProgressFeaturesForWorktree(
+                projectPath,
+                branchName,
+              );
 
             // Only emit auto_mode_idle if we're truly done with all features
             if (!hasInProgressFeatures) {
-              this.eventBus.emitAutoModeEvent('auto_mode_idle', {
-                message: 'No pending features - auto mode idle',
+              this.eventBus.emitAutoModeEvent("auto_mode_idle", {
+                message: "No pending features - auto mode idle",
                 projectPath,
                 branchName,
               });
               projectState.hasEmittedIdleEvent = true;
             }
           }
-          await this.sleep(SLEEP_INTERVAL_IDLE_MS, projectState.abortController.signal);
+          await this.sleep(
+            SLEEP_INTERVAL_IDLE_MS,
+            projectState.abortController.signal,
+          );
           continue;
         }
 
@@ -217,7 +242,9 @@ export class AutoLoopCoordinator {
           (f) =>
             !this.isFeatureRunningFn(f.id) &&
             !this.isFeatureFinishedFn(f) &&
-            (this.loadAllFeaturesFn ? areDependenciesSatisfied(f, allFeatures!) : true)
+            (this.loadAllFeaturesFn
+              ? areDependenciesSatisfied(f, allFeatures!)
+              : true),
         );
 
         // Sort eligible features by priority (lower number = higher priority, default 2)
@@ -228,7 +255,7 @@ export class AutoLoopCoordinator {
         if (nextFeature) {
           logger.info(
             `Auto-loop selected feature "${nextFeature.title || nextFeature.id}" ` +
-              `(priority=${nextFeature.priority ?? 2}) from ${eligibleFeatures.length} eligible features`
+              `(priority=${nextFeature.priority ?? 2}) from ${eligibleFeatures.length} eligible features`,
           );
         }
         if (nextFeature) {
@@ -237,19 +264,38 @@ export class AutoLoopCoordinator {
             projectPath,
             nextFeature.id,
             projectState.config.useWorktrees,
-            true
+            true,
           ).catch((error) => {
             const errorInfo = classifyError(error);
-            logger.error(`Auto-loop feature ${nextFeature.id} failed:`, errorInfo.message);
-            if (this.trackFailureAndCheckPauseForProject(projectPath, branchName, errorInfo)) {
-              this.signalShouldPauseForProject(projectPath, branchName, errorInfo);
+            logger.error(
+              `Auto-loop feature ${nextFeature.id} failed:`,
+              errorInfo.message,
+            );
+            if (
+              this.trackFailureAndCheckPauseForProject(
+                projectPath,
+                branchName,
+                errorInfo,
+              )
+            ) {
+              this.signalShouldPauseForProject(
+                projectPath,
+                branchName,
+                errorInfo,
+              );
             }
           });
         }
-        await this.sleep(SLEEP_INTERVAL_NORMAL_MS, projectState.abortController.signal);
+        await this.sleep(
+          SLEEP_INTERVAL_NORMAL_MS,
+          projectState.abortController.signal,
+        );
       } catch {
         if (projectState.abortController.signal.aborted) break;
-        await this.sleep(SLEEP_INTERVAL_ERROR_MS, projectState.abortController.signal);
+        await this.sleep(
+          SLEEP_INTERVAL_ERROR_MS,
+          projectState.abortController.signal,
+        );
       }
     }
     projectState.isRunning = false;
@@ -257,7 +303,7 @@ export class AutoLoopCoordinator {
 
   async stopAutoLoopForProject(
     projectPath: string,
-    branchName: string | null = null
+    branchName: string | null = null,
   ): Promise<number> {
     const worktreeKey = getWorktreeAutoLoopKey(projectPath, branchName);
     const projectState = this.autoLoopsByProject.get(worktreeKey);
@@ -267,8 +313,8 @@ export class AutoLoopCoordinator {
     projectState.abortController.abort();
     await this.clearExecutionStateFn(projectPath, branchName);
     if (wasRunning)
-      this.eventBus.emitAutoModeEvent('auto_mode_stopped', {
-        message: 'Auto mode stopped',
+      this.eventBus.emitAutoModeEvent("auto_mode_stopped", {
+        message: "Auto mode stopped",
         projectPath,
         branchName,
       });
@@ -276,7 +322,10 @@ export class AutoLoopCoordinator {
     return await this.getRunningCountForWorktree(projectPath, branchName);
   }
 
-  isAutoLoopRunningForProject(projectPath: string, branchName: string | null = null): boolean {
+  isAutoLoopRunningForProject(
+    projectPath: string,
+    branchName: string | null = null,
+  ): boolean {
     const worktreeKey = getWorktreeAutoLoopKey(projectPath, branchName);
     const projectState = this.autoLoopsByProject.get(worktreeKey);
     return projectState?.isRunning ?? false;
@@ -289,7 +338,7 @@ export class AutoLoopCoordinator {
    */
   getAutoLoopConfigForProject(
     projectPath: string,
-    branchName: string | null = null
+    branchName: string | null = null,
   ): AutoModeConfig | null {
     const worktreeKey = getWorktreeAutoLoopKey(projectPath, branchName);
     const projectState = this.autoLoopsByProject.get(worktreeKey);
@@ -299,8 +348,14 @@ export class AutoLoopCoordinator {
   /**
    * Get all active auto loop worktrees with their project paths and branch names
    */
-  getActiveWorktrees(): Array<{ projectPath: string; branchName: string | null }> {
-    const activeWorktrees: Array<{ projectPath: string; branchName: string | null }> = [];
+  getActiveWorktrees(): Array<{
+    projectPath: string;
+    branchName: string | null;
+  }> {
+    const activeWorktrees: Array<{
+      projectPath: string;
+      branchName: string | null;
+    }> = [];
     for (const [, state] of this.autoLoopsByProject) {
       if (state.isRunning) {
         activeWorktrees.push({
@@ -328,23 +383,27 @@ export class AutoLoopCoordinator {
   async getRunningCountForWorktree(
     projectPath: string,
     branchName: string | null,
-    options?: { autoModeOnly?: boolean }
+    options?: { autoModeOnly?: boolean },
   ): Promise<number> {
-    return this.concurrencyManager.getRunningCountForWorktree(projectPath, branchName, options);
+    return this.concurrencyManager.getRunningCountForWorktree(
+      projectPath,
+      branchName,
+      options,
+    );
   }
 
   trackFailureAndCheckPauseForProject(
     projectPath: string,
     branchNameOrError: string | null | { type: string; message: string },
-    errorInfo?: { type: string; message: string }
+    errorInfo?: { type: string; message: string },
   ): boolean {
     // Support both old (projectPath, errorInfo) and new (projectPath, branchName, errorInfo) signatures
     let branchName: string | null;
     let actualErrorInfo: { type: string; message: string };
     if (
-      typeof branchNameOrError === 'object' &&
+      typeof branchNameOrError === "object" &&
       branchNameOrError !== null &&
-      'type' in branchNameOrError
+      "type" in branchNameOrError
     ) {
       // Old signature: (projectPath, errorInfo)
       branchName = null;
@@ -355,33 +414,37 @@ export class AutoLoopCoordinator {
       actualErrorInfo = errorInfo!;
     }
     const projectState = this.autoLoopsByProject.get(
-      getWorktreeAutoLoopKey(projectPath, branchName)
+      getWorktreeAutoLoopKey(projectPath, branchName),
     );
     if (!projectState) return false;
     const now = Date.now();
-    projectState.consecutiveFailures.push({ timestamp: now, error: actualErrorInfo.message });
+    projectState.consecutiveFailures.push({
+      timestamp: now,
+      error: actualErrorInfo.message,
+    });
     projectState.consecutiveFailures = projectState.consecutiveFailures.filter(
-      (f) => now - f.timestamp < FAILURE_WINDOW_MS
+      (f) => now - f.timestamp < FAILURE_WINDOW_MS,
     );
     return (
-      projectState.consecutiveFailures.length >= CONSECUTIVE_FAILURE_THRESHOLD ||
-      actualErrorInfo.type === 'quota_exhausted' ||
-      actualErrorInfo.type === 'rate_limit'
+      projectState.consecutiveFailures.length >=
+        CONSECUTIVE_FAILURE_THRESHOLD ||
+      actualErrorInfo.type === "quota_exhausted" ||
+      actualErrorInfo.type === "rate_limit"
     );
   }
 
   signalShouldPauseForProject(
     projectPath: string,
     branchNameOrError: string | null | { type: string; message: string },
-    errorInfo?: { type: string; message: string }
+    errorInfo?: { type: string; message: string },
   ): void {
     // Support both old (projectPath, errorInfo) and new (projectPath, branchName, errorInfo) signatures
     let branchName: string | null;
     let actualErrorInfo: { type: string; message: string };
     if (
-      typeof branchNameOrError === 'object' &&
+      typeof branchNameOrError === "object" &&
       branchNameOrError !== null &&
-      'type' in branchNameOrError
+      "type" in branchNameOrError
     ) {
       branchName = null;
       actualErrorInfo = branchNameOrError;
@@ -391,16 +454,16 @@ export class AutoLoopCoordinator {
     }
 
     const projectState = this.autoLoopsByProject.get(
-      getWorktreeAutoLoopKey(projectPath, branchName)
+      getWorktreeAutoLoopKey(projectPath, branchName),
     );
     if (!projectState || projectState.pausedDueToFailures) return;
     projectState.pausedDueToFailures = true;
     const failureCount = projectState.consecutiveFailures.length;
-    this.eventBus.emitAutoModeEvent('auto_mode_paused_failures', {
+    this.eventBus.emitAutoModeEvent("auto_mode_paused_failures", {
       message:
         failureCount >= CONSECUTIVE_FAILURE_THRESHOLD
           ? `Auto Mode paused: ${failureCount} consecutive failures detected.`
-          : 'Auto Mode paused: Usage limit or API error detected.',
+          : "Auto Mode paused: Usage limit or API error detected.",
       errorType: actualErrorInfo.type,
       originalError: actualErrorInfo.message,
       failureCount,
@@ -410,9 +473,12 @@ export class AutoLoopCoordinator {
     this.stopAutoLoopForProject(projectPath, branchName);
   }
 
-  resetFailureTrackingForProject(projectPath: string, branchName: string | null = null): void {
+  resetFailureTrackingForProject(
+    projectPath: string,
+    branchName: string | null = null,
+  ): void {
     const projectState = this.autoLoopsByProject.get(
-      getWorktreeAutoLoopKey(projectPath, branchName)
+      getWorktreeAutoLoopKey(projectPath, branchName),
     );
     if (projectState) {
       projectState.consecutiveFailures = [];
@@ -420,9 +486,12 @@ export class AutoLoopCoordinator {
     }
   }
 
-  recordSuccessForProject(projectPath: string, branchName: string | null = null): void {
+  recordSuccessForProject(
+    projectPath: string,
+    branchName: string | null = null,
+  ): void {
     const projectState = this.autoLoopsByProject.get(
-      getWorktreeAutoLoopKey(projectPath, branchName)
+      getWorktreeAutoLoopKey(projectPath, branchName),
     );
     if (projectState) projectState.consecutiveFailures = [];
   }
@@ -430,29 +499,38 @@ export class AutoLoopCoordinator {
   async resolveMaxConcurrency(
     projectPath: string,
     branchName: string | null,
-    provided?: number
+    provided?: number,
   ): Promise<number> {
-    if (typeof provided === 'number' && Number.isFinite(provided)) return provided;
+    if (typeof provided === "number" && Number.isFinite(provided))
+      return provided;
     if (!this.settingsService) return DEFAULT_MAX_CONCURRENCY;
     try {
       const settings = await this.settingsService.getGlobalSettings();
       const globalMax =
-        typeof settings.maxConcurrency === 'number'
+        typeof settings.maxConcurrency === "number"
           ? settings.maxConcurrency
           : DEFAULT_MAX_CONCURRENCY;
-      const projectId = settings.projects?.find((p) => p.path === projectPath)?.id;
+      const projectId = settings.projects?.find(
+        (p) => p.path === projectPath,
+      )?.id;
       const autoModeByWorktree = settings.autoModeByWorktree;
-      if (projectId && autoModeByWorktree && typeof autoModeByWorktree === 'object') {
+      if (
+        projectId &&
+        autoModeByWorktree &&
+        typeof autoModeByWorktree === "object"
+      ) {
         // Normalize both null and 'main' to '__main__' to match the same
         // canonicalization used by getWorktreeAutoLoopKey, ensuring that
         // lookups for the primary branch always use the '__main__' sentinel
         // regardless of whether the caller passed null or the string 'main'.
         const normalizedBranch =
-          branchName === null || branchName === 'main' ? '__main__' : branchName;
+          branchName === null || branchName === "main"
+            ? "__main__"
+            : branchName;
         const worktreeId = `${projectId}::${normalizedBranch}`;
         if (
           worktreeId in autoModeByWorktree &&
-          typeof autoModeByWorktree[worktreeId]?.maxConcurrency === 'number'
+          typeof autoModeByWorktree[worktreeId]?.maxConcurrency === "number"
         ) {
           return autoModeByWorktree[worktreeId].maxConcurrency;
         }
@@ -466,18 +544,18 @@ export class AutoLoopCoordinator {
   private sleep(ms: number, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
       if (signal?.aborted) {
-        reject(new Error('Aborted'));
+        reject(new Error("Aborted"));
         return;
       }
       const onAbort = () => {
         clearTimeout(timeout);
-        reject(new Error('Aborted'));
+        reject(new Error("Aborted"));
       };
       const timeout = setTimeout(() => {
-        signal?.removeEventListener('abort', onAbort);
+        signal?.removeEventListener("abort", onAbort);
         resolve();
       }, ms);
-      signal?.addEventListener('abort', onAbort);
+      signal?.addEventListener("abort", onAbort);
     });
   }
 
@@ -486,11 +564,14 @@ export class AutoLoopCoordinator {
    * For main worktree (branchName === null or 'main'): includes features with no branchName or branchName === 'main'.
    * For feature worktrees (branchName !== null and !== 'main'): only includes features with matching branchName.
    */
-  private featureBelongsToWorktree(feature: Feature, branchName: string | null): boolean {
-    const isMainWorktree = branchName === null || branchName === 'main';
+  private featureBelongsToWorktree(
+    feature: Feature,
+    branchName: string | null,
+  ): boolean {
+    const isMainWorktree = branchName === null || branchName === "main";
     if (isMainWorktree) {
       // Main worktree: include features with no branchName or branchName === 'main'
-      return !feature.branchName || feature.branchName === 'main';
+      return !feature.branchName || feature.branchName === "main";
     } else {
       // Feature worktree: only include exact branch match
       return feature.branchName === branchName;
@@ -504,7 +585,7 @@ export class AutoLoopCoordinator {
    */
   private async hasInProgressFeaturesForWorktree(
     projectPath: string,
-    branchName: string | null
+    branchName: string | null,
   ): Promise<boolean> {
     if (!this.loadAllFeaturesFn) {
       return false;
@@ -513,13 +594,15 @@ export class AutoLoopCoordinator {
     try {
       const allFeatures = await this.loadAllFeaturesFn(projectPath);
       return allFeatures.some(
-        (f) => f.status === 'in_progress' && this.featureBelongsToWorktree(f, branchName)
+        (f) =>
+          f.status === "in_progress" &&
+          this.featureBelongsToWorktree(f, branchName),
       );
     } catch (error) {
       const errorInfo = classifyError(error);
       logger.warn(
         `Failed to load all features for idle check (projectPath=${projectPath}, branchName=${branchName}): ${errorInfo.message}`,
-        error
+        error,
       );
       return false;
     }

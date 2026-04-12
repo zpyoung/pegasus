@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 interface WelcomeStepProps {
   onNext: () => void;
@@ -13,10 +13,12 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
       </div>
 
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-3">Welcome to Pegasus</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-3">
+          Welcome to Pegasus
+        </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          To get started, we&apos;ll need to verify either claude code cli is installed or you have
-          Anthropic api keys
+          To get started, we&apos;ll need to verify either claude code cli is
+          installed or you have Anthropic api keys
         </p>
       </div>
 

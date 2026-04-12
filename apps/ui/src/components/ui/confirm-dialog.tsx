@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
+import type { ReactNode } from "react";
+import { LucideIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,9 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -28,7 +28,13 @@ interface ConfirmDialogProps {
   /** Text for the cancel button. Defaults to "Cancel" */
   cancelText?: string;
   /** Variant for the confirm button. Defaults to "default" */
-  confirmVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  confirmVariant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
 }
 
 export function ConfirmDialog({
@@ -38,11 +44,11 @@ export function ConfirmDialog({
   title,
   description,
   icon: Icon,
-  iconClassName = 'text-primary',
+  iconClassName = "text-primary",
   children,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  confirmVariant = 'default',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  confirmVariant = "default",
 }: ConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
@@ -57,19 +63,25 @@ export function ConfirmDialog({
             {Icon && <Icon className={`w-5 h-5 ${iconClassName}`} />}
             {title}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">{description}</DialogDescription>
+          <DialogDescription className="text-muted-foreground">
+            {description}
+          </DialogDescription>
         </DialogHeader>
 
         {children}
 
         <DialogFooter className="gap-2 sm:gap-2 pt-4">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="px-4">
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="px-4"
+          >
             {cancelText}
           </Button>
           <HotkeyButton
             variant={confirmVariant}
             onClick={handleConfirm}
-            hotkey={{ key: 'Enter', cmdCtrl: true }}
+            hotkey={{ key: "Enter", cmdCtrl: true }}
             hotkeyActive={open}
             className="px-4"
           >

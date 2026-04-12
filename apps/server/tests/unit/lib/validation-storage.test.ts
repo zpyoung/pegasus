@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   writeValidation,
   readValidation,
@@ -9,16 +9,19 @@ import {
   markValidationViewed,
   getUnviewedValidationsCount,
   type StoredValidation,
-} from '@/lib/validation-storage.js';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+} from "@/lib/validation-storage.js";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 
-describe('validation-storage.ts', () => {
+describe("validation-storage.ts", () => {
   let testProjectPath: string;
 
   beforeEach(async () => {
-    testProjectPath = path.join(os.tmpdir(), `validation-storage-test-${Date.now()}`);
+    testProjectPath = path.join(
+      os.tmpdir(),
+      `validation-storage-test-${Date.now()}`,
+    );
     await fs.mkdir(testProjectPath, { recursive: true });
   });
 
@@ -30,21 +33,23 @@ describe('validation-storage.ts', () => {
     }
   });
 
-  const createMockValidation = (overrides: Partial<StoredValidation> = {}): StoredValidation => ({
+  const createMockValidation = (
+    overrides: Partial<StoredValidation> = {},
+  ): StoredValidation => ({
     issueNumber: 123,
-    issueTitle: 'Test Issue',
+    issueTitle: "Test Issue",
     validatedAt: new Date().toISOString(),
-    model: 'haiku',
+    model: "haiku",
     result: {
-      verdict: 'valid',
-      confidence: 'high',
-      reasoning: 'Test reasoning',
+      verdict: "valid",
+      confidence: "high",
+      reasoning: "Test reasoning",
     },
     ...overrides,
   });
 
-  describe('writeValidation', () => {
-    it('should write validation to storage', async () => {
+  describe("writeValidation", () => {
+    it("should write validation to storage", async () => {
       const validation = createMockValidation();
 
       await writeValidation(testProjectPath, 123, validation);
@@ -52,34 +57,34 @@ describe('validation-storage.ts', () => {
       // Verify file was created
       const validationPath = path.join(
         testProjectPath,
-        '.pegasus',
-        'validations',
-        '123',
-        'validation.json'
+        ".pegasus",
+        "validations",
+        "123",
+        "validation.json",
       );
-      const content = await fs.readFile(validationPath, 'utf-8');
+      const content = await fs.readFile(validationPath, "utf-8");
       expect(JSON.parse(content)).toEqual(validation);
     });
 
-    it('should create nested directories if they do not exist', async () => {
+    it("should create nested directories if they do not exist", async () => {
       const validation = createMockValidation({ issueNumber: 456 });
 
       await writeValidation(testProjectPath, 456, validation);
 
       const validationPath = path.join(
         testProjectPath,
-        '.pegasus',
-        'validations',
-        '456',
-        'validation.json'
+        ".pegasus",
+        "validations",
+        "456",
+        "validation.json",
       );
-      const content = await fs.readFile(validationPath, 'utf-8');
+      const content = await fs.readFile(validationPath, "utf-8");
       expect(JSON.parse(content)).toEqual(validation);
     });
   });
 
-  describe('readValidation', () => {
-    it('should read validation from storage', async () => {
+  describe("readValidation", () => {
+    it("should read validation from storage", async () => {
       const validation = createMockValidation();
       await writeValidation(testProjectPath, 123, validation);
 
@@ -88,18 +93,27 @@ describe('validation-storage.ts', () => {
       expect(result).toEqual(validation);
     });
 
-    it('should return null when validation does not exist', async () => {
+    it("should return null when validation does not exist", async () => {
       const result = await readValidation(testProjectPath, 999);
 
       expect(result).toBeNull();
     });
   });
 
-  describe('getAllValidations', () => {
-    it('should return all validations for a project', async () => {
-      const validation1 = createMockValidation({ issueNumber: 1, issueTitle: 'Issue 1' });
-      const validation2 = createMockValidation({ issueNumber: 2, issueTitle: 'Issue 2' });
-      const validation3 = createMockValidation({ issueNumber: 3, issueTitle: 'Issue 3' });
+  describe("getAllValidations", () => {
+    it("should return all validations for a project", async () => {
+      const validation1 = createMockValidation({
+        issueNumber: 1,
+        issueTitle: "Issue 1",
+      });
+      const validation2 = createMockValidation({
+        issueNumber: 2,
+        issueTitle: "Issue 2",
+      });
+      const validation3 = createMockValidation({
+        issueNumber: 3,
+        issueTitle: "Issue 3",
+      });
 
       await writeValidation(testProjectPath, 1, validation1);
       await writeValidation(testProjectPath, 2, validation2);
@@ -113,18 +127,23 @@ describe('validation-storage.ts', () => {
       expect(result[2]).toEqual(validation3);
     });
 
-    it('should return empty array when no validations exist', async () => {
+    it("should return empty array when no validations exist", async () => {
       const result = await getAllValidations(testProjectPath);
 
       expect(result).toEqual([]);
     });
 
-    it('should skip non-numeric directories', async () => {
+    it("should skip non-numeric directories", async () => {
       const validation = createMockValidation({ issueNumber: 1 });
       await writeValidation(testProjectPath, 1, validation);
 
       // Create a non-numeric directory
-      const invalidDir = path.join(testProjectPath, '.pegasus', 'validations', 'invalid');
+      const invalidDir = path.join(
+        testProjectPath,
+        ".pegasus",
+        "validations",
+        "invalid",
+      );
       await fs.mkdir(invalidDir, { recursive: true });
 
       const result = await getAllValidations(testProjectPath);
@@ -134,8 +153,8 @@ describe('validation-storage.ts', () => {
     });
   });
 
-  describe('deleteValidation', () => {
-    it('should delete validation from storage', async () => {
+  describe("deleteValidation", () => {
+    it("should delete validation from storage", async () => {
       const validation = createMockValidation();
       await writeValidation(testProjectPath, 123, validation);
 
@@ -147,15 +166,15 @@ describe('validation-storage.ts', () => {
       expect(readResult).toBeNull();
     });
 
-    it('should return true even when validation does not exist', async () => {
+    it("should return true even when validation does not exist", async () => {
       const result = await deleteValidation(testProjectPath, 999);
 
       expect(result).toBe(true);
     });
   });
 
-  describe('isValidationStale', () => {
-    it('should return false for recent validation', () => {
+  describe("isValidationStale", () => {
+    it("should return false for recent validation", () => {
       const validation = createMockValidation({
         validatedAt: new Date().toISOString(),
       });
@@ -165,7 +184,7 @@ describe('validation-storage.ts', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true for validation older than 24 hours', () => {
+    it("should return true for validation older than 24 hours", () => {
       const oldDate = new Date();
       oldDate.setHours(oldDate.getHours() - 25); // 25 hours ago
 
@@ -178,7 +197,7 @@ describe('validation-storage.ts', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false for validation exactly at 24 hours', () => {
+    it("should return false for validation exactly at 24 hours", () => {
       const exactDate = new Date(Date.now() - 24 * 60 * 60 * 1000 + 100);
 
       const validation = createMockValidation({
@@ -191,8 +210,8 @@ describe('validation-storage.ts', () => {
     });
   });
 
-  describe('getValidationWithFreshness', () => {
-    it('should return validation with isStale false for recent validation', async () => {
+  describe("getValidationWithFreshness", () => {
+    it("should return validation with isStale false for recent validation", async () => {
       const validation = createMockValidation({
         validatedAt: new Date().toISOString(),
       });
@@ -205,7 +224,7 @@ describe('validation-storage.ts', () => {
       expect(result!.isStale).toBe(false);
     });
 
-    it('should return validation with isStale true for old validation', async () => {
+    it("should return validation with isStale true for old validation", async () => {
       const oldDate = new Date();
       oldDate.setHours(oldDate.getHours() - 25);
 
@@ -220,15 +239,15 @@ describe('validation-storage.ts', () => {
       expect(result!.isStale).toBe(true);
     });
 
-    it('should return null when validation does not exist', async () => {
+    it("should return null when validation does not exist", async () => {
       const result = await getValidationWithFreshness(testProjectPath, 999);
 
       expect(result).toBeNull();
     });
   });
 
-  describe('markValidationViewed', () => {
-    it('should mark validation as viewed', async () => {
+  describe("markValidationViewed", () => {
+    it("should mark validation as viewed", async () => {
       const validation = createMockValidation();
       await writeValidation(testProjectPath, 123, validation);
 
@@ -241,15 +260,15 @@ describe('validation-storage.ts', () => {
       expect(updated!.viewedAt).toBeDefined();
     });
 
-    it('should return false when validation does not exist', async () => {
+    it("should return false when validation does not exist", async () => {
       const result = await markValidationViewed(testProjectPath, 999);
 
       expect(result).toBe(false);
     });
   });
 
-  describe('getUnviewedValidationsCount', () => {
-    it('should return count of unviewed non-stale validations', async () => {
+  describe("getUnviewedValidationsCount", () => {
+    it("should return count of unviewed non-stale validations", async () => {
       const validation1 = createMockValidation({ issueNumber: 1 });
       const validation2 = createMockValidation({ issueNumber: 2 });
       const validation3 = createMockValidation({
@@ -266,7 +285,7 @@ describe('validation-storage.ts', () => {
       expect(result).toBe(2);
     });
 
-    it('should not count stale validations', async () => {
+    it("should not count stale validations", async () => {
       const oldDate = new Date();
       oldDate.setHours(oldDate.getHours() - 25);
 
@@ -284,13 +303,13 @@ describe('validation-storage.ts', () => {
       expect(result).toBe(1);
     });
 
-    it('should return 0 when no validations exist', async () => {
+    it("should return 0 when no validations exist", async () => {
       const result = await getUnviewedValidationsCount(testProjectPath);
 
       expect(result).toBe(0);
     });
 
-    it('should return 0 when all validations are viewed', async () => {
+    it("should return 0 when all validations are viewed", async () => {
       const validation = createMockValidation({
         issueNumber: 1,
         viewedAt: new Date().toISOString(),

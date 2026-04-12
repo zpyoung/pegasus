@@ -1,23 +1,26 @@
-import { useState, useCallback, useEffect } from 'react';
-import { RouterProvider } from '@tanstack/react-router';
-import { createLogger } from '@pegasus/utils/logger';
-import { router } from './utils/router';
-import { SplashScreen } from './components/splash-screen';
-import { useSettingsSync } from './hooks/use-settings-sync';
-import { useCursorStatusInit } from './hooks/use-cursor-status-init';
-import { useProviderAuthInit } from './hooks/use-provider-auth-init';
-import { useMobileVisibility, useMobileOnlineManager } from './hooks/use-mobile-visibility';
-import { useAppStore } from './store/app-store';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import './styles/global.css';
-import './styles/theme-imports';
-import './styles/font-imports';
-import { loadUserFonts, preloadAllFonts } from './styles/font-imports';
+import { useState, useCallback, useEffect } from "react";
+import { RouterProvider } from "@tanstack/react-router";
+import { createLogger } from "@pegasus/utils/logger";
+import { router } from "./utils/router";
+import { SplashScreen } from "./components/splash-screen";
+import { useSettingsSync } from "./hooks/use-settings-sync";
+import { useCursorStatusInit } from "./hooks/use-cursor-status-init";
+import { useProviderAuthInit } from "./hooks/use-provider-auth-init";
+import {
+  useMobileVisibility,
+  useMobileOnlineManager,
+} from "./hooks/use-mobile-visibility";
+import { useAppStore } from "./store/app-store";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import "./styles/global.css";
+import "./styles/theme-imports";
+import "./styles/font-imports";
+import { loadUserFonts, preloadAllFonts } from "./styles/font-imports";
 
-const logger = createLogger('App');
+const logger = createLogger("App");
 
 // Key for localStorage to persist splash screen preference
-const DISABLE_SPLASH_KEY = 'pegasus-disable-splash';
+const DISABLE_SPLASH_KEY = "pegasus-disable-splash";
 
 export default function App() {
   const disableSplashScreen = useAppStore((state) => state.disableSplashScreen);
@@ -25,7 +28,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(() => {
     // Check localStorage for user preference (available synchronously)
     const savedPreference = localStorage.getItem(DISABLE_SPLASH_KEY);
-    if (savedPreference === 'true') {
+    if (savedPreference === "true") {
       return false;
     }
     // Only show splash once per browser session.
@@ -34,7 +37,7 @@ export default function App() {
     // The flag is written on splash complete and cleared when the tab is fully closed
     // (via the 'pagehide' + persisted=false event, which fires on true tab close but
     // not on discard/background). This gives "once per actual session" semantics.
-    if (localStorage.getItem('pegasus-splash-shown-session')) {
+    if (localStorage.getItem("pegasus-splash-shown-session")) {
       return false;
     }
     return true;
@@ -58,7 +61,7 @@ export default function App() {
     // user interactions and critical rendering, unlike setTimeout which may fire
     // during a busy frame and cause jank.
     const schedulePreload =
-      typeof requestIdleCallback !== 'undefined'
+      typeof requestIdleCallback !== "undefined"
         ? () => requestIdleCallback(() => preloadAllFonts(), { timeout: 5000 })
         : () => setTimeout(() => preloadAllFonts(), 3000);
 
@@ -92,7 +95,7 @@ export default function App() {
   // Sync settings changes back to server (API-first persistence)
   const settingsSyncState = useSettingsSync();
   if (settingsSyncState.error) {
-    logger.error('Settings sync error:', settingsSyncState.error);
+    logger.error("Settings sync error:", settingsSyncState.error);
   }
 
   // Initialize Cursor CLI status at startup
@@ -109,7 +112,7 @@ export default function App() {
 
   const handleSplashComplete = useCallback(() => {
     // Mark splash as shown for this session (survives tab discard/restore)
-    localStorage.setItem('pegasus-splash-shown-session', 'true');
+    localStorage.setItem("pegasus-splash-shown-session", "true");
     setShowSplash(false);
   }, []);
 
@@ -120,17 +123,19 @@ export default function App() {
     const handlePageHide = (e: PageTransitionEvent) => {
       if (!e.persisted) {
         // Tab is being closed or navigating away (not going into bfcache)
-        localStorage.removeItem('pegasus-splash-shown-session');
+        localStorage.removeItem("pegasus-splash-shown-session");
       }
     };
-    window.addEventListener('pagehide', handlePageHide);
-    return () => window.removeEventListener('pagehide', handlePageHide);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
   }, []);
 
   return (
     <TooltipProvider delayDuration={300}>
       <RouterProvider router={router} />
-      {showSplash && !disableSplashScreen && <SplashScreen onComplete={handleSplashComplete} />}
+      {showSplash && !disableSplashScreen && (
+        <SplashScreen onComplete={handleSplashComplete} />
+      )}
     </TooltipProvider>
   );
 }

@@ -92,7 +92,9 @@
   text-shadow: 0 0 8px #f97e72;
 }
 
-.synthwave [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.synthwave
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.22 0.07 290) !important;
   color: #72f1b8 !important;
   text-shadow: 0 0 12px #72f1b8;

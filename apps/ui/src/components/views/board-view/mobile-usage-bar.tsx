@@ -1,15 +1,26 @@
-import { useEffect, useCallback, useState, type ComponentType, type ReactNode } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { useAppStore } from '@/store/app-store';
-import { AnthropicIcon, OpenAIIcon, ZaiIcon, GeminiIcon } from '@/components/ui/provider-icon';
+import {
+  useEffect,
+  useCallback,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { useAppStore } from "@/store/app-store";
+import {
+  AnthropicIcon,
+  OpenAIIcon,
+  ZaiIcon,
+  GeminiIcon,
+} from "@/components/ui/provider-icon";
 import {
   getExpectedWeeklyPacePercentage,
   getExpectedCodexPacePercentage,
   getPaceStatusLabel,
-} from '@/store/utils/usage-utils';
+} from "@/store/utils/usage-utils";
 
 interface MobileUsageBarProps {
   showClaudeUsage: boolean;
@@ -20,9 +31,9 @@ interface MobileUsageBarProps {
 
 // Helper to get progress bar color based on percentage
 function getProgressBarColor(percentage: number): string {
-  if (percentage >= 80) return 'bg-red-500';
-  if (percentage >= 50) return 'bg-yellow-500';
-  return 'bg-green-500';
+  if (percentage >= 80) return "bg-red-500";
+  if (percentage >= 50) return "bg-yellow-500";
+  return "bg-green-500";
 }
 
 // Helper to format large numbers with K/M suffixes
@@ -40,14 +51,17 @@ function formatNumber(num: number): string {
 }
 
 // Helper to format reset time
-function formatResetTime(unixTimestamp: number, isMilliseconds = false): string {
+function formatResetTime(
+  unixTimestamp: number,
+  isMilliseconds = false,
+): string {
   const date = new Date(isMilliseconds ? unixTimestamp : unixTimestamp * 1000);
   const now = new Date();
   const diff = date.getTime() - now.getTime();
 
   // Handle past timestamps (negative diff)
   if (diff <= 0) {
-    return 'Resetting soon';
+    return "Resetting soon";
   }
 
   if (diff < 3600000) {
@@ -57,7 +71,7 @@ function formatResetTime(unixTimestamp: number, isMilliseconds = false): string 
   if (diff < 86400000) {
     const hours = Math.floor(diff / 3600000);
     const mins = Math.ceil((diff % 3600000) / 60000);
-    return `Resets in ${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+    return `Resets in ${hours}h${mins > 0 ? ` ${mins}m` : ""}`;
   }
   return `Resets ${date.toLocaleDateString()}`;
 }
@@ -78,7 +92,10 @@ function UsageBar({
   resetText?: string;
   pacePercentage?: number | null;
 }) {
-  const paceLabel = pacePercentage != null ? getPaceStatusLabel(percentage, pacePercentage) : null;
+  const paceLabel =
+    pacePercentage != null
+      ? getPaceStatusLabel(percentage, pacePercentage)
+      : null;
 
   return (
     <div className="mt-1.5 first:mt-0">
@@ -88,12 +105,12 @@ function UsageBar({
         </span>
         <span
           className={cn(
-            'text-[10px] font-mono font-bold',
+            "text-[10px] font-mono font-bold",
             percentage >= 80
-              ? 'text-red-500'
+              ? "text-red-500"
               : percentage >= 50
-                ? 'text-yellow-500'
-                : 'text-green-500'
+                ? "text-yellow-500"
+                : "text-green-500",
           )}
         >
           {Math.round(percentage)}%
@@ -101,29 +118,36 @@ function UsageBar({
       </div>
       <div
         className={cn(
-          'relative h-1 w-full bg-muted-foreground/10 rounded-full overflow-hidden transition-opacity',
-          isStale && 'opacity-60'
+          "relative h-1 w-full bg-muted-foreground/10 rounded-full overflow-hidden transition-opacity",
+          isStale && "opacity-60",
         )}
       >
         <div
-          className={cn('h-full transition-all duration-500', getProgressBarColor(percentage))}
+          className={cn(
+            "h-full transition-all duration-500",
+            getProgressBarColor(percentage),
+          )}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />
-        {pacePercentage != null && pacePercentage > 0 && pacePercentage < 100 && (
-          <div
-            className="absolute top-0 h-full w-0.5 bg-foreground/60"
-            style={{ left: `${pacePercentage}%` }}
-            title={`Expected: ${Math.round(pacePercentage)}%`}
-          />
-        )}
+        {pacePercentage != null &&
+          pacePercentage > 0 &&
+          pacePercentage < 100 && (
+            <div
+              className="absolute top-0 h-full w-0.5 bg-foreground/60"
+              style={{ left: `${pacePercentage}%` }}
+              title={`Expected: ${Math.round(pacePercentage)}%`}
+            />
+          )}
       </div>
       {(details || resetText || paceLabel) && (
         <div className="flex items-center justify-between mt-0.5">
           {paceLabel ? (
             <span
               className={cn(
-                'text-[9px]',
-                percentage > (pacePercentage ?? 0) ? 'text-orange-500' : 'text-green-500'
+                "text-[9px]",
+                percentage > (pacePercentage ?? 0)
+                  ? "text-orange-500"
+                  : "text-green-500",
               )}
             >
               {paceLabel}
@@ -134,7 +158,9 @@ function UsageBar({
             <span />
           )}
           {resetText && (
-            <span className="text-[9px] text-muted-foreground ml-auto">{resetText}</span>
+            <span className="text-[9px] text-muted-foreground ml-auto">
+              {resetText}
+            </span>
           )}
         </div>
       )}
@@ -200,11 +226,16 @@ export function MobileUsageBar({
 
   // Check if data is stale (older than 2 minutes)
   const isClaudeStale =
-    !claudeUsageLastUpdated || Date.now() - claudeUsageLastUpdated > 2 * 60 * 1000;
-  const isCodexStale = !codexUsageLastUpdated || Date.now() - codexUsageLastUpdated > 2 * 60 * 1000;
-  const isZaiStale = !zaiUsageLastUpdated || Date.now() - zaiUsageLastUpdated > 2 * 60 * 1000;
+    !claudeUsageLastUpdated ||
+    Date.now() - claudeUsageLastUpdated > 2 * 60 * 1000;
+  const isCodexStale =
+    !codexUsageLastUpdated ||
+    Date.now() - codexUsageLastUpdated > 2 * 60 * 1000;
+  const isZaiStale =
+    !zaiUsageLastUpdated || Date.now() - zaiUsageLastUpdated > 2 * 60 * 1000;
   const isGeminiStale =
-    !geminiUsageLastUpdated || Date.now() - geminiUsageLastUpdated > 2 * 60 * 1000;
+    !geminiUsageLastUpdated ||
+    Date.now() - geminiUsageLastUpdated > 2 * 60 * 1000;
 
   const fetchClaudeUsage = useCallback(async () => {
     setIsClaudeLoading(true);
@@ -212,7 +243,7 @@ export function MobileUsageBar({
       const api = getElectronAPI();
       if (!api.claude) return;
       const data = await api.claude.getUsage();
-      if (!('error' in data)) {
+      if (!("error" in data)) {
         setClaudeUsage(data);
       }
     } catch {
@@ -228,7 +259,7 @@ export function MobileUsageBar({
       const api = getElectronAPI();
       if (!api.codex) return;
       const data = await api.codex.getUsage();
-      if (!('error' in data)) {
+      if (!("error" in data)) {
         setCodexUsage(data);
       }
     } catch {
@@ -244,7 +275,7 @@ export function MobileUsageBar({
       const api = getElectronAPI();
       if (!api.zai) return;
       const data = await api.zai.getUsage();
-      if (!('error' in data)) {
+      if (!("error" in data)) {
         setZaiUsage(data);
       }
     } catch {
@@ -260,7 +291,7 @@ export function MobileUsageBar({
       const api = getElectronAPI();
       if (!api.gemini) return;
       const data = await api.gemini.getUsage();
-      if (!('error' in data)) {
+      if (!("error" in data)) {
         setGeminiUsage(data, Date.now());
       }
     } catch {
@@ -302,7 +333,12 @@ export function MobileUsageBar({
   }, [showGeminiUsage, isGeminiStale, fetchGeminiUsage]);
 
   // Don't render if there's nothing to show
-  if (!showClaudeUsage && !showCodexUsage && !showZaiUsage && !showGeminiUsage) {
+  if (
+    !showClaudeUsage &&
+    !showCodexUsage &&
+    !showZaiUsage &&
+    !showGeminiUsage
+  ) {
     return null;
   }
 
@@ -326,11 +362,15 @@ export function MobileUsageBar({
                 label="Weekly"
                 percentage={claudeUsage.weeklyPercentage}
                 isStale={isClaudeStale}
-                pacePercentage={getExpectedWeeklyPacePercentage(claudeUsage.weeklyResetTime)}
+                pacePercentage={getExpectedWeeklyPacePercentage(
+                  claudeUsage.weeklyResetTime,
+                )}
               />
             </>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              Loading usage data...
+            </p>
           )}
         </UsageItem>
       )}
@@ -346,36 +386,48 @@ export function MobileUsageBar({
             <>
               {codexUsage.rateLimits.primary && (
                 <UsageBar
-                  label={getCodexWindowLabel(codexUsage.rateLimits.primary.windowDurationMins)}
+                  label={getCodexWindowLabel(
+                    codexUsage.rateLimits.primary.windowDurationMins,
+                  )}
                   percentage={codexUsage.rateLimits.primary.usedPercent}
                   isStale={isCodexStale}
                   pacePercentage={getExpectedCodexPacePercentage(
                     codexUsage.rateLimits.primary.resetsAt,
-                    codexUsage.rateLimits.primary.windowDurationMins
+                    codexUsage.rateLimits.primary.windowDurationMins,
                   )}
                 />
               )}
               {codexUsage.rateLimits.secondary && (
                 <UsageBar
-                  label={getCodexWindowLabel(codexUsage.rateLimits.secondary.windowDurationMins)}
+                  label={getCodexWindowLabel(
+                    codexUsage.rateLimits.secondary.windowDurationMins,
+                  )}
                   percentage={codexUsage.rateLimits.secondary.usedPercent}
                   isStale={isCodexStale}
                   pacePercentage={getExpectedCodexPacePercentage(
                     codexUsage.rateLimits.secondary.resetsAt,
-                    codexUsage.rateLimits.secondary.windowDurationMins
+                    codexUsage.rateLimits.secondary.windowDurationMins,
                   )}
                 />
               )}
             </>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              Loading usage data...
+            </p>
           )}
         </UsageItem>
       )}
 
       {showZaiUsage && (
-        <UsageItem icon={ZaiIcon} label="z.ai" isLoading={isZaiLoading} onRefresh={fetchZaiUsage}>
-          {zaiUsage?.quotaLimits && (zaiUsage.quotaLimits.tokens || zaiUsage.quotaLimits.mcp) ? (
+        <UsageItem
+          icon={ZaiIcon}
+          label="z.ai"
+          isLoading={isZaiLoading}
+          onRefresh={fetchZaiUsage}
+        >
+          {zaiUsage?.quotaLimits &&
+          (zaiUsage.quotaLimits.tokens || zaiUsage.quotaLimits.mcp) ? (
             <>
               {zaiUsage.quotaLimits.tokens && (
                 <UsageBar
@@ -385,7 +437,10 @@ export function MobileUsageBar({
                   details={`${formatNumber(zaiUsage.quotaLimits.tokens.used)} / ${formatNumber(zaiUsage.quotaLimits.tokens.limit)}`}
                   resetText={
                     zaiUsage.quotaLimits.tokens.nextResetTime
-                      ? formatResetTime(zaiUsage.quotaLimits.tokens.nextResetTime, true)
+                      ? formatResetTime(
+                          zaiUsage.quotaLimits.tokens.nextResetTime,
+                          true,
+                        )
                       : undefined
                   }
                 />
@@ -398,16 +453,23 @@ export function MobileUsageBar({
                   details={`${formatNumber(zaiUsage.quotaLimits.mcp.used)} / ${formatNumber(zaiUsage.quotaLimits.mcp.limit)} calls`}
                   resetText={
                     zaiUsage.quotaLimits.mcp.nextResetTime
-                      ? formatResetTime(zaiUsage.quotaLimits.mcp.nextResetTime, true)
+                      ? formatResetTime(
+                          zaiUsage.quotaLimits.mcp.nextResetTime,
+                          true,
+                        )
                       : undefined
                   }
                 />
               )}
             </>
           ) : zaiUsage ? (
-            <p className="text-[10px] text-muted-foreground italic">No usage data from z.ai API</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              No usage data from z.ai API
+            </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              Loading usage data...
+            </p>
           )}
         </UsageItem>
       )}
@@ -443,15 +505,15 @@ export function MobileUsageBar({
               ) : (
                 <div className="text-[10px]">
                   <p className="text-green-500 font-medium">
-                    Connected via{' '}
-                    {geminiUsage.authMethod === 'cli_login'
-                      ? 'CLI Login'
-                      : geminiUsage.authMethod === 'api_key'
-                        ? 'API Key'
+                    Connected via{" "}
+                    {geminiUsage.authMethod === "cli_login"
+                      ? "CLI Login"
+                      : geminiUsage.authMethod === "api_key"
+                        ? "API Key"
                         : geminiUsage.authMethod}
                   </p>
                   <p className="text-muted-foreground italic mt-0.5">
-                    {geminiUsage.error || 'No usage yet'}
+                    {geminiUsage.error || "No usage yet"}
                   </p>
                 </div>
               )
@@ -459,7 +521,9 @@ export function MobileUsageBar({
               <p className="text-[10px] text-yellow-500">Not authenticated</p>
             )
           ) : (
-            <p className="text-[10px] text-muted-foreground italic">Loading usage data...</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              Loading usage data...
+            </p>
           )}
         </UsageItem>
       )}

@@ -5,17 +5,26 @@
  * otherwise cause a false dirty state.
  */
 export function normalizeLineEndings(text: string): string {
-  return text.indexOf('\r') !== -1 ? text.replace(/\r\n?/g, '\n') : text;
+  return text.indexOf("\r") !== -1 ? text.replace(/\r\n?/g, "\n") : text;
 }
 
-export function computeIsDirty(content: string, originalContent: string): boolean {
-  return normalizeLineEndings(content) !== normalizeLineEndings(originalContent);
+export function computeIsDirty(
+  content: string,
+  originalContent: string,
+): boolean {
+  return (
+    normalizeLineEndings(content) !== normalizeLineEndings(originalContent)
+  );
 }
 
 export function updateTabWithContent<
   T extends { originalContent: string; content: string; isDirty: boolean },
 >(tab: T, content: string): T {
-  return { ...tab, content, isDirty: computeIsDirty(content, tab.originalContent) };
+  return {
+    ...tab,
+    content,
+    isDirty: computeIsDirty(content, tab.originalContent),
+  };
 }
 
 export function markTabAsSaved<

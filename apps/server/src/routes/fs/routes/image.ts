@@ -9,11 +9,11 @@
  * - X-Session-Token header (web mode)
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createImageHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -24,7 +24,7 @@ export function createImageHandler() {
       };
 
       if (!imagePath) {
-        res.status(400).json({ success: false, error: 'path is required' });
+        res.status(400).json({ success: false, error: "path is required" });
         return;
       }
 
@@ -40,10 +40,10 @@ export function createImageHandler() {
         await secureFs.access(fullPath);
       } catch (accessError) {
         if (accessError instanceof PathNotAllowedError) {
-          res.status(403).json({ success: false, error: 'Path not allowed' });
+          res.status(403).json({ success: false, error: "Path not allowed" });
           return;
         }
-        res.status(404).json({ success: false, error: 'Image not found' });
+        res.status(404).json({ success: false, error: "Image not found" });
         return;
       }
 
@@ -53,20 +53,23 @@ export function createImageHandler() {
       // Determine MIME type from extension
       const ext = path.extname(fullPath).toLowerCase();
       const mimeTypes: Record<string, string> = {
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.webp': 'image/webp',
-        '.svg': 'image/svg+xml',
-        '.bmp': 'image/bmp',
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".svg": "image/svg+xml",
+        ".bmp": "image/bmp",
       };
 
-      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.setHeader(
+        "Content-Type",
+        mimeTypes[ext] || "application/octet-stream",
+      );
+      res.setHeader("Cache-Control", "public, max-age=3600");
       res.send(buffer);
     } catch (error) {
-      logError(error, 'Serve image failed');
+      logError(error, "Serve image failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

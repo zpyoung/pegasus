@@ -9,13 +9,17 @@
  * Response: { success: true, result: EventReplayResult }
  */
 
-import type { Request, Response } from 'express';
-import type { EventHistoryService } from '../../../services/event-history-service.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import type { EventReplayResult, EventReplayHookResult, EventHook } from '@pegasus/types';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { getErrorMessage, logError, logger } from '../common.js';
+import type { Request, Response } from "express";
+import type { EventHistoryService } from "../../../services/event-history-service.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import type {
+  EventReplayResult,
+  EventReplayHookResult,
+  EventHook,
+} from "@pegasus/types";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { getErrorMessage, logError, logger } from "../common.js";
 
 const execAsync = promisify(exec);
 
@@ -43,7 +47,7 @@ function substituteVariables(template: string, context: HookContext): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, variable) => {
     const value = context[variable as keyof HookContext];
     if (value === undefined || value === null) {
-      return '';
+      return "";
     }
     return String(value);
   });
@@ -52,12 +56,15 @@ function substituteVariables(template: string, context: HookContext): string {
 /**
  * Execute a single hook and return the result
  */
-async function executeHook(hook: EventHook, context: HookContext): Promise<EventReplayHookResult> {
+async function executeHook(
+  hook: EventHook,
+  context: HookContext,
+): Promise<EventReplayHookResult> {
   const hookName = hook.name || hook.id;
   const startTime = Date.now();
 
   try {
-    if (hook.action.type === 'shell') {
+    if (hook.action.type === "shell") {
       const command = substituteVariables(hook.action.command, context);
       const timeout = hook.action.timeout || DEFAULT_SHELL_TIMEOUT;
 
@@ -74,12 +81,12 @@ async function executeHook(hook: EventHook, context: HookContext): Promise<Event
         success: true,
         durationMs: Date.now() - startTime,
       };
-    } else if (hook.action.type === 'http') {
+    } else if (hook.action.type === "http") {
       const url = substituteVariables(hook.action.url, context);
-      const method = hook.action.method || 'POST';
+      const method = hook.action.method || "POST";
 
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
       if (hook.action.headers) {
         for (const [key, value] of Object.entries(hook.action.headers)) {
@@ -90,7 +97,7 @@ async function executeHook(hook: EventHook, context: HookContext): Promise<Event
       let body: string | undefined;
       if (hook.action.body) {
         body = substituteVariables(hook.action.body, context);
-      } else if (method !== 'GET') {
+      } else if (method !== "GET") {
         body = JSON.stringify({
           eventType: context.eventType,
           timestamp: context.timestamp,
@@ -104,12 +111,15 @@ async function executeHook(hook: EventHook, context: HookContext): Promise<Event
       logger.info(`Replaying HTTP hook "${hookName}": ${method} ${url}`);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_HTTP_TIMEOUT);
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        DEFAULT_HTTP_TIMEOUT,
+      );
 
       const response = await fetch(url, {
         method,
         headers,
-        body: method !== 'GET' ? body : undefined,
+        body: method !== "GET" ? body : undefined,
         signal: controller.signal,
       });
 
@@ -137,14 +147,14 @@ async function executeHook(hook: EventHook, context: HookContext): Promise<Event
       hookId: hook.id,
       hookName: hook.name,
       success: false,
-      error: 'Unknown hook action type',
+      error: "Unknown hook action type",
       durationMs: Date.now() - startTime,
     };
   } catch (error) {
     const errorMessage =
       error instanceof Error
-        ? error.name === 'AbortError'
-          ? 'Request timed out'
+        ? error.name === "AbortError"
+          ? "Request timed out"
           : error.message
         : String(error);
 
@@ -160,7 +170,7 @@ async function executeHook(hook: EventHook, context: HookContext): Promise<Event
 
 export function createReplayHandler(
   eventHistoryService: EventHistoryService,
-  settingsService: SettingsService
+  settingsService: SettingsService,
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -170,20 +180,22 @@ export function createReplayHandler(
         hookIds?: string[];
       };
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!eventId || typeof eventId !== 'string') {
-        res.status(400).json({ success: false, error: 'eventId is required' });
+      if (!eventId || typeof eventId !== "string") {
+        res.status(400).json({ success: false, error: "eventId is required" });
         return;
       }
 
       // Get the event
       const event = await eventHistoryService.getEvent(projectPath, eventId);
       if (!event) {
-        res.status(404).json({ success: false, error: 'Event not found' });
+        res.status(404).json({ success: false, error: "Event not found" });
         return;
       }
 
@@ -212,7 +224,9 @@ export function createReplayHandler(
       };
 
       // Execute all hooks in parallel
-      const hookResults = await Promise.all(hooks.map((hook) => executeHook(hook, context)));
+      const hookResults = await Promise.all(
+        hooks.map((hook) => executeHook(hook, context)),
+      );
 
       const result: EventReplayResult = {
         eventId,
@@ -227,7 +241,7 @@ export function createReplayHandler(
         result,
       });
     } catch (error) {
-      logError(error, 'Replay event failed');
+      logError(error, "Replay event failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

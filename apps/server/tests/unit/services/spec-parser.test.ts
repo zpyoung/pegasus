@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   parseTasksFromSpec,
   detectTaskStartMarker,
@@ -6,11 +6,11 @@ import {
   detectPhaseCompleteMarker,
   detectSpecFallback,
   extractSummary,
-} from '../../../src/services/spec-parser.js';
+} from "../../../src/services/spec-parser.js";
 
-describe('SpecParser', () => {
-  describe('parseTasksFromSpec', () => {
-    it('should parse tasks from a tasks code block', () => {
+describe("SpecParser", () => {
+  describe("parseTasksFromSpec", () => {
+    it("should parse tasks from a tasks code block", () => {
       const specContent = `
 ## Specification
 
@@ -28,17 +28,17 @@ Some notes here.
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toHaveLength(3);
       expect(tasks[0]).toEqual({
-        id: 'T001',
-        description: 'Create user model',
-        filePath: 'src/models/user.ts',
+        id: "T001",
+        description: "Create user model",
+        filePath: "src/models/user.ts",
         phase: undefined,
-        status: 'pending',
+        status: "pending",
       });
-      expect(tasks[1].id).toBe('T002');
-      expect(tasks[2].id).toBe('T003');
+      expect(tasks[1].id).toBe("T002");
+      expect(tasks[2].id).toBe("T003");
     });
 
-    it('should parse tasks with phases', () => {
+    it("should parse tasks with phases", () => {
       const specContent = `
 \`\`\`tasks
 ## Phase 1: Foundation
@@ -55,20 +55,20 @@ Some notes here.
 `;
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toHaveLength(5);
-      expect(tasks[0].phase).toBe('Phase 1: Foundation');
-      expect(tasks[1].phase).toBe('Phase 1: Foundation');
-      expect(tasks[2].phase).toBe('Phase 2: Implementation');
-      expect(tasks[3].phase).toBe('Phase 2: Implementation');
-      expect(tasks[4].phase).toBe('Phase 3: Testing');
+      expect(tasks[0].phase).toBe("Phase 1: Foundation");
+      expect(tasks[1].phase).toBe("Phase 1: Foundation");
+      expect(tasks[2].phase).toBe("Phase 2: Implementation");
+      expect(tasks[3].phase).toBe("Phase 2: Implementation");
+      expect(tasks[4].phase).toBe("Phase 3: Testing");
     });
 
-    it('should return empty array for content without tasks', () => {
-      const specContent = 'Just some text without any tasks';
+    it("should return empty array for content without tasks", () => {
+      const specContent = "Just some text without any tasks";
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toEqual([]);
     });
 
-    it('should fallback to finding task lines outside code block', () => {
+    it("should fallback to finding task lines outside code block", () => {
       const specContent = `
 ## Implementation Plan
 
@@ -77,11 +77,11 @@ Some notes here.
 `;
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toHaveLength(2);
-      expect(tasks[0].id).toBe('T001');
-      expect(tasks[1].id).toBe('T002');
+      expect(tasks[0].id).toBe("T001");
+      expect(tasks[1].id).toBe("T002");
     });
 
-    it('should handle empty tasks block', () => {
+    it("should handle empty tasks block", () => {
       const specContent = `
 \`\`\`tasks
 \`\`\`
@@ -90,12 +90,12 @@ Some notes here.
       expect(tasks).toEqual([]);
     });
 
-    it('should handle empty string input', () => {
-      const tasks = parseTasksFromSpec('');
+    it("should handle empty string input", () => {
+      const tasks = parseTasksFromSpec("");
       expect(tasks).toEqual([]);
     });
 
-    it('should handle task without file path', () => {
+    it("should handle task without file path", () => {
       const specContent = `
 \`\`\`tasks
 - [ ] T001: Task without file
@@ -104,14 +104,14 @@ Some notes here.
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toHaveLength(1);
       expect(tasks[0]).toEqual({
-        id: 'T001',
-        description: 'Task without file',
+        id: "T001",
+        description: "Task without file",
         phase: undefined,
-        status: 'pending',
+        status: "pending",
       });
     });
 
-    it('should handle mixed valid and invalid lines', () => {
+    it("should handle mixed valid and invalid lines", () => {
       const specContent = `
 \`\`\`tasks
 - [ ] T001: Valid task | File: src/valid.ts
@@ -124,7 +124,7 @@ Some other text
       expect(tasks).toHaveLength(2);
     });
 
-    it('should preserve task order', () => {
+    it("should preserve task order", () => {
       const specContent = `
 \`\`\`tasks
 - [ ] T003: Third
@@ -133,12 +133,12 @@ Some other text
 \`\`\`
 `;
       const tasks = parseTasksFromSpec(specContent);
-      expect(tasks[0].id).toBe('T003');
-      expect(tasks[1].id).toBe('T001');
-      expect(tasks[2].id).toBe('T002');
+      expect(tasks[0].id).toBe("T003");
+      expect(tasks[1].id).toBe("T001");
+      expect(tasks[2].id).toBe("T002");
     });
 
-    it('should handle task IDs with different numbers', () => {
+    it("should handle task IDs with different numbers", () => {
       const specContent = `
 \`\`\`tasks
 - [ ] T001: First
@@ -148,40 +148,42 @@ Some other text
 `;
       const tasks = parseTasksFromSpec(specContent);
       expect(tasks).toHaveLength(3);
-      expect(tasks[0].id).toBe('T001');
-      expect(tasks[1].id).toBe('T010');
-      expect(tasks[2].id).toBe('T100');
+      expect(tasks[0].id).toBe("T001");
+      expect(tasks[1].id).toBe("T010");
+      expect(tasks[2].id).toBe("T100");
     });
 
-    it('should trim whitespace from description and file path', () => {
+    it("should trim whitespace from description and file path", () => {
       const specContent = `
 \`\`\`tasks
 - [ ] T001:   Create API endpoint   | File:   src/routes/api.ts
 \`\`\`
 `;
       const tasks = parseTasksFromSpec(specContent);
-      expect(tasks[0].description).toBe('Create API endpoint');
-      expect(tasks[0].filePath).toBe('src/routes/api.ts');
+      expect(tasks[0].description).toBe("Create API endpoint");
+      expect(tasks[0].filePath).toBe("src/routes/api.ts");
     });
   });
 
-  describe('detectTaskStartMarker', () => {
-    it('should detect task start marker and return task ID', () => {
-      expect(detectTaskStartMarker('[TASK_START] T001')).toBe('T001');
-      expect(detectTaskStartMarker('[TASK_START] T042')).toBe('T042');
-      expect(detectTaskStartMarker('[TASK_START] T999')).toBe('T999');
+  describe("detectTaskStartMarker", () => {
+    it("should detect task start marker and return task ID", () => {
+      expect(detectTaskStartMarker("[TASK_START] T001")).toBe("T001");
+      expect(detectTaskStartMarker("[TASK_START] T042")).toBe("T042");
+      expect(detectTaskStartMarker("[TASK_START] T999")).toBe("T999");
     });
 
-    it('should handle marker with description', () => {
-      expect(detectTaskStartMarker('[TASK_START] T001: Creating user model')).toBe('T001');
+    it("should handle marker with description", () => {
+      expect(
+        detectTaskStartMarker("[TASK_START] T001: Creating user model"),
+      ).toBe("T001");
     });
 
-    it('should return null when no marker present', () => {
-      expect(detectTaskStartMarker('No marker here')).toBeNull();
-      expect(detectTaskStartMarker('')).toBeNull();
+    it("should return null when no marker present", () => {
+      expect(detectTaskStartMarker("No marker here")).toBeNull();
+      expect(detectTaskStartMarker("")).toBeNull();
     });
 
-    it('should find marker in accumulated text', () => {
+    it("should find marker in accumulated text", () => {
       const accumulated = `
 Some earlier output...
 
@@ -190,46 +192,48 @@ Now starting the task:
 
 Let me begin by...
 `;
-      expect(detectTaskStartMarker(accumulated)).toBe('T003');
+      expect(detectTaskStartMarker(accumulated)).toBe("T003");
     });
 
-    it('should handle whitespace variations', () => {
-      expect(detectTaskStartMarker('[TASK_START]  T001')).toBe('T001');
-      expect(detectTaskStartMarker('[TASK_START]\tT001')).toBe('T001');
+    it("should handle whitespace variations", () => {
+      expect(detectTaskStartMarker("[TASK_START]  T001")).toBe("T001");
+      expect(detectTaskStartMarker("[TASK_START]\tT001")).toBe("T001");
     });
 
-    it('should not match invalid task IDs', () => {
-      expect(detectTaskStartMarker('[TASK_START] TASK1')).toBeNull();
-      expect(detectTaskStartMarker('[TASK_START] T1')).toBeNull();
-      expect(detectTaskStartMarker('[TASK_START] T12')).toBeNull();
+    it("should not match invalid task IDs", () => {
+      expect(detectTaskStartMarker("[TASK_START] TASK1")).toBeNull();
+      expect(detectTaskStartMarker("[TASK_START] T1")).toBeNull();
+      expect(detectTaskStartMarker("[TASK_START] T12")).toBeNull();
     });
   });
 
-  describe('detectTaskCompleteMarker', () => {
-    it('should detect task complete marker and return task ID', () => {
-      expect(detectTaskCompleteMarker('[TASK_COMPLETE] T001')).toEqual({
-        id: 'T001',
+  describe("detectTaskCompleteMarker", () => {
+    it("should detect task complete marker and return task ID", () => {
+      expect(detectTaskCompleteMarker("[TASK_COMPLETE] T001")).toEqual({
+        id: "T001",
         summary: undefined,
       });
-      expect(detectTaskCompleteMarker('[TASK_COMPLETE] T042')).toEqual({
-        id: 'T042',
+      expect(detectTaskCompleteMarker("[TASK_COMPLETE] T042")).toEqual({
+        id: "T042",
         summary: undefined,
       });
     });
 
-    it('should handle marker with summary', () => {
-      expect(detectTaskCompleteMarker('[TASK_COMPLETE] T001: User model created')).toEqual({
-        id: 'T001',
-        summary: 'User model created',
+    it("should handle marker with summary", () => {
+      expect(
+        detectTaskCompleteMarker("[TASK_COMPLETE] T001: User model created"),
+      ).toEqual({
+        id: "T001",
+        summary: "User model created",
       });
     });
 
-    it('should return null when no marker present', () => {
-      expect(detectTaskCompleteMarker('No marker here')).toBeNull();
-      expect(detectTaskCompleteMarker('')).toBeNull();
+    it("should return null when no marker present", () => {
+      expect(detectTaskCompleteMarker("No marker here")).toBeNull();
+      expect(detectTaskCompleteMarker("")).toBeNull();
     });
 
-    it('should find marker in accumulated text', () => {
+    it("should find marker in accumulated text", () => {
       const accumulated = `
 Working on the task...
 
@@ -239,100 +243,111 @@ Done with the implementation:
 Moving on to...
 `;
       expect(detectTaskCompleteMarker(accumulated)).toEqual({
-        id: 'T003',
-        summary: 'Database setup complete',
+        id: "T003",
+        summary: "Database setup complete",
       });
     });
 
-    it('should find marker in the middle of a stream with trailing text', () => {
+    it("should find marker in the middle of a stream with trailing text", () => {
       const streamText =
-        'The implementation is complete! [TASK_COMPLETE] T001: Added user model and tests. Now let me check the next task...';
+        "The implementation is complete! [TASK_COMPLETE] T001: Added user model and tests. Now let me check the next task...";
       expect(detectTaskCompleteMarker(streamText)).toEqual({
-        id: 'T001',
-        summary: 'Added user model and tests. Now let me check the next task...',
+        id: "T001",
+        summary:
+          "Added user model and tests. Now let me check the next task...",
       });
     });
 
-    it('should find marker in the middle of a stream with multiple tasks and return the FIRST match', () => {
+    it("should find marker in the middle of a stream with multiple tasks and return the FIRST match", () => {
       const streamText =
-        '[TASK_COMPLETE] T001: Task one done. Continuing... [TASK_COMPLETE] T002: Task two done. Moving on...';
+        "[TASK_COMPLETE] T001: Task one done. Continuing... [TASK_COMPLETE] T002: Task two done. Moving on...";
       expect(detectTaskCompleteMarker(streamText)).toEqual({
-        id: 'T001',
-        summary: 'Task one done. Continuing...',
+        id: "T001",
+        summary: "Task one done. Continuing...",
       });
     });
 
-    it('should not confuse with TASK_START marker', () => {
-      expect(detectTaskCompleteMarker('[TASK_START] T001')).toBeNull();
+    it("should not confuse with TASK_START marker", () => {
+      expect(detectTaskCompleteMarker("[TASK_START] T001")).toBeNull();
     });
 
-    it('should not match invalid task IDs', () => {
-      expect(detectTaskCompleteMarker('[TASK_COMPLETE] TASK1')).toBeNull();
-      expect(detectTaskCompleteMarker('[TASK_COMPLETE] T1')).toBeNull();
+    it("should not match invalid task IDs", () => {
+      expect(detectTaskCompleteMarker("[TASK_COMPLETE] TASK1")).toBeNull();
+      expect(detectTaskCompleteMarker("[TASK_COMPLETE] T1")).toBeNull();
     });
 
-    it('should allow brackets in summary text', () => {
+    it("should allow brackets in summary text", () => {
       // Regression test: summaries containing array[index] syntax should not be truncated
       expect(
-        detectTaskCompleteMarker('[TASK_COMPLETE] T001: Supports array[index] access syntax')
+        detectTaskCompleteMarker(
+          "[TASK_COMPLETE] T001: Supports array[index] access syntax",
+        ),
       ).toEqual({
-        id: 'T001',
-        summary: 'Supports array[index] access syntax',
+        id: "T001",
+        summary: "Supports array[index] access syntax",
       });
     });
 
-    it('should handle summary with multiple brackets', () => {
+    it("should handle summary with multiple brackets", () => {
       expect(
-        detectTaskCompleteMarker('[TASK_COMPLETE] T042: Fixed bug in data[0].items[key] mapping')
+        detectTaskCompleteMarker(
+          "[TASK_COMPLETE] T042: Fixed bug in data[0].items[key] mapping",
+        ),
       ).toEqual({
-        id: 'T042',
-        summary: 'Fixed bug in data[0].items[key] mapping',
+        id: "T042",
+        summary: "Fixed bug in data[0].items[key] mapping",
       });
     });
 
-    it('should stop at newline in summary', () => {
+    it("should stop at newline in summary", () => {
       const result = detectTaskCompleteMarker(
-        '[TASK_COMPLETE] T001: First line\nSecond line without marker'
+        "[TASK_COMPLETE] T001: First line\nSecond line without marker",
       );
       expect(result).toEqual({
-        id: 'T001',
-        summary: 'First line',
+        id: "T001",
+        summary: "First line",
       });
     });
 
-    it('should stop at next TASK_START marker', () => {
+    it("should stop at next TASK_START marker", () => {
       expect(
-        detectTaskCompleteMarker('[TASK_COMPLETE] T001: Summary text[TASK_START] T002')
+        detectTaskCompleteMarker(
+          "[TASK_COMPLETE] T001: Summary text[TASK_START] T002",
+        ),
       ).toEqual({
-        id: 'T001',
-        summary: 'Summary text',
+        id: "T001",
+        summary: "Summary text",
       });
     });
   });
 
-  describe('detectPhaseCompleteMarker', () => {
-    it('should detect phase complete marker and return phase number', () => {
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] Phase 1')).toBe(1);
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] Phase 2')).toBe(2);
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] Phase 10')).toBe(10);
+  describe("detectPhaseCompleteMarker", () => {
+    it("should detect phase complete marker and return phase number", () => {
+      expect(detectPhaseCompleteMarker("[PHASE_COMPLETE] Phase 1")).toBe(1);
+      expect(detectPhaseCompleteMarker("[PHASE_COMPLETE] Phase 2")).toBe(2);
+      expect(detectPhaseCompleteMarker("[PHASE_COMPLETE] Phase 10")).toBe(10);
     });
 
-    it('should handle marker with description', () => {
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] Phase 1 complete')).toBe(1);
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] Phase 2: Foundation done')).toBe(2);
+    it("should handle marker with description", () => {
+      expect(
+        detectPhaseCompleteMarker("[PHASE_COMPLETE] Phase 1 complete"),
+      ).toBe(1);
+      expect(
+        detectPhaseCompleteMarker("[PHASE_COMPLETE] Phase 2: Foundation done"),
+      ).toBe(2);
     });
 
-    it('should return null when no marker present', () => {
-      expect(detectPhaseCompleteMarker('No marker here')).toBeNull();
-      expect(detectPhaseCompleteMarker('')).toBeNull();
+    it("should return null when no marker present", () => {
+      expect(detectPhaseCompleteMarker("No marker here")).toBeNull();
+      expect(detectPhaseCompleteMarker("")).toBeNull();
     });
 
-    it('should be case-insensitive', () => {
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] phase 1')).toBe(1);
-      expect(detectPhaseCompleteMarker('[PHASE_COMPLETE] PHASE 2')).toBe(2);
+    it("should be case-insensitive", () => {
+      expect(detectPhaseCompleteMarker("[PHASE_COMPLETE] phase 1")).toBe(1);
+      expect(detectPhaseCompleteMarker("[PHASE_COMPLETE] PHASE 2")).toBe(2);
     });
 
-    it('should find marker in accumulated text', () => {
+    it("should find marker in accumulated text", () => {
       const accumulated = `
 Finishing up the phase...
 
@@ -344,13 +359,13 @@ Starting Phase 3...
       expect(detectPhaseCompleteMarker(accumulated)).toBe(2);
     });
 
-    it('should not confuse with task markers', () => {
-      expect(detectPhaseCompleteMarker('[TASK_COMPLETE] T001')).toBeNull();
+    it("should not confuse with task markers", () => {
+      expect(detectPhaseCompleteMarker("[TASK_COMPLETE] T001")).toBeNull();
     });
   });
 
-  describe('detectSpecFallback', () => {
-    it('should detect spec with tasks block and acceptance criteria', () => {
+  describe("detectSpecFallback", () => {
+    it("should detect spec with tasks block and acceptance criteria", () => {
       const content = `
 ## Acceptance Criteria
 - GIVEN a user, WHEN they login, THEN they see the dashboard
@@ -362,7 +377,7 @@ Starting Phase 3...
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with task lines and problem statement', () => {
+    it("should detect spec with task lines and problem statement", () => {
       const content = `
 ## Problem Statement
 Users cannot currently log in to the application.
@@ -374,7 +389,7 @@ Users cannot currently log in to the application.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with Goal section (lite planning mode)', () => {
+    it("should detect spec with Goal section (lite planning mode)", () => {
       const content = `
 **Goal**: Implement user authentication
 
@@ -386,7 +401,7 @@ Users cannot currently log in to the application.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with User Story format', () => {
+    it("should detect spec with User Story format", () => {
       const content = `
 ## User Story
 As a user, I want to reset my password, so that I can regain access.
@@ -401,7 +416,7 @@ This will modify the auth module.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with Overview section', () => {
+    it("should detect spec with Overview section", () => {
       const content = `
 ## Overview
 This feature adds dark mode support.
@@ -413,7 +428,7 @@ This feature adds dark mode support.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with Summary section', () => {
+    it("should detect spec with Summary section", () => {
       const content = `
 ## Summary
 Adding a new dashboard component.
@@ -423,7 +438,7 @@ Adding a new dashboard component.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with implementation plan', () => {
+    it("should detect spec with implementation plan", () => {
       const content = `
 ## Implementation Plan
 We will add the feature in two phases.
@@ -433,7 +448,7 @@ We will add the feature in two phases.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with implementation steps', () => {
+    it("should detect spec with implementation steps", () => {
       const content = `
 ## Implementation Steps
 Follow these steps:
@@ -443,7 +458,7 @@ Follow these steps:
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should detect spec with implementation approach', () => {
+    it("should detect spec with implementation approach", () => {
       const content = `
 ## Implementation Approach
 We will use a modular approach.
@@ -453,7 +468,7 @@ We will use a modular approach.
       expect(detectSpecFallback(content)).toBe(true);
     });
 
-    it('should NOT detect spec without task structure', () => {
+    it("should NOT detect spec without task structure", () => {
       const content = `
 ## Problem Statement
 Users cannot log in.
@@ -464,7 +479,7 @@ Users cannot log in.
       expect(detectSpecFallback(content)).toBe(false);
     });
 
-    it('should NOT detect spec without spec content sections', () => {
+    it("should NOT detect spec without spec content sections", () => {
       const content = `
 Here are some tasks:
 
@@ -474,12 +489,12 @@ Here are some tasks:
       expect(detectSpecFallback(content)).toBe(false);
     });
 
-    it('should NOT detect random text as spec', () => {
-      expect(detectSpecFallback('Just some random text')).toBe(false);
-      expect(detectSpecFallback('')).toBe(false);
+    it("should NOT detect random text as spec", () => {
+      expect(detectSpecFallback("Just some random text")).toBe(false);
+      expect(detectSpecFallback("")).toBe(false);
     });
 
-    it('should handle case-insensitive matching for spec sections', () => {
+    it("should handle case-insensitive matching for spec sections", () => {
       const content = `
 ## ACCEPTANCE CRITERIA
 All caps section header
@@ -490,14 +505,15 @@ All caps section header
     });
   });
 
-  describe('extractSummary', () => {
-    describe('explicit <summary> tags', () => {
-      it('should extract content from summary tags', () => {
-        const text = 'Some preamble <summary>This is the summary content</summary> more text';
-        expect(extractSummary(text)).toBe('This is the summary content');
+  describe("extractSummary", () => {
+    describe("explicit <summary> tags", () => {
+      it("should extract content from summary tags", () => {
+        const text =
+          "Some preamble <summary>This is the summary content</summary> more text";
+        expect(extractSummary(text)).toBe("This is the summary content");
       });
 
-      it('should use last match to avoid stale summaries', () => {
+      it("should use last match to avoid stale summaries", () => {
         const text = `
 <summary>Old stale summary</summary>
 
@@ -505,24 +521,26 @@ More agent output...
 
 <summary>Fresh new summary</summary>
 `;
-        expect(extractSummary(text)).toBe('Fresh new summary');
+        expect(extractSummary(text)).toBe("Fresh new summary");
       });
 
-      it('should handle multiline summary content', () => {
+      it("should handle multiline summary content", () => {
         const text = `<summary>First line
 Second line
 Third line</summary>`;
-        expect(extractSummary(text)).toBe('First line\nSecond line\nThird line');
+        expect(extractSummary(text)).toBe(
+          "First line\nSecond line\nThird line",
+        );
       });
 
-      it('should trim whitespace from summary', () => {
-        const text = '<summary>  trimmed content  </summary>';
-        expect(extractSummary(text)).toBe('trimmed content');
+      it("should trim whitespace from summary", () => {
+        const text = "<summary>  trimmed content  </summary>";
+        expect(extractSummary(text)).toBe("trimmed content");
       });
     });
 
-    describe('## Summary section (markdown)', () => {
-      it('should extract from ## Summary section', () => {
+    describe("## Summary section (markdown)", () => {
+      it("should extract from ## Summary section", () => {
         const text = `
 ## Summary
 
@@ -531,11 +549,11 @@ This is a summary paragraph.
 ## Other Section
 More content.
 `;
-        expect(extractSummary(text)).toBe('This is a summary paragraph.');
+        expect(extractSummary(text)).toBe("This is a summary paragraph.");
       });
 
-      it('should truncate long summaries to 500 chars', () => {
-        const longContent = 'A'.repeat(600);
+      it("should truncate long summaries to 500 chars", () => {
+        const longContent = "A".repeat(600);
         const text = `
 ## Summary
 
@@ -546,10 +564,10 @@ ${longContent}
         const result = extractSummary(text);
         expect(result).not.toBeNull();
         expect(result!.length).toBeLessThanOrEqual(503); // 500 + '...'
-        expect(result!.endsWith('...')).toBe(true);
+        expect(result!.endsWith("...")).toBe(true);
       });
 
-      it('should use last match for ## Summary', () => {
+      it("should use last match for ## Summary", () => {
         const text = `
 ## Summary
 
@@ -559,10 +577,10 @@ Old summary content.
 
 New summary content.
 `;
-        expect(extractSummary(text)).toBe('New summary content.');
+        expect(extractSummary(text)).toBe("New summary content.");
       });
 
-      it('should stop at next markdown header', () => {
+      it("should stop at next markdown header", () => {
         const text = `
 ## Summary
 
@@ -571,10 +589,10 @@ Summary content here.
 ## Implementation
 Implementation details.
 `;
-        expect(extractSummary(text)).toBe('Summary content here.');
+        expect(extractSummary(text)).toBe("Summary content here.");
       });
 
-      it('should include ### subsections within the summary (not cut off at ### Root Cause)', () => {
+      it("should include ### subsections within the summary (not cut off at ### Root Cause)", () => {
         const text = `
 ## Summary
 
@@ -591,15 +609,15 @@ More content.
 `;
         const result = extractSummary(text);
         expect(result).not.toBeNull();
-        expect(result).toContain('Overview of changes.');
-        expect(result).toContain('### Root Cause');
-        expect(result).toContain('The bug was caused by X.');
-        expect(result).toContain('### Fix Applied');
-        expect(result).toContain('Changed Y to Z.');
-        expect(result).not.toContain('## Other Section');
+        expect(result).toContain("Overview of changes.");
+        expect(result).toContain("### Root Cause");
+        expect(result).toContain("The bug was caused by X.");
+        expect(result).toContain("### Fix Applied");
+        expect(result).toContain("Changed Y to Z.");
+        expect(result).not.toContain("## Other Section");
       });
 
-      it('should include ### subsections and stop at next ## header', () => {
+      it("should include ### subsections and stop at next ## header", () => {
         const text = `
 ## Summary
 
@@ -617,20 +635,21 @@ Details here.
 `;
         const result = extractSummary(text);
         expect(result).not.toBeNull();
-        expect(result).toContain('Brief intro.');
-        expect(result).toContain('### Changes');
-        expect(result).toContain('### Notes');
-        expect(result).not.toContain('## Implementation');
+        expect(result).toContain("Brief intro.");
+        expect(result).toContain("### Changes");
+        expect(result).toContain("### Notes");
+        expect(result).not.toContain("## Implementation");
       });
     });
 
-    describe('**Goal**: section (lite planning mode)', () => {
-      it('should extract from **Goal**: section', () => {
-        const text = '**Goal**: Implement user authentication\n**Approach**: Use JWT';
-        expect(extractSummary(text)).toBe('Implement user authentication');
+    describe("**Goal**: section (lite planning mode)", () => {
+      it("should extract from **Goal**: section", () => {
+        const text =
+          "**Goal**: Implement user authentication\n**Approach**: Use JWT";
+        expect(extractSummary(text)).toBe("Implement user authentication");
       });
 
-      it('should use last match for **Goal**:', () => {
+      it("should use last match for **Goal**:", () => {
         const text = `
 **Goal**: Old goal
 
@@ -638,36 +657,40 @@ More output...
 
 **Goal**: New goal
 `;
-        expect(extractSummary(text)).toBe('New goal');
+        expect(extractSummary(text)).toBe("New goal");
       });
 
-      it('should handle inline goal', () => {
-        const text = '1. **Goal**: Add login functionality';
-        expect(extractSummary(text)).toBe('Add login functionality');
+      it("should handle inline goal", () => {
+        const text = "1. **Goal**: Add login functionality";
+        expect(extractSummary(text)).toBe("Add login functionality");
       });
     });
 
-    describe('**Problem**: section (spec/full modes)', () => {
-      it('should extract from **Problem**: section', () => {
+    describe("**Problem**: section (spec/full modes)", () => {
+      it("should extract from **Problem**: section", () => {
         const text = `
 **Problem**: Users cannot log in to the application
 
 **Solution**: Add authentication
 `;
-        expect(extractSummary(text)).toBe('Users cannot log in to the application');
+        expect(extractSummary(text)).toBe(
+          "Users cannot log in to the application",
+        );
       });
 
-      it('should extract from **Problem Statement**: section', () => {
+      it("should extract from **Problem Statement**: section", () => {
         const text = `
 **Problem Statement**: Users need password reset functionality
 
 1. Create reset endpoint
 `;
-        expect(extractSummary(text)).toBe('Users need password reset functionality');
+        expect(extractSummary(text)).toBe(
+          "Users need password reset functionality",
+        );
       });
 
-      it('should truncate long problem descriptions', () => {
-        const longProblem = 'X'.repeat(600);
+      it("should truncate long problem descriptions", () => {
+        const longProblem = "X".repeat(600);
         const text = `**Problem**: ${longProblem}`;
         const result = extractSummary(text);
         expect(result).not.toBeNull();
@@ -675,14 +698,15 @@ More output...
       });
     });
 
-    describe('**Solution**: section (fallback)', () => {
-      it('should extract from **Solution**: section as fallback', () => {
-        const text = '**Solution**: Use JWT for authentication\n1. Install package';
-        expect(extractSummary(text)).toBe('Use JWT for authentication');
+    describe("**Solution**: section (fallback)", () => {
+      it("should extract from **Solution**: section as fallback", () => {
+        const text =
+          "**Solution**: Use JWT for authentication\n1. Install package";
+        expect(extractSummary(text)).toBe("Use JWT for authentication");
       });
 
-      it('should truncate solution to 300 chars', () => {
-        const longSolution = 'Y'.repeat(400);
+      it("should truncate solution to 300 chars", () => {
+        const longSolution = "Y".repeat(400);
         const text = `**Solution**: ${longSolution}`;
         const result = extractSummary(text);
         expect(result).not.toBeNull();
@@ -690,8 +714,8 @@ More output...
       });
     });
 
-    describe('priority order', () => {
-      it('should prefer <summary> over ## Summary', () => {
+    describe("priority order", () => {
+      it("should prefer <summary> over ## Summary", () => {
         const text = `
 ## Summary
 
@@ -699,10 +723,10 @@ Markdown summary
 
 <summary>Tagged summary</summary>
 `;
-        expect(extractSummary(text)).toBe('Tagged summary');
+        expect(extractSummary(text)).toBe("Tagged summary");
       });
 
-      it('should prefer ## Summary over **Goal**:', () => {
+      it("should prefer ## Summary over **Goal**:", () => {
         const text = `
 **Goal**: Goal content
 
@@ -710,38 +734,40 @@ Markdown summary
 
 Summary section content.
 `;
-        expect(extractSummary(text)).toBe('Summary section content.');
+        expect(extractSummary(text)).toBe("Summary section content.");
       });
 
-      it('should prefer **Goal**: over **Problem**:', () => {
+      it("should prefer **Goal**: over **Problem**:", () => {
         const text = `
 **Problem**: Problem description
 
 **Goal**: Goal description
 `;
-        expect(extractSummary(text)).toBe('Goal description');
+        expect(extractSummary(text)).toBe("Goal description");
       });
 
-      it('should prefer **Problem**: over **Solution**:', () => {
+      it("should prefer **Problem**: over **Solution**:", () => {
         const text = `
 **Solution**: Solution description
 
 **Problem**: Problem description
 `;
-        expect(extractSummary(text)).toBe('Problem description');
+        expect(extractSummary(text)).toBe("Problem description");
       });
     });
 
-    describe('edge cases', () => {
-      it('should return null for empty string', () => {
-        expect(extractSummary('')).toBeNull();
+    describe("edge cases", () => {
+      it("should return null for empty string", () => {
+        expect(extractSummary("")).toBeNull();
       });
 
-      it('should return null when no summary pattern found', () => {
-        expect(extractSummary('Random text without any summary patterns')).toBeNull();
+      it("should return null when no summary pattern found", () => {
+        expect(
+          extractSummary("Random text without any summary patterns"),
+        ).toBeNull();
       });
 
-      it('should include all paragraphs in ## Summary section', () => {
+      it("should include all paragraphs in ## Summary section", () => {
         const text = `
 ## Summary
 
@@ -752,13 +778,13 @@ Second paragraph of summary.
 ## Other
 `;
         const result = extractSummary(text);
-        expect(result).toContain('First paragraph of summary.');
-        expect(result).toContain('Second paragraph of summary.');
+        expect(result).toContain("First paragraph of summary.");
+        expect(result).toContain("Second paragraph of summary.");
       });
     });
 
-    describe('pipeline accumulated output (multiple <summary> tags)', () => {
-      it('should return only the LAST summary tag from accumulated pipeline output', () => {
+    describe("pipeline accumulated output (multiple <summary> tags)", () => {
+      it("should return only the LAST summary tag from accumulated pipeline output", () => {
         // Documents WHY the UI needs server-side feature.summary:
         // When pipeline steps accumulate raw output in agent-output.md, each step
         // writes its own <summary> tag. extractSummary takes only the LAST match,
@@ -790,11 +816,13 @@ Running tests...
 `;
         const result = extractSummary(accumulatedOutput);
         // Only the LAST summary tag is returned - the Code Review summary is lost
-        expect(result).toBe('## Testing Summary\n- All 15 tests pass\n- Coverage at 92%');
-        expect(result).not.toContain('Code Review');
+        expect(result).toBe(
+          "## Testing Summary\n- All 15 tests pass\n- Coverage at 92%",
+        );
+        expect(result).not.toContain("Code Review");
       });
 
-      it('should return only the LAST summary from three pipeline steps', () => {
+      it("should return only the LAST summary from three pipeline steps", () => {
         const accumulatedOutput = `
 <summary>Step 1: Implementation complete</summary>
 
@@ -811,12 +839,12 @@ Running tests...
 <summary>Step 3: All tests passing</summary>
 `;
         const result = extractSummary(accumulatedOutput);
-        expect(result).toBe('Step 3: All tests passing');
-        expect(result).not.toContain('Step 1');
-        expect(result).not.toContain('Step 2');
+        expect(result).toBe("Step 3: All tests passing");
+        expect(result).not.toContain("Step 1");
+        expect(result).not.toContain("Step 2");
       });
 
-      it('should handle accumulated output where only one step has a summary tag', () => {
+      it("should handle accumulated output where only one step has a summary tag", () => {
         const accumulatedOutput = `
 ## Step 1: Implementation
 Some raw output without summary tags...
@@ -833,7 +861,7 @@ Some raw output without summary tags...
 </summary>
 `;
         const result = extractSummary(accumulatedOutput);
-        expect(result).toBe('## Test Results\n- All tests pass');
+        expect(result).toBe("## Test Results\n- All tests pass");
       });
     });
   });

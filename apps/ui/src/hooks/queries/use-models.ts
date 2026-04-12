@@ -4,11 +4,11 @@
  * React Query hooks for fetching available AI models.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import type { ModelDefinition } from '@pegasus/types';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import type { ModelDefinition } from "@pegasus/types";
 
 interface CodexModel {
   id: string;
@@ -16,7 +16,7 @@ interface CodexModel {
   description: string;
   hasThinking: boolean;
   supportsVision: boolean;
-  tier: 'premium' | 'standard' | 'basic';
+  tier: "premium" | "standard" | "basic";
   isDefault: boolean;
 }
 
@@ -31,11 +31,11 @@ export function useAvailableModels() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.model) {
-        throw new Error('Model API not available');
+        throw new Error("Model API not available");
       }
       const result = await api.model.getAvailable();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch available models');
+        throw new Error(result.error || "Failed to fetch available models");
       }
       return result.models ?? [];
     },
@@ -55,11 +55,11 @@ export function useCodexModels(refresh = false) {
     queryFn: async (): Promise<CodexModel[]> => {
       const api = getElectronAPI();
       if (!api.codex) {
-        throw new Error('Codex API not available');
+        throw new Error("Codex API not available");
       }
       const result = await api.codex.getModels(refresh);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Codex models');
+        throw new Error(result.error || "Failed to fetch Codex models");
       }
       return (result.models ?? []) as CodexModel[];
     },
@@ -79,11 +79,11 @@ export function useOpencodeModels(refresh = false) {
     queryFn: async (): Promise<ModelDefinition[]> => {
       const api = getElectronAPI();
       if (!api.setup?.getOpencodeModels) {
-        throw new Error('OpenCode models API not available');
+        throw new Error("OpenCode models API not available");
       }
       const result = await api.setup.getOpencodeModels(refresh);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch OpenCode models');
+        throw new Error(result.error || "Failed to fetch OpenCode models");
       }
       return (result.models ?? []) as ModelDefinition[];
     },
@@ -102,11 +102,11 @@ export function useOpencodeProviders() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getOpencodeProviders) {
-        throw new Error('OpenCode providers API not available');
+        throw new Error("OpenCode providers API not available");
       }
       const result = await api.setup.getOpencodeProviders();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch OpenCode providers');
+        throw new Error(result.error || "Failed to fetch OpenCode providers");
       }
       return result.providers ?? [];
     },
@@ -125,11 +125,11 @@ export function useModelProviders() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.model) {
-        throw new Error('Model API not available');
+        throw new Error("Model API not available");
       }
       const result = await api.model.checkProviders();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch providers');
+        throw new Error(result.error || "Failed to fetch providers");
       }
       return result.providers ?? {};
     },

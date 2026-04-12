@@ -2,18 +2,22 @@
  * GET /copilot-status endpoint - Get Copilot CLI installation and auth status
  */
 
-import type { Request, Response } from 'express';
-import { CopilotProvider } from '../../../providers/copilot-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { CopilotProvider } from "../../../providers/copilot-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs/promises";
+import * as path from "path";
 
-const DISCONNECTED_MARKER_FILE = '.copilot-disconnected';
+const DISCONNECTED_MARKER_FILE = ".copilot-disconnected";
 
 async function isCopilotDisconnectedFromApp(): Promise<boolean> {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.pegasus', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(
+      projectRoot,
+      ".pegasus",
+      DISCONNECTED_MARKER_FILE,
+    );
     await fs.access(markerPath);
     return true;
   } catch {
@@ -26,8 +30,8 @@ async function isCopilotDisconnectedFromApp(): Promise<boolean> {
  * Returns Copilot CLI installation and authentication status
  */
 export function createCopilotStatusHandler() {
-  const installCommand = 'pnpm add -g @github/copilot';
-  const loginCommand = 'gh auth login';
+  const installCommand = "pnpm add -g @github/copilot";
+  const loginCommand = "gh auth login";
 
   return async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -40,7 +44,7 @@ export function createCopilotStatusHandler() {
           path: null,
           auth: {
             authenticated: false,
-            method: 'none',
+            method: "none",
           },
           installCommand,
           loginCommand,
@@ -68,7 +72,7 @@ export function createCopilotStatusHandler() {
         loginCommand,
       });
     } catch (error) {
-      logError(error, 'Get Copilot status failed');
+      logError(error, "Get Copilot status failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

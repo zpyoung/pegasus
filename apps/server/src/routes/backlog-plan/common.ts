@@ -2,13 +2,13 @@
  * Common utilities for backlog plan routes
  */
 
-import { createLogger } from '@pegasus/utils';
-import { ensurePegasusDir, getPegasusDir } from '@pegasus/platform';
-import * as secureFs from '../../lib/secure-fs.js';
-import path from 'path';
-import type { BacklogPlanResult } from '@pegasus/types';
+import { createLogger } from "@pegasus/utils";
+import { ensurePegasusDir, getPegasusDir } from "@pegasus/platform";
+import * as secureFs from "../../lib/secure-fs.js";
+import path from "path";
+import type { BacklogPlanResult } from "@pegasus/types";
 
-const logger = createLogger('BacklogPlan');
+const logger = createLogger("BacklogPlan");
 
 // State for tracking running generation
 let isRunning = false;
@@ -20,7 +20,7 @@ let runningDetails: {
   startedAt: string;
 } | null = null;
 
-const BACKLOG_PLAN_FILENAME = 'backlog-plan.json';
+const BACKLOG_PLAN_FILENAME = "backlog-plan.json";
 
 export interface StoredBacklogPlan {
   savedAt: string;
@@ -33,7 +33,10 @@ export function getBacklogPlanStatus(): { isRunning: boolean } {
   return { isRunning };
 }
 
-export function setRunningState(running: boolean, abortController?: AbortController | null): void {
+export function setRunningState(
+  running: boolean,
+  abortController?: AbortController | null,
+): void {
   isRunning = running;
   if (!running) {
     runningDetails = null;
@@ -49,7 +52,7 @@ export function setRunningDetails(
     prompt: string;
     model?: string;
     startedAt: string;
-  } | null
+  } | null,
 ): void {
   runningDetails = details;
 }
@@ -67,16 +70,21 @@ function getBacklogPlanPath(projectPath: string): string {
   return path.join(getPegasusDir(projectPath), BACKLOG_PLAN_FILENAME);
 }
 
-export async function saveBacklogPlan(projectPath: string, plan: StoredBacklogPlan): Promise<void> {
+export async function saveBacklogPlan(
+  projectPath: string,
+  plan: StoredBacklogPlan,
+): Promise<void> {
   await ensurePegasusDir(projectPath);
   const filePath = getBacklogPlanPath(projectPath);
-  await secureFs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
+  await secureFs.writeFile(filePath, JSON.stringify(plan, null, 2), "utf-8");
 }
 
-export async function loadBacklogPlan(projectPath: string): Promise<StoredBacklogPlan | null> {
+export async function loadBacklogPlan(
+  projectPath: string,
+): Promise<StoredBacklogPlan | null> {
   try {
     const filePath = getBacklogPlanPath(projectPath);
-    const raw = await secureFs.readFile(filePath, 'utf-8');
+    const raw = await secureFs.readFile(filePath, "utf-8");
     const parsed = JSON.parse(raw as string) as StoredBacklogPlan;
     if (!Array.isArray(parsed?.result?.changes)) {
       return null;
@@ -106,51 +114,56 @@ export function getAbortController(): AbortController | null {
 export function mapBacklogPlanError(rawMessage: string): string {
   // Claude Code spawn failures
   if (
-    rawMessage.includes('Failed to spawn Claude Code process') ||
-    rawMessage.includes('spawn node ENOENT') ||
-    rawMessage.includes('Claude Code executable not found') ||
-    rawMessage.includes('Claude Code native binary not found')
+    rawMessage.includes("Failed to spawn Claude Code process") ||
+    rawMessage.includes("spawn node ENOENT") ||
+    rawMessage.includes("Claude Code executable not found") ||
+    rawMessage.includes("Claude Code native binary not found")
   ) {
     return 'Claude CLI could not be launched. Make sure the Claude CLI is installed and available in PATH, or check that Node.js is correctly installed. Try running "which claude" or "claude --version" in your terminal to verify.';
   }
 
   // Claude Code process crash - extract exit code for diagnostics
-  if (rawMessage.includes('Claude Code process exited')) {
+  if (rawMessage.includes("Claude Code process exited")) {
     const exitCodeMatch = rawMessage.match(/exited with code (\d+)/);
-    const exitCode = exitCodeMatch ? exitCodeMatch[1] : 'unknown';
+    const exitCode = exitCodeMatch ? exitCodeMatch[1] : "unknown";
     logger.error(`[BacklogPlan] Claude process exit code: ${exitCode}`);
     return `Claude exited unexpectedly (exit code: ${exitCode}). This is usually a transient issue. Try again. If it keeps happening, re-run \`claude login\` or update your API key in Setup.`;
   }
 
   // Claude Code process killed by signal
-  if (rawMessage.includes('Claude Code process terminated by signal')) {
+  if (rawMessage.includes("Claude Code process terminated by signal")) {
     const signalMatch = rawMessage.match(/terminated by signal (\w+)/);
-    const signal = signalMatch ? signalMatch[1] : 'unknown';
-    logger.error(`[BacklogPlan] Claude process terminated by signal: ${signal}`);
+    const signal = signalMatch ? signalMatch[1] : "unknown";
+    logger.error(
+      `[BacklogPlan] Claude process terminated by signal: ${signal}`,
+    );
     return `Claude was terminated by signal ${signal}. This may indicate a resource issue. Try again.`;
   }
 
   // Rate limiting
-  if (rawMessage.toLowerCase().includes('rate limit') || rawMessage.includes('429')) {
-    return 'Rate limited. Please wait a moment and try again.';
+  if (
+    rawMessage.toLowerCase().includes("rate limit") ||
+    rawMessage.includes("429")
+  ) {
+    return "Rate limited. Please wait a moment and try again.";
   }
 
   // Network errors
   if (
-    rawMessage.toLowerCase().includes('network') ||
-    rawMessage.toLowerCase().includes('econnrefused') ||
-    rawMessage.toLowerCase().includes('timeout')
+    rawMessage.toLowerCase().includes("network") ||
+    rawMessage.toLowerCase().includes("econnrefused") ||
+    rawMessage.toLowerCase().includes("timeout")
   ) {
-    return 'Network error. Check your internet connection and try again.';
+    return "Network error. Check your internet connection and try again.";
   }
 
   // Authentication errors
   if (
-    rawMessage.toLowerCase().includes('not authenticated') ||
-    rawMessage.toLowerCase().includes('unauthorized') ||
-    rawMessage.includes('401')
+    rawMessage.toLowerCase().includes("not authenticated") ||
+    rawMessage.toLowerCase().includes("unauthorized") ||
+    rawMessage.includes("401")
   ) {
-    return 'Authentication failed. Please check your API key or run `claude login` to authenticate.';
+    return "Authentication failed. Please check your API key or run `claude login` to authenticate.";
   }
 
   // Return original message for unknown errors

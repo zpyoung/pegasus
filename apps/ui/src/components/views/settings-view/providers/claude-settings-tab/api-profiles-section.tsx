@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { useAppStore } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -18,8 +18,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import {
   ChevronDown,
   Eye,
@@ -32,23 +32,23 @@ import {
   Settings2,
   Trash2,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import type {
   ClaudeCompatibleProvider,
   ClaudeCompatibleProviderType,
   ApiKeySource,
   ProviderModel,
   ClaudeModelAlias,
-} from '@pegasus/types';
-import { CLAUDE_PROVIDER_TEMPLATES } from '@pegasus/types';
-import { Badge } from '@/components/ui/badge';
+} from "@pegasus/types";
+import { CLAUDE_PROVIDER_TEMPLATES } from "@pegasus/types";
+import { Badge } from "@/components/ui/badge";
 
 // Generate unique ID for providers
 function generateProviderId(): string {
@@ -57,33 +57,33 @@ function generateProviderId(): string {
 
 // Mask API key for display (show first 4 + last 4 chars)
 function maskApiKey(key?: string): string {
-  if (!key || key.length <= 8) return '••••••••';
+  if (!key || key.length <= 8) return "••••••••";
   return `${key.substring(0, 4)}••••${key.substring(key.length - 4)}`;
 }
 
 // Provider type display names
 const PROVIDER_TYPE_LABELS: Record<ClaudeCompatibleProviderType, string> = {
-  anthropic: 'Anthropic',
-  glm: 'GLM',
-  minimax: 'MiniMax',
-  openrouter: 'OpenRouter',
-  custom: 'Custom',
+  anthropic: "Anthropic",
+  glm: "GLM",
+  minimax: "MiniMax",
+  openrouter: "OpenRouter",
+  custom: "Custom",
 };
 
 // Provider type badge colors
 const PROVIDER_TYPE_COLORS: Record<ClaudeCompatibleProviderType, string> = {
-  anthropic: 'bg-brand-500/20 text-brand-500',
-  glm: 'bg-emerald-500/20 text-emerald-500',
-  minimax: 'bg-purple-500/20 text-purple-500',
-  openrouter: 'bg-amber-500/20 text-amber-500',
-  custom: 'bg-zinc-500/20 text-zinc-400',
+  anthropic: "bg-brand-500/20 text-brand-500",
+  glm: "bg-emerald-500/20 text-emerald-500",
+  minimax: "bg-purple-500/20 text-purple-500",
+  openrouter: "bg-amber-500/20 text-amber-500",
+  custom: "bg-zinc-500/20 text-zinc-400",
 };
 
 // Claude model display names
 const CLAUDE_MODEL_LABELS: Record<ClaudeModelAlias, string> = {
-  haiku: 'Claude Haiku',
-  sonnet: 'Claude Sonnet',
-  opus: 'Claude Opus',
+  haiku: "Claude Haiku",
+  sonnet: "Claude Sonnet",
+  opus: "Claude Opus",
 };
 
 interface ModelFormEntry {
@@ -105,19 +105,22 @@ interface ProviderFormData {
 }
 
 const emptyFormData: ProviderFormData = {
-  name: '',
-  providerType: 'custom',
-  baseUrl: '',
-  apiKeySource: 'inline',
-  apiKey: '',
+  name: "",
+  providerType: "custom",
+  baseUrl: "",
+  apiKeySource: "inline",
+  apiKey: "",
   useAuthToken: false,
-  timeoutMs: '',
+  timeoutMs: "",
   models: [],
   disableNonessentialTraffic: false,
 };
 
 // Provider types that have fixed settings (no need to show toggles)
-const FIXED_SETTINGS_PROVIDERS: ClaudeCompatibleProviderType[] = ['glm', 'minimax'];
+const FIXED_SETTINGS_PROVIDERS: ClaudeCompatibleProviderType[] = [
+  "glm",
+  "minimax",
+];
 
 // Check if provider type has fixed settings
 function hasFixedSettings(providerType: ClaudeCompatibleProviderType): boolean {
@@ -134,7 +137,9 @@ export function ApiProfilesSection() {
   } = useAppStore();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProviderId, setEditingProviderId] = useState<string | null>(null);
+  const [editingProviderId, setEditingProviderId] = useState<string | null>(
+    null,
+  );
   const [formData, setFormData] = useState<ProviderFormData>(emptyFormData);
   const [showApiKey, setShowApiKey] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -153,16 +158,17 @@ export function ApiProfilesSection() {
         name: template.name,
         providerType: template.providerType,
         baseUrl: template.baseUrl,
-        apiKeySource: template.defaultApiKeySource ?? 'inline',
-        apiKey: '',
+        apiKeySource: template.defaultApiKeySource ?? "inline",
+        apiKey: "",
         useAuthToken: template.useAuthToken,
-        timeoutMs: template.timeoutMs?.toString() ?? '',
+        timeoutMs: template.timeoutMs?.toString() ?? "",
         models: (template.defaultModels || []).map((m) => ({
           id: m.id,
           displayName: m.displayName,
-          mapsToClaudeModel: m.mapsToClaudeModel || 'sonnet',
+          mapsToClaudeModel: m.mapsToClaudeModel || "sonnet",
         })),
-        disableNonessentialTraffic: template.disableNonessentialTraffic ?? false,
+        disableNonessentialTraffic:
+          template.disableNonessentialTraffic ?? false,
       });
       setCurrentTemplate(template);
     } else {
@@ -173,28 +179,30 @@ export function ApiProfilesSection() {
     setEditingProviderId(null);
     setShowApiKey(false);
     // For fixed providers, hide model mappings by default (they have sensible defaults)
-    setShowModelMappings(template ? !hasFixedSettings(template.providerType) : true);
+    setShowModelMappings(
+      template ? !hasFixedSettings(template.providerType) : true,
+    );
     setIsDialogOpen(true);
   };
 
   const handleOpenEditDialog = (provider: ClaudeCompatibleProvider) => {
     // Find matching template by provider type
     const template = CLAUDE_PROVIDER_TEMPLATES.find(
-      (t) => t.providerType === provider.providerType
+      (t) => t.providerType === provider.providerType,
     );
 
     setFormData({
       name: provider.name,
       providerType: provider.providerType,
       baseUrl: provider.baseUrl,
-      apiKeySource: provider.apiKeySource ?? 'inline',
-      apiKey: provider.apiKey ?? '',
+      apiKeySource: provider.apiKeySource ?? "inline",
+      apiKey: provider.apiKey ?? "",
       useAuthToken: provider.useAuthToken ?? false,
-      timeoutMs: provider.timeoutMs?.toString() ?? '',
+      timeoutMs: provider.timeoutMs?.toString() ?? "",
       models: (provider.models || []).map((m) => ({
         id: m.id,
         displayName: m.displayName,
-        mapsToClaudeModel: m.mapsToClaudeModel || 'sonnet',
+        mapsToClaudeModel: m.mapsToClaudeModel || "sonnet",
       })),
       disableNonessentialTraffic: provider.disableNonessentialTraffic ?? false,
     });
@@ -231,9 +239,12 @@ export function ApiProfilesSection() {
       enabled: existingProvider?.enabled ?? true,
       baseUrl: formData.baseUrl.trim(),
       // For fixed providers, always use inline
-      apiKeySource: isFixedProvider ? 'inline' : formData.apiKeySource,
+      apiKeySource: isFixedProvider ? "inline" : formData.apiKeySource,
       // Only include apiKey when source is 'inline'
-      apiKey: isFixedProvider || formData.apiKeySource === 'inline' ? formData.apiKey : undefined,
+      apiKey:
+        isFixedProvider || formData.apiKeySource === "inline"
+          ? formData.apiKey
+          : undefined,
       // For fixed providers, always use auth token
       useAuthToken: isFixedProvider ? true : formData.useAuthToken,
       timeoutMs: (() => {
@@ -266,11 +277,17 @@ export function ApiProfilesSection() {
   const handleAddModel = () => {
     setFormData({
       ...formData,
-      models: [...formData.models, { id: '', displayName: '', mapsToClaudeModel: 'sonnet' }],
+      models: [
+        ...formData.models,
+        { id: "", displayName: "", mapsToClaudeModel: "sonnet" },
+      ],
     });
   };
 
-  const handleUpdateModel = (index: number, updates: Partial<ModelFormEntry>) => {
+  const handleUpdateModel = (
+    index: number,
+    updates: Partial<ModelFormEntry>,
+  ) => {
     const newModels = [...formData.models];
     newModels[index] = { ...newModels[index], ...updates };
     setFormData({ ...formData, models: newModels });
@@ -285,7 +302,9 @@ export function ApiProfilesSection() {
 
   // Check for duplicate provider name (case-insensitive, excluding current provider when editing)
   const isDuplicateName = claudeCompatibleProviders.some(
-    (p) => p.name.toLowerCase() === formData.name.trim().toLowerCase() && p.id !== editingProviderId
+    (p) =>
+      p.name.toLowerCase() === formData.name.trim().toLowerCase() &&
+      p.id !== editingProviderId,
   );
 
   // For fixed providers, API key is always required (inline only)
@@ -296,24 +315,25 @@ export function ApiProfilesSection() {
     formData.baseUrl.trim().length > 0 &&
     (isFixedProvider
       ? formData.apiKey.length > 0
-      : formData.apiKeySource !== 'inline' || formData.apiKey.length > 0) &&
+      : formData.apiKeySource !== "inline" || formData.apiKey.length > 0) &&
     !isDuplicateName;
 
   // Check model coverage
   const modelCoverage = {
-    hasHaiku: formData.models.some((m) => m.mapsToClaudeModel === 'haiku'),
-    hasSonnet: formData.models.some((m) => m.mapsToClaudeModel === 'sonnet'),
-    hasOpus: formData.models.some((m) => m.mapsToClaudeModel === 'opus'),
+    hasHaiku: formData.models.some((m) => m.mapsToClaudeModel === "haiku"),
+    hasSonnet: formData.models.some((m) => m.mapsToClaudeModel === "sonnet"),
+    hasOpus: formData.models.some((m) => m.mapsToClaudeModel === "opus"),
   };
-  const hasAllMappings = modelCoverage.hasHaiku && modelCoverage.hasSonnet && modelCoverage.hasOpus;
+  const hasAllMappings =
+    modelCoverage.hasHaiku && modelCoverage.hasSonnet && modelCoverage.hasOpus;
 
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -342,17 +362,17 @@ export function ApiProfilesSection() {
               Custom Provider
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            {CLAUDE_PROVIDER_TEMPLATES.filter((t) => t.providerType !== 'anthropic').map(
-              (template) => (
-                <DropdownMenuItem
-                  key={template.name}
-                  onClick={() => handleOpenAddDialog(template.name)}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  {template.name}
-                </DropdownMenuItem>
-              )
-            )}
+            {CLAUDE_PROVIDER_TEMPLATES.filter(
+              (t) => t.providerType !== "anthropic",
+            ).map((template) => (
+              <DropdownMenuItem
+                key={template.name}
+                onClick={() => handleOpenAddDialog(template.name)}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {template.name}
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -361,8 +381,9 @@ export function ApiProfilesSection() {
       <div className="p-6 space-y-4">
         {/* Info Banner */}
         <div className="p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 text-sm text-muted-foreground">
-          Models from enabled providers appear in all model dropdowns throughout the app. You can
-          select different models from different providers for each phase.
+          Models from enabled providers appear in all model dropdowns throughout
+          the app. You can select different models from different providers for
+          each phase.
         </div>
 
         {/* Provider List */}
@@ -382,7 +403,9 @@ export function ApiProfilesSection() {
                 provider={provider}
                 onEdit={() => handleOpenEditDialog(provider)}
                 onDelete={() => setDeleteConfirmId(provider.id)}
-                onToggleEnabled={() => toggleClaudeCompatibleProviderEnabled(provider.id)}
+                onToggleEnabled={() =>
+                  toggleClaudeCompatibleProviderEnabled(provider.id)
+                }
               />
             ))}
           </div>
@@ -394,12 +417,12 @@ export function ApiProfilesSection() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingProviderId ? 'Edit Model Provider' : 'Add Model Provider'}
+              {editingProviderId ? "Edit Model Provider" : "Add Model Provider"}
             </DialogTitle>
             <DialogDescription>
               {isFixedProvider
                 ? `Configure ${PROVIDER_TYPE_LABELS[formData.providerType]} endpoint with model mappings to Claude.`
-                : 'Configure a Claude-compatible API endpoint. Models from this provider will appear in all model selectors.'}
+                : "Configure a Claude-compatible API endpoint. Models from this provider will appear in all model selectors."}
             </DialogDescription>
           </DialogHeader>
 
@@ -410,12 +433,16 @@ export function ApiProfilesSection() {
               <Input
                 id="provider-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="e.g., GLM (Work)"
-                className={isDuplicateName ? 'border-destructive' : ''}
+                className={isDuplicateName ? "border-destructive" : ""}
               />
               {isDuplicateName && (
-                <p className="text-xs text-destructive">A provider with this name already exists</p>
+                <p className="text-xs text-destructive">
+                  A provider with this name already exists
+                </p>
               )}
             </div>
 
@@ -449,9 +476,11 @@ export function ApiProfilesSection() {
               <div className="relative">
                 <Input
                   id="provider-api-key"
-                  type={showApiKey ? 'text' : 'password'}
+                  type={showApiKey ? "text" : "password"}
                   value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, apiKey: e.target.value })
+                  }
                   placeholder="Enter API key"
                   className="pr-10"
                 />
@@ -462,7 +491,11 @@ export function ApiProfilesSection() {
                   className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground hover:bg-transparent"
                   onClick={() => setShowApiKey(!showApiKey)}
                 >
-                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showApiKey ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
               {currentTemplate?.apiKeyUrl && (
@@ -472,7 +505,8 @@ export function ApiProfilesSection() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-brand-500 hover:text-brand-400"
                 >
-                  Get API Key from {currentTemplate.name} <ExternalLink className="w-3 h-3" />
+                  Get API Key from {currentTemplate.name}{" "}
+                  <ExternalLink className="w-3 h-3" />
                 </a>
               )}
             </div>
@@ -484,7 +518,9 @@ export function ApiProfilesSection() {
                 <Input
                   id="provider-base-url"
                   value={formData.baseUrl}
-                  onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, baseUrl: e.target.value })
+                  }
                   placeholder="https://api.example.com/v1"
                 />
               </div>
@@ -506,7 +542,9 @@ export function ApiProfilesSection() {
                       <SelectValue placeholder="Select API key source" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="inline">Enter key for this provider only</SelectItem>
+                      <SelectItem value="inline">
+                        Enter key for this provider only
+                      </SelectItem>
                       <SelectItem value="credentials">
                         Use saved API key (from Settings → API Keys)
                       </SelectItem>
@@ -550,7 +588,10 @@ export function ApiProfilesSection() {
                     id="disable-traffic"
                     checked={formData.disableNonessentialTraffic}
                     onCheckedChange={(checked) =>
-                      setFormData({ ...formData, disableNonessentialTraffic: checked })
+                      setFormData({
+                        ...formData,
+                        disableNonessentialTraffic: checked,
+                      })
                     }
                   />
                 </div>
@@ -564,7 +605,9 @@ export function ApiProfilesSection() {
                 id="provider-timeout"
                 type="number"
                 value={formData.timeoutMs}
-                onChange={(e) => setFormData({ ...formData, timeoutMs: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, timeoutMs: e.target.value })
+                }
                 placeholder="Optional, e.g., 3000000"
               />
             </div>
@@ -578,7 +621,8 @@ export function ApiProfilesSection() {
                     <div>
                       <Label className="font-medium">Model Mappings</Label>
                       <p className="text-xs text-muted-foreground">
-                        {formData.models.length} mappings configured (Haiku, Sonnet, Opus)
+                        {formData.models.length} mappings configured (Haiku,
+                        Sonnet, Opus)
                       </p>
                     </div>
                     <Button
@@ -589,11 +633,11 @@ export function ApiProfilesSection() {
                       className="gap-2"
                     >
                       <Settings2 className="w-4 h-4" />
-                      {showModelMappings ? 'Hide' : 'Customize'}
+                      {showModelMappings ? "Hide" : "Customize"}
                       <ChevronDown
                         className={cn(
-                          'w-4 h-4 transition-transform',
-                          showModelMappings && 'rotate-180'
+                          "w-4 h-4 transition-transform",
+                          showModelMappings && "rotate-180",
                         )}
                       />
                     </Button>
@@ -610,10 +654,16 @@ export function ApiProfilesSection() {
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Model ID</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                  Model ID
+                                </Label>
                                 <Input
                                   value={model.id}
-                                  onChange={(e) => handleUpdateModel(index, { id: e.target.value })}
+                                  onChange={(e) =>
+                                    handleUpdateModel(index, {
+                                      id: e.target.value,
+                                    })
+                                  }
                                   placeholder="e.g., GLM-4.7"
                                   className="text-xs h-8"
                                 />
@@ -625,7 +675,9 @@ export function ApiProfilesSection() {
                                 <Input
                                   value={model.displayName}
                                   onChange={(e) =>
-                                    handleUpdateModel(index, { displayName: e.target.value })
+                                    handleUpdateModel(index, {
+                                      displayName: e.target.value,
+                                    })
                                   }
                                   placeholder="e.g., GLM 4.7"
                                   className="text-xs h-8"
@@ -639,16 +691,24 @@ export function ApiProfilesSection() {
                               <Select
                                 value={model.mapsToClaudeModel}
                                 onValueChange={(value: ClaudeModelAlias) =>
-                                  handleUpdateModel(index, { mapsToClaudeModel: value })
+                                  handleUpdateModel(index, {
+                                    mapsToClaudeModel: value,
+                                  })
                                 }
                               >
                                 <SelectTrigger className="text-xs h-8">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="haiku">Haiku (fast, efficient)</SelectItem>
-                                  <SelectItem value="sonnet">Sonnet (balanced)</SelectItem>
-                                  <SelectItem value="opus">Opus (powerful)</SelectItem>
+                                  <SelectItem value="haiku">
+                                    Haiku (fast, efficient)
+                                  </SelectItem>
+                                  <SelectItem value="sonnet">
+                                    Sonnet (balanced)
+                                  </SelectItem>
+                                  <SelectItem value="opus">
+                                    Opus (powerful)
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -684,10 +744,16 @@ export function ApiProfilesSection() {
                     <div>
                       <Label className="font-medium">Model Mappings</Label>
                       <p className="text-xs text-muted-foreground">
-                        Map provider models to Claude equivalents (Haiku, Sonnet, Opus)
+                        Map provider models to Claude equivalents (Haiku,
+                        Sonnet, Opus)
                       </p>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddModel}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddModel}
+                    >
                       <Plus className="w-4 h-4 mr-1" />
                       Add Model
                     </Button>
@@ -696,20 +762,21 @@ export function ApiProfilesSection() {
                   {/* Coverage warning - only for non-fixed providers */}
                   {formData.models.length > 0 && !hasAllMappings && (
                     <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-600 dark:text-yellow-400">
-                      Missing mappings:{' '}
+                      Missing mappings:{" "}
                       {[
-                        !modelCoverage.hasHaiku && 'Haiku',
-                        !modelCoverage.hasSonnet && 'Sonnet',
-                        !modelCoverage.hasOpus && 'Opus',
+                        !modelCoverage.hasHaiku && "Haiku",
+                        !modelCoverage.hasSonnet && "Sonnet",
+                        !modelCoverage.hasOpus && "Opus",
                       ]
                         .filter(Boolean)
-                        .join(', ')}
+                        .join(", ")}
                     </div>
                   )}
 
                   {formData.models.length === 0 ? (
                     <div className="p-4 border border-dashed border-border/50 rounded-lg text-center text-sm text-muted-foreground">
-                      No models configured. Add models to use with this provider.
+                      No models configured. Add models to use with this
+                      provider.
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -721,10 +788,16 @@ export function ApiProfilesSection() {
                           <div className="flex-1 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Model ID</Label>
+                                <Label className="text-xs text-muted-foreground">
+                                  Model ID
+                                </Label>
                                 <Input
                                   value={model.id}
-                                  onChange={(e) => handleUpdateModel(index, { id: e.target.value })}
+                                  onChange={(e) =>
+                                    handleUpdateModel(index, {
+                                      id: e.target.value,
+                                    })
+                                  }
                                   placeholder="e.g., GLM-4.7"
                                   className="text-xs h-8"
                                 />
@@ -736,7 +809,9 @@ export function ApiProfilesSection() {
                                 <Input
                                   value={model.displayName}
                                   onChange={(e) =>
-                                    handleUpdateModel(index, { displayName: e.target.value })
+                                    handleUpdateModel(index, {
+                                      displayName: e.target.value,
+                                    })
                                   }
                                   placeholder="e.g., GLM 4.7"
                                   className="text-xs h-8"
@@ -750,16 +825,24 @@ export function ApiProfilesSection() {
                               <Select
                                 value={model.mapsToClaudeModel}
                                 onValueChange={(value: ClaudeModelAlias) =>
-                                  handleUpdateModel(index, { mapsToClaudeModel: value })
+                                  handleUpdateModel(index, {
+                                    mapsToClaudeModel: value,
+                                  })
                                 }
                               >
                                 <SelectTrigger className="text-xs h-8">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="haiku">Haiku (fast, efficient)</SelectItem>
-                                  <SelectItem value="sonnet">Sonnet (balanced)</SelectItem>
-                                  <SelectItem value="opus">Opus (powerful)</SelectItem>
+                                  <SelectItem value="haiku">
+                                    Haiku (fast, efficient)
+                                  </SelectItem>
+                                  <SelectItem value="sonnet">
+                                    Sonnet (balanced)
+                                  </SelectItem>
+                                  <SelectItem value="opus">
+                                    Opus (powerful)
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
@@ -787,20 +870,24 @@ export function ApiProfilesSection() {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={!isFormValid}>
-              {editingProviderId ? 'Save Changes' : 'Add Provider'}
+              {editingProviderId ? "Save Changes" : "Add Provider"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete Provider?</DialogTitle>
             <DialogDescription>
-              This will permanently delete the provider and its models. Any phase model
-              configurations using these models will need to be updated.
+              This will permanently delete the provider and its models. Any
+              phase model configurations using these models will need to be
+              updated.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -827,35 +914,50 @@ interface ProviderCardProps {
   onToggleEnabled: () => void;
 }
 
-function ProviderCard({ provider, onEdit, onDelete, onToggleEnabled }: ProviderCardProps) {
+function ProviderCard({
+  provider,
+  onEdit,
+  onDelete,
+  onToggleEnabled,
+}: ProviderCardProps) {
   const isEnabled = provider.enabled !== false;
 
   return (
     <div
       className={cn(
-        'rounded-lg border p-4 transition-colors',
+        "rounded-lg border p-4 transition-colors",
         isEnabled
-          ? 'border-border/50 bg-card/50 hover:border-border'
-          : 'border-border/30 bg-card/30 opacity-60'
+          ? "border-border/50 bg-card/50 hover:border-border"
+          : "border-border/30 bg-card/30 opacity-60",
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-medium text-foreground truncate">{provider.name}</h4>
+            <h4 className="font-medium text-foreground truncate">
+              {provider.name}
+            </h4>
             <Badge
               variant="secondary"
-              className={cn('text-xs', PROVIDER_TYPE_COLORS[provider.providerType])}
+              className={cn(
+                "text-xs",
+                PROVIDER_TYPE_COLORS[provider.providerType],
+              )}
             >
               {PROVIDER_TYPE_LABELS[provider.providerType]}
             </Badge>
             {!isEnabled && (
-              <Badge variant="secondary" className="text-xs bg-zinc-500/20 text-zinc-400">
+              <Badge
+                variant="secondary"
+                className="text-xs bg-zinc-500/20 text-zinc-400"
+              >
                 Disabled
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground truncate mt-1">{provider.baseUrl}</p>
+          <p className="text-xs text-muted-foreground truncate mt-1">
+            {provider.baseUrl}
+          </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
             <span>Key: {maskApiKey(provider.apiKey)}</span>
             <span>{provider.models?.length || 0} model(s)</span>

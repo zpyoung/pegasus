@@ -1,5 +1,5 @@
 // @ts-nocheck - form state management with partial feature updates and validation
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,33 +7,48 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { CategoryAutocomplete } from '@/components/ui/category-autocomplete';
-import { DependencySelector } from '@/components/ui/dependency-selector';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CategoryAutocomplete } from "@/components/ui/category-autocomplete";
+import { DependencySelector } from "@/components/ui/dependency-selector";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   DescriptionImageDropZone,
   FeatureImagePath as DescriptionImagePath,
   FeatureTextFilePath as DescriptionTextFilePath,
   ImagePreviewMap,
-} from '@/components/ui/description-image-dropzone';
-import { GitBranch, Cpu, FolderKanban, Settings2, Workflow } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
-import { cn, migrateModelId, normalizeModelEntry } from '@/lib/utils';
-import { Feature, ModelAlias, ThinkingLevel, PlanningMode } from '@/store/app-store';
-import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@pegasus/types';
+} from "@/components/ui/description-image-dropzone";
+import {
+  GitBranch,
+  Cpu,
+  FolderKanban,
+  Settings2,
+  Workflow,
+} from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
+import { cn, migrateModelId, normalizeModelEntry } from "@/lib/utils";
+import {
+  Feature,
+  ModelAlias,
+  ThinkingLevel,
+  PlanningMode,
+} from "@/store/app-store";
+import type {
+  ReasoningEffort,
+  PhaseModelEntry,
+  DescriptionHistoryEntry,
+} from "@pegasus/types";
 import {
   PrioritySelector,
   WorkModeSelector,
@@ -42,32 +57,39 @@ import {
   EnhancementHistoryButton,
   PipelineExclusionControls,
   type EnhancementMode,
-} from '../shared';
-import type { WorkMode } from '../shared';
-import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { DependencyTreeDialog } from './dependency-tree-dialog';
-import { useDiscoverPipelines } from '@/hooks/queries/use-pipeline';
+} from "../shared";
+import type { WorkMode } from "../shared";
+import { PhaseModelSelector } from "@/components/views/settings-view/model-defaults/phase-model-selector";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { DependencyTreeDialog } from "./dependency-tree-dialog";
+import { useDiscoverPipelines } from "@/hooks/queries/use-pipeline";
 
 /**
  * Regex pattern to extract Handlebars variable references from a template string.
  * Matches simple `{{variable.path}}` expressions.
  */
-const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
+const TEMPLATE_VARIABLE_REGEX =
+  /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
 
 /**
  * Extract `inputs.*` variable names from all stages' prompt templates in a pipeline.
  * Returns deduplicated, sorted array of input variable names (without the `inputs.` prefix).
  */
-function extractPipelineInputVariables(stages: Array<{ prompt: string }>): string[] {
+function extractPipelineInputVariables(
+  stages: Array<{ prompt: string }>,
+): string[] {
   const inputVars = new Set<string>();
   for (const stage of stages) {
     TEMPLATE_VARIABLE_REGEX.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = TEMPLATE_VARIABLE_REGEX.exec(stage.prompt)) !== null) {
       const varPath = match[1];
-      if (varPath.startsWith('inputs.')) {
-        inputVars.add(varPath.slice('inputs.'.length));
+      if (varPath.startsWith("inputs.")) {
+        inputVars.add(varPath.slice("inputs.".length));
       }
     }
   }
@@ -79,7 +101,7 @@ function extractPipelineInputVariables(stages: Array<{ prompt: string }>): strin
  * Converts snake_case/kebab-case to Title Case.
  */
 function formatInputLabel(varName: string): string {
-  return varName.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return varName.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
@@ -87,12 +109,12 @@ function formatInputLabel(varName: string): string {
  * to the form-state shape (string | boolean), so number inputs render as text.
  */
 function pipelineInputsToFormState(
-  inputs: Record<string, string | number | boolean> | undefined
+  inputs: Record<string, string | number | boolean> | undefined,
 ): Record<string, string | boolean> {
   if (!inputs) return {};
   const out: Record<string, string | boolean> = {};
   for (const [key, value] of Object.entries(inputs)) {
-    out[key] = typeof value === 'boolean' ? value : String(value);
+    out[key] = typeof value === "boolean" ? value : String(value);
   }
   return out;
 }
@@ -123,9 +145,9 @@ interface EditFeatureDialogProps {
       pipeline?: string; // Pipeline slug to use (e.g., "feature", "bug-fix")
       pipelineInputs?: Record<string, string | number | boolean>; // Pipeline template input values
     },
-    descriptionHistorySource?: 'enhance' | 'edit',
+    descriptionHistorySource?: "enhance" | "edit",
     enhancementMode?: EnhancementMode,
-    preEnhancementDescription?: string
+    preEnhancementDescription?: string,
   ) => void;
   categorySuggestions: string[];
   branchSuggestions: string[];
@@ -154,73 +176,87 @@ export function EditFeatureDialog({
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
     // If feature has a branchName, it's using 'custom' mode
     // Otherwise, it's on 'current' branch (no worktree isolation)
-    return feature?.branchName ? 'custom' : 'current';
+    return feature?.branchName ? "custom" : "current";
   });
-  const [editFeaturePreviewMap, setEditFeaturePreviewMap] = useState<ImagePreviewMap>(
-    () => new Map()
-  );
+  const [editFeaturePreviewMap, setEditFeaturePreviewMap] =
+    useState<ImagePreviewMap>(() => new Map());
   const [showDependencyTree, setShowDependencyTree] = useState(false);
-  const [planningMode, setPlanningMode] = useState<PlanningMode>(feature?.planningMode ?? 'skip');
+  const [planningMode, setPlanningMode] = useState<PlanningMode>(
+    feature?.planningMode ?? "skip",
+  );
   const [requirePlanApproval, setRequirePlanApproval] = useState(
-    feature?.requirePlanApproval ?? false
+    feature?.requirePlanApproval ?? false,
   );
 
   // Model selection state - migrate legacy model IDs to canonical format
   const [modelEntry, setModelEntry] = useState<PhaseModelEntry>(() =>
     normalizeModelEntry({
-      model: migrateModelId(feature?.model) || 'claude-opus',
-      thinkingLevel: feature?.thinkingLevel || 'none',
-      reasoningEffort: feature?.reasoningEffort || 'none',
+      model: migrateModelId(feature?.model) || "claude-opus",
+      thinkingLevel: feature?.thinkingLevel || "none",
+      reasoningEffort: feature?.reasoningEffort || "none",
       providerId: feature?.providerId,
-    })
+    }),
   );
 
   // Track the source of description changes for history
   const [descriptionChangeSource, setDescriptionChangeSource] = useState<
-    { source: 'enhance'; mode: EnhancementMode } | 'edit' | null
+    { source: "enhance"; mode: EnhancementMode } | "edit" | null
   >(null);
   // Track the original description when the dialog opened for comparison
-  const [originalDescription, setOriginalDescription] = useState(feature?.description ?? '');
+  const [originalDescription, setOriginalDescription] = useState(
+    feature?.description ?? "",
+  );
   // Track the description before enhancement (so it can be restored)
-  const [preEnhancementDescription, setPreEnhancementDescription] = useState<string | null>(null);
+  const [preEnhancementDescription, setPreEnhancementDescription] = useState<
+    string | null
+  >(null);
   // Local history state for real-time display (combines persisted + session history)
   const [localHistory, setLocalHistory] = useState<DescriptionHistoryEntry[]>(
-    feature?.descriptionHistory ?? []
+    feature?.descriptionHistory ?? [],
   );
 
   // Dependency state
   const [parentDependencies, setParentDependencies] = useState<string[]>(
-    feature?.dependencies ?? []
+    feature?.dependencies ?? [],
   );
   // Child dependencies are features that have this feature in their dependencies
   const [childDependencies, setChildDependencies] = useState<string[]>(() => {
     if (!feature) return [];
-    return allFeatures.filter((f) => f.dependencies?.includes(feature.id)).map((f) => f.id);
+    return allFeatures
+      .filter((f) => f.dependencies?.includes(feature.id))
+      .map((f) => f.id);
   });
   // Track original child dependencies to detect changes
-  const [originalChildDependencies, setOriginalChildDependencies] = useState<string[]>(() => {
+  const [originalChildDependencies, setOriginalChildDependencies] = useState<
+    string[]
+  >(() => {
     if (!feature) return [];
-    return allFeatures.filter((f) => f.dependencies?.includes(feature.id)).map((f) => f.id);
+    return allFeatures
+      .filter((f) => f.dependencies?.includes(feature.id))
+      .map((f) => f.id);
   });
 
   // Pipeline exclusion state
   const [excludedPipelineSteps, setExcludedPipelineSteps] = useState<string[]>(
-    feature?.excludedPipelineSteps ?? []
+    feature?.excludedPipelineSteps ?? [],
   );
 
   // YAML Pipeline selection state
-  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>(feature?.pipeline ?? '');
-  const [pipelineInputs, setPipelineInputs] = useState<Record<string, string | boolean>>(() =>
-    pipelineInputsToFormState(feature?.pipelineInputs)
+  const [selectedPipelineSlug, setSelectedPipelineSlug] = useState<string>(
+    feature?.pipeline ?? "",
   );
+  const [pipelineInputs, setPipelineInputs] = useState<
+    Record<string, string | boolean>
+  >(() => pipelineInputsToFormState(feature?.pipelineInputs));
 
   // Discover available YAML pipelines
   const { data: discoveredPipelines = [] } = useDiscoverPipelines(projectPath);
 
   // Compute the selected pipeline
   const selectedPipeline = useMemo(
-    () => discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
-    [discoveredPipelines, selectedPipelineSlug]
+    () =>
+      discoveredPipelines.find((p) => p.slug === selectedPipelineSlug) ?? null,
+    [discoveredPipelines, selectedPipelineSlug],
   );
 
   // Compute input field definitions: prefer formally declared inputs, fall back to dynamic extraction
@@ -237,35 +273,37 @@ export function EditFeatureDialog({
       }));
     }
     // Fall back to dynamically extracting {{inputs.X}} references from stage prompts
-    return extractPipelineInputVariables(selectedPipeline.config.stages).map((varName) => ({
-      name: varName,
-      type: 'string' as const,
-      required: false,
-      default: undefined,
-      description: undefined,
-    }));
+    return extractPipelineInputVariables(selectedPipeline.config.stages).map(
+      (varName) => ({
+        name: varName,
+        type: "string" as const,
+        required: false,
+        default: undefined,
+        description: undefined,
+      }),
+    );
   }, [selectedPipeline]);
 
   useEffect(() => {
     setEditingFeature(feature);
     if (feature) {
-      setPlanningMode(feature.planningMode ?? 'skip');
+      setPlanningMode(feature.planningMode ?? "skip");
       setRequirePlanApproval(feature.requirePlanApproval ?? false);
       // Derive workMode from feature's branchName
-      setWorkMode(feature.branchName ? 'custom' : 'current');
+      setWorkMode(feature.branchName ? "custom" : "current");
       // Reset history tracking state
-      setOriginalDescription(feature.description ?? '');
+      setOriginalDescription(feature.description ?? "");
       setDescriptionChangeSource(null);
       setPreEnhancementDescription(null);
       setLocalHistory(feature.descriptionHistory ?? []);
       // Reset model entry - migrate legacy model IDs
       setModelEntry(
         normalizeModelEntry({
-          model: migrateModelId(feature.model) || 'claude-opus',
-          thinkingLevel: feature.thinkingLevel || 'none',
-          reasoningEffort: feature.reasoningEffort || 'none',
+          model: migrateModelId(feature.model) || "claude-opus",
+          thinkingLevel: feature.thinkingLevel || "none",
+          reasoningEffort: feature.reasoningEffort || "none",
           providerId: feature.providerId,
-        })
+        }),
       );
       // Reset dependency state
       setParentDependencies(feature.dependencies ?? []);
@@ -277,7 +315,7 @@ export function EditFeatureDialog({
       // Reset pipeline exclusion state
       setExcludedPipelineSteps(feature.excludedPipelineSteps ?? []);
       // Reset YAML pipeline selection from feature
-      setSelectedPipelineSlug(feature.pipeline ?? '');
+      setSelectedPipelineSlug(feature.pipeline ?? "");
       setPipelineInputs(pipelineInputsToFormState(feature.pipelineInputs));
     } else {
       setEditFeaturePreviewMap(new Map());
@@ -288,14 +326,14 @@ export function EditFeatureDialog({
       setChildDependencies([]);
       setOriginalChildDependencies([]);
       setExcludedPipelineSteps([]);
-      setSelectedPipelineSlug('');
+      setSelectedPipelineSlug("");
       setPipelineInputs({});
     }
   }, [feature, allFeatures]);
 
   // Clear requirePlanApproval when planning mode is skip (lite supports approval)
   useEffect(() => {
-    if (planningMode === 'skip') {
+    if (planningMode === "skip") {
       setRequirePlanApproval(false);
     }
   }, [planningMode]);
@@ -303,7 +341,7 @@ export function EditFeatureDialog({
   // When a YAML pipeline is selected, planning is handled by the pipeline - reset to skip
   useEffect(() => {
     if (selectedPipelineSlug) {
-      setPlanningMode('skip');
+      setPlanningMode("skip");
       setRequirePlanApproval(false);
     }
   }, [selectedPipelineSlug]);
@@ -317,9 +355,14 @@ export function EditFeatureDialog({
 
     // Validate branch selection for custom mode
     const isBranchSelectorEnabled =
-      editingFeature.status === 'backlog' || editingFeature.status === 'merge_conflict';
-    if (isBranchSelectorEnabled && workMode === 'custom' && !editingFeature.branchName?.trim()) {
-      toast.error('Please select a branch name');
+      editingFeature.status === "backlog" ||
+      editingFeature.status === "merge_conflict";
+    if (
+      isBranchSelectorEnabled &&
+      workMode === "custom" &&
+      !editingFeature.branchName?.trim()
+    ) {
+      toast.error("Please select a branch name");
       return;
     }
 
@@ -328,7 +371,8 @@ export function EditFeatureDialog({
     // For 'current' mode, use empty string (work on current branch)
     // For 'auto' mode, use empty string (will be auto-generated in use-board-actions)
     // For 'custom' mode, use the specified branch name
-    const finalBranchName = workMode === 'custom' ? editingFeature.branchName || '' : '';
+    const finalBranchName =
+      workMode === "custom" ? editingFeature.branchName || "" : "";
 
     // Check if child dependencies changed
     const childDepsChanged =
@@ -342,20 +386,22 @@ export function EditFeatureDialog({
     if (selectedPipelineSlug) {
       for (const field of pipelineInputDefinitions) {
         const rawValue = pipelineInputs[field.name];
-        if (field.type === 'boolean') {
+        if (field.type === "boolean") {
           finalPipelineInputs[field.name] =
-            typeof rawValue === 'boolean' ? rawValue : (field.default ?? false);
-        } else if (field.type === 'number') {
-          const strValue = String(rawValue ?? '').trim();
-          if (strValue !== '') {
+            typeof rawValue === "boolean" ? rawValue : (field.default ?? false);
+        } else if (field.type === "number") {
+          const strValue = String(rawValue ?? "").trim();
+          if (strValue !== "") {
             const numValue = Number(strValue);
-            finalPipelineInputs[field.name] = isNaN(numValue) ? strValue : numValue;
+            finalPipelineInputs[field.name] = isNaN(numValue)
+              ? strValue
+              : numValue;
           } else if (field.default !== undefined) {
             finalPipelineInputs[field.name] = field.default;
           }
         } else {
-          const strValue = String(rawValue ?? '').trim();
-          if (strValue !== '') {
+          const strValue = String(rawValue ?? "").trim();
+          if (strValue !== "") {
             finalPipelineInputs[field.name] = strValue;
           } else if (field.default !== undefined) {
             finalPipelineInputs[field.name] = String(field.default);
@@ -365,7 +411,7 @@ export function EditFeatureDialog({
     }
 
     const updates = {
-      title: editingFeature.title ?? '',
+      title: editingFeature.title ?? "",
       category: editingFeature.category,
       description: editingFeature.description,
       skipTests: editingFeature.skipTests ?? false,
@@ -382,22 +428,31 @@ export function EditFeatureDialog({
       workMode,
       dependencies: parentDependencies,
       childDependencies: childDepsChanged ? childDependencies : undefined,
-      excludedPipelineSteps: excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
+      excludedPipelineSteps:
+        excludedPipelineSteps.length > 0 ? excludedPipelineSteps : undefined,
       pipeline: selectedPipelineSlug || undefined,
       pipelineInputs:
-        Object.keys(finalPipelineInputs).length > 0 ? finalPipelineInputs : undefined,
+        Object.keys(finalPipelineInputs).length > 0
+          ? finalPipelineInputs
+          : undefined,
     };
 
     // Determine if description changed and what source to use
-    const descriptionChanged = editingFeature.description !== originalDescription;
-    let historySource: 'enhance' | 'edit' | undefined;
-    let historyEnhancementMode: 'improve' | 'technical' | 'simplify' | 'acceptance' | undefined;
+    const descriptionChanged =
+      editingFeature.description !== originalDescription;
+    let historySource: "enhance" | "edit" | undefined;
+    let historyEnhancementMode:
+      | "improve"
+      | "technical"
+      | "simplify"
+      | "acceptance"
+      | undefined;
 
     if (descriptionChanged && descriptionChangeSource) {
-      if (descriptionChangeSource === 'edit') {
-        historySource = 'edit';
+      if (descriptionChangeSource === "edit") {
+        historySource = "edit";
       } else {
-        historySource = 'enhance';
+        historySource = "enhance";
         historyEnhancementMode = descriptionChangeSource.mode;
       }
     }
@@ -407,7 +462,7 @@ export function EditFeatureDialog({
       updates,
       historySource,
       historyEnhancementMode,
-      preEnhancementDescription ?? undefined
+      preEnhancementDescription ?? undefined,
     );
     setEditFeaturePreviewMap(new Map());
     onClose();
@@ -424,8 +479,10 @@ export function EditFeatureDialog({
   }
 
   // Shared card styling
-  const cardClass = 'rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3';
-  const sectionHeaderClass = 'flex items-center gap-2 text-sm font-medium text-foreground';
+  const cardClass =
+    "rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3";
+  const sectionHeaderClass =
+    "flex items-center gap-2 text-sm font-medium text-foreground";
 
   return (
     <Dialog open={!!editingFeature} onOpenChange={handleDialogClose}>
@@ -461,8 +518,10 @@ export function EditFeatureDialog({
                   history={localHistory}
                   currentValue={editingFeature.description}
                   onRestore={(description) => {
-                    setEditingFeature((prev) => (prev ? { ...prev, description } : prev));
-                    setDescriptionChangeSource('edit');
+                    setEditingFeature((prev) =>
+                      prev ? { ...prev, description } : prev,
+                    );
+                    setDescriptionChangeSource("edit");
                   }}
                   valueAccessor={(entry) => entry.description}
                   title="Version History"
@@ -477,8 +536,11 @@ export function EditFeatureDialog({
                     description: value,
                   });
                   // Track that this change was a manual edit (unless already enhanced)
-                  if (!descriptionChangeSource || descriptionChangeSource === 'edit') {
-                    setDescriptionChangeSource('edit');
+                  if (
+                    !descriptionChangeSource ||
+                    descriptionChangeSource === "edit"
+                  ) {
+                    setDescriptionChangeSource("edit");
                   }
                 }}
                 images={editingFeature.imagePaths ?? []}
@@ -506,7 +568,7 @@ export function EditFeatureDialog({
               <Label htmlFor="edit-title">Title (optional)</Label>
               <Input
                 id="edit-title"
-                value={editingFeature.title ?? ''}
+                value={editingFeature.title ?? ""}
                 onChange={(e) =>
                   setEditingFeature({
                     ...editingFeature,
@@ -522,10 +584,12 @@ export function EditFeatureDialog({
             <EnhanceWithAI
               value={editingFeature.description}
               onChange={(enhanced) =>
-                setEditingFeature((prev) => (prev ? { ...prev, description: enhanced } : prev))
+                setEditingFeature((prev) =>
+                  prev ? { ...prev, description: enhanced } : prev,
+                )
               }
               onHistoryAdd={({ mode, originalText, enhancedText }) => {
-                setDescriptionChangeSource({ source: 'enhance', mode });
+                setDescriptionChangeSource({ source: "enhance", mode });
                 setPreEnhancementDescription(originalText);
 
                 // Update local history for real-time display
@@ -538,14 +602,14 @@ export function EditFeatureDialog({
                     newHistory.push({
                       description: originalText,
                       timestamp,
-                      source: prev.length === 0 ? 'initial' : 'edit',
+                      source: prev.length === 0 ? "initial" : "edit",
                     });
                   }
                   // Add enhanced text
                   newHistory.push({
                     description: enhancedText,
                     timestamp,
-                    source: 'enhance',
+                    source: "enhance",
                     enhancementMode: mode,
                   });
                   return newHistory;
@@ -567,7 +631,10 @@ export function EditFeatureDialog({
                     type="button"
                     onClick={() => {
                       onClose();
-                      navigate({ to: '/settings', search: { view: 'defaults' } });
+                      navigate({
+                        to: "/settings",
+                        search: { view: "defaults" },
+                      });
                     }}
                     className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
@@ -576,7 +643,9 @@ export function EditFeatureDialog({
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Change default model and planning settings for new features</p>
+                  <p>
+                    Change default model and planning settings for new features
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -591,10 +660,17 @@ export function EditFeatureDialog({
               />
             </div>
 
-            <div className={cn('grid gap-3', selectedPipelineSlug ? 'grid-cols-1' : 'grid-cols-2')}>
+            <div
+              className={cn(
+                "grid gap-3",
+                selectedPipelineSlug ? "grid-cols-1" : "grid-cols-2",
+              )}
+            >
               {!selectedPipelineSlug && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Planning</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Planning
+                  </Label>
                   <PlanningModeSelect
                     mode={planningMode}
                     onModeChange={setPlanningMode}
@@ -611,7 +687,10 @@ export function EditFeatureDialog({
                       id="edit-feature-skip-tests"
                       checked={!(editingFeature.skipTests ?? false)}
                       onCheckedChange={(checked) =>
-                        setEditingFeature({ ...editingFeature, skipTests: !checked })
+                        setEditingFeature({
+                          ...editingFeature,
+                          skipTests: !checked,
+                        })
                       }
                       data-testid="edit-feature-skip-tests-checkbox"
                     />
@@ -627,17 +706,19 @@ export function EditFeatureDialog({
                       <Checkbox
                         id="edit-feature-require-approval"
                         checked={requirePlanApproval}
-                        onCheckedChange={(checked) => setRequirePlanApproval(!!checked)}
-                        disabled={planningMode === 'skip'}
+                        onCheckedChange={(checked) =>
+                          setRequirePlanApproval(!!checked)
+                        }
+                        disabled={planningMode === "skip"}
                         data-testid="edit-feature-require-approval-checkbox"
                       />
                       <Label
                         htmlFor="edit-feature-require-approval"
                         className={cn(
-                          'text-xs font-normal',
-                          planningMode === 'skip'
-                            ? 'cursor-not-allowed text-muted-foreground'
-                            : 'cursor-pointer'
+                          "text-xs font-normal",
+                          planningMode === "skip"
+                            ? "cursor-not-allowed text-muted-foreground"
+                            : "cursor-pointer",
                         )}
                       >
                         Require approval
@@ -658,22 +739,28 @@ export function EditFeatureDialog({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Workflow Pipeline</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Workflow Pipeline
+                </Label>
                 <Select
-                  value={selectedPipelineSlug || '__none__'}
+                  value={selectedPipelineSlug || "__none__"}
                   onValueChange={(value) => {
-                    const slug = value === '__none__' ? '' : value;
+                    const slug = value === "__none__" ? "" : value;
                     setSelectedPipelineSlug(slug);
                     // Reset inputs and pre-fill defaults when pipeline changes
                     if (slug) {
-                      const pipeline = discoveredPipelines.find((p) => p.slug === slug);
+                      const pipeline = discoveredPipelines.find(
+                        (p) => p.slug === slug,
+                      );
                       const declared = pipeline?.config.inputs;
                       if (declared && Object.keys(declared).length > 0) {
                         const defaults: Record<string, string | boolean> = {};
                         for (const [name, input] of Object.entries(declared)) {
-                          if (input.type === 'boolean') {
+                          if (input.type === "boolean") {
                             defaults[name] =
-                              typeof input.default === 'boolean' ? input.default : false;
+                              typeof input.default === "boolean"
+                                ? input.default
+                                : false;
                           } else if (input.default !== undefined) {
                             defaults[name] = String(input.default);
                           }
@@ -691,15 +778,18 @@ export function EditFeatureDialog({
                     <SelectValue placeholder="Default (no pipeline)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">Default (no pipeline)</SelectItem>
+                    <SelectItem value="__none__">
+                      Default (no pipeline)
+                    </SelectItem>
                     {discoveredPipelines.map((pipeline) => (
                       <SelectItem
                         key={pipeline.slug}
                         value={pipeline.slug}
                         description={
                           <span className="text-xs text-muted-foreground">
-                            {pipeline.config.description} ({pipeline.stageCount} stage
-                            {pipeline.stageCount !== 1 ? 's' : ''})
+                            {pipeline.config.description} ({pipeline.stageCount}{" "}
+                            stage
+                            {pipeline.stageCount !== 1 ? "s" : ""})
                           </span>
                         }
                       >
@@ -719,7 +809,9 @@ export function EditFeatureDialog({
                         key={stage.id}
                         className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted border border-border/50 text-muted-foreground"
                       >
-                        <span className="text-[10px] font-mono opacity-60">{idx + 1}</span>
+                        <span className="text-[10px] font-mono opacity-60">
+                          {idx + 1}
+                        </span>
                         {stage.name}
                       </span>
                     ))}
@@ -738,12 +830,12 @@ export function EditFeatureDialog({
                   </Label>
                   {pipelineInputDefinitions.map((field) => (
                     <div key={field.name} className="space-y-1">
-                      {field.type === 'boolean' ? (
+                      {field.type === "boolean" ? (
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`edit-pipeline-input-${field.name}`}
                             checked={
-                              typeof pipelineInputs[field.name] === 'boolean'
+                              typeof pipelineInputs[field.name] === "boolean"
                                 ? pipelineInputs[field.name]
                                 : false
                             }
@@ -777,18 +869,21 @@ export function EditFeatureDialog({
                               {formatInputLabel(field.name)}
                             </Label>
                             {field.required && (
-                              <span className="text-xs text-destructive" aria-label="required">
+                              <span
+                                className="text-xs text-destructive"
+                                aria-label="required"
+                              >
                                 *
                               </span>
                             )}
                           </div>
                           <Input
                             id={`edit-pipeline-input-${field.name}`}
-                            type={field.type === 'number' ? 'number' : 'text'}
+                            type={field.type === "number" ? "number" : "text"}
                             value={
-                              typeof pipelineInputs[field.name] === 'string'
+                              typeof pipelineInputs[field.name] === "string"
                                 ? pipelineInputs[field.name]
-                                : ''
+                                : ""
                             }
                             onChange={(e) =>
                               setPipelineInputs((prev) => ({
@@ -804,14 +899,17 @@ export function EditFeatureDialog({
                             data-testid={`edit-feature-pipeline-input-${field.name}`}
                           />
                           {field.description && (
-                            <p className="text-xs text-muted-foreground">{field.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {field.description}
+                            </p>
                           )}
                         </>
                       )}
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">
-                    These values will be available as template variables in the pipeline stages.
+                    These values will be available as template variables in the
+                    pipeline stages.
                   </p>
                 </div>
               )}
@@ -827,7 +925,9 @@ export function EditFeatureDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Category</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Category
+                </Label>
                 <CategoryAutocomplete
                   value={editingFeature.category}
                   onChange={(value) =>
@@ -842,7 +942,9 @@ export function EditFeatureDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Priority
+                </Label>
                 <PrioritySelector
                   selectedPriority={editingFeature.priority ?? 2}
                   onPrioritySelect={(priority) =>
@@ -861,7 +963,7 @@ export function EditFeatureDialog({
               <WorkModeSelector
                 workMode={workMode}
                 onWorkModeChange={setWorkMode}
-                branchName={editingFeature.branchName ?? ''}
+                branchName={editingFeature.branchName ?? ""}
                 onBranchNameChange={(value) =>
                   setEditingFeature({
                     ...editingFeature,
@@ -872,7 +974,8 @@ export function EditFeatureDialog({
                 branchCardCounts={branchCardCounts}
                 currentBranch={currentBranch}
                 disabled={
-                  editingFeature.status !== 'backlog' && editingFeature.status !== 'merge_conflict'
+                  editingFeature.status !== "backlog" &&
+                  editingFeature.status !== "merge_conflict"
                 }
                 testIdPrefix="edit-feature-work-mode"
               />
@@ -939,13 +1042,13 @@ export function EditFeatureDialog({
             </Button>
             <HotkeyButton
               onClick={handleUpdate}
-              hotkey={{ key: 'Enter', cmdCtrl: true }}
+              hotkey={{ key: "Enter", cmdCtrl: true }}
               hotkeyActive={!!editingFeature}
               data-testid="confirm-edit-feature"
               disabled={
-                (editingFeature.status === 'backlog' ||
-                  editingFeature.status === 'merge_conflict') &&
-                workMode === 'custom' &&
+                (editingFeature.status === "backlog" ||
+                  editingFeature.status === "merge_conflict") &&
+                workMode === "custom" &&
                 !editingFeature.branchName?.trim()
               }
             >

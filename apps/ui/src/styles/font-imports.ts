@@ -12,7 +12,7 @@
  */
 
 // Critical: Zed Fonts (default fallback) - loaded immediately
-import '@/assets/fonts/zed/zed-fonts.css';
+import "@/assets/fonts/zed/zed-fonts.css";
 
 /**
  * Registry of lazy-loadable font imports.
@@ -25,125 +25,128 @@ const fontLoaders: Record<string, FontLoader> = {
   // Sans-serif / UI Fonts
   Inter: async () => {
     await Promise.all([
-      import('@fontsource/inter/400.css'),
-      import('@fontsource/inter/500.css'),
-      import('@fontsource/inter/600.css'),
-      import('@fontsource/inter/700.css'),
+      import("@fontsource/inter/400.css"),
+      import("@fontsource/inter/500.css"),
+      import("@fontsource/inter/600.css"),
+      import("@fontsource/inter/700.css"),
     ]);
   },
   Roboto: async () => {
     await Promise.all([
-      import('@fontsource/roboto/400.css'),
-      import('@fontsource/roboto/500.css'),
-      import('@fontsource/roboto/700.css'),
+      import("@fontsource/roboto/400.css"),
+      import("@fontsource/roboto/500.css"),
+      import("@fontsource/roboto/700.css"),
     ]);
   },
-  'Open Sans': async () => {
+  "Open Sans": async () => {
     await Promise.all([
-      import('@fontsource/open-sans/400.css'),
-      import('@fontsource/open-sans/500.css'),
-      import('@fontsource/open-sans/600.css'),
-      import('@fontsource/open-sans/700.css'),
+      import("@fontsource/open-sans/400.css"),
+      import("@fontsource/open-sans/500.css"),
+      import("@fontsource/open-sans/600.css"),
+      import("@fontsource/open-sans/700.css"),
     ]);
   },
   Montserrat: async () => {
     await Promise.all([
-      import('@fontsource/montserrat/400.css'),
-      import('@fontsource/montserrat/500.css'),
-      import('@fontsource/montserrat/600.css'),
-      import('@fontsource/montserrat/700.css'),
+      import("@fontsource/montserrat/400.css"),
+      import("@fontsource/montserrat/500.css"),
+      import("@fontsource/montserrat/600.css"),
+      import("@fontsource/montserrat/700.css"),
     ]);
   },
   Lato: async () => {
-    await Promise.all([import('@fontsource/lato/400.css'), import('@fontsource/lato/700.css')]);
+    await Promise.all([
+      import("@fontsource/lato/400.css"),
+      import("@fontsource/lato/700.css"),
+    ]);
   },
   Poppins: async () => {
     await Promise.all([
-      import('@fontsource/poppins/400.css'),
-      import('@fontsource/poppins/500.css'),
-      import('@fontsource/poppins/600.css'),
-      import('@fontsource/poppins/700.css'),
+      import("@fontsource/poppins/400.css"),
+      import("@fontsource/poppins/500.css"),
+      import("@fontsource/poppins/600.css"),
+      import("@fontsource/poppins/700.css"),
     ]);
   },
   Raleway: async () => {
     await Promise.all([
-      import('@fontsource/raleway/400.css'),
-      import('@fontsource/raleway/500.css'),
-      import('@fontsource/raleway/600.css'),
-      import('@fontsource/raleway/700.css'),
+      import("@fontsource/raleway/400.css"),
+      import("@fontsource/raleway/500.css"),
+      import("@fontsource/raleway/600.css"),
+      import("@fontsource/raleway/700.css"),
     ]);
   },
-  'Work Sans': async () => {
+  "Work Sans": async () => {
     await Promise.all([
-      import('@fontsource/work-sans/400.css'),
-      import('@fontsource/work-sans/500.css'),
-      import('@fontsource/work-sans/600.css'),
-      import('@fontsource/work-sans/700.css'),
+      import("@fontsource/work-sans/400.css"),
+      import("@fontsource/work-sans/500.css"),
+      import("@fontsource/work-sans/600.css"),
+      import("@fontsource/work-sans/700.css"),
     ]);
   },
-  'Source Sans 3': async () => {
+  "Source Sans 3": async () => {
     await Promise.all([
-      import('@fontsource/source-sans-3/400.css'),
-      import('@fontsource/source-sans-3/500.css'),
-      import('@fontsource/source-sans-3/600.css'),
-      import('@fontsource/source-sans-3/700.css'),
+      import("@fontsource/source-sans-3/400.css"),
+      import("@fontsource/source-sans-3/500.css"),
+      import("@fontsource/source-sans-3/600.css"),
+      import("@fontsource/source-sans-3/700.css"),
     ]);
   },
 
   // Monospace / Code Fonts
-  'Fira Code': async () => {
+  "Fira Code": async () => {
     await Promise.all([
-      import('@fontsource/fira-code/400.css'),
-      import('@fontsource/fira-code/500.css'),
-      import('@fontsource/fira-code/600.css'),
-      import('@fontsource/fira-code/700.css'),
+      import("@fontsource/fira-code/400.css"),
+      import("@fontsource/fira-code/500.css"),
+      import("@fontsource/fira-code/600.css"),
+      import("@fontsource/fira-code/700.css"),
     ]);
   },
-  'JetBrains Mono': async () => {
+  "JetBrains Mono": async () => {
     await Promise.all([
-      import('@fontsource/jetbrains-mono/400.css'),
-      import('@fontsource/jetbrains-mono/500.css'),
-      import('@fontsource/jetbrains-mono/600.css'),
-      import('@fontsource/jetbrains-mono/700.css'),
+      import("@fontsource/jetbrains-mono/400.css"),
+      import("@fontsource/jetbrains-mono/500.css"),
+      import("@fontsource/jetbrains-mono/600.css"),
+      import("@fontsource/jetbrains-mono/700.css"),
     ]);
   },
-  'Cascadia Code': async () => {
+  "Cascadia Code": async () => {
     await Promise.all([
-      import('@fontsource/cascadia-code/400.css'),
-      import('@fontsource/cascadia-code/600.css'),
-      import('@fontsource/cascadia-code/700.css'),
+      import("@fontsource/cascadia-code/400.css"),
+      import("@fontsource/cascadia-code/600.css"),
+      import("@fontsource/cascadia-code/700.css"),
     ]);
   },
   Iosevka: async () => {
     await Promise.all([
-      import('@fontsource/iosevka/400.css'),
-      import('@fontsource/iosevka/500.css'),
-      import('@fontsource/iosevka/600.css'),
-      import('@fontsource/iosevka/700.css'),
+      import("@fontsource/iosevka/400.css"),
+      import("@fontsource/iosevka/500.css"),
+      import("@fontsource/iosevka/600.css"),
+      import("@fontsource/iosevka/700.css"),
     ]);
   },
   Inconsolata: async () => {
     await Promise.all([
-      import('@fontsource/inconsolata/400.css'),
-      import('@fontsource/inconsolata/500.css'),
-      import('@fontsource/inconsolata/600.css'),
-      import('@fontsource/inconsolata/700.css'),
+      import("@fontsource/inconsolata/400.css"),
+      import("@fontsource/inconsolata/500.css"),
+      import("@fontsource/inconsolata/600.css"),
+      import("@fontsource/inconsolata/700.css"),
     ]);
   },
-  'Source Code Pro': async () => {
+  "Source Code Pro": async () => {
     await Promise.all([
-      import('@fontsource/source-code-pro/400.css'),
-      import('@fontsource/source-code-pro/500.css'),
-      import('@fontsource/source-code-pro/600.css'),
-      import('@fontsource/source-code-pro/700.css'),
+      import("@fontsource/source-code-pro/400.css"),
+      import("@fontsource/source-code-pro/500.css"),
+      import("@fontsource/source-code-pro/600.css"),
+      import("@fontsource/source-code-pro/700.css"),
     ]);
   },
-  'IBM Plex Mono': async () => {
+  "IBM Plex Mono": async () => {
     await Promise.all([
-      import('@fontsource/ibm-plex-mono/400.css'),
-      import('@fontsource/ibm-plex-mono/500.css'),
-      import('@fontsource/ibm-plex-mono/600.css'),
-      import('@fontsource/ibm-plex-mono/700.css'),
+      import("@fontsource/ibm-plex-mono/400.css"),
+      import("@fontsource/ibm-plex-mono/500.css"),
+      import("@fontsource/ibm-plex-mono/600.css"),
+      import("@fontsource/ibm-plex-mono/700.css"),
     ]);
   },
 };
@@ -160,9 +163,9 @@ export async function loadFont(fontFamily: string): Promise<void> {
   // Extract the primary font name from CSS font-family string
   // e.g., "'JetBrains Mono', monospace" -> "JetBrains Mono"
   const primaryFont = fontFamily
-    .split(',')[0]
+    .split(",")[0]
     .trim()
-    .replace(/^['"]|['"]$/g, '');
+    .replace(/^['"]|['"]$/g, "");
 
   if (loadedFonts.has(primaryFont)) return;
 
@@ -185,26 +188,26 @@ export async function loadFont(fontFamily: string): Promise<void> {
  */
 export function loadUserFonts(): void {
   try {
-    const stored = localStorage.getItem('pegasus-storage');
+    const stored = localStorage.getItem("pegasus-storage");
     if (!stored) return;
 
     const data = JSON.parse(stored);
     const state = data?.state;
 
     // Load globally configured fonts
-    if (state?.fontFamilySans && state.fontFamilySans !== 'default') {
+    if (state?.fontFamilySans && state.fontFamilySans !== "default") {
       loadFont(state.fontFamilySans);
     }
-    if (state?.fontFamilyMono && state.fontFamilyMono !== 'default') {
+    if (state?.fontFamilyMono && state.fontFamilyMono !== "default") {
       loadFont(state.fontFamilyMono);
     }
 
     // Load current project's font overrides
     const currentProject = state?.currentProject;
-    if (currentProject?.fontSans && currentProject.fontSans !== 'default') {
+    if (currentProject?.fontSans && currentProject.fontSans !== "default") {
       loadFont(currentProject.fontSans);
     }
-    if (currentProject?.fontMono && currentProject.fontMono !== 'default') {
+    if (currentProject?.fontMono && currentProject.fontMono !== "default") {
       loadFont(currentProject.fontMono);
     }
   } catch {
@@ -219,7 +222,7 @@ export function loadUserFonts(): void {
  */
 export function preloadAllFonts(): void {
   const idleCallback =
-    typeof requestIdleCallback !== 'undefined'
+    typeof requestIdleCallback !== "undefined"
       ? requestIdleCallback
       : (cb: () => void) => setTimeout(cb, 100);
 

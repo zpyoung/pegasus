@@ -10,7 +10,7 @@
  * - Integrates useBoardBackground theming (column opacity/border, card styling, bg image)
  */
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -20,31 +20,59 @@ import {
   useSensor,
   useSensors,
   closestCenter,
-} from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { toast } from 'sonner';
-import { Lightbulb, Plus } from 'lucide-react';
-import { useAppStore } from '@/store/app-store';
-import { useIdeationStore } from '@/store/ideation-store';
-import { useResponsiveKanban } from '@/hooks/use-responsive-kanban';
-import { KanbanColumn } from '../board-view/components/kanban-column';
-import { useBoardBackground } from '../board-view/hooks/use-board-background';
-import { IdeaCard } from './idea-card';
-import { PromoteModal } from './promote-modal';
-import { GenerationJobsIndicator } from './generation-jobs-indicator';
-import { PromptCommandPopover } from './prompt-command-popover';
-import { useIdeas } from './hooks/use-ideas';
-import { useConvertIdea } from './hooks/use-convert-idea';
-import type { Idea, IdeaStatus, UpdateIdeaInput, ConvertToFeatureOptions } from '@pegasus/types';
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { toast } from "sonner";
+import { Lightbulb, Plus } from "lucide-react";
+import { useAppStore } from "@/store/app-store";
+import { useIdeationStore } from "@/store/ideation-store";
+import { useResponsiveKanban } from "@/hooks/use-responsive-kanban";
+import { KanbanColumn } from "../board-view/components/kanban-column";
+import { useBoardBackground } from "../board-view/hooks/use-board-background";
+import { IdeaCard } from "./idea-card";
+import { PromoteModal } from "./promote-modal";
+import { GenerationJobsIndicator } from "./generation-jobs-indicator";
+import { PromptCommandPopover } from "./prompt-command-popover";
+import { useIdeas } from "./hooks/use-ideas";
+import { useConvertIdea } from "./hooks/use-convert-idea";
+import type {
+  Idea,
+  IdeaStatus,
+  UpdateIdeaInput,
+  ConvertToFeatureOptions,
+} from "@pegasus/types";
 
 // ============================================================================
 // Column definitions
 // ============================================================================
 
-const COLUMNS: { id: IdeaStatus; label: string; description: string; colorClass: string }[] = [
-  { id: 'raw', label: 'Raw', description: 'Unrefined ideas', colorClass: 'bg-yellow-500' },
-  { id: 'refined', label: 'Refined', description: 'Ideas being shaped', colorClass: 'bg-blue-500' },
-  { id: 'ready', label: 'Ready', description: 'Ready to promote', colorClass: 'bg-emerald-500' },
+const COLUMNS: {
+  id: IdeaStatus;
+  label: string;
+  description: string;
+  colorClass: string;
+}[] = [
+  {
+    id: "raw",
+    label: "Raw",
+    description: "Unrefined ideas",
+    colorClass: "bg-yellow-500",
+  },
+  {
+    id: "refined",
+    label: "Refined",
+    description: "Ideas being shaped",
+    colorClass: "bg-blue-500",
+  },
+  {
+    id: "ready",
+    label: "Ready",
+    description: "Ready to promote",
+    colorClass: "bg-emerald-500",
+  },
 ];
 
 // ============================================================================
@@ -57,7 +85,7 @@ interface QuickAddInputProps {
 }
 
 function QuickAddInput({ inputRef, onAdd }: QuickAddInputProps) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -70,9 +98,9 @@ function QuickAddInput({ inputRef, onAdd }: QuickAddInputProps) {
     setError(null);
     try {
       await onAdd(title);
-      setValue('');
+      setValue("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add idea');
+      setError(err instanceof Error ? err.message : "Failed to add idea");
     } finally {
       setIsAdding(false);
     }
@@ -113,7 +141,7 @@ function QuickAddInput({ inputRef, onAdd }: QuickAddInputProps) {
 
 export function IdeaBoard() {
   const currentProject = useAppStore((s) => s.currentProject);
-  const projectPath = currentProject?.path ?? '';
+  const projectPath = currentProject?.path ?? "";
 
   const { ideas, createIdea, updateIdea, deleteIdea } = useIdeas(projectPath);
   const { convert, isConverting } = useConvertIdea(projectPath);
@@ -123,18 +151,22 @@ export function IdeaBoard() {
   const [activeIdea, setActiveIdea] = useState<Idea | null>(null);
 
   // ─── Theming & layout ─────────────────────────────────────────────────────
-  const { backgroundSettings, backgroundImageStyle } = useBoardBackground({ currentProject });
+  const { backgroundSettings, backgroundImageStyle } = useBoardBackground({
+    currentProject,
+  });
   const { columnWidth, containerStyle } = useResponsiveKanban(COLUMNS.length);
 
   // ─── DnD setup ───────────────────────────────────────────────────────────
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const dragged = ideas.find((i) => i.id === event.active.id);
       setActiveIdea(dragged ?? null);
     },
-    [ideas]
+    [ideas],
   );
 
   const handleDragEnd = useCallback(
@@ -151,10 +183,10 @@ export function IdeaBoard() {
       let targetStatus: IdeaStatus;
       const overId = String(over.id);
 
-      if (overId === 'raw' || overId === 'refined' || overId === 'ready') {
+      if (overId === "raw" || overId === "refined" || overId === "ready") {
         targetStatus = overId as IdeaStatus;
-      } else if (overId.startsWith('column-header-')) {
-        targetStatus = overId.replace('column-header-', '') as IdeaStatus;
+      } else if (overId.startsWith("column-header-")) {
+        targetStatus = overId.replace("column-header-", "") as IdeaStatus;
       } else {
         // Dropped on a card — use that card's status
         const overIdea = ideas.find((i) => i.id === overId);
@@ -167,12 +199,12 @@ export function IdeaBoard() {
         { ideaId: String(active.id), updates: { status: targetStatus } },
         {
           onError: (err) => {
-            toast.error('Failed to move idea', { description: err.message });
+            toast.error("Failed to move idea", { description: err.message });
           },
-        }
+        },
       );
     },
-    [ideas, updateIdea]
+    [ideas, updateIdea],
   );
 
   // ─── Legacy generationJobs drain ─────────────────────────────────────────
@@ -182,7 +214,10 @@ export function IdeaBoard() {
   useEffect(() => {
     if (!projectPath) return;
     const readyJobs = generationJobs.filter(
-      (j) => j.projectPath === projectPath && j.status === 'ready' && j.suggestions.length > 0
+      (j) =>
+        j.projectPath === projectPath &&
+        j.status === "ready" &&
+        j.suggestions.length > 0,
     );
     if (readyJobs.length === 0) return;
 
@@ -192,14 +227,14 @@ export function IdeaBoard() {
           for (const suggestion of job.suggestions) {
             await createIdea.mutateAsync({
               title: suggestion.title,
-              description: suggestion.description ?? '',
+              description: suggestion.description ?? "",
               category: suggestion.category,
-              status: 'raw',
+              status: "raw",
             });
           }
           removeJob(job.id);
         } catch (err) {
-          console.warn('[IdeaBoard] Legacy drain failed for job', job.id, err);
+          console.warn("[IdeaBoard] Legacy drain failed for job", job.id, err);
         }
       }
     };
@@ -211,19 +246,20 @@ export function IdeaBoard() {
   // ─── Quick add handler ────────────────────────────────────────────────────
   const handleQuickAdd = useCallback(
     async (title: string) => {
-      await createIdea.mutateAsync({ title, status: 'raw' });
+      await createIdea.mutateAsync({ title, status: "raw" });
     },
-    [createIdea]
+    [createIdea],
   );
 
   // ─── Delete handler ───────────────────────────────────────────────────────
   const handleDelete = useCallback(
     (idea: Idea) => {
       deleteIdea.mutate(idea.id, {
-        onError: (err) => toast.error('Failed to delete idea', { description: err.message }),
+        onError: (err) =>
+          toast.error("Failed to delete idea", { description: err.message }),
       });
     },
-    [deleteIdea]
+    [deleteIdea],
   );
 
   // ─── Edit handler ─────────────────────────────────────────────────────────
@@ -231,10 +267,13 @@ export function IdeaBoard() {
     (idea: Idea, updates: UpdateIdeaInput) => {
       updateIdea.mutate(
         { ideaId: idea.id, updates },
-        { onError: (err) => toast.error('Failed to save idea', { description: err.message }) }
+        {
+          onError: (err) =>
+            toast.error("Failed to save idea", { description: err.message }),
+        },
       );
     },
-    [updateIdea]
+    [updateIdea],
   );
 
   // ─── Promote handler ──────────────────────────────────────────────────────
@@ -243,13 +282,16 @@ export function IdeaBoard() {
       convert(ideaId, options);
       setPromoteIdea(null);
     },
-    [convert]
+    [convert],
   );
 
   // ─── No project guard ─────────────────────────────────────────────────────
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center content-bg" data-testid="idea-board">
+      <div
+        className="flex-1 flex items-center justify-center content-bg"
+        data-testid="idea-board"
+      >
         <div className="text-center text-muted-foreground">
           <p>Open a project to start capturing ideas</p>
         </div>
@@ -269,7 +311,7 @@ export function IdeaBoard() {
         <Lightbulb className="h-5 w-5 text-primary" />
         <h1 className="text-xl font-bold">Idea Board</h1>
         <span className="text-sm text-muted-foreground ml-1">
-          {ideas.length} idea{ideas.length !== 1 ? 's' : ''}
+          {ideas.length} idea{ideas.length !== 1 ? "s" : ""}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <GenerationJobsIndicator />
@@ -286,59 +328,64 @@ export function IdeaBoard() {
           onDragEnd={handleDragEnd}
         >
           <div className="h-full pt-1 pb-1" style={containerStyle}>
-          {COLUMNS.map((col) => {
-            const columnIdeas = ideas.filter((i) => i.status === col.id);
+            {COLUMNS.map((col) => {
+              const columnIdeas = ideas.filter((i) => i.status === col.id);
 
-            return (
-              <KanbanColumn
-                key={col.id}
-                id={col.id}
-                title={col.label}
-                colorClass={col.colorClass}
-                count={columnIdeas.length}
-                width={columnWidth}
-                opacity={backgroundSettings.columnOpacity}
-                showBorder={backgroundSettings.columnBorderEnabled}
-                hideScrollbar={backgroundSettings.hideScrollbar}
-              >
-                {col.id === 'raw' && (
-                  <div className="px-1 pb-2">
-                    <QuickAddInput inputRef={quickAddRef} onAdd={handleQuickAdd} />
-                  </div>
-                )}
-                <SortableContext
-                  items={columnIdeas.map((i) => i.id)}
-                  strategy={verticalListSortingStrategy}
+              return (
+                <KanbanColumn
+                  key={col.id}
+                  id={col.id}
+                  title={col.label}
+                  colorClass={col.colorClass}
+                  count={columnIdeas.length}
+                  width={columnWidth}
+                  opacity={backgroundSettings.columnOpacity}
+                  showBorder={backgroundSettings.columnBorderEnabled}
+                  hideScrollbar={backgroundSettings.hideScrollbar}
                 >
-                  {columnIdeas.map((idea) => (
-                    <IdeaCard
-                      key={idea.id}
-                      idea={idea}
-                      onEdit={handleEdit}
-                      onPromote={setPromoteIdea}
-                      onDelete={handleDelete}
-                      isSaving={updateIdea.isPending}
-                      opacity={backgroundSettings.cardOpacity}
-                      glassmorphism={backgroundSettings.cardGlassmorphism}
-                      cardBorderEnabled={backgroundSettings.cardBorderEnabled}
-                      cardBorderOpacity={backgroundSettings.cardBorderOpacity}
-                    />
-                  ))}
-                  {columnIdeas.length === 0 && (
-                    <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
-                      {col.id === 'raw' ? 'Type above to add an idea' : 'Drag ideas here'}
+                  {col.id === "raw" && (
+                    <div className="px-1 pb-2">
+                      <QuickAddInput
+                        inputRef={quickAddRef}
+                        onAdd={handleQuickAdd}
+                      />
                     </div>
                   )}
-                </SortableContext>
-              </KanbanColumn>
-            );
-          })}
+                  <SortableContext
+                    items={columnIdeas.map((i) => i.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {columnIdeas.map((idea) => (
+                      <IdeaCard
+                        key={idea.id}
+                        idea={idea}
+                        onEdit={handleEdit}
+                        onPromote={setPromoteIdea}
+                        onDelete={handleDelete}
+                        isSaving={updateIdea.isPending}
+                        opacity={backgroundSettings.cardOpacity}
+                        glassmorphism={backgroundSettings.cardGlassmorphism}
+                        cardBorderEnabled={backgroundSettings.cardBorderEnabled}
+                        cardBorderOpacity={backgroundSettings.cardBorderOpacity}
+                      />
+                    ))}
+                    {columnIdeas.length === 0 && (
+                      <div className="flex items-center justify-center py-8 text-xs text-muted-foreground">
+                        {col.id === "raw"
+                          ? "Type above to add an idea"
+                          : "Drag ideas here"}
+                      </div>
+                    )}
+                  </SortableContext>
+                </KanbanColumn>
+              );
+            })}
           </div>
 
           <DragOverlay
             dropAnimation={{
               duration: 200,
-              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+              easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
             }}
           >
             {activeIdea && (

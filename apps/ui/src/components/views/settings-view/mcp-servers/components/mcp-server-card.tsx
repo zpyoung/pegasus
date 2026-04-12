@@ -1,13 +1,24 @@
-import { ChevronDown, ChevronRight, Code, Pencil, Trash2, PlayCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
-import type { MCPServerConfig } from '@pegasus/types';
-import type { ServerTestState } from '../types';
-import { getServerIcon, getTestStatusIcon, maskSensitiveUrl } from '../utils';
-import { MCPToolsList } from '../mcp-tools-list';
+import {
+  ChevronDown,
+  ChevronRight,
+  Code,
+  Pencil,
+  Trash2,
+  PlayCircle,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+import type { MCPServerConfig } from "@pegasus/types";
+import type { ServerTestState } from "../types";
+import { getServerIcon, getTestStatusIcon, maskSensitiveUrl } from "../utils";
+import { MCPToolsList } from "../mcp-tools-list";
 
 interface MCPServerCardProps {
   server: MCPServerConfig;
@@ -39,10 +50,10 @@ export function MCPServerCard({
     <Collapsible open={isExpanded} onOpenChange={onToggleExpanded}>
       <div
         className={cn(
-          'rounded-xl border',
+          "rounded-xl border",
           server.enabled !== false
-            ? 'border-border/50 bg-accent/20'
-            : 'border-border/30 bg-muted/30 opacity-60'
+            ? "border-border/50 bg-accent/20"
+            : "border-border/30 bg-muted/30 opacity-60",
         )}
         data-testid={`mcp-server-${server.id}`}
       >
@@ -51,8 +62,8 @@ export function MCPServerCard({
             <CollapsibleTrigger asChild>
               <button
                 className={cn(
-                  'flex items-center gap-3 text-left min-w-0 flex-1',
-                  hasTools && 'cursor-pointer hover:opacity-80'
+                  "flex items-center gap-3 text-left min-w-0 flex-1",
+                  hasTools && "cursor-pointer hover:opacity-80",
                 )}
                 disabled={!hasTools}
               >
@@ -67,19 +78,22 @@ export function MCPServerCard({
                 )}
                 <div
                   className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                    server.enabled !== false ? 'bg-brand-500/20' : 'bg-muted'
+                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                    server.enabled !== false ? "bg-brand-500/20" : "bg-muted",
                   )}
                 >
                   <Icon className="w-4 h-4 text-brand-500" />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-sm truncate">{server.name}</span>
+                    <span className="font-medium text-sm truncate">
+                      {server.name}
+                    </span>
                     {testState && getTestStatusIcon(testState.status)}
-                    {testState?.status === 'success' && testState.tools && (
+                    {testState?.status === "success" && testState.tools && (
                       <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded whitespace-nowrap">
-                        {testState.tools.length} tool{testState.tools.length !== 1 ? 's' : ''}
+                        {testState.tools.length} tool
+                        {testState.tools.length !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
@@ -89,11 +103,11 @@ export function MCPServerCard({
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground/60 mt-0.5 truncate">
-                    {server.type === 'stdio'
-                      ? `${server.command}${server.args?.length ? ' ' + server.args.join(' ') : ''}`
-                      : maskSensitiveUrl(server.url || '')}
+                    {server.type === "stdio"
+                      ? `${server.command}${server.args?.length ? " " + server.args.join(" ") : ""}`
+                      : maskSensitiveUrl(server.url || "")}
                   </div>
-                  {testState?.status === 'error' && testState.error && (
+                  {testState?.status === "error" && testState.error && (
                     <div className="text-xs text-destructive mt-1 line-clamp-2 break-words">
                       {testState.error}
                     </div>
@@ -107,11 +121,13 @@ export function MCPServerCard({
               variant="ghost"
               size="sm"
               onClick={onTest}
-              disabled={testState?.status === 'testing' || server.enabled === false}
+              disabled={
+                testState?.status === "testing" || server.enabled === false
+              }
               data-testid={`mcp-server-test-${server.id}`}
               className="h-8 px-2"
             >
-              {testState?.status === 'testing' ? (
+              {testState?.status === "testing" ? (
                 <Spinner size="sm" />
               ) : (
                 <PlayCircle className="w-4 h-4" />
@@ -154,10 +170,12 @@ export function MCPServerCard({
         {hasTools && (
           <CollapsibleContent>
             <div className="px-4 pb-4 pt-0 ml-7 overflow-hidden">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Available Tools</div>
+              <div className="text-xs font-medium text-muted-foreground mb-2">
+                Available Tools
+              </div>
               <MCPToolsList
                 tools={testState.tools!}
-                isLoading={testState.status === 'testing'}
+                isLoading={testState.status === "testing"}
                 error={testState.error}
                 className="max-w-full"
               />

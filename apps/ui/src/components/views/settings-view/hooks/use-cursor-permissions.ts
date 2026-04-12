@@ -1,6 +1,9 @@
-import { useState, useCallback } from 'react';
-import { useCursorPermissionsQuery, type CursorPermissionsData } from '@/hooks/queries';
-import { useApplyCursorProfile, useCopyCursorConfig } from '@/hooks/mutations';
+import { useState, useCallback } from "react";
+import {
+  useCursorPermissionsQuery,
+  type CursorPermissionsData,
+} from "@/hooks/queries";
+import { useApplyCursorProfile, useCopyCursorConfig } from "@/hooks/mutations";
 
 // Re-export for backward compatibility
 export type PermissionsData = CursorPermissionsData;
@@ -19,15 +22,15 @@ export function useCursorPermissions(projectPath?: string) {
 
   // Apply a permission profile
   const applyProfile = useCallback(
-    (profileId: 'strict' | 'development', scope: 'global' | 'project') => {
+    (profileId: "strict" | "development", scope: "global" | "project") => {
       applyProfileMutation.mutate({ profileId, scope });
     },
-    [applyProfileMutation]
+    [applyProfileMutation],
   );
 
   // Copy example config to clipboard
   const copyConfig = useCallback(
-    (profileId: 'strict' | 'development') => {
+    (profileId: "strict" | "development") => {
       copyConfigMutation.mutate(profileId, {
         onSuccess: () => {
           setCopiedConfig(true);
@@ -35,7 +38,7 @@ export function useCursorPermissions(projectPath?: string) {
         },
       });
     },
-    [copyConfigMutation]
+    [copyConfigMutation],
   );
 
   // Load permissions (refetch)

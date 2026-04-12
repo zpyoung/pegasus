@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Clock } from "lucide-react";
 
 interface CountUpTimerProps {
   startedAt: string; // ISO timestamp string
@@ -15,8 +15,8 @@ function formatElapsedTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
 
-  const paddedMinutes = minutes.toString().padStart(2, '0');
-  const paddedSeconds = remainingSeconds.toString().padStart(2, '0');
+  const paddedMinutes = minutes.toString().padStart(2, "0");
+  const paddedSeconds = remainingSeconds.toString().padStart(2, "0");
 
   return `${paddedMinutes}:${paddedSeconds}`;
 }
@@ -25,7 +25,7 @@ function formatElapsedTime(seconds: number): string {
  * CountUpTimer component that displays elapsed time since a given start time
  * Updates every second to show the current elapsed time in MM:SS format
  */
-export function CountUpTimer({ startedAt, className = '' }: CountUpTimerProps) {
+export function CountUpTimer({ startedAt, className = "" }: CountUpTimerProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -55,7 +55,9 @@ export function CountUpTimer({ startedAt, className = '' }: CountUpTimerProps) {
       data-testid="count-up-timer"
     >
       <Clock className="w-3 h-3" />
-      <span data-testid="timer-display">{formatElapsedTime(elapsedSeconds)}</span>
+      <span data-testid="timer-display">
+        {formatElapsedTime(elapsedSeconds)}
+      </span>
     </div>
   );
 }

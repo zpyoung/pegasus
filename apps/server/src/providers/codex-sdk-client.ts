@@ -5,18 +5,28 @@
  * Provides cleaner integration than spawning CLI processes.
  */
 
-import { Codex } from '@openai/codex-sdk';
-import { formatHistoryAsText, classifyError, getUserFriendlyErrorMessage } from '@pegasus/utils';
-import { supportsReasoningEffort } from '@pegasus/types';
-import type { ExecuteOptions, ProviderMessage } from './types.js';
+import { Codex } from "@openai/codex-sdk";
+import {
+  formatHistoryAsText,
+  classifyError,
+  getUserFriendlyErrorMessage,
+} from "@pegasus/utils";
+import { supportsReasoningEffort } from "@pegasus/types";
+import type { ExecuteOptions, ProviderMessage } from "./types.js";
 
-const OPENAI_API_KEY_ENV = 'OPENAI_API_KEY';
-const SDK_HISTORY_HEADER = 'Current request:\n';
-const DEFAULT_RESPONSE_TEXT = '';
-const SDK_ERROR_DETAILS_LABEL = 'Details:';
+const OPENAI_API_KEY_ENV = "OPENAI_API_KEY";
+const SDK_HISTORY_HEADER = "Current request:\n";
+const DEFAULT_RESPONSE_TEXT = "";
+const SDK_ERROR_DETAILS_LABEL = "Details:";
 
-type SdkReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
-const SDK_REASONING_EFFORTS = new Set<string>(['minimal', 'low', 'medium', 'high', 'xhigh']);
+type SdkReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
+const SDK_REASONING_EFFORTS = new Set<string>([
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+]);
 
 type PromptBlock = {
   type: string;
@@ -31,36 +41,45 @@ type PromptBlock = {
 function resolveApiKey(): string {
   const apiKey = process.env[OPENAI_API_KEY_ENV];
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set.');
+    throw new Error("OPENAI_API_KEY is not set.");
   }
   return apiKey;
 }
 
-function normalizePromptBlocks(prompt: ExecuteOptions['prompt']): PromptBlock[] {
+function normalizePromptBlocks(
+  prompt: ExecuteOptions["prompt"],
+): PromptBlock[] {
   if (Array.isArray(prompt)) {
     return prompt as PromptBlock[];
   }
-  return [{ type: 'text', text: prompt }];
+  return [{ type: "text", text: prompt }];
 }
 
-function buildPromptText(options: ExecuteOptions, systemPrompt: string | null): string {
+function buildPromptText(
+  options: ExecuteOptions,
+  systemPrompt: string | null,
+): string {
   const historyText =
     options.conversationHistory && options.conversationHistory.length > 0
       ? formatHistoryAsText(options.conversationHistory)
-      : '';
+      : "";
 
   const promptBlocks = normalizePromptBlocks(options.prompt);
   const promptTexts: string[] = [];
 
   for (const block of promptBlocks) {
-    if (block.type === 'text' && typeof block.text === 'string' && block.text.trim()) {
+    if (
+      block.type === "text" &&
+      typeof block.text === "string" &&
+      block.text.trim()
+    ) {
       promptTexts.push(block.text);
     }
   }
 
-  const promptContent = promptTexts.join('\n\n');
+  const promptContent = promptTexts.join("\n\n");
   if (!promptContent.trim()) {
-    throw new Error('Codex SDK prompt is empty.');
+    throw new Error("Codex SDK prompt is empty.");
   }
 
   const parts: string[] = [];
@@ -72,7 +91,7 @@ function buildPromptText(options: ExecuteOptions, systemPrompt: string | null): 
   }
   parts.push(`${SDK_HISTORY_HEADER}${promptContent}`);
 
-  return parts.join('\n\n');
+  return parts.join("\n\n");
 }
 
 function buildSdkErrorMessage(rawMessage: string, userMessage: string): string {
@@ -96,7 +115,7 @@ function buildSdkErrorMessage(rawMessage: string, userMessage: string): string {
  */
 export async function* executeCodexSdkQuery(
   options: ExecuteOptions,
-  systemPrompt: string | null
+  systemPrompt: string | null,
 ): AsyncGenerator<ProviderMessage> {
   try {
     const apiKey = resolveApiKey();
@@ -120,10 +139,11 @@ export async function* executeCodexSdkQuery(
       options.reasoningEffort &&
       options.model &&
       supportsReasoningEffort(options.model) &&
-      options.reasoningEffort !== 'none' &&
+      options.reasoningEffort !== "none" &&
       SDK_REASONING_EFFORTS.has(options.reasoningEffort)
     ) {
-      threadOptions.modelReasoningEffort = options.reasoningEffort as SdkReasoningEffort;
+      threadOptions.modelReasoningEffort =
+        options.reasoningEffort as SdkReasoningEffort;
     }
 
     // Resume existing thread or start new one
@@ -159,18 +179,18 @@ export async function* executeCodexSdkQuery(
 
     // Yield assistant message
     yield {
-      type: 'assistant',
+      type: "assistant",
       session_id: threadId,
       message: {
-        role: 'assistant',
-        content: [{ type: 'text', text: outputText }],
+        role: "assistant",
+        content: [{ type: "text", text: outputText }],
       },
     };
 
     // Yield result
     yield {
-      type: 'result',
-      subtype: 'success',
+      type: "result",
+      subtype: "success",
       session_id: threadId,
       result: outputText,
     };
@@ -181,13 +201,13 @@ export async function* executeCodexSdkQuery(
 
     // Enhance error messages with actionable tips for common Codex issues
     // Normalize inputs to avoid crashes from nullish values
-    const errorLower = (errorInfo?.message ?? '').toLowerCase();
-    const modelLabel = options?.model ?? '<unknown model>';
+    const errorLower = (errorInfo?.message ?? "").toLowerCase();
+    const modelLabel = options?.model ?? "<unknown model>";
 
     if (
-      errorLower.includes('does not exist') ||
-      errorLower.includes('model_not_found') ||
-      errorLower.includes('invalid_model')
+      errorLower.includes("does not exist") ||
+      errorLower.includes("model_not_found") ||
+      errorLower.includes("invalid_model")
     ) {
       // Model not found - provide helpful guidance
       combinedMessage +=
@@ -195,10 +215,10 @@ export async function* executeCodexSdkQuery(
         `Some models (like gpt-5.3-codex) require a ChatGPT Pro/Plus subscription and OAuth login via 'codex login'. ` +
         `Try using a different model (e.g., gpt-5.1 or gpt-5.2), or authenticate with 'codex login' instead of an API key.`;
     } else if (
-      errorLower.includes('stream disconnected') ||
-      errorLower.includes('stream ended') ||
-      errorLower.includes('connection reset') ||
-      errorLower.includes('socket hang up')
+      errorLower.includes("stream disconnected") ||
+      errorLower.includes("stream ended") ||
+      errorLower.includes("connection reset") ||
+      errorLower.includes("socket hang up")
     ) {
       // Stream disconnection - provide helpful guidance
       combinedMessage +=
@@ -209,7 +229,7 @@ export async function* executeCodexSdkQuery(
         `Try again, or switch to a different model.`;
     }
 
-    console.error('[CodexSDK] executeQuery() error during execution:', {
+    console.error("[CodexSDK] executeQuery() error during execution:", {
       type: errorInfo.type,
       message: errorInfo.message,
       model: options.model,
@@ -217,6 +237,6 @@ export async function* executeCodexSdkQuery(
       retryAfter: errorInfo.retryAfter,
       stack: error instanceof Error ? error.stack : undefined,
     });
-    yield { type: 'error', error: combinedMessage };
+    yield { type: "error", error: combinedMessage };
   }
 }

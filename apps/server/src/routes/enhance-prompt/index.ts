@@ -5,9 +5,9 @@
  * with different enhancement modes (improve, expand, simplify, etc.)
  */
 
-import { Router } from 'express';
-import type { SettingsService } from '../../services/settings-service.js';
-import { createEnhanceHandler } from './routes/enhance.js';
+import { Router } from "express";
+import type { SettingsService } from "../../services/settings-service.js";
+import { createEnhanceHandler } from "./routes/enhance.js";
 
 /**
  * Create the enhance-prompt router
@@ -15,10 +15,12 @@ import { createEnhanceHandler } from './routes/enhance.js';
  * @param settingsService - Settings service for loading custom prompts
  * @returns Express router with enhance-prompt endpoints
  */
-export function createEnhancePromptRoutes(settingsService?: SettingsService): Router {
+export function createEnhancePromptRoutes(
+  settingsService?: SettingsService,
+): Router {
   const router = Router();
 
-  router.post('/', createEnhanceHandler(settingsService));
+  router.post("/", createEnhanceHandler(settingsService));
 
   return router;
 }

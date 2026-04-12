@@ -5,9 +5,13 @@
  * with caching via React Query.
  */
 
-import { useCallback, useMemo } from 'react';
-import type { IdeationPrompt, PromptCategory, IdeaCategory } from '@pegasus/types';
-import { useIdeationPrompts } from '@/hooks/queries';
+import { useCallback, useMemo } from "react";
+import type {
+  IdeationPrompt,
+  PromptCategory,
+  IdeaCategory,
+} from "@pegasus/types";
+import { useIdeationPrompts } from "@/hooks/queries";
 
 interface UseGuidedPromptsReturn {
   prompts: IdeationPrompt[];
@@ -30,21 +34,21 @@ export function useGuidedPrompts(): UseGuidedPromptsReturn {
     (category: IdeaCategory): IdeationPrompt[] => {
       return prompts.filter((p) => p.category === category);
     },
-    [prompts]
+    [prompts],
   );
 
   const getPromptById = useCallback(
     (id: string): IdeationPrompt | undefined => {
       return prompts.find((p) => p.id === id);
     },
-    [prompts]
+    [prompts],
   );
 
   const getCategoryById = useCallback(
     (id: IdeaCategory): PromptCategory | undefined => {
       return categories.find((c) => c.id === id);
     },
-    [categories]
+    [categories],
   );
 
   // Convert async refetch to match the expected interface

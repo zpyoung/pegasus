@@ -76,7 +76,12 @@
 /* Theme-specific overrides */
 
 .tokyonight .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #7aa2f7 0%, #bb9af7 50%, #7aa2f7 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #7aa2f7 0%,
+    #bb9af7 50%,
+    #7aa2f7 100%
+  );
 }
 
 .tokyonight .animated-outline-inner {
@@ -84,7 +89,9 @@
   color: #7aa2f7 !important;
 }
 
-.tokyonight [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.tokyonight
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.22 0.04 260) !important;
   color: #bb9af7 !important;
 }

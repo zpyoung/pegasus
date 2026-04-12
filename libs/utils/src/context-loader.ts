@@ -13,8 +13,8 @@
  * gotchas, and patterns that should inform future work.
  */
 
-import path from 'path';
-import { secureFs } from '@pegasus/platform';
+import path from "path";
+import { secureFs } from "@pegasus/platform";
 import {
   getMemoryDir,
   parseFrontmatter,
@@ -25,7 +25,7 @@ import {
   incrementUsageStat,
   type MemoryFsModule,
   type MemoryMetadata,
-} from './memory-loader.js';
+} from "./memory-loader.js";
 
 /**
  * Metadata structure for context files
@@ -72,10 +72,16 @@ export interface ContextFilesResult {
 export interface ContextFsModule {
   access: (path: string) => Promise<void>;
   readdir: (path: string) => Promise<string[]>;
-  readFile: (path: string, encoding?: BufferEncoding) => Promise<string | Buffer>;
+  readFile: (
+    path: string,
+    encoding?: BufferEncoding,
+  ) => Promise<string | Buffer>;
   // Write methods needed for memory operations
   writeFile: (path: string, content: string) => Promise<void>;
-  mkdir: (path: string, options?: { recursive?: boolean }) => Promise<string | undefined>;
+  mkdir: (
+    path: string,
+    options?: { recursive?: boolean },
+  ) => Promise<string | undefined>;
   appendFile: (path: string, content: string) => Promise<void>;
 }
 
@@ -113,7 +119,7 @@ export interface LoadContextFilesOptions {
  * Get the context directory path for a project
  */
 function getContextDir(projectPath: string): string {
-  return path.join(projectPath, '.pegasus', 'context');
+  return path.join(projectPath, ".pegasus", "context");
 }
 
 /**
@@ -121,11 +127,11 @@ function getContextDir(projectPath: string): string {
  */
 async function loadContextMetadata(
   contextDir: string,
-  fsModule: ContextFsModule
+  fsModule: ContextFsModule,
 ): Promise<ContextMetadata> {
-  const metadataPath = path.join(contextDir, 'context-metadata.json');
+  const metadataPath = path.join(contextDir, "context-metadata.json");
   try {
-    const content = await fsModule.readFile(metadataPath, 'utf-8');
+    const content = await fsModule.readFile(metadataPath, "utf-8");
     return JSON.parse(content as string);
   } catch {
     // Metadata file doesn't exist yet - that's fine
@@ -140,7 +146,7 @@ function formatContextFileEntry(file: ContextFileInfo): string {
   const header = `## ${file.name}`;
   const pathInfo = `**Path:** \`${file.path}\``;
 
-  let descriptionInfo = '';
+  let descriptionInfo = "";
   if (file.description) {
     descriptionInfo = `\n**Purpose:** ${file.description}`;
   }
@@ -153,7 +159,7 @@ function formatContextFileEntry(file: ContextFileInfo): string {
  */
 function buildContextPrompt(files: ContextFileInfo[]): string {
   if (files.length === 0) {
-    return '';
+    return "";
   }
 
   const formattedFiles = files.map(formatContextFileEntry);
@@ -171,7 +177,7 @@ If you need more details about a context file, you can read the full file at the
 
 ---
 
-${formattedFiles.join('\n\n---\n\n')}
+${formattedFiles.join("\n\n---\n\n")}
 
 ---
 
@@ -207,7 +213,7 @@ ${formattedFiles.join('\n\n---\n\n')}
  * ```
  */
 export async function loadContextFiles(
-  options: LoadContextFilesOptions
+  options: LoadContextFilesOptions,
 ): Promise<ContextFilesResult> {
   const {
     projectPath,
@@ -235,7 +241,10 @@ export async function loadContextFiles(
       // Filter for text-based context files (case-insensitive for cross-platform)
       const textFiles = allFiles.filter((f) => {
         const lower = f.toLowerCase();
-        return (lower.endsWith('.md') || lower.endsWith('.txt')) && f !== 'context-metadata.json';
+        return (
+          (lower.endsWith(".md") || lower.endsWith(".txt")) &&
+          f !== "context-metadata.json"
+        );
       });
 
       if (textFiles.length > 0) {
@@ -246,7 +255,7 @@ export async function loadContextFiles(
         for (const fileName of textFiles) {
           const filePath = path.join(contextDir, fileName);
           try {
-            const content = await fsModule.readFile(filePath, 'utf-8');
+            const content = await fsModule.readFile(filePath, "utf-8");
             files.push({
               name: fileName,
               path: filePath,
@@ -254,7 +263,10 @@ export async function loadContextFiles(
               description: metadata.files[fileName]?.description,
             });
           } catch (error) {
-            console.warn(`[ContextLoader] Failed to read context file ${fileName}:`, error);
+            console.warn(
+              `[ContextLoader] Failed to read context file ${fileName}:`,
+              error,
+            );
           }
         }
       }
@@ -283,12 +295,14 @@ export async function loadContextFiles(
       // Filter for markdown memory files (except _index.md, case-insensitive)
       const memoryMdFiles = allMemoryFiles.filter((f) => {
         const lower = f.toLowerCase();
-        return lower.endsWith('.md') && lower !== '_index.md';
+        return lower.endsWith(".md") && lower !== "_index.md";
       });
 
       // Extract terms from task context for matching
       const taskTerms = taskContext
-        ? extractTerms(taskContext.title + ' ' + (taskContext.description || ''))
+        ? extractTerms(
+            taskContext.title + " " + (taskContext.description || ""),
+          )
         : [];
 
       // Score and load memory files
@@ -303,7 +317,7 @@ export async function loadContextFiles(
       for (const fileName of memoryMdFiles) {
         const filePath = path.join(memoryDir, fileName);
         try {
-          const rawContent = await fsModule.readFile(filePath, 'utf-8');
+          const rawContent = await fsModule.readFile(filePath, "utf-8");
           const { metadata, body } = parseFrontmatter(rawContent as string);
 
           // Skip empty files
@@ -315,13 +329,14 @@ export async function loadContextFiles(
           if (taskTerms.length > 0) {
             // Match task terms against file metadata
             const tagScore = countMatches(metadata.tags, taskTerms) * 3;
-            const relevantToScore = countMatches(metadata.relevantTo, taskTerms) * 2;
+            const relevantToScore =
+              countMatches(metadata.relevantTo, taskTerms) * 2;
             const summaryTerms = extractTerms(metadata.summary);
             const summaryScore = countMatches(summaryTerms, taskTerms);
             // Split category name on hyphens/underscores for better matching
             // e.g., "authentication-decisions" matches "authentication"
             const categoryTerms = fileName
-              .replace('.md', '')
+              .replace(".md", "")
               .split(/[-_]/)
               .filter((t) => t.length > 2);
             const categoryScore = countMatches(categoryTerms, taskTerms) * 4;
@@ -340,7 +355,10 @@ export async function loadContextFiles(
 
           scoredFiles.push({ fileName, filePath, body, metadata, score });
         } catch (error) {
-          console.warn(`[ContextLoader] Failed to read memory file ${fileName}:`, error);
+          console.warn(
+            `[ContextLoader] Failed to read memory file ${fileName}:`,
+            error,
+          );
         }
       }
 
@@ -356,14 +374,19 @@ export async function loadContextFiles(
       // Skip selection if maxMemoryFiles is 0
       if (maxMemoryFiles > 0) {
         // Always include gotchas.md
-        const gotchasFile = scoredFiles.find((f) => f.fileName === 'gotchas.md');
+        const gotchasFile = scoredFiles.find(
+          (f) => f.fileName === "gotchas.md",
+        );
         if (gotchasFile) {
-          selectedFiles.add('gotchas.md');
+          selectedFiles.add("gotchas.md");
         }
 
         // Add high-importance files
         for (const file of scoredFiles) {
-          if (file.metadata.importance >= 0.9 && selectedFiles.size < maxMemoryFiles) {
+          if (
+            file.metadata.importance >= 0.9 &&
+            selectedFiles.size < maxMemoryFiles
+          ) {
             selectedFiles.add(file.fileName);
           }
         }
@@ -385,13 +408,17 @@ export async function loadContextFiles(
             name: file.fileName,
             path: file.filePath,
             content: file.body,
-            category: file.fileName.replace('.md', ''),
+            category: file.fileName.replace(".md", ""),
           });
 
           // Increment the 'loaded' stat for this file (CRITICAL FIX)
           // This makes calculateUsageScore work correctly
           try {
-            await incrementUsageStat(file.filePath, 'loaded', fsModule as MemoryFsModule);
+            await incrementUsageStat(
+              file.filePath,
+              "loaded",
+              fsModule as MemoryFsModule,
+            );
           } catch {
             // Non-critical - continue even if stat update fails
           }
@@ -399,7 +426,7 @@ export async function loadContextFiles(
       }
 
       if (memoryFiles.length > 0) {
-        const selectedNames = memoryFiles.map((f) => f.category).join(', ');
+        const selectedNames = memoryFiles.map((f) => f.category).join(", ");
         console.log(`[ContextLoader] Selected memory files: ${selectedNames}`);
       }
     } catch {
@@ -410,7 +437,9 @@ export async function loadContextFiles(
   // Build combined prompt
   const contextPrompt = buildContextPrompt(files);
   const memoryPrompt = buildMemoryPrompt(memoryFiles);
-  const formattedPrompt = [contextPrompt, memoryPrompt].filter(Boolean).join('\n\n');
+  const formattedPrompt = [contextPrompt, memoryPrompt]
+    .filter(Boolean)
+    .join("\n\n");
 
   const loadedItems = [];
   if (files.length > 0) {
@@ -420,7 +449,7 @@ export async function loadContextFiles(
     loadedItems.push(`${memoryFiles.length} memory file(s)`);
   }
   if (loadedItems.length > 0) {
-    console.log(`[ContextLoader] Loaded ${loadedItems.join(' and ')}`);
+    console.log(`[ContextLoader] Loaded ${loadedItems.join(" and ")}`);
   }
 
   return { files, memoryFiles, formattedPrompt };
@@ -431,7 +460,7 @@ export async function loadContextFiles(
  */
 function buildMemoryPrompt(memoryFiles: MemoryFileInfo[]): string {
   if (memoryFiles.length === 0) {
-    return '';
+    return "";
   }
 
   const sections = memoryFiles.map((file) => {
@@ -447,7 +476,7 @@ The following learnings and decisions from previous work are available.
 
 ---
 
-${sections.join('\n\n---\n\n')}
+${sections.join("\n\n---\n\n")}
 
 ---
 `;
@@ -459,7 +488,7 @@ ${sections.join('\n\n---\n\n')}
  * loading full content.
  */
 export async function getContextFilesSummary(
-  options: LoadContextFilesOptions
+  options: LoadContextFilesOptions,
 ): Promise<Array<{ name: string; path: string; description?: string }>> {
   const { projectPath, fsModule = secureFs } = options;
   const contextDir = path.resolve(getContextDir(projectPath));
@@ -470,7 +499,10 @@ export async function getContextFilesSummary(
 
     const textFiles = allFiles.filter((f) => {
       const lower = f.toLowerCase();
-      return (lower.endsWith('.md') || lower.endsWith('.txt')) && f !== 'context-metadata.json';
+      return (
+        (lower.endsWith(".md") || lower.endsWith(".txt")) &&
+        f !== "context-metadata.json"
+      );
     });
 
     if (textFiles.length === 0) {

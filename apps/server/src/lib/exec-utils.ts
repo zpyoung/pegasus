@@ -5,20 +5,20 @@
  * Used by both route handlers and service layers.
  */
 
-import { createLogger } from '@pegasus/utils';
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('ExecUtils');
+const logger = createLogger("ExecUtils");
 
 // Extended PATH to include common tool installation locations
 export const extendedPath = [
   process.env.PATH,
-  '/opt/homebrew/bin',
-  '/usr/local/bin',
-  '/home/linuxbrew/.linuxbrew/bin',
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+  "/home/linuxbrew/.linuxbrew/bin",
   `${process.env.HOME}/.local/bin`,
 ]
   .filter(Boolean)
-  .join(':');
+  .join(":");
 
 export const execEnv = {
   ...process.env,

@@ -5,23 +5,25 @@
  * These routes handle only HTTP control plane calls.
  */
 
-import { Router } from 'express';
-import type { QuestionHelperService } from '../../services/question-helper-service.js';
-import { validatePathParams } from '../../middleware/validate-paths.js';
-import { createSendMessageHandler } from './routes/send-message.js';
-import { createEndSessionHandler } from './routes/end-session.js';
-import { createGetHistoryHandler } from './routes/get-history.js';
+import { Router } from "express";
+import type { QuestionHelperService } from "../../services/question-helper-service.js";
+import { validatePathParams } from "../../middleware/validate-paths.js";
+import { createSendMessageHandler } from "./routes/send-message.js";
+import { createEndSessionHandler } from "./routes/end-session.js";
+import { createGetHistoryHandler } from "./routes/get-history.js";
 
-export function createQuestionHelperRoutes(helperService: QuestionHelperService): Router {
+export function createQuestionHelperRoutes(
+  helperService: QuestionHelperService,
+): Router {
   const router = Router();
 
   router.post(
-    '/send-message',
-    validatePathParams('projectPath'),
-    createSendMessageHandler(helperService)
+    "/send-message",
+    validatePathParams("projectPath"),
+    createSendMessageHandler(helperService),
   );
-  router.post('/end-session', createEndSessionHandler(helperService));
-  router.get('/history/:featureId', createGetHistoryHandler(helperService));
+  router.post("/end-session", createEndSessionHandler(helperService));
+  router.get("/history/:featureId", createGetHistoryHandler(helperService));
 
   return router;
 }

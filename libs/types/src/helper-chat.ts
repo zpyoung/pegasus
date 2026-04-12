@@ -6,13 +6,13 @@
  */
 
 export type HelperChatPayload =
-  | { kind: 'started'; sessionId: string }
-  | { kind: 'delta'; text: string }
-  | { kind: 'tool_call'; toolName: string; toolId: string; input: string }
-  | { kind: 'tool_complete'; toolId: string }
-  | { kind: 'complete' }
-  | { kind: 'error'; message: string }
-  | { kind: 'session_terminated' };
+  | { kind: "started"; sessionId: string }
+  | { kind: "delta"; text: string }
+  | { kind: "tool_call"; toolName: string; toolId: string; input: string }
+  | { kind: "tool_complete"; toolId: string }
+  | { kind: "complete" }
+  | { kind: "error"; message: string }
+  | { kind: "session_terminated" };
 
 export interface HelperChatEvent {
   featureId: string;

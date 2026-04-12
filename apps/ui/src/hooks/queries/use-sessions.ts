@@ -4,11 +4,11 @@
  * React Query hooks for fetching session data.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import type { SessionListItem } from '@/types/electron';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import type { SessionListItem } from "@/types/electron";
 
 /**
  * Fetch all sessions
@@ -27,11 +27,11 @@ export function useSessions(includeArchived = false) {
     queryFn: async (): Promise<SessionListItem[]> => {
       const api = getElectronAPI();
       if (!api.sessions) {
-        throw new Error('Sessions API not available');
+        throw new Error("Sessions API not available");
       }
       const result = await api.sessions.list(includeArchived);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch sessions');
+        throw new Error(result.error || "Failed to fetch sessions");
       }
       return result.sessions ?? [];
     },
@@ -47,16 +47,16 @@ export function useSessions(includeArchived = false) {
  */
 export function useSessionHistory(sessionId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.sessions.history(sessionId ?? ''),
+    queryKey: queryKeys.sessions.history(sessionId ?? ""),
     queryFn: async () => {
-      if (!sessionId) throw new Error('No session ID');
+      if (!sessionId) throw new Error("No session ID");
       const api = getElectronAPI();
       if (!api.agent) {
-        throw new Error('Agent API not available');
+        throw new Error("Agent API not available");
       }
       const result = await api.agent.getHistory(sessionId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch session history');
+        throw new Error(result.error || "Failed to fetch session history");
       }
       return {
         messages: result.messages ?? [],
@@ -76,16 +76,16 @@ export function useSessionHistory(sessionId: string | undefined) {
  */
 export function useSessionQueue(sessionId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.sessions.queue(sessionId ?? ''),
+    queryKey: queryKeys.sessions.queue(sessionId ?? ""),
     queryFn: async () => {
-      if (!sessionId) throw new Error('No session ID');
+      if (!sessionId) throw new Error("No session ID");
       const api = getElectronAPI();
       if (!api.agent) {
-        throw new Error('Agent API not available');
+        throw new Error("Agent API not available");
       }
       const result = await api.agent.queueList(sessionId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch queue');
+        throw new Error(result.error || "Failed to fetch queue");
       }
       return result.queue ?? [];
     },

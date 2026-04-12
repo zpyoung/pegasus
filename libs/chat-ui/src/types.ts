@@ -1,6 +1,6 @@
-import type { ReactNode, RefObject } from 'react';
+import type { ReactNode, RefObject } from "react";
 
-export type ChatRole = 'user' | 'assistant' | 'tool' | 'system';
+export type ChatRole = "user" | "assistant" | "tool" | "system";
 
 export interface ChatMessage {
   id: string;
@@ -9,29 +9,29 @@ export interface ChatMessage {
   toolName?: string;
   toolInput?: string;
   toolId?: string;
-  toolStatus?: 'running' | 'completed' | 'error';
+  toolStatus?: "running" | "completed" | "error";
   timestamp: number;
   metadata?: Record<string, unknown>;
 }
 
 export type ChatStreamEvent =
-  | { type: 'started' }
-  | { type: 'text_chunk'; text: string }
-  | { type: 'tool_call'; toolName: string; toolId: string; input: string }
-  | { type: 'tool_complete'; toolId: string }
-  | { type: 'message_complete' }
-  | { type: 'error'; message: string };
+  | { type: "started" }
+  | { type: "text_chunk"; text: string }
+  | { type: "tool_call"; toolName: string; toolId: string; input: string }
+  | { type: "tool_complete"; toolId: string }
+  | { type: "message_complete" }
+  | { type: "error"; message: string };
 
 export interface ChatTransport {
   sendMessage(text: string): Promise<void>;
   subscribeStream(handler: (event: ChatStreamEvent) => void): () => void;
 }
 
-export type ChatStatus = 'idle' | 'streaming' | 'error';
+export type ChatStatus = "idle" | "streaming" | "error";
 
 export type GroupedItem =
-  | { type: 'message'; message: ChatMessage }
-  | { type: 'tool_group'; messages: ChatMessage[] };
+  | { type: "message"; message: ChatMessage }
+  | { type: "tool_group"; messages: ChatMessage[] };
 
 export interface ChatPanelProps {
   transport: ChatTransport;

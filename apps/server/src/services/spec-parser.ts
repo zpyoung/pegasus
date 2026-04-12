@@ -5,7 +5,7 @@
  * and extracts summary content from various formats.
  */
 
-import type { ParsedTask } from '@pegasus/types';
+import type { ParsedTask } from "@pegasus/types";
 
 /**
  * Parse a single task line
@@ -13,7 +13,9 @@ import type { ParsedTask } from '@pegasus/types';
  */
 function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
   // Match pattern: - [ ] T###: Description | File: path
-  const taskMatch = line.match(/- \[ \] (T\d{3}):\s*([^|]+)(?:\|\s*File:\s*(.+))?$/);
+  const taskMatch = line.match(
+    /- \[ \] (T\d{3}):\s*([^|]+)(?:\|\s*File:\s*(.+))?$/,
+  );
   if (!taskMatch) {
     // Try simpler pattern without file
     const simpleMatch = line.match(/- \[ \] (T\d{3}):\s*(.+)$/);
@@ -22,7 +24,7 @@ function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
         id: simpleMatch[1],
         description: simpleMatch[2].trim(),
         phase: currentPhase,
-        status: 'pending',
+        status: "pending",
       };
     }
     return null;
@@ -33,7 +35,7 @@ function parseTaskLine(line: string, currentPhase?: string): ParsedTask | null {
     description: taskMatch[2].trim(),
     filePath: taskMatch[3]?.trim(),
     phase: currentPhase,
-    status: 'pending',
+    status: "pending",
   };
 }
 
@@ -65,7 +67,7 @@ export function parseTasksFromSpec(specContent: string): ParsedTask[] {
   }
 
   const tasksContent = tasksBlockMatch[1];
-  const lines = tasksContent.split('\n');
+  const lines = tasksContent.split("\n");
 
   let currentPhase: string | undefined;
 
@@ -80,7 +82,7 @@ export function parseTasksFromSpec(specContent: string): ParsedTask[] {
     }
 
     // Check for task line
-    if (trimmedLine.startsWith('- [ ]')) {
+    if (trimmedLine.startsWith("- [ ]")) {
       const parsed = parseTaskLine(trimmedLine, currentPhase);
       if (parsed) {
         tasks.push(parsed);
@@ -104,7 +106,9 @@ export function detectTaskStartMarker(text: string): string | null {
  * Detect [TASK_COMPLETE] marker in text and extract task ID and summary
  * Format: [TASK_COMPLETE] T###: Brief summary
  */
-export function detectTaskCompleteMarker(text: string): { id: string; summary?: string } | null {
+export function detectTaskCompleteMarker(
+  text: string,
+): { id: string; summary?: string } | null {
   // Use a regex that captures the summary until newline or next task marker
   // Allow brackets in summary content (e.g., "supports array[index] access")
   // Pattern breakdown:
@@ -113,14 +117,16 @@ export function detectTaskCompleteMarker(text: string): { id: string; summary?: 
   // - (?::\s*([^\n\[]+))? - Optionally capture summary (stops at newline or bracket)
   // - But we want to allow brackets in summary, so we use a different approach:
   // - Match summary until newline, then trim any trailing markers in post-processing
-  const match = text.match(/\[TASK_COMPLETE\]\s*(T\d{3})(?::\s*(.+?))?(?=\n|$)/i);
+  const match = text.match(
+    /\[TASK_COMPLETE\]\s*(T\d{3})(?::\s*(.+?))?(?=\n|$)/i,
+  );
   if (!match) return null;
 
   // Post-process: remove trailing task markers from summary if present
   let summary = match[2]?.trim();
   if (summary) {
     // Remove trailing content that looks like another marker
-    summary = summary.replace(/\s*\[TASK_[A-Z_]+\].*$/i, '').trim();
+    summary = summary.replace(/\s*\[TASK_[A-Z_]+\].*$/i, "").trim();
   }
 
   return {
@@ -160,7 +166,9 @@ export function detectSpecFallback(text: string): boolean {
   // Additional patterns for different model outputs
   const hasGoal = /\*\*Goal\*\*:/i.test(text);
   const hasSolution = /\*\*Solution\*\*:/i.test(text);
-  const hasImplementation = /implementation\s*(plan|steps|approach)/i.test(text);
+  const hasImplementation = /implementation\s*(plan|steps|approach)/i.test(
+    text,
+  );
   const hasOverview = /##\s*(overview|summary)/i.test(text);
 
   // Spec is detected if we have task structure AND at least some spec content
@@ -197,11 +205,15 @@ export function extractSummary(text: string): string | null {
   // Helper to truncate content to first paragraph with max length
   const truncate = (content: string, maxLength: number): string => {
     const firstPara = content.split(/\n\n/)[0];
-    return firstPara.length > maxLength ? `${firstPara.substring(0, maxLength)}...` : firstPara;
+    return firstPara.length > maxLength
+      ? `${firstPara.substring(0, maxLength)}...`
+      : firstPara;
   };
 
   // Helper to get last match from matchAll results
-  const getLastMatch = (matches: IterableIterator<RegExpMatchArray>): RegExpMatchArray | null => {
+  const getLastMatch = (
+    matches: IterableIterator<RegExpMatchArray>,
+  ): RegExpMatchArray | null => {
     const arr = [...matches];
     return arr.length > 0 ? arr[arr.length - 1] : null;
   };
@@ -216,7 +228,9 @@ export function extractSummary(text: string): string | null {
   // Check for ## Summary section (use last match)
   // Stop at \n## [^#] (same-level headers like "## Changes") but preserve ### subsections
   // (like "### Root Cause", "### Fix Applied") that belong to the summary content.
-  const sectionMatches = text.matchAll(/##\s*Summary\s*\n+([\s\S]*?)(?=\n## [^#]|$)/gi);
+  const sectionMatches = text.matchAll(
+    /##\s*Summary\s*\n+([\s\S]*?)(?=\n## [^#]|$)/gi,
+  );
   const sectionMatch = getLastMatch(sectionMatches);
   if (sectionMatch) {
     const content = sectionMatch[1].trim();
@@ -233,7 +247,7 @@ export function extractSummary(text: string): string | null {
 
   // Check for **Problem**: or **Problem Statement**: section (spec/full modes, use last match)
   const problemMatches = text.matchAll(
-    /\*\*Problem(?:\s*Statement)?\*\*:\s*([\s\S]*?)(?=\n\d+\.|\n\*\*|$)/gi
+    /\*\*Problem(?:\s*Statement)?\*\*:\s*([\s\S]*?)(?=\n\d+\.|\n\*\*|$)/gi,
   );
   const problemMatch = getLastMatch(problemMatches);
   if (problemMatch) {
@@ -241,7 +255,9 @@ export function extractSummary(text: string): string | null {
   }
 
   // Check for **Solution**: section as fallback (use last match)
-  const solutionMatches = text.matchAll(/\*\*Solution\*\*:\s*([\s\S]*?)(?=\n\d+\.|\n\*\*|$)/gi);
+  const solutionMatches = text.matchAll(
+    /\*\*Solution\*\*:\s*([\s\S]*?)(?=\n\d+\.|\n\*\*|$)/gi,
+  );
   const solutionMatch = getLastMatch(solutionMatches);
   if (solutionMatch) {
     return truncate(solutionMatch[1].trim(), 300);

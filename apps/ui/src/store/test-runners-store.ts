@@ -2,8 +2,8 @@
  * Test Runners Store - State management for test runner sessions
  */
 
-import { create } from 'zustand';
-import type { TestRunStatus } from '@/types/electron';
+import { create } from "zustand";
+import type { TestRunStatus } from "@/types/electron";
 
 // ============================================================================
 // Types
@@ -56,7 +56,7 @@ interface TestRunnersState {
 
 interface TestRunnersActions {
   /** Add or update a session when a test run starts */
-  startSession: (session: Omit<TestSession, 'output'>) => void;
+  startSession: (session: Omit<TestSession, "output">) => void;
 
   /** Append output to a session */
   appendOutput: (sessionId: string, content: string) => void;
@@ -66,7 +66,7 @@ interface TestRunnersActions {
     sessionId: string,
     status: TestRunStatus,
     exitCode: number | null,
-    duration: number
+    duration: number,
   ) => void;
 
   /** Get the active session for a worktree */
@@ -109,13 +109,15 @@ const initialState: TestRunnersState = {
 // Store
 // ============================================================================
 
-export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>((set, get) => ({
+export const useTestRunnersStore = create<
+  TestRunnersState & TestRunnersActions
+>((set, get) => ({
   ...initialState,
 
   startSession: (session) => {
     const newSession: TestSession = {
       ...session,
-      output: '',
+      output: "",
     };
 
     set((state) => ({
@@ -155,7 +157,8 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
       const finishedAt = new Date().toISOString();
 
       // Remove from active sessions since it's no longer running
-      const { [session.worktreePath]: _, ...remainingActive } = state.activeSessionByWorktree;
+      const { [session.worktreePath]: _, ...remainingActive } =
+        state.activeSessionByWorktree;
 
       return {
         sessions: {
@@ -193,7 +196,7 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
     const sessionId = state.activeSessionByWorktree[worktreePath];
     if (!sessionId) return false;
     const session = state.sessions[sessionId];
-    return session?.status === 'running' || session?.status === 'pending';
+    return session?.status === "running" || session?.status === "pending";
   },
 
   removeSession: (sessionId) => {
@@ -210,7 +213,9 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
       return {
         sessions: remainingSessions,
         activeSessionByWorktree:
-          activeId === sessionId ? remainingActive : state.activeSessionByWorktree,
+          activeId === sessionId
+            ? remainingActive
+            : state.activeSessionByWorktree,
       };
     });
   },
@@ -229,7 +234,8 @@ export const useTestRunnersStore = create<TestRunnersState & TestRunnersActions>
       });
 
       // Remove from active
-      const { [worktreePath]: _, ...remainingActive } = state.activeSessionByWorktree;
+      const { [worktreePath]: _, ...remainingActive } =
+        state.activeSessionByWorktree;
 
       return {
         sessions: remainingSessions,

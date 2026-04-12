@@ -1,6 +1,6 @@
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FlaskConical } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FlaskConical } from "lucide-react";
 
 interface TestingTabContentProps {
   skipTests: boolean;
@@ -11,9 +11,9 @@ interface TestingTabContentProps {
 export function TestingTabContent({
   skipTests,
   onSkipTestsChange,
-  testIdPrefix = '',
+  testIdPrefix = "",
 }: TestingTabContentProps) {
-  const checkboxId = testIdPrefix ? `${testIdPrefix}-skip-tests` : 'skip-tests';
+  const checkboxId = testIdPrefix ? `${testIdPrefix}-skip-tests` : "skip-tests";
 
   return (
     <div className="space-y-4">
@@ -22,7 +22,7 @@ export function TestingTabContent({
           id={checkboxId}
           checked={!skipTests}
           onCheckedChange={(checked) => onSkipTestsChange(checked !== true)}
-          data-testid={`${testIdPrefix ? testIdPrefix + '-' : ''}skip-tests-checkbox`}
+          data-testid={`${testIdPrefix ? testIdPrefix + "-" : ""}skip-tests-checkbox`}
         />
         <div className="flex items-center gap-2">
           <Label htmlFor={checkboxId} className="text-sm cursor-pointer">
@@ -32,8 +32,9 @@ export function TestingTabContent({
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        When enabled, the agent will use Playwright to verify the feature works correctly before
-        marking it as verified. When disabled, manual verification will be required.
+        When enabled, the agent will use Playwright to verify the feature works
+        correctly before marking it as verified. When disabled, manual
+        verification will be required.
       </p>
     </div>
   );

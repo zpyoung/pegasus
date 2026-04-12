@@ -1,9 +1,20 @@
-import { memo, useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
-import { Check, Copy } from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { writeToClipboard } from '@/lib/clipboard-utils';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
+import { Check, Copy } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { writeToClipboard } from "@/lib/clipboard-utils";
 
 interface TaskIdCopyProps {
   taskId: string;
@@ -11,19 +22,21 @@ interface TaskIdCopyProps {
   compact?: boolean;
 }
 
-async function copyTaskId(taskId: string): Promise<{ ok: boolean; denied: boolean }> {
+async function copyTaskId(
+  taskId: string,
+): Promise<{ ok: boolean; denied: boolean }> {
   if (
-    typeof window !== 'undefined' &&
+    typeof window !== "undefined" &&
     window.isSecureContext &&
-    typeof navigator !== 'undefined' &&
+    typeof navigator !== "undefined" &&
     navigator.clipboard &&
-    typeof navigator.clipboard.writeText === 'function'
+    typeof navigator.clipboard.writeText === "function"
   ) {
     try {
       await navigator.clipboard.writeText(taskId);
       return { ok: true, denied: false };
     } catch (error) {
-      if (error instanceof Error && error.name === 'NotAllowedError') {
+      if (error instanceof Error && error.name === "NotAllowedError") {
         const fallbackOk = await writeToClipboard(taskId);
         return { ok: fallbackOk, denied: !fallbackOk };
       }
@@ -65,17 +78,20 @@ export const TaskIdCopy = memo(function TaskIdCopy({
           setCopied(false);
           resetTimeoutRef.current = null;
         }, 1500);
-        toast.success('Task ID copied', { description: taskId });
+        toast.success("Task ID copied", { description: taskId });
         return;
       }
 
-      toast.error(result.denied ? 'Clipboard access denied' : 'Failed to copy task ID', {
-        description: result.denied
-          ? 'Allow clipboard access in your browser, then try again.'
-          : 'Your browser could not copy the task ID.',
-      });
+      toast.error(
+        result.denied ? "Clipboard access denied" : "Failed to copy task ID",
+        {
+          description: result.denied
+            ? "Allow clipboard access in your browser, then try again."
+            : "Your browser could not copy the task ID.",
+        },
+      );
     },
-    [taskId]
+    [taskId],
   );
 
   return (
@@ -86,10 +102,10 @@ export const TaskIdCopy = memo(function TaskIdCopy({
           onClick={handleCopy}
           onPointerDown={(event) => event.stopPropagation()}
           className={cn(
-            'group inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-left transition-colors',
-            'hover:border-primary/40 hover:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-            compact ? 'text-[10px]' : 'text-[11px]',
-            className
+            "group inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-left transition-colors",
+            "hover:border-primary/40 hover:bg-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            compact ? "text-[10px]" : "text-[11px]",
+            className,
           )}
           aria-label={`Copy task ID ${taskId}`}
           data-testid={`copy-task-id-${taskId}`}
@@ -109,7 +125,9 @@ export const TaskIdCopy = memo(function TaskIdCopy({
           )}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top">{copied ? 'Copied' : 'Copy task ID'}</TooltipContent>
+      <TooltipContent side="top">
+        {copied ? "Copied" : "Copy task ID"}
+      </TooltipContent>
     </Tooltip>
   );
 });

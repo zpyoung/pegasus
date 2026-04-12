@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const logger = createLogger('SessionManager');
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+const logger = createLogger("SessionManager");
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   MessageSquare,
@@ -17,69 +17,69 @@ import {
   Check,
   X,
   ArchiveRestore,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn, pathsEqual } from '@/lib/utils';
-import type { SessionListItem } from '@/types/electron';
-import { useKeyboardShortcutsConfig } from '@/hooks/use-keyboard-shortcuts';
-import { getElectronAPI } from '@/lib/electron';
-import { useSessions } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import { DeleteSessionDialog } from '@/components/dialogs/delete-session-dialog';
-import { DeleteAllArchivedSessionsDialog } from '@/components/dialogs/delete-all-archived-sessions-dialog';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn, pathsEqual } from "@/lib/utils";
+import type { SessionListItem } from "@/types/electron";
+import { useKeyboardShortcutsConfig } from "@/hooks/use-keyboard-shortcuts";
+import { getElectronAPI } from "@/lib/electron";
+import { useSessions } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import { DeleteSessionDialog } from "@/components/dialogs/delete-session-dialog";
+import { DeleteAllArchivedSessionsDialog } from "@/components/dialogs/delete-all-archived-sessions-dialog";
 
 // Random session name generator
 const adjectives = [
-  'Swift',
-  'Bright',
-  'Clever',
-  'Dynamic',
-  'Eager',
-  'Focused',
-  'Gentle',
-  'Happy',
-  'Inventive',
-  'Jolly',
-  'Keen',
-  'Lively',
-  'Mighty',
-  'Noble',
-  'Optimal',
-  'Peaceful',
-  'Quick',
-  'Radiant',
-  'Smart',
-  'Tranquil',
-  'Unique',
-  'Vibrant',
-  'Wise',
-  'Zealous',
+  "Swift",
+  "Bright",
+  "Clever",
+  "Dynamic",
+  "Eager",
+  "Focused",
+  "Gentle",
+  "Happy",
+  "Inventive",
+  "Jolly",
+  "Keen",
+  "Lively",
+  "Mighty",
+  "Noble",
+  "Optimal",
+  "Peaceful",
+  "Quick",
+  "Radiant",
+  "Smart",
+  "Tranquil",
+  "Unique",
+  "Vibrant",
+  "Wise",
+  "Zealous",
 ];
 
 const nouns = [
-  'Agent',
-  'Builder',
-  'Coder',
-  'Developer',
-  'Explorer',
-  'Forge',
-  'Garden',
-  'Helper',
-  'Innovator',
-  'Journey',
-  'Kernel',
-  'Lighthouse',
-  'Mission',
-  'Navigator',
-  'Oracle',
-  'Project',
-  'Quest',
-  'Runner',
-  'Spark',
-  'Task',
-  'Unicorn',
-  'Voyage',
-  'Workshop',
+  "Agent",
+  "Builder",
+  "Coder",
+  "Developer",
+  "Explorer",
+  "Forge",
+  "Garden",
+  "Helper",
+  "Innovator",
+  "Journey",
+  "Kernel",
+  "Lighthouse",
+  "Mission",
+  "Navigator",
+  "Oracle",
+  "Project",
+  "Quest",
+  "Runner",
+  "Spark",
+  "Task",
+  "Unicorn",
+  "Voyage",
+  "Workshop",
 ];
 
 function generateRandomSessionName(): string {
@@ -108,15 +108,19 @@ export function SessionManager({
 }: SessionManagerProps) {
   const shortcuts = useKeyboardShortcutsConfig();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
+  const [editingName, setEditingName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [newSessionName, setNewSessionName] = useState('');
-  const [runningSessions, setRunningSessions] = useState<Set<string>>(new Set());
+  const [newSessionName, setNewSessionName] = useState("");
+  const [runningSessions, setRunningSessions] = useState<Set<string>>(
+    new Set(),
+  );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<SessionListItem | null>(null);
-  const [isDeleteAllArchivedDialogOpen, setIsDeleteAllArchivedDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] =
+    useState<SessionListItem | null>(null);
+  const [isDeleteAllArchivedDialogOpen, setIsDeleteAllArchivedDialogOpen] =
+    useState(false);
 
   // Use React Query for sessions list - always include archived, filter client-side
   const { data: sessions = [], refetch: refetchSessions } = useSessions(true);
@@ -125,31 +129,36 @@ export function SessionManager({
   const hasCheckedInitialRef = useRef(false);
 
   // Check running state for all sessions
-  const checkRunningSessions = useCallback(async (sessionList: SessionListItem[]) => {
-    const api = getElectronAPI();
-    if (!api?.agent) return;
+  const checkRunningSessions = useCallback(
+    async (sessionList: SessionListItem[]) => {
+      const api = getElectronAPI();
+      if (!api?.agent) return;
 
-    const runningIds = new Set<string>();
+      const runningIds = new Set<string>();
 
-    // Check each session's running state
-    for (const session of sessionList) {
-      try {
-        const result = await api.agent.getHistory(session.id);
-        if (result.success && result.isRunning) {
-          runningIds.add(session.id);
+      // Check each session's running state
+      for (const session of sessionList) {
+        try {
+          const result = await api.agent.getHistory(session.id);
+          if (result.success && result.isRunning) {
+            runningIds.add(session.id);
+          }
+        } catch (err) {
+          // Ignore errors for individual session checks
+          logger.warn(`Failed to check running state for ${session.id}:`, err);
         }
-      } catch (err) {
-        // Ignore errors for individual session checks
-        logger.warn(`Failed to check running state for ${session.id}:`, err);
       }
-    }
 
-    setRunningSessions(runningIds);
-  }, []);
+      setRunningSessions(runningIds);
+    },
+    [],
+  );
 
   // Helper to invalidate sessions cache and refetch
   const invalidateSessions = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all(true) });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.sessions.all(true),
+    });
     // Also check running state after invalidation
     const result = await refetchSessions();
     if (result.data) {
@@ -178,7 +187,12 @@ export function SessionManager({
     }, 3000); // Check every 3 seconds
 
     return () => clearInterval(interval);
-  }, [sessions, runningSessions.size, isCurrentSessionThinking, checkRunningSessions]);
+  }, [
+    sessions,
+    runningSessions.size,
+    isCurrentSessionThinking,
+    checkRunningSessions,
+  ]);
 
   // Effective working directory for session creation (worktree path or project path)
   const effectiveWorkingDirectory = workingDirectory || projectPath;
@@ -190,10 +204,14 @@ export function SessionManager({
 
     const sessionName = newSessionName.trim() || generateRandomSessionName();
 
-    const result = await api.sessions.create(sessionName, projectPath, effectiveWorkingDirectory);
+    const result = await api.sessions.create(
+      sessionName,
+      projectPath,
+      effectiveWorkingDirectory,
+    );
 
     if (result.success && result.session?.id) {
-      setNewSessionName('');
+      setNewSessionName("");
       setIsCreating(false);
       // Select the new session immediately before invalidating the cache to avoid
       // a race condition where the cache re-render resets the selected session.
@@ -209,7 +227,11 @@ export function SessionManager({
 
     const sessionName = generateRandomSessionName();
 
-    const result = await api.sessions.create(sessionName, projectPath, effectiveWorkingDirectory);
+    const result = await api.sessions.create(
+      sessionName,
+      projectPath,
+      effectiveWorkingDirectory,
+    );
 
     if (result.success && result.session?.id) {
       // Select the new session immediately before invalidating the cache to avoid
@@ -217,7 +239,12 @@ export function SessionManager({
       onSelectSession(result.session.id);
       await invalidateSessions();
     }
-  }, [effectiveWorkingDirectory, projectPath, invalidateSessions, onSelectSession]);
+  }, [
+    effectiveWorkingDirectory,
+    projectPath,
+    invalidateSessions,
+    onSelectSession,
+  ]);
 
   // Expose the quick create function via ref for keyboard shortcuts
   useEffect(() => {
@@ -240,7 +267,7 @@ export function SessionManager({
 
     if (result.success) {
       setEditingSessionId(null);
-      setEditingName('');
+      setEditingName("");
       await invalidateSessions();
     }
   };
@@ -249,7 +276,7 @@ export function SessionManager({
   const handleArchiveSession = async (sessionId: string) => {
     const api = getElectronAPI();
     if (!api?.sessions) {
-      logger.error('[SessionManager] Sessions API not available');
+      logger.error("[SessionManager] Sessions API not available");
       return;
     }
 
@@ -262,10 +289,10 @@ export function SessionManager({
         }
         await invalidateSessions();
       } else {
-        logger.error('[SessionManager] Archive failed:', result.error);
+        logger.error("[SessionManager] Archive failed:", result.error);
       }
     } catch (error) {
-      logger.error('[SessionManager] Archive error:', error);
+      logger.error("[SessionManager] Archive error:", error);
     }
   };
 
@@ -273,7 +300,7 @@ export function SessionManager({
   const handleUnarchiveSession = async (sessionId: string) => {
     const api = getElectronAPI();
     if (!api?.sessions) {
-      logger.error('[SessionManager] Sessions API not available');
+      logger.error("[SessionManager] Sessions API not available");
       return;
     }
 
@@ -282,10 +309,10 @@ export function SessionManager({
       if (result.success) {
         await invalidateSessions();
       } else {
-        logger.error('[SessionManager] Unarchive failed:', result.error);
+        logger.error("[SessionManager] Unarchive failed:", result.error);
       }
     } catch (error) {
-      logger.error('[SessionManager] Unarchive error:', error);
+      logger.error("[SessionManager] Unarchive error:", error);
     }
   };
 
@@ -346,7 +373,8 @@ export function SessionManager({
 
   const activeSessions = scopedSessions.filter((s) => !s.isArchived);
   const archivedSessions = scopedSessions.filter((s) => s.isArchived);
-  const displayedSessions = activeTab === 'active' ? activeSessions : archivedSessions;
+  const displayedSessions =
+    activeTab === "active" ? activeSessions : archivedSessions;
 
   return (
     <Card className="h-full flex flex-col rounded-none">
@@ -358,8 +386,8 @@ export function SessionManager({
             size="sm"
             onClick={() => {
               // Switch to active tab if on archived tab
-              if (activeTab === 'archived') {
-                setActiveTab('active');
+              if (activeTab === "archived") {
+                setActiveTab("active");
               }
               handleQuickCreateSession();
             }}
@@ -375,7 +403,9 @@ export function SessionManager({
 
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as 'active' | 'archived')}
+          onValueChange={(value) =>
+            setActiveTab(value as "active" | "archived")
+          }
           className="w-full"
         >
           <TabsList className="w-full">
@@ -391,7 +421,10 @@ export function SessionManager({
         </Tabs>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto space-y-2" data-testid="session-list">
+      <CardContent
+        className="flex-1 overflow-y-auto space-y-2"
+        data-testid="session-list"
+      >
         {/* Create new session */}
         {isCreating && (
           <div className="p-3 border rounded-lg bg-muted/50">
@@ -401,10 +434,10 @@ export function SessionManager({
                 value={newSessionName}
                 onChange={(e) => setNewSessionName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateSession();
-                  if (e.key === 'Escape') {
+                  if (e.key === "Enter") handleCreateSession();
+                  if (e.key === "Escape") {
                     setIsCreating(false);
-                    setNewSessionName('');
+                    setNewSessionName("");
                   }
                 }}
                 autoFocus
@@ -417,7 +450,7 @@ export function SessionManager({
                 variant="ghost"
                 onClick={() => {
                   setIsCreating(false);
-                  setNewSessionName('');
+                  setNewSessionName("");
                 }}
               >
                 <X className="w-4 h-4" />
@@ -427,7 +460,7 @@ export function SessionManager({
         )}
 
         {/* Delete All Archived button - shown at the top of archived sessions */}
-        {activeTab === 'archived' && archivedSessions.length > 0 && (
+        {activeTab === "archived" && archivedSessions.length > 0 && (
           <div className="pb-2 border-b mb-2">
             <Button
               variant="destructive"
@@ -447,9 +480,9 @@ export function SessionManager({
           <div
             key={session.id}
             className={cn(
-              'p-3 border rounded-lg cursor-pointer transition-colors hover:bg-accent/50',
-              currentSessionId === session.id && 'bg-primary/10 border-primary',
-              session.isArchived && 'opacity-60'
+              "p-3 border rounded-lg cursor-pointer transition-colors hover:bg-accent/50",
+              currentSessionId === session.id && "bg-primary/10 border-primary",
+              session.isArchived && "opacity-60",
             )}
             onClick={() => !session.isArchived && onSelectSession(session.id)}
             data-testid={`session-item-${session.id}`}
@@ -462,10 +495,10 @@ export function SessionManager({
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRenameSession(session.id);
-                        if (e.key === 'Escape') {
+                        if (e.key === "Enter") handleRenameSession(session.id);
+                        if (e.key === "Escape") {
                           setEditingSessionId(null);
-                          setEditingName('');
+                          setEditingName("");
                         }
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -488,7 +521,7 @@ export function SessionManager({
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingSessionId(null);
-                        setEditingName('');
+                        setEditingName("");
                       }}
                       className="h-7"
                     >
@@ -499,14 +532,16 @@ export function SessionManager({
                   <>
                     <div className="flex items-center gap-2 mb-1">
                       {/* Show loading indicator if this session is running (either current session thinking or any session in runningSessions) */}
-                      {(currentSessionId === session.id && isCurrentSessionThinking) ||
+                      {(currentSessionId === session.id &&
+                        isCurrentSessionThinking) ||
                       runningSessions.has(session.id) ? (
                         <Spinner size="sm" className="shrink-0" />
                       ) : (
                         <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                       )}
                       <h3 className="font-medium truncate">{session.name}</h3>
-                      {((currentSessionId === session.id && isCurrentSessionThinking) ||
+                      {((currentSessionId === session.id &&
+                        isCurrentSessionThinking) ||
                         runningSessions.has(session.id)) && (
                         <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                           thinking...
@@ -514,7 +549,9 @@ export function SessionManager({
                       )}
                     </div>
                     {session.preview && (
-                      <p className="text-xs text-muted-foreground truncate">{session.preview}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {session.preview}
+                      </p>
                     )}
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-xs text-muted-foreground">
@@ -531,7 +568,10 @@ export function SessionManager({
 
               {/* Actions */}
               {!session.isArchived && (
-                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="flex gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button
                     size="sm"
                     variant="ghost"
@@ -556,7 +596,10 @@ export function SessionManager({
               )}
 
               {session.isArchived && (
-                <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="flex gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button
                     size="sm"
                     variant="ghost"
@@ -584,12 +627,14 @@ export function SessionManager({
           <div className="text-center py-8 text-muted-foreground">
             <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
             <p className="text-sm">
-              {activeTab === 'active' ? 'No active sessions' : 'No archived sessions'}
+              {activeTab === "active"
+                ? "No active sessions"
+                : "No archived sessions"}
             </p>
             <p className="text-xs">
-              {activeTab === 'active'
-                ? 'Create your first session to get started'
-                : 'Archive sessions to see them here'}
+              {activeTab === "active"
+                ? "Create your first session to get started"
+                : "Archive sessions to see them here"}
             </p>
           </div>
         )}

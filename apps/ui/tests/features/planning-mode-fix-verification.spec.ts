@@ -6,9 +6,9 @@
  * 2. All planning mode options are accessible
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -17,12 +17,12 @@ import {
   clickAddFeature,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
-import { DEFAULT_ELEMENT_TIMEOUT_MS } from '../utils/core/waiting';
+} from "../utils";
+import { DEFAULT_ELEMENT_TIMEOUT_MS } from "../utils/core/waiting";
 
-const TEST_TEMP_DIR = createTempDirPath('planning-mode-verification-test');
+const TEST_TEMP_DIR = createTempDirPath("planning-mode-verification-test");
 
-test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
+test.describe("Planning Mode Fix Verification (GitHub #671)", () => {
   let projectPath: string;
   const projectName = `test-project-${Date.now()}`;
 
@@ -35,23 +35,23 @@ test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
     fs.mkdirSync(projectPath, { recursive: true });
 
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: [] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: [] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for planning mode verification.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for planning mode verification.`,
     );
   });
 
@@ -59,21 +59,25 @@ test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('planning mode selector should be enabled and accessible in add feature dialog', async ({
+  test("planning mode selector should be enabled and accessible in add feature dialog", async ({
     page,
   }) => {
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
 
     await authenticateForTests(page);
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
 
     await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
       timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
     });
-    await expect(page.locator('[data-testid="kanban-column-backlog"]')).toBeVisible({
+    await expect(
+      page.locator('[data-testid="kanban-column-backlog"]'),
+    ).toBeVisible({
       timeout: 5000,
     });
 
@@ -81,13 +85,15 @@ test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
     await clickAddFeature(page);
 
     // Wait for dialog to be visible (clickAddFeature already waits, but this adds an extra check)
-    await expect(page.locator('[data-testid="add-feature-dialog"]')).toBeVisible({
+    await expect(
+      page.locator('[data-testid="add-feature-dialog"]'),
+    ).toBeVisible({
       timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
     });
 
     // Find the planning mode select trigger
     const planningModeSelectTrigger = page.locator(
-      '[data-testid="add-feature-planning-select-trigger"]'
+      '[data-testid="add-feature-planning-select-trigger"]',
     );
 
     // Verify the planning mode selector is visible
@@ -104,10 +110,18 @@ test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
     await page.waitForTimeout(300);
 
     // Verify all planning mode options are visible
-    const skipOption = page.locator('[data-testid="add-feature-planning-option-skip"]');
-    const liteOption = page.locator('[data-testid="add-feature-planning-option-lite"]');
-    const specOption = page.locator('[data-testid="add-feature-planning-option-spec"]');
-    const fullOption = page.locator('[data-testid="add-feature-planning-option-full"]');
+    const skipOption = page.locator(
+      '[data-testid="add-feature-planning-option-skip"]',
+    );
+    const liteOption = page.locator(
+      '[data-testid="add-feature-planning-option-lite"]',
+    );
+    const specOption = page.locator(
+      '[data-testid="add-feature-planning-option-spec"]',
+    );
+    const fullOption = page.locator(
+      '[data-testid="add-feature-planning-option-full"]',
+    );
 
     await expect(skipOption).toBeVisible({ timeout: 3000 });
     await expect(liteOption).toBeVisible({ timeout: 3000 });
@@ -119,16 +133,16 @@ test.describe('Planning Mode Fix Verification (GitHub #671)', () => {
     await page.waitForTimeout(200);
 
     // Verify the selection changed (the trigger should now show "Spec")
-    await expect(planningModeSelectTrigger).toContainText('Spec');
+    await expect(planningModeSelectTrigger).toContainText("Spec");
 
     // Check that require approval checkbox appears for spec/full modes
     const requireApprovalCheckbox = page.locator(
-      '[data-testid="add-feature-planning-require-approval-checkbox"]'
+      '[data-testid="add-feature-planning-require-approval-checkbox"]',
     );
     await expect(requireApprovalCheckbox).toBeVisible({ timeout: 3000 });
     await expect(requireApprovalCheckbox).not.toBeDisabled();
 
     // Close the dialog
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
   });
 });

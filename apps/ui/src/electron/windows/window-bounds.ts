@@ -5,22 +5,22 @@
  * Uses centralized electronUserData methods for path validation.
  */
 
-import { screen } from 'electron';
+import { screen } from "electron";
 import {
   electronUserDataExists,
   electronUserDataReadFileSync,
   electronUserDataWriteFileSync,
-} from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils/logger';
+} from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   WindowBounds,
   WINDOW_BOUNDS_FILENAME,
   MIN_WIDTH_COLLAPSED,
   MIN_HEIGHT,
-} from '../constants';
-import { state } from '../state';
+} from "../constants";
+import { state } from "../state";
 
-const logger = createLogger('WindowBounds');
+const logger = createLogger("WindowBounds");
 
 /**
  * Load saved window bounds from disk
@@ -33,16 +33,16 @@ export function loadWindowBounds(): WindowBounds | null {
       const bounds = JSON.parse(data) as WindowBounds;
       // Validate the loaded data has required fields
       if (
-        typeof bounds.x === 'number' &&
-        typeof bounds.y === 'number' &&
-        typeof bounds.width === 'number' &&
-        typeof bounds.height === 'number'
+        typeof bounds.x === "number" &&
+        typeof bounds.y === "number" &&
+        typeof bounds.width === "number" &&
+        typeof bounds.height === "number"
       ) {
         return bounds;
       }
     }
   } catch (error) {
-    logger.warn('Failed to load window bounds:', (error as Error).message);
+    logger.warn("Failed to load window bounds:", (error as Error).message);
   }
   return null;
 }
@@ -53,10 +53,13 @@ export function loadWindowBounds(): WindowBounds | null {
  */
 export function saveWindowBounds(bounds: WindowBounds): void {
   try {
-    electronUserDataWriteFileSync(WINDOW_BOUNDS_FILENAME, JSON.stringify(bounds, null, 2));
-    logger.info('Window bounds saved');
+    electronUserDataWriteFileSync(
+      WINDOW_BOUNDS_FILENAME,
+      JSON.stringify(bounds, null, 2),
+    );
+    logger.info("Window bounds saved");
   } catch (error) {
-    logger.warn('Failed to save window bounds:', (error as Error).message);
+    logger.warn("Failed to save window bounds:", (error as Error).message);
   }
 }
 
@@ -75,7 +78,9 @@ export function scheduleSaveWindowBounds(): void {
 
     const isMaximized = state.mainWindow.isMaximized();
     // Use getNormalBounds() for maximized windows to save pre-maximized size
-    const bounds = isMaximized ? state.mainWindow.getNormalBounds() : state.mainWindow.getBounds();
+    const bounds = isMaximized
+      ? state.mainWindow.getNormalBounds()
+      : state.mainWindow.getBounds();
 
     saveWindowBounds({
       x: bounds.x,
@@ -101,7 +106,12 @@ export function validateBounds(bounds: WindowBounds): WindowBounds {
   let isVisible = false;
   for (const display of displays) {
     const { x, y, width, height } = display.workArea;
-    if (centerX >= x && centerX <= x + width && centerY >= y && centerY <= y + height) {
+    if (
+      centerX >= x &&
+      centerX <= x + width &&
+      centerY >= y &&
+      centerY <= y + height
+    ) {
       isVisible = true;
       break;
     }

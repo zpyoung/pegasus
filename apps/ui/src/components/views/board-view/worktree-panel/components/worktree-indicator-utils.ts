@@ -4,7 +4,7 @@
  * and WorktreeDropdownItem components.
  */
 
-import type { PRInfo } from '../types';
+import type { PRInfo } from "../types";
 
 /**
  * Truncates a branch name if it exceeds the maximum length.
@@ -14,10 +14,12 @@ import type { PRInfo } from '../types';
  */
 export function truncateBranchName(
   branchName: string,
-  maxLength: number
+  maxLength: number,
 ): { truncated: string; isTruncated: boolean } {
   const isTruncated = branchName.length > maxLength;
-  const truncated = isTruncated ? `${branchName.slice(0, maxLength)}...` : branchName;
+  const truncated = isTruncated
+    ? `${branchName.slice(0, maxLength)}...`
+    : branchName;
   return { truncated, isTruncated };
 }
 
@@ -26,15 +28,15 @@ export function truncateBranchName(
  * @param state - The PR state (OPEN, MERGED, or CLOSED)
  * @returns CSS class string for the badge
  */
-export function getPRBadgeStyles(state: PRInfo['state']): string {
+export function getPRBadgeStyles(state: PRInfo["state"]): string {
   switch (state) {
-    case 'OPEN':
-      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30';
-    case 'MERGED':
-      return 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30';
-    case 'CLOSED':
+    case "OPEN":
+      return "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+    case "MERGED":
+      return "bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30";
+    case "CLOSED":
     default:
-      return 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30';
+      return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
   }
 }
 
@@ -43,7 +45,7 @@ export function getPRBadgeStyles(state: PRInfo['state']): string {
  * This is a constant style used across all worktree components.
  */
 export function getChangesBadgeStyles(): string {
-  return 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30';
+  return "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30";
 }
 
 /**
@@ -51,27 +53,34 @@ export function getChangesBadgeStyles(): string {
  * Uses red/destructive colors to indicate merge/rebase/cherry-pick conflicts.
  */
 export function getConflictBadgeStyles(): string {
-  return 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30';
+  return "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30";
 }
 
 /**
  * Returns a human-readable label for the conflict type.
  */
-export function getConflictTypeLabel(conflictType?: 'merge' | 'rebase' | 'cherry-pick'): string {
+export function getConflictTypeLabel(
+  conflictType?: "merge" | "rebase" | "cherry-pick",
+): string {
   switch (conflictType) {
-    case 'merge':
-      return 'Merge';
-    case 'rebase':
-      return 'Rebase';
-    case 'cherry-pick':
-      return 'Cherry-pick';
+    case "merge":
+      return "Merge";
+    case "rebase":
+      return "Rebase";
+    case "cherry-pick":
+      return "Cherry-pick";
     default:
-      return 'Conflict';
+      return "Conflict";
   }
 }
 
 /** Possible test session status values */
-export type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+export type TestStatus =
+  | "pending"
+  | "running"
+  | "passed"
+  | "failed"
+  | "cancelled";
 
 /**
  * Returns the CSS classes for a test status indicator based on test result.
@@ -80,15 +89,15 @@ export type TestStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelle
  */
 export function getTestStatusStyles(status: TestStatus): string {
   switch (status) {
-    case 'passed':
-      return 'text-green-500';
-    case 'failed':
-      return 'text-red-500';
-    case 'running':
-      return 'text-blue-500';
-    case 'pending':
-    case 'cancelled':
+    case "passed":
+      return "text-green-500";
+    case "failed":
+      return "text-red-500";
+    case "running":
+      return "text-blue-500";
+    case "pending":
+    case "cancelled":
     default:
-      return 'text-muted-foreground';
+      return "text-muted-foreground";
   }
 }

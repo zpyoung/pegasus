@@ -4,9 +4,9 @@
  * Handles authentication-related operations.
  */
 
-import { ipcMain } from 'electron';
-import { IPC_CHANNELS } from './channels';
-import { state } from '../state';
+import { ipcMain } from "electron";
+import { IPC_CHANNELS } from "./channels";
+import { state } from "../state";
 
 /**
  * Register auth IPC handlers

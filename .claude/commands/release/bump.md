@@ -83,27 +83,27 @@ Group commits into Keep a Changelog sections, each with an emoji header and per-
 
 **Section headers:**
 
-| Section | Header |
-|---|---|
-| Added | `### ✨ Added` |
-| Fixed | `### 🐛 Fixed` |
-| Changed | `### 🔄 Changed` |
+| Section          | Header                                                                   |
+| ---------------- | ------------------------------------------------------------------------ |
+| Added            | `### ✨ Added`                                                           |
+| Fixed            | `### 🐛 Fixed`                                                           |
+| Changed          | `### 🔄 Changed`                                                         |
 | Breaking Changes | `### 💥 Breaking Changes` (only if breaking commits exist; placed first) |
 
 **Per-bullet emoji by commit type:**
 
-| Commit type | Emoji | Section |
-|---|---|---|
-| `feat:` | ✨ | Added |
-| `feat!:` / breaking | 💥 | Breaking Changes |
-| `fix:` | 🐛 | Fixed |
-| `perf:` | ⚡ | Fixed |
-| `refactor:` | 🔧 | Changed |
-| `docs:` | 📝 | Changed |
-| `build:`, `ci:` | 🏗️ | Changed |
-| `style:` | 🎨 | Changed |
-| `test:` | 🧪 | Changed |
-| `chore:` | ⚙️ | Changed |
+| Commit type         | Emoji | Section          |
+| ------------------- | ----- | ---------------- |
+| `feat:`             | ✨    | Added            |
+| `feat!:` / breaking | 💥    | Breaking Changes |
+| `fix:`              | 🐛    | Fixed            |
+| `perf:`             | ⚡    | Fixed            |
+| `refactor:`         | 🔧    | Changed          |
+| `docs:`             | 📝    | Changed          |
+| `build:`, `ci:`     | 🏗️    | Changed          |
+| `style:`            | 🎨    | Changed          |
+| `test:`             | 🧪    | Changed          |
+| `chore:`            | ⚙️    | Changed          |
 
 **Emoji fallback for non-conventional commits:** If a commit subject doesn't match a conventional-commit prefix, check for a leading emoji in the subject itself (e.g. `✨ Add feature`, `🐛 Fix bug`). Use that emoji and infer the section from the emoji mapping above. If there's no prefix and no emoji, default to ⚙️ Changed.
 
@@ -126,15 +126,19 @@ Insert the new version block **above** the most recent `## [x.y.z]` heading (and
 ## [NEW_VERSION] — YYYY-MM-DD
 
 ### 💥 Breaking Changes
+
 - 💥 ... (abc1234)
 
 ### ✨ Added
+
 - ✨ ... (def5678)
 
 ### 🐛 Fixed
+
 - 🐛 ... (ghi9012)
 
 ### 🔄 Changed
+
 - 🔧 ... (jkl3456)
 
 ---
@@ -199,13 +203,14 @@ Next steps:
 ## Error handling
 
 <error_handling>
+
 - **No version tags exist** → abort with a clear error, suggest creating an initial tag
 - **No commits since the last tag** → exit cleanly with an informational message, no changes
 - **CHANGELOG.md missing** → abort, suggest running the project's doc scaffold
 - **Commit subjects not in conventional-commit format** → default unknown types to `patch`, and note the ambiguity in the final report
 - **User rejects a major bump** → print "Aborted, no files modified." and exit
 - **`$ARGUMENTS` contains an unexpected value** → abort with: `Unknown argument '<value>'. Expected: major | minor | patch`
-</error_handling>
+  </error_handling>
 
 ## Example
 
@@ -233,12 +238,15 @@ ghi9012 docs: update CHANGELOG for v1.0.0 release
 ## [1.1.0] — 2026-04-12
 
 ### ✨ Added
+
 - ✨ Add telemetry opt-out flag (`abc1234`)
 
 ### 🐛 Fixed
+
 - 🐛 Resolve race condition in worktree creation (`def5678`)
 
 ### 🔄 Changed
+
 - 📝 Update CHANGELOG for v1.0.0 release (`ghi9012`)
 ```
 

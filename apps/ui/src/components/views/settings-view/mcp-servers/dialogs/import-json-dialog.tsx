@@ -1,6 +1,6 @@
-import { FileJson } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { FileJson } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface ImportJsonDialogProps {
   open: boolean;
@@ -33,8 +33,8 @@ export function ImportJsonDialog({
         <DialogHeader>
           <DialogTitle>Import MCP Servers</DialogTitle>
           <DialogDescription>
-            Paste JSON configuration in Claude Code format. Servers with duplicate names will be
-            skipped.
+            Paste JSON configuration in Claude Code format. Servers with
+            duplicate names will be skipped.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -58,7 +58,11 @@ export function ImportJsonDialog({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={onImport} disabled={!importJson.trim()} data-testid="mcp-import-button">
+          <Button
+            onClick={onImport}
+            disabled={!importJson.trim()}
+            data-testid="mcp-import-button"
+          >
             <FileJson className="w-4 h-4 mr-2" />
             Import
           </Button>

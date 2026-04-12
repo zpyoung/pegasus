@@ -10,10 +10,10 @@
  * the requireGitRepoOnly middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import { getErrorMessage, logError } from '../common.js';
-import { applyOrPop } from '../../../services/stash-service.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import { getErrorMessage, logError } from "../common.js";
+import { applyOrPop } from "../../../services/stash-service.js";
 
 export function createStashApplyHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -27,7 +27,7 @@ export function createStashApplyHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -35,17 +35,18 @@ export function createStashApplyHandler(events: EventEmitter) {
       if (stashIndex === undefined || stashIndex === null) {
         res.status(400).json({
           success: false,
-          error: 'stashIndex required',
+          error: "stashIndex required",
         });
         return;
       }
 
-      const idx = typeof stashIndex === 'string' ? Number(stashIndex) : stashIndex;
+      const idx =
+        typeof stashIndex === "string" ? Number(stashIndex) : stashIndex;
 
       if (!Number.isInteger(idx) || idx < 0) {
         res.status(400).json({
           success: false,
-          error: 'stashIndex must be a non-negative integer',
+          error: "stashIndex must be a non-negative integer",
         });
         return;
       }
@@ -71,7 +72,7 @@ export function createStashApplyHandler(events: EventEmitter) {
         },
       });
     } catch (error) {
-      logError(error, 'Stash apply failed');
+      logError(error, "Stash apply failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

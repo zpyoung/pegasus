@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
+import { useRef, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface BoardSearchBarProps {
   searchQuery: string;
@@ -25,7 +25,7 @@ export function BoardSearchBar({
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only focus if not typing in an input/textarea
       if (
-        e.key === '/' &&
+        e.key === "/" &&
         !(e.target instanceof HTMLInputElement) &&
         !(e.target instanceof HTMLTextAreaElement)
       ) {
@@ -34,8 +34,8 @@ export function BoardSearchBar({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
@@ -53,7 +53,7 @@ export function BoardSearchBar({
         />
         {searchQuery ? (
           <button
-            onClick={() => onSearchChange('')}
+            onClick={() => onSearchChange("")}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
             data-testid="kanban-search-clear"
             aria-label="Clear search"

@@ -2,12 +2,12 @@
  * POST /move endpoint - Move (rename) file or directory to a new location
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { mkdirSafe } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { mkdirSafe } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createMoveHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -19,9 +19,10 @@ export function createMoveHandler() {
       };
 
       if (!sourcePath || !destinationPath) {
-        res
-          .status(400)
-          .json({ success: false, error: 'sourcePath and destinationPath are required' });
+        res.status(400).json({
+          success: false,
+          error: "sourcePath and destinationPath are required",
+        });
         return;
       }
 
@@ -36,7 +37,7 @@ export function createMoveHandler() {
       if (resolvedDest.startsWith(resolvedSrc + path.sep)) {
         res.status(400).json({
           success: false,
-          error: 'Cannot move a folder into one of its own descendants',
+          error: "Cannot move a folder into one of its own descendants",
         });
         return;
       }
@@ -48,7 +49,7 @@ export function createMoveHandler() {
         if (!overwrite) {
           res.status(409).json({
             success: false,
-            error: 'Destination already exists',
+            error: "Destination already exists",
             exists: true,
           });
           return;
@@ -72,7 +73,7 @@ export function createMoveHandler() {
         return;
       }
 
-      logError(error, 'Move file failed');
+      logError(error, "Move file failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

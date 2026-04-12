@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 interface CompleteStepProps {
   onFinish: () => void;
@@ -13,10 +13,12 @@ export function CompleteStep({ onFinish }: CompleteStepProps) {
       </div>
 
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-3">Setup Complete!</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-3">
+          Setup Complete!
+        </h2>
         <p className="text-muted-foreground max-w-md mx-auto">
-          Your development environment is configured. You&apos;re ready to start building with
-          AI-powered assistance.
+          Your development environment is configured. You&apos;re ready to start
+          building with AI-powered assistance.
         </p>
       </div>
 

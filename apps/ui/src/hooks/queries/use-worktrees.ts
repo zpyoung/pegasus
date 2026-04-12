@@ -4,11 +4,11 @@
  * React Query hooks for fetching worktree data.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import { createSmartPollingInterval } from '@/hooks/use-event-recency';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import { createSmartPollingInterval } from "@/hooks/use-event-recency";
 
 const WORKTREE_REFETCH_ON_FOCUS = false;
 const WORKTREE_REFETCH_ON_RECONNECT = false;
@@ -25,7 +25,7 @@ interface WorktreeInfo {
   /** Whether a merge, rebase, or cherry-pick is in progress with conflicts */
   hasConflicts?: boolean;
   /** Type of conflict operation in progress */
-  conflictType?: 'merge' | 'rebase' | 'cherry-pick';
+  conflictType?: "merge" | "rebase" | "cherry-pick";
   /** List of files with conflicts */
   conflictFiles?: string[];
   /** The branch that is the source of the conflict (e.g. the branch being merged in) */
@@ -55,18 +55,21 @@ interface WorktreesResult {
  * const worktrees = data?.worktrees ?? [];
  * ```
  */
-export function useWorktrees(projectPath: string | undefined, includeDetails = true) {
+export function useWorktrees(
+  projectPath: string | undefined,
+  includeDetails = true,
+) {
   return useQuery({
-    queryKey: queryKeys.worktrees.all(projectPath ?? ''),
+    queryKey: queryKeys.worktrees.all(projectPath ?? ""),
     queryFn: async (): Promise<WorktreesResult> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.listAll(projectPath, includeDetails);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch worktrees');
+        throw new Error(result.error || "Failed to fetch worktrees");
       }
       return {
         worktrees: result.worktrees ?? [],
@@ -88,18 +91,22 @@ export function useWorktrees(projectPath: string | undefined, includeDetails = t
  * @param featureId - ID of the feature
  * @returns Query result with worktree info
  */
-export function useWorktreeInfo(projectPath: string | undefined, featureId: string | undefined) {
+export function useWorktreeInfo(
+  projectPath: string | undefined,
+  featureId: string | undefined,
+) {
   return useQuery({
-    queryKey: queryKeys.worktrees.single(projectPath ?? '', featureId ?? ''),
+    queryKey: queryKeys.worktrees.single(projectPath ?? "", featureId ?? ""),
     queryFn: async () => {
-      if (!projectPath || !featureId) throw new Error('Missing project path or feature ID');
+      if (!projectPath || !featureId)
+        throw new Error("Missing project path or feature ID");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.getInfo(projectPath, featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch worktree info');
+        throw new Error(result.error || "Failed to fetch worktree info");
       }
       return result;
     },
@@ -117,18 +124,22 @@ export function useWorktreeInfo(projectPath: string | undefined, featureId: stri
  * @param featureId - ID of the feature
  * @returns Query result with worktree status
  */
-export function useWorktreeStatus(projectPath: string | undefined, featureId: string | undefined) {
+export function useWorktreeStatus(
+  projectPath: string | undefined,
+  featureId: string | undefined,
+) {
   return useQuery({
-    queryKey: queryKeys.worktrees.status(projectPath ?? '', featureId ?? ''),
+    queryKey: queryKeys.worktrees.status(projectPath ?? "", featureId ?? ""),
     queryFn: async () => {
-      if (!projectPath || !featureId) throw new Error('Missing project path or feature ID');
+      if (!projectPath || !featureId)
+        throw new Error("Missing project path or feature ID");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.getStatus(projectPath, featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch worktree status');
+        throw new Error(result.error || "Failed to fetch worktree status");
       }
       return result;
     },
@@ -146,22 +157,26 @@ export function useWorktreeStatus(projectPath: string | undefined, featureId: st
  * @param featureId - ID of the feature
  * @returns Query result with files and diff content
  */
-export function useWorktreeDiffs(projectPath: string | undefined, featureId: string | undefined) {
+export function useWorktreeDiffs(
+  projectPath: string | undefined,
+  featureId: string | undefined,
+) {
   return useQuery({
-    queryKey: queryKeys.worktrees.diffs(projectPath ?? '', featureId ?? ''),
+    queryKey: queryKeys.worktrees.diffs(projectPath ?? "", featureId ?? ""),
     queryFn: async () => {
-      if (!projectPath || !featureId) throw new Error('Missing project path or feature ID');
+      if (!projectPath || !featureId)
+        throw new Error("Missing project path or feature ID");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.getDiffs(projectPath, featureId);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch diffs');
+        throw new Error(result.error || "Failed to fetch diffs");
       }
       return {
         files: result.files ?? [],
-        diff: result.diff ?? '',
+        diff: result.diff ?? "",
         ...(result.mergeState ? { mergeState: result.mergeState } : {}),
       };
     },
@@ -201,20 +216,26 @@ interface BranchesResult {
  * @param includeRemote - Whether to include remote branches
  * @returns Query result with branches, ahead/behind counts, and git repo status
  */
-export function useWorktreeBranches(worktreePath: string | undefined, includeRemote = false) {
+export function useWorktreeBranches(
+  worktreePath: string | undefined,
+  includeRemote = false,
+) {
   return useQuery({
     // Include includeRemote in query key so different configurations have separate caches
-    queryKey: queryKeys.worktrees.branches(worktreePath ?? '', includeRemote),
+    queryKey: queryKeys.worktrees.branches(worktreePath ?? "", includeRemote),
     queryFn: async (): Promise<BranchesResult> => {
-      if (!worktreePath) throw new Error('No worktree path');
+      if (!worktreePath) throw new Error("No worktree path");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
-      const result = await api.worktree.listBranches(worktreePath, includeRemote);
+      const result = await api.worktree.listBranches(
+        worktreePath,
+        includeRemote,
+      );
 
       // Handle special git status codes
-      if (result.code === 'NOT_GIT_REPO') {
+      if (result.code === "NOT_GIT_REPO") {
         return {
           branches: [],
           aheadCount: 0,
@@ -225,7 +246,7 @@ export function useWorktreeBranches(worktreePath: string | undefined, includeRem
           hasCommits: false,
         };
       }
-      if (result.code === 'NO_COMMITS') {
+      if (result.code === "NO_COMMITS") {
         return {
           branches: [],
           aheadCount: 0,
@@ -238,7 +259,7 @@ export function useWorktreeBranches(worktreePath: string | undefined, includeRem
       }
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch branches');
+        throw new Error(result.error || "Failed to fetch branches");
       }
 
       return {
@@ -250,7 +271,8 @@ export function useWorktreeBranches(worktreePath: string | undefined, includeRem
         isGitRepo: true,
         hasCommits: true,
         trackingRemote: result.result?.trackingRemote,
-        remotesWithBranch: (result.result as { remotesWithBranch?: string[] })?.remotesWithBranch,
+        remotesWithBranch: (result.result as { remotesWithBranch?: string[] })
+          ?.remotesWithBranch,
       };
     },
     enabled: !!worktreePath,
@@ -268,20 +290,20 @@ export function useWorktreeBranches(worktreePath: string | undefined, includeRem
  */
 export function useWorktreeInitScript(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.worktrees.initScript(projectPath ?? ''),
+    queryKey: queryKeys.worktrees.initScript(projectPath ?? ""),
     queryFn: async () => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.getInitScript(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch init script');
+        throw new Error(result.error || "Failed to fetch init script");
       }
       return {
         exists: result.exists ?? false,
-        content: result.content ?? '',
+        content: result.content ?? "",
       };
     },
     enabled: !!projectPath,
@@ -302,11 +324,11 @@ export function useAvailableEditors() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.getAvailableEditors();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch editors');
+        throw new Error(result.error || "Failed to fetch editors");
       }
       return result.result?.editors ?? [];
     },

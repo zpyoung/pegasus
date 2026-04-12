@@ -1,7 +1,7 @@
-import { Terminal, Globe, CheckCircle2, XCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import type { ServerType, ServerTestState } from './types';
-import { SENSITIVE_PARAM_PATTERNS } from './constants';
+import { Terminal, Globe, CheckCircle2, XCircle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import type { ServerType, ServerTestState } from "./types";
+import { SENSITIVE_PARAM_PATTERNS } from "./constants";
 
 /**
  * Mask sensitive values in URLs (query params with key-like names)
@@ -14,7 +14,7 @@ export function maskSensitiveUrl(url: string): string {
 
     for (const [key] of params.entries()) {
       if (SENSITIVE_PARAM_PATTERNS.some((pattern) => pattern.test(key))) {
-        params.set(key, '***');
+        params.set(key, "***");
         hasSensitive = true;
       }
     }
@@ -28,23 +28,23 @@ export function maskSensitiveUrl(url: string): string {
     // If URL parsing fails, try simple regex replacement for common patterns
     return url.replace(
       /([?&])(api[-_]?key|auth|token|secret|password|credential)=([^&]*)/gi,
-      '$1$2=***'
+      "$1$2=***",
     );
   }
 }
 
-export function getServerIcon(type: ServerType = 'stdio') {
-  if (type === 'stdio') return Terminal;
+export function getServerIcon(type: ServerType = "stdio") {
+  if (type === "stdio") return Terminal;
   return Globe;
 }
 
-export function getTestStatusIcon(status: ServerTestState['status']) {
+export function getTestStatusIcon(status: ServerTestState["status"]) {
   switch (status) {
-    case 'testing':
+    case "testing":
       return <Spinner size="sm" />;
-    case 'success':
+    case "success":
       return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-    case 'error':
+    case "error":
       return <XCircle className="w-4 h-4 text-destructive" />;
     default:
       return null;

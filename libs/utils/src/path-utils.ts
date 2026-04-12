@@ -22,7 +22,7 @@
  * ```
  */
 export function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/');
+  return p.replace(/\\/g, "/");
 }
 
 /**
@@ -45,7 +45,10 @@ export function normalizePath(p: string): string {
  * pathsEqual(null, null);                       // true
  * ```
  */
-export function pathsEqual(p1: string | undefined | null, p2: string | undefined | null): boolean {
+export function pathsEqual(
+  p1: string | undefined | null,
+  p2: string | undefined | null,
+): boolean {
   if (!p1 || !p2) return p1 === p2;
   return normalizePath(p1) === normalizePath(p2);
 }
@@ -70,8 +73,11 @@ export function pathsEqual(p1: string | undefined | null, p2: string | undefined
  * sanitizeFilename("", "unnamed");         // "unnamed"
  * ```
  */
-export function sanitizeFilename(filename: string, fallback: string = 'file'): string {
-  if (!filename || typeof filename !== 'string') {
+export function sanitizeFilename(
+  filename: string,
+  fallback: string = "file",
+): string {
+  if (!filename || typeof filename !== "string") {
     return fallback;
   }
 
@@ -80,10 +86,10 @@ export function sanitizeFilename(filename: string, fallback: string = 'file'): s
   // - Windows invalid chars: : * ? " < > |
   // - Control characters and other problematic chars
   let safeName = filename
-    .replace(/[/\\:*?"<>|]/g, '') // Remove invalid chars
-    .replace(/\s+/g, '_') // Replace spaces with underscores
-    .replace(/\.+$/g, '') // Remove trailing dots (Windows issue)
-    .replace(/^\.+/g, '') // Remove leading dots
+    .replace(/[/\\:*?"<>|]/g, "") // Remove invalid chars
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .replace(/\.+$/g, "") // Remove trailing dots (Windows issue)
+    .replace(/^\.+/g, "") // Remove leading dots
     .trim();
 
   // If empty after sanitization, use fallback

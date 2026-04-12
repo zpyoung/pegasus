@@ -83,7 +83,12 @@
 }
 
 .sand .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #d97706 0%, #b45309 50%, #d97706 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #d97706 0%,
+    #b45309 50%,
+    #d97706 100%
+  );
 }
 
 .sand .animated-outline-inner {

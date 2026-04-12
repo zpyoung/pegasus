@@ -15,10 +15,10 @@
  * Response: { success: true, events: StoredEventSummary[], total: number }
  */
 
-import type { Request, Response } from 'express';
-import type { EventHistoryService } from '../../../services/event-history-service.js';
-import type { EventHistoryFilter } from '@pegasus/types';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { EventHistoryService } from "../../../services/event-history-service.js";
+import type { EventHistoryFilter } from "@pegasus/types";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createListHandler(eventHistoryService: EventHistoryService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -28,8 +28,10 @@ export function createListHandler(eventHistoryService: EventHistoryService) {
         filter?: EventHistoryFilter;
       };
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -46,7 +48,7 @@ export function createListHandler(eventHistoryService: EventHistoryService) {
         total,
       });
     } catch (error) {
-      logError(error, 'List events failed');
+      logError(error, "List events failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

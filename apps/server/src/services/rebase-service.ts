@@ -5,12 +5,20 @@
  * Follows the same pattern as merge-service.ts and cherry-pick-service.ts.
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { createLogger, getErrorMessage, isValidRemoteName } from '@pegasus/utils';
-import { execGitCommand, getCurrentBranch, getConflictFiles } from '@pegasus/git-utils';
+import fs from "fs/promises";
+import path from "path";
+import {
+  createLogger,
+  getErrorMessage,
+  isValidRemoteName,
+} from "@pegasus/utils";
+import {
+  execGitCommand,
+  getCurrentBranch,
+  getConflictFiles,
+} from "@pegasus/git-utils";
 
-const logger = createLogger('RebaseService');
+const logger = createLogger("RebaseService");
 
 // ============================================================================
 // Types
@@ -47,11 +55,11 @@ export interface RebaseResult {
 export async function runRebase(
   worktreePath: string,
   ontoBranch: string,
-  options?: RebaseOptions
+  options?: RebaseOptions,
 ): Promise<RebaseResult> {
   // Reject empty, whitespace-only, or dash-prefixed branch names.
-  const normalizedOntoBranch = ontoBranch?.trim() ?? '';
-  if (normalizedOntoBranch === '' || normalizedOntoBranch.startsWith('-')) {
+  const normalizedOntoBranch = ontoBranch?.trim() ?? "";
+  if (normalizedOntoBranch === "" || normalizedOntoBranch.startsWith("-")) {
     return {
       success: false,
       error: `Invalid branch name: "${ontoBranch}" must not be empty or start with a dash.`,
@@ -72,9 +80,9 @@ export async function runRebase(
   // Validate the remote name to prevent git option injection.
   // Reject invalid remote names so the caller knows their input was wrong,
   // consistent with how invalid branch names are handled above.
-  const remote = options?.remote || 'origin';
+  const remote = options?.remote || "origin";
   if (!isValidRemoteName(remote)) {
-    logger.warn('Invalid remote name supplied to rebase-service', {
+    logger.warn("Invalid remote name supplied to rebase-service", {
       remote,
       worktreePath,
     });
@@ -86,13 +94,16 @@ export async function runRebase(
 
   // Fetch latest from remote before rebasing to ensure we have up-to-date refs
   try {
-    await execGitCommand(['fetch', remote], worktreePath);
+    await execGitCommand(["fetch", remote], worktreePath);
   } catch (fetchError) {
-    logger.warn('Failed to fetch from remote before rebase; proceeding with local refs', {
-      remote,
-      worktreePath,
-      error: getErrorMessage(fetchError),
-    });
+    logger.warn(
+      "Failed to fetch from remote before rebase; proceeding with local refs",
+      {
+        remote,
+        worktreePath,
+        error: getErrorMessage(fetchError),
+      },
+    );
     // Non-fatal: proceed with local refs if fetch fails (e.g. offline)
   }
 
@@ -100,7 +111,9 @@ export async function runRebase(
     // Pass ontoBranch after '--' so git treats it as a ref, not an option.
     // Set LC_ALL=C so git always emits English output regardless of the system
     // locale, making text-based conflict detection reliable.
-    await execGitCommand(['rebase', '--', normalizedOntoBranch], worktreePath, { LC_ALL: 'C' });
+    await execGitCommand(["rebase", "--", normalizedOntoBranch], worktreePath, {
+      LC_ALL: "C",
+    });
 
     return {
       success: true,
@@ -129,29 +142,35 @@ export async function runRebase(
     //     indicate an unmerged state (UU, AA, DD, AU, UA, DU, UD).
     //
     // hasConflicts is true when ANY of the three layers returns positive.
-    const err = rebaseError as { stdout?: string; stderr?: string; message?: string };
-    const output = `${err.stdout || ''} ${err.stderr || ''} ${err.message || ''}`;
+    const err = rebaseError as {
+      stdout?: string;
+      stderr?: string;
+      message?: string;
+    };
+    const output = `${err.stdout || ""} ${err.stderr || ""} ${err.message || ""}`;
 
     // Layer 1 – text matching (locale-safe because we set LC_ALL=C above).
     const textIndicatesConflict =
-      output.includes('CONFLICT') ||
-      output.includes('could not apply') ||
-      output.includes('Resolve all conflicts') ||
-      output.includes('fix conflicts');
+      output.includes("CONFLICT") ||
+      output.includes("could not apply") ||
+      output.includes("Resolve all conflicts") ||
+      output.includes("fix conflicts");
 
     // Layers 2 & 3 – repository state inspection (locale-independent).
     let rebaseStateExists = false;
     let hasUnmergedPaths = false;
     try {
       // Find the canonical .git directory for this worktree.
-      const gitDir = (await execGitCommand(['rev-parse', '--git-dir'], worktreePath)).trim();
+      const gitDir = (
+        await execGitCommand(["rev-parse", "--git-dir"], worktreePath)
+      ).trim();
       // git rev-parse --git-dir returns a path relative to cwd when the repo is
       // a worktree, so we resolve it against worktreePath.
       const resolvedGitDir = path.resolve(worktreePath, gitDir);
 
       // Layer 2: check for rebase state directories.
-      const rebaseMergeDir = path.join(resolvedGitDir, 'rebase-merge');
-      const rebaseApplyDir = path.join(resolvedGitDir, 'rebase-apply');
+      const rebaseMergeDir = path.join(resolvedGitDir, "rebase-merge");
+      const rebaseApplyDir = path.join(resolvedGitDir, "rebase-apply");
       const [rebaseMergeExists, rebaseApplyExists] = await Promise.all([
         fs
           .access(rebaseMergeDir)
@@ -170,20 +189,25 @@ export async function runRebase(
 
     try {
       // Layer 3: check for unmerged paths via machine-readable git status.
-      const statusOutput = await execGitCommand(['status', '--porcelain'], worktreePath, {
-        LC_ALL: 'C',
-      });
+      const statusOutput = await execGitCommand(
+        ["status", "--porcelain"],
+        worktreePath,
+        {
+          LC_ALL: "C",
+        },
+      );
       // Unmerged status codes occupy the first two characters of each line.
       // Standard unmerged codes: UU, AA, DD, AU, UA, DU, UD.
       hasUnmergedPaths = statusOutput
-        .split('\n')
+        .split("\n")
         .some((line) => /^(UU|AA|DD|AU|UA|DU|UD)/.test(line));
     } catch {
       // git status failing is itself a sign something is wrong; leave
       // hasUnmergedPaths as false and rely on the other layers.
     }
 
-    const hasConflicts = textIndicatesConflict || rebaseStateExists || hasUnmergedPaths;
+    const hasConflicts =
+      textIndicatesConflict || rebaseStateExists || hasUnmergedPaths;
 
     if (hasConflicts) {
       // Attempt to fetch the list of conflicted files.  We wrap this in its
@@ -195,7 +219,7 @@ export async function runRebase(
         conflictFiles = await getConflictFiles(worktreePath);
       } catch (getConflictFilesError: unknown) {
         conflictFilesError = getConflictFilesError;
-        logger.warn('Failed to retrieve conflict files after rebase conflict', {
+        logger.warn("Failed to retrieve conflict files after rebase conflict", {
           worktreePath,
           error: getErrorMessage(getConflictFilesError),
         });
@@ -206,9 +230,12 @@ export async function runRebase(
       const aborted = await abortRebase(worktreePath);
 
       if (!aborted) {
-        logger.error('Failed to abort rebase after conflict; repository may be in a dirty state', {
-          worktreePath,
-        });
+        logger.error(
+          "Failed to abort rebase after conflict; repository may be in a dirty state",
+          {
+            worktreePath,
+          },
+        );
       }
 
       // Re-throw a composed error so callers retain both the original rebase
@@ -219,9 +246,9 @@ export async function runRebase(
           `Original rebase error: ${getErrorMessage(rebaseError)}`,
           `Additionally, fetching conflict files failed: ${getErrorMessage(conflictFilesError)}`,
           aborted
-            ? 'The rebase was aborted; no changes were applied.'
-            : 'The rebase abort also failed; repository may be in a dirty state.',
-        ].join(' ');
+            ? "The rebase was aborted; no changes were applied."
+            : "The rebase abort also failed; repository may be in a dirty state.",
+        ].join(" ");
         throw new Error(composedMessage);
       }
 
@@ -251,10 +278,13 @@ export async function runRebase(
  */
 export async function abortRebase(worktreePath: string): Promise<boolean> {
   try {
-    await execGitCommand(['rebase', '--abort'], worktreePath);
+    await execGitCommand(["rebase", "--abort"], worktreePath);
     return true;
   } catch (err) {
-    logger.warn('Failed to abort rebase after conflict', err instanceof Error ? err.message : err);
+    logger.warn(
+      "Failed to abort rebase after conflict",
+      err instanceof Error ? err.message : err,
+    );
     return false;
   }
 }

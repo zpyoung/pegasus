@@ -107,11 +107,11 @@ Abstract base for providers that spawn a CLI subprocess. Handles:
 #### CliProvider Exported Types
 
 ```typescript
-export type SpawnStrategy = 'wsl' | 'npx' | 'direct' | 'cmd';
+export type SpawnStrategy = "wsl" | "npx" | "direct" | "cmd";
 
 export interface CliSpawnConfig {
   windowsStrategy: SpawnStrategy;
-  npxPackage?: string;          // Required for 'npx' strategy
+  npxPackage?: string; // Required for 'npx' strategy
   wslDistribution?: string;
   commonPaths: Record<string, string[]>; // Per platform: 'linux' | 'darwin' | 'win32'
   versionCommand?: string;
@@ -126,6 +126,7 @@ export interface CliErrorInfo {
 ```
 
 Subclasses of `CliProvider` must implement:
+
 - `getCliName()` — CLI executable name (e.g., `'cursor-agent'`)
 - `getSpawnConfig()` — Platform-specific detection config
 - `buildCliArgs(options)` — Translate `ExecuteOptions` to CLI argument array
@@ -161,6 +162,7 @@ Handles models that start with `'claude-'` or whose name includes `'opus'`, `'so
 #### Authentication
 
 Checked in priority order:
+
 1. `ANTHROPIC_API_KEY` environment variable
 2. `ANTHROPIC_AUTH_TOKEN` environment variable
 3. API key from credentials file (managed via Settings UI)
@@ -170,13 +172,13 @@ Checked in priority order:
 
 #### Available Models
 
-| Model ID | Name | Context | Max Output | Tier |
-|---|---|---|---|---|
-| `claude-opus-4-6` | Claude Opus 4.6 | 200K | 128K | premium |
-| `claude-sonnet-4-6` | Claude Sonnet 4.6 | 200K | 64K | standard |
-| `claude-sonnet-4-20250514` | Claude Sonnet 4 | 200K | 16K | standard |
-| `claude-3-5-sonnet-20241022` | Claude 3.5 Sonnet | 200K | 8K | standard |
-| `claude-haiku-4-5-20251001` | Claude Haiku 4.5 | 200K | 8K | basic |
+| Model ID                     | Name              | Context | Max Output | Tier     |
+| ---------------------------- | ----------------- | ------- | ---------- | -------- |
+| `claude-opus-4-6`            | Claude Opus 4.6   | 200K    | 128K       | premium  |
+| `claude-sonnet-4-6`          | Claude Sonnet 4.6 | 200K    | 64K        | standard |
+| `claude-sonnet-4-20250514`   | Claude Sonnet 4   | 200K    | 16K        | standard |
+| `claude-3-5-sonnet-20241022` | Claude 3.5 Sonnet | 200K    | 8K         | standard |
+| `claude-haiku-4-5-20251001`  | Claude Haiku 4.5  | 200K    | 8K         | basic    |
 
 ---
 
@@ -204,20 +206,21 @@ Routes models matching `isCodexModel()` from `@pegasus/types`.
 #### Authentication
 
 Two methods:
+
 1. CLI login: `codex login` (OAuth tokens stored in `~/.codex/auth.json`)
 2. API key: `OPENAI_API_KEY` environment variable
 
 #### Codex Event to ProviderMessage Mapping
 
-| Codex Event | ProviderMessage |
-|---|---|
-| `item.completed` (reasoning) | `{ type: 'assistant', content: [{ type: 'thinking' }] }` |
-| `item.completed` (agent_message) | `{ type: 'assistant', content: [{ type: 'text' }] }` |
-| `item.completed` (command_execution) | `{ type: 'assistant', content: [{ type: 'text', text: '```bash...' }] }` |
-| `item.started` (command_execution) | `{ type: 'assistant', content: [{ type: 'tool_use' }] }` |
-| `item.updated` (todo_list) | `{ type: 'assistant', content: [{ type: 'text', text: '**Updated Todo...' }] }` |
-| `turn.completed` | `{ type: 'result', subtype: 'success' }` |
-| `error` | `{ type: 'error', error: '...' }` |
+| Codex Event                          | ProviderMessage                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `item.completed` (reasoning)         | `{ type: 'assistant', content: [{ type: 'thinking' }] }`                        |
+| `item.completed` (agent_message)     | `{ type: 'assistant', content: [{ type: 'text' }] }`                            |
+| `item.completed` (command_execution) | `{ type: 'assistant', content: [{ type: 'text', text: '```bash...' }] }`        |
+| `item.started` (command_execution)   | `{ type: 'assistant', content: [{ type: 'tool_use' }] }`                        |
+| `item.updated` (todo_list)           | `{ type: 'assistant', content: [{ type: 'text', text: '**Updated Todo...' }] }` |
+| `turn.completed`                     | `{ type: 'result', subtype: 'success' }`                                        |
+| `error`                              | `{ type: 'error', error: '...' }`                                               |
 
 ---
 
@@ -249,18 +252,18 @@ Requires Cursor account credentials stored in cursor-agent config. Check via Set
 
 `CursorProvider` maps Cursor-native tool calls to standard Pegasus tool names:
 
-| Cursor Tool | Standard Name |
-|---|---|
-| `readToolCall` | `Read` |
-| `writeToolCall` | `Write` |
-| `editToolCall` | `Edit` |
-| `shellToolCall` | `Bash` |
-| `deleteToolCall` | `Delete` |
-| `grepToolCall` | `Grep` |
-| `lsToolCall` | `Ls` |
-| `globToolCall` | `Glob` |
+| Cursor Tool         | Standard Name    |
+| ------------------- | ---------------- |
+| `readToolCall`      | `Read`           |
+| `writeToolCall`     | `Write`          |
+| `editToolCall`      | `Edit`           |
+| `shellToolCall`     | `Bash`           |
+| `deleteToolCall`    | `Delete`         |
+| `grepToolCall`      | `Grep`           |
+| `lsToolCall`        | `Ls`             |
+| `globToolCall`      | `Glob`           |
 | `semSearchToolCall` | `SemanticSearch` |
-| `readLintsToolCall` | `ReadLints` |
+| `readLintsToolCall` | `ReadLints`      |
 
 #### Error Codes
 
@@ -291,37 +294,38 @@ Routes models matching `isGeminiModel()` from `@pegasus/types`.
 #### Authentication
 
 Three methods (checked in order):
+
 1. `GEMINI_API_KEY` environment variable
 2. Vertex AI: `GOOGLE_APPLICATION_CREDENTIALS` or `GOOGLE_CLOUD_PROJECT`
 3. Google OAuth: configured via `gemini` CLI interactive login (stored in `~/.gemini/settings.json`)
 
 #### Tool Normalization
 
-| Gemini Tool | Standard Name |
-|---|---|
-| `write_todos` | `TodoWrite` |
-| `read_file` | `Read` |
-| `read_many_files` | `Read` |
-| `replace` | `Edit` |
-| `write_file` | `Write` |
-| `run_shell_command` | `Bash` |
-| `search_file_content` | `Grep` |
-| `glob` | `Glob` |
-| `list_directory` | `Ls` |
-| `web_fetch` | `WebFetch` |
-| `google_web_search` | `WebSearch` |
+| Gemini Tool           | Standard Name |
+| --------------------- | ------------- |
+| `write_todos`         | `TodoWrite`   |
+| `read_file`           | `Read`        |
+| `read_many_files`     | `Read`        |
+| `replace`             | `Edit`        |
+| `write_file`          | `Write`       |
+| `run_shell_command`   | `Bash`        |
+| `search_file_content` | `Grep`        |
+| `glob`                | `Glob`        |
+| `list_directory`      | `Ls`          |
+| `web_fetch`           | `WebFetch`    |
+| `google_web_search`   | `WebSearch`   |
 
 #### Gemini Stream Event Types
 
-| Event Type | Handling |
-|---|---|
-| `init` | Captures `session_id`; no message yielded |
-| `message` (assistant) | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
-| `message` (user) | Skipped |
-| `tool_use` | Yields normalized `tool_use` content block |
-| `tool_result` | Yields `tool_result` content block |
-| `result` (success) | Yields `{ type: 'result', subtype: 'success' }` |
-| `result` / `error` (error) | Yields `{ type: 'error', error: '...' }` |
+| Event Type                 | Handling                                                    |
+| -------------------------- | ----------------------------------------------------------- |
+| `init`                     | Captures `session_id`; no message yielded                   |
+| `message` (assistant)      | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
+| `message` (user)           | Skipped                                                     |
+| `tool_use`                 | Yields normalized `tool_use` content block                  |
+| `tool_result`              | Yields `tool_result` content block                          |
+| `result` (success)         | Yields `{ type: 'result', subtype: 'success' }`             |
+| `result` / `error` (error) | Yields `{ type: 'error', error: '...' }`                    |
 
 #### Error Codes
 
@@ -353,6 +357,7 @@ Routes models matching `isCopilotModel()` from `@pegasus/types`.
 #### Authentication
 
 Checked in order:
+
 1. `gh auth status` — GitHub CLI authentication
 2. `copilot auth status` — Direct Copilot CLI auth check
 3. `GITHUB_TOKEN` environment variable
@@ -362,30 +367,30 @@ Checked in order:
 
 Copilot SDK tools are normalized to standard names (case-insensitive lookup):
 
-| Copilot Tool | Standard Name |
-|---|---|
-| `read_file`, `read`, `view`, `read_many_files` | `Read` |
-| `write_file`, `write`, `create_file` | `Write` |
-| `edit_file`, `edit`, `replace`, `patch` | `Edit` |
-| `run_shell`, `run_shell_command`, `shell`, `bash`, `execute`, `terminal` | `Bash` |
-| `search`, `grep`, `search_file_content` | `Grep` |
-| `find_files`, `glob` | `Glob` |
-| `list_dir`, `list_directory`, `ls` | `Ls` |
-| `web_fetch`, `fetch` | `WebFetch` |
-| `web_search`, `search_web`, `google_web_search` | `WebSearch` |
-| `todo_write`, `write_todos`, `update_todos` | `TodoWrite` |
-| `report_intent` | `ReportIntent` |
+| Copilot Tool                                                             | Standard Name  |
+| ------------------------------------------------------------------------ | -------------- |
+| `read_file`, `read`, `view`, `read_many_files`                           | `Read`         |
+| `write_file`, `write`, `create_file`                                     | `Write`        |
+| `edit_file`, `edit`, `replace`, `patch`                                  | `Edit`         |
+| `run_shell`, `run_shell_command`, `shell`, `bash`, `execute`, `terminal` | `Bash`         |
+| `search`, `grep`, `search_file_content`                                  | `Grep`         |
+| `find_files`, `glob`                                                     | `Glob`         |
+| `list_dir`, `list_directory`, `ls`                                       | `Ls`           |
+| `web_fetch`, `fetch`                                                     | `WebFetch`     |
+| `web_search`, `search_web`, `google_web_search`                          | `WebSearch`    |
+| `todo_write`, `write_todos`, `update_todos`                              | `TodoWrite`    |
+| `report_intent`                                                          | `ReportIntent` |
 
 #### Copilot SDK Event Types
 
-| SDK Event | Handling |
-|---|---|
-| `assistant.message` | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
-| `assistant.message_delta` | Skipped (final message has complete content) |
-| `tool.execution_start` | Yields normalized `tool_use` content block |
-| `tool.execution_complete` | Yields `tool_result` content block |
-| `session.idle` | Yields `{ type: 'result', subtype: 'success' }` |
-| `session.error` | Yields `{ type: 'error', error: '...' }` |
+| SDK Event                 | Handling                                                    |
+| ------------------------- | ----------------------------------------------------------- |
+| `assistant.message`       | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
+| `assistant.message_delta` | Skipped (final message has complete content)                |
+| `tool.execution_start`    | Yields normalized `tool_use` content block                  |
+| `tool.execution_complete` | Yields `tool_result` content block                          |
+| `session.idle`            | Yields `{ type: 'result', subtype: 'success' }`             |
+| `session.error`           | Yields `{ type: 'error', error: '...' }`                    |
 
 #### Error Codes
 
@@ -428,14 +433,14 @@ Routes models matching `isOpencodeModel()` from `@pegasus/types`. OpenCode model
 
 #### OpenCode Stream Event Types
 
-| Event Type | Handling |
-|---|---|
-| `text` | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
-| `tool_use` | Yields normalized `tool_use` or `tool_result` content block |
-| `tool_call` | Yields `tool_use` content block |
-| `tool_result` | Yields `tool_result` content block |
-| `step_start` / `step_finish` | Ignored (agentic loop bookkeeping) |
-| `error` / `tool_error` | Yields `{ type: 'error', error: '...' }` |
+| Event Type                   | Handling                                                    |
+| ---------------------------- | ----------------------------------------------------------- |
+| `text`                       | Yields `{ type: 'assistant', content: [{ type: 'text' }] }` |
+| `tool_use`                   | Yields normalized `tool_use` or `tool_result` content block |
+| `tool_call`                  | Yields `tool_use` content block                             |
+| `tool_result`                | Yields `tool_result` content block                          |
+| `step_start` / `step_finish` | Ignored (agentic loop bookkeeping)                          |
+| `error` / `tool_error`       | Yields `{ type: 'error', error: '...' }`                    |
 
 ---
 
@@ -465,14 +470,16 @@ yield { type: 'result', subtype: 'success' };
 Providers register themselves using `registerProvider()` on import. The factory file imports all providers and registers them with name, factory function, model matcher, priority, and optional aliases:
 
 ```typescript
-registerProvider('claude', {
+registerProvider("claude", {
   factory: () => new ClaudeProvider(),
-  aliases: ['anthropic'],
-  canHandleModel: (model) => model.startsWith('claude-') || ['opus', 'sonnet', 'haiku'].some(n => model.includes(n)),
+  aliases: ["anthropic"],
+  canHandleModel: (model) =>
+    model.startsWith("claude-") ||
+    ["opus", "sonnet", "haiku"].some((n) => model.includes(n)),
   priority: 0,
 });
 
-registerProvider('cursor', {
+registerProvider("cursor", {
   factory: () => new CursorProvider(),
   canHandleModel: (model) => isCursorModel(model),
   priority: 10,
@@ -483,14 +490,14 @@ registerProvider('cursor', {
 
 ### Priority Order
 
-| Priority | Provider |
-|---|---|
-| 10 | cursor |
-| 6 | copilot |
-| 5 | codex |
-| 4 | gemini |
-| 3 | opencode |
-| 0 | claude (default fallback) |
+| Priority | Provider                  |
+| -------- | ------------------------- |
+| 10       | cursor                    |
+| 6        | copilot                   |
+| 5        | codex                     |
+| 4        | gemini                    |
+| 3        | opencode                  |
+| 0        | claude (default fallback) |
 
 ### ProviderFactory Static Methods
 
@@ -503,7 +510,7 @@ class ProviderFactory {
    */
   static getProviderForModel(
     modelId: string,
-    options?: { throwOnDisconnected?: boolean }
+    options?: { throwOnDisconnected?: boolean },
   ): BaseProvider;
 
   /**
@@ -573,14 +580,14 @@ export function isProviderDisconnected(providerName: string): boolean;
 
 Checks for the presence of a sentinel file in `.pegasus/`:
 
-| Provider | Sentinel File |
-|---|---|
-| `claude` | `.claude-disconnected` |
-| `codex` | `.codex-disconnected` |
-| `cursor` | `.cursor-disconnected` |
+| Provider   | Sentinel File            |
+| ---------- | ------------------------ |
+| `claude`   | `.claude-disconnected`   |
+| `codex`    | `.codex-disconnected`    |
+| `cursor`   | `.cursor-disconnected`   |
 | `opencode` | `.opencode-disconnected` |
-| `gemini` | `.gemini-disconnected` |
-| `copilot` | `.copilot-disconnected` |
+| `gemini`   | `.gemini-disconnected`   |
+| `copilot`  | `.copilot-disconnected`  |
 
 `getProviderForModel()` calls this check (when `throwOnDisconnected` is `true`, the default) and throws with a user-readable message directing the user to Settings > Providers to reconnect.
 
@@ -596,10 +603,14 @@ A higher-level interface over `ProviderFactory` for routes that only need text r
 
 ```typescript
 // Accumulate a complete text response
-async function simpleQuery(options: SimpleQueryOptions): Promise<SimpleQueryResult>
+async function simpleQuery(
+  options: SimpleQueryOptions,
+): Promise<SimpleQueryResult>;
 
 // Stream with callbacks for real-time progress
-async function streamingQuery(options: StreamingQueryOptions): Promise<SimpleQueryResult>
+async function streamingQuery(
+  options: StreamingQueryOptions,
+): Promise<SimpleQueryResult>;
 ```
 
 ### SimpleQueryOptions
@@ -607,19 +618,19 @@ async function streamingQuery(options: StreamingQueryOptions): Promise<SimpleQue
 ```typescript
 interface SimpleQueryOptions {
   prompt: string | Array<{ type: string; text?: string; source?: object }>;
-  model?: string;                   // Default: 'claude-sonnet-4-6'
+  model?: string; // Default: 'claude-sonnet-4-6'
   cwd: string;
   systemPrompt?: string;
-  maxTurns?: number;                // Default: 1 for simpleQuery, 250 for streamingQuery
-  allowedTools?: string[];          // Default: [] for simpleQuery, ['Read', 'Glob', 'Grep'] for streamingQuery
+  maxTurns?: number; // Default: 1 for simpleQuery, 250 for streamingQuery
+  allowedTools?: string[]; // Default: [] for simpleQuery, ['Read', 'Glob', 'Grep'] for streamingQuery
   abortController?: AbortController;
-  outputFormat?: { type: 'json_schema'; schema: Record<string, unknown> };
+  outputFormat?: { type: "json_schema"; schema: Record<string, unknown> };
   thinkingLevel?: ThinkingLevel;
   reasoningEffort?: ReasoningEffort;
   readOnly?: boolean;
-  settingSources?: Array<'user' | 'project' | 'local'>;
+  settingSources?: Array<"user" | "project" | "local">;
   claudeCompatibleProvider?: ClaudeCompatibleProvider;
-  claudeApiProfile?: ClaudeApiProfile;  // @deprecated, use claudeCompatibleProvider
+  claudeApiProfile?: ClaudeApiProfile; // @deprecated, use claudeCompatibleProvider
   credentials?: Credentials;
 }
 ```
@@ -648,13 +659,16 @@ interface SimpleQueryResult {
 ### Usage Example
 
 ```typescript
-import { simpleQuery, streamingQuery } from '../providers/simple-query-service.js';
+import {
+  simpleQuery,
+  streamingQuery,
+} from "../providers/simple-query-service.js";
 
 // Simple one-shot query
 const result = await simpleQuery({
-  prompt: 'Generate a feature title for: user authentication',
+  prompt: "Generate a feature title for: user authentication",
   cwd: process.cwd(),
-  systemPrompt: 'You are a title generator. Return only the title.',
+  systemPrompt: "You are a title generator. Return only the title.",
   maxTurns: 1,
   allowedTools: [],
 });
@@ -662,10 +676,10 @@ console.log(result.text);
 
 // Streaming with progress callbacks
 const result = await streamingQuery({
-  prompt: 'Analyze this project and suggest improvements',
-  cwd: '/path/to/project',
+  prompt: "Analyze this project and suggest improvements",
+  cwd: "/path/to/project",
   maxTurns: 250,
-  allowedTools: ['Read', 'Glob', 'Grep'],
+  allowedTools: ["Read", "Glob", "Grep"],
   onText: (text) => emitProgressEvent(text),
   onToolUse: (tool, input) => emitToolUseEvent(tool, input),
   onThinking: (thinking) => emitThinkingEvent(thinking),
@@ -682,47 +696,76 @@ For CLI-based providers, extend `CliProvider`:
 
 ```typescript
 // apps/server/src/providers/myprovider-provider.ts
-import { CliProvider, type CliSpawnConfig } from './cli-provider.js';
-import type { ExecuteOptions, ProviderMessage, InstallationStatus, ModelDefinition } from './types.js';
+import { CliProvider, type CliSpawnConfig } from "./cli-provider.js";
+import type {
+  ExecuteOptions,
+  ProviderMessage,
+  InstallationStatus,
+  ModelDefinition,
+} from "./types.js";
 
 export class MyProvider extends CliProvider {
-  getName(): string { return 'myprovider'; }
-  getCliName(): string { return 'my-cli'; }
+  getName(): string {
+    return "myprovider";
+  }
+  getCliName(): string {
+    return "my-cli";
+  }
 
   getSpawnConfig(): CliSpawnConfig {
     return {
-      windowsStrategy: 'npx',
-      npxPackage: '@myorg/my-cli',
+      windowsStrategy: "npx",
+      npxPackage: "@myorg/my-cli",
       commonPaths: {
-        linux: ['~/.local/bin/my-cli', '/usr/local/bin/my-cli'],
-        darwin: ['~/.local/bin/my-cli', '/opt/homebrew/bin/my-cli'],
+        linux: ["~/.local/bin/my-cli", "/usr/local/bin/my-cli"],
+        darwin: ["~/.local/bin/my-cli", "/opt/homebrew/bin/my-cli"],
         win32: [],
       },
     };
   }
 
   buildCliArgs(options: ExecuteOptions): string[] {
-    return ['--json', '--model', options.model, '--prompt', options.prompt as string];
+    return [
+      "--json",
+      "--model",
+      options.model,
+      "--prompt",
+      options.prompt as string,
+    ];
   }
 
   normalizeEvent(event: unknown): ProviderMessage | null {
     const e = event as { type: string; content?: string };
-    if (e.type === 'text') {
-      return { type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: e.content ?? '' }] } };
+    if (e.type === "text") {
+      return {
+        type: "assistant",
+        message: {
+          role: "assistant",
+          content: [{ type: "text", text: e.content ?? "" }],
+        },
+      };
     }
-    if (e.type === 'done') {
-      return { type: 'result', subtype: 'success' };
+    if (e.type === "done") {
+      return { type: "result", subtype: "success" };
     }
     return null;
   }
 
   async detectInstallation(): Promise<InstallationStatus> {
     const installed = await this.isInstalled();
-    return { installed, method: 'cli', authenticated: true };
+    return { installed, method: "cli", authenticated: true };
   }
 
   getAvailableModels(): ModelDefinition[] {
-    return [{ id: 'myprovider-default', name: 'My Provider Default', modelString: 'default', provider: 'myprovider', description: '...' }];
+    return [
+      {
+        id: "myprovider-default",
+        name: "My Provider Default",
+        modelString: "default",
+        provider: "myprovider",
+        description: "...",
+      },
+    ];
   }
 }
 ```
@@ -735,7 +778,7 @@ Add a type-guard to `libs/types/src/` and export it from `libs/types/src/index.t
 
 ```typescript
 export function isMyProviderModel(modelId: string): boolean {
-  return modelId.startsWith('myprovider-');
+  return modelId.startsWith("myprovider-");
 }
 ```
 
@@ -744,14 +787,14 @@ export function isMyProviderModel(modelId: string): boolean {
 Add the registration block at the bottom of `provider-factory.ts`:
 
 ```typescript
-import { MyProvider } from './myprovider-provider.js';
-import { isMyProviderModel } from '@pegasus/types';
+import { MyProvider } from "./myprovider-provider.js";
+import { isMyProviderModel } from "@pegasus/types";
 
-registerProvider('myprovider', {
+registerProvider("myprovider", {
   factory: () => new MyProvider(),
-  aliases: ['my-alias'],
+  aliases: ["my-alias"],
   canHandleModel: (model) => isMyProviderModel(model),
-  priority: 7,  // Choose a priority that reflects desired matching order
+  priority: 7, // Choose a priority that reflects desired matching order
 });
 ```
 
@@ -760,7 +803,7 @@ registerProvider('myprovider', {
 Update `apps/server/src/providers/index.ts`:
 
 ```typescript
-export { MyProvider } from './myprovider-provider.js';
+export { MyProvider } from "./myprovider-provider.js";
 ```
 
 ### No Other Changes Required
@@ -820,17 +863,17 @@ interface ExecuteOptions {
 
 ```typescript
 interface ProviderMessage {
-  type: 'assistant' | 'user' | 'error' | 'result';
+  type: "assistant" | "user" | "error" | "result";
   subtype?:
-    | 'success'
-    | 'error'
-    | 'error_max_turns'
-    | 'error_max_structured_output_retries'
-    | 'error_during_execution'
-    | 'error_max_budget_usd';
+    | "success"
+    | "error"
+    | "error_max_turns"
+    | "error_max_structured_output_retries"
+    | "error_during_execution"
+    | "error_max_budget_usd";
   session_id?: string;
   message?: {
-    role: 'user' | 'assistant';
+    role: "user" | "assistant";
     content: ContentBlock[];
   };
   result?: string;
@@ -844,7 +887,7 @@ interface ProviderMessage {
 
 ```typescript
 interface ContentBlock {
-  type: 'text' | 'tool_use' | 'thinking' | 'tool_result';
+  type: "text" | "tool_use" | "thinking" | "tool_result";
   text?: string;
   thinking?: string;
   name?: string;
@@ -862,7 +905,7 @@ interface InstallationStatus {
   path?: string;
   version?: string;
   /** 'cli' | 'wsl' | 'npm' | 'brew' | 'sdk' */
-  method?: 'cli' | 'wsl' | 'npm' | 'brew' | 'sdk';
+  method?: "cli" | "wsl" | "npm" | "brew" | "sdk";
   hasApiKey?: boolean;
   hasOAuthToken?: boolean;
   authenticated?: boolean;
@@ -883,7 +926,7 @@ interface ModelDefinition {
   maxOutputTokens?: number;
   supportsVision?: boolean;
   supportsTools?: boolean;
-  tier?: 'basic' | 'standard' | 'premium';
+  tier?: "basic" | "standard" | "premium";
   default?: boolean;
   hasReasoning?: boolean;
 }
@@ -892,7 +935,7 @@ interface ModelDefinition {
 ### ReasoningEffort
 
 ```typescript
-type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
 ```
 
 Timeout multipliers (applied to a 120 s CLI base or 30 s SDK base):
@@ -931,9 +974,9 @@ Exception: `CopilotProvider` skips this check because Copilot model IDs legitima
 Use `createLogger()` from `@pegasus/utils` with the provider class name:
 
 ```typescript
-const logger = createLogger('MyProvider');
-logger.debug('CLI detected at:', this.cliPath);
-logger.error('Authentication failed:', error);
+const logger = createLogger("MyProvider");
+logger.debug("CLI detected at:", this.cliPath);
+logger.error("Authentication failed:", error);
 ```
 
 ### Abort Signal
@@ -949,8 +992,9 @@ Respect the abort controller. `CliProvider.executeQuery()` handles this for CLI 
 **Problem**: `ProviderFactory.getProviderForModel()` routes to the wrong provider.
 
 **Debug**:
+
 ```typescript
-console.log(ProviderFactory.getProviderNameForModel('my-model-id'));
+console.log(ProviderFactory.getProviderNameForModel("my-model-id"));
 console.log(ProviderFactory.getRegisteredProviderNames());
 ```
 
@@ -963,6 +1007,7 @@ Check that: (1) the provider is registered, (2) `canHandleModel()` returns true 
 **Solution**: Check for `.pegasus/.<provider>-disconnected` sentinel file in the project directory. Remove it or use Settings > Providers > Sign In to reconnect.
 
 To bypass the check for diagnostics:
+
 ```typescript
 ProviderFactory.getProviderForModel(modelId, { throwOnDisconnected: false });
 ```
@@ -972,6 +1017,7 @@ ProviderFactory.getProviderForModel(modelId, { throwOnDisconnected: false });
 **Problem**: Provider fails with authentication error.
 
 **Solution**:
+
 1. Call `provider.detectInstallation()` and inspect `authenticated` field
 2. For CLI providers: run the CLI interactively to authenticate (e.g., `gemini`, `codex login`, `gh auth login`)
 3. Check environment variables: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GITHUB_TOKEN`
@@ -981,6 +1027,7 @@ ProviderFactory.getProviderForModel(modelId, { throwOnDisconnected: false });
 **Problem**: CLI provider throws "CLI not found."
 
 **Solution**:
+
 1. Verify CLI is installed: run the CLI command directly in a terminal
 2. Check `CliSpawnConfig.commonPaths` for expected installation locations
 3. On Windows: verify WSL is installed and the CLI is available inside WSL (for WSL-strategy providers)
@@ -990,6 +1037,7 @@ ProviderFactory.getProviderForModel(modelId, { throwOnDisconnected: false });
 **Problem**: CLI subprocess produces no output.
 
 **Solution**:
+
 1. For reasoning models, check that `reasoningEffort` is set appropriately — `'xhigh'` uses 4× the base timeout
 2. Enable debug output: set `PEGASUS_DEBUG_RAW_OUTPUT=true` and `LOG_LEVEL=debug`
 3. Verify the CLI runs correctly in isolation with the same arguments
@@ -999,6 +1047,7 @@ ProviderFactory.getProviderForModel(modelId, { throwOnDisconnected: false });
 **Problem**: Provider fails to parse CLI output.
 
 **Solution**:
+
 1. Run the CLI manually with the same flags and inspect raw output
 2. Check for unexpected non-JSON lines (warnings, banners) that need to be filtered in `normalizeEvent()`
 3. Return `null` from `normalizeEvent()` to silently skip unknown event types

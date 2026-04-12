@@ -5,24 +5,28 @@
  * (defaults to Opus for high-quality specification generation).
  */
 
-import * as secureFs from '../../lib/secure-fs.js';
-import type { EventEmitter } from '../../lib/events.js';
-import { specOutputSchema, specToXml, type SpecOutput } from '../../lib/app-spec-format.js';
-import { createLogger } from '@pegasus/utils';
-import { DEFAULT_PHASE_MODELS, supportsStructuredOutput } from '@pegasus/types';
-import { resolvePhaseModel } from '@pegasus/model-resolver';
-import { extractJson } from '../../lib/json-extractor.js';
-import { streamingQuery } from '../../providers/simple-query-service.js';
-import { generateFeaturesFromSpec } from './generate-features-from-spec.js';
-import { ensurePegasusDir, getAppSpecPath } from '@pegasus/platform';
-import type { SettingsService } from '../../services/settings-service.js';
+import * as secureFs from "../../lib/secure-fs.js";
+import type { EventEmitter } from "../../lib/events.js";
+import {
+  specOutputSchema,
+  specToXml,
+  type SpecOutput,
+} from "../../lib/app-spec-format.js";
+import { createLogger } from "@pegasus/utils";
+import { DEFAULT_PHASE_MODELS, supportsStructuredOutput } from "@pegasus/types";
+import { resolvePhaseModel } from "@pegasus/model-resolver";
+import { extractJson } from "../../lib/json-extractor.js";
+import { streamingQuery } from "../../providers/simple-query-service.js";
+import { generateFeaturesFromSpec } from "./generate-features-from-spec.js";
+import { ensurePegasusDir, getAppSpecPath } from "@pegasus/platform";
+import type { SettingsService } from "../../services/settings-service.js";
 import {
   getAutoLoadClaudeMdSetting,
   getPromptCustomization,
   getPhaseModelWithOverrides,
-} from '../../lib/settings-helpers.js';
+} from "../../lib/settings-helpers.js";
 
-const logger = createLogger('SpecRegeneration');
+const logger = createLogger("SpecRegeneration");
 
 export async function generateSpec(
   projectPath: string,
@@ -32,22 +36,25 @@ export async function generateSpec(
   generateFeatures?: boolean,
   analyzeProject?: boolean,
   maxFeatures?: number,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): Promise<void> {
-  logger.info('========== generateSpec() started ==========');
-  logger.info('projectPath:', projectPath);
-  logger.info('projectOverview length:', `${projectOverview.length} chars`);
-  logger.info('projectOverview preview:', projectOverview.substring(0, 300));
-  logger.info('generateFeatures:', generateFeatures);
-  logger.info('analyzeProject:', analyzeProject);
-  logger.info('maxFeatures:', maxFeatures);
+  logger.info("========== generateSpec() started ==========");
+  logger.info("projectPath:", projectPath);
+  logger.info("projectOverview length:", `${projectOverview.length} chars`);
+  logger.info("projectOverview preview:", projectOverview.substring(0, 300));
+  logger.info("generateFeatures:", generateFeatures);
+  logger.info("analyzeProject:", analyzeProject);
+  logger.info("maxFeatures:", maxFeatures);
 
   // Get customized prompts from settings
-  const prompts = await getPromptCustomization(settingsService, '[SpecRegeneration]');
+  const prompts = await getPromptCustomization(
+    settingsService,
+    "[SpecRegeneration]",
+  );
 
   // Build the prompt based on whether we should analyze the project
-  let analysisInstructions = '';
-  let techStackDefaults = '';
+  let analysisInstructions = "";
+  let techStackDefaults = "";
 
   if (analyzeProject !== false) {
     // Default to true - analyze the project
@@ -79,21 +86,21 @@ ${analysisInstructions}
 
 ${prompts.appSpec.structuredSpecInstructions}`;
 
-  logger.info('========== PROMPT BEING SENT ==========');
+  logger.info("========== PROMPT BEING SENT ==========");
   logger.info(`Prompt length: ${prompt.length} chars`);
   logger.info(`Prompt preview (first 500 chars):\n${prompt.substring(0, 500)}`);
-  logger.info('========== END PROMPT PREVIEW ==========');
+  logger.info("========== END PROMPT PREVIEW ==========");
 
-  events.emit('spec-regeneration:event', {
-    type: 'spec_progress',
-    content: 'Starting spec generation...\n',
+  events.emit("spec-regeneration:event", {
+    type: "spec_progress",
+    content: "Starting spec generation...\n",
   });
 
   // Load autoLoadClaudeMd setting
   const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
     projectPath,
     settingsService,
-    '[SpecRegeneration]'
+    "[SpecRegeneration]",
   );
 
   // Get model from phase settings with provider info
@@ -103,10 +110,10 @@ ${prompts.appSpec.structuredSpecInstructions}`;
     credentials,
   } = settingsService
     ? await getPhaseModelWithOverrides(
-        'specGenerationModel',
+        "specGenerationModel",
         settingsService,
         projectPath,
-        '[SpecRegeneration]'
+        "[SpecRegeneration]",
       )
     : {
         phaseModel: DEFAULT_PHASE_MODELS.specGenerationModel,
@@ -115,15 +122,19 @@ ${prompts.appSpec.structuredSpecInstructions}`;
       };
   const { model, thinkingLevel } = resolvePhaseModel(phaseModelEntry);
 
-  logger.info('Using model:', model, provider ? `via provider: ${provider.name}` : 'direct API');
+  logger.info(
+    "Using model:",
+    model,
+    provider ? `via provider: ${provider.name}` : "direct API",
+  );
 
-  let responseText = '';
+  let responseText = "";
   let structuredOutput: SpecOutput | null = null;
 
   // Determine if we should use structured output based on model type
   const useStructuredOutput = supportsStructuredOutput(model);
   logger.info(
-    `Structured output mode: ${useStructuredOutput ? 'enabled (Claude/Codex)' : 'disabled (using JSON instructions)'}`
+    `Structured output mode: ${useStructuredOutput ? "enabled (Claude/Codex)" : "disabled (using JSON instructions)"}`,
   );
 
   // Build the final prompt - for non-Claude/Codex models, include JSON schema instructions
@@ -147,34 +158,34 @@ Your entire response should be valid JSON starting with { and ending with }. No 
     model,
     cwd: projectPath,
     maxTurns: 250,
-    allowedTools: ['Read', 'Glob', 'Grep'],
+    allowedTools: ["Read", "Glob", "Grep"],
     abortController,
     thinkingLevel,
     readOnly: true, // Spec generation only reads code, we write the spec ourselves
-    settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+    settingSources: autoLoadClaudeMd ? ["user", "project", "local"] : undefined,
     claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
     credentials, // Pass credentials for resolving 'credentials' apiKeySource
     outputFormat: useStructuredOutput
       ? {
-          type: 'json_schema',
+          type: "json_schema",
           schema: specOutputSchema,
         }
       : undefined,
     onText: (text) => {
       responseText += text;
       logger.info(
-        `Text block received (${text.length} chars), total now: ${responseText.length} chars`
+        `Text block received (${text.length} chars), total now: ${responseText.length} chars`,
       );
-      events.emit('spec-regeneration:event', {
-        type: 'spec_regeneration_progress',
+      events.emit("spec-regeneration:event", {
+        type: "spec_regeneration_progress",
         content: text,
         projectPath: projectPath,
       });
     },
     onToolUse: (tool, input) => {
-      logger.info('Tool use:', tool);
-      events.emit('spec-regeneration:event', {
-        type: 'spec_tool',
+      logger.info("Tool use:", tool);
+      events.emit("spec-regeneration:event", {
+        type: "spec_tool",
         tool,
         input,
       });
@@ -184,8 +195,11 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   // Get structured output if available
   if (result.structured_output) {
     structuredOutput = result.structured_output as unknown as SpecOutput;
-    logger.info('✅ Received structured output');
-    logger.debug('Structured output:', JSON.stringify(structuredOutput, null, 2));
+    logger.info("✅ Received structured output");
+    logger.debug(
+      "Structured output:",
+      JSON.stringify(structuredOutput, null, 2),
+    );
   } else if (!useStructuredOutput && responseText) {
     // For non-Claude providers, parse JSON from response text
     structuredOutput = extractJson<SpecOutput>(responseText, { logger });
@@ -199,55 +213,68 @@ Your entire response should be valid JSON starting with { and ending with }. No 
 
   if (structuredOutput) {
     // Use structured output - convert JSON to XML
-    logger.info('✅ Using structured output for XML generation');
+    logger.info("✅ Using structured output for XML generation");
     xmlContent = specToXml(structuredOutput);
-    logger.info(`Generated XML from structured output: ${xmlContent.length} chars`);
+    logger.info(
+      `Generated XML from structured output: ${xmlContent.length} chars`,
+    );
   } else {
     // Fallback: Extract XML content from response text
     // Claude might include conversational text before/after
     // See: https://github.com/zpyoung/pegasus/issues/149
-    logger.warn('⚠️ No structured output, falling back to text parsing');
-    logger.info('========== FINAL RESPONSE TEXT ==========');
-    logger.info(responseText || '(empty)');
-    logger.info('========== END RESPONSE TEXT ==========');
+    logger.warn("⚠️ No structured output, falling back to text parsing");
+    logger.info("========== FINAL RESPONSE TEXT ==========");
+    logger.info(responseText || "(empty)");
+    logger.info("========== END RESPONSE TEXT ==========");
 
     if (!responseText || responseText.trim().length === 0) {
-      throw new Error('No response text and no structured output - cannot generate spec');
+      throw new Error(
+        "No response text and no structured output - cannot generate spec",
+      );
     }
 
-    const xmlStart = responseText.indexOf('<project_specification>');
-    const xmlEnd = responseText.lastIndexOf('</project_specification>');
+    const xmlStart = responseText.indexOf("<project_specification>");
+    const xmlEnd = responseText.lastIndexOf("</project_specification>");
 
     if (xmlStart !== -1 && xmlEnd !== -1) {
       // Extract just the XML content, discarding any conversational text before/after
-      xmlContent = responseText.substring(xmlStart, xmlEnd + '</project_specification>'.length);
-      logger.info(`Extracted XML content: ${xmlContent.length} chars (from position ${xmlStart})`);
+      xmlContent = responseText.substring(
+        xmlStart,
+        xmlEnd + "</project_specification>".length,
+      );
+      logger.info(
+        `Extracted XML content: ${xmlContent.length} chars (from position ${xmlStart})`,
+      );
     } else {
       // No XML found, try JSON extraction
-      logger.warn('⚠️ No XML tags found, attempting JSON extraction...');
+      logger.warn("⚠️ No XML tags found, attempting JSON extraction...");
       const extractedJson = extractJson<SpecOutput>(responseText, { logger });
 
       if (
         extractedJson &&
-        typeof extractedJson.project_name === 'string' &&
-        typeof extractedJson.overview === 'string' &&
+        typeof extractedJson.project_name === "string" &&
+        typeof extractedJson.overview === "string" &&
         Array.isArray(extractedJson.technology_stack) &&
         Array.isArray(extractedJson.core_capabilities) &&
         Array.isArray(extractedJson.implemented_features)
       ) {
-        logger.info('✅ Successfully extracted JSON from response text');
+        logger.info("✅ Successfully extracted JSON from response text");
         xmlContent = specToXml(extractedJson);
-        logger.info(`✅ Converted extracted JSON to XML: ${xmlContent.length} chars`);
+        logger.info(
+          `✅ Converted extracted JSON to XML: ${xmlContent.length} chars`,
+        );
       } else {
         // Neither XML nor valid JSON found
-        logger.error('❌ Response does not contain valid XML or JSON structure');
         logger.error(
-          'This typically happens when structured output failed and the agent produced conversational text instead of structured output'
+          "❌ Response does not contain valid XML or JSON structure",
+        );
+        logger.error(
+          "This typically happens when structured output failed and the agent produced conversational text instead of structured output",
         );
         throw new Error(
-          'Failed to generate spec: No valid XML or JSON structure found in response. ' +
-            'The response contained conversational text but no <project_specification> tags or valid JSON. ' +
-            'Please try again.'
+          "Failed to generate spec: No valid XML or JSON structure found in response. " +
+            "The response contained conversational text but no <project_specification> tags or valid JSON. " +
+            "Please try again.",
         );
       }
     }
@@ -257,40 +284,40 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   await ensurePegasusDir(projectPath);
   const specPath = getAppSpecPath(projectPath);
 
-  logger.info('Saving spec to:', specPath);
+  logger.info("Saving spec to:", specPath);
   logger.info(`Content to save (${xmlContent.length} chars)`);
 
   await secureFs.writeFile(specPath, xmlContent);
 
   // Verify the file was written
-  const savedContent = await secureFs.readFile(specPath, 'utf-8');
+  const savedContent = await secureFs.readFile(specPath, "utf-8");
   logger.info(`Verified saved file: ${savedContent.length} chars`);
   if (savedContent.length === 0) {
-    logger.error('❌ File was saved but is empty!');
+    logger.error("❌ File was saved but is empty!");
   }
 
-  logger.info('Spec saved successfully');
+  logger.info("Spec saved successfully");
 
   // Emit spec completion event
   if (generateFeatures) {
     // If features will be generated, emit intermediate completion
-    events.emit('spec-regeneration:event', {
-      type: 'spec_regeneration_progress',
-      content: '[Phase: spec_complete] Spec created! Generating features...\n',
+    events.emit("spec-regeneration:event", {
+      type: "spec_regeneration_progress",
+      content: "[Phase: spec_complete] Spec created! Generating features...\n",
       projectPath: projectPath,
     });
   } else {
     // If no features, emit final completion
-    events.emit('spec-regeneration:event', {
-      type: 'spec_regeneration_complete',
-      message: 'Spec regeneration complete!',
+    events.emit("spec-regeneration:event", {
+      type: "spec_regeneration_complete",
+      message: "Spec regeneration complete!",
       projectPath: projectPath,
     });
   }
 
   // If generate features was requested, generate them from the spec
   if (generateFeatures) {
-    logger.info('Starting feature generation from spec...');
+    logger.info("Starting feature generation from spec...");
     // Create a new abort controller for feature generation
     const featureAbortController = new AbortController();
     try {
@@ -299,19 +326,19 @@ Your entire response should be valid JSON starting with { and ending with }. No 
         events,
         featureAbortController,
         maxFeatures,
-        settingsService
+        settingsService,
       );
       // Final completion will be emitted by generateFeaturesFromSpec -> parseAndCreateFeatures
     } catch (featureError) {
-      logger.error('Feature generation failed:', featureError);
+      logger.error("Feature generation failed:", featureError);
       // Don't throw - spec generation succeeded, feature generation is optional
-      events.emit('spec-regeneration:event', {
-        type: 'spec_regeneration_error',
-        error: (featureError as Error).message || 'Feature generation failed',
+      events.emit("spec-regeneration:event", {
+        type: "spec_regeneration_error",
+        error: (featureError as Error).message || "Feature generation failed",
         projectPath: projectPath,
       });
     }
   }
 
-  logger.debug('========== generateSpec() completed ==========');
+  logger.debug("========== generateSpec() completed ==========");
 }

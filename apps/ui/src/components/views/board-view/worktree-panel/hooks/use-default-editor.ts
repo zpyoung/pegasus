@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useEffect, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('DefaultEditor');
+const logger = createLogger("DefaultEditor");
 
 export function useDefaultEditor() {
-  const [defaultEditorName, setDefaultEditorName] = useState<string>('Editor');
+  const [defaultEditorName, setDefaultEditorName] = useState<string>("Editor");
 
   const fetchDefaultEditor = useCallback(async () => {
     try {
@@ -18,7 +18,7 @@ export function useDefaultEditor() {
         setDefaultEditorName(result.result.editorName);
       }
     } catch (error) {
-      logger.error('Failed to fetch default editor:', error);
+      logger.error("Failed to fetch default editor:", error);
     }
   }, []);
 

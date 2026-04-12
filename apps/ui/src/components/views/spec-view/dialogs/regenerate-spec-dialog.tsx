@@ -1,5 +1,5 @@
-import { Sparkles, Clock } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
+import { Sparkles, Clock } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -7,13 +7,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { FEATURE_COUNT_OPTIONS } from '../constants';
-import type { RegenerateSpecDialogProps, FeatureCount } from '../types';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { FEATURE_COUNT_OPTIONS } from "../constants";
+import type { RegenerateSpecDialogProps, FeatureCount } from "../types";
 
 export function RegenerateSpecDialog({
   open,
@@ -30,7 +30,9 @@ export function RegenerateSpecDialog({
   isRegenerating,
   isGeneratingFeatures = false,
 }: RegenerateSpecDialogProps) {
-  const selectedOption = FEATURE_COUNT_OPTIONS.find((o) => o.value === featureCount);
+  const selectedOption = FEATURE_COUNT_OPTIONS.find(
+    (o) => o.value === featureCount,
+  );
   const isDisabled = isRegenerating || isGeneratingFeatures;
 
   return (
@@ -46,9 +48,10 @@ export function RegenerateSpecDialog({
         <DialogHeader>
           <DialogTitle>Regenerate App Specification</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            We will regenerate your app spec based on a short project definition and the current
-            tech stack found in your project. The agent will analyze your codebase to understand
-            your existing technologies and create a comprehensive specification.
+            We will regenerate your app spec based on a short project definition
+            and the current tech stack found in your project. The agent will
+            analyze your codebase to understand your existing technologies and
+            create a comprehensive specification.
           </DialogDescription>
         </DialogHeader>
 
@@ -56,8 +59,9 @@ export function RegenerateSpecDialog({
           <div className="space-y-2">
             <label className="text-sm font-medium">Describe your project</label>
             <p className="text-xs text-muted-foreground">
-              Provide a clear description of what your app should do. Be as detailed as you want -
-              the more context you provide, the more comprehensive the spec will be.
+              Provide a clear description of what your app should do. Be as
+              detailed as you want - the more context you provide, the more
+              comprehensive the spec will be.
             </p>
             <textarea
               className="w-full h-40 p-3 rounded-md border border-border bg-background font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
@@ -72,20 +76,23 @@ export function RegenerateSpecDialog({
             <Checkbox
               id="regenerate-analyze-project"
               checked={analyzeProject}
-              onCheckedChange={(checked) => onAnalyzeProjectChange(checked === true)}
+              onCheckedChange={(checked) =>
+                onAnalyzeProjectChange(checked === true)
+              }
               disabled={isDisabled}
             />
             <div className="space-y-1">
               <label
                 htmlFor="regenerate-analyze-project"
-                className={`text-sm font-medium ${isDisabled ? '' : 'cursor-pointer'}`}
+                className={`text-sm font-medium ${isDisabled ? "" : "cursor-pointer"}`}
               >
                 Analyze current project for additional context
               </label>
               <p className="text-xs text-muted-foreground">
-                If checked, the agent will research your existing codebase to understand the tech
-                stack. If unchecked, defaults to TanStack Start, Drizzle ORM, PostgreSQL, shadcn/ui,
-                Tailwind CSS, and React.
+                If checked, the agent will research your existing codebase to
+                understand the tech stack. If unchecked, defaults to TanStack
+                Start, Drizzle ORM, PostgreSQL, shadcn/ui, Tailwind CSS, and
+                React.
               </p>
             </div>
           </div>
@@ -94,19 +101,21 @@ export function RegenerateSpecDialog({
             <Checkbox
               id="regenerate-generate-features"
               checked={generateFeatures}
-              onCheckedChange={(checked) => onGenerateFeaturesChange(checked === true)}
+              onCheckedChange={(checked) =>
+                onGenerateFeaturesChange(checked === true)
+              }
               disabled={isDisabled}
             />
             <div className="space-y-1">
               <label
                 htmlFor="regenerate-generate-features"
-                className={`text-sm font-medium ${isDisabled ? '' : 'cursor-pointer'}`}
+                className={`text-sm font-medium ${isDisabled ? "" : "cursor-pointer"}`}
               >
                 Generate feature list
               </label>
               <p className="text-xs text-muted-foreground">
-                Automatically create features in the features folder from the implementation roadmap
-                after the spec is regenerated.
+                Automatically create features in the features folder from the
+                implementation roadmap after the spec is regenerated.
               </p>
             </div>
           </div>
@@ -120,15 +129,19 @@ export function RegenerateSpecDialog({
                   <Button
                     key={option.value}
                     type="button"
-                    variant={featureCount === option.value ? 'default' : 'outline'}
+                    variant={
+                      featureCount === option.value ? "default" : "outline"
+                    }
                     size="sm"
-                    onClick={() => onFeatureCountChange(option.value as FeatureCount)}
+                    onClick={() =>
+                      onFeatureCountChange(option.value as FeatureCount)
+                    }
                     disabled={isDisabled}
                     className={cn(
-                      'flex-1 transition-all',
+                      "flex-1 transition-all",
                       featureCount === option.value
-                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
-                        : 'bg-muted/30 hover:bg-muted/50 border-border'
+                        ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                        : "bg-muted/30 hover:bg-muted/50 border-border",
                     )}
                     data-testid={`regenerate-feature-count-${option.value}`}
                   >
@@ -148,13 +161,17 @@ export function RegenerateSpecDialog({
 
         <DialogFooter>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isDisabled}>
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isDisabled}
+            >
               Cancel
             </Button>
             <HotkeyButton
               onClick={onRegenerate}
               disabled={!projectDefinition.trim() || isDisabled}
-              hotkey={{ key: 'Enter', cmdCtrl: true }}
+              hotkey={{ key: "Enter", cmdCtrl: true }}
               hotkeyActive={open && !isDisabled}
             >
               {isRegenerating ? (

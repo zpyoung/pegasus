@@ -8,12 +8,16 @@
 /**
  * Valid todo status values in the standard format
  */
-type TodoStatus = 'pending' | 'in_progress' | 'completed';
+type TodoStatus = "pending" | "in_progress" | "completed";
 
 /**
  * Set of valid status values for validation
  */
-const VALID_STATUSES = new Set<TodoStatus>(['pending', 'in_progress', 'completed']);
+const VALID_STATUSES = new Set<TodoStatus>([
+  "pending",
+  "in_progress",
+  "completed",
+]);
 
 /**
  * Todo item from various AI providers (Gemini, Copilot, etc.)
@@ -37,10 +41,10 @@ interface NormalizedTodo {
  * Normalize a provider status value to a valid TodoStatus
  */
 function normalizeStatus(status: string | undefined): TodoStatus {
-  if (!status) return 'pending';
-  if (status === 'cancelled' || status === 'canceled') return 'completed';
+  if (!status) return "pending";
+  if (status === "cancelled" || status === "canceled") return "completed";
   if (VALID_STATUSES.has(status as TodoStatus)) return status as TodoStatus;
-  return 'pending';
+  return "pending";
 }
 
 /**
@@ -53,13 +57,15 @@ function normalizeStatus(status: string | undefined): TodoStatus {
  * Output format (Claude/Standard):
  * - { content, status, activeForm } where status is 'pending'|'in_progress'|'completed'
  */
-export function normalizeTodos(todos: ProviderTodo[] | null | undefined): NormalizedTodo[] {
+export function normalizeTodos(
+  todos: ProviderTodo[] | null | undefined,
+): NormalizedTodo[] {
   if (!todos) return [];
   return todos.map((todo) => ({
-    content: todo.content || todo.description || '',
+    content: todo.content || todo.description || "",
     status: normalizeStatus(todo.status),
     // Use content/description as activeForm since providers may not have it
-    activeForm: todo.content || todo.description || '',
+    activeForm: todo.content || todo.description || "",
   }));
 }
 
@@ -69,7 +75,9 @@ export function normalizeTodos(todos: ProviderTodo[] | null | undefined): Normal
  * Different providers use different parameter names for file paths:
  * - path, file, filename, filePath -> file_path
  */
-export function normalizeFilePathInput(input: Record<string, unknown>): Record<string, unknown> {
+export function normalizeFilePathInput(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   const normalized = { ...input };
   if (!normalized.file_path) {
     if (input.path) normalized.file_path = input.path;
@@ -86,7 +94,9 @@ export function normalizeFilePathInput(input: Record<string, unknown>): Record<s
  * Different providers use different parameter names for commands:
  * - cmd, script -> command
  */
-export function normalizeCommandInput(input: Record<string, unknown>): Record<string, unknown> {
+export function normalizeCommandInput(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   const normalized = { ...input };
   if (!normalized.command) {
     if (input.cmd) normalized.command = input.cmd;
@@ -101,7 +111,9 @@ export function normalizeCommandInput(input: Record<string, unknown>): Record<st
  * Different providers use different parameter names for search patterns:
  * - query, search, regex -> pattern
  */
-export function normalizePatternInput(input: Record<string, unknown>): Record<string, unknown> {
+export function normalizePatternInput(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   const normalized = { ...input };
   if (!normalized.pattern) {
     if (input.query) normalized.pattern = input.query;

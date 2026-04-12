@@ -34,6 +34,7 @@ Pegasus supports two kinds of pipelines that control how AI agents work through 
 The pipeline system lets you define multi-stage AI workflows that execute sequentially for a feature. Instead of running a single undifferentiated agent prompt, you can break work into distinct phases — planning, implementation, review, testing — each with its own model selection, permission mode, and prompt template.
 
 Pipelines are especially useful when:
+
 - You want the agent to analyze before acting (read-only analysis followed by targeted edits)
 - You need an approval gate between planning and implementation
 - Different stages require different models (e.g., Opus for design, Sonnet for coding)
@@ -45,10 +46,10 @@ Pipelines are especially useful when:
 
 Pegasus has two pipeline systems:
 
-| System | Config format | Primary use |
-|--------|--------------|-------------|
-| **YAML Pipeline** | `.yaml` files in `.pegasus/pipelines/` | Assigning a workflow to a feature before execution |
-| **JSON Pipeline** | `.pegasus/pipeline.json` | Custom Kanban columns that appear between "In Progress" and "Done" |
+| System            | Config format                          | Primary use                                                        |
+| ----------------- | -------------------------------------- | ------------------------------------------------------------------ |
+| **YAML Pipeline** | `.yaml` files in `.pegasus/pipelines/` | Assigning a workflow to a feature before execution                 |
+| **JSON Pipeline** | `.pegasus/pipeline.json`               | Custom Kanban columns that appear between "In Progress" and "Done" |
 
 The YAML pipeline is the recommended approach. When a feature has a `pipeline` field set to a pipeline slug (e.g., `"feature"` or `"bug-fix"`), the execution engine uses `StageRunner` to process the YAML stages. The JSON pipeline predates YAML pipelines and is still supported for legacy custom columns.
 
@@ -63,24 +64,24 @@ A pipeline is defined in a YAML file stored in `.pegasus/pipelines/{slug}.yaml` 
 **Top-level fields:**
 
 ```yaml
-name: Feature                          # Pipeline display name (required)
-description: Plan, implement, and review a new feature  # (required)
+name: Feature # Pipeline display name (required)
+description: Plan, implement, and review a new feature # (required)
 
 execution:
-  mode: session                        # Currently the only supported mode
+  mode: session # Currently the only supported mode
 
-defaults:                              # Fallback settings for all stages
-  model: sonnet                        # Default model alias or full model ID
-  max_turns: 10                        # Default max agent conversation turns
-  permission_mode: plan                # Default permission mode
+defaults: # Fallback settings for all stages
+  model: sonnet # Default model alias or full model ID
+  max_turns: 10 # Default max agent conversation turns
+  permission_mode: plan # Default permission mode
 
-inputs:                                # Declared user inputs (optional)
+inputs: # Declared user inputs (optional)
   target_module:
     type: string
     required: true
     description: "Module to work on"
 
-stages:                                # Ordered list of stages (required, min 1)
+stages: # Ordered list of stages (required, min 1)
   - id: plan
     name: Feature Planning
     prompt: |
@@ -88,6 +89,7 @@ stages:                                # Ordered list of stages (required, min 1
 ```
 
 **Schema rules enforced at load time:**
+
 - `name` and `description` are required and must be non-empty
 - `stages` must contain at least one entry
 - Stage `id` values must be unique within the pipeline
@@ -101,18 +103,18 @@ Each stage in the `stages` array accepts:
 
 ```yaml
 stages:
-  - id: implement                      # Required. Unique within the pipeline.
-    name: Implement Feature            # Required. Human-readable display name.
-    prompt: |                          # Required. Handlebars template (see below).
+  - id: implement # Required. Unique within the pipeline.
+    name: Implement Feature # Required. Human-readable display name.
+    prompt: | # Required. Handlebars template (see below).
       Implement {{task.description}}...
-    claude_flags:                      # Optional. Override pipeline defaults for this stage.
-      model: sonnet                    # Model alias or full model ID
-      permission_mode: acceptEdits     # "plan" | "acceptEdits" | other Claude SDK modes
-      max_turns: 20                    # Positive integer
-    requires_approval: false           # If true, logs an approval gate notification
-    question: "Which module should this target?"  # Pre-stage question shown to user
-    question_meta:                     # Optional metadata for the question
-      type: single-select              # "free-text" | "single-select" | "multi-select"
+    claude_flags: # Optional. Override pipeline defaults for this stage.
+      model: sonnet # Model alias or full model ID
+      permission_mode: acceptEdits # "plan" | "acceptEdits" | other Claude SDK modes
+      max_turns: 20 # Positive integer
+    requires_approval: false # If true, logs an approval gate notification
+    question: "Which module should this target?" # Pre-stage question shown to user
+    question_meta: # Optional metadata for the question
+      type: single-select # "free-text" | "single-select" | "multi-select"
       options:
         - auth
         - payments
@@ -126,6 +128,7 @@ stages:
 3. System defaults: `model: sonnet`, `permission_mode: plan`, `max_turns: 10`
 
 **`permission_mode` values:**
+
 - `plan` — read-only, the agent can browse code and produce a plan but cannot write files
 - `acceptEdits` — the agent can read and write files
 
@@ -137,16 +140,16 @@ Stage prompts are Handlebars templates. Variables are resolved just before the s
 
 **Available namespaces:**
 
-| Variable | Source |
-|----------|--------|
-| `{{task.description}}` | The feature's description field |
-| `{{task.title}}` | The feature's title |
-| `{{project.language}}` | From project settings |
-| `{{project.test_command}}` | From project settings |
-| `{{project.lint_command}}` | From project settings |
-| `{{inputs.<name>}}` | User-provided pipeline inputs |
-| `{{previous_context}}` | Accumulated agent output from all prior stages |
-| `{{stages.<stageId>.question_response}}` | User's answer to a pre-stage question |
+| Variable                                 | Source                                         |
+| ---------------------------------------- | ---------------------------------------------- |
+| `{{task.description}}`                   | The feature's description field                |
+| `{{task.title}}`                         | The feature's title                            |
+| `{{project.language}}`                   | From project settings                          |
+| `{{project.test_command}}`               | From project settings                          |
+| `{{project.lint_command}}`               | From project settings                          |
+| `{{inputs.<name>}}`                      | User-provided pipeline inputs                  |
+| `{{previous_context}}`                   | Accumulated agent output from all prior stages |
+| `{{stages.<stageId>.question_response}}` | User's answer to a pre-stage question          |
 
 **Conditional blocks** using Handlebars helpers:
 
@@ -167,7 +170,7 @@ Pipelines can declare inputs that users must provide when creating a feature wit
 ```yaml
 inputs:
   design_doc_path:
-    type: string           # "string" | "number" | "boolean"
+    type: string # "string" | "number" | "boolean"
     required: true
     description: "Path to the design document (e.g. .ai_tasks/feature-x.design.md)"
   max_iterations:
@@ -191,11 +194,11 @@ Pegasus ships two built-in pipelines that are always available regardless of whe
 
 Three stages: `analyze` → `implement` → `verify`
 
-| Stage | Model | Permission | max_turns | Approval |
-|-------|-------|-----------|-----------|---------|
-| Root Cause Analysis | sonnet | plan | 8 | No |
-| Apply Fix | sonnet | acceptEdits | 15 | Yes |
-| Verify Fix | sonnet | plan | 5 | No |
+| Stage               | Model  | Permission  | max_turns | Approval |
+| ------------------- | ------ | ----------- | --------- | -------- |
+| Root Cause Analysis | sonnet | plan        | 8         | No       |
+| Apply Fix           | sonnet | acceptEdits | 15        | Yes      |
+| Verify Fix          | sonnet | plan        | 5         | No       |
 
 The analyze stage is read-only and instructs the agent to identify root cause without making changes. The implement stage uses `acceptEdits` to apply a minimal, targeted fix. The verify stage re-reads the changes and runs the test suite if `project.test_command` is configured.
 
@@ -203,11 +206,11 @@ The analyze stage is read-only and instructs the agent to identify root cause wi
 
 Three stages: `plan` → `implement` → `review`
 
-| Stage | Model | Permission | max_turns | Approval |
-|-------|-------|-----------|-----------|---------|
-| Feature Planning | opus | plan | 10 | Yes |
-| Implement Feature | sonnet | acceptEdits | 20 | No |
-| Code Review | sonnet | plan | 8 | No |
+| Stage             | Model  | Permission  | max_turns | Approval |
+| ----------------- | ------ | ----------- | --------- | -------- |
+| Feature Planning  | opus   | plan        | 10        | Yes      |
+| Implement Feature | sonnet | acceptEdits | 20        | No       |
+| Code Review       | sonnet | plan        | 8         | No       |
 
 The plan stage uses Opus for deeper reasoning and requires approval before implementation begins. The implement stage follows the approved plan. The review stage verifies quality and runs tests.
 
@@ -319,13 +322,13 @@ Each step in `pipeline.json` creates a new Kanban column. Features transition th
 
 ```typescript
 interface PipelineStep {
-  id: string;          // Auto-generated unique identifier
-  name: string;        // Display name shown on the Kanban column
-  order: number;       // Zero-based position in the pipeline
+  id: string; // Auto-generated unique identifier
+  name: string; // Display name shown on the Kanban column
+  order: number; // Zero-based position in the pipeline
   instructions: string; // Prompt instructions for the agent at this step
-  colorClass: string;  // CSS class used for the column color
-  createdAt: string;   // ISO 8601 timestamp
-  updatedAt: string;   // ISO 8601 timestamp
+  colorClass: string; // CSS class used for the column color
+  createdAt: string; // ISO 8601 timestamp
+  updatedAt: string; // ISO 8601 timestamp
 }
 ```
 
@@ -419,9 +422,11 @@ All pipeline routes are mounted at `/api/pipeline`.
 Scans user-level and project-level pipeline directories for YAML files, validates them, and returns the deduplicated list (project overrides user for the same slug). Built-in pipelines are included in the response as `isBuiltIn: true`.
 
 Query parameters:
+
 - `projectPath` (required) — Absolute path to the project
 
 Response:
+
 ```json
 {
   "success": true,
@@ -455,15 +460,17 @@ Response:
 Copies one or more built-in pipeline YAML templates to the project's `.pegasus/pipelines/` directory. By default, existing files are not overwritten.
 
 Request body:
+
 ```json
 {
   "projectPath": "/path/to/project",
-  "slugs": ["feature", "bug-fix"],   // omit to copy all built-ins
+  "slugs": ["feature", "bug-fix"], // omit to copy all built-ins
   "overwrite": false
 }
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -492,6 +499,7 @@ Response: `{ "success": true, "config": { "version": 1, "steps": [...] } }`
 **`POST /api/pipeline/config/save`** — Save entire pipeline configuration
 
 Request body:
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -507,6 +515,7 @@ Request body:
 **`POST /api/pipeline/steps/add`** — Add a new pipeline step
 
 Request body:
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -526,6 +535,7 @@ Response: `{ "success": true, "step": { "id": "step_...", "name": "...", ... } }
 **`POST /api/pipeline/steps/update`** — Update an existing step
 
 Request body:
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -545,6 +555,7 @@ Request body: `{ "projectPath": "/path/to/project", "stepId": "step_..." }`
 **`POST /api/pipeline/steps/reorder`** — Reorder steps
 
 Request body:
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -582,6 +593,7 @@ Positions are assigned in the order of the `stepIds` array.
 ```
 
 **Key files:**
+
 - `pipeline-state.json` — Written after each stage; read on resume to skip completed stages. Deleted after all stages succeed.
 - `stage-outputs/{stageId}.md` — Per-stage accumulated context snapshots. Preserved after pipeline completes for auditing and debugging.
 - `agent-output.md` — The live context file updated after each stage. This is what later stages read as `previous_context`.

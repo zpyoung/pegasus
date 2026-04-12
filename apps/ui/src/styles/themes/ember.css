@@ -82,7 +82,12 @@
 /* Theme-specific overrides */
 
 .ember .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #fd971f 0%, #f92672 50%, #fd971f 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #fd971f 0%,
+    #f92672 50%,
+    #fd971f 100%
+  );
 }
 
 .ember .animated-outline-inner {
@@ -90,7 +95,9 @@
   color: #fd971f !important;
 }
 
-.ember [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.ember
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.28 0.02 100) !important;
   color: #fdbf6f !important;
 }

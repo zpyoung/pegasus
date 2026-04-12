@@ -39,7 +39,7 @@ export interface AppServerAccountResponse {
 }
 
 export interface AppServerAccount {
-  type: 'apiKey' | 'chatgpt';
+  type: "apiKey" | "chatgpt";
   email?: string;
   planType?: string;
 }

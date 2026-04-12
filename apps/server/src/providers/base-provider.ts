@@ -9,7 +9,7 @@ import type {
   InstallationStatus,
   ValidationResult,
   ModelDefinition,
-} from './types.js';
+} from "./types.js";
 
 /**
  * Base provider class that all provider implementations must extend
@@ -33,7 +33,9 @@ export abstract class BaseProvider {
    * @param options Execution options
    * @returns AsyncGenerator yielding provider messages
    */
-  abstract executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage>;
+  abstract executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage>;
 
   /**
    * Detect if the provider is installed and configured
@@ -57,7 +59,7 @@ export abstract class BaseProvider {
 
     // Base validation (can be overridden)
     if (!this.config) {
-      errors.push('Provider config is missing');
+      errors.push("Provider config is missing");
     }
 
     return {
@@ -74,7 +76,7 @@ export abstract class BaseProvider {
    */
   supportsFeature(feature: string): boolean {
     // Default implementation - override in subclasses
-    const commonFeatures = ['tools', 'text'];
+    const commonFeatures = ["tools", "text"];
     return commonFeatures.includes(feature);
   }
 

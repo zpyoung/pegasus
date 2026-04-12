@@ -1,13 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Shield, ShieldCheck, ShieldAlert, ChevronDown, Copy, Check } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import type { CursorStatus } from '../hooks/use-cursor-status';
-import type { PermissionsData } from '../hooks/use-cursor-permissions';
+import { useState, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  ChevronDown,
+  Copy,
+  Check,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import type { CursorStatus } from "../hooks/use-cursor-status";
+import type { PermissionsData } from "../hooks/use-cursor-permissions";
 
 interface CursorPermissionsSectionProps {
   status: CursorStatus | null;
@@ -16,8 +27,11 @@ interface CursorPermissionsSectionProps {
   isSavingPermissions: boolean;
   copiedConfig: boolean;
   currentProject?: { path: string } | null;
-  onApplyProfile: (profileId: 'strict' | 'development', scope: 'global' | 'project') => void;
-  onCopyConfig: (profileId: 'strict' | 'development') => void;
+  onApplyProfile: (
+    profileId: "strict" | "development",
+    scope: "global" | "project",
+  ) => void;
+  onCopyConfig: (profileId: "strict" | "development") => void;
   onLoadPermissions: () => void;
 }
 
@@ -46,13 +60,16 @@ export function CursorPermissionsSection({
   }
 
   return (
-    <Collapsible open={permissionsExpanded} onOpenChange={setPermissionsExpanded}>
+    <Collapsible
+      open={permissionsExpanded}
+      onOpenChange={setPermissionsExpanded}
+    >
       <div
         className={cn(
-          'rounded-2xl overflow-hidden',
-          'border border-border/50',
-          'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-          'shadow-sm shadow-black/5'
+          "rounded-2xl overflow-hidden",
+          "border border-border/50",
+          "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+          "shadow-sm shadow-black/5",
         )}
       >
         <CollapsibleTrigger className="w-full">
@@ -65,7 +82,9 @@ export function CursorPermissionsSection({
                 <h2 className="text-lg font-semibold text-foreground tracking-tight">
                   CLI Permissions
                 </h2>
-                <p className="text-sm text-muted-foreground/80">Configure what Cursor CLI can do</p>
+                <p className="text-sm text-muted-foreground/80">
+                  Configure what Cursor CLI can do
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -73,17 +92,17 @@ export function CursorPermissionsSection({
                 <Badge
                   variant="outline"
                   className={cn(
-                    permissions.activeProfile === 'strict'
-                      ? 'border-green-500/50 text-green-500'
-                      : permissions.activeProfile === 'development'
-                        ? 'border-blue-500/50 text-blue-500'
-                        : 'border-amber-500/50 text-amber-500'
+                    permissions.activeProfile === "strict"
+                      ? "border-green-500/50 text-green-500"
+                      : permissions.activeProfile === "development"
+                        ? "border-blue-500/50 text-blue-500"
+                        : "border-amber-500/50 text-amber-500",
                   )}
                 >
-                  {permissions.activeProfile === 'strict' && (
+                  {permissions.activeProfile === "strict" && (
                     <ShieldCheck className="w-3 h-3 mr-1" />
                   )}
-                  {permissions.activeProfile === 'development' && (
+                  {permissions.activeProfile === "development" && (
                     <ShieldAlert className="w-3 h-3 mr-1" />
                   )}
                   {permissions.activeProfile}
@@ -91,8 +110,8 @@ export function CursorPermissionsSection({
               )}
               <ChevronDown
                 className={cn(
-                  'w-5 h-5 text-muted-foreground transition-transform',
-                  permissionsExpanded && 'rotate-180'
+                  "w-5 h-5 text-muted-foreground transition-transform",
+                  permissionsExpanded && "rotate-180",
                 )}
               />
             </div>
@@ -107,9 +126,9 @@ export function CursorPermissionsSection({
               <div className="text-sm text-amber-400/90">
                 <span className="font-medium">Security Notice</span>
                 <p className="text-xs text-amber-400/70 mt-1">
-                  Cursor CLI can execute shell commands based on its permission config. For
-                  overnight automation, consider using the Strict profile to limit what commands can
-                  run.
+                  Cursor CLI can execute shell commands based on its permission
+                  config. For overnight automation, consider using the Strict
+                  profile to limit what commands can run.
                 </p>
               </div>
             </div>
@@ -128,21 +147,23 @@ export function CursorPermissionsSection({
                       <div
                         key={profile.id}
                         className={cn(
-                          'p-4 rounded-xl border transition-colors',
+                          "p-4 rounded-xl border transition-colors",
                           permissions.activeProfile === profile.id
-                            ? 'border-brand-500/50 bg-brand-500/5'
-                            : 'border-border/50 bg-card/50 hover:bg-accent/30'
+                            ? "border-brand-500/50 bg-brand-500/5"
+                            : "border-border/50 bg-card/50 hover:bg-accent/30",
                         )}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              {profile.id === 'strict' ? (
+                              {profile.id === "strict" ? (
                                 <ShieldCheck className="w-4 h-4 text-green-500" />
                               ) : (
                                 <ShieldAlert className="w-4 h-4 text-blue-500" />
                               )}
-                              <span className="font-medium">{profile.name}</span>
+                              <span className="font-medium">
+                                {profile.name}
+                              </span>
                               {permissions.activeProfile === profile.id && (
                                 <Badge variant="secondary" className="text-xs">
                                   Active
@@ -156,7 +177,9 @@ export function CursorPermissionsSection({
                               <span className="text-green-500">
                                 {profile.permissions.allow.length} allowed
                               </span>
-                              <span className="text-muted-foreground/50">|</span>
+                              <span className="text-muted-foreground/50">
+                                |
+                              </span>
                               <span className="text-red-500">
                                 {profile.permissions.deny.length} denied
                               </span>
@@ -166,13 +189,19 @@ export function CursorPermissionsSection({
                             <Button
                               size="sm"
                               variant={
-                                permissions.activeProfile === profile.id ? 'secondary' : 'default'
+                                permissions.activeProfile === profile.id
+                                  ? "secondary"
+                                  : "default"
                               }
                               disabled={
-                                isSavingPermissions || permissions.activeProfile === profile.id
+                                isSavingPermissions ||
+                                permissions.activeProfile === profile.id
                               }
                               onClick={() =>
-                                onApplyProfile(profile.id as 'strict' | 'development', 'global')
+                                onApplyProfile(
+                                  profile.id as "strict" | "development",
+                                  "global",
+                                )
                               }
                             >
                               Apply Globally
@@ -183,7 +212,10 @@ export function CursorPermissionsSection({
                                 variant="outline"
                                 disabled={isSavingPermissions}
                                 onClick={() =>
-                                  onApplyProfile(profile.id as 'strict' | 'development', 'project')
+                                  onApplyProfile(
+                                    profile.id as "strict" | "development",
+                                    "project",
+                                  )
                                 }
                               >
                                 Apply to Project
@@ -207,7 +239,11 @@ export function CursorPermissionsSection({
                           ~/.cursor/cli-config.json
                         </p>
                       </div>
-                      <Button size="sm" variant="ghost" onClick={() => onCopyConfig('development')}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onCopyConfig("development")}
+                      >
                         {copiedConfig ? (
                           <Check className="w-4 h-4" />
                         ) : (
@@ -231,7 +267,7 @@ export function CursorPermissionsSection({
 
                 {/* Documentation Link */}
                 <div className="text-xs text-muted-foreground">
-                  Learn more about{' '}
+                  Learn more about{" "}
                   <a
                     href="https://cursor.com/docs/cli/reference/permissions"
                     target="_blank"

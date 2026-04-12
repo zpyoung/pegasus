@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator } from "@playwright/test";
 
 /**
  * Default timeout for element waiting operations in E2E tests.
@@ -14,7 +14,7 @@ export const DEFAULT_ELEMENT_TIMEOUT_MS = 10000;
  * Tests should wait for specific elements to verify page is ready.
  */
 export async function waitForNetworkIdle(page: Page): Promise<void> {
-  await page.waitForLoadState('load');
+  await page.waitForLoadState("load");
 }
 
 /**
@@ -23,12 +23,12 @@ export async function waitForNetworkIdle(page: Page): Promise<void> {
 export async function waitForElement(
   page: Page,
   testId: string,
-  options?: { timeout?: number; state?: 'attached' | 'visible' | 'hidden' }
+  options?: { timeout?: number; state?: "attached" | "visible" | "hidden" },
 ): Promise<Locator> {
   const element = page.locator(`[data-testid="${testId}"]`);
   await element.waitFor({
     timeout: options?.timeout ?? DEFAULT_ELEMENT_TIMEOUT_MS,
-    state: options?.state ?? 'visible',
+    state: options?.state ?? "visible",
   });
   return element;
 }
@@ -39,12 +39,12 @@ export async function waitForElement(
 export async function waitForElementHidden(
   page: Page,
   testId: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<void> {
   const element = page.locator(`[data-testid="${testId}"]`);
   await element.waitFor({
     timeout: options?.timeout ?? DEFAULT_ELEMENT_TIMEOUT_MS,
-    state: 'hidden',
+    state: "hidden",
   });
 }
 
@@ -52,13 +52,16 @@ export async function waitForElementHidden(
  * Wait for the splash screen to disappear
  * The splash screen has z-[9999] and blocks interactions, so we need to wait for it
  */
-export async function waitForSplashScreenToDisappear(page: Page, timeout = 5000): Promise<void> {
+export async function waitForSplashScreenToDisappear(
+  page: Page,
+  timeout = 5000,
+): Promise<void> {
   try {
     // Check if splash screen is disabled or already shown (fastest check)
     const splashDisabled = await page.evaluate(() => {
       return (
-        localStorage.getItem('pegasus-disable-splash') === 'true' ||
-        localStorage.getItem('pegasus-splash-shown-session') === 'true'
+        localStorage.getItem("pegasus-disable-splash") === "true" ||
+        localStorage.getItem("pegasus-splash-shown-session") === "true"
       );
     });
 
@@ -74,36 +77,36 @@ export async function waitForSplashScreenToDisappear(page: Page, timeout = 5000)
       () => {
         // Check if splash is disabled or already shown
         if (
-          localStorage.getItem('pegasus-disable-splash') === 'true' ||
-          localStorage.getItem('pegasus-splash-shown-session') === 'true'
+          localStorage.getItem("pegasus-disable-splash") === "true" ||
+          localStorage.getItem("pegasus-splash-shown-session") === "true"
         ) {
           return true;
         }
 
         // Check for splash screen element by looking for fixed inset-0 with high z-index
-        const allDivs = document.querySelectorAll('div');
+        const allDivs = document.querySelectorAll("div");
         for (const div of allDivs) {
           const style = window.getComputedStyle(div);
-          const classes = div.className || '';
+          const classes = div.className || "";
           // Check if it matches splash screen pattern: fixed, inset-0, and high z-index
           if (
-            style.position === 'fixed' &&
-            (classes.includes('inset-0') ||
-              (style.top === '0px' &&
-                style.left === '0px' &&
-                style.right === '0px' &&
-                style.bottom === '0px')) &&
-            (classes.includes('z-[') || parseInt(style.zIndex) >= 9999)
+            style.position === "fixed" &&
+            (classes.includes("inset-0") ||
+              (style.top === "0px" &&
+                style.left === "0px" &&
+                style.right === "0px" &&
+                style.bottom === "0px")) &&
+            (classes.includes("z-[") || parseInt(style.zIndex) >= 9999)
           ) {
             // Check if it's visible and blocking (opacity > 0 and pointer-events not none)
-            if (style.opacity !== '0' && style.pointerEvents !== 'none') {
+            if (style.opacity !== "0" && style.pointerEvents !== "none") {
               return false; // Splash screen is still visible
             }
           }
         }
         return true; // No visible splash screen found
       },
-      { timeout }
+      { timeout },
     );
   } catch {
     // Splash screen might not exist or already gone, which is fine

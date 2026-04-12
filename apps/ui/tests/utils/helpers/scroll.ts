@@ -1,4 +1,4 @@
-import { Locator } from '@playwright/test';
+import { Locator } from "@playwright/test";
 
 /**
  * Check if an element is scrollable (has scrollable content)
@@ -27,7 +27,7 @@ export async function scrollToBottom(locator: Locator): Promise<void> {
  * Get the scroll position of an element
  */
 export async function getScrollPosition(
-  locator: Locator
+  locator: Locator,
 ): Promise<{ scrollTop: number; scrollHeight: number; clientHeight: number }> {
   return await locator.evaluate((el) => ({
     scrollTop: el.scrollTop,
@@ -41,7 +41,7 @@ export async function getScrollPosition(
  */
 export async function isElementVisibleInScrollContainer(
   element: Locator,
-  container: Locator
+  container: Locator,
 ): Promise<boolean> {
   const elementBox = await element.boundingBox();
   const containerBox = await container.boundingBox();

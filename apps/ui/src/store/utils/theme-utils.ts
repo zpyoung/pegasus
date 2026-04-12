@@ -1,12 +1,12 @@
-import { getItem, setItem, removeItem } from '@/lib/storage';
-import { DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
-import type { Project } from '@/lib/electron';
-import type { ThemeMode } from '../types/ui-types';
+import { getItem, setItem, removeItem } from "@/lib/storage";
+import { DEFAULT_FONT_VALUE } from "@/config/ui-font-options";
+import type { Project } from "@/lib/electron";
+import type { ThemeMode } from "../types/ui-types";
 
 // LocalStorage keys for persistence (fallback when server settings aren't available)
-export const THEME_STORAGE_KEY = 'pegasus:theme';
-const FONT_SANS_STORAGE_KEY = 'pegasus:font-sans';
-const FONT_MONO_STORAGE_KEY = 'pegasus:font-mono';
+export const THEME_STORAGE_KEY = "pegasus:theme";
+const FONT_SANS_STORAGE_KEY = "pegasus:font-sans";
+const FONT_MONO_STORAGE_KEY = "pegasus:font-mono";
 
 /**
  * Get the theme from localStorage as a fallback
@@ -20,7 +20,7 @@ export function getStoredTheme(): ThemeMode | null {
   // We intentionally keep reading it as a fallback so users don't get a "default theme flash"
   // on login/logged-out pages if THEME_STORAGE_KEY hasn't been written yet.
   try {
-    const legacy = getItem('pegasus-storage');
+    const legacy = getItem("pegasus-storage");
     if (!legacy) return null;
     interface LegacyStorageFormat {
       state?: { theme?: string };
@@ -28,7 +28,7 @@ export function getStoredTheme(): ThemeMode | null {
     }
     const parsed = JSON.parse(legacy) as LegacyStorageFormat;
     const theme = parsed.state?.theme ?? parsed.theme;
-    if (typeof theme === 'string' && theme.length > 0) {
+    if (typeof theme === "string" && theme.length > 0) {
       return theme as ThemeMode;
     }
   } catch {
@@ -48,7 +48,7 @@ export function getStoredTheme(): ThemeMode | null {
 export function getEffectiveFont(
   projectFont: string | undefined,
   globalFont: string | null,
-  fontOptions: readonly { value: string; label: string }[]
+  fontOptions: readonly { value: string; label: string }[],
 ): string | null {
   const isValidFont = (font: string | null | undefined): boolean => {
     if (!font || font === DEFAULT_FONT_VALUE) return true;
@@ -109,7 +109,7 @@ export function saveFontMonoToStorage(fontFamily: string | null): void {
 
 export function persistEffectiveThemeForProject(
   project: Project | null,
-  fallbackTheme: ThemeMode
+  fallbackTheme: ThemeMode,
 ): void {
   const projectTheme = project?.theme as ThemeMode | undefined;
   const themeToStore = projectTheme ?? fallbackTheme;

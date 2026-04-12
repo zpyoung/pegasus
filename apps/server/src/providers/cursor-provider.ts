@@ -10,17 +10,17 @@
  * Spawns the cursor-agent CLI with --output-format stream-json for streaming responses.
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { findCliInWsl, isWslAvailable } from '@pegasus/platform';
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+import { findCliInWsl, isWslAvailable } from "@pegasus/platform";
 import {
   CliProvider,
   type CliSpawnConfig,
   type CliDetectionResult,
   type CliErrorInfo,
-} from './cli-provider.js';
+} from "./cli-provider.js";
 import type {
   ProviderConfig,
   ExecuteOptions,
@@ -28,10 +28,13 @@ import type {
   InstallationStatus,
   ModelDefinition,
   ContentBlock,
-} from './types.js';
-import { validateBareModelId } from '@pegasus/types';
-import { validateApiKey } from '../lib/auth-utils.js';
-import { getEffectivePermissions, detectProfile } from '../services/cursor-config-service.js';
+} from "./types.js";
+import { validateBareModelId } from "@pegasus/types";
+import { validateApiKey } from "../lib/auth-utils.js";
+import {
+  getEffectivePermissions,
+  detectProfile,
+} from "../services/cursor-config-service.js";
 import {
   type CursorStreamEvent,
   type CursorSystemEvent,
@@ -40,12 +43,12 @@ import {
   type CursorResultEvent,
   type CursorAuthStatus,
   CURSOR_MODEL_MAP,
-} from '@pegasus/types';
-import { createLogger, isAbortError } from '@pegasus/utils';
-import { spawnJSONLProcess, execInWsl } from '@pegasus/platform';
+} from "@pegasus/types";
+import { createLogger, isAbortError } from "@pegasus/utils";
+import { spawnJSONLProcess, execInWsl } from "@pegasus/platform";
 
 // Create logger for this module
-const logger = createLogger('CursorProvider');
+const logger = createLogger("CursorProvider");
 
 // =============================================================================
 // Cursor Tool Handler Registry
@@ -72,13 +75,13 @@ interface CursorToolHandler<TArgs = unknown, TResult = unknown> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- handler registry stores heterogeneous tool type parameters
 const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
   readToolCall: {
-    name: 'Read',
+    name: "Read",
     mapInput: (args: { path: string }) => ({ file_path: args.path }),
     formatResult: (result: { content: string }) => result.content,
   },
 
   writeToolCall: {
-    name: 'Write',
+    name: "Write",
     mapInput: (args: { path: string; fileText: string }) => ({
       file_path: args.path,
       content: args.fileText,
@@ -88,19 +91,24 @@ const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
   },
 
   editToolCall: {
-    name: 'Edit',
+    name: "Edit",
     mapInput: (args: { path: string; oldText?: string; newText?: string }) => ({
       file_path: args.path,
       old_string: args.oldText,
       new_string: args.newText,
     }),
-    formatResult: (_result: unknown, args?: { path: string }) => `Edited file: ${args?.path}`,
+    formatResult: (_result: unknown, args?: { path: string }) =>
+      `Edited file: ${args?.path}`,
   },
 
   shellToolCall: {
-    name: 'Bash',
+    name: "Bash",
     mapInput: (args: { command: string }) => ({ command: args.command }),
-    formatResult: (result: { exitCode: number; stdout?: string; stderr?: string }) => {
+    formatResult: (result: {
+      exitCode: number;
+      stdout?: string;
+      stderr?: string;
+    }) => {
       let content = `Exit code: ${result.exitCode}`;
       if (result.stdout) content += `\n${result.stdout}`;
       if (result.stderr) content += `\nStderr: ${result.stderr}`;
@@ -110,14 +118,15 @@ const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
   },
 
   deleteToolCall: {
-    name: 'Delete',
+    name: "Delete",
     mapInput: (args: { path: string }) => ({ file_path: args.path }),
-    formatResult: (_result: unknown, args?: { path: string }) => `Deleted: ${args?.path}`,
+    formatResult: (_result: unknown, args?: { path: string }) =>
+      `Deleted: ${args?.path}`,
     formatRejected: (reason: string) => `Delete rejected: ${reason}`,
   },
 
   grepToolCall: {
-    name: 'Grep',
+    name: "Grep",
     mapInput: (args: { pattern: string; path?: string }) => ({
       pattern: args.pattern,
       path: args.path,
@@ -127,24 +136,29 @@ const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
   },
 
   lsToolCall: {
-    name: 'Ls',
+    name: "Ls",
     mapInput: (args: { path: string }) => ({ path: args.path }),
     formatResult: (result: { childrenFiles: number; childrenDirs: number }) =>
       `Found ${result.childrenFiles} files, ${result.childrenDirs} directories`,
   },
 
   globToolCall: {
-    name: 'Glob',
+    name: "Glob",
     mapInput: (args: { globPattern: string; targetDirectory?: string }) => ({
       pattern: args.globPattern,
       path: args.targetDirectory,
     }),
-    formatResult: (result: { totalFiles: number }) => `Found ${result.totalFiles} matching files`,
+    formatResult: (result: { totalFiles: number }) =>
+      `Found ${result.totalFiles} matching files`,
   },
 
   semSearchToolCall: {
-    name: 'SemanticSearch',
-    mapInput: (args: { query: string; targetDirectories?: string[]; explanation?: string }) => ({
+    name: "SemanticSearch",
+    mapInput: (args: {
+      query: string;
+      targetDirectories?: string[];
+      explanation?: string;
+    }) => ({
       query: args.query,
       targetDirectories: args.targetDirectories,
       explanation: args.explanation,
@@ -153,12 +167,12 @@ const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
       const resultCount = result.codeResults?.length || 0;
       return resultCount > 0
         ? `Found ${resultCount} semantic search result(s)`
-        : result.results || 'No results found';
+        : result.results || "No results found";
     },
   },
 
   readLintsToolCall: {
-    name: 'ReadLints',
+    name: "ReadLints",
     mapInput: (args: { paths: string[] }) => ({ paths: args.paths }),
     formatResult: (result: { totalDiagnostics: number; totalFiles: number }) =>
       `Found ${result.totalDiagnostics} diagnostic(s) in ${result.totalFiles} file(s)`,
@@ -170,11 +184,13 @@ const CURSOR_TOOL_HANDLERS: Record<string, CursorToolHandler<any, any>> = {
  * Returns { toolName, toolInput } or null if tool type is unknown
  */
 function processCursorToolCall(
-  toolCall: CursorToolCallEvent['tool_call']
+  toolCall: CursorToolCallEvent["tool_call"],
 ): { toolName: string; toolInput: unknown } | null {
   // Check each registered handler
   for (const [key, handler] of Object.entries(CURSOR_TOOL_HANDLERS)) {
-    const toolData = toolCall[key as keyof typeof toolCall] as { args?: unknown } | undefined;
+    const toolData = toolCall[key as keyof typeof toolCall] as
+      | { args?: unknown }
+      | undefined;
     if (toolData) {
       // Skip if args not yet populated (partial streaming event)
       if (!toolData.args) return null;
@@ -189,7 +205,7 @@ function processCursorToolCall(
   if (toolCall.function) {
     let toolInput: unknown;
     try {
-      toolInput = JSON.parse(toolCall.function.arguments || '{}');
+      toolInput = JSON.parse(toolCall.function.arguments || "{}");
     } catch {
       toolInput = { raw: toolCall.function.arguments };
     }
@@ -205,7 +221,9 @@ function processCursorToolCall(
 /**
  * Format the result content for a completed Cursor tool call
  */
-function formatCursorToolResult(toolCall: CursorToolCallEvent['tool_call']): string {
+function formatCursorToolResult(
+  toolCall: CursorToolCallEvent["tool_call"],
+): string {
   for (const [key, handler] of Object.entries(CURSOR_TOOL_HANDLERS)) {
     const toolData = toolCall[key as keyof typeof toolCall] as
       | {
@@ -224,7 +242,7 @@ function formatCursorToolResult(toolCall: CursorToolCallEvent['tool_call']): str
     }
   }
 
-  return '';
+  return "";
 }
 
 // =============================================================================
@@ -235,14 +253,14 @@ function formatCursorToolResult(toolCall: CursorToolCallEvent['tool_call']): str
  * Cursor-specific error codes for detailed error handling
  */
 export enum CursorErrorCode {
-  NOT_INSTALLED = 'CURSOR_NOT_INSTALLED',
-  NOT_AUTHENTICATED = 'CURSOR_NOT_AUTHENTICATED',
-  RATE_LIMITED = 'CURSOR_RATE_LIMITED',
-  MODEL_UNAVAILABLE = 'CURSOR_MODEL_UNAVAILABLE',
-  NETWORK_ERROR = 'CURSOR_NETWORK_ERROR',
-  PROCESS_CRASHED = 'CURSOR_PROCESS_CRASHED',
-  TIMEOUT = 'CURSOR_TIMEOUT',
-  UNKNOWN = 'CURSOR_UNKNOWN_ERROR',
+  NOT_INSTALLED = "CURSOR_NOT_INSTALLED",
+  NOT_AUTHENTICATED = "CURSOR_NOT_AUTHENTICATED",
+  RATE_LIMITED = "CURSOR_RATE_LIMITED",
+  MODEL_UNAVAILABLE = "CURSOR_MODEL_UNAVAILABLE",
+  NETWORK_ERROR = "CURSOR_NETWORK_ERROR",
+  PROCESS_CRASHED = "CURSOR_PROCESS_CRASHED",
+  TIMEOUT = "CURSOR_TIMEOUT",
+  UNKNOWN = "CURSOR_UNKNOWN_ERROR",
 }
 
 export interface CursorError extends Error {
@@ -266,7 +284,10 @@ export class CursorProvider extends CliProvider {
    * The install script creates versioned folders like:
    *   ~/.local/share/cursor-agent/versions/2025.12.17-996666f/cursor-agent
    */
-  private static VERSIONS_DIR = path.join(os.homedir(), '.local/share/cursor-agent/versions');
+  private static VERSIONS_DIR = path.join(
+    os.homedir(),
+    ".local/share/cursor-agent/versions",
+  );
 
   constructor(config: ProviderConfig = {}) {
     super(config);
@@ -279,120 +300,137 @@ export class CursorProvider extends CliProvider {
   // ==========================================================================
 
   getName(): string {
-    return 'cursor';
+    return "cursor";
   }
 
   getCliName(): string {
-    return 'cursor-agent';
+    return "cursor-agent";
   }
 
   getSpawnConfig(): CliSpawnConfig {
     return {
-      windowsStrategy: 'direct',
+      windowsStrategy: "direct",
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/cursor-agent'), // Primary symlink location
-          '/usr/local/bin/cursor-agent',
+          path.join(os.homedir(), ".local/bin/cursor-agent"), // Primary symlink location
+          "/usr/local/bin/cursor-agent",
         ],
-        darwin: [path.join(os.homedir(), '.local/bin/cursor-agent'), '/usr/local/bin/cursor-agent'],
+        darwin: [
+          path.join(os.homedir(), ".local/bin/cursor-agent"),
+          "/usr/local/bin/cursor-agent",
+        ],
         win32: [
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'Cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor-agent.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "Cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor-agent.exe",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'Cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor-agent.cmd'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "Cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor-agent.cmd",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'Cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "Cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor.exe",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'Cursor',
-            'cursor.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "Cursor",
+            "cursor.exe",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor-agent.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor-agent.exe",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor-agent.cmd'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor-agent.cmd",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'cursor',
-            'resources',
-            'app',
-            'bin',
-            'cursor.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "cursor",
+            "resources",
+            "app",
+            "bin",
+            "cursor.exe",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'Programs',
-            'cursor',
-            'cursor.exe'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "Programs",
+            "cursor",
+            "cursor.exe",
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-            'npm',
-            'cursor-agent.cmd'
+            process.env.APPDATA ||
+              path.join(os.homedir(), "AppData", "Roaming"),
+            "npm",
+            "cursor-agent.cmd",
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-            'npm',
-            'cursor.cmd'
+            process.env.APPDATA ||
+              path.join(os.homedir(), "AppData", "Roaming"),
+            "npm",
+            "cursor.cmd",
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-            '.npm-global',
-            'bin',
-            'cursor-agent.cmd'
+            process.env.APPDATA ||
+              path.join(os.homedir(), "AppData", "Roaming"),
+            ".npm-global",
+            "bin",
+            "cursor-agent.cmd",
           ),
           path.join(
-            process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-            '.npm-global',
-            'bin',
-            'cursor.cmd'
+            process.env.APPDATA ||
+              path.join(os.homedir(), "AppData", "Roaming"),
+            ".npm-global",
+            "bin",
+            "cursor.cmd",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'pnpm',
-            'cursor-agent.cmd'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "pnpm",
+            "cursor-agent.cmd",
           ),
           path.join(
-            process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'),
-            'pnpm',
-            'cursor.cmd'
+            process.env.LOCALAPPDATA ||
+              path.join(os.homedir(), "AppData", "Local"),
+            "pnpm",
+            "cursor.cmd",
           ),
         ],
       },
@@ -404,21 +442,21 @@ export class CursorProvider extends CliProvider {
    * Used to pass prompt via stdin instead of CLI args to avoid shell escaping issues
    */
   private extractPromptText(options: ExecuteOptions): string {
-    if (typeof options.prompt === 'string') {
+    if (typeof options.prompt === "string") {
       return options.prompt;
     } else if (Array.isArray(options.prompt)) {
       return options.prompt
-        .filter((p) => p.type === 'text' && p.text)
+        .filter((p) => p.type === "text" && p.text)
         .map((p) => p.text)
-        .join('\n');
+        .join("\n");
     } else {
-      throw new Error('Invalid prompt format');
+      throw new Error("Invalid prompt format");
     }
   }
 
   buildCliArgs(options: ExecuteOptions): string[] {
     // Model is already bare (no prefix) - validated by executeQuery
-    const model = options.model || 'auto';
+    const model = options.model || "auto";
 
     // Build CLI arguments for cursor-agent
     // NOTE: Prompt is NOT included here - it's passed via stdin to avoid
@@ -426,37 +464,37 @@ export class CursorProvider extends CliProvider {
     const cliArgs: string[] = [];
 
     // If using Cursor IDE (cliPath is 'cursor' not 'cursor-agent'), add 'agent' subcommand
-    if (this.cliPath && !this.cliPath.includes('cursor-agent')) {
-      cliArgs.push('agent');
+    if (this.cliPath && !this.cliPath.includes("cursor-agent")) {
+      cliArgs.push("agent");
     }
 
     cliArgs.push(
-      '-p', // Print mode (non-interactive)
-      '--output-format',
-      'stream-json',
-      '--stream-partial-output' // Real-time streaming
+      "-p", // Print mode (non-interactive)
+      "--output-format",
+      "stream-json",
+      "--stream-partial-output", // Real-time streaming
     );
 
     // In read-only mode, use --mode ask for Q&A style (no tools)
     // Otherwise, add --force to allow file edits
     if (options.readOnly) {
-      cliArgs.push('--mode', 'ask');
+      cliArgs.push("--mode", "ask");
     } else {
-      cliArgs.push('--force');
+      cliArgs.push("--force");
     }
 
     // Add model if not auto
-    if (model !== 'auto') {
-      cliArgs.push('--model', model);
+    if (model !== "auto") {
+      cliArgs.push("--model", model);
     }
 
     // Resume an existing chat when a provider session ID is available
     if (options.sdkSessionId) {
-      cliArgs.push('--resume', options.sdkSessionId);
+      cliArgs.push("--resume", options.sdkSessionId);
     }
 
     // Use '-' to indicate reading prompt from stdin
-    cliArgs.push('-');
+    cliArgs.push("-");
 
     return cliArgs;
   }
@@ -469,30 +507,30 @@ export class CursorProvider extends CliProvider {
     const cursorEvent = event as CursorStreamEvent;
 
     switch (cursorEvent.type) {
-      case 'system':
+      case "system":
         // System init - we capture session_id but don't yield a message
         return null;
 
-      case 'user':
+      case "user":
         // User message - already handled by caller
         return null;
 
-      case 'assistant': {
+      case "assistant": {
         const assistantEvent = cursorEvent as CursorAssistantEvent;
         return {
-          type: 'assistant',
+          type: "assistant",
           session_id: assistantEvent.session_id,
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: assistantEvent.message.content.map((c) => ({
-              type: 'text' as const,
+              type: "text" as const,
               text: c.text,
             })),
           },
         };
       }
 
-      case 'tool_call': {
+      case "tool_call": {
         const toolEvent = cursorEvent as CursorToolCallEvent;
         const toolCall = toolEvent.tool_call;
 
@@ -502,8 +540,8 @@ export class CursorProvider extends CliProvider {
           // Log unrecognized tool call structure for debugging
           const toolCallKeys = Object.keys(toolCall);
           logger.warn(
-            `[UNHANDLED TOOL_CALL] Unknown tool call structure. Keys: ${toolCallKeys.join(', ')}. ` +
-              `Full tool_call: ${JSON.stringify(toolCall).substring(0, 500)}`
+            `[UNHANDLED TOOL_CALL] Unknown tool call structure. Keys: ${toolCallKeys.join(", ")}. ` +
+              `Full tool_call: ${JSON.stringify(toolCall).substring(0, 500)}`,
           );
           return null;
         }
@@ -511,15 +549,15 @@ export class CursorProvider extends CliProvider {
         const { toolName, toolInput } = processed;
 
         // For started events, emit tool_use
-        if (toolEvent.subtype === 'started') {
+        if (toolEvent.subtype === "started") {
           return {
-            type: 'assistant',
+            type: "assistant",
             session_id: toolEvent.session_id,
             message: {
-              role: 'assistant',
+              role: "assistant",
               content: [
                 {
-                  type: 'tool_use',
+                  type: "tool_use",
                   name: toolName,
                   tool_use_id: toolEvent.call_id,
                   input: toolInput,
@@ -530,23 +568,23 @@ export class CursorProvider extends CliProvider {
         }
 
         // For completed events, emit both tool_use and tool_result
-        if (toolEvent.subtype === 'completed') {
+        if (toolEvent.subtype === "completed") {
           const resultContent = formatCursorToolResult(toolCall);
 
           return {
-            type: 'assistant',
+            type: "assistant",
             session_id: toolEvent.session_id,
             message: {
-              role: 'assistant',
+              role: "assistant",
               content: [
                 {
-                  type: 'tool_use',
+                  type: "tool_use",
                   name: toolName,
                   tool_use_id: toolEvent.call_id,
                   input: toolInput,
                 },
                 {
-                  type: 'tool_result',
+                  type: "tool_result",
                   tool_use_id: toolEvent.call_id,
                   content: resultContent,
                 },
@@ -558,24 +596,24 @@ export class CursorProvider extends CliProvider {
         return null;
       }
 
-      case 'result': {
+      case "result": {
         const resultEvent = cursorEvent as CursorResultEvent;
 
         if (resultEvent.is_error) {
-          const errorText = resultEvent.error || resultEvent.result || '';
+          const errorText = resultEvent.error || resultEvent.result || "";
           const enrichedError =
             errorText ||
-            `Cursor agent failed (duration: ${resultEvent.duration_ms}ms, subtype: ${resultEvent.subtype}, session: ${resultEvent.session_id ?? 'none'})`;
+            `Cursor agent failed (duration: ${resultEvent.duration_ms}ms, subtype: ${resultEvent.subtype}, session: ${resultEvent.session_id ?? "none"})`;
           return {
-            type: 'error',
+            type: "error",
             session_id: resultEvent.session_id,
             error: enrichedError,
           };
         }
 
         return {
-          type: 'result',
-          subtype: 'success',
+          type: "result",
+          subtype: "success",
           session_id: resultEvent.session_id,
           result: resultEvent.result,
         };
@@ -596,13 +634,13 @@ export class CursorProvider extends CliProvider {
    * 2. Cursor IDE with 'cursor agent' subcommand support
    */
   protected detectCli(): CliDetectionResult {
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       const findInPath = (command: string): string | null => {
         try {
           const result = execSync(`where ${command}`, {
-            encoding: 'utf8',
+            encoding: "utf8",
             timeout: 5000,
-            stdio: ['pipe', 'pipe', 'pipe'],
+            stdio: ["pipe", "pipe", "pipe"],
             windowsHide: true,
           })
             .trim()
@@ -619,14 +657,14 @@ export class CursorProvider extends CliProvider {
       };
 
       const isCursorAgentBinary = (cliPath: string) =>
-        cliPath.toLowerCase().includes('cursor-agent');
+        cliPath.toLowerCase().includes("cursor-agent");
 
       const supportsCursorAgentSubcommand = (cliPath: string) => {
         try {
           execSync(`"${cliPath}" agent --version`, {
-            encoding: 'utf8',
+            encoding: "utf8",
             timeout: 5000,
-            stdio: 'pipe',
+            stdio: "pipe",
             windowsHide: true,
           });
           return true;
@@ -635,13 +673,18 @@ export class CursorProvider extends CliProvider {
         }
       };
 
-      const pathResult = findInPath('cursor-agent') || findInPath('cursor');
+      const pathResult = findInPath("cursor-agent") || findInPath("cursor");
       if (pathResult) {
-        if (isCursorAgentBinary(pathResult) || supportsCursorAgentSubcommand(pathResult)) {
+        if (
+          isCursorAgentBinary(pathResult) ||
+          supportsCursorAgentSubcommand(pathResult)
+        ) {
           return {
             cliPath: pathResult,
             useWsl: false,
-            strategy: pathResult.toLowerCase().endsWith('.cmd') ? 'cmd' : 'direct',
+            strategy: pathResult.toLowerCase().endsWith(".cmd")
+              ? "cmd"
+              : "direct",
           };
         }
       }
@@ -652,34 +695,39 @@ export class CursorProvider extends CliProvider {
         if (!fs.existsSync(resolved)) {
           continue;
         }
-        if (isCursorAgentBinary(resolved) || supportsCursorAgentSubcommand(resolved)) {
+        if (
+          isCursorAgentBinary(resolved) ||
+          supportsCursorAgentSubcommand(resolved)
+        ) {
           return {
             cliPath: resolved,
             useWsl: false,
-            strategy: resolved.toLowerCase().endsWith('.cmd') ? 'cmd' : 'direct',
+            strategy: resolved.toLowerCase().endsWith(".cmd")
+              ? "cmd"
+              : "direct",
           };
         }
       }
 
       const wslLogger = (msg: string) => logger.debug(msg);
       if (isWslAvailable({ logger: wslLogger })) {
-        const wslResult = findCliInWsl('cursor-agent', { logger: wslLogger });
+        const wslResult = findCliInWsl("cursor-agent", { logger: wslLogger });
         if (wslResult) {
           logger.debug(
-            `Using cursor-agent via WSL (${wslResult.distribution || 'default'}): ${wslResult.wslPath}`
+            `Using cursor-agent via WSL (${wslResult.distribution || "default"}): ${wslResult.wslPath}`,
           );
           return {
-            cliPath: 'wsl.exe',
+            cliPath: "wsl.exe",
             useWsl: true,
             wslCliPath: wslResult.wslPath,
             wslDistribution: wslResult.distribution,
-            strategy: 'wsl',
+            strategy: "wsl",
           };
         }
       }
 
-      logger.debug('cursor-agent not found on Windows');
-      return { cliPath: null, useWsl: false, strategy: 'direct' };
+      logger.debug("cursor-agent not found on Windows");
+      return { cliPath: null, useWsl: false, strategy: "direct" };
     }
 
     // First try standard detection (PATH, common paths, WSL)
@@ -694,18 +742,24 @@ export class CursorProvider extends CliProvider {
       try {
         const versions = fs
           .readdirSync(CursorProvider.VERSIONS_DIR)
-          .filter((v) => !v.startsWith('.'))
+          .filter((v) => !v.startsWith("."))
           .sort()
           .reverse(); // Most recent first
 
         for (const version of versions) {
-          const versionPath = path.join(CursorProvider.VERSIONS_DIR, version, 'cursor-agent');
+          const versionPath = path.join(
+            CursorProvider.VERSIONS_DIR,
+            version,
+            "cursor-agent",
+          );
           if (fs.existsSync(versionPath)) {
-            logger.debug(`Found cursor-agent version ${version} at: ${versionPath}`);
+            logger.debug(
+              `Found cursor-agent version ${version} at: ${versionPath}`,
+            );
             return {
               cliPath: versionPath,
               useWsl: false,
-              strategy: 'native',
+              strategy: "native",
             };
           }
         }
@@ -717,10 +771,10 @@ export class CursorProvider extends CliProvider {
     // If cursor-agent not found, try to find 'cursor' IDE and use 'cursor agent' subcommand
     // The Cursor IDE includes the agent as a subcommand: cursor agent
     const cursorPaths = [
-      '/usr/bin/cursor',
-      '/usr/local/bin/cursor',
-      path.join(os.homedir(), '.local/bin/cursor'),
-      '/opt/cursor/cursor',
+      "/usr/bin/cursor",
+      "/usr/local/bin/cursor",
+      path.join(os.homedir(), ".local/bin/cursor"),
+      "/opt/cursor/cursor",
     ];
 
     for (const cursorPath of cursorPaths) {
@@ -728,16 +782,16 @@ export class CursorProvider extends CliProvider {
         // Verify cursor agent subcommand works
         try {
           execSync(`"${cursorPath}" agent --version`, {
-            encoding: 'utf8',
+            encoding: "utf8",
             timeout: 5000,
-            stdio: 'pipe',
+            stdio: "pipe",
           });
           logger.debug(`Using cursor agent via Cursor IDE: ${cursorPath}`);
           // Return cursor path but we'll use 'cursor agent' subcommand
           return {
             cliPath: cursorPath,
             useWsl: false,
-            strategy: 'native',
+            strategy: "native",
           };
         } catch {
           // cursor agent subcommand doesn't work, try next path
@@ -755,64 +809,71 @@ export class CursorProvider extends CliProvider {
     const lower = stderr.toLowerCase();
 
     if (
-      lower.includes('not authenticated') ||
-      lower.includes('please log in') ||
-      lower.includes('unauthorized')
+      lower.includes("not authenticated") ||
+      lower.includes("please log in") ||
+      lower.includes("unauthorized")
     ) {
       return {
         code: CursorErrorCode.NOT_AUTHENTICATED,
-        message: 'Cursor CLI is not authenticated',
+        message: "Cursor CLI is not authenticated",
         recoverable: true,
-        suggestion: 'Run "cursor-agent login" to authenticate with your browser',
+        suggestion:
+          'Run "cursor-agent login" to authenticate with your browser',
       };
     }
 
     if (
-      lower.includes('rate limit') ||
-      lower.includes('too many requests') ||
-      lower.includes('429')
+      lower.includes("rate limit") ||
+      lower.includes("too many requests") ||
+      lower.includes("429")
     ) {
       return {
         code: CursorErrorCode.RATE_LIMITED,
-        message: 'Cursor API rate limit exceeded',
+        message: "Cursor API rate limit exceeded",
         recoverable: true,
-        suggestion: 'Wait a few minutes and try again, or upgrade to Cursor Pro',
+        suggestion:
+          "Wait a few minutes and try again, or upgrade to Cursor Pro",
       };
     }
 
     if (
-      lower.includes('model not available') ||
-      lower.includes('invalid model') ||
-      lower.includes('unknown model')
+      lower.includes("model not available") ||
+      lower.includes("invalid model") ||
+      lower.includes("unknown model")
     ) {
       return {
         code: CursorErrorCode.MODEL_UNAVAILABLE,
-        message: 'Requested model is not available',
+        message: "Requested model is not available",
         recoverable: true,
         suggestion: 'Try using "auto" mode or select a different model',
       };
     }
 
     if (
-      lower.includes('network') ||
-      lower.includes('connection') ||
-      lower.includes('econnrefused') ||
-      lower.includes('timeout')
+      lower.includes("network") ||
+      lower.includes("connection") ||
+      lower.includes("econnrefused") ||
+      lower.includes("timeout")
     ) {
       return {
         code: CursorErrorCode.NETWORK_ERROR,
-        message: 'Network connection error',
+        message: "Network connection error",
         recoverable: true,
-        suggestion: 'Check your internet connection and try again',
+        suggestion: "Check your internet connection and try again",
       };
     }
 
-    if (exitCode === 137 || lower.includes('killed') || lower.includes('sigterm')) {
+    if (
+      exitCode === 137 ||
+      lower.includes("killed") ||
+      lower.includes("sigterm")
+    ) {
       return {
         code: CursorErrorCode.PROCESS_CRASHED,
-        message: 'Cursor agent process was terminated',
+        message: "Cursor agent process was terminated",
         recoverable: true,
-        suggestion: 'The process may have run out of memory. Try a simpler task.',
+        suggestion:
+          "The process may have run out of memory. Try a simpler task.",
       };
     }
 
@@ -827,10 +888,10 @@ export class CursorProvider extends CliProvider {
    * Override install instructions for Cursor-specific guidance
    */
   protected getInstallInstructions(): string {
-    if (process.platform === 'win32') {
-      return 'cursor-agent requires WSL on Windows. Install WSL, then run in WSL: curl https://cursor.com/install -fsS | bash';
+    if (process.platform === "win32") {
+      return "cursor-agent requires WSL on Windows. Install WSL, then run in WSL: curl https://cursor.com/install -fsS | bash";
     }
-    return 'Install with: curl https://cursor.com/install -fsS | bash';
+    return "Install with: curl https://cursor.com/install -fsS | bash";
   }
 
   /**
@@ -840,20 +901,22 @@ export class CursorProvider extends CliProvider {
    * - Session ID tracking from system init events
    * - Text block deduplication (Cursor sends duplicate chunks)
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     this.ensureCliDetected();
 
     // Validate that model doesn't have a provider prefix (except cursor- which should already be stripped)
     // AgentService should strip prefixes before passing to providers
     // Note: Cursor's Gemini models (e.g., "gemini-3-pro") legitimately start with "gemini-"
-    validateBareModelId(options.model, 'CursorProvider', 'cursor');
+    validateBareModelId(options.model, "CursorProvider", "cursor");
 
     if (!this.cliPath) {
       throw this.createError(
         CursorErrorCode.NOT_INSTALLED,
-        'Cursor CLI is not installed',
+        "Cursor CLI is not installed",
         true,
-        this.getInstallInstructions()
+        this.getInstallInstructions(),
       );
     }
 
@@ -863,7 +926,7 @@ export class CursorProvider extends CliProvider {
       logger.warn(
         `MCP servers configured (${serverCount}) but not yet supported by Cursor CLI in Pegasus. ` +
           `MCP support for Cursor will be added in a future release. ` +
-          `The configured MCP servers will be ignored for this execution.`
+          `The configured MCP servers will be ignored for this execution.`,
       );
     }
 
@@ -883,22 +946,26 @@ export class CursorProvider extends CliProvider {
     let sessionId: string | undefined;
 
     // Dedup state for Cursor-specific text block handling
-    let lastTextBlock = '';
-    let accumulatedText = '';
+    let lastTextBlock = "";
+    let accumulatedText = "";
 
-    logger.debug(`CursorProvider.executeQuery called with model: "${options.model}"`);
+    logger.debug(
+      `CursorProvider.executeQuery called with model: "${options.model}"`,
+    );
 
     // Get effective permissions for this project and detect the active profile
-    const effectivePermissions = await getEffectivePermissions(options.cwd || process.cwd());
+    const effectivePermissions = await getEffectivePermissions(
+      options.cwd || process.cwd(),
+    );
     const activeProfile = detectProfile(effectivePermissions);
     logger.debug(
-      `Active permission profile: ${activeProfile ?? 'none'}, permissions: ${JSON.stringify(effectivePermissions)}`
+      `Active permission profile: ${activeProfile ?? "none"}, permissions: ${JSON.stringify(effectivePermissions)}`,
     );
 
     // Debug: log raw events when PEGASUS_DEBUG_RAW_OUTPUT is enabled
     const debugRawEvents =
-      process.env.PEGASUS_DEBUG_RAW_OUTPUT === 'true' ||
-      process.env.PEGASUS_DEBUG_RAW_OUTPUT === '1';
+      process.env.PEGASUS_DEBUG_RAW_OUTPUT === "true" ||
+      process.env.PEGASUS_DEBUG_RAW_OUTPUT === "1";
 
     try {
       for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
@@ -906,35 +973,43 @@ export class CursorProvider extends CliProvider {
 
         // Log raw event for debugging
         if (debugRawEvents) {
-          const subtype = 'subtype' in event ? (event.subtype as string) : 'none';
+          const subtype =
+            "subtype" in event ? (event.subtype as string) : "none";
           logger.info(`[RAW EVENT] type=${event.type} subtype=${subtype}`);
-          if (event.type === 'tool_call') {
+          if (event.type === "tool_call") {
             const toolEvent = event as CursorToolCallEvent;
             const tc = toolEvent.tool_call;
             const toolTypes =
               [
-                tc.readToolCall && 'read',
-                tc.writeToolCall && 'write',
-                tc.editToolCall && 'edit',
-                tc.shellToolCall && 'shell',
-                tc.deleteToolCall && 'delete',
-                tc.grepToolCall && 'grep',
-                tc.lsToolCall && 'ls',
-                tc.globToolCall && 'glob',
+                tc.readToolCall && "read",
+                tc.writeToolCall && "write",
+                tc.editToolCall && "edit",
+                tc.shellToolCall && "shell",
+                tc.deleteToolCall && "delete",
+                tc.grepToolCall && "grep",
+                tc.lsToolCall && "ls",
+                tc.globToolCall && "glob",
                 tc.function && `function:${tc.function.name}`,
               ]
                 .filter(Boolean)
-                .join(',') || 'unknown';
+                .join(",") || "unknown";
             logger.info(
               `[RAW TOOL_CALL] call_id=${toolEvent.call_id} types=[${toolTypes}]` +
-                (tc.shellToolCall ? ` cmd="${tc.shellToolCall.args?.command}"` : '') +
-                (tc.writeToolCall ? ` path="${tc.writeToolCall.args?.path}"` : '')
+                (tc.shellToolCall
+                  ? ` cmd="${tc.shellToolCall.args?.command}"`
+                  : "") +
+                (tc.writeToolCall
+                  ? ` path="${tc.writeToolCall.args?.path}"`
+                  : ""),
             );
           }
         }
 
         // Capture session ID from system init
-        if (event.type === 'system' && (event as CursorSystemEvent).subtype === 'init') {
+        if (
+          event.type === "system" &&
+          (event as CursorSystemEvent).subtype === "init"
+        ) {
           sessionId = event.session_id;
           logger.debug(`Session started: ${sessionId}`);
         }
@@ -942,7 +1017,9 @@ export class CursorProvider extends CliProvider {
         // Normalize and yield the event
         const normalized = this.normalizeEvent(event);
         if (!normalized && debugRawEvents) {
-          logger.info(`[DROPPED EVENT] type=${event.type} - normalizeEvent returned null`);
+          logger.info(
+            `[DROPPED EVENT] type=${event.type} - normalizeEvent returned null`,
+          );
         }
         if (normalized) {
           // Ensure session_id is always set
@@ -951,11 +1028,11 @@ export class CursorProvider extends CliProvider {
           }
 
           // Apply Cursor-specific dedup for assistant text messages
-          if (normalized.type === 'assistant' && normalized.message?.content) {
+          if (normalized.type === "assistant" && normalized.message?.content) {
             const dedupedContent = this.deduplicateTextBlocks(
               normalized.message.content,
               lastTextBlock,
-              accumulatedText
+              accumulatedText,
             );
 
             if (dedupedContent.content.length === 0) {
@@ -976,21 +1053,21 @@ export class CursorProvider extends CliProvider {
       }
     } catch (error) {
       if (isAbortError(error)) {
-        logger.debug('Query aborted');
+        logger.debug("Query aborted");
         return;
       }
 
       // Map CLI errors to CursorError
-      if (error instanceof Error && 'stderr' in error) {
+      if (error instanceof Error && "stderr" in error) {
         const errorInfo = this.mapError(
           (error as { stderr?: string }).stderr || error.message,
-          (error as { exitCode?: number | null }).exitCode ?? null
+          (error as { exitCode?: number | null }).exitCode ?? null,
         );
         throw this.createError(
           errorInfo.code as CursorErrorCode,
           errorInfo.message,
           errorInfo.recoverable,
-          errorInfo.suggestion
+          errorInfo.suggestion,
         );
       }
       throw error;
@@ -1008,13 +1085,13 @@ export class CursorProvider extends CliProvider {
     code: CursorErrorCode,
     message: string,
     recoverable: boolean = false,
-    suggestion?: string
+    suggestion?: string,
   ): CursorError {
     const error = new Error(message) as CursorError;
     error.code = code;
     error.recoverable = recoverable;
     error.suggestion = suggestion;
-    error.name = 'CursorError';
+    error.name = "CursorError";
     return error;
   }
 
@@ -1030,14 +1107,14 @@ export class CursorProvider extends CliProvider {
   private deduplicateTextBlocks(
     content: ContentBlock[],
     lastTextBlock: string,
-    accumulatedText: string
+    accumulatedText: string,
   ): { content: ContentBlock[]; lastBlock: string; accumulated: string } {
     const filtered: ContentBlock[] = [];
     let newLastBlock = lastTextBlock;
     let newAccumulated = accumulatedText;
 
     for (const block of content) {
-      if (block.type !== 'text' || !block.text) {
+      if (block.type !== "text" || !block.text) {
         filtered.push(block);
         continue;
       }
@@ -1054,9 +1131,12 @@ export class CursorProvider extends CliProvider {
 
       // Skip final accumulated text block
       // Cursor sends one large block containing ALL previous text at the end
-      if (newAccumulated.length > 100 && text.length > newAccumulated.length * 0.8) {
-        const normalizedAccum = newAccumulated.replace(/\s+/g, ' ').trim();
-        const normalizedNew = text.replace(/\s+/g, ' ').trim();
+      if (
+        newAccumulated.length > 100 &&
+        text.length > newAccumulated.length * 0.8
+      ) {
+        const normalizedAccum = newAccumulated.replace(/\s+/g, " ").trim();
+        const normalizedNew = text.replace(/\s+/g, " ").trim();
         if (normalizedNew.includes(normalizedAccum.slice(0, 100))) {
           // This is the final accumulated block, skip it
           continue;
@@ -1093,14 +1173,14 @@ export class CursorProvider extends CliProvider {
       }
 
       // If using Cursor IDE, use 'cursor agent --version'
-      const versionCmd = this.cliPath.includes('cursor-agent')
+      const versionCmd = this.cliPath.includes("cursor-agent")
         ? `"${this.cliPath}" --version`
         : `"${this.cliPath}" agent --version`;
 
       const result = execSync(versionCmd, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 5000,
-        stdio: 'pipe',
+        stdio: "pipe",
       }).trim();
       return result;
     } catch {
@@ -1114,17 +1194,21 @@ export class CursorProvider extends CliProvider {
   async checkAuth(): Promise<CursorAuthStatus> {
     this.ensureCliDetected();
     if (!this.cliPath) {
-      return { authenticated: false, method: 'none' };
+      return { authenticated: false, method: "none" };
     }
 
     // Check for API key in environment with validation
     if (process.env.CURSOR_API_KEY) {
-      const validation = validateApiKey(process.env.CURSOR_API_KEY, 'cursor');
+      const validation = validateApiKey(process.env.CURSOR_API_KEY, "cursor");
       if (!validation.isValid) {
-        logger.warn('Cursor API key validation failed:', validation.error);
-        return { authenticated: false, method: 'api_key', error: validation.error };
+        logger.warn("Cursor API key validation failed:", validation.error);
+        return {
+          authenticated: false,
+          method: "api_key",
+          error: validation.error,
+        };
       }
-      return { authenticated: true, method: 'api_key' };
+      return { authenticated: true, method: "api_key" };
     }
 
     // For WSL mode, check credentials inside WSL
@@ -1133,17 +1217,24 @@ export class CursorProvider extends CliProvider {
 
       // Check for credentials file inside WSL
       const wslCredPaths = [
-        '$HOME/.cursor/credentials.json',
-        '$HOME/.config/cursor/credentials.json',
+        "$HOME/.cursor/credentials.json",
+        "$HOME/.config/cursor/credentials.json",
       ];
 
       for (const credPath of wslCredPaths) {
-        const content = execInWsl(`sh -c "cat ${credPath} 2>/dev/null || echo ''"`, wslOpts);
+        const content = execInWsl(
+          `sh -c "cat ${credPath} 2>/dev/null || echo ''"`,
+          wslOpts,
+        );
         if (content && content.trim()) {
           try {
             const creds = JSON.parse(content);
             if (creds.accessToken || creds.token) {
-              return { authenticated: true, method: 'login', hasCredentialsFile: true };
+              return {
+                authenticated: true,
+                method: "login",
+                hasCredentialsFile: true,
+              };
             }
           } catch {
             // Invalid credentials file
@@ -1157,25 +1248,29 @@ export class CursorProvider extends CliProvider {
         distribution: this.wslDistribution,
       });
       if (versionResult) {
-        return { authenticated: true, method: 'login' };
+        return { authenticated: true, method: "login" };
       }
 
-      return { authenticated: false, method: 'none' };
+      return { authenticated: false, method: "none" };
     }
 
     // Native mode (Linux/macOS) - check local credentials
     const credentialPaths = [
-      path.join(os.homedir(), '.cursor', 'credentials.json'),
-      path.join(os.homedir(), '.config', 'cursor', 'credentials.json'),
+      path.join(os.homedir(), ".cursor", "credentials.json"),
+      path.join(os.homedir(), ".config", "cursor", "credentials.json"),
     ];
 
     for (const credPath of credentialPaths) {
       if (fs.existsSync(credPath)) {
         try {
-          const content = fs.readFileSync(credPath, 'utf8');
+          const content = fs.readFileSync(credPath, "utf8");
           const creds = JSON.parse(content);
           if (creds.accessToken || creds.token) {
-            return { authenticated: true, method: 'login', hasCredentialsFile: true };
+            return {
+              authenticated: true,
+              method: "login",
+              hasCredentialsFile: true,
+            };
           }
         } catch {
           // Invalid credentials file
@@ -1186,19 +1281,22 @@ export class CursorProvider extends CliProvider {
     // Try running a simple command to check auth
     try {
       execSync(`"${this.cliPath}" --version`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 10000,
         env: { ...process.env },
       });
-      return { authenticated: true, method: 'login' };
+      return { authenticated: true, method: "login" };
     } catch (error: unknown) {
       const execError = error as { stderr?: string };
-      if (execError.stderr?.includes('not authenticated') || execError.stderr?.includes('log in')) {
-        return { authenticated: false, method: 'none' };
+      if (
+        execError.stderr?.includes("not authenticated") ||
+        execError.stderr?.includes("log in")
+      ) {
+        return { authenticated: false, method: "none" };
       }
     }
 
-    return { authenticated: false, method: 'none' };
+    return { authenticated: false, method: "none" };
   }
 
   /**
@@ -1212,14 +1310,14 @@ export class CursorProvider extends CliProvider {
     // Determine the display path - for WSL, show the WSL path with distribution
     const displayPath =
       this.useWsl && this.wslCliPath
-        ? `(WSL${this.wslDistribution ? `:${this.wslDistribution}` : ''}) ${this.wslCliPath}`
+        ? `(WSL${this.wslDistribution ? `:${this.wslDistribution}` : ""}) ${this.wslCliPath}`
         : this.cliPath || undefined;
 
     return {
       installed,
       version: version || undefined,
       path: displayPath,
-      method: this.useWsl ? 'wsl' : 'cli',
+      method: this.useWsl ? "wsl" : "cli",
       hasApiKey: !!process.env.CURSOR_API_KEY,
       authenticated: auth.authenticated,
     };
@@ -1241,7 +1339,7 @@ export class CursorProvider extends CliProvider {
       id: `cursor-${id}`,
       name: config.label,
       modelString: id,
-      provider: 'cursor',
+      provider: "cursor",
       description: config.description,
       supportsTools: true,
       supportsVision: config.supportsVision,
@@ -1252,7 +1350,7 @@ export class CursorProvider extends CliProvider {
    * Check if a feature is supported
    */
   supportsFeature(feature: string): boolean {
-    const supported = ['tools', 'text', 'streaming'];
+    const supported = ["tools", "text", "streaming"];
     return supported.includes(feature);
   }
 }

@@ -1,21 +1,25 @@
-import { useCallback, useState } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Wand2, GitBranch, ClipboardCheck, RefreshCw } from 'lucide-react';
-import { UsagePopover } from '@/components/usage-popover';
-import { useAppStore } from '@/store/app-store';
-import { useSetupStore } from '@/store/setup-store';
-import { useIsTablet } from '@/hooks/use-media-query';
-import { AutoModeSettingsPopover } from './dialogs/auto-mode-settings-popover';
-import { WorktreeSettingsPopover } from './dialogs/worktree-settings-popover';
-import { PlanSettingsPopover } from './dialogs/plan-settings-popover';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { BoardSearchBar } from './board-search-bar';
-import { BoardControls } from './board-controls';
-import { ViewToggle, type ViewMode } from './components';
-import { HeaderMobileMenu } from './header-mobile-menu';
+import { useCallback, useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Wand2, GitBranch, ClipboardCheck, RefreshCw } from "lucide-react";
+import { UsagePopover } from "@/components/usage-popover";
+import { useAppStore } from "@/store/app-store";
+import { useSetupStore } from "@/store/setup-store";
+import { useIsTablet } from "@/hooks/use-media-query";
+import { AutoModeSettingsPopover } from "./dialogs/auto-mode-settings-popover";
+import { WorktreeSettingsPopover } from "./dialogs/worktree-settings-popover";
+import { PlanSettingsPopover } from "./dialogs/plan-settings-popover";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { BoardSearchBar } from "./board-search-bar";
+import { BoardControls } from "./board-controls";
+import { ViewToggle, type ViewMode } from "./components";
+import { HeaderMobileMenu } from "./header-mobile-menu";
 
 export type { ViewMode };
 
@@ -47,7 +51,7 @@ interface BoardHeaderProps {
 
 // Shared styles for header control containers
 const controlContainerClass =
-  'flex items-center gap-1.5 px-3 h-8 rounded-md bg-secondary border border-border';
+  "flex items-center gap-1.5 px-3 h-8 rounded-md bg-secondary border border-border";
 
 export function BoardHeader({
   projectPath,
@@ -71,30 +75,41 @@ export function BoardHeader({
   activeBranch,
 }: BoardHeaderProps) {
   const claudeAuthStatus = useSetupStore((state) => state.claudeAuthStatus);
-  const skipVerificationInAutoMode = useAppStore((state) => state.skipVerificationInAutoMode);
-  const setSkipVerificationInAutoMode = useAppStore((state) => state.setSkipVerificationInAutoMode);
-  const planUseSelectedWorktreeBranch = useAppStore((state) => state.planUseSelectedWorktreeBranch);
+  const skipVerificationInAutoMode = useAppStore(
+    (state) => state.skipVerificationInAutoMode,
+  );
+  const setSkipVerificationInAutoMode = useAppStore(
+    (state) => state.setSkipVerificationInAutoMode,
+  );
+  const planUseSelectedWorktreeBranch = useAppStore(
+    (state) => state.planUseSelectedWorktreeBranch,
+  );
   const setPlanUseSelectedWorktreeBranch = useAppStore(
-    (state) => state.setPlanUseSelectedWorktreeBranch
+    (state) => state.setPlanUseSelectedWorktreeBranch,
   );
   const addFeatureUseSelectedWorktreeBranch = useAppStore(
-    (state) => state.addFeatureUseSelectedWorktreeBranch
+    (state) => state.addFeatureUseSelectedWorktreeBranch,
   );
   const setAddFeatureUseSelectedWorktreeBranch = useAppStore(
-    (state) => state.setAddFeatureUseSelectedWorktreeBranch
+    (state) => state.setAddFeatureUseSelectedWorktreeBranch,
   );
   const codexAuthStatus = useSetupStore((state) => state.codexAuthStatus);
   const zaiAuthStatus = useSetupStore((state) => state.zaiAuthStatus);
   const geminiAuthStatus = useSetupStore((state) => state.geminiAuthStatus);
 
   // Worktree panel visibility (per-project)
-  const worktreePanelVisibleByProject = useAppStore((state) => state.worktreePanelVisibleByProject);
-  const setWorktreePanelVisible = useAppStore((state) => state.setWorktreePanelVisible);
-  const isWorktreePanelVisible = worktreePanelVisibleByProject[projectPath] ?? true;
+  const worktreePanelVisibleByProject = useAppStore(
+    (state) => state.worktreePanelVisibleByProject,
+  );
+  const setWorktreePanelVisible = useAppStore(
+    (state) => state.setWorktreePanelVisible,
+  );
+  const isWorktreePanelVisible =
+    worktreePanelVisibleByProject[projectPath] ?? true;
 
   // All-worktrees mode indicator (per-project)
   const showAllWorktrees = useAppStore(
-    (state) => state.showAllWorktreesByProject[projectPath] ?? false
+    (state) => state.showAllWorktreesByProject[projectPath] ?? false,
   );
 
   const handleWorktreePanelToggle = useCallback(
@@ -109,10 +124,10 @@ export function BoardHeader({
           worktreePanelVisible: visible,
         });
       } catch (error) {
-        console.error('Failed to persist worktree panel visibility:', error);
+        console.error("Failed to persist worktree panel visibility:", error);
       }
     },
-    [projectPath, setWorktreePanelVisible]
+    [projectPath, setWorktreePanelVisible],
   );
 
   const isClaudeCliVerified = !!claudeAuthStatus?.authenticated;
@@ -154,8 +169,13 @@ export function BoardHeader({
           creatingSpecProjectPath={creatingSpecProjectPath}
           currentProjectPath={projectPath}
         />
-        {isMounted && <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />}
-        <BoardControls isMounted={isMounted} onShowBoardBackground={onShowBoardBackground} />
+        {isMounted && (
+          <ViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+        )}
+        <BoardControls
+          isMounted={isMounted}
+          onShowBoardBackground={onShowBoardBackground}
+        />
       </div>
       <div className="flex gap-4 items-center">
         {isMounted && !isTablet && (
@@ -168,18 +188,25 @@ export function BoardHeader({
                 disabled={isRefreshingBoard}
                 aria-label="Refresh board state from server"
               >
-                <RefreshCw className={isRefreshingBoard ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
+                <RefreshCw
+                  className={
+                    isRefreshingBoard ? "w-4 h-4 animate-spin" : "w-4 h-4"
+                  }
+                />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Refresh board state from server</TooltipContent>
+            <TooltipContent side="bottom">
+              Refresh board state from server
+            </TooltipContent>
           </Tooltip>
         )}
         {/* Usage Popover - show if any provider is authenticated, only on desktop */}
         {isMounted &&
           !isTablet &&
-          (showClaudeUsage || showCodexUsage || showZaiUsage || showGeminiUsage) && (
-            <UsagePopover />
-          )}
+          (showClaudeUsage ||
+            showCodexUsage ||
+            showZaiUsage ||
+            showGeminiUsage) && <UsagePopover />}
 
         {/* Tablet/Mobile view: show hamburger menu with all controls */}
         {isMounted && isTablet && (
@@ -206,7 +233,10 @@ export function BoardHeader({
         {/* Desktop view: show full controls */}
         {/* Worktrees Toggle - only show after mount to prevent hydration issues */}
         {isMounted && !isTablet && (
-          <div className={controlContainerClass} data-testid="worktrees-toggle-container">
+          <div
+            className={controlContainerClass}
+            data-testid="worktrees-toggle-container"
+          >
             <GitBranch className="w-4 h-4 text-muted-foreground" />
             <Label
               htmlFor="worktrees-toggle"
@@ -217,9 +247,9 @@ export function BoardHeader({
             {showAllWorktrees && !isWorktreePanelVisible && (
               <span
                 className="text-[10px] font-medium text-primary bg-primary/15 px-1.5 py-0.5 rounded whitespace-nowrap"
-                title={`All-worktrees mode active — showing every branch (active: ${activeBranch ?? 'main'})`}
+                title={`All-worktrees mode active — showing every branch (active: ${activeBranch ?? "main"})`}
               >
-                All (active: {activeBranch ?? 'main'})
+                All (active: {activeBranch ?? "main"})
               </span>
             )}
             <Switch
@@ -229,15 +259,22 @@ export function BoardHeader({
               data-testid="worktrees-toggle"
             />
             <WorktreeSettingsPopover
-              addFeatureUseSelectedWorktreeBranch={addFeatureUseSelectedWorktreeBranch}
-              onAddFeatureUseSelectedWorktreeBranchChange={setAddFeatureUseSelectedWorktreeBranch}
+              addFeatureUseSelectedWorktreeBranch={
+                addFeatureUseSelectedWorktreeBranch
+              }
+              onAddFeatureUseSelectedWorktreeBranchChange={
+                setAddFeatureUseSelectedWorktreeBranch
+              }
             />
           </div>
         )}
 
         {/* Auto Mode Toggle - only show after mount to prevent hydration issues */}
         {isMounted && !isTablet && (
-          <div className={controlContainerClass} data-testid="auto-mode-toggle-container">
+          <div
+            className={controlContainerClass}
+            data-testid="auto-mode-toggle-container"
+          >
             <Label
               htmlFor="auto-mode-toggle"
               className="text-xs font-medium cursor-pointer whitespace-nowrap"
@@ -269,7 +306,10 @@ export function BoardHeader({
 
         {/* Plan Button with Settings - only show on desktop, tablet/mobile has it in the panel */}
         {isMounted && !isTablet && (
-          <div className={controlContainerClass} data-testid="plan-button-container">
+          <div
+            className={controlContainerClass}
+            data-testid="plan-button-container"
+          >
             {hasPendingPlan && (
               <button
                 onClick={onOpenPendingPlan || onOpenPlanDialog}
@@ -289,7 +329,9 @@ export function BoardHeader({
             </button>
             <PlanSettingsPopover
               planUseSelectedWorktreeBranch={planUseSelectedWorktreeBranch}
-              onPlanUseSelectedWorktreeBranchChange={setPlanUseSelectedWorktreeBranch}
+              onPlanUseSelectedWorktreeBranchChange={
+                setPlanUseSelectedWorktreeBranch
+              }
             />
           </div>
         )}

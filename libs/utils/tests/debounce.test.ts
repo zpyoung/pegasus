@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { debounce, throttle } from '../src/debounce.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { debounce, throttle } from "../src/debounce.js";
 
-describe('debounce', () => {
+describe("debounce", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -10,7 +10,7 @@ describe('debounce', () => {
     vi.useRealTimers();
   });
 
-  it('should delay function execution', () => {
+  it("should delay function execution", () => {
     const fn = vi.fn();
     const debounced = debounce(fn, 100);
 
@@ -24,7 +24,7 @@ describe('debounce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should reset timer on subsequent calls', () => {
+  it("should reset timer on subsequent calls", () => {
     const fn = vi.fn();
     const debounced = debounce(fn, 100);
 
@@ -38,31 +38,31 @@ describe('debounce', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should pass arguments to the function', () => {
+  it("should pass arguments to the function", () => {
     const fn = vi.fn();
     const debounced = debounce(fn, 100);
 
-    debounced('arg1', 'arg2');
+    debounced("arg1", "arg2");
     vi.advanceTimersByTime(100);
 
-    expect(fn).toHaveBeenCalledWith('arg1', 'arg2');
+    expect(fn).toHaveBeenCalledWith("arg1", "arg2");
   });
 
-  it('should use the latest arguments when called multiple times', () => {
+  it("should use the latest arguments when called multiple times", () => {
     const fn = vi.fn();
     const debounced = debounce(fn, 100);
 
-    debounced('first');
-    debounced('second');
-    debounced('third');
+    debounced("first");
+    debounced("second");
+    debounced("third");
     vi.advanceTimersByTime(100);
 
     expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn).toHaveBeenCalledWith('third');
+    expect(fn).toHaveBeenCalledWith("third");
   });
 
-  describe('leading option', () => {
-    it('should call function immediately when leading is true', () => {
+  describe("leading option", () => {
+    it("should call function immediately when leading is true", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100, { leading: true });
 
@@ -70,7 +70,7 @@ describe('debounce', () => {
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
-    it('should not call again until wait time has passed', () => {
+    it("should not call again until wait time has passed", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100, { leading: true, trailing: false });
 
@@ -84,24 +84,24 @@ describe('debounce', () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
 
-    it('should call both leading and trailing when both are true', () => {
+    it("should call both leading and trailing when both are true", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100, { leading: true, trailing: true });
 
-      debounced('leading');
+      debounced("leading");
       expect(fn).toHaveBeenCalledTimes(1);
-      expect(fn).toHaveBeenLastCalledWith('leading');
+      expect(fn).toHaveBeenLastCalledWith("leading");
 
-      debounced('trailing');
+      debounced("trailing");
       vi.advanceTimersByTime(100);
 
       expect(fn).toHaveBeenCalledTimes(2);
-      expect(fn).toHaveBeenLastCalledWith('trailing');
+      expect(fn).toHaveBeenLastCalledWith("trailing");
     });
   });
 
-  describe('trailing option', () => {
-    it('should not call on trailing edge when trailing is false', () => {
+  describe("trailing option", () => {
+    it("should not call on trailing edge when trailing is false", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100, { trailing: false });
 
@@ -112,8 +112,8 @@ describe('debounce', () => {
     });
   });
 
-  describe('maxWait option', () => {
-    it('should invoke function after maxWait even with continuous calls', () => {
+  describe("maxWait option", () => {
+    it("should invoke function after maxWait even with continuous calls", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100, { maxWait: 200 });
 
@@ -131,16 +131,16 @@ describe('debounce', () => {
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
-    it('should throw error if maxWait is less than wait', () => {
+    it("should throw error if maxWait is less than wait", () => {
       const fn = vi.fn();
       expect(() => debounce(fn, 100, { maxWait: 50 })).toThrow(
-        'maxWait must be greater than or equal to wait'
+        "maxWait must be greater than or equal to wait",
       );
     });
   });
 
-  describe('cancel method', () => {
-    it('should cancel pending invocation', () => {
+  describe("cancel method", () => {
+    it("should cancel pending invocation", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -151,34 +151,34 @@ describe('debounce', () => {
       expect(fn).not.toHaveBeenCalled();
     });
 
-    it('should reset state after cancel', () => {
+    it("should reset state after cancel", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
-      debounced('first');
+      debounced("first");
       debounced.cancel();
-      debounced('second');
+      debounced("second");
       vi.advanceTimersByTime(100);
 
       expect(fn).toHaveBeenCalledTimes(1);
-      expect(fn).toHaveBeenCalledWith('second');
+      expect(fn).toHaveBeenCalledWith("second");
     });
   });
 
-  describe('flush method', () => {
-    it('should immediately invoke pending function', () => {
+  describe("flush method", () => {
+    it("should immediately invoke pending function", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
-      debounced('value');
+      debounced("value");
       expect(fn).not.toHaveBeenCalled();
 
       debounced.flush();
       expect(fn).toHaveBeenCalledTimes(1);
-      expect(fn).toHaveBeenCalledWith('value');
+      expect(fn).toHaveBeenCalledWith("value");
     });
 
-    it('should not invoke if no pending call', () => {
+    it("should not invoke if no pending call", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -186,7 +186,7 @@ describe('debounce', () => {
       expect(fn).not.toHaveBeenCalled();
     });
 
-    it('should cancel timer after flush', () => {
+    it("should cancel timer after flush", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -198,8 +198,8 @@ describe('debounce', () => {
     });
   });
 
-  describe('pending method', () => {
-    it('should return true when there is a pending invocation', () => {
+  describe("pending method", () => {
+    it("should return true when there is a pending invocation", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -208,7 +208,7 @@ describe('debounce', () => {
       expect(debounced.pending()).toBe(true);
     });
 
-    it('should return false after invocation', () => {
+    it("should return false after invocation", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -217,7 +217,7 @@ describe('debounce', () => {
       expect(debounced.pending()).toBe(false);
     });
 
-    it('should return false after cancel', () => {
+    it("should return false after cancel", () => {
       const fn = vi.fn();
       const debounced = debounce(fn, 100);
 
@@ -228,7 +228,7 @@ describe('debounce', () => {
   });
 });
 
-describe('throttle', () => {
+describe("throttle", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -237,7 +237,7 @@ describe('throttle', () => {
     vi.useRealTimers();
   });
 
-  it('should invoke function immediately by default', () => {
+  it("should invoke function immediately by default", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
 
@@ -245,7 +245,7 @@ describe('throttle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should not invoke again before wait time', () => {
+  it("should not invoke again before wait time", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
 
@@ -255,22 +255,22 @@ describe('throttle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should invoke on trailing edge with latest args', () => {
+  it("should invoke on trailing edge with latest args", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
 
-    throttled('first');
-    expect(fn).toHaveBeenCalledWith('first');
+    throttled("first");
+    expect(fn).toHaveBeenCalledWith("first");
 
-    throttled('second');
-    throttled('third');
+    throttled("second");
+    throttled("third");
     vi.advanceTimersByTime(100);
 
     expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn).toHaveBeenLastCalledWith('third');
+    expect(fn).toHaveBeenLastCalledWith("third");
   });
 
-  it('should respect leading option', () => {
+  it("should respect leading option", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100, { leading: false });
 
@@ -281,19 +281,19 @@ describe('throttle', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should respect trailing option', () => {
+  it("should respect trailing option", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100, { trailing: false });
 
-    throttled('first');
-    throttled('second');
+    throttled("first");
+    throttled("second");
     vi.advanceTimersByTime(100);
 
     expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn).toHaveBeenCalledWith('first');
+    expect(fn).toHaveBeenCalledWith("first");
   });
 
-  it('should invoke at regular intervals during continuous calls', () => {
+  it("should invoke at regular intervals during continuous calls", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
 
@@ -308,16 +308,16 @@ describe('throttle', () => {
     expect(fn.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('should have cancel, flush, and pending methods', () => {
+  it("should have cancel, flush, and pending methods", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100);
 
-    expect(typeof throttled.cancel).toBe('function');
-    expect(typeof throttled.flush).toBe('function');
-    expect(typeof throttled.pending).toBe('function');
+    expect(typeof throttled.cancel).toBe("function");
+    expect(typeof throttled.flush).toBe("function");
+    expect(typeof throttled.pending).toBe("function");
   });
 
-  it('should cancel pending invocation', () => {
+  it("should cancel pending invocation", () => {
     const fn = vi.fn();
     const throttled = throttle(fn, 100, { leading: false });
 

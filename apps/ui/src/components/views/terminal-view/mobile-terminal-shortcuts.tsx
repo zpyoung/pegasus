@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect, useState } from "react";
 import {
   ArrowUp,
   ArrowDown,
@@ -10,20 +10,23 @@ import {
   ClipboardPaste,
   CheckSquare,
   TextSelect,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { StickyModifierKeys, type StickyModifier } from './sticky-modifier-keys';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  StickyModifierKeys,
+  type StickyModifier,
+} from "./sticky-modifier-keys";
 
 /**
  * ANSI escape sequences for special keys.
  * These are what terminal emulators send when these keys are pressed.
  */
 const SPECIAL_KEYS = {
-  escape: '\x1b',
-  tab: '\t',
-  delete: '\x1b[3~',
-  home: '\x1b[H',
-  end: '\x1b[F',
+  escape: "\x1b",
+  tab: "\t",
+  delete: "\x1b[3~",
+  home: "\x1b[H",
+  end: "\x1b[F",
 } as const;
 
 /**
@@ -31,17 +34,17 @@ const SPECIAL_KEYS = {
  * Ctrl+<char> sends the char code & 0x1f (e.g., Ctrl+C = 0x03).
  */
 const CTRL_KEYS = {
-  'Ctrl+C': '\x03', // Interrupt / SIGINT
-  'Ctrl+Z': '\x1a', // Suspend / SIGTSTP
-  'Ctrl+A': '\x01', // Move to beginning of line
-  'Ctrl+B': '\x02', // Move cursor back (tmux prefix)
+  "Ctrl+C": "\x03", // Interrupt / SIGINT
+  "Ctrl+Z": "\x1a", // Suspend / SIGTSTP
+  "Ctrl+A": "\x01", // Move to beginning of line
+  "Ctrl+B": "\x02", // Move cursor back (tmux prefix)
 } as const;
 
 const ARROW_KEYS = {
-  up: '\x1b[A',
-  down: '\x1b[B',
-  right: '\x1b[C',
-  left: '\x1b[D',
+  up: "\x1b[A",
+  down: "\x1b[B",
+  right: "\x1b[C",
+  left: "\x1b[D",
 } as const;
 
 interface MobileTerminalShortcutsProps {
@@ -115,7 +118,7 @@ export function MobileTerminalShortcuts({
       if (!isConnected) return;
       onSendInput(data);
     },
-    [isConnected, onSendInput]
+    [isConnected, onSendInput],
   );
 
   /** Handles arrow key press with long-press repeat support. */
@@ -132,7 +135,7 @@ export function MobileTerminalShortcuts({
         }, 80);
       }, 400);
     },
-    [clearRepeat, sendKey]
+    [clearRepeat, sendKey],
   );
 
   const handleArrowRelease = useCallback(() => {
@@ -182,7 +185,7 @@ export function MobileTerminalShortcuts({
       {onToggleSelectMode && (
         <IconShortcutButton
           icon={TextSelect}
-          title={isSelectMode ? 'Exit select mode' : 'Select text'}
+          title={isSelectMode ? "Exit select mode" : "Select text"}
           onPress={onToggleSelectMode}
           disabled={!isConnected}
           active={isSelectMode}
@@ -235,19 +238,19 @@ export function MobileTerminalShortcuts({
       <ShortcutButton
         label="^C"
         title="Ctrl+C (Interrupt)"
-        onPress={() => sendKey(CTRL_KEYS['Ctrl+C'])}
+        onPress={() => sendKey(CTRL_KEYS["Ctrl+C"])}
         disabled={!isConnected}
       />
       <ShortcutButton
         label="^Z"
         title="Ctrl+Z (Suspend)"
-        onPress={() => sendKey(CTRL_KEYS['Ctrl+Z'])}
+        onPress={() => sendKey(CTRL_KEYS["Ctrl+Z"])}
         disabled={!isConnected}
       />
       <ShortcutButton
         label="^B"
         title="Ctrl+B (Back/tmux prefix)"
-        onPress={() => sendKey(CTRL_KEYS['Ctrl+B'])}
+        onPress={() => sendKey(CTRL_KEYS["Ctrl+B"])}
         disabled={!isConnected}
       />
 
@@ -320,10 +323,10 @@ function ShortcutButton({
   return (
     <button
       className={cn(
-        'px-3 py-2 rounded-md text-xs font-medium shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
-        'active:scale-95 touch-manipulation',
-        'bg-muted/80 text-foreground hover:bg-accent',
-        disabled && 'opacity-40 pointer-events-none'
+        "px-3 py-2 rounded-md text-xs font-medium shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center",
+        "active:scale-95 touch-manipulation",
+        "bg-muted/80 text-foreground hover:bg-accent",
+        disabled && "opacity-40 pointer-events-none",
       )}
       onPointerDown={(e) => {
         e.preventDefault(); // Prevent focus stealing from terminal
@@ -347,7 +350,7 @@ function ArrowButton({
   onRelease,
   disabled = false,
 }: {
-  direction: 'up' | 'down' | 'left' | 'right';
+  direction: "up" | "down" | "left" | "right";
   onPress: () => void;
   onRelease: () => void;
   disabled?: boolean;
@@ -363,10 +366,10 @@ function ArrowButton({
   return (
     <button
       className={cn(
-        'p-2 rounded-md shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
-        'active:scale-95 touch-manipulation',
-        'bg-muted/80 text-foreground hover:bg-accent',
-        disabled && 'opacity-40 pointer-events-none'
+        "p-2 rounded-md shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center",
+        "active:scale-95 touch-manipulation",
+        "bg-muted/80 text-foreground hover:bg-accent",
+        disabled && "opacity-40 pointer-events-none",
       )}
       onPointerDown={(e) => {
         e.preventDefault(); // Prevent focus stealing from terminal
@@ -402,12 +405,12 @@ function IconShortcutButton({
   return (
     <button
       className={cn(
-        'p-2 rounded-md shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center',
-        'active:scale-95 touch-manipulation',
+        "p-2 rounded-md shrink-0 select-none transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center",
+        "active:scale-95 touch-manipulation",
         active
-          ? 'bg-brand-500/20 text-brand-500 ring-1 ring-brand-500/40'
-          : 'bg-muted/80 text-foreground hover:bg-accent',
-        disabled && 'opacity-40 pointer-events-none'
+          ? "bg-brand-500/20 text-brand-500 ring-1 ring-brand-500/40"
+          : "bg-muted/80 text-foreground hover:bg-accent",
+        disabled && "opacity-40 pointer-events-none",
       )}
       onPointerDown={(e) => {
         e.preventDefault(); // Prevent focus stealing from terminal

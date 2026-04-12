@@ -1,41 +1,41 @@
-import CodeMirror from '@uiw/react-codemirror';
-import { xml } from '@codemirror/lang-xml';
-import { EditorView } from '@codemirror/view';
-import { cn } from '@/lib/utils';
+import CodeMirror from "@uiw/react-codemirror";
+import { xml } from "@codemirror/lang-xml";
+import { EditorView } from "@codemirror/view";
+import { cn } from "@/lib/utils";
 
 interface XmlSyntaxEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-  'data-testid'?: string;
+  "data-testid"?: string;
 }
 
 // Simple editor theme - inherits text color from parent
 const editorTheme = EditorView.theme({
-  '&': {
-    height: '100%',
-    fontSize: '0.875rem',
-    backgroundColor: 'transparent',
+  "&": {
+    height: "100%",
+    fontSize: "0.875rem",
+    backgroundColor: "transparent",
   },
-  '.cm-scroller': {
-    overflow: 'auto',
+  ".cm-scroller": {
+    overflow: "auto",
   },
-  '.cm-content': {
-    padding: '1rem',
-    minHeight: '100%',
+  ".cm-content": {
+    padding: "1rem",
+    minHeight: "100%",
   },
-  '.cm-activeLine': {
-    backgroundColor: 'transparent',
+  ".cm-activeLine": {
+    backgroundColor: "transparent",
   },
-  '.cm-line': {
-    padding: '0',
+  ".cm-line": {
+    padding: "0",
   },
-  '&.cm-focused': {
-    outline: 'none',
+  "&.cm-focused": {
+    outline: "none",
   },
-  '.cm-gutters': {
-    display: 'none',
+  ".cm-gutters": {
+    display: "none",
   },
 });
 
@@ -44,10 +44,10 @@ export function XmlSyntaxEditor({
   onChange,
   placeholder,
   className,
-  'data-testid': testId,
+  "data-testid": testId,
 }: XmlSyntaxEditorProps) {
   return (
-    <div className={cn('w-full h-full', className)} data-testid={testId}>
+    <div className={cn("w-full h-full", className)} data-testid={testId}>
       <CodeMirror
         value={value}
         onChange={onChange}

@@ -22,13 +22,13 @@
  * - syncProjectSettingsToServer: Writes project-specific overrides
  */
 
-import { useEffect, useState, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getHttpApiClient, waitForApiKeyInit } from '@/lib/http-api-client';
-import { getItem, setItem } from '@/lib/storage';
-import { sanitizeWorktreeByProject } from '@/lib/settings-utils';
-import { useAppStore, THEME_STORAGE_KEY } from '@/store/app-store';
-import { useSetupStore } from '@/store/setup-store';
+import { useEffect, useState, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getHttpApiClient, waitForApiKeyInit } from "@/lib/http-api-client";
+import { getItem, setItem } from "@/lib/storage";
+import { sanitizeWorktreeByProject } from "@/lib/settings-utils";
+import { useAppStore, THEME_STORAGE_KEY } from "@/store/app-store";
+import { useSetupStore } from "@/store/setup-store";
 import {
   DEFAULT_OPENCODE_MODEL,
   DEFAULT_MAX_CONCURRENCY,
@@ -40,9 +40,9 @@ import {
   type GlobalSettings,
   type CursorModelId,
   type PhaseModelEntry,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
-const logger = createLogger('SettingsMigration');
+const logger = createLogger("SettingsMigration");
 
 /**
  * State returned by useSettingsMigration hook
@@ -121,117 +121,157 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
   try {
     // First, check for fresh server settings cache (updated whenever server settings are fetched)
     // This prevents stale data when switching between modes
-    const settingsCache = getItem('pegasus-settings-cache');
+    const settingsCache = getItem("pegasus-settings-cache");
     if (settingsCache) {
       try {
         const cached = JSON.parse(settingsCache) as GlobalSettings;
         const cacheProjectCount = cached?.projects?.length ?? 0;
-        logger.info(`[CACHE_LOADED] projects=${cacheProjectCount}, theme=${cached?.theme}`);
+        logger.info(
+          `[CACHE_LOADED] projects=${cacheProjectCount}, theme=${cached?.theme}`,
+        );
         return cached;
       } catch {
-        logger.warn('Failed to parse settings cache, falling back to old storage');
+        logger.warn(
+          "Failed to parse settings cache, falling back to old storage",
+        );
       }
     } else {
-      logger.info('[CACHE_EMPTY] No settings cache found in localStorage');
+      logger.info("[CACHE_EMPTY] No settings cache found in localStorage");
     }
 
     // Fall back to old Zustand persisted storage
-    const pegasusStorage = getItem('pegasus-storage');
+    const pegasusStorage = getItem("pegasus-storage");
     if (!pegasusStorage) {
       return null;
     }
 
     const parsed = JSON.parse(pegasusStorage) as Record<string, unknown>;
     // Zustand persist stores state under 'state' key
-    const state = (parsed.state as Record<string, unknown> | undefined) || parsed;
+    const state =
+      (parsed.state as Record<string, unknown> | undefined) || parsed;
 
     // Setup wizard state (previously stored in its own persist key)
-    const pegasusSetup = getItem('pegasus-setup');
+    const pegasusSetup = getItem("pegasus-setup");
     const setupParsed = pegasusSetup
       ? (JSON.parse(pegasusSetup) as Record<string, unknown>)
       : null;
     const setupState =
-      (setupParsed?.state as Record<string, unknown> | undefined) || setupParsed || {};
+      (setupParsed?.state as Record<string, unknown> | undefined) ||
+      setupParsed ||
+      {};
 
     // Also check for standalone localStorage keys
-    const worktreePanelCollapsed = getItem('worktree-panel-collapsed');
-    const recentFolders = getItem('file-browser-recent-folders');
-    const lastProjectDir = getItem('pegasus:lastProjectDir');
+    const worktreePanelCollapsed = getItem("worktree-panel-collapsed");
+    const recentFolders = getItem("file-browser-recent-folders");
+    const lastProjectDir = getItem("pegasus:lastProjectDir");
 
     return {
       setupComplete: setupState.setupComplete as boolean,
       isFirstRun: setupState.isFirstRun as boolean,
       skipClaudeSetup: setupState.skipClaudeSetup as boolean,
-      theme: state.theme as GlobalSettings['theme'],
+      theme: state.theme as GlobalSettings["theme"],
       sidebarOpen: state.sidebarOpen as boolean,
       chatHistoryOpen: state.chatHistoryOpen as boolean,
       maxConcurrency: state.maxConcurrency as number,
       defaultSkipTests: state.defaultSkipTests as boolean,
       enableDependencyBlocking: state.enableDependencyBlocking as boolean,
       skipVerificationInAutoMode: state.skipVerificationInAutoMode as boolean,
-      mergePostAction: (state.mergePostAction as 'commit' | 'manual' | null) ?? null,
+      mergePostAction:
+        (state.mergePostAction as "commit" | "manual" | null) ?? null,
       useWorktrees: state.useWorktrees as boolean,
-      defaultPlanningMode: state.defaultPlanningMode as GlobalSettings['defaultPlanningMode'],
+      defaultPlanningMode:
+        state.defaultPlanningMode as GlobalSettings["defaultPlanningMode"],
       defaultRequirePlanApproval: state.defaultRequirePlanApproval as boolean,
       muteDoneSound: state.muteDoneSound as boolean,
       disableSplashScreen: state.disableSplashScreen as boolean,
       defaultSortNewestCardOnTop: state.defaultSortNewestCardOnTop as boolean,
-      enhancementModel: state.enhancementModel as GlobalSettings['enhancementModel'],
-      validationModel: state.validationModel as GlobalSettings['validationModel'],
-      phaseModels: state.phaseModels as GlobalSettings['phaseModels'],
-      enabledCursorModels: state.enabledCursorModels as GlobalSettings['enabledCursorModels'],
-      cursorDefaultModel: state.cursorDefaultModel as GlobalSettings['cursorDefaultModel'],
-      enabledOpencodeModels: state.enabledOpencodeModels as GlobalSettings['enabledOpencodeModels'],
-      opencodeDefaultModel: state.opencodeDefaultModel as GlobalSettings['opencodeDefaultModel'],
+      enhancementModel:
+        state.enhancementModel as GlobalSettings["enhancementModel"],
+      validationModel:
+        state.validationModel as GlobalSettings["validationModel"],
+      phaseModels: state.phaseModels as GlobalSettings["phaseModels"],
+      enabledCursorModels:
+        state.enabledCursorModels as GlobalSettings["enabledCursorModels"],
+      cursorDefaultModel:
+        state.cursorDefaultModel as GlobalSettings["cursorDefaultModel"],
+      enabledOpencodeModels:
+        state.enabledOpencodeModels as GlobalSettings["enabledOpencodeModels"],
+      opencodeDefaultModel:
+        state.opencodeDefaultModel as GlobalSettings["opencodeDefaultModel"],
       enabledDynamicModelIds:
-        state.enabledDynamicModelIds as GlobalSettings['enabledDynamicModelIds'],
-      disabledProviders: (state.disabledProviders ?? []) as GlobalSettings['disabledProviders'],
+        state.enabledDynamicModelIds as GlobalSettings["enabledDynamicModelIds"],
+      disabledProviders: (state.disabledProviders ??
+        []) as GlobalSettings["disabledProviders"],
       autoLoadClaudeMd: state.autoLoadClaudeMd as boolean,
       useClaudeCodeSystemPrompt: state.useClaudeCodeSystemPrompt as boolean,
-      codexAutoLoadAgents: state.codexAutoLoadAgents as GlobalSettings['codexAutoLoadAgents'],
-      codexSandboxMode: state.codexSandboxMode as GlobalSettings['codexSandboxMode'],
-      codexApprovalPolicy: state.codexApprovalPolicy as GlobalSettings['codexApprovalPolicy'],
-      codexEnableWebSearch: state.codexEnableWebSearch as GlobalSettings['codexEnableWebSearch'],
-      codexEnableImages: state.codexEnableImages as GlobalSettings['codexEnableImages'],
-      codexAdditionalDirs: state.codexAdditionalDirs as GlobalSettings['codexAdditionalDirs'],
-      codexThreadId: state.codexThreadId as GlobalSettings['codexThreadId'],
-      keyboardShortcuts: state.keyboardShortcuts as GlobalSettings['keyboardShortcuts'],
-      mcpServers: state.mcpServers as GlobalSettings['mcpServers'],
-      promptCustomization: state.promptCustomization as GlobalSettings['promptCustomization'],
-      eventHooks: state.eventHooks as GlobalSettings['eventHooks'],
-      ntfyEndpoints: state.ntfyEndpoints as GlobalSettings['ntfyEndpoints'],
-      featureTemplates: state.featureTemplates as GlobalSettings['featureTemplates'],
-      projects: state.projects as GlobalSettings['projects'],
-      trashedProjects: state.trashedProjects as GlobalSettings['trashedProjects'],
-      currentProjectId: (state.currentProject as { id?: string } | null)?.id ?? null,
-      projectHistory: state.projectHistory as GlobalSettings['projectHistory'],
+      codexAutoLoadAgents:
+        state.codexAutoLoadAgents as GlobalSettings["codexAutoLoadAgents"],
+      codexSandboxMode:
+        state.codexSandboxMode as GlobalSettings["codexSandboxMode"],
+      codexApprovalPolicy:
+        state.codexApprovalPolicy as GlobalSettings["codexApprovalPolicy"],
+      codexEnableWebSearch:
+        state.codexEnableWebSearch as GlobalSettings["codexEnableWebSearch"],
+      codexEnableImages:
+        state.codexEnableImages as GlobalSettings["codexEnableImages"],
+      codexAdditionalDirs:
+        state.codexAdditionalDirs as GlobalSettings["codexAdditionalDirs"],
+      codexThreadId: state.codexThreadId as GlobalSettings["codexThreadId"],
+      keyboardShortcuts:
+        state.keyboardShortcuts as GlobalSettings["keyboardShortcuts"],
+      mcpServers: state.mcpServers as GlobalSettings["mcpServers"],
+      promptCustomization:
+        state.promptCustomization as GlobalSettings["promptCustomization"],
+      eventHooks: state.eventHooks as GlobalSettings["eventHooks"],
+      ntfyEndpoints: state.ntfyEndpoints as GlobalSettings["ntfyEndpoints"],
+      featureTemplates:
+        state.featureTemplates as GlobalSettings["featureTemplates"],
+      projects: state.projects as GlobalSettings["projects"],
+      trashedProjects:
+        state.trashedProjects as GlobalSettings["trashedProjects"],
+      currentProjectId:
+        (state.currentProject as { id?: string } | null)?.id ?? null,
+      projectHistory: state.projectHistory as GlobalSettings["projectHistory"],
       projectHistoryIndex: state.projectHistoryIndex as number,
       lastSelectedSessionByProject:
-        state.lastSelectedSessionByProject as GlobalSettings['lastSelectedSessionByProject'],
-      agentModelBySession: state.agentModelBySession as GlobalSettings['agentModelBySession'],
+        state.lastSelectedSessionByProject as GlobalSettings["lastSelectedSessionByProject"],
+      agentModelBySession:
+        state.agentModelBySession as GlobalSettings["agentModelBySession"],
       helperModelByFeature:
-        state.helperModelByFeature as GlobalSettings['helperModelByFeature'],
+        state.helperModelByFeature as GlobalSettings["helperModelByFeature"],
       // UI State from standalone localStorage keys or Zustand state
       worktreePanelCollapsed:
-        worktreePanelCollapsed === 'true' || (state.worktreePanelCollapsed as boolean),
+        worktreePanelCollapsed === "true" ||
+        (state.worktreePanelCollapsed as boolean),
       lastProjectDir: lastProjectDir || (state.lastProjectDir as string),
-      recentFolders: recentFolders ? JSON.parse(recentFolders) : (state.recentFolders as string[]),
+      recentFolders: recentFolders
+        ? JSON.parse(recentFolders)
+        : (state.recentFolders as string[]),
       // Claude API Profiles (legacy)
-      claudeApiProfiles: (state.claudeApiProfiles as GlobalSettings['claudeApiProfiles']) ?? [],
+      claudeApiProfiles:
+        (state.claudeApiProfiles as GlobalSettings["claudeApiProfiles"]) ?? [],
       activeClaudeApiProfileId:
-        (state.activeClaudeApiProfileId as GlobalSettings['activeClaudeApiProfileId']) ?? null,
+        (state.activeClaudeApiProfileId as GlobalSettings["activeClaudeApiProfileId"]) ??
+        null,
       // Claude Compatible Providers (new system)
       claudeCompatibleProviders:
-        (state.claudeCompatibleProviders as GlobalSettings['claudeCompatibleProviders']) ?? [],
+        (state.claudeCompatibleProviders as GlobalSettings["claudeCompatibleProviders"]) ??
+        [],
       // Settings that were previously missing from migration (added for sync parity)
-      enableAiCommitMessages: state.enableAiCommitMessages as boolean | undefined,
+      enableAiCommitMessages: state.enableAiCommitMessages as
+        | boolean
+        | undefined,
       enableSkills: state.enableSkills as boolean | undefined,
-      skillsSources: state.skillsSources as GlobalSettings['skillsSources'] | undefined,
+      skillsSources: state.skillsSources as
+        | GlobalSettings["skillsSources"]
+        | undefined,
       enableSubagents: state.enableSubagents as boolean | undefined,
-      subagentsSources: state.subagentsSources as GlobalSettings['subagentsSources'] | undefined,
+      subagentsSources: state.subagentsSources as
+        | GlobalSettings["subagentsSources"]
+        | undefined,
     };
   } catch (error) {
-    logger.error('Failed to parse localStorage settings:', error);
+    logger.error("Failed to parse localStorage settings:", error);
     return null;
   }
 }
@@ -249,7 +289,7 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
  */
 export function localStorageHasMoreData(
   localSettings: Partial<GlobalSettings> | null,
-  serverSettings: GlobalSettings | null
+  serverSettings: GlobalSettings | null,
 ): boolean {
   if (!localSettings) return false;
   if (!serverSettings) return true;
@@ -259,7 +299,9 @@ export function localStorageHasMoreData(
   const serverProjects = serverSettings.projects || [];
 
   if (localProjects.length > 0 && serverProjects.length === 0) {
-    logger.info(`localStorage has ${localProjects.length} projects, server has none - will merge`);
+    logger.info(
+      `localStorage has ${localProjects.length} projects, server has none - will merge`,
+    );
     return true;
   }
 
@@ -280,7 +322,7 @@ export function localStorageHasMoreData(
  */
 export function mergeSettings(
   serverSettings: GlobalSettings,
-  localSettings: Partial<GlobalSettings> | null
+  localSettings: Partial<GlobalSettings> | null,
 ): GlobalSettings {
   if (!localSettings) return serverSettings;
 
@@ -297,7 +339,8 @@ export function mergeSettings(
   }
 
   if (
-    (!serverSettings.trashedProjects || serverSettings.trashedProjects.length === 0) &&
+    (!serverSettings.trashedProjects ||
+      serverSettings.trashedProjects.length === 0) &&
     localSettings.trashedProjects &&
     localSettings.trashedProjects.length > 0
   ) {
@@ -313,7 +356,8 @@ export function mergeSettings(
   }
 
   if (
-    (!serverSettings.recentFolders || serverSettings.recentFolders.length === 0) &&
+    (!serverSettings.recentFolders ||
+      serverSettings.recentFolders.length === 0) &&
     localSettings.recentFolders &&
     localSettings.recentFolders.length > 0
   ) {
@@ -321,7 +365,8 @@ export function mergeSettings(
   }
 
   if (
-    (!serverSettings.projectHistory || serverSettings.projectHistory.length === 0) &&
+    (!serverSettings.projectHistory ||
+      serverSettings.projectHistory.length === 0) &&
     localSettings.projectHistory &&
     localSettings.projectHistory.length > 0
   ) {
@@ -336,7 +381,8 @@ export function mergeSettings(
     localSettings.lastSelectedSessionByProject &&
     Object.keys(localSettings.lastSelectedSessionByProject).length > 0
   ) {
-    merged.lastSelectedSessionByProject = localSettings.lastSelectedSessionByProject;
+    merged.lastSelectedSessionByProject =
+      localSettings.lastSelectedSessionByProject;
   }
 
   if (
@@ -369,7 +415,8 @@ export function mergeSettings(
 
   // Claude API Profiles - preserve from localStorage if server is empty
   if (
-    (!serverSettings.claudeApiProfiles || serverSettings.claudeApiProfiles.length === 0) &&
+    (!serverSettings.claudeApiProfiles ||
+      serverSettings.claudeApiProfiles.length === 0) &&
     localSettings.claudeApiProfiles &&
     localSettings.claudeApiProfiles.length > 0
   ) {
@@ -377,7 +424,10 @@ export function mergeSettings(
   }
 
   // Active Claude API Profile ID - preserve from localStorage if server doesn't have one
-  if (!serverSettings.activeClaudeApiProfileId && localSettings.activeClaudeApiProfileId) {
+  if (
+    !serverSettings.activeClaudeApiProfileId &&
+    localSettings.activeClaudeApiProfileId
+  ) {
     merged.activeClaudeApiProfileId = localSettings.activeClaudeApiProfileId;
   }
 
@@ -402,13 +452,19 @@ export function mergeSettings(
 
   // Preserve new settings fields from localStorage if server has defaults
   // Use nullish coalescing to accept stored falsy values (e.g. false)
-  if (localSettings.enableAiCommitMessages != null && merged.enableAiCommitMessages == null) {
+  if (
+    localSettings.enableAiCommitMessages != null &&
+    merged.enableAiCommitMessages == null
+  ) {
     merged.enableAiCommitMessages = localSettings.enableAiCommitMessages;
   }
   if (localSettings.enableSkills != null && merged.enableSkills == null) {
     merged.enableSkills = localSettings.enableSkills;
   }
-  if (localSettings.skillsSources && (!merged.skillsSources || merged.skillsSources.length === 0)) {
+  if (
+    localSettings.skillsSources &&
+    (!merged.skillsSources || merged.skillsSources.length === 0)
+  ) {
     merged.skillsSources = localSettings.skillsSources;
   }
   if (localSettings.enableSubagents != null && merged.enableSubagents == null) {
@@ -440,14 +496,14 @@ export function mergeSettings(
  * @returns Promise resolving to {settings, migrated} - final settings and whether migration occurred
  */
 export async function performSettingsMigration(
-  serverSettings: GlobalSettings
+  serverSettings: GlobalSettings,
 ): Promise<{ settings: GlobalSettings; migrated: boolean }> {
   // Get localStorage data
   const localSettings = parseLocalStorageSettings();
   const localProjects = localSettings?.projects?.length ?? 0;
   const serverProjects = serverSettings.projects?.length ?? 0;
 
-  logger.info('[MIGRATION_CHECK]', {
+  logger.info("[MIGRATION_CHECK]", {
     localStorageProjects: localProjects,
     serverProjects: serverProjects,
     localStorageMigrated: serverSettings.localStorageMigrated,
@@ -456,7 +512,9 @@ export async function performSettingsMigration(
 
   // Check if migration has already been completed
   if (serverSettings.localStorageMigrated) {
-    logger.info('[MIGRATION_SKIP] Using server settings only (migration already completed)');
+    logger.info(
+      "[MIGRATION_SKIP] Using server settings only (migration already completed)",
+    );
     return { settings: serverSettings, migrated: false };
   }
 
@@ -464,7 +522,9 @@ export async function performSettingsMigration(
   if (localStorageHasMoreData(localSettings, serverSettings)) {
     // First-time migration: merge localStorage data with server settings
     const mergedSettings = mergeSettings(serverSettings, localSettings);
-    logger.info('Merged localStorage data with server settings (first-time migration)');
+    logger.info(
+      "Merged localStorage data with server settings (first-time migration)",
+    );
 
     // Sync merged settings to server with migration marker
     try {
@@ -476,12 +536,12 @@ export async function performSettingsMigration(
 
       const result = await api.settings.updateGlobal(updates);
       if (result.success) {
-        logger.info('Synced merged settings to server with migration marker');
+        logger.info("Synced merged settings to server with migration marker");
       } else {
-        logger.warn('Failed to sync merged settings to server:', result.error);
+        logger.warn("Failed to sync merged settings to server:", result.error);
       }
     } catch (error) {
-      logger.error('Failed to sync merged settings:', error);
+      logger.error("Failed to sync merged settings:", error);
     }
 
     return { settings: mergedSettings, migrated: true };
@@ -492,9 +552,9 @@ export async function performSettingsMigration(
     try {
       const api = getHttpApiClient();
       await api.settings.updateGlobal({ localStorageMigrated: true });
-      logger.info('Marked settings as migrated (no data to migrate)');
+      logger.info("Marked settings as migrated (no data to migrate)");
     } catch (error) {
-      logger.warn('Failed to set migration marker:', error);
+      logger.warn("Failed to set migration marker:", error);
     }
   }
 
@@ -533,17 +593,19 @@ export function useSettingsMigration(): MigrationState {
 
         // Always try to get localStorage data first (in case we need to merge/migrate)
         const localSettings = parseLocalStorageSettings();
-        logger.info(`localStorage has ${localSettings?.projects?.length ?? 0} projects`);
+        logger.info(
+          `localStorage has ${localSettings?.projects?.length ?? 0} projects`,
+        );
 
         // Check if server has settings files
         const status = await api.settings.getStatus();
 
         if (!status.success) {
-          logger.error('Failed to get settings status:', status);
+          logger.error("Failed to get settings status:", status);
 
           // Even if status check fails, try to use localStorage data if available
           if (localSettings) {
-            logger.info('Using localStorage data as fallback');
+            logger.info("Using localStorage data as fallback");
             hydrateStoreFromSettings(localSettings as GlobalSettings);
           }
 
@@ -552,7 +614,7 @@ export function useSettingsMigration(): MigrationState {
           setState({
             checked: true,
             migrated: false,
-            error: 'Failed to check settings status',
+            error: "Failed to check settings status",
           });
           return;
         }
@@ -563,19 +625,21 @@ export function useSettingsMigration(): MigrationState {
           const global = await api.settings.getGlobal();
           if (global.success && global.settings) {
             serverSettings = global.settings as unknown as GlobalSettings;
-            logger.info(`Server has ${serverSettings.projects?.length ?? 0} projects`);
+            logger.info(
+              `Server has ${serverSettings.projects?.length ?? 0} projects`,
+            );
 
             // Update localStorage with fresh server data to keep cache in sync
             // This prevents stale localStorage data from being used when switching between modes
             try {
-              setItem('pegasus-settings-cache', JSON.stringify(serverSettings));
-              logger.debug('Updated localStorage with fresh server settings');
+              setItem("pegasus-settings-cache", JSON.stringify(serverSettings));
+              logger.debug("Updated localStorage with fresh server settings");
             } catch (storageError) {
-              logger.warn('Failed to update localStorage cache:', storageError);
+              logger.warn("Failed to update localStorage cache:", storageError);
             }
           }
         } catch (error) {
-          logger.error('Failed to fetch server settings:', error);
+          logger.error("Failed to fetch server settings:", error);
         }
 
         // Determine what settings to use
@@ -585,14 +649,18 @@ export function useSettingsMigration(): MigrationState {
         if (serverSettings) {
           // Check if migration has already been completed
           if (serverSettings.localStorageMigrated) {
-            logger.info('localStorage migration already completed, using server settings only');
+            logger.info(
+              "localStorage migration already completed, using server settings only",
+            );
             finalSettings = serverSettings;
             // Don't set needsSync - no migration needed
           } else if (localStorageHasMoreData(localSettings, serverSettings)) {
             // First-time migration: merge localStorage data with server settings
             finalSettings = mergeSettings(serverSettings, localSettings);
             needsSync = true;
-            logger.info('Merged localStorage data with server settings (first-time migration)');
+            logger.info(
+              "Merged localStorage data with server settings (first-time migration)",
+            );
           } else {
             finalSettings = serverSettings;
           }
@@ -601,11 +669,11 @@ export function useSettingsMigration(): MigrationState {
           finalSettings = localSettings as GlobalSettings;
           needsSync = true;
           logger.info(
-            'Using localStorage settings (no server settings found - first-time migration)'
+            "Using localStorage settings (no server settings found - first-time migration)",
           );
         } else {
           // No settings anywhere, use defaults
-          logger.info('No settings found, using defaults');
+          logger.info("No settings found, using defaults");
           signalMigrationComplete();
           setState({ checked: true, migrated: false, error: null });
           return;
@@ -613,7 +681,7 @@ export function useSettingsMigration(): MigrationState {
 
         // Hydrate the store
         hydrateStoreFromSettings(finalSettings);
-        logger.info('Store hydrated with settings');
+        logger.info("Store hydrated with settings");
 
         // If we merged data or used localStorage, sync to server with migration marker
         if (needsSync) {
@@ -625,14 +693,19 @@ export function useSettingsMigration(): MigrationState {
 
             const result = await api.settings.updateGlobal(updates);
             if (result.success) {
-              logger.info('Synced merged settings to server with migration marker');
+              logger.info(
+                "Synced merged settings to server with migration marker",
+              );
               // NOTE: We intentionally do NOT clear localStorage values
               // This allows users to switch back to older versions of Pegasus
             } else {
-              logger.warn('Failed to sync merged settings to server:', result.error);
+              logger.warn(
+                "Failed to sync merged settings to server:",
+                result.error,
+              );
             }
           } catch (error) {
-            logger.error('Failed to sync merged settings:', error);
+            logger.error("Failed to sync merged settings:", error);
           }
         }
 
@@ -641,7 +714,7 @@ export function useSettingsMigration(): MigrationState {
 
         setState({ checked: true, migrated: needsSync, error: null });
       } catch (error) {
-        logger.error('Migration/hydration failed:', error);
+        logger.error("Migration/hydration failed:", error);
 
         // Signal that migration is complete (even on error)
         signalMigrationComplete();
@@ -649,7 +722,7 @@ export function useSettingsMigration(): MigrationState {
         setState({
           checked: true,
           migrated: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
@@ -671,23 +744,29 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   // Users who had old settings with a subset of models should still see all available models
   const allCursorModels = getAllCursorModelIds();
   const migratedCursorDefault = migrateCursorModelIds([
-    settings.cursorDefaultModel ?? current.cursorDefaultModel ?? 'cursor-auto',
+    settings.cursorDefaultModel ?? current.cursorDefaultModel ?? "cursor-auto",
   ])[0];
   const validCursorModelIds = new Set(allCursorModels);
-  const sanitizedCursorDefaultModel = validCursorModelIds.has(migratedCursorDefault)
+  const sanitizedCursorDefaultModel = validCursorModelIds.has(
+    migratedCursorDefault,
+  )
     ? migratedCursorDefault
-    : ('cursor-auto' as CursorModelId);
+    : ("cursor-auto" as CursorModelId);
 
   const validOpencodeModelIds = new Set(getAllOpencodeModelIds());
   const incomingEnabledOpencodeModels =
     settings.enabledOpencodeModels ?? current.enabledOpencodeModels;
   const sanitizedOpencodeDefaultModel = validOpencodeModelIds.has(
-    settings.opencodeDefaultModel ?? current.opencodeDefaultModel
+    settings.opencodeDefaultModel ?? current.opencodeDefaultModel,
   )
     ? (settings.opencodeDefaultModel ?? current.opencodeDefaultModel)
     : DEFAULT_OPENCODE_MODEL;
   const sanitizedEnabledOpencodeModels = Array.from(
-    new Set(incomingEnabledOpencodeModels.filter((modelId) => validOpencodeModelIds.has(modelId)))
+    new Set(
+      incomingEnabledOpencodeModels.filter((modelId) =>
+        validOpencodeModelIds.has(modelId),
+      ),
+    ),
   );
 
   if (!sanitizedEnabledOpencodeModels.includes(sanitizedOpencodeDefaultModel)) {
@@ -697,13 +776,13 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   const persistedDynamicModelIds =
     settings.enabledDynamicModelIds ?? current.enabledDynamicModelIds;
   const sanitizedDynamicModelIds = persistedDynamicModelIds.filter(
-    (modelId) => !modelId.startsWith('amazon-bedrock/')
+    (modelId) => !modelId.startsWith("amazon-bedrock/"),
   );
 
   const persistedKnownDynamicModelIds =
     settings.knownDynamicModelIds ?? current.knownDynamicModelIds;
   const sanitizedKnownDynamicModelIds = persistedKnownDynamicModelIds.filter(
-    (modelId) => !modelId.startsWith('amazon-bedrock/')
+    (modelId) => !modelId.startsWith("amazon-bedrock/"),
   );
 
   // Convert ProjectRef[] to Project[] (minimal data, features will be loaded separately)
@@ -724,14 +803,18 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   // Find the current project by ID
   let currentProject = null;
   if (settings.currentProjectId) {
-    currentProject = projects.find((p) => p.id === settings.currentProjectId) ?? null;
+    currentProject =
+      projects.find((p) => p.id === settings.currentProjectId) ?? null;
     if (currentProject) {
-      logger.info(`Restoring current project: ${currentProject.name} (${currentProject.id})`);
+      logger.info(
+        `Restoring current project: ${currentProject.name} (${currentProject.id})`,
+      );
     }
   }
 
   // Save theme to localStorage for fallback when server settings aren't available
-  const storedTheme = (currentProject?.theme as string | undefined) || settings.theme;
+  const storedTheme =
+    (currentProject?.theme as string | undefined) || settings.theme;
   if (storedTheme) {
     setItem(THEME_STORAGE_KEY, storedTheme);
   }
@@ -763,11 +846,11 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
   }
 
   useAppStore.setState({
-    theme: settings.theme as unknown as import('@/store/app-store').ThemeMode,
+    theme: settings.theme as unknown as import("@/store/app-store").ThemeMode,
     fontFamilySans: settings.fontFamilySans ?? null,
     fontFamilyMono: settings.fontFamilyMono ?? null,
     sidebarOpen: settings.sidebarOpen ?? true,
-    sidebarStyle: settings.sidebarStyle ?? 'unified',
+    sidebarStyle: settings.sidebarStyle ?? "unified",
     collapsedNavSections: settings.collapsedNavSections ?? {},
     chatHistoryOpen: settings.chatHistoryOpen ?? false,
     maxConcurrency: settings.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY,
@@ -777,23 +860,28 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     skipVerificationInAutoMode: settings.skipVerificationInAutoMode ?? false,
     mergePostAction: settings.mergePostAction ?? null,
     useWorktrees: settings.useWorktrees ?? true,
-    defaultPlanningMode: settings.defaultPlanningMode ?? 'skip',
+    defaultPlanningMode: settings.defaultPlanningMode ?? "skip",
     defaultRequirePlanApproval: settings.defaultRequirePlanApproval ?? false,
-    defaultFeatureModel: migratePhaseModelEntry(settings.defaultFeatureModel) ?? {
-      model: 'claude-opus',
-      thinkingLevel: 'adaptive',
+    defaultFeatureModel: migratePhaseModelEntry(
+      settings.defaultFeatureModel,
+    ) ?? {
+      model: "claude-opus",
+      thinkingLevel: "adaptive",
     },
     muteDoneSound: settings.muteDoneSound ?? false,
     disableSplashScreen: settings.disableSplashScreen ?? false,
     defaultSortNewestCardOnTop: settings.defaultSortNewestCardOnTop ?? false,
-    serverLogLevel: settings.serverLogLevel ?? 'info',
+    serverLogLevel: settings.serverLogLevel ?? "info",
     enableRequestLogging: settings.enableRequestLogging ?? true,
     showQueryDevtools: settings.showQueryDevtools ?? true,
-    enhancementModel: settings.enhancementModel ?? 'claude-sonnet',
-    validationModel: settings.validationModel ?? 'claude-opus',
-    phaseModels: { ...DEFAULT_PHASE_MODELS, ...(settings.phaseModels ?? current.phaseModels) },
-    defaultThinkingLevel: settings.defaultThinkingLevel ?? 'adaptive',
-    defaultReasoningEffort: settings.defaultReasoningEffort ?? 'none',
+    enhancementModel: settings.enhancementModel ?? "claude-sonnet",
+    validationModel: settings.validationModel ?? "claude-opus",
+    phaseModels: {
+      ...DEFAULT_PHASE_MODELS,
+      ...(settings.phaseModels ?? current.phaseModels),
+    },
+    defaultThinkingLevel: settings.defaultThinkingLevel ?? "adaptive",
+    defaultReasoningEffort: settings.defaultReasoningEffort ?? "none",
     enabledCursorModels: allCursorModels, // Always use ALL cursor models
     cursorDefaultModel: sanitizedCursorDefaultModel,
     enabledOpencodeModels: sanitizedEnabledOpencodeModels,
@@ -803,22 +891,24 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     disabledProviders: settings.disabledProviders ?? [],
     enableAiCommitMessages: settings.enableAiCommitMessages ?? true,
     enableSkills: settings.enableSkills ?? true,
-    skillsSources: settings.skillsSources ?? ['user', 'project'],
+    skillsSources: settings.skillsSources ?? ["user", "project"],
     enableSubagents: settings.enableSubagents ?? true,
-    subagentsSources: settings.subagentsSources ?? ['user', 'project'],
+    subagentsSources: settings.subagentsSources ?? ["user", "project"],
     autoLoadClaudeMd: settings.autoLoadClaudeMd ?? true,
     useClaudeCodeSystemPrompt: settings.useClaudeCodeSystemPrompt ?? true,
     skipSandboxWarning: settings.skipSandboxWarning ?? false,
     codexAutoLoadAgents: settings.codexAutoLoadAgents ?? false,
-    codexSandboxMode: settings.codexSandboxMode ?? 'workspace-write',
-    codexApprovalPolicy: settings.codexApprovalPolicy ?? 'on-request',
+    codexSandboxMode: settings.codexSandboxMode ?? "workspace-write",
+    codexApprovalPolicy: settings.codexApprovalPolicy ?? "on-request",
     codexEnableWebSearch: settings.codexEnableWebSearch ?? false,
     codexEnableImages: settings.codexEnableImages ?? true,
     codexAdditionalDirs: settings.codexAdditionalDirs ?? [],
     codexThreadId: settings.codexThreadId,
     keyboardShortcuts: {
       ...current.keyboardShortcuts,
-      ...(settings.keyboardShortcuts as unknown as Partial<typeof current.keyboardShortcuts>),
+      ...(settings.keyboardShortcuts as unknown as Partial<
+        typeof current.keyboardShortcuts
+      >),
     },
     mcpServers: settings.mcpServers ?? [],
     promptCustomization: settings.promptCustomization ?? {},
@@ -836,56 +926,66 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     lastSelectedSessionByProject: settings.lastSelectedSessionByProject ?? {},
     agentModelBySession: settings.agentModelBySession
       ? Object.fromEntries(
-          Object.entries(settings.agentModelBySession as Record<string, unknown>).map(
-            ([sessionId, entry]) => [
-              sessionId,
-              migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
-            ]
-          )
+          Object.entries(
+            settings.agentModelBySession as Record<string, unknown>,
+          ).map(([sessionId, entry]) => [
+            sessionId,
+            migratePhaseModelEntry(
+              entry as string | PhaseModelEntry | null | undefined,
+            ),
+          ]),
         )
       : current.agentModelBySession,
     helperModelByFeature: settings.helperModelByFeature
       ? Object.fromEntries(
-          Object.entries(settings.helperModelByFeature as Record<string, unknown>).map(
-            ([featureId, entry]) => [
-              featureId,
-              migratePhaseModelEntry(entry as string | PhaseModelEntry | null | undefined),
-            ]
-          )
+          Object.entries(
+            settings.helperModelByFeature as Record<string, unknown>,
+          ).map(([featureId, entry]) => [
+            featureId,
+            migratePhaseModelEntry(
+              entry as string | PhaseModelEntry | null | undefined,
+            ),
+          ]),
         )
       : current.helperModelByFeature,
     // Restore all valid worktree selections (both main branch and feature worktrees).
     // The validation effect in use-worktrees.ts handles deleted worktrees gracefully
     // by resetting to main branch when the worktree list loads and the cached
     // worktree no longer exists.
-    currentWorktreeByProject: sanitizeWorktreeByProject(settings.currentWorktreeByProject),
+    currentWorktreeByProject: sanitizeWorktreeByProject(
+      settings.currentWorktreeByProject,
+    ),
     // UI State
     worktreePanelCollapsed: settings.worktreePanelCollapsed ?? false,
-    lastProjectDir: settings.lastProjectDir ?? '',
+    lastProjectDir: settings.lastProjectDir ?? "",
     recentFolders: settings.recentFolders ?? [],
     // File editor settings
     editorFontSize: settings.editorFontSize ?? 13,
-    editorFontFamily: settings.editorFontFamily ?? 'default',
+    editorFontFamily: settings.editorFontFamily ?? "default",
     editorAutoSave: settings.editorAutoSave ?? false,
     editorAutoSaveDelay: settings.editorAutoSaveDelay ?? 1000,
     // Terminal settings (nested in terminalState)
     ...((settings.terminalFontFamily ||
-      (settings as unknown as Record<string, unknown>).terminalCustomBackgroundColor !==
-        undefined ||
-      (settings as unknown as Record<string, unknown>).terminalCustomForegroundColor !==
-        undefined) && {
+      (settings as unknown as Record<string, unknown>)
+        .terminalCustomBackgroundColor !== undefined ||
+      (settings as unknown as Record<string, unknown>)
+        .terminalCustomForegroundColor !== undefined) && {
       terminalState: {
         ...current.terminalState,
-        ...(settings.terminalFontFamily && { fontFamily: settings.terminalFontFamily }),
-        ...((settings as unknown as Record<string, unknown>).terminalCustomBackgroundColor !==
-          undefined && {
-          customBackgroundColor: (settings as unknown as Record<string, unknown>)
-            .terminalCustomBackgroundColor as string | null,
+        ...(settings.terminalFontFamily && {
+          fontFamily: settings.terminalFontFamily,
         }),
-        ...((settings as unknown as Record<string, unknown>).terminalCustomForegroundColor !==
-          undefined && {
-          customForegroundColor: (settings as unknown as Record<string, unknown>)
-            .terminalCustomForegroundColor as string | null,
+        ...((settings as unknown as Record<string, unknown>)
+          .terminalCustomBackgroundColor !== undefined && {
+          customBackgroundColor: (
+            settings as unknown as Record<string, unknown>
+          ).terminalCustomBackgroundColor as string | null,
+        }),
+        ...((settings as unknown as Record<string, unknown>)
+          .terminalCustomForegroundColor !== undefined && {
+          customForegroundColor: (
+            settings as unknown as Record<string, unknown>
+          ).terminalCustomForegroundColor as string | null,
         }),
       },
     }),
@@ -896,7 +996,7 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     setupComplete: settings.setupComplete ?? false,
     isFirstRun: settings.isFirstRun ?? true,
     skipClaudeSetup: settings.skipClaudeSetup ?? false,
-    currentStep: settings.setupComplete ? 'complete' : 'welcome',
+    currentStep: settings.setupComplete ? "complete" : "welcome",
   });
 }
 
@@ -1009,7 +1109,7 @@ export async function syncSettingsToServer(): Promise<boolean> {
     const result = await api.settings.updateGlobal(updates);
     return result.success;
   } catch (error) {
-    logger.error('Failed to sync settings:', error);
+    logger.error("Failed to sync settings:", error);
     return false;
   }
 }
@@ -1030,7 +1130,7 @@ export async function syncCredentialsToServer(apiKeys: {
     const result = await api.settings.updateCredentials({ apiKeys });
     return result.success;
   } catch (error) {
-    logger.error('Failed to sync credentials:', error);
+    logger.error("Failed to sync credentials:", error);
     return false;
   }
 }
@@ -1056,14 +1156,14 @@ export async function syncProjectSettingsToServer(
       hasChanges?: boolean;
       changedFilesCount?: number;
     }>;
-  }
+  },
 ): Promise<boolean> {
   try {
     const api = getHttpApiClient();
     const result = await api.settings.updateProject(projectPath, updates);
     return result.success;
   } catch (error) {
-    logger.error('Failed to sync project settings:', error);
+    logger.error("Failed to sync project settings:", error);
     return false;
   }
 }
@@ -1079,7 +1179,7 @@ export async function loadMCPServersFromServer(): Promise<boolean> {
     const result = await api.settings.getGlobal();
 
     if (!result.success || !result.settings) {
-      logger.error('Failed to load settings:', result.error);
+      logger.error("Failed to load settings:", result.error);
       return false;
     }
 
@@ -1089,7 +1189,7 @@ export async function loadMCPServersFromServer(): Promise<boolean> {
     logger.info(`Loaded ${mcpServers.length} MCP servers from server`);
     return true;
   } catch (error) {
-    logger.error('Failed to load MCP servers:', error);
+    logger.error("Failed to load MCP servers:", error);
     return false;
   }
 }

@@ -4,15 +4,24 @@
  * Displays project health, feature counts, and agent status with quick navigation.
  */
 
-import { useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useAppStore } from '@/store/app-store';
-import { initializeProject } from '@/lib/project-init';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import type { ProjectStatus, ProjectHealthStatus } from '@pegasus/types';
-import { Folder, Activity, CheckCircle2, XCircle, Clock, Pause, Bot, Bell } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useAppStore } from "@/store/app-store";
+import { initializeProject } from "@/lib/project-init";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import type { ProjectStatus, ProjectHealthStatus } from "@pegasus/types";
+import {
+  Folder,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Pause,
+  Bot,
+  Bell,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ProjectStatusCardProps {
   project: ProjectStatus;
@@ -25,37 +34,40 @@ const healthStatusConfig: Record<
 > = {
   active: {
     icon: Activity,
-    color: 'text-green-500',
-    label: 'Active',
-    bgColor: 'bg-green-500/10',
+    color: "text-green-500",
+    label: "Active",
+    bgColor: "bg-green-500/10",
   },
   idle: {
     icon: Pause,
-    color: 'text-muted-foreground',
-    label: 'Idle',
-    bgColor: 'bg-muted/50',
+    color: "text-muted-foreground",
+    label: "Idle",
+    bgColor: "bg-muted/50",
   },
   waiting: {
     icon: Clock,
-    color: 'text-yellow-500',
-    label: 'Waiting',
-    bgColor: 'bg-yellow-500/10',
+    color: "text-yellow-500",
+    label: "Waiting",
+    bgColor: "bg-yellow-500/10",
   },
   completed: {
     icon: CheckCircle2,
-    color: 'text-blue-500',
-    label: 'Completed',
-    bgColor: 'bg-blue-500/10',
+    color: "text-blue-500",
+    label: "Completed",
+    bgColor: "bg-blue-500/10",
   },
   error: {
     icon: XCircle,
-    color: 'text-red-500',
-    label: 'Error',
-    bgColor: 'bg-red-500/10',
+    color: "text-red-500",
+    label: "Error",
+    bgColor: "bg-red-500/10",
   },
 };
 
-export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCardProps) {
+export function ProjectStatusCard({
+  project,
+  onProjectClick,
+}: ProjectStatusCardProps) {
   const navigate = useNavigate();
   const { upsertAndSetCurrentProject } = useAppStore();
 
@@ -72,23 +84,23 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
     try {
       const initResult = await initializeProject(project.projectPath);
       if (!initResult.success) {
-        toast.error('Failed to open project', {
-          description: initResult.error || 'Unknown error',
+        toast.error("Failed to open project", {
+          description: initResult.error || "Unknown error",
         });
         return;
       }
 
       upsertAndSetCurrentProject(project.projectPath, project.projectName);
-      navigate({ to: '/board' });
+      navigate({ to: "/board" });
     } catch (error) {
-      toast.error('Failed to open project', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to open project", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }, [project, onProjectClick, upsertAndSetCurrentProject, navigate]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       handleClick();
     }
@@ -99,12 +111,17 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
       role="button"
       tabIndex={0}
       className={cn(
-        'group relative rounded-xl border bg-card/60 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:-translate-y-0.5',
-        project.healthStatus === 'active' && 'border-green-500/30 hover:border-green-500/50',
-        project.healthStatus === 'error' && 'border-red-500/30 hover:border-red-500/50',
-        project.healthStatus === 'waiting' && 'border-yellow-500/30 hover:border-yellow-500/50',
-        project.healthStatus === 'completed' && 'border-blue-500/30 hover:border-blue-500/50',
-        project.healthStatus === 'idle' && 'border-border hover:border-brand-500/40'
+        "group relative rounded-xl border bg-card/60 backdrop-blur-sm transition-all duration-300 cursor-pointer hover:-translate-y-0.5",
+        project.healthStatus === "active" &&
+          "border-green-500/30 hover:border-green-500/50",
+        project.healthStatus === "error" &&
+          "border-red-500/30 hover:border-red-500/50",
+        project.healthStatus === "waiting" &&
+          "border-yellow-500/30 hover:border-yellow-500/50",
+        project.healthStatus === "completed" &&
+          "border-blue-500/30 hover:border-blue-500/50",
+        project.healthStatus === "idle" &&
+          "border-border hover:border-brand-500/40",
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -117,17 +134,19 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
           <div className="flex items-center gap-3 min-w-0">
             <div
               className={cn(
-                'w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors',
-                statusConfig.bgColor
+                "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                statusConfig.bgColor,
               )}
             >
-              <Folder className={cn('w-5 h-5', statusConfig.color)} />
+              <Folder className={cn("w-5 h-5", statusConfig.color)} />
             </div>
             <div className="min-w-0">
               <h3 className="font-medium text-foreground truncate group-hover:text-brand-500 transition-colors">
                 {project.projectName}
               </h3>
-              <p className="text-xs text-muted-foreground truncate">{project.projectPath}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {project.projectPath}
+              </p>
             </div>
           </div>
 
@@ -142,10 +161,12 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
             <Badge
               variant="outline"
               className={cn(
-                'h-6 px-2 text-xs gap-1',
+                "h-6 px-2 text-xs gap-1",
                 statusConfig.color,
-                project.healthStatus === 'active' && 'border-green-500/30 bg-green-500/10',
-                project.healthStatus === 'error' && 'border-red-500/30 bg-red-500/10'
+                project.healthStatus === "active" &&
+                  "border-green-500/30 bg-green-500/10",
+                project.healthStatus === "error" &&
+                  "border-red-500/30 bg-red-500/10",
               )}
             >
               <StatusIcon className="w-3 h-3" />
@@ -198,7 +219,10 @@ export function ProjectStatusCard({ project, onProjectClick }: ProjectStatusCard
             </div>
           )}
           {project.lastActivityAt && !project.isAutoModeRunning && (
-            <span>Last activity: {new Date(project.lastActivityAt).toLocaleDateString()}</span>
+            <span>
+              Last activity:{" "}
+              {new Date(project.lastActivityAt).toLocaleDateString()}
+            </span>
           )}
         </div>
       </div>

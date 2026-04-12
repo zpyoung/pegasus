@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,11 +6,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Archive,
   FilePlus,
@@ -20,14 +20,14 @@ import {
   File,
   ChevronDown,
   ChevronRight,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { TruncatedFilePath } from '@/components/ui/truncated-file-path';
-import type { FileStatus } from '@/types/electron';
-import { parseDiff, type ParsedFileDiff } from '@/lib/diff-utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { TruncatedFilePath } from "@/components/ui/truncated-file-path";
+import type { FileStatus } from "@/types/electron";
+import { parseDiff, type ParsedFileDiff } from "@/lib/diff-utils";
 
 interface WorktreeInfo {
   path: string;
@@ -46,58 +46,60 @@ interface StashChangesDialogProps {
 
 const getFileIcon = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
+    case "A":
+    case "?":
       return <FilePlus className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />;
-    case 'D':
+    case "D":
       return <FileX className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />;
-    case 'M':
-    case 'U':
+    case "M":
+    case "U":
       return <FilePen className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />;
-    case 'R':
-    case 'C':
+    case "R":
+    case "C":
       return <File className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />;
     default:
-      return <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />;
+      return (
+        <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+      );
   }
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'A':
-      return 'Added';
-    case '?':
-      return 'Untracked';
-    case 'D':
-      return 'Deleted';
-    case 'M':
-      return 'Modified';
-    case 'U':
-      return 'Updated';
-    case 'R':
-      return 'Renamed';
-    case 'C':
-      return 'Copied';
+    case "A":
+      return "Added";
+    case "?":
+      return "Untracked";
+    case "D":
+      return "Deleted";
+    case "M":
+      return "Modified";
+    case "U":
+      return "Updated";
+    case "R":
+      return "Renamed";
+    case "C":
+      return "Copied";
     default:
-      return 'Changed';
+      return "Changed";
   }
 };
 
 const getStatusBadgeColor = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
-    case 'D':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
-    case 'M':
-    case 'U':
-      return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    case 'R':
-    case 'C':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case "A":
+    case "?":
+      return "bg-green-500/20 text-green-400 border-green-500/30";
+    case "D":
+      return "bg-red-500/20 text-red-400 border-red-500/30";
+    case "M":
+    case "U":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    case "R":
+    case "C":
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     default:
-      return 'bg-muted text-muted-foreground border-border';
+      return "bg-muted text-muted-foreground border-border";
   }
 };
 
@@ -108,52 +110,68 @@ function DiffLine({
   content,
   lineNumber,
 }: {
-  type: 'context' | 'addition' | 'deletion' | 'header';
+  type: "context" | "addition" | "deletion" | "header";
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
   const bgClass = {
-    context: 'bg-transparent',
-    addition: 'bg-green-500/10',
-    deletion: 'bg-red-500/10',
-    header: 'bg-blue-500/10',
+    context: "bg-transparent",
+    addition: "bg-green-500/10",
+    deletion: "bg-red-500/10",
+    header: "bg-blue-500/10",
   };
 
   const textClass = {
-    context: 'text-foreground-secondary',
-    addition: 'text-green-400',
-    deletion: 'text-red-400',
-    header: 'text-blue-400',
+    context: "text-foreground-secondary",
+    addition: "text-green-400",
+    deletion: "text-red-400",
+    header: "text-blue-400",
   };
 
   const prefix = {
-    context: ' ',
-    addition: '+',
-    deletion: '-',
-    header: '',
+    context: " ",
+    addition: "+",
+    deletion: "-",
+    header: "",
   };
 
-  if (type === 'header') {
+  if (type === "header") {
     return (
-      <div className={cn('px-2 py-1 font-mono text-xs', bgClass[type], textClass[type])}>
+      <div
+        className={cn(
+          "px-2 py-1 font-mono text-xs",
+          bgClass[type],
+          textClass[type],
+        )}
+      >
         {content}
       </div>
     );
   }
 
   return (
-    <div className={cn('flex font-mono text-xs', bgClass[type])}>
+    <div className={cn("flex font-mono text-xs", bgClass[type])}>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.old ?? ''}
+        {lineNumber?.old ?? ""}
       </span>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.new ?? ''}
+        {lineNumber?.new ?? ""}
       </span>
-      <span className={cn('w-4 flex-shrink-0 text-center select-none', textClass[type])}>
+      <span
+        className={cn(
+          "w-4 flex-shrink-0 text-center select-none",
+          textClass[type],
+        )}
+      >
         {prefix[type]}
       </span>
-      <span className={cn('flex-1 px-1.5 whitespace-pre-wrap break-all', textClass[type])}>
-        {content || '\u00A0'}
+      <span
+        className={cn(
+          "flex-1 px-1.5 whitespace-pre-wrap break-all",
+          textClass[type],
+        )}
+      >
+        {content || "\u00A0"}
       </span>
     </div>
   );
@@ -165,12 +183,12 @@ export function StashChangesDialog({
   worktree,
   onStashed,
 }: StashChangesDialogProps) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isStashing, setIsStashing] = useState(false);
 
   // File selection state
   const [files, setFiles] = useState<FileStatus[]>([]);
-  const [diffContent, setDiffContent] = useState('');
+  const [diffContent, setDiffContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [isLoadingDiffs, setIsLoadingDiffs] = useState(false);
@@ -193,7 +211,7 @@ export function StashChangesDialog({
       setIsLoadingDiffs(true);
       setLoadDiffsError(null);
       setFiles([]);
-      setDiffContent('');
+      setDiffContent("");
       setSelectedFiles(new Set());
       setExpandedFile(null);
       try {
@@ -202,23 +220,25 @@ export function StashChangesDialog({
         if (result.success) {
           const fileList = result.files ?? [];
           if (!cancelled.current) setFiles(fileList);
-          if (!cancelled.current) setDiffContent(result.diff ?? '');
+          if (!cancelled.current) setDiffContent(result.diff ?? "");
           // Select all files by default
           if (!cancelled.current)
             setSelectedFiles(new Set(fileList.map((f: FileStatus) => f.path)));
         } else if (!cancelled.current) {
-          setLoadDiffsError(result.error ?? 'Failed to load diffs');
+          setLoadDiffsError(result.error ?? "Failed to load diffs");
         }
       } catch (err) {
-        console.warn('Failed to load diffs for stash dialog:', err);
+        console.warn("Failed to load diffs for stash dialog:", err);
         if (!cancelled.current) {
-          setLoadDiffsError(err instanceof Error ? err.message : 'Failed to load changes');
+          setLoadDiffsError(
+            err instanceof Error ? err.message : "Failed to load changes",
+          );
         }
       } finally {
         if (!cancelled.current) setIsLoadingDiffs(false);
       }
     },
-    [worktree]
+    [worktree],
   );
 
   // Load diffs when dialog opens
@@ -266,33 +286,36 @@ export function StashChangesDialog({
 
       // Pass selected files if not all files are selected
       const filesToStash =
-        selectedFiles.size === files.length ? undefined : Array.from(selectedFiles);
+        selectedFiles.size === files.length
+          ? undefined
+          : Array.from(selectedFiles);
 
       const result = await api.worktree.stashPush(
         worktree.path,
         message.trim() || undefined,
-        filesToStash
+        filesToStash,
       );
 
       if (result.success && result.result) {
         if (result.result.stashed) {
-          toast.success('Changes stashed', {
-            description: result.result.message || 'Your changes have been stashed',
+          toast.success("Changes stashed", {
+            description:
+              result.result.message || "Your changes have been stashed",
           });
-          setMessage('');
+          setMessage("");
           onOpenChange(false);
           onStashed?.();
         } else {
-          toast.info('No changes to stash');
+          toast.info("No changes to stash");
         }
       } else {
-        toast.error('Failed to stash changes', {
-          description: result.error || 'Unknown error',
+        toast.error("Failed to stash changes", {
+          description: result.error || "Unknown error",
         });
       }
     } catch (err) {
-      toast.error('Failed to stash changes', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error("Failed to stash changes", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setIsStashing(false);
@@ -301,12 +324,17 @@ export function StashChangesDialog({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !isStashing && selectedFiles.size > 0) {
+      if (
+        e.key === "Enter" &&
+        (e.metaKey || e.ctrlKey) &&
+        !isStashing &&
+        selectedFiles.size > 0
+      ) {
         e.preventDefault();
         handleStash();
       }
     },
-    [isStashing, selectedFiles.size, handleStash]
+    [isStashing, selectedFiles.size, handleStash],
   );
 
   if (!worktree) return null;
@@ -318,7 +346,7 @@ export function StashChangesDialog({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          setMessage('');
+          setMessage("");
         }
         onOpenChange(isOpen);
       }}
@@ -333,8 +361,10 @@ export function StashChangesDialog({
             Stash Changes
           </DialogTitle>
           <DialogDescription>
-            Stash uncommitted changes on{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+            Stash uncommitted changes on{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>
           </DialogDescription>
         </DialogHeader>
 
@@ -357,7 +387,7 @@ export function StashChangesDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? "Deselect all" : "Select all"}
                 </button>
               )}
             </div>
@@ -369,7 +399,9 @@ export function StashChangesDialog({
               </div>
             ) : loadDiffsError ? (
               <div className="flex flex-col items-center justify-center py-6 gap-2 border border-border rounded-lg">
-                <span className="text-sm text-destructive">Failed to load changes</span>
+                <span className="text-sm text-destructive">
+                  Failed to load changes
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -393,23 +425,32 @@ export function StashChangesDialog({
                   const fileDiff = diffsByFile.get(file.path);
                   const additions = fileDiff
                     ? fileDiff.hunks.reduce(
-                        (acc, hunk) => acc + hunk.lines.filter((l) => l.type === 'addition').length,
-                        0
+                        (acc, hunk) =>
+                          acc +
+                          hunk.lines.filter((l) => l.type === "addition")
+                            .length,
+                        0,
                       )
                     : 0;
                   const deletions = fileDiff
                     ? fileDiff.hunks.reduce(
-                        (acc, hunk) => acc + hunk.lines.filter((l) => l.type === 'deletion').length,
-                        0
+                        (acc, hunk) =>
+                          acc +
+                          hunk.lines.filter((l) => l.type === "deletion")
+                            .length,
+                        0,
                       )
                     : 0;
 
                   return (
-                    <div key={file.path} className="border-b border-border last:border-b-0">
+                    <div
+                      key={file.path}
+                      className="border-b border-border last:border-b-0"
+                    >
                       <div
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors group',
-                          isExpanded && 'bg-accent/30'
+                          "flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors group",
+                          isExpanded && "bg-accent/30",
                         )}
                       >
                         {/* Checkbox */}
@@ -436,8 +477,8 @@ export function StashChangesDialog({
                           />
                           <span
                             className={cn(
-                              'text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0',
-                              getStatusBadgeColor(file.status)
+                              "text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0",
+                              getStatusBadgeColor(file.status),
                             )}
                           >
                             {getStatusLabel(file.status)}
@@ -477,9 +518,9 @@ export function StashChangesDialog({
                       )}
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
-                          {file.status === '?' ? (
+                          {file.status === "?" ? (
                             <span>New file - diff preview not available</span>
-                          ) : file.status === 'D' ? (
+                          ) : file.status === "D" ? (
                             <span>File deleted</span>
                           ) : (
                             <span>Diff content not available</span>
@@ -496,7 +537,8 @@ export function StashChangesDialog({
           {/* Stash Message */}
           <div className="space-y-2">
             <label htmlFor="stash-message" className="text-sm font-medium">
-              Stash message <span className="text-muted-foreground">(optional)</span>
+              Stash message{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </label>
             <Input
               id="stash-message"
@@ -507,29 +549,39 @@ export function StashChangesDialog({
               autoFocus
             />
             <p className="text-xs text-muted-foreground">
-              A descriptive message helps identify this stash later. Press{' '}
+              A descriptive message helps identify this stash later. Press{" "}
               <kbd className="px-1 py-0.5 text-[10px] bg-muted rounded border">
-                {typeof navigator !== 'undefined' &&
+                {typeof navigator !== "undefined" &&
                 (
-                  (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData
-                    ?.platform ||
+                  (
+                    navigator as Navigator & {
+                      userAgentData?: { platform?: string };
+                    }
+                  ).userAgentData?.platform ||
                   navigator.platform ||
-                  ''
-                ).includes('Mac')
-                  ? '⌘'
-                  : 'Ctrl'}
+                  ""
+                ).includes("Mac")
+                  ? "⌘"
+                  : "Ctrl"}
                 +Enter
-              </kbd>{' '}
+              </kbd>{" "}
               to stash.
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isStashing}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isStashing}
+          >
             Cancel
           </Button>
-          <Button onClick={handleStash} disabled={isStashing || selectedFiles.size === 0}>
+          <Button
+            onClick={handleStash}
+            disabled={isStashing || selectedFiles.size === 0}
+          >
             {isStashing ? (
               <>
                 <Spinner size="xs" className="mr-2" />
@@ -540,8 +592,8 @@ export function StashChangesDialog({
                 <Archive className="w-4 h-4 mr-2" />
                 Stash
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
-                  : ' Changes'}
+                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? "s" : ""})`
+                  : " Changes"}
               </>
             )}
           </Button>

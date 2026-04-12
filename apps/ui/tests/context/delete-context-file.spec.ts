@@ -4,9 +4,9 @@
  * Happy path: Delete a context file via the UI
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   resetContextDirectory,
   setupProjectWithFixture,
@@ -19,15 +19,15 @@ import {
   fillInput,
   waitForNetworkIdle,
   authenticateForTests,
-} from '../utils';
+} from "../utils";
 
-test.describe('Delete Context File', () => {
+test.describe("Delete Context File", () => {
   test.beforeEach(() => {
     resetContextDirectory();
   });
 
-  test('should delete a context file via the UI', async ({ page }) => {
-    const fileName = 'to-delete.md';
+  test("should delete a context file via the UI", async ({ page }) => {
+    const fileName = "to-delete.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -36,17 +36,23 @@ test.describe('Delete Context File', () => {
     await waitForNetworkIdle(page);
 
     // First create a context file to delete
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
-    await fillInput(page, 'new-markdown-content', '# Test File\n\nThis file will be deleted.');
+    await fillInput(page, "new-markdown-name", fileName);
+    await fillInput(
+      page,
+      "new-markdown-content",
+      "# Test File\n\nThis file will be deleted.",
+    );
 
-    await clickElement(page, 'confirm-create-markdown');
+    await clickElement(page, "confirm-create-markdown");
 
     await page.waitForFunction(
       () => !document.querySelector('[data-testid="create-markdown-dialog"]'),
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
 
     // Wait for the file to appear in the list
@@ -64,7 +70,7 @@ test.describe('Delete Context File', () => {
 
     // Verify the file is deleted from the filesystem
     const fixturePath = getFixturePath();
-    const contextPath = path.join(fixturePath, '.pegasus', 'context', fileName);
+    const contextPath = path.join(fixturePath, ".pegasus", "context", fileName);
     expect(fs.existsSync(contextPath)).toBe(false);
   });
 });

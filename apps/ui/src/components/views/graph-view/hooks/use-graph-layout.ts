@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef } from 'react';
-import dagre from 'dagre';
-import { TaskNode, DependencyEdge } from './use-graph-nodes';
+import { useCallback, useMemo, useRef } from "react";
+import dagre from "dagre";
+import { TaskNode, DependencyEdge } from "./use-graph-nodes";
 
 const NODE_WIDTH = 280;
 const NODE_HEIGHT = 120;
@@ -16,8 +16,10 @@ interface UseGraphLayoutProps {
  */
 export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
   // Cache the last computed positions to avoid recalculating layout
-  const positionCache = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const lastStructureKey = useRef<string>('');
+  const positionCache = useRef<Map<string, { x: number; y: number }>>(
+    new Map(),
+  );
+  const lastStructureKey = useRef<string>("");
   // Track layout version to signal when fresh layout was computed
   const layoutVersion = useRef<number>(0);
 
@@ -25,12 +27,12 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
     (
       inputNodes: TaskNode[],
       inputEdges: DependencyEdge[],
-      direction: 'LR' | 'TB' = 'LR'
+      direction: "LR" | "TB" = "LR",
     ): { nodes: TaskNode[]; edges: DependencyEdge[] } => {
       const dagreGraph = new dagre.graphlib.Graph();
       dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-      const isHorizontal = direction === 'LR';
+      const isHorizontal = direction === "LR";
       dagreGraph.setGraph({
         rankdir: direction,
         nodesep: 50,
@@ -60,14 +62,14 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
         return {
           ...node,
           position,
-          targetPosition: isHorizontal ? 'left' : 'top',
-          sourcePosition: isHorizontal ? 'right' : 'bottom',
+          targetPosition: isHorizontal ? "left" : "top",
+          sourcePosition: isHorizontal ? "right" : "bottom",
         } as TaskNode;
       });
 
       return { nodes: layoutedNodes, edges: inputEdges };
     },
-    []
+    [],
   );
 
   // Create a stable structure key based on node IDs AND edge connections
@@ -76,13 +78,13 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
     const nodeIds = nodes
       .map((n) => n.id)
       .sort()
-      .join(',');
+      .join(",");
     // Include edge structure (source->target pairs) to ensure layout recalculates
     // when dependencies change, not just when nodes are added/removed
     const edgeConnections = edges
       .map((e) => `${e.source}->${e.target}`)
       .sort()
-      .join(',');
+      .join(",");
     return `${nodeIds}|${edgeConnections}`;
   }, [nodes, edges]);
 
@@ -90,7 +92,7 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
   const layoutedElements = useMemo(() => {
     if (nodes.length === 0) {
       positionCache.current.clear();
-      lastStructureKey.current = '';
+      lastStructureKey.current = "";
       return { nodes: [], edges: [], didRelayout: false };
     }
 
@@ -101,7 +103,7 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
       // Structure changed - run full layout
       lastStructureKey.current = structureKey;
       layoutVersion.current += 1;
-      const result = getLayoutedElements(nodes, edges, 'LR');
+      const result = getLayoutedElements(nodes, edges, "LR");
       return { ...result, didRelayout: true };
     } else {
       // Structure unchanged - preserve cached positions, just update node data
@@ -110,8 +112,8 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
         return {
           ...node,
           position: cachedPosition || { x: 0, y: 0 },
-          targetPosition: 'left',
-          sourcePosition: 'right',
+          targetPosition: "left",
+          sourcePosition: "right",
         } as TaskNode;
       });
       return { nodes: layoutedNodes, edges, didRelayout: false };
@@ -120,10 +122,10 @@ export function useGraphLayout({ nodes, edges }: UseGraphLayoutProps) {
 
   // Manual re-layout function
   const runLayout = useCallback(
-    (direction: 'LR' | 'TB' = 'LR') => {
+    (direction: "LR" | "TB" = "LR") => {
       return getLayoutedElements(nodes, edges, direction);
     },
-    [nodes, edges, getLayoutedElements]
+    [nodes, edges, getLayoutedElements],
   );
 
   return {

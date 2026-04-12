@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect } from "react";
 
 interface UseAgentScrollOptions {
   messagesLength: number;
@@ -26,13 +26,14 @@ export function useAgentScroll({
 
     const threshold = 50; // 50px threshold for "near bottom"
     const isAtBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+      container.scrollHeight - container.scrollTop - container.clientHeight <=
+      threshold;
 
     setIsUserAtBottom(isAtBottom);
   }, []);
 
   // Scroll to bottom function
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
@@ -53,7 +54,7 @@ export function useAgentScroll({
     if (isUserAtBottom && messagesLength > 0) {
       // Use a small delay to ensure DOM is updated
       setTimeout(() => {
-        scrollToBottom('smooth');
+        scrollToBottom("smooth");
       }, 100);
     }
   }, [messagesLength, isUserAtBottom, scrollToBottom]);
@@ -63,7 +64,7 @@ export function useAgentScroll({
     if (currentSessionId && messagesLength > 0) {
       // Scroll immediately without animation when switching sessions
       setTimeout(() => {
-        scrollToBottom('auto');
+        scrollToBottom("auto");
         setIsUserAtBottom(true);
       }, 100);
     }

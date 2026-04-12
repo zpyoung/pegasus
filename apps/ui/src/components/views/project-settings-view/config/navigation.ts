@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from "lucide-react";
 import {
   User,
   GitBranch,
@@ -8,8 +8,8 @@ import {
   Database,
   Terminal,
   Unlink,
-} from 'lucide-react';
-import type { ProjectSettingsViewId } from '../hooks/use-project-settings-view';
+} from "lucide-react";
+import type { ProjectSettingsViewId } from "../hooks/use-project-settings-view";
 
 export interface ProjectNavigationItem {
   id: ProjectSettingsViewId;
@@ -18,12 +18,12 @@ export interface ProjectNavigationItem {
 }
 
 export const PROJECT_SETTINGS_NAV_ITEMS: ProjectNavigationItem[] = [
-  { id: 'identity', label: 'Identity', icon: User },
-  { id: 'worktrees', label: 'Worktrees', icon: GitBranch },
-  { id: 'commands-scripts', label: 'Commands & Scripts', icon: Terminal },
-  { id: 'theme', label: 'Theme', icon: Palette },
-  { id: 'claude', label: 'Models', icon: Workflow },
-  { id: 'data', label: 'Data', icon: Database },
-  { id: 'orphaned', label: 'Orphaned Features', icon: Unlink },
-  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
+  { id: "identity", label: "Identity", icon: User },
+  { id: "worktrees", label: "Worktrees", icon: GitBranch },
+  { id: "commands-scripts", label: "Commands & Scripts", icon: Terminal },
+  { id: "theme", label: "Theme", icon: Palette },
+  { id: "claude", label: "Models", icon: Workflow },
+  { id: "data", label: "Data", icon: Database },
+  { id: "orphaned", label: "Orphaned Features", icon: Unlink },
+  { id: "danger", label: "Danger Zone", icon: AlertTriangle },
 ];

@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
-import { Node, Edge } from '@xyflow/react';
-import { Feature } from '@/store/app-store';
-import { createFeatureMap, getBlockingDependenciesFromMap } from '@pegasus/dependency-resolver';
-import { GRAPH_RENDER_MODE_FULL, type GraphRenderMode } from '../constants';
-import { GraphFilterResult } from './use-graph-filter';
+import { useMemo } from "react";
+import { Node, Edge } from "@xyflow/react";
+import { Feature } from "@/store/app-store";
+import {
+  createFeatureMap,
+  getBlockingDependenciesFromMap,
+} from "@pegasus/dependency-resolver";
+import { GRAPH_RENDER_MODE_FULL, type GraphRenderMode } from "../constants";
+import { GraphFilterResult } from "./use-graph-filter";
 
 export interface TaskNodeData extends Feature {
   // Re-declare properties from BaseFeature that have index signature issues
@@ -35,10 +38,10 @@ export interface TaskNodeData extends Feature {
   renderMode?: GraphRenderMode;
 }
 
-export type TaskNode = Node<TaskNodeData, 'task'>;
+export type TaskNode = Node<TaskNodeData, "task">;
 export type DependencyEdge = Edge<{
-  sourceStatus: Feature['status'];
-  targetStatus: Feature['status'];
+  sourceStatus: Feature["status"];
+  targetStatus: Feature["status"];
   isHighlighted?: boolean;
   isDimmed?: boolean;
   onDeleteDependency?: (sourceId: string, targetId: string) => void;
@@ -95,8 +98,10 @@ export function useGraphNodes({
     // Extract filter state
     const hasActiveFilter = filterResult?.hasActiveFilter ?? false;
     const matchedNodeIds = filterResult?.matchedNodeIds ?? new Set<string>();
-    const highlightedNodeIds = filterResult?.highlightedNodeIds ?? new Set<string>();
-    const highlightedEdgeIds = filterResult?.highlightedEdgeIds ?? new Set<string>();
+    const highlightedNodeIds =
+      filterResult?.highlightedNodeIds ?? new Set<string>();
+    const highlightedEdgeIds =
+      filterResult?.highlightedEdgeIds ?? new Set<string>();
 
     // Create nodes
     features.forEach((feature) => {
@@ -105,12 +110,13 @@ export function useGraphNodes({
 
       // Calculate filter highlight states
       const isMatched = hasActiveFilter && matchedNodeIds.has(feature.id);
-      const isHighlighted = hasActiveFilter && highlightedNodeIds.has(feature.id);
+      const isHighlighted =
+        hasActiveFilter && highlightedNodeIds.has(feature.id);
       const isDimmed = hasActiveFilter && !highlightedNodeIds.has(feature.id);
 
       const node: TaskNode = {
         id: feature.id,
-        type: 'task',
+        type: "task",
         position: { x: 0, y: 0 }, // Will be set by layout
         data: {
           ...feature,
@@ -164,17 +170,21 @@ export function useGraphNodes({
             const edgeId = `${depId}->${feature.id}`;
 
             // Calculate edge highlight states
-            const edgeIsHighlighted = hasActiveFilter && highlightedEdgeIds.has(edgeId);
-            const edgeIsDimmed = hasActiveFilter && !highlightedEdgeIds.has(edgeId);
+            const edgeIsHighlighted =
+              hasActiveFilter && highlightedEdgeIds.has(edgeId);
+            const edgeIsDimmed =
+              hasActiveFilter && !highlightedEdgeIds.has(edgeId);
 
             const edge: DependencyEdge = {
               id: edgeId,
               source: depId,
               target: feature.id,
-              type: 'dependency',
-              animated: enableEdgeAnimations && (isRunning || runningTaskIds.has(depId)),
+              type: "dependency",
+              animated:
+                enableEdgeAnimations &&
+                (isRunning || runningTaskIds.has(depId)),
               data: {
-                sourceStatus: sourceFeature.status as Feature['status'],
+                sourceStatus: sourceFeature.status as Feature["status"],
                 targetStatus: feature.status,
                 isHighlighted: edgeIsHighlighted,
                 isDimmed: edgeIsDimmed,

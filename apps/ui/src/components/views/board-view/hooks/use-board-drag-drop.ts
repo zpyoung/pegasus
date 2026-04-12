@@ -1,12 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { Feature } from '@/store/app-store';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
-import { COLUMNS, ColumnId } from '../constants';
+import { useState, useCallback, useEffect } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+import { Feature } from "@/store/app-store";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
+import { COLUMNS, ColumnId } from "../constants";
 
-const logger = createLogger('BoardDragDrop');
+const logger = createLogger("BoardDragDrop");
 
 export interface PendingDependencyLink {
   draggedFeature: Feature;
@@ -17,7 +17,10 @@ interface UseBoardDragDropProps {
   features: Feature[];
   currentProject: { path: string; id: string } | null;
   runningAutoTasks: string[];
-  persistFeatureUpdate: (featureId: string, updates: Partial<Feature>) => Promise<void>;
+  persistFeatureUpdate: (
+    featureId: string,
+    updates: Partial<Feature>,
+  ) => Promise<void>;
   handleStartImplementation: (feature: Feature) => Promise<boolean>;
   stopFeature: (featureId: string) => Promise<boolean>;
 }
@@ -31,9 +34,8 @@ export function useBoardDragDrop({
   stopFeature,
 }: UseBoardDragDropProps) {
   const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
-  const [pendingDependencyLink, setPendingDependencyLink] = useState<PendingDependencyLink | null>(
-    null
-  );
+  const [pendingDependencyLink, setPendingDependencyLink] =
+    useState<PendingDependencyLink | null>(null);
   // IMPORTANT: Use individual selectors instead of bare useAppStore() to prevent
   // subscribing to the entire store. Bare useAppStore() causes the host component
   // (BoardView) to re-render on EVERY store change, which cascades through effects
@@ -63,7 +65,7 @@ export function useBoardDragDrop({
         setActiveFeature(feature);
       }
     },
-    [features]
+    [features],
   );
 
   // Clear pending dependency link
@@ -89,13 +91,13 @@ export function useBoardDragDrop({
       const isRunningTask = runningAutoTasks.includes(featureId);
 
       // Check if dropped on another card (for creating dependency links)
-      if (overId.startsWith('card-drop-')) {
+      if (overId.startsWith("card-drop-")) {
         const cardData = over.data.current as {
           type: string;
           featureId: string;
         };
 
-        if (cardData?.type === 'card') {
+        if (cardData?.type === "card") {
           const targetFeatureId = cardData.featureId;
 
           // Don't link to self
@@ -107,9 +109,12 @@ export function useBoardDragDrop({
           if (!targetFeature) return;
 
           // Don't allow linking completed features (they're already done)
-          if (draggedFeature.status === 'completed' || targetFeature.status === 'completed') {
-            toast.error('Cannot link features', {
-              description: 'Completed features cannot be linked.',
+          if (
+            draggedFeature.status === "completed" ||
+            targetFeature.status === "completed"
+          ) {
+            toast.error("Cannot link features", {
+              description: "Completed features cannot be linked.",
             });
             return;
           }
@@ -124,7 +129,7 @@ export function useBoardDragDrop({
       }
 
       // Check if dropped on a worktree tab
-      if (overId.startsWith('worktree-drop-')) {
+      if (overId.startsWith("worktree-drop-")) {
         // Handle dropping on a worktree - change the feature's branchName
         const worktreeData = over.data.current as {
           type: string;
@@ -133,12 +138,13 @@ export function useBoardDragDrop({
           isMain: boolean;
         };
 
-        if (worktreeData?.type === 'worktree') {
+        if (worktreeData?.type === "worktree") {
           // Don't allow moving running tasks to a different worktree
           if (isRunningTask) {
-            logger.debug('Cannot move running feature to different worktree');
-            toast.error('Cannot move feature', {
-              description: 'This feature is currently running and cannot be moved.',
+            logger.debug("Cannot move running feature to different worktree");
+            toast.error("Cannot move feature", {
+              description:
+                "This feature is currently running and cannot be moved.",
             });
             return;
           }
@@ -148,7 +154,9 @@ export function useBoardDragDrop({
 
           // For main worktree, set branchName to undefined to indicate it should use main
           // For other worktrees, set branchName to the target branch
-          const newBranchName: string | undefined = worktreeData.isMain ? undefined : targetBranch;
+          const newBranchName: string | undefined = worktreeData.isMain
+            ? undefined
+            : targetBranch;
 
           // If already on the same branch, nothing to do
           // For main worktree: feature with null/undefined branchName is already on main
@@ -165,9 +173,11 @@ export function useBoardDragDrop({
           updateFeature(featureId, { branchName: newBranchName });
           await persistFeatureUpdate(featureId, { branchName: newBranchName });
 
-          const branchDisplay = worktreeData.isMain ? targetBranch : targetBranch;
-          toast.success('Feature moved to branch', {
-            description: `Moved to ${branchDisplay}: ${draggedFeature.description.slice(0, 40)}${draggedFeature.description.length > 40 ? '...' : ''}`,
+          const branchDisplay = worktreeData.isMain
+            ? targetBranch
+            : targetBranch;
+          toast.success("Feature moved to branch", {
+            description: `Moved to ${branchDisplay}: ${draggedFeature.description.slice(0, 40)}${draggedFeature.description.length > 40 ? "..." : ""}`,
           });
           return;
         }
@@ -181,15 +191,15 @@ export function useBoardDragDrop({
 
       // Normalize the over ID: strip 'column-header-' prefix if the card was dropped
       // directly onto the column header droppable zone (e.g. 'column-header-backlog' → 'backlog')
-      const effectiveOverId = overId.startsWith('column-header-')
-        ? overId.replace('column-header-', '')
+      const effectiveOverId = overId.startsWith("column-header-")
+        ? overId.replace("column-header-", "")
         : overId;
 
       // Check if we dropped on a column
       const column = COLUMNS.find((c) => c.id === effectiveOverId);
       if (column) {
         targetStatus = column.id;
-      } else if (effectiveOverId.startsWith('pipeline_')) {
+      } else if (effectiveOverId.startsWith("pipeline_")) {
         // Pipeline step column (not in static COLUMNS list)
         targetStatus = effectiveOverId as ColumnId;
       } else {
@@ -208,133 +218,149 @@ export function useBoardDragDrop({
       // Handle different drag scenarios
       // Note: persistFeatureUpdate handles optimistic RQ cache update internally,
       // so no separate moveFeature() call is needed.
-      if (draggedFeature.status === 'backlog' || draggedFeature.status === 'merge_conflict') {
+      if (
+        draggedFeature.status === "backlog" ||
+        draggedFeature.status === "merge_conflict"
+      ) {
         // From backlog
-        if (targetStatus === 'in_progress') {
+        if (targetStatus === "in_progress") {
           // Use helper function to handle concurrency check and start implementation
           // Server will derive workDir from feature.branchName
           await handleStartImplementation(draggedFeature);
         } else {
           persistFeatureUpdate(featureId, { status: targetStatus });
         }
-      } else if (draggedFeature.status === 'waiting_approval') {
+      } else if (draggedFeature.status === "waiting_approval") {
         // waiting_approval features can be dragged to verified for manual verification
         // NOTE: This check must come BEFORE skipTests check because waiting_approval
         // features often have skipTests=true, and we want status-based handling first
-        if (targetStatus === 'verified') {
+        if (targetStatus === "verified") {
           // Clear justFinishedAt timestamp when manually verifying via drag
           persistFeatureUpdate(featureId, {
-            status: 'verified',
+            status: "verified",
             justFinishedAt: undefined,
           });
-          toast.success('Feature verified', {
+          toast.success("Feature verified", {
             description: `Manually verified: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
-        } else if (targetStatus === 'backlog') {
+        } else if (targetStatus === "backlog") {
           // Allow moving waiting_approval cards back to backlog
           // Clear justFinishedAt timestamp when moving back to backlog
           persistFeatureUpdate(featureId, {
-            status: 'backlog',
+            status: "backlog",
             justFinishedAt: undefined,
           });
-          toast.info('Feature moved to backlog', {
+          toast.info("Feature moved to backlog", {
             description: `Moved to Backlog: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
         }
-      } else if (draggedFeature.status === 'in_progress') {
+      } else if (draggedFeature.status === "in_progress") {
         // Handle in_progress features being moved
-        if (targetStatus === 'backlog') {
+        if (targetStatus === "backlog") {
           // If the feature is currently running, stop it first
           if (isRunningTask) {
             try {
               const stopped = await stopFeature(featureId);
               if (stopped) {
-                logger.info('Stopped running feature via drag to backlog:', featureId);
+                logger.info(
+                  "Stopped running feature via drag to backlog:",
+                  featureId,
+                );
               } else {
-                logger.warn('Feature was not running by the time stop was requested:', featureId);
+                logger.warn(
+                  "Feature was not running by the time stop was requested:",
+                  featureId,
+                );
               }
             } catch (error) {
-              logger.error('Error stopping feature during drag to backlog:', error);
-              toast.error('Failed to stop agent', {
-                description: 'The feature will still be moved to backlog.',
+              logger.error(
+                "Error stopping feature during drag to backlog:",
+                error,
+              );
+              toast.error("Failed to stop agent", {
+                description: "The feature will still be moved to backlog.",
               });
             }
           }
-          persistFeatureUpdate(featureId, { status: 'backlog' });
+          persistFeatureUpdate(featureId, { status: "backlog" });
           toast.info(
             isRunningTask
-              ? 'Agent stopped and feature moved to backlog'
-              : 'Feature moved to backlog',
+              ? "Agent stopped and feature moved to backlog"
+              : "Feature moved to backlog",
             {
               description: `Moved to Backlog: ${draggedFeature.description.slice(
                 0,
-                50
-              )}${draggedFeature.description.length > 50 ? '...' : ''}`,
-            }
+                50,
+              )}${draggedFeature.description.length > 50 ? "..." : ""}`,
+            },
           );
         } else if (isRunningTask) {
           // Running features can only be dragged to backlog, not other columns
-          logger.debug('Cannot drag running feature to', targetStatus);
-          toast.error('Cannot move running feature', {
-            description: 'Stop the agent first or drag to Backlog to stop and move.',
+          logger.debug("Cannot drag running feature to", targetStatus);
+          toast.error("Cannot move running feature", {
+            description:
+              "Stop the agent first or drag to Backlog to stop and move.",
           });
           return;
-        } else if (targetStatus === 'verified' && draggedFeature.skipTests) {
+        } else if (targetStatus === "verified" && draggedFeature.skipTests) {
           // Manual verify via drag (only for skipTests features)
-          persistFeatureUpdate(featureId, { status: 'verified' });
-          toast.success('Feature verified', {
+          persistFeatureUpdate(featureId, { status: "verified" });
+          toast.success("Feature verified", {
             description: `Marked as verified: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
         }
       } else if (draggedFeature.skipTests) {
         // skipTests feature being moved between verified and waiting_approval
-        if (targetStatus === 'waiting_approval' && draggedFeature.status === 'verified') {
+        if (
+          targetStatus === "waiting_approval" &&
+          draggedFeature.status === "verified"
+        ) {
           // Move verified feature back to waiting_approval
-          persistFeatureUpdate(featureId, { status: 'waiting_approval' });
-          toast.info('Feature moved back', {
+          persistFeatureUpdate(featureId, { status: "waiting_approval" });
+          toast.info("Feature moved back", {
             description: `Moved back to Waiting Approval: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
-        } else if (targetStatus === 'backlog') {
+        } else if (targetStatus === "backlog") {
           // Allow moving skipTests cards back to backlog (from verified)
-          persistFeatureUpdate(featureId, { status: 'backlog' });
-          toast.info('Feature moved to backlog', {
+          persistFeatureUpdate(featureId, { status: "backlog" });
+          toast.info("Feature moved to backlog", {
             description: `Moved to Backlog: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
         }
-      } else if (draggedFeature.status === 'verified') {
+      } else if (draggedFeature.status === "verified") {
         // Handle verified TDD (non-skipTests) features being moved back
-        if (targetStatus === 'waiting_approval') {
+        if (targetStatus === "waiting_approval") {
           // Move verified feature back to waiting_approval
-          persistFeatureUpdate(featureId, { status: 'waiting_approval' });
-          toast.info('Feature moved back', {
+          persistFeatureUpdate(featureId, { status: "waiting_approval" });
+          toast.info("Feature moved back", {
             description: `Moved back to Waiting Approval: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
-        } else if (targetStatus === 'backlog') {
+        } else if (targetStatus === "backlog") {
           // Allow moving verified cards back to backlog
-          persistFeatureUpdate(featureId, { status: 'backlog' });
-          toast.info('Feature moved to backlog', {
+          persistFeatureUpdate(featureId, { status: "backlog" });
+          toast.info("Feature moved to backlog", {
             description: `Moved to Backlog: ${draggedFeature.description.slice(
               0,
-              50
-            )}${draggedFeature.description.length > 50 ? '...' : ''}`,
+              50,
+            )}${draggedFeature.description.length > 50 ? "..." : ""}`,
           });
         }
       }
@@ -346,7 +372,7 @@ export function useBoardDragDrop({
       persistFeatureUpdate,
       handleStartImplementation,
       stopFeature,
-    ]
+    ],
   );
 
   return {

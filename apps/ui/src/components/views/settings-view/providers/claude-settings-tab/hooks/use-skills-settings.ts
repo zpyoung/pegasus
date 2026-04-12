@@ -5,17 +5,19 @@
  * configuring which sources to load Skills from (user/project).
  */
 
-import { useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
-import { useUpdateGlobalSettings } from '@/hooks/mutations';
+import { useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
+import { useUpdateGlobalSettings } from "@/hooks/mutations";
 
 export function useSkillsSettings() {
   const enabled = useAppStore((state) => state.enableSkills);
   const sources = useAppStore((state) => state.skillsSources);
 
   // React Query mutation (disable default toast)
-  const updateSettingsMutation = useUpdateGlobalSettings({ showSuccessToast: false });
+  const updateSettingsMutation = useUpdateGlobalSettings({
+    showSuccessToast: false,
+  });
 
   const updateEnabled = useCallback(
     (newEnabled: boolean) => {
@@ -24,27 +26,27 @@ export function useSkillsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ enableSkills: newEnabled });
-            toast.success(newEnabled ? 'Skills enabled' : 'Skills disabled');
+            toast.success(newEnabled ? "Skills enabled" : "Skills disabled");
           },
-        }
+        },
       );
     },
-    [updateSettingsMutation]
+    [updateSettingsMutation],
   );
 
   const updateSources = useCallback(
-    (newSources: Array<'user' | 'project'>) => {
+    (newSources: Array<"user" | "project">) => {
       updateSettingsMutation.mutate(
         { skillsSources: newSources },
         {
           onSuccess: () => {
             useAppStore.setState({ skillsSources: newSources });
-            toast.success('Skills sources updated');
+            toast.success("Skills sources updated");
           },
-        }
+        },
       );
     },
-    [updateSettingsMutation]
+    [updateSettingsMutation],
   );
 
   return {

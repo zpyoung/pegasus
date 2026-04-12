@@ -1,5 +1,9 @@
-import type { GitHubIssue, StoredValidation, GitHubComment } from '@/lib/electron';
-import type { ModelId, LinkedPRInfo, PhaseModelEntry } from '@pegasus/types';
+import type {
+  GitHubIssue,
+  StoredValidation,
+  GitHubComment,
+} from "@/lib/electron";
+import type { ModelId, LinkedPRInfo, PhaseModelEntry } from "@pegasus/types";
 
 // ============================================================================
 // Issues Filter State Types
@@ -9,11 +13,11 @@ import type { ModelId, LinkedPRInfo, PhaseModelEntry } from '@pegasus/types';
  * Available sort columns for issues list
  */
 export const ISSUES_SORT_COLUMNS = [
-  'title',
-  'created_at',
-  'updated_at',
-  'comments',
-  'number',
+  "title",
+  "created_at",
+  "updated_at",
+  "comments",
+  "number",
 ] as const;
 
 export type IssuesSortColumn = (typeof ISSUES_SORT_COLUMNS)[number];
@@ -21,21 +25,26 @@ export type IssuesSortColumn = (typeof ISSUES_SORT_COLUMNS)[number];
 /**
  * Sort direction options
  */
-export type IssuesSortDirection = 'asc' | 'desc';
+export type IssuesSortDirection = "asc" | "desc";
 
 /**
  * Available issue state filter values
  */
-export const ISSUES_STATE_FILTER_OPTIONS = ['open', 'closed', 'all'] as const;
+export const ISSUES_STATE_FILTER_OPTIONS = ["open", "closed", "all"] as const;
 
 export type IssuesStateFilter = (typeof ISSUES_STATE_FILTER_OPTIONS)[number];
 
 /**
  * Validation status filter values for filtering issues by validation state
  */
-export const ISSUES_VALIDATION_STATUS_OPTIONS = ['validated', 'not_validated', 'stale'] as const;
+export const ISSUES_VALIDATION_STATUS_OPTIONS = [
+  "validated",
+  "not_validated",
+  "stale",
+] as const;
 
-export type IssuesValidationStatus = (typeof ISSUES_VALIDATION_STATUS_OPTIONS)[number];
+export type IssuesValidationStatus =
+  (typeof ISSUES_VALIDATION_STATUS_OPTIONS)[number];
 
 /**
  * Sort configuration for issues list
@@ -90,15 +99,15 @@ export interface IssuesFilterResult {
  * Default values for IssuesFilterState
  */
 export const DEFAULT_ISSUES_FILTER_STATE: IssuesFilterState = {
-  searchQuery: '',
-  stateFilter: 'open',
+  searchQuery: "",
+  stateFilter: "open",
   selectedLabels: [],
   selectedAssignees: [],
   selectedMilestones: [],
   validationStatusFilter: null,
   sortConfig: {
-    column: 'updated_at',
-    direction: 'desc',
+    column: "updated_at",
+    direction: "desc",
   },
 };
 
@@ -132,7 +141,10 @@ export interface IssueDetailPanelProps {
   issue: GitHubIssue;
   validatingIssues: Set<number>;
   cachedValidations: Map<number, StoredValidation>;
-  onValidateIssue: (issue: GitHubIssue, options?: ValidateIssueOptions) => Promise<void>;
+  onValidateIssue: (
+    issue: GitHubIssue,
+    options?: ValidateIssueOptions,
+  ) => Promise<void>;
   onViewCachedValidation: (issue: GitHubIssue) => Promise<void>;
   onOpenInGitHub: (url: string) => void;
   onClose: () => void;

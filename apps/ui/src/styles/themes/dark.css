@@ -86,19 +86,32 @@
   /* Shadow tokens - darker for dark mode */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 
 /* Theme-specific overrides */
 
 .dark .content-bg {
-  background: linear-gradient(135deg, oklch(0.04 0 0), oklch(0.08 0 0), oklch(0.04 0 0));
+  background: linear-gradient(
+    135deg,
+    oklch(0.04 0 0),
+    oklch(0.08 0 0),
+    oklch(0.04 0 0)
+  );
 }
 
 .dark .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #a855f7 0%, #3b82f6 50%, #a855f7 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #a855f7 0%,
+    #3b82f6 50%,
+    #a855f7 100%
+  );
 }
 
 .dark .animated-outline-inner {
@@ -106,7 +119,9 @@
   color: #c084fc !important;
 }
 
-.dark [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.dark
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.2 0.02 270) !important;
   color: #e9d5ff !important;
 }

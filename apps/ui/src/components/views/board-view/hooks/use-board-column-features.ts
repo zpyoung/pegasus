@@ -1,13 +1,13 @@
 // @ts-nocheck - column filtering logic with dependency resolution and status mapping
-import { useMemo, useCallback, useEffect } from 'react';
-import { Feature, useAppStore } from '@/store/app-store';
+import { useMemo, useCallback, useEffect } from "react";
+import { Feature, useAppStore } from "@/store/app-store";
 import {
   createFeatureMap,
   getBlockingDependenciesFromMap,
   resolveDependencies,
-} from '@pegasus/dependency-resolver';
+} from "@pegasus/dependency-resolver";
 
-type ColumnId = Feature['status'];
+type ColumnId = Feature["status"];
 
 /**
  * Extract creation time from a feature, falling back to the timestamp
@@ -128,7 +128,9 @@ function sortNewestWithDependencies(features: Feature[]): Feature[] {
         inDegree.set(childId, newDeg);
         if (newDeg === 0) {
           queue.push(featureMap.get(childId)!);
-          queue.sort((a, b) => getFeatureCreatedTime(b) - getFeatureCreatedTime(a));
+          queue.sort(
+            (a, b) => getFeatureCreatedTime(b) - getFeatureCreatedTime(a),
+          );
         }
       }
     }
@@ -174,9 +176,11 @@ export function useBoardColumnFeatures({
   showAllWorktrees = false,
 }: UseBoardColumnFeaturesProps) {
   // Get recently completed features from store for race condition protection
-  const recentlyCompletedFeatures = useAppStore((state) => state.recentlyCompletedFeatures);
+  const recentlyCompletedFeatures = useAppStore(
+    (state) => state.recentlyCompletedFeatures,
+  );
   const clearRecentlyCompletedFeatures = useAppStore(
-    (state) => state.clearRecentlyCompletedFeatures
+    (state) => state.clearRecentlyCompletedFeatures,
   );
 
   // Clear recently completed features when the cache refreshes with updated statuses.
@@ -198,13 +202,19 @@ export function useBoardColumnFeatures({
   // Read recentlyCompletedFeatures from the store directly to get the latest value without
   // subscribing to it as a dependency.
   useEffect(() => {
-    const currentRecentlyCompleted = useAppStore.getState().recentlyCompletedFeatures;
+    const currentRecentlyCompleted =
+      useAppStore.getState().recentlyCompletedFeatures;
     if (currentRecentlyCompleted.size === 0) return;
 
-    const hasUpdatedStatus = Array.from(currentRecentlyCompleted).some((featureId) => {
-      const feature = features.find((f) => f.id === featureId);
-      return feature && (feature.status === 'verified' || feature.status === 'completed');
-    });
+    const hasUpdatedStatus = Array.from(currentRecentlyCompleted).some(
+      (featureId) => {
+        const feature = features.find((f) => f.id === featureId);
+        return (
+          feature &&
+          (feature.status === "verified" || feature.status === "completed")
+        );
+      },
+    );
 
     if (hasUpdatedStatus) {
       clearRecentlyCompletedFeatures();
@@ -237,7 +247,7 @@ export function useBoardColumnFeatures({
       ? features.filter(
           (f) =>
             f.description.toLowerCase().includes(normalizedQuery) ||
-            f.category?.toLowerCase().includes(normalizedQuery)
+            f.category?.toLowerCase().includes(normalizedQuery),
         )
       : features;
 
@@ -271,12 +281,15 @@ export function useBoardColumnFeatures({
         // (worktrees disabled or haven't loaded yet).
         // Show features assigned to primary worktree's branch.
         if (projectPath) {
-          const worktrees = useAppStore.getState().worktreesByProject[projectPath] ?? [];
+          const worktrees =
+            useAppStore.getState().worktreesByProject[projectPath] ?? [];
           if (worktrees.length === 0) {
             // Worktrees not loaded yet - fallback to showing features on common default branches
             // This prevents features from disappearing during initial load
             matchesWorktree =
-              featureBranch === 'main' || featureBranch === 'master' || featureBranch === 'develop';
+              featureBranch === "main" ||
+              featureBranch === "master" ||
+              featureBranch === "develop";
           } else {
             matchesWorktree = useAppStore
               .getState()
@@ -291,7 +304,7 @@ export function useBoardColumnFeatures({
       }
 
       // Use the feature's status (fallback to backlog for unknown statuses)
-      const status = f.status || 'backlog';
+      const status = f.status || "backlog";
 
       // IMPORTANT:
       // Historically, we forced "running" features into in_progress so they never disappeared
@@ -311,13 +324,13 @@ export function useBoardColumnFeatures({
           // 3. User switched worktrees while feature was starting
           // Still show it in in_progress to prevent it from disappearing
           console.debug(
-            `Feature ${f.id} is running but branchName (${featureBranch}) doesn't match current worktree branch (${effectiveBranch}) - showing anyway to prevent disappearing`
+            `Feature ${f.id} is running but branchName (${featureBranch}) doesn't match current worktree branch (${effectiveBranch}) - showing anyway to prevent disappearing`,
           );
           map.in_progress.push(f);
           return;
         }
 
-        if (status.startsWith('pipeline_')) {
+        if (status.startsWith("pipeline_")) {
           if (!map[status]) map[status] = [];
           map[status].push(f);
           return;
@@ -325,7 +338,7 @@ export function useBoardColumnFeatures({
 
         // If it's running and has a known non-backlog status, keep it in that status.
         // Otherwise, fallback to in_progress as the "active work" column.
-        if (status !== 'backlog' && map[status]) {
+        if (status !== "backlog" && map[status]) {
           map[status].push(f);
         } else {
           map.in_progress.push(f);
@@ -345,10 +358,10 @@ export function useBoardColumnFeatures({
       // Both display in the backlog column and need the same allRunningTaskIds race-condition
       // protection as 'backlog' to prevent briefly flashing in backlog when already executing.
       if (
-        status === 'backlog' ||
-        status === 'merge_conflict' ||
-        status === 'ready' ||
-        status === 'interrupted'
+        status === "backlog" ||
+        status === "merge_conflict" ||
+        status === "ready" ||
+        status === "interrupted"
       ) {
         // IMPORTANT: Check if this feature is running on ANY worktree before placing in backlog.
         // This prevents a race condition where the feature has started executing on the server
@@ -367,7 +380,7 @@ export function useBoardColumnFeatures({
           // The feature will be placed correctly once the cache refreshes.
           // Log for debugging (can remove after verification)
           console.debug(
-            `Feature ${f.id} recently completed - skipping backlog placement during cache refresh`
+            `Feature ${f.id} recently completed - skipping backlog placement during cache refresh`,
           );
         } else if (matchesWorktree) {
           map.backlog.push(f);
@@ -377,12 +390,12 @@ export function useBoardColumnFeatures({
         if (matchesWorktree) {
           map[status].push(f);
         }
-      } else if (status === 'waiting_question') {
+      } else if (status === "waiting_question") {
         // waiting_question: feature is paused awaiting user input — display in in_progress column
         if (matchesWorktree) {
           map.in_progress.push(f);
         }
-      } else if (status.startsWith('pipeline_')) {
+      } else if (status.startsWith("pipeline_")) {
         // Handle pipeline statuses - initialize array if needed
         if (matchesWorktree) {
           if (!map[status]) {
@@ -409,7 +422,8 @@ export function useBoardColumnFeatures({
       const { orderedFeatures } = resolveDependencies(map.backlog);
 
       // Get all features to check blocking dependencies against
-      const enableDependencyBlocking = useAppStore.getState().enableDependencyBlocking;
+      const enableDependencyBlocking =
+        useAppStore.getState().enableDependencyBlocking;
 
       // Sort blocked features to the end of the backlog
       // This keeps the dependency order within each group (unblocked/blocked)
@@ -447,7 +461,7 @@ export function useBoardColumnFeatures({
     // (Backlog is handled above with dependency-aware sorting)
     if (sortNewestCardOnTop) {
       for (const columnId of Object.keys(map)) {
-        if (columnId === 'backlog') continue;
+        if (columnId === "backlog") continue;
         map[columnId] = [...map[columnId]].sort((a, b) => {
           const aTime = getFeatureCreatedTime(a);
           const bTime = getFeatureCreatedTime(b);
@@ -474,12 +488,12 @@ export function useBoardColumnFeatures({
     (columnId: ColumnId) => {
       return columnFeaturesMap[columnId] || [];
     },
-    [columnFeaturesMap]
+    [columnFeaturesMap],
   );
 
   // Memoize completed features for the archive modal
   const completedFeatures = useMemo(() => {
-    return features.filter((f) => f.status === 'completed');
+    return features.filter((f) => f.status === "completed");
   }, [features]);
 
   return {

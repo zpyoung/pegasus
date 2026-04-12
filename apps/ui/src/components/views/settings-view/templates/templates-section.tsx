@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,19 +11,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { GripVertical, Plus, Pencil, Trash2, FileText, Lock, MoreHorizontal } from 'lucide-react';
+} from "@/components/ui/dialog";
+import {
+  GripVertical,
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  Lock,
+  MoreHorizontal,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import type { FeatureTemplate, PhaseModelEntry } from '@pegasus/types';
-import { PhaseModelSelector } from '../model-defaults/phase-model-selector';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import type { FeatureTemplate, PhaseModelEntry } from "@pegasus/types";
+import { PhaseModelSelector } from "../model-defaults/phase-model-selector";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
 import {
   DndContext,
   closestCenter,
@@ -32,20 +40,23 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface TemplatesSectionProps {
   templates: FeatureTemplate[];
   onAddTemplate: (template: FeatureTemplate) => Promise<void>;
-  onUpdateTemplate: (id: string, updates: Partial<FeatureTemplate>) => Promise<void>;
+  onUpdateTemplate: (
+    id: string,
+    updates: Partial<FeatureTemplate>,
+  ) => Promise<void>;
   onDeleteTemplate: (id: string) => Promise<void>;
   onReorderTemplates: (templateIds: string[]) => Promise<void>;
 }
@@ -73,7 +84,14 @@ function SortableTemplateItem({
   onToggleEnabled: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: template.id,
   });
 
@@ -89,10 +107,10 @@ function SortableTemplateItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50',
-        'transition-all duration-200',
-        isDragging && 'opacity-50 shadow-lg',
-        !isEnabled && 'opacity-60'
+        "flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50",
+        "transition-all duration-200",
+        isDragging && "opacity-50 shadow-lg",
+        !isEnabled && "opacity-60",
       )}
     >
       {/* Drag Handle */}
@@ -121,7 +139,9 @@ function SortableTemplateItem({
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{template.prompt}</p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">
+          {template.prompt}
+        </p>
       </div>
 
       {/* Actions */}
@@ -132,7 +152,10 @@ function SortableTemplateItem({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onEdit} data-testid={`template-edit-${template.id}`}>
+          <DropdownMenuItem
+            onClick={onEdit}
+            data-testid={`template-edit-${template.id}`}
+          >
             <Pencil className="w-4 h-4 mr-2" />
             Edit
           </DropdownMenuItem>
@@ -140,8 +163,11 @@ function SortableTemplateItem({
             onClick={onToggleEnabled}
             data-testid={`template-toggle-${template.id}`}
           >
-            <Checkbox checked={isEnabled} className="w-4 h-4 mr-2 pointer-events-none" />
-            {isEnabled ? 'Disable' : 'Enable'}
+            <Checkbox
+              checked={isEnabled}
+              className="w-4 h-4 mr-2 pointer-events-none"
+            />
+            {isEnabled ? "Disable" : "Enable"}
           </DropdownMenuItem>
           {!template.isBuiltIn && (
             <DropdownMenuItem
@@ -167,10 +193,11 @@ export function TemplatesSection({
   onReorderTemplates,
 }: TemplatesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<FeatureTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] =
+    useState<FeatureTemplate | null>(null);
   const [formData, setFormData] = useState<TemplateFormData>({
-    name: '',
-    prompt: '',
+    name: "",
+    prompt: "",
   });
   const [nameError, setNameError] = useState(false);
   const [promptError, setPromptError] = useState(false);
@@ -181,14 +208,14 @@ export function TemplatesSection({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleAddNew = () => {
     setEditingTemplate(null);
     setFormData({
-      name: '',
-      prompt: '',
+      name: "",
+      prompt: "",
       model: undefined,
     });
     setNameError(false);
@@ -209,16 +236,18 @@ export function TemplatesSection({
   };
 
   const handleToggleEnabled = async (template: FeatureTemplate) => {
-    await onUpdateTemplate(template.id, { enabled: template.enabled === false ? true : false });
+    await onUpdateTemplate(template.id, {
+      enabled: template.enabled === false ? true : false,
+    });
   };
 
   const handleDelete = async (template: FeatureTemplate) => {
     if (template.isBuiltIn) {
-      toast.error('Built-in templates cannot be deleted');
+      toast.error("Built-in templates cannot be deleted");
       return;
     }
     await onDeleteTemplate(template.id);
-    toast.success('Template deleted');
+    toast.success("Template deleted");
   };
 
   const handleSave = async () => {
@@ -241,7 +270,7 @@ export function TemplatesSection({
         prompt: formData.prompt.trim(),
         model: formData.model,
       });
-      toast.success('Template updated');
+      toast.success("Template updated");
     } else {
       // Create new
       const newTemplate: FeatureTemplate = {
@@ -254,7 +283,7 @@ export function TemplatesSection({
         order: Math.max(...templates.map((t) => t.order ?? 0), -1) + 1,
       };
       await onAddTemplate(newTemplate);
-      toast.success('Template created');
+      toast.success("Template created");
     }
     setDialogOpen(false);
   };
@@ -262,7 +291,7 @@ export function TemplatesSection({
   // Memoized sorted copy — avoids mutating the Zustand-managed templates array
   const sortedTemplates = useMemo(
     () => [...templates].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
-    [templates]
+    [templates],
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -279,10 +308,10 @@ export function TemplatesSection({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -306,7 +335,8 @@ export function TemplatesSection({
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Create reusable task templates for quick feature creation from the Add Feature dropdown.
+          Create reusable task templates for quick feature creation from the Add
+          Feature dropdown.
         </p>
       </div>
 
@@ -315,7 +345,9 @@ export function TemplatesSection({
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p className="text-sm">No templates yet</p>
-            <p className="text-xs mt-1">Create your first template to get started</p>
+            <p className="text-xs mt-1">
+              Create your first template to get started
+            </p>
           </div>
         ) : (
           <DndContext
@@ -347,11 +379,13 @@ export function TemplatesSection({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg" data-testid="template-dialog">
           <DialogHeader>
-            <DialogTitle>{editingTemplate ? 'Edit Template' : 'Create Template'}</DialogTitle>
+            <DialogTitle>
+              {editingTemplate ? "Edit Template" : "Create Template"}
+            </DialogTitle>
             <DialogDescription>
               {editingTemplate
-                ? 'Update the template details below.'
-                : 'Create a new template for quick feature creation.'}
+                ? "Update the template details below."
+                : "Create a new template for quick feature creation."}
             </DialogDescription>
           </DialogHeader>
 
@@ -370,11 +404,13 @@ export function TemplatesSection({
                 }}
                 placeholder="e.g., Run tests and fix issues"
                 maxLength={MAX_NAME_LENGTH}
-                className={nameError ? 'border-destructive' : ''}
+                className={nameError ? "border-destructive" : ""}
                 data-testid="template-name-input"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                {nameError && <span className="text-destructive">Name is required</span>}
+                {nameError && (
+                  <span className="text-destructive">Name is required</span>
+                )}
                 <span className="ml-auto">
                   {formData.name.length}/{MAX_NAME_LENGTH}
                 </span>
@@ -395,10 +431,12 @@ export function TemplatesSection({
                 }}
                 placeholder="Describe the task the AI should perform..."
                 rows={4}
-                className={promptError ? 'border-destructive' : ''}
+                className={promptError ? "border-destructive" : ""}
                 data-testid="template-prompt-input"
               />
-              {promptError && <p className="text-xs text-destructive">Prompt is required</p>}
+              {promptError && (
+                <p className="text-xs text-destructive">Prompt is required</p>
+              )}
             </div>
 
             {/* Model (optional) */}
@@ -411,7 +449,8 @@ export function TemplatesSection({
                 align="end"
               />
               <p className="text-xs text-muted-foreground">
-                If set, this model will be pre-selected when using this template.
+                If set, this model will be pre-selected when using this
+                template.
               </p>
             </div>
           </div>
@@ -421,7 +460,7 @@ export function TemplatesSection({
               Cancel
             </Button>
             <Button onClick={handleSave} data-testid="template-save-button">
-              {editingTemplate ? 'Save Changes' : 'Create Template'}
+              {editingTemplate ? "Save Changes" : "Create Template"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export interface WindowState {
   isMaximized: boolean;
@@ -13,7 +13,7 @@ export interface WindowState {
  */
 export function useWindowState(): WindowState {
   const [windowState, setWindowState] = useState<WindowState>(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return { isMaximized: false, windowWidth: 0, windowHeight: 0 };
     }
     const width = window.innerWidth;
@@ -26,7 +26,7 @@ export function useWindowState(): WindowState {
   });
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const updateWindowState = () => {
       const width = window.innerWidth;
@@ -42,10 +42,10 @@ export function useWindowState(): WindowState {
     updateWindowState();
 
     // Listen for resize events
-    window.addEventListener('resize', updateWindowState);
+    window.addEventListener("resize", updateWindowState);
 
     return () => {
-      window.removeEventListener('resize', updateWindowState);
+      window.removeEventListener("resize", updateWindowState);
     };
   }, []);
 

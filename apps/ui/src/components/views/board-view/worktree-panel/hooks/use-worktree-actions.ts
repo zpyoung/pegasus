@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
 import {
   useSwitchBranch,
   usePullWorktree,
@@ -11,11 +11,11 @@ import {
   useSyncWorktree,
   useSetTracking,
   useOpenInEditor,
-} from '@/hooks/mutations';
-import type { WorktreeInfo } from '../types';
-import type { UncommittedChangesInfo } from '../../dialogs/stash-confirm-dialog';
+} from "@/hooks/mutations";
+import type { WorktreeInfo } from "../types";
+import type { UncommittedChangesInfo } from "../../dialogs/stash-confirm-dialog";
 
-const logger = createLogger('WorktreeActions');
+const logger = createLogger("WorktreeActions");
 
 /** Pending branch switch details, stored while awaiting user confirmation */
 export interface PendingSwitchInfo {
@@ -44,7 +44,9 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
   const [isActivating, setIsActivating] = useState(false);
 
   // Pending branch switch state (waiting for user stash decision)
-  const [pendingSwitch, setPendingSwitch] = useState<PendingSwitchInfo | null>(null);
+  const [pendingSwitch, setPendingSwitch] = useState<PendingSwitchInfo | null>(
+    null,
+  );
 
   // Use React Query mutations
   const switchBranchMutation = useSwitchBranch({
@@ -64,7 +66,8 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
    */
   const handleSwitchBranch = useCallback(
     async (worktree: WorktreeInfo, branchName: string) => {
-      if (switchBranchMutation.isPending || branchName === worktree.branch) return;
+      if (switchBranchMutation.isPending || branchName === worktree.branch)
+        return;
 
       // Check for uncommitted changes before switching
       try {
@@ -87,7 +90,10 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         }
       } catch (err) {
         // If we can't check for changes, proceed with the switch (server will auto-stash)
-        logger.warn('Failed to check for uncommitted changes, proceeding with switch:', err);
+        logger.warn(
+          "Failed to check for uncommitted changes, proceeding with switch:",
+          err,
+        );
       }
 
       // No changes detected, proceed directly (server still handles stash as safety net)
@@ -96,7 +102,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         branchName,
       });
     },
-    [switchBranchMutation]
+    [switchBranchMutation],
   );
 
   /**
@@ -106,10 +112,10 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
    * detects and stashes automatically). When "cancel", we just clear the pending state.
    */
   const confirmPendingSwitch = useCallback(
-    (action: 'stash-and-proceed' | 'proceed-without-stash' | 'cancel') => {
+    (action: "stash-and-proceed" | "proceed-without-stash" | "cancel") => {
       if (!pendingSwitch) return;
 
-      if (action === 'cancel') {
+      if (action === "cancel") {
         setPendingSwitch(null);
         return;
       }
@@ -124,7 +130,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
 
       setPendingSwitch(null);
     },
-    [pendingSwitch, switchBranchMutation]
+    [pendingSwitch, switchBranchMutation],
   );
 
   /** Clear the pending switch without performing any action */
@@ -140,7 +146,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         remote,
       });
     },
-    [pullMutation]
+    [pullMutation],
   );
 
   const handlePush = useCallback(
@@ -151,7 +157,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         remote,
       });
     },
-    [pushMutation]
+    [pushMutation],
   );
 
   const handleSync = useCallback(
@@ -162,7 +168,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         remote,
       });
     },
-    [syncMutation]
+    [syncMutation],
   );
 
   const handleSetTracking = useCallback(
@@ -173,20 +179,25 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         remote,
       });
     },
-    [setTrackingMutation]
+    [setTrackingMutation],
   );
 
   const handleOpenInIntegratedTerminal = useCallback(
-    (worktree: WorktreeInfo, mode?: 'tab' | 'split') => {
+    (worktree: WorktreeInfo, mode?: "tab" | "split") => {
       // Navigate to the terminal view with the worktree path and branch name
       // The terminal view will handle creating the terminal with the specified cwd
       // Include nonce to allow opening the same worktree multiple times
       navigate({
-        to: '/terminal',
-        search: { cwd: worktree.path, branch: worktree.branch, mode, nonce: Date.now() },
+        to: "/terminal",
+        search: {
+          cwd: worktree.path,
+          branch: worktree.branch,
+          mode,
+          nonce: Date.now(),
+        },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const handleRunTerminalScript = useCallback(
@@ -194,17 +205,17 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
       // Navigate to the terminal view with the worktree path, branch, and command to run
       // The terminal view will create a new terminal and automatically execute the command
       navigate({
-        to: '/terminal',
+        to: "/terminal",
         search: {
           cwd: worktree.path,
           branch: worktree.branch,
-          mode: 'tab' as const,
+          mode: "tab" as const,
           nonce: Date.now(),
           command,
         },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const handleOpenInEditor = useCallback(
@@ -214,7 +225,7 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
         editorCommand,
       });
     },
-    [openInEditorMutation]
+    [openInEditorMutation],
   );
 
   const handleOpenInExternalTerminal = useCallback(
@@ -222,20 +233,23 @@ export function useWorktreeActions(options?: UseWorktreeActionsOptions) {
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.openInExternalTerminal) {
-          logger.warn('Open in external terminal API not available');
+          logger.warn("Open in external terminal API not available");
           return;
         }
-        const result = await api.worktree.openInExternalTerminal(worktree.path, terminalId);
+        const result = await api.worktree.openInExternalTerminal(
+          worktree.path,
+          terminalId,
+        );
         if (result.success && result.result) {
           toast.success(result.result.message);
         } else if (result.error) {
           toast.error(result.error);
         }
       } catch (error) {
-        logger.error('Open in external terminal failed:', error);
+        logger.error("Open in external terminal failed:", error);
       }
     },
-    []
+    [],
   );
 
   return {

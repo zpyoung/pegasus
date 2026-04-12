@@ -1,2 +1,2 @@
-export { TrashDialog } from './trash-dialog';
-export { OnboardingDialog } from './onboarding-dialog';
+export { TrashDialog } from "./trash-dialog";
+export { OnboardingDialog } from "./onboarding-dialog";

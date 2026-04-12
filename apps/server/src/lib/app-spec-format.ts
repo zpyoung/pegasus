@@ -6,8 +6,8 @@
  */
 
 // Import and re-export spec types from shared package
-export type { SpecOutput } from '@pegasus/types';
-export { specOutputSchema } from '@pegasus/types';
+export type { SpecOutput } from "@pegasus/types";
+export { specOutputSchema } from "@pegasus/types";
 
 /**
  * Escape special XML characters
@@ -15,21 +15,21 @@ export { specOutputSchema } from '@pegasus/types';
  */
 export function escapeXml(str: string | undefined | null): string {
   if (str == null) {
-    return '';
+    return "";
   }
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 /**
  * Convert structured spec output to XML format
  */
-export function specToXml(spec: import('@pegasus/types').SpecOutput): string {
-  const indent = '  ';
+export function specToXml(spec: import("@pegasus/types").SpecOutput): string {
+  const indent = "  ";
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <project_specification>
@@ -40,11 +40,11 @@ ${indent}${indent}${escapeXml(spec.overview)}
 ${indent}</overview>
 
 ${indent}<technology_stack>
-${spec.technology_stack.map((t) => `${indent}${indent}<technology>${escapeXml(t)}</technology>`).join('\n')}
+${spec.technology_stack.map((t) => `${indent}${indent}<technology>${escapeXml(t)}</technology>`).join("\n")}
 ${indent}</technology_stack>
 
 ${indent}<core_capabilities>
-${spec.core_capabilities.map((c) => `${indent}${indent}<capability>${escapeXml(c)}</capability>`).join('\n')}
+${spec.core_capabilities.map((c) => `${indent}${indent}<capability>${escapeXml(c)}</capability>`).join("\n")}
 ${indent}</core_capabilities>
 
 ${indent}<implemented_features>
@@ -55,13 +55,13 @@ ${indent}${indent}${indent}<name>${escapeXml(f.name)}</name>
 ${indent}${indent}${indent}<description>${escapeXml(f.description)}</description>${
       f.file_locations && f.file_locations.length > 0
         ? `\n${indent}${indent}${indent}<file_locations>
-${f.file_locations.map((loc) => `${indent}${indent}${indent}${indent}<location>${escapeXml(loc)}</location>`).join('\n')}
+${f.file_locations.map((loc) => `${indent}${indent}${indent}${indent}<location>${escapeXml(loc)}</location>`).join("\n")}
 ${indent}${indent}${indent}</file_locations>`
-        : ''
+        : ""
     }
-${indent}${indent}</feature>`
+${indent}${indent}</feature>`,
   )
-  .join('\n')}
+  .join("\n")}
 ${indent}</implemented_features>`;
 
   // Optional sections
@@ -69,7 +69,7 @@ ${indent}</implemented_features>`;
     xml += `
 
 ${indent}<additional_requirements>
-${spec.additional_requirements.map((r) => `${indent}${indent}<requirement>${escapeXml(r)}</requirement>`).join('\n')}
+${spec.additional_requirements.map((r) => `${indent}${indent}<requirement>${escapeXml(r)}</requirement>`).join("\n")}
 ${indent}</additional_requirements>`;
   }
 
@@ -77,7 +77,7 @@ ${indent}</additional_requirements>`;
     xml += `
 
 ${indent}<development_guidelines>
-${spec.development_guidelines.map((g) => `${indent}${indent}<guideline>${escapeXml(g)}</guideline>`).join('\n')}
+${spec.development_guidelines.map((g) => `${indent}${indent}<guideline>${escapeXml(g)}</guideline>`).join("\n")}
 ${indent}</development_guidelines>`;
   }
 
@@ -91,9 +91,9 @@ ${spec.implementation_roadmap
 ${indent}${indent}${indent}<name>${escapeXml(r.phase)}</name>
 ${indent}${indent}${indent}<status>${escapeXml(r.status)}</status>
 ${indent}${indent}${indent}<description>${escapeXml(r.description)}</description>
-${indent}${indent}</phase>`
+${indent}${indent}</phase>`,
   )
-  .join('\n')}
+  .join("\n")}
 ${indent}</implementation_roadmap>`;
   }
 

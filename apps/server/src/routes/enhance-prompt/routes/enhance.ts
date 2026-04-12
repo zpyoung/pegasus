@@ -6,29 +6,32 @@
  * Supports modes: improve, technical, simplify, acceptance, ux-reviewer
  */
 
-import type { Request, Response } from 'express';
-import { createLogger } from '@pegasus/utils';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { CLAUDE_MODEL_MAP, type ThinkingLevel } from '@pegasus/types';
-import { getAppSpecPath } from '@pegasus/platform';
-import { simpleQuery } from '../../../providers/simple-query-service.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getPromptCustomization, getProviderByModelId } from '../../../lib/settings-helpers.js';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import * as secureFs from '../../../lib/secure-fs.js';
+import type { Request, Response } from "express";
+import { createLogger } from "@pegasus/utils";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { CLAUDE_MODEL_MAP, type ThinkingLevel } from "@pegasus/types";
+import { getAppSpecPath } from "@pegasus/platform";
+import { simpleQuery } from "../../../providers/simple-query-service.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import {
+  getPromptCustomization,
+  getProviderByModelId,
+} from "../../../lib/settings-helpers.js";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import * as secureFs from "../../../lib/secure-fs.js";
 import {
   buildUserPrompt,
   isValidEnhancementMode,
   type EnhancementMode,
-} from '../../../lib/enhancement-prompts.js';
+} from "../../../lib/enhancement-prompts.js";
 import {
   extractTechnologyStack,
   extractXmlElements,
   extractXmlSection,
   unescapeXml,
-} from '../../../lib/xml-extractor.js';
+} from "../../../lib/xml-extractor.js";
 
-const logger = createLogger('EnhancePrompt');
+const logger = createLogger("EnhancePrompt");
 
 /**
  * Request body for the enhance endpoint
@@ -62,18 +65,25 @@ interface EnhanceErrorResponse {
   error: string;
 }
 
-async function buildProjectContext(projectPath: string): Promise<string | null> {
+async function buildProjectContext(
+  projectPath: string,
+): Promise<string | null> {
   const contextBlocks: string[] = [];
 
   try {
     const appSpecPath = getAppSpecPath(projectPath);
-    const specContent = (await secureFs.readFile(appSpecPath, 'utf-8')) as string;
+    const specContent = (await secureFs.readFile(
+      appSpecPath,
+      "utf-8",
+    )) as string;
 
-    const projectName = extractXmlSection(specContent, 'project_name');
-    const overview = extractXmlSection(specContent, 'overview');
+    const projectName = extractXmlSection(specContent, "project_name");
+    const overview = extractXmlSection(specContent, "overview");
     const techStack = extractTechnologyStack(specContent);
-    const coreSection = extractXmlSection(specContent, 'core_capabilities');
-    const coreCapabilities = coreSection ? extractXmlElements(coreSection, 'capability') : [];
+    const coreSection = extractXmlSection(specContent, "core_capabilities");
+    const coreCapabilities = coreSection
+      ? extractXmlElements(coreSection, "capability")
+      : [];
 
     const summaryLines: string[] = [];
     if (projectName) {
@@ -83,17 +93,21 @@ async function buildProjectContext(projectPath: string): Promise<string | null> 
       summaryLines.push(`Overview: ${unescapeXml(overview.trim())}`);
     }
     if (techStack.length > 0) {
-      summaryLines.push(`Tech Stack: ${techStack.join(', ')}`);
+      summaryLines.push(`Tech Stack: ${techStack.join(", ")}`);
     }
     if (coreCapabilities.length > 0) {
-      summaryLines.push(`Core Capabilities: ${coreCapabilities.slice(0, 10).join(', ')}`);
+      summaryLines.push(
+        `Core Capabilities: ${coreCapabilities.slice(0, 10).join(", ")}`,
+      );
     }
 
     if (summaryLines.length > 0) {
-      contextBlocks.push(`PROJECT CONTEXT:\n${summaryLines.map((line) => `- ${line}`).join('\n')}`);
+      contextBlocks.push(
+        `PROJECT CONTEXT:\n${summaryLines.map((line) => `- ${line}`).join("\n")}`,
+      );
     }
   } catch (error) {
-    logger.debug('No app_spec.txt context available for enhancement', error);
+    logger.debug("No app_spec.txt context available for enhancement", error);
   }
 
   try {
@@ -106,20 +120,23 @@ async function buildProjectContext(projectPath: string): Promise<string | null> 
     if (featureTitles.length > 0) {
       const listed = featureTitles.slice(0, 30).map((title) => `- ${title}`);
       contextBlocks.push(
-        `EXISTING FEATURES (avoid duplicates):\n${listed.join('\n')}${
-          featureTitles.length > 30 ? '\n- ...' : ''
-        }`
+        `EXISTING FEATURES (avoid duplicates):\n${listed.join("\n")}${
+          featureTitles.length > 30 ? "\n- ..." : ""
+        }`,
       );
     }
   } catch (error) {
-    logger.debug('Failed to load existing features for enhancement context', error);
+    logger.debug(
+      "Failed to load existing features for enhancement context",
+      error,
+    );
   }
 
   if (contextBlocks.length === 0) {
     return null;
   }
 
-  return contextBlocks.join('\n\n');
+  return contextBlocks.join("\n\n");
 }
 
 /**
@@ -129,27 +146,32 @@ async function buildProjectContext(projectPath: string): Promise<string | null> 
  * @returns Express request handler for text enhancement
  */
 export function createEnhanceHandler(
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { originalText, enhancementMode, model, thinkingLevel, projectPath } =
-        req.body as EnhanceRequestBody;
+      const {
+        originalText,
+        enhancementMode,
+        model,
+        thinkingLevel,
+        projectPath,
+      } = req.body as EnhanceRequestBody;
 
       // Validate required fields
-      if (!originalText || typeof originalText !== 'string') {
+      if (!originalText || typeof originalText !== "string") {
         const response: EnhanceErrorResponse = {
           success: false,
-          error: 'originalText is required and must be a string',
+          error: "originalText is required and must be a string",
         };
         res.status(400).json(response);
         return;
       }
 
-      if (!enhancementMode || typeof enhancementMode !== 'string') {
+      if (!enhancementMode || typeof enhancementMode !== "string") {
         const response: EnhanceErrorResponse = {
           success: false,
-          error: 'enhancementMode is required and must be a string',
+          error: "enhancementMode is required and must be a string",
         };
         res.status(400).json(response);
         return;
@@ -160,7 +182,7 @@ export function createEnhanceHandler(
       if (trimmedText.length === 0) {
         const response: EnhanceErrorResponse = {
           success: false,
-          error: 'originalText cannot be empty',
+          error: "originalText cannot be empty",
         };
         res.status(400).json(response);
         return;
@@ -170,12 +192,17 @@ export function createEnhanceHandler(
       const normalizedMode = enhancementMode.toLowerCase();
       const validMode: EnhancementMode = isValidEnhancementMode(normalizedMode)
         ? normalizedMode
-        : 'improve';
+        : "improve";
 
-      logger.info(`Enhancing text with mode: ${validMode}, length: ${trimmedText.length} chars`);
+      logger.info(
+        `Enhancing text with mode: ${validMode}, length: ${trimmedText.length} chars`,
+      );
 
       // Load enhancement prompts from settings (merges custom + defaults)
-      const prompts = await getPromptCustomization(settingsService, '[EnhancePrompt]');
+      const prompts = await getPromptCustomization(
+        settingsService,
+        "[EnhancePrompt]",
+      );
 
       // Get the system prompt for this mode from merged prompts
       const systemPromptMap: Record<EnhancementMode, string> = {
@@ -183,22 +210,28 @@ export function createEnhanceHandler(
         technical: prompts.enhancement.technicalSystemPrompt,
         simplify: prompts.enhancement.simplifySystemPrompt,
         acceptance: prompts.enhancement.acceptanceSystemPrompt,
-        'ux-reviewer': prompts.enhancement.uxReviewerSystemPrompt,
+        "ux-reviewer": prompts.enhancement.uxReviewerSystemPrompt,
       };
       const systemPrompt = systemPromptMap[validMode];
 
-      logger.debug(`Using ${validMode} system prompt (length: ${systemPrompt.length} chars)`);
+      logger.debug(
+        `Using ${validMode} system prompt (length: ${systemPrompt.length} chars)`,
+      );
 
       // Build the user prompt with few-shot examples
       const userPrompt = buildUserPrompt(validMode, trimmedText, true);
-      const projectContext = projectPath ? await buildProjectContext(projectPath) : null;
+      const projectContext = projectPath
+        ? await buildProjectContext(projectPath)
+        : null;
       if (projectContext) {
-        logger.debug('Including project context in enhancement prompt');
+        logger.debug("Including project context in enhancement prompt");
       }
 
       // Check if the model is a provider model (like "GLM-4.5-Air")
       // If so, get the provider config and resolved Claude model
-      let claudeCompatibleProvider: import('@pegasus/types').ClaudeCompatibleProvider | undefined;
+      let claudeCompatibleProvider:
+        | import("@pegasus/types").ClaudeCompatibleProvider
+        | undefined;
       let providerResolvedModel: string | undefined;
       let credentials = await settingsService?.getCredentials();
 
@@ -206,7 +239,7 @@ export function createEnhanceHandler(
         const providerResult = await getProviderByModelId(
           model,
           settingsService,
-          '[EnhancePrompt]'
+          "[EnhancePrompt]",
         );
         if (providerResult.provider) {
           claudeCompatibleProvider = providerResult.provider;
@@ -214,7 +247,9 @@ export function createEnhanceHandler(
           credentials = providerResult.credentials;
           logger.info(
             `Using provider "${providerResult.provider.name}" for model "${model}"` +
-              (providerResolvedModel ? ` -> resolved to "${providerResolvedModel}"` : '')
+              (providerResolvedModel
+                ? ` -> resolved to "${providerResolvedModel}"`
+                : ""),
           );
         }
       }
@@ -224,7 +259,8 @@ export function createEnhanceHandler(
       // to the API, NOT the resolved Claude model - otherwise we get "model not found"
       const modelForApi = claudeCompatibleProvider
         ? model
-        : providerResolvedModel || resolveModelString(model, CLAUDE_MODEL_MAP.sonnet);
+        : providerResolvedModel ||
+          resolveModelString(model, CLAUDE_MODEL_MAP.sonnet);
 
       logger.debug(`Using model: ${modelForApi}`);
 
@@ -232,7 +268,9 @@ export function createEnhanceHandler(
       // The system prompt is combined with user prompt since some providers
       // don't have a separate system prompt concept
       const result = await simpleQuery({
-        prompt: [systemPrompt, projectContext, userPrompt].filter(Boolean).join('\n\n'),
+        prompt: [systemPrompt, projectContext, userPrompt]
+          .filter(Boolean)
+          .join("\n\n"),
         model: modelForApi,
         cwd: process.cwd(), // Enhancement doesn't need a specific working directory
         maxTurns: 1,
@@ -246,16 +284,18 @@ export function createEnhanceHandler(
       const enhancedText = result.text;
 
       if (!enhancedText || enhancedText.trim().length === 0) {
-        logger.warn('Received empty response from AI');
+        logger.warn("Received empty response from AI");
         const response: EnhanceErrorResponse = {
           success: false,
-          error: 'Failed to generate enhanced text - empty response',
+          error: "Failed to generate enhanced text - empty response",
         };
         res.status(500).json(response);
         return;
       }
 
-      logger.info(`Enhancement complete, output length: ${enhancedText.length} chars`);
+      logger.info(
+        `Enhancement complete, output length: ${enhancedText.length} chars`,
+      );
 
       const response: EnhanceSuccessResponse = {
         success: true,
@@ -263,8 +303,9 @@ export function createEnhanceHandler(
       };
       res.json(response);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      logger.error('Enhancement failed:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      logger.error("Enhancement failed:", errorMessage);
 
       const response: EnhanceErrorResponse = {
         success: false,

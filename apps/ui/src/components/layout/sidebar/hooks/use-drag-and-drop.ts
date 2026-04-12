@@ -1,20 +1,28 @@
-import { useCallback } from 'react';
-import { useSensors, useSensor, PointerSensor, type DragEndEvent } from '@dnd-kit/core';
-import type { Project } from '@/lib/electron';
+import { useCallback } from "react";
+import {
+  useSensors,
+  useSensor,
+  PointerSensor,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import type { Project } from "@/lib/electron";
 
 interface UseDragAndDropProps {
   projects: Project[];
   reorderProjects: (oldIndex: number, newIndex: number) => void;
 }
 
-export function useDragAndDrop({ projects, reorderProjects }: UseDragAndDropProps) {
+export function useDragAndDrop({
+  projects,
+  reorderProjects,
+}: UseDragAndDropProps) {
   // Sensors for drag-and-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 5, // Small distance to start drag
       },
-    })
+    }),
   );
 
   // Handle drag end for reordering projects
@@ -31,7 +39,7 @@ export function useDragAndDrop({ projects, reorderProjects }: UseDragAndDropProp
         }
       }
     },
-    [projects, reorderProjects]
+    [projects, reorderProjects],
   );
 
   return {

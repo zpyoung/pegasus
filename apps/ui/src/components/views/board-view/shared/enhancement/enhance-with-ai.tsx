@@ -1,7 +1,11 @@
-import { useState } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,21 +13,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
-import { getElectronAPI } from '@/lib/electron';
-import { ModelOverrideTrigger, useModelOverride } from '@/components/shared';
+} from "@/components/ui/dropdown-menu";
+import { Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import { getElectronAPI } from "@/lib/electron";
+import { ModelOverrideTrigger, useModelOverride } from "@/components/shared";
 import {
   EnhancementMode,
   ENHANCEMENT_MODE_LABELS,
   REWRITE_MODES,
   ADDITIVE_MODES,
   isAdditiveMode,
-} from './enhancement-constants';
-import { useAppStore } from '@/store/app-store';
+} from "./enhancement-constants";
+import { useAppStore } from "@/store/app-store";
 
-const logger = createLogger('EnhanceWithAI');
+const logger = createLogger("EnhanceWithAI");
 
 interface EnhanceWithAIProps {
   /** Current text value to enhance */
@@ -62,14 +66,15 @@ export function EnhanceWithAI({
   className,
 }: EnhanceWithAIProps) {
   const [isEnhancing, setIsEnhancing] = useState(false);
-  const [enhancementMode, setEnhancementMode] = useState<EnhancementMode>('improve');
+  const [enhancementMode, setEnhancementMode] =
+    useState<EnhancementMode>("improve");
   const [enhanceOpen, setEnhanceOpen] = useState(false);
 
   // Get current project path for per-project Claude API profile
   const currentProjectPath = useAppStore((state) => state.currentProject?.path);
 
   // Enhancement model override
-  const enhancementOverride = useModelOverride({ phase: 'enhancementModel' });
+  const enhancementOverride = useModelOverride({ phase: "enhancementModel" });
 
   const handleEnhance = async () => {
     if (!value.trim() || isEnhancing || disabled) return;
@@ -82,7 +87,7 @@ export function EnhanceWithAI({
         enhancementMode,
         enhancementOverride.effectiveModel,
         enhancementOverride.effectiveModelEntry.thinkingLevel,
-        currentProjectPath
+        currentProjectPath,
       );
 
       if (result?.success && result.enhancedText) {
@@ -96,26 +101,34 @@ export function EnhanceWithAI({
         // Track in history if callback provided (includes original for restoration)
         onHistoryAdd?.({ mode: enhancementMode, originalText, enhancedText });
 
-        toast.success('Enhanced successfully!');
+        toast.success("Enhanced successfully!");
       } else {
-        toast.error(result?.error || 'Failed to enhance');
+        toast.error(result?.error || "Failed to enhance");
       }
     } catch (error) {
-      logger.error('Enhancement failed:', error);
-      toast.error('Failed to enhance');
+      logger.error("Enhancement failed:", error);
+      toast.error("Failed to enhance");
     } finally {
       setIsEnhancing(false);
     }
   };
 
   return (
-    <Collapsible open={enhanceOpen} onOpenChange={setEnhanceOpen} className={className}>
+    <Collapsible
+      open={enhanceOpen}
+      onOpenChange={setEnhanceOpen}
+      className={className}
+    >
       <CollapsibleTrigger asChild>
         <button
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full py-1"
           disabled={disabled}
         >
-          {enhanceOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {enhanceOpen ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
           <Sparkles className="w-4 h-4" />
           <span>Enhance with AI</span>
         </button>
@@ -124,7 +137,12 @@ export function EnhanceWithAI({
         <div className="flex flex-wrap items-center gap-2 pl-6">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled={disabled}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={disabled}
+              >
                 {ENHANCEMENT_MODE_LABELS[enhancementMode]}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
@@ -132,14 +150,20 @@ export function EnhanceWithAI({
             <DropdownMenuContent align="start">
               <DropdownMenuLabel>Rewrite</DropdownMenuLabel>
               {REWRITE_MODES.map((mode) => (
-                <DropdownMenuItem key={mode} onClick={() => setEnhancementMode(mode)}>
+                <DropdownMenuItem
+                  key={mode}
+                  onClick={() => setEnhancementMode(mode)}
+                >
                   {ENHANCEMENT_MODE_LABELS[mode]}
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Append Details</DropdownMenuLabel>
               {ADDITIVE_MODES.map((mode) => (
-                <DropdownMenuItem key={mode} onClick={() => setEnhancementMode(mode)}>
+                <DropdownMenuItem
+                  key={mode}
+                  onClick={() => setEnhancementMode(mode)}
+                >
                   {ENHANCEMENT_MODE_LABELS[mode]}
                 </DropdownMenuItem>
               ))}

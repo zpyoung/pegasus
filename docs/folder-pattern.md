@@ -125,11 +125,11 @@ Use `index.ts` files to create clean import paths:
 
 ```tsx
 // board-view/hooks/index.ts
-export { useBoardActions } from './use-board-actions';
-export { useBoardFeatures } from './use-board-features';
+export { useBoardActions } from "./use-board-actions";
+export { useBoardFeatures } from "./use-board-features";
 
 // Usage in board-view.tsx
-import { useBoardActions, useBoardFeatures } from './board-view/hooks';
+import { useBoardActions, useBoardFeatures } from "./board-view/hooks";
 ```
 
 ## When to Create a Subfolder
@@ -161,13 +161,17 @@ The `dialogs/` folder contains all dialog and modal components specific to a vie
 
 ```tsx
 // dialogs/index.ts
-export { AddFeatureDialog } from './add-feature-dialog';
-export { EditFeatureDialog } from './edit-feature-dialog';
-export { AgentOutputModal } from './agent-output-modal';
+export { AddFeatureDialog } from "./add-feature-dialog";
+export { EditFeatureDialog } from "./edit-feature-dialog";
+export { AgentOutputModal } from "./agent-output-modal";
 // ... etc
 
 // Usage in view entry point
-import { AddFeatureDialog, EditFeatureDialog, AgentOutputModal } from './board-view/dialogs';
+import {
+  AddFeatureDialog,
+  EditFeatureDialog,
+  AgentOutputModal,
+} from "./board-view/dialogs";
 ```
 
 ## Quick Reference

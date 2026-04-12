@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useCallback } from 'react';
-import { useCursorCliStatus } from '@/hooks/queries';
-import { useSetupStore } from '@/store/setup-store';
+import { useEffect, useMemo, useCallback } from "react";
+import { useCursorCliStatus } from "@/hooks/queries";
+import { useSetupStore } from "@/store/setup-store";
 
 export interface CursorStatus {
   installed: boolean;
@@ -37,7 +37,7 @@ export function useCursorStatus() {
         auth: status.authenticated
           ? {
               authenticated: true,
-              method: status.method || 'unknown',
+              method: status.method || "unknown",
             }
           : undefined,
       });

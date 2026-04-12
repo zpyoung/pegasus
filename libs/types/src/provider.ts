@@ -7,8 +7,8 @@ import type {
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   Credentials,
-} from './settings.js';
-import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
+} from "./settings.js";
+import type { CodexSandboxMode, CodexApprovalPolicy } from "./codex.js";
 
 /**
  * Reasoning effort levels for Codex/OpenAI models
@@ -21,7 +21,13 @@ import type { CodexSandboxMode, CodexApprovalPolicy } from './codex.js';
  * - 'high': Maximizes reasoning depth for critical tasks
  * - 'xhigh': Highest level, supported by gpt-5.1-codex-max and newer
  */
-export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+export type ReasoningEffort =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh";
 
 /**
  * Default timeout in milliseconds for provider operations.
@@ -71,9 +77,9 @@ export const REASONING_TIMEOUT_MULTIPLIERS: Record<ReasoningEffort, number> = {
  */
 export function calculateReasoningTimeout(
   reasoningEffort?: ReasoningEffort,
-  baseTimeoutMs: number = DEFAULT_TIMEOUT_MS
+  baseTimeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): number {
-  const effort = reasoningEffort ?? 'none';
+  const effort = reasoningEffort ?? "none";
   const multiplier = REASONING_TIMEOUT_MULTIPLIERS[effort] ?? 1.0;
   return Math.round(baseTimeoutMs * multiplier);
 }
@@ -91,7 +97,7 @@ export interface ProviderConfig {
  * Message in conversation history
  */
 export interface ConversationMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string | Array<{ type: string; text?: string; source?: object }>;
 }
 
@@ -99,8 +105,8 @@ export interface ConversationMessage {
  * System prompt preset configuration for CLAUDE.md auto-loading
  */
 export interface SystemPromptPreset {
-  type: 'preset';
-  preset: 'claude_code';
+  type: "preset";
+  preset: "claude_code";
   append?: string;
 }
 
@@ -108,7 +114,10 @@ export interface SystemPromptPreset {
  * MCP server configuration types for SDK options
  * Matches the Claude Agent SDK's McpServerConfig types
  */
-export type McpServerConfig = McpStdioServerConfig | McpSSEServerConfig | McpHttpServerConfig;
+export type McpServerConfig =
+  | McpStdioServerConfig
+  | McpSSEServerConfig
+  | McpHttpServerConfig;
 
 /**
  * Stdio-based MCP server (subprocess)
@@ -116,7 +125,7 @@ export type McpServerConfig = McpStdioServerConfig | McpSSEServerConfig | McpHtt
  * and allow simpler configs like { command: "node", args: ["server.js"] }
  */
 export interface McpStdioServerConfig {
-  type?: 'stdio';
+  type?: "stdio";
   command: string;
   args?: string[];
   env?: Record<string, string>;
@@ -124,14 +133,14 @@ export interface McpStdioServerConfig {
 
 /** SSE-based MCP server */
 export interface McpSSEServerConfig {
-  type: 'sse';
+  type: "sse";
   url: string;
   headers?: Record<string, string>;
 }
 
 /** HTTP-based MCP server */
 export interface McpHttpServerConfig {
-  type: 'http';
+  type: "http";
   url: string;
   headers?: Record<string, string>;
 }
@@ -147,7 +156,7 @@ export interface AgentDefinition {
   /** Restricted tool list (if omitted, inherits all tools) */
   tools?: string[];
   /** Model override for this agent */
-  model?: 'sonnet' | 'opus' | 'haiku' | 'inherit';
+  model?: "sonnet" | "opus" | "haiku" | "inherit";
 }
 
 /**
@@ -178,7 +187,7 @@ export interface ExecuteOptions {
   abortController?: AbortController;
   conversationHistory?: ConversationMessage[]; // Previous messages for context
   sdkSessionId?: string; // Claude SDK session ID for resuming conversations
-  settingSources?: Array<'user' | 'project' | 'local'>; // Sources for CLAUDE.md loading
+  settingSources?: Array<"user" | "project" | "local">; // Sources for CLAUDE.md loading
   /**
    * If true, the provider should run in read-only mode (no file modifications).
    * For Cursor CLI, this omits the --force flag, making it suggest-only.
@@ -218,7 +227,7 @@ export interface ExecuteOptions {
     threadId?: string;
   };
   outputFormat?: {
-    type: 'json_schema';
+    type: "json_schema";
     schema: Record<string, unknown>;
   };
   /**
@@ -246,7 +255,7 @@ export interface ExecuteOptions {
  * Content block in a provider message (matches Claude SDK format)
  */
 export interface ContentBlock {
-  type: 'text' | 'tool_use' | 'thinking' | 'tool_result';
+  type: "text" | "tool_use" | "thinking" | "tool_result";
   text?: string;
   thinking?: string;
   name?: string;
@@ -259,17 +268,17 @@ export interface ContentBlock {
  * Message returned by a provider (matches Claude SDK streaming format)
  */
 export interface ProviderMessage {
-  type: 'assistant' | 'user' | 'error' | 'result';
+  type: "assistant" | "user" | "error" | "result";
   subtype?:
-    | 'success'
-    | 'error'
-    | 'error_max_turns'
-    | 'error_max_structured_output_retries'
-    | 'error_during_execution'
-    | 'error_max_budget_usd';
+    | "success"
+    | "error"
+    | "error_max_turns"
+    | "error_max_structured_output_retries"
+    | "error_during_execution"
+    | "error_max_budget_usd";
   session_id?: string;
   message?: {
-    role: 'user' | 'assistant';
+    role: "user" | "assistant";
     content: ContentBlock[];
   };
   result?: string;
@@ -294,7 +303,7 @@ export interface InstallationStatus {
    * - brew: Installed via Homebrew
    * - sdk: Using SDK library
    */
-  method?: 'cli' | 'wsl' | 'npm' | 'brew' | 'sdk';
+  method?: "cli" | "wsl" | "npm" | "brew" | "sdk";
   hasApiKey?: boolean;
   hasOAuthToken?: boolean;
   authenticated?: boolean;
@@ -323,7 +332,7 @@ export interface ModelDefinition {
   maxOutputTokens?: number;
   supportsVision?: boolean;
   supportsTools?: boolean;
-  tier?: 'basic' | 'standard' | 'premium';
+  tier?: "basic" | "standard" | "premium";
   default?: boolean;
   hasReasoning?: boolean;
 }

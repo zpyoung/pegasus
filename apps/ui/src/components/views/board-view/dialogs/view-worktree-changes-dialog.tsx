@@ -4,9 +4,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { FileText } from 'lucide-react';
-import { GitDiffPanel } from '@/components/ui/git-diff-panel';
+} from "@/components/ui/dialog";
+import { FileText } from "lucide-react";
+import { GitDiffPanel } from "@/components/ui/git-diff-panel";
 
 interface WorktreeInfo {
   path: string;
@@ -40,14 +40,18 @@ export function ViewWorktreeChangesDialog({
             View Changes
           </DialogTitle>
           <DialogDescription>
-            Changes in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
-            {worktree.changedFilesCount !== undefined && worktree.changedFilesCount > 0 && (
-              <span className="ml-1">
-                ({worktree.changedFilesCount} file
-                {worktree.changedFilesCount > 1 ? 's' : ''} changed)
-              </span>
-            )}
+            Changes in the{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>{" "}
+            worktree.
+            {worktree.changedFilesCount !== undefined &&
+              worktree.changedFilesCount > 0 && (
+                <span className="ml-1">
+                  ({worktree.changedFilesCount} file
+                  {worktree.changedFilesCount > 1 ? "s" : ""} changed)
+                </span>
+              )}
             <span className="ml-1 text-xs text-muted-foreground">
               — Use the Stage/Unstage buttons to prepare files for commit.
             </span>

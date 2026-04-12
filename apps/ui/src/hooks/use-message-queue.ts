@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import type { ImageAttachment, TextFileAttachment } from "@/store/app-store";
 
-const logger = createLogger('MessageQueue');
+const logger = createLogger("MessageQueue");
 
 export interface QueuedMessage {
   id: string;
@@ -22,7 +22,7 @@ interface UseMessageQueueResult {
   addToQueue: (
     content: string,
     images?: ImageAttachment[],
-    textFiles?: TextFileAttachment[]
+    textFiles?: TextFileAttachment[],
   ) => void;
   clearQueue: () => void;
   removeFromQueue: (messageId: string) => void;
@@ -35,12 +35,18 @@ interface UseMessageQueueResult {
  * This allows users to queue up multiple messages while one is being processed,
  * improving the chat experience by removing blocking behavior.
  */
-export function useMessageQueue({ onProcessNext }: UseMessageQueueOptions): UseMessageQueueResult {
+export function useMessageQueue({
+  onProcessNext,
+}: UseMessageQueueOptions): UseMessageQueueResult {
   const [queuedMessages, setQueuedMessages] = useState<QueuedMessage[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
   const addToQueue = useCallback(
-    (content: string, images?: ImageAttachment[], textFiles?: TextFileAttachment[]) => {
+    (
+      content: string,
+      images?: ImageAttachment[],
+      textFiles?: TextFileAttachment[],
+    ) => {
       const queuedMessage: QueuedMessage = {
         id: `queued-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         content: content.trim(),
@@ -51,7 +57,7 @@ export function useMessageQueue({ onProcessNext }: UseMessageQueueOptions): UseM
 
       setQueuedMessages((prev) => [...prev, queuedMessage]);
     },
-    []
+    [],
   );
 
   const removeFromQueue = useCallback((messageId: string) => {
@@ -75,7 +81,7 @@ export function useMessageQueue({ onProcessNext }: UseMessageQueueOptions): UseM
       // Remove the processed message from queue
       setQueuedMessages((prev) => prev.slice(1));
     } catch (error) {
-      logger.error('Error processing queued message:', error);
+      logger.error("Error processing queued message:", error);
       // Keep the message in queue for retry or manual removal
     } finally {
       setIsProcessingQueue(false);

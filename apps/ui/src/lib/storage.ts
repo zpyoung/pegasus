@@ -10,7 +10,7 @@
  * Check if localStorage is available in the current environment
  */
 function isStorageAvailable(): boolean {
-  return typeof window !== 'undefined' && window.localStorage !== undefined;
+  return typeof window !== "undefined" && window.localStorage !== undefined;
 }
 
 /**

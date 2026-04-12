@@ -9,19 +9,23 @@
  * Per-project operations should use AutoModeServiceFacade instead.
  */
 
-import path from 'path';
-import { createLogger } from '@pegasus/utils';
-import type { EventEmitter } from '../../lib/events.js';
-import { TypedEventBus } from '../typed-event-bus.js';
-import { ConcurrencyManager } from '../concurrency-manager.js';
-import { WorktreeResolver } from '../worktree-resolver.js';
-import { AutoLoopCoordinator } from '../auto-loop-coordinator.js';
-import { FeatureStateManager } from '../feature-state-manager.js';
-import { FeatureLoader } from '../feature-loader.js';
-import type { SettingsService } from '../settings-service.js';
-import type { SharedServices, AutoModeStatus, RunningAgentInfo } from './types.js';
+import path from "path";
+import { createLogger } from "@pegasus/utils";
+import type { EventEmitter } from "../../lib/events.js";
+import { TypedEventBus } from "../typed-event-bus.js";
+import { ConcurrencyManager } from "../concurrency-manager.js";
+import { WorktreeResolver } from "../worktree-resolver.js";
+import { AutoLoopCoordinator } from "../auto-loop-coordinator.js";
+import { FeatureStateManager } from "../feature-state-manager.js";
+import { FeatureLoader } from "../feature-loader.js";
+import type { SettingsService } from "../settings-service.js";
+import type {
+  SharedServices,
+  AutoModeStatus,
+  RunningAgentInfo,
+} from "./types.js";
 
-const logger = createLogger('GlobalAutoModeService');
+const logger = createLogger("GlobalAutoModeService");
 
 /**
  * GlobalAutoModeService provides global operations for auto-mode.
@@ -39,13 +43,13 @@ export class GlobalAutoModeService {
   constructor(
     events: EventEmitter,
     settingsService: SettingsService | null,
-    featureLoader: FeatureLoader = new FeatureLoader()
+    featureLoader: FeatureLoader = new FeatureLoader(),
   ) {
     this.featureLoader = featureLoader;
     this.eventBus = new TypedEventBus(events);
     this.worktreeResolver = new WorktreeResolver();
     this.concurrencyManager = new ConcurrencyManager((p) =>
-      this.worktreeResolver.getCurrentBranch(p)
+      this.worktreeResolver.getCurrentBranch(p),
     );
     this.featureStateManager = new FeatureStateManager(events, featureLoader);
 
@@ -60,8 +64,8 @@ export class GlobalAutoModeService {
       // executeFeatureFn - throws because facades must use their own coordinator for execution
       async () => {
         throw new Error(
-          'executeFeatureFn not available in GlobalAutoModeService. ' +
-            'Facades must create their own AutoLoopCoordinator for execution.'
+          "executeFeatureFn not available in GlobalAutoModeService. " +
+            "Facades must create their own AutoLoopCoordinator for execution.",
         );
       },
       // getBacklogFeaturesFn
@@ -75,10 +79,11 @@ export class GlobalAutoModeService {
         }
         return features.filter(
           (f) =>
-            (f.status === 'backlog' || f.status === 'ready') &&
+            (f.status === "backlog" || f.status === "ready") &&
             (branchName === null
-              ? !f.branchName || (primaryBranch && f.branchName === primaryBranch)
-              : f.branchName === branchName)
+              ? !f.branchName ||
+                (primaryBranch && f.branchName === primaryBranch)
+              : f.branchName === branchName),
         );
       },
       // saveExecutionStateFn - placeholder
@@ -89,11 +94,11 @@ export class GlobalAutoModeService {
       (pPath) => this.featureStateManager.resetStuckFeatures(pPath),
       // isFeatureDoneFn
       (feature) =>
-        feature.status === 'completed' ||
-        feature.status === 'verified' ||
-        feature.status === 'waiting_approval',
+        feature.status === "completed" ||
+        feature.status === "verified" ||
+        feature.status === "waiting_approval",
       // isFeatureRunningFn
-      (featureId) => this.concurrencyManager.isRunning(featureId)
+      (featureId) => this.concurrencyManager.isRunning(featureId),
     );
   }
 
@@ -136,7 +141,10 @@ export class GlobalAutoModeService {
   /**
    * Get all active auto loop worktrees
    */
-  getActiveAutoLoopWorktrees(): Array<{ projectPath: string; branchName: string | null }> {
+  getActiveAutoLoopWorktrees(): Array<{
+    projectPath: string;
+    branchName: string | null;
+  }> {
     return this.autoLoopCoordinator.getActiveWorktrees();
   }
 
@@ -155,7 +163,10 @@ export class GlobalAutoModeService {
         let branchName: string | undefined;
 
         try {
-          const feature = await this.featureLoader.get(rf.projectPath, rf.featureId);
+          const feature = await this.featureLoader.get(
+            rf.projectPath,
+            rf.featureId,
+          );
           if (feature) {
             title = feature.title;
             description = feature.description;
@@ -176,7 +187,7 @@ export class GlobalAutoModeService {
           description,
           branchName,
         };
-      })
+      }),
     );
     return agents;
   }
@@ -195,12 +206,16 @@ export class GlobalAutoModeService {
     const allRunning = this.concurrencyManager.getAllRunning();
 
     for (const rf of allRunning) {
-      await this.featureStateManager.markFeatureInterrupted(rf.projectPath, rf.featureId, reason);
+      await this.featureStateManager.markFeatureInterrupted(
+        rf.projectPath,
+        rf.featureId,
+        reason,
+      );
     }
 
     if (allRunning.length > 0) {
       logger.info(
-        `Marked ${allRunning.length} running feature(s) as interrupted: ${reason || 'no reason provided'}`
+        `Marked ${allRunning.length} running feature(s) as interrupted: ${reason || "no reason provided"}`,
       );
     }
   }

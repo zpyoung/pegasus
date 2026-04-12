@@ -1,6 +1,12 @@
 // @ts-nocheck - responsive breakpoint logic with layout state calculations
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { useAppStore } from '@/store/app-store';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react";
+import { useAppStore } from "@/store/app-store";
 
 export interface ResponsiveKanbanConfig {
   columnWidth: number;
@@ -48,7 +54,7 @@ export interface UseResponsiveKanbanResult {
  */
 export function useResponsiveKanban(
   columnCount: number = 4,
-  config: Partial<ResponsiveKanbanConfig> = {}
+  config: Partial<ResponsiveKanbanConfig> = {},
 ): UseResponsiveKanbanResult {
   const { columnMinWidth, columnMaxWidth, gap, padding } = {
     ...DEFAULT_CONFIG,
@@ -61,7 +67,7 @@ export function useResponsiveKanban(
 
   const calculateColumnWidth = useCallback(
     (containerWidth?: number) => {
-      if (typeof window === 'undefined') {
+      if (typeof window === "undefined") {
         return DEFAULT_CONFIG.columnWidth;
       }
 
@@ -69,7 +75,9 @@ export function useResponsiveKanban(
       // The flex layout already accounts for sidebar width, so we use the container's actual width
       let width = containerWidth;
       if (width === undefined) {
-        const boardContainer = document.querySelector('[data-testid="board-view"]')?.parentElement;
+        const boardContainer = document.querySelector(
+          '[data-testid="board-view"]',
+        )?.parentElement;
         width = boardContainer ? boardContainer.clientWidth : window.innerWidth;
       }
 
@@ -86,19 +94,24 @@ export function useResponsiveKanban(
       let idealWidth = Math.floor(widthForColumns / columnCount);
 
       // Clamp to min/max bounds
-      idealWidth = Math.max(columnMinWidth, Math.min(columnMaxWidth, idealWidth));
+      idealWidth = Math.max(
+        columnMinWidth,
+        Math.min(columnMaxWidth, idealWidth),
+      );
 
       return idealWidth;
     },
-    [columnCount, columnMinWidth, columnMaxWidth, gap, padding]
+    [columnCount, columnMinWidth, columnMaxWidth, gap, padding],
   );
 
-  const [columnWidth, setColumnWidth] = useState<number>(() => calculateColumnWidth());
+  const [columnWidth, setColumnWidth] = useState<number>(() =>
+    calculateColumnWidth(),
+  );
 
   // Use useLayoutEffect to calculate width synchronously before paint
   // This prevents the "bounce" effect when navigating to the kanban view
   useLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const updateWidth = () => {
       const newWidth = calculateColumnWidth();
@@ -112,7 +125,7 @@ export function useResponsiveKanban(
 
   // Set up ResizeObserver for ongoing resize handling
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const updateWidth = () => {
       const newWidth = calculateColumnWidth();
@@ -132,7 +145,7 @@ export function useResponsiveKanban(
     const boardView = document.querySelector('[data-testid="board-view"]');
     const container = boardView?.parentElement;
 
-    if (container && typeof ResizeObserver !== 'undefined') {
+    if (container && typeof ResizeObserver !== "undefined") {
       resizeObserver = new ResizeObserver((entries) => {
         // Use the observed container's width for calculation
         const entry = entries[0];
@@ -146,13 +159,13 @@ export function useResponsiveKanban(
     }
 
     // Fallback to window resize event
-    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener("resize", scheduleUpdate);
 
     return () => {
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
@@ -177,10 +190,10 @@ export function useResponsiveKanban(
 
   // Container style for horizontal scrolling support
   const containerStyle: React.CSSProperties = {
-    display: 'flex',
+    display: "flex",
     gap: `${gap}px`,
-    width: 'max-content', // Expand to fit all columns, enabling horizontal scroll when needed
-    minHeight: '100%', // Ensure full height
+    width: "max-content", // Expand to fit all columns, enabling horizontal scroll when needed
+    minHeight: "100%", // Ensure full height
   };
 
   return {

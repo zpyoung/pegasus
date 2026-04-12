@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import type { PromptCustomization, CustomPrompt } from '@pegasus/types';
+import type { LucideIcon } from "lucide-react";
+import type { PromptCustomization, CustomPrompt } from "@pegasus/types";
 
 /** Props for the PromptField component */
 export interface PromptFieldProps {
@@ -21,7 +21,7 @@ export interface PromptFieldConfig {
 }
 
 /** Banner type for tabs */
-export type BannerType = 'info' | 'warning';
+export type BannerType = "info" | "warning";
 
 /** Configuration for info/warning banners */
 export interface BannerConfig {

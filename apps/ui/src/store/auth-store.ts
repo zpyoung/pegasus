@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface AuthState {
   /** Whether we've attempted to determine auth status for this page load */
@@ -33,13 +33,17 @@ interface AuthActions {
  */
 function getInitialAuthState(): AuthState {
   try {
-    const raw = localStorage.getItem('pegasus-settings-cache');
+    const raw = localStorage.getItem("pegasus-settings-cache");
     if (raw) {
       const parsed = JSON.parse(raw) as {
         projects?: unknown[];
         setupComplete?: boolean;
       };
-      if (parsed?.projects && Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+      if (
+        parsed?.projects &&
+        Array.isArray(parsed.projects) &&
+        parsed.projects.length > 0
+      ) {
         // Returning user with cached settings — optimistically mark as authenticated.
         // Only mark settingsLoaded=true when setupComplete is confirmed in cache,
         // preventing premature /setup redirects before the setup store is hydrated.
@@ -72,5 +76,6 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   setAuthState: (state) => {
     set({ ...state });
   },
-  resetAuth: () => set({ authChecked: false, isAuthenticated: false, settingsLoaded: false }),
+  resetAuth: () =>
+    set({ authChecked: false, isAuthenticated: false, settingsLoaded: false }),
 }));

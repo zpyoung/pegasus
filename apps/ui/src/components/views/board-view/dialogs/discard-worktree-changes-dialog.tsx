@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Undo2,
   FilePlus,
@@ -20,15 +20,15 @@ import {
   ChevronDown,
   ChevronRight,
   AlertTriangle,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { TruncatedFilePath } from '@/components/ui/truncated-file-path';
-import type { FileStatus } from '@/types/electron';
-import { parseDiff, type ParsedFileDiff } from '@/lib/diff-utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { TruncatedFilePath } from "@/components/ui/truncated-file-path";
+import type { FileStatus } from "@/types/electron";
+import { parseDiff, type ParsedFileDiff } from "@/lib/diff-utils";
 
 interface WorktreeInfo {
   path: string;
@@ -47,80 +47,82 @@ interface DiscardWorktreeChangesDialogProps {
 
 const getFileIcon = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
+    case "A":
+    case "?":
       return <FilePlus className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />;
-    case 'D':
+    case "D":
       return <FileX className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />;
-    case 'M':
-    case 'U':
+    case "M":
+    case "U":
       return <FilePen className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />;
-    case 'R':
-    case 'C':
+    case "R":
+    case "C":
       return <File className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />;
     default:
-      return <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />;
+      return (
+        <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+      );
   }
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'A':
-      return 'Added';
-    case '?':
-      return 'Untracked';
-    case 'D':
-      return 'Deleted';
-    case 'M':
-      return 'Modified';
-    case 'U':
-      return 'Updated';
-    case 'R':
-      return 'Renamed';
-    case 'C':
-      return 'Copied';
+    case "A":
+      return "Added";
+    case "?":
+      return "Untracked";
+    case "D":
+      return "Deleted";
+    case "M":
+      return "Modified";
+    case "U":
+      return "Updated";
+    case "R":
+      return "Renamed";
+    case "C":
+      return "Copied";
     default:
-      return 'Changed';
+      return "Changed";
   }
 };
 
 const getStatusBadgeColor = (status: string) => {
   switch (status) {
-    case 'A':
-    case '?':
-      return 'bg-green-500/20 text-green-400 border-green-500/30';
-    case 'D':
-      return 'bg-red-500/20 text-red-400 border-red-500/30';
-    case 'M':
-    case 'U':
-      return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    case 'R':
-    case 'C':
-      return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    case "A":
+    case "?":
+      return "bg-green-500/20 text-green-400 border-green-500/30";
+    case "D":
+      return "bg-red-500/20 text-red-400 border-red-500/30";
+    case "M":
+    case "U":
+      return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+    case "R":
+    case "C":
+      return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     default:
-      return 'bg-muted text-muted-foreground border-border';
+      return "bg-muted text-muted-foreground border-border";
   }
 };
 
 const bgClass = {
-  context: 'bg-transparent',
-  addition: 'bg-green-500/10',
-  deletion: 'bg-red-500/10',
-  header: 'bg-blue-500/10',
+  context: "bg-transparent",
+  addition: "bg-green-500/10",
+  deletion: "bg-red-500/10",
+  header: "bg-blue-500/10",
 };
 
 const textClass = {
-  context: 'text-foreground-secondary',
-  addition: 'text-green-400',
-  deletion: 'text-red-400',
-  header: 'text-blue-400',
+  context: "text-foreground-secondary",
+  addition: "text-green-400",
+  deletion: "text-red-400",
+  header: "text-blue-400",
 };
 
 const prefix = {
-  context: ' ',
-  addition: '+',
-  deletion: '-',
-  header: '',
+  context: " ",
+  addition: "+",
+  deletion: "-",
+  header: "",
 };
 
 function DiffLine({
@@ -128,31 +130,47 @@ function DiffLine({
   content,
   lineNumber,
 }: {
-  type: 'context' | 'addition' | 'deletion' | 'header';
+  type: "context" | "addition" | "deletion" | "header";
   content: string;
   lineNumber?: { old?: number; new?: number };
 }) {
-  if (type === 'header') {
+  if (type === "header") {
     return (
-      <div className={cn('px-2 py-1 font-mono text-xs', bgClass[type], textClass[type])}>
+      <div
+        className={cn(
+          "px-2 py-1 font-mono text-xs",
+          bgClass[type],
+          textClass[type],
+        )}
+      >
         {content}
       </div>
     );
   }
 
   return (
-    <div className={cn('flex font-mono text-xs', bgClass[type])}>
+    <div className={cn("flex font-mono text-xs", bgClass[type])}>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.old ?? ''}
+        {lineNumber?.old ?? ""}
       </span>
       <span className="w-10 flex-shrink-0 text-right pr-1.5 text-muted-foreground select-none border-r border-border-glass text-[10px]">
-        {lineNumber?.new ?? ''}
+        {lineNumber?.new ?? ""}
       </span>
-      <span className={cn('w-4 flex-shrink-0 text-center select-none', textClass[type])}>
+      <span
+        className={cn(
+          "w-4 flex-shrink-0 text-center select-none",
+          textClass[type],
+        )}
+      >
         {prefix[type]}
       </span>
-      <span className={cn('flex-1 px-1.5 whitespace-pre-wrap break-all', textClass[type])}>
-        {content || '\u00A0'}
+      <span
+        className={cn(
+          "flex-1 px-1.5 whitespace-pre-wrap break-all",
+          textClass[type],
+        )}
+      >
+        {content || "\u00A0"}
       </span>
     </div>
   );
@@ -169,7 +187,7 @@ export function DiscardWorktreeChangesDialog({
 
   // File selection state
   const [files, setFiles] = useState<FileStatus[]>([]);
-  const [diffContent, setDiffContent] = useState('');
+  const [diffContent, setDiffContent] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [isLoadingDiffs, setIsLoadingDiffs] = useState(false);
@@ -191,7 +209,7 @@ export function DiscardWorktreeChangesDialog({
     if (open && worktree) {
       setIsLoadingDiffs(true);
       setFiles([]);
-      setDiffContent('');
+      setDiffContent("");
       setSelectedFiles(new Set());
       setExpandedFile(null);
       setError(null);
@@ -207,17 +225,17 @@ export function DiscardWorktreeChangesDialog({
               const fileList = result.files ?? [];
               if (!cancelled) setError(null);
               if (!cancelled) setFiles(fileList);
-              if (!cancelled) setDiffContent(result.diff ?? '');
+              if (!cancelled) setDiffContent(result.diff ?? "");
               if (!cancelled) setSelectedFiles(new Set());
             } else {
-              if (!cancelled) setError(result.error || 'Failed to fetch diffs');
+              if (!cancelled) setError(result.error || "Failed to fetch diffs");
             }
           } else {
-            if (!cancelled) setError('Diff API unavailable');
+            if (!cancelled) setError("Diff API unavailable");
           }
         } catch (err) {
           if (cancelled) return;
-          console.warn('Failed to load diffs for discard dialog:', err);
+          console.warn("Failed to load diffs for discard dialog:", err);
           setError(err instanceof Error ? err.message : String(err));
         } finally {
           if (!cancelled) setIsLoadingDiffs(false);
@@ -268,28 +286,37 @@ export function DiscardWorktreeChangesDialog({
 
       // Pass selected files if not all files are selected
       const filesToDiscard =
-        selectedFiles.size === files.length ? undefined : Array.from(selectedFiles);
+        selectedFiles.size === files.length
+          ? undefined
+          : Array.from(selectedFiles);
 
-      const result = await api.worktree.discardChanges(worktree.path, filesToDiscard);
+      const result = await api.worktree.discardChanges(
+        worktree.path,
+        filesToDiscard,
+      );
 
       if (result.success && result.result) {
         if (result.result.discarded) {
-          const fileCount = filesToDiscard ? filesToDiscard.length : selectedFiles.size;
-          toast.success('Changes discarded', {
-            description: `Discarded ${fileCount} ${fileCount === 1 ? 'file' : 'files'} in ${worktree.branch}`,
+          const fileCount = filesToDiscard
+            ? filesToDiscard.length
+            : selectedFiles.size;
+          toast.success("Changes discarded", {
+            description: `Discarded ${fileCount} ${fileCount === 1 ? "file" : "files"} in ${worktree.branch}`,
           });
           onDiscarded();
           onOpenChange(false);
         } else {
-          toast.info('No changes to discard', {
+          toast.info("No changes to discard", {
             description: result.result.message,
           });
         }
       } else {
-        setError(result.error || 'Failed to discard changes');
+        setError(result.error || "Failed to discard changes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to discard changes');
+      setError(
+        err instanceof Error ? err.message : "Failed to discard changes",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -308,9 +335,11 @@ export function DiscardWorktreeChangesDialog({
             Discard Changes
           </DialogTitle>
           <DialogDescription>
-            Select which changes to discard in the{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code> worktree.
-            This action cannot be undone.
+            Select which changes to discard in the{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>{" "}
+            worktree. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -334,7 +363,7 @@ export function DiscardWorktreeChangesDialog({
                   onClick={handleToggleAll}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {allSelected ? 'Deselect all' : 'Select all'}
+                  {allSelected ? "Deselect all" : "Select all"}
                 </button>
               )}
             </div>
@@ -356,25 +385,34 @@ export function DiscardWorktreeChangesDialog({
                   const fileDiff = diffsByFile.get(file.path);
                   const additions = fileDiff
                     ? fileDiff.hunks.reduce(
-                        (acc, hunk) => acc + hunk.lines.filter((l) => l.type === 'addition').length,
-                        0
+                        (acc, hunk) =>
+                          acc +
+                          hunk.lines.filter((l) => l.type === "addition")
+                            .length,
+                        0,
                       )
                     : 0;
                   const deletions = fileDiff
                     ? fileDiff.hunks.reduce(
-                        (acc, hunk) => acc + hunk.lines.filter((l) => l.type === 'deletion').length,
-                        0
+                        (acc, hunk) =>
+                          acc +
+                          hunk.lines.filter((l) => l.type === "deletion")
+                            .length,
+                        0,
                       )
                     : 0;
 
-                  const fileButtonId = `file-btn-${file.path.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                  const fileButtonId = `file-btn-${file.path.replace(/[^a-zA-Z0-9]/g, "-")}`;
 
                   return (
-                    <div key={file.path} className="border-b border-border last:border-b-0">
+                    <div
+                      key={file.path}
+                      className="border-b border-border last:border-b-0"
+                    >
                       <div
                         className={cn(
-                          'flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors group',
-                          isExpanded && 'bg-accent/30'
+                          "flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 transition-colors group",
+                          isExpanded && "bg-accent/30",
                         )}
                       >
                         {/* Checkbox */}
@@ -405,8 +443,8 @@ export function DiscardWorktreeChangesDialog({
                           />
                           <span
                             className={cn(
-                              'text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0',
-                              getStatusBadgeColor(file.status)
+                              "text-[10px] px-1.5 py-0.5 rounded border font-medium flex-shrink-0",
+                              getStatusBadgeColor(file.status),
                             )}
                           >
                             {getStatusLabel(file.status)}
@@ -446,9 +484,9 @@ export function DiscardWorktreeChangesDialog({
                       )}
                       {isExpanded && !fileDiff && (
                         <div className="px-4 py-3 text-xs text-muted-foreground bg-background border-t border-border">
-                          {file.status === '?' ? (
+                          {file.status === "?" ? (
                             <span>New file - diff preview not available</span>
-                          ) : file.status === 'D' ? (
+                          ) : file.status === "D" ? (
                             <span>File deleted</span>
                           ) : (
                             <span>Diff content not available</span>
@@ -466,9 +504,9 @@ export function DiscardWorktreeChangesDialog({
           <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <p className="text-xs text-destructive">
-              This will permanently discard the selected changes. Staged changes will be unstaged,
-              modifications to tracked files will be reverted, and untracked files will be deleted.
-              This action cannot be undone.
+              This will permanently discard the selected changes. Staged changes
+              will be unstaged, modifications to tracked files will be reverted,
+              and untracked files will be deleted. This action cannot be undone.
             </p>
           </div>
 
@@ -476,7 +514,11 @@ export function DiscardWorktreeChangesDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
           <Button
@@ -494,10 +536,10 @@ export function DiscardWorktreeChangesDialog({
                 <Undo2 className="w-4 h-4 mr-2" />
                 Discard
                 {selectedFiles.size > 0 && selectedFiles.size < files.length
-                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
+                  ? ` (${selectedFiles.size} file${selectedFiles.size > 1 ? "s" : ""})`
                   : selectedFiles.size > 0
-                    ? ` All (${selectedFiles.size} file${selectedFiles.size > 1 ? 's' : ''})`
-                    : ''}
+                    ? ` All (${selectedFiles.size} file${selectedFiles.size > 1 ? "s" : ""})`
+                    : ""}
               </>
             )}
           </Button>

@@ -1,15 +1,25 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import { OpencodeCliStatus, OpencodeCliStatusSkeleton } from '../cli-status/opencode-cli-status';
-import { OpencodeModelConfiguration } from './opencode-model-configuration';
-import { ProviderToggle } from './provider-toggle';
-import { useOpencodeCliStatus, useOpencodeProviders, useOpencodeModels } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import type { CliStatus as SharedCliStatus } from '../shared/types';
-import type { OpencodeModelId } from '@pegasus/types';
-import type { OpencodeAuthStatus, OpenCodeProviderInfo } from '../cli-status/opencode-cli-status';
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import {
+  OpencodeCliStatus,
+  OpencodeCliStatusSkeleton,
+} from "../cli-status/opencode-cli-status";
+import { OpencodeModelConfiguration } from "./opencode-model-configuration";
+import { ProviderToggle } from "./provider-toggle";
+import {
+  useOpencodeCliStatus,
+  useOpencodeProviders,
+  useOpencodeModels,
+} from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import type { CliStatus as SharedCliStatus } from "../shared/types";
+import type { OpencodeModelId } from "@pegasus/types";
+import type {
+  OpencodeAuthStatus,
+  OpenCodeProviderInfo,
+} from "../cli-status/opencode-cli-status";
 
 export function OpencodeSettingsTab() {
   const queryClient = useQueryClient();
@@ -34,9 +44,11 @@ export function OpencodeSettingsTab() {
 
   const isCliInstalled = cliStatusData?.installed ?? false;
 
-  const { data: providersData = [], isFetching: isFetchingProviders } = useOpencodeProviders();
+  const { data: providersData = [], isFetching: isFetchingProviders } =
+    useOpencodeProviders();
 
-  const { data: modelsData = [], isFetching: isFetchingModels } = useOpencodeModels();
+  const { data: modelsData = [], isFetching: isFetchingModels } =
+    useOpencodeModels();
 
   // Sync React Query opencode models data to Zustand store so that the model
   // selector dropdown (PhaseModelSelector) reflects newly enabled models without
@@ -53,7 +65,7 @@ export function OpencodeSettingsTab() {
     if (!cliStatusData) return null;
     return {
       success: cliStatusData.success ?? false,
-      status: cliStatusData.installed ? 'installed' : 'not_installed',
+      status: cliStatusData.installed ? "installed" : "not_installed",
       method: cliStatusData.auth?.method,
       version: cliStatusData.version,
       path: cliStatusData.path,
@@ -66,10 +78,12 @@ export function OpencodeSettingsTab() {
   const authStatus = useMemo((): OpencodeAuthStatus | null => {
     if (!cliStatusData?.auth) return null;
     // Cast auth to include optional error field for type compatibility
-    const auth = cliStatusData.auth as typeof cliStatusData.auth & { error?: string };
+    const auth = cliStatusData.auth as typeof cliStatusData.auth & {
+      error?: string;
+    };
     return {
       authenticated: auth.authenticated,
-      method: (auth.method as OpencodeAuthStatus['method']) || 'none',
+      method: (auth.method as OpencodeAuthStatus["method"]) || "none",
       hasApiKey: auth.hasApiKey,
       hasEnvApiKey: auth.hasEnvApiKey,
       hasOAuthToken: auth.hasOAuthToken,
@@ -81,11 +95,13 @@ export function OpencodeSettingsTab() {
   const handleRefreshOpencodeCli = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: queryKeys.cli.opencode() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.models.opencodeProviders() }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.models.opencodeProviders(),
+      }),
       queryClient.invalidateQueries({ queryKey: queryKeys.models.opencode() }),
     ]);
     await refetchCliStatus();
-    toast.success('OpenCode CLI refreshed');
+    toast.success("OpenCode CLI refreshed");
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -93,14 +109,14 @@ export function OpencodeSettingsTab() {
       setIsSaving(true);
       try {
         setOpencodeDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success("Default model updated");
       } catch {
-        toast.error('Failed to update default model');
+        toast.error("Failed to update default model");
       } finally {
         setIsSaving(false);
       }
     },
-    [setOpencodeDefaultModel]
+    [setOpencodeDefaultModel],
   );
 
   const handleModelToggle = useCallback(
@@ -109,12 +125,12 @@ export function OpencodeSettingsTab() {
       try {
         toggleOpencodeModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error("Failed to update models");
       } finally {
         setIsSaving(false);
       }
     },
-    [toggleOpencodeModel]
+    [toggleOpencodeModel],
   );
 
   const handleDynamicModelToggle = useCallback(
@@ -123,12 +139,12 @@ export function OpencodeSettingsTab() {
       try {
         toggleDynamicModel(modelId, enabled);
       } catch {
-        toast.error('Failed to update dynamic model');
+        toast.error("Failed to update dynamic model");
       } finally {
         setIsSaving(false);
       }
     },
-    [toggleDynamicModel]
+    [toggleDynamicModel],
   );
 
   // Show skeleton only while checking CLI status initially

@@ -2,9 +2,9 @@
  * POST /queue/clear endpoint - Clear all prompts from the queue
  */
 
-import type { Request, Response } from 'express';
-import { AgentService } from '../../../services/agent-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { AgentService } from "../../../services/agent-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createQueueClearHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -14,7 +14,7 @@ export function createQueueClearHandler(agentService: AgentService) {
       if (!sessionId) {
         res.status(400).json({
           success: false,
-          error: 'sessionId is required',
+          error: "sessionId is required",
         });
         return;
       }
@@ -22,7 +22,7 @@ export function createQueueClearHandler(agentService: AgentService) {
       const result = await agentService.clearQueue(sessionId);
       res.json(result);
     } catch (error) {
-      logError(error, 'Clear queue failed');
+      logError(error, "Clear queue failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

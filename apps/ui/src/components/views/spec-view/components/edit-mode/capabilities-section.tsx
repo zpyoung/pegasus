@@ -1,13 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lightbulb } from 'lucide-react';
-import { ArrayFieldEditor } from './array-field-editor';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lightbulb } from "lucide-react";
+import { ArrayFieldEditor } from "./array-field-editor";
 
 interface CapabilitiesSectionProps {
   capabilities: string[];
   onChange: (capabilities: string[]) => void;
 }
 
-export function CapabilitiesSection({ capabilities, onChange }: CapabilitiesSectionProps) {
+export function CapabilitiesSection({
+  capabilities,
+  onChange,
+}: CapabilitiesSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">

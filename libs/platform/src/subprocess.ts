@@ -2,8 +2,8 @@
  * Subprocess management utilities for CLI providers
  */
 
-import { spawn, type ChildProcess } from 'child_process';
-import { StringDecoder } from 'string_decoder';
+import { spawn, type ChildProcess } from "child_process";
+import { StringDecoder } from "string_decoder";
 
 export interface SubprocessOptions {
   command: string;
@@ -38,8 +38,18 @@ export interface SubprocessResult {
  * events. Direct data event handling delivers parsed events to the consumer
  * as soon as they arrive from the pipe.
  */
-export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGenerator<unknown> {
-  const { command, args, cwd, env, abortController, timeout = 30000, stdinData } = options;
+export async function* spawnJSONLProcess(
+  options: SubprocessOptions,
+): AsyncGenerator<unknown> {
+  const {
+    command,
+    args,
+    cwd,
+    env,
+    abortController,
+    timeout = 30000,
+    stdinData,
+  } = options;
 
   const processEnv = {
     ...process.env,
@@ -47,22 +57,26 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   };
 
   // Log command without stdin data (which may be large/sensitive)
-  console.log(`[SubprocessManager] Spawning: ${command} ${args.join(' ')}`);
+  console.log(`[SubprocessManager] Spawning: ${command} ${args.join(" ")}`);
   console.log(`[SubprocessManager] Working directory: ${cwd}`);
   if (stdinData) {
-    console.log(`[SubprocessManager] Passing ${stdinData.length} bytes via stdin`);
+    console.log(
+      `[SubprocessManager] Passing ${stdinData.length} bytes via stdin`,
+    );
   }
 
   // On Windows, .cmd files must be run through shell (cmd.exe)
   const needsShell =
-    process.platform === 'win32' &&
-    (command.toLowerCase().endsWith('.cmd') || command === 'npx' || command === 'npm');
+    process.platform === "win32" &&
+    (command.toLowerCase().endsWith(".cmd") ||
+      command === "npx" ||
+      command === "npm");
 
   const childProcess: ChildProcess = spawn(command, args, {
     cwd,
     env: processEnv,
     // Use 'pipe' for stdin when we need to write data, otherwise 'ignore'
-    stdio: [stdinData ? 'pipe' : 'ignore', 'pipe', 'pipe'],
+    stdio: [stdinData ? "pipe" : "ignore", "pipe", "pipe"],
     shell: needsShell,
   });
 
@@ -72,7 +86,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     childProcess.stdin.end();
   }
 
-  let stderrOutput = '';
+  let stderrOutput = "";
   let lastOutputTime = Date.now();
   let timeoutHandle: NodeJS.Timeout | null = null;
   let processExited = false;
@@ -85,13 +99,13 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   let notifyConsumer: (() => void) | null = null;
 
   // Track process exit early so we don't block on an already-exited process
-  childProcess.on('exit', () => {
+  childProcess.on("exit", () => {
     processExited = true;
   });
 
   // Collect stderr for error reporting
   if (childProcess.stderr) {
-    childProcess.stderr.on('data', (data: Buffer) => {
+    childProcess.stderr.on("data", (data: Buffer) => {
       const text = data.toString();
       stderrOutput += text;
       console.warn(`[SubprocessManager] stderr: ${text}`);
@@ -107,8 +121,10 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     timeoutHandle = setTimeout(() => {
       const elapsed = Date.now() - lastOutputTime;
       if (elapsed >= timeout) {
-        console.error(`[SubprocessManager] Process timeout: no output for ${timeout}ms`);
-        childProcess.kill('SIGTERM');
+        console.error(
+          `[SubprocessManager] Process timeout: no output for ${timeout}ms`,
+        );
+        childProcess.kill("SIGTERM");
       }
     }, timeout);
   };
@@ -119,11 +135,11 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
   let abortHandler: (() => void) | null = null;
   if (abortController) {
     abortHandler = () => {
-      console.log('[SubprocessManager] Abort signal received, killing process');
+      console.log("[SubprocessManager] Abort signal received, killing process");
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
-      childProcess.kill('SIGTERM');
+      childProcess.kill("SIGTERM");
 
       // Force stream consumer to exit immediately instead of waiting for
       // the process to close stdout. CLI tools (especially Gemini CLI) may
@@ -138,9 +154,11 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       // SIGKILL cannot be caught or ignored, guaranteeing termination.
       const killTimer = setTimeout(() => {
         if (!processExited) {
-          console.log('[SubprocessManager] Escalated to SIGKILL after SIGTERM timeout');
+          console.log(
+            "[SubprocessManager] Escalated to SIGKILL after SIGTERM timeout",
+          );
           try {
-            childProcess.kill('SIGKILL');
+            childProcess.kill("SIGKILL");
           } catch {
             // Process may have already exited between the check and kill
           }
@@ -148,7 +166,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       }, 3000);
 
       // Clean up the kill timer when process exits (don't leak timers)
-      childProcess.once('exit', () => {
+      childProcess.once("exit", () => {
         clearTimeout(killTimer);
       });
     };
@@ -156,14 +174,14 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     if (abortController.signal.aborted) {
       abortHandler();
     } else {
-      abortController.signal.addEventListener('abort', abortHandler);
+      abortController.signal.addEventListener("abort", abortHandler);
     }
   }
 
   // Helper to clean up abort listener
   const cleanupAbortListener = () => {
     if (abortController && abortHandler) {
-      abortController.signal.removeEventListener('abort', abortHandler);
+      abortController.signal.removeEventListener("abort", abortHandler);
       abortHandler = null;
     }
   };
@@ -175,17 +193,17 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     // Queue of parsed events ready to be yielded
     const eventQueue: unknown[] = [];
     // Partial line buffer for incomplete lines across data chunks
-    let lineBuffer = '';
+    let lineBuffer = "";
     // StringDecoder handles multibyte UTF-8 sequences that may be split across chunks
-    const decoder = new StringDecoder('utf8');
+    const decoder = new StringDecoder("utf8");
 
-    childProcess.stdout.on('data', (chunk: Buffer) => {
+    childProcess.stdout.on("data", (chunk: Buffer) => {
       resetTimeout();
 
       lineBuffer += decoder.write(chunk);
-      const lines = lineBuffer.split('\n');
+      const lines = lineBuffer.split("\n");
       // Last element is either empty (line ended with \n) or a partial line
-      lineBuffer = lines.pop() || '';
+      lineBuffer = lines.pop() || "";
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -194,9 +212,12 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         try {
           eventQueue.push(JSON.parse(trimmed));
         } catch (parseError) {
-          console.error(`[SubprocessManager] Failed to parse JSONL line: ${trimmed}`, parseError);
+          console.error(
+            `[SubprocessManager] Failed to parse JSONL line: ${trimmed}`,
+            parseError,
+          );
           eventQueue.push({
-            type: 'error',
+            type: "error",
             error: `Failed to parse output: ${trimmed}`,
           });
         }
@@ -209,7 +230,7 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       }
     });
 
-    childProcess.stdout.on('end', () => {
+    childProcess.stdout.on("end", () => {
       // Flush any remaining bytes from the decoder
       lineBuffer += decoder.end();
 
@@ -220,14 +241,14 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
         } catch (parseError) {
           console.error(
             `[SubprocessManager] Failed to parse final JSONL line: ${lineBuffer}`,
-            parseError
+            parseError,
           );
           eventQueue.push({
-            type: 'error',
+            type: "error",
             error: `Failed to parse output: ${lineBuffer}`,
           });
         }
-        lineBuffer = '';
+        lineBuffer = "";
       }
 
       streamEnded = true;
@@ -238,8 +259,8 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       }
     });
 
-    childProcess.stdout.on('error', (error) => {
-      console.error('[SubprocessManager] stdout error:', error);
+    childProcess.stdout.on("error", (error) => {
+      console.error("[SubprocessManager] stdout error:", error);
       streamEnded = true;
       if (notifyConsumer) {
         notifyConsumer();
@@ -279,13 +300,13 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
       return;
     }
 
-    childProcess.on('exit', (code) => {
+    childProcess.on("exit", (code) => {
       console.log(`[SubprocessManager] Process exited with code: ${code}`);
       resolve(code);
     });
 
-    childProcess.on('error', (error) => {
-      console.error('[SubprocessManager] Process error:', error);
+    childProcess.on("error", (error) => {
+      console.error("[SubprocessManager] Process error:", error);
       resolve(null);
     });
   });
@@ -295,21 +316,23 @@ export async function* spawnJSONLProcess(options: SubprocessOptions): AsyncGener
     const errorMessage = stderrOutput || `Process exited with code ${exitCode}`;
     console.error(`[SubprocessManager] Process failed: ${errorMessage}`);
     yield {
-      type: 'error',
+      type: "error",
       error: errorMessage,
     };
   }
 
   // Process completed successfully
   if (exitCode === 0 && !stderrOutput) {
-    console.log('[SubprocessManager] Process completed successfully');
+    console.log("[SubprocessManager] Process completed successfully");
   }
 }
 
 /**
  * Spawns a subprocess and collects all output
  */
-export async function spawnProcess(options: SubprocessOptions): Promise<SubprocessResult> {
+export async function spawnProcess(
+  options: SubprocessOptions,
+): Promise<SubprocessResult> {
   const { command, args, cwd, env, abortController, stdinData } = options;
 
   const processEnv = {
@@ -320,13 +343,15 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
   return new Promise((resolve, reject) => {
     // On Windows, .cmd files must be run through shell (cmd.exe)
     const needsShell =
-      process.platform === 'win32' &&
-      (command.toLowerCase().endsWith('.cmd') || command === 'npx' || command === 'npm');
+      process.platform === "win32" &&
+      (command.toLowerCase().endsWith(".cmd") ||
+        command === "npx" ||
+        command === "npm");
 
     const childProcess = spawn(command, args, {
       cwd,
       env: processEnv,
-      stdio: [stdinData ? 'pipe' : 'ignore', 'pipe', 'pipe'],
+      stdio: [stdinData ? "pipe" : "ignore", "pipe", "pipe"],
       shell: needsShell,
     });
 
@@ -335,17 +360,17 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
       childProcess.stdin.end();
     }
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
     if (childProcess.stdout) {
-      childProcess.stdout.on('data', (data: Buffer) => {
+      childProcess.stdout.on("data", (data: Buffer) => {
         stdout += data.toString();
       });
     }
 
     if (childProcess.stderr) {
-      childProcess.stderr.on('data', (data: Buffer) => {
+      childProcess.stderr.on("data", (data: Buffer) => {
         stderr += data.toString();
       });
     }
@@ -354,7 +379,7 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
     let abortHandler: (() => void) | null = null;
     const cleanupAbortListener = () => {
       if (abortController && abortHandler) {
-        abortController.signal.removeEventListener('abort', abortHandler);
+        abortController.signal.removeEventListener("abort", abortHandler);
         abortHandler = null;
       }
     };
@@ -362,29 +387,29 @@ export async function spawnProcess(options: SubprocessOptions): Promise<Subproce
     if (abortController) {
       abortHandler = () => {
         cleanupAbortListener();
-        childProcess.kill('SIGTERM');
+        childProcess.kill("SIGTERM");
 
         // Escalate to SIGKILL after 3 seconds if process hasn't exited
         const killTimer = setTimeout(() => {
           try {
-            childProcess.kill('SIGKILL');
+            childProcess.kill("SIGKILL");
           } catch {
             // Process may have already exited
           }
         }, 3000);
-        childProcess.once('exit', () => clearTimeout(killTimer));
+        childProcess.once("exit", () => clearTimeout(killTimer));
 
-        reject(new Error('Process aborted'));
+        reject(new Error("Process aborted"));
       };
-      abortController.signal.addEventListener('abort', abortHandler);
+      abortController.signal.addEventListener("abort", abortHandler);
     }
 
-    childProcess.on('exit', (code) => {
+    childProcess.on("exit", (code) => {
       cleanupAbortListener();
       resolve({ stdout, stderr, exitCode: code });
     });
 
-    childProcess.on('error', (error) => {
+    childProcess.on("error", (error) => {
       cleanupAbortListener();
       reject(error);
     });

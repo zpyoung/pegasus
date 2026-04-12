@@ -8,10 +8,13 @@
  * - Interrupted feature detection and batch resumption
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import path from 'path';
-import { RecoveryService, DEFAULT_EXECUTION_STATE } from '@/services/recovery-service.js';
-import type { Feature } from '@pegasus/types';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import path from "path";
+import {
+  RecoveryService,
+  DEFAULT_EXECUTION_STATE,
+} from "@/services/recovery-service.js";
+import type { Feature } from "@pegasus/types";
 
 /**
  * Helper to normalize paths for cross-platform test compatibility.
@@ -20,46 +23,50 @@ import type { Feature } from '@pegasus/types';
 const normalizePath = (p: string): string => path.normalize(p);
 
 // Mock dependencies
-vi.mock('@pegasus/utils', () => ({
+vi.mock("@pegasus/utils", () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
   }),
-  readJsonWithRecovery: vi.fn().mockResolvedValue({ data: null, wasRecovered: false }),
+  readJsonWithRecovery: vi
+    .fn()
+    .mockResolvedValue({ data: null, wasRecovered: false }),
   logRecoveryWarning: vi.fn(),
   DEFAULT_BACKUP_COUNT: 5,
 }));
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   getFeatureDir: (projectPath: string, featureId: string) =>
     `${projectPath}/.pegasus/features/${featureId}`,
   getFeaturesDir: (projectPath: string) => `${projectPath}/.pegasus/features`,
-  getExecutionStatePath: (projectPath: string) => `${projectPath}/.pegasus/execution-state.json`,
+  getExecutionStatePath: (projectPath: string) =>
+    `${projectPath}/.pegasus/execution-state.json`,
   ensurePegasusDir: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/lib/secure-fs.js', () => ({
-  access: vi.fn().mockRejectedValue(new Error('ENOENT')),
-  readFile: vi.fn().mockRejectedValue(new Error('ENOENT')),
+vi.mock("@/lib/secure-fs.js", () => ({
+  access: vi.fn().mockRejectedValue(new Error("ENOENT")),
+  readFile: vi.fn().mockRejectedValue(new Error("ENOENT")),
   writeFile: vi.fn().mockResolvedValue(undefined),
   unlink: vi.fn().mockResolvedValue(undefined),
   readdir: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock('@/lib/settings-helpers.js', () => ({
+vi.mock("@/lib/settings-helpers.js", () => ({
   getPromptCustomization: vi.fn().mockResolvedValue({
     taskExecution: {
-      resumeFeatureTemplate: 'Resume: {{featurePrompt}}\n\nPrevious context:\n{{previousContext}}',
+      resumeFeatureTemplate:
+        "Resume: {{featurePrompt}}\n\nPrevious context:\n{{previousContext}}",
     },
   }),
 }));
 
-describe('recovery-service.ts', () => {
+describe("recovery-service.ts", () => {
   // Import mocked modules for access in tests
-  let secureFs: typeof import('@/lib/secure-fs.js');
-  let utils: typeof import('@pegasus/utils');
+  let secureFs: typeof import("@/lib/secure-fs.js");
+  let utils: typeof import("@pegasus/utils");
 
   // Mock dependencies
   const mockEventBus = {
@@ -74,7 +81,7 @@ describe('recovery-service.ts', () => {
     acquire: vi.fn().mockImplementation(({ featureId }) => ({
       featureId,
       abortController: new AbortController(),
-      projectPath: '/test/project',
+      projectPath: "/test/project",
       isAutoMode: false,
       startTime: Date.now(),
       leaseCount: 1,
@@ -100,12 +107,12 @@ describe('recovery-service.ts', () => {
     vi.clearAllMocks();
 
     // Import mocked modules
-    secureFs = await import('@/lib/secure-fs.js');
-    utils = await import('@pegasus/utils');
+    secureFs = await import("@/lib/secure-fs.js");
+    utils = await import("@pegasus/utils");
 
     // Reset secure-fs mocks to default behavior
-    vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
-    vi.mocked(secureFs.readFile).mockRejectedValue(new Error('ENOENT'));
+    vi.mocked(secureFs.access).mockRejectedValue(new Error("ENOENT"));
+    vi.mocked(secureFs.readFile).mockRejectedValue(new Error("ENOENT"));
     vi.mocked(secureFs.writeFile).mockResolvedValue(undefined);
     vi.mocked(secureFs.unlink).mockResolvedValue(undefined);
     vi.mocked(secureFs.readdir).mockResolvedValue([]);
@@ -139,7 +146,7 @@ describe('recovery-service.ts', () => {
       mockResumePipeline,
       mockIsFeatureRunning,
       mockAcquireRunningFeature,
-      mockReleaseRunningFeature
+      mockReleaseRunningFeature,
     );
   });
 
@@ -147,79 +154,91 @@ describe('recovery-service.ts', () => {
     vi.resetAllMocks();
   });
 
-  describe('DEFAULT_EXECUTION_STATE', () => {
-    it('has correct default values', () => {
+  describe("DEFAULT_EXECUTION_STATE", () => {
+    it("has correct default values", () => {
       expect(DEFAULT_EXECUTION_STATE).toEqual({
         version: 1,
         autoLoopWasRunning: false,
         maxConcurrency: expect.any(Number),
-        projectPath: '',
+        projectPath: "",
         branchName: null,
         runningFeatureIds: [],
-        savedAt: '',
+        savedAt: "",
       });
     });
   });
 
-  describe('saveExecutionStateForProject', () => {
-    it('writes correct JSON to execution state path', async () => {
+  describe("saveExecutionStateForProject", () => {
+    it("writes correct JSON to execution state path", async () => {
       mockConcurrencyManager.getAllRunning.mockReturnValue([
-        { featureId: 'feature-1', projectPath: '/test/project' },
-        { featureId: 'feature-2', projectPath: '/test/project' },
-        { featureId: 'feature-3', projectPath: '/other/project' },
+        { featureId: "feature-1", projectPath: "/test/project" },
+        { featureId: "feature-2", projectPath: "/test/project" },
+        { featureId: "feature-3", projectPath: "/other/project" },
       ]);
 
-      await service.saveExecutionStateForProject('/test/project', 'feature-branch', 3);
-
-      expect(secureFs.writeFile).toHaveBeenCalledWith(
-        '/test/project/.pegasus/execution-state.json',
-        expect.any(String),
-        'utf-8'
+      await service.saveExecutionStateForProject(
+        "/test/project",
+        "feature-branch",
+        3,
       );
 
-      const writtenContent = JSON.parse(vi.mocked(secureFs.writeFile).mock.calls[0][1] as string);
+      expect(secureFs.writeFile).toHaveBeenCalledWith(
+        "/test/project/.pegasus/execution-state.json",
+        expect.any(String),
+        "utf-8",
+      );
+
+      const writtenContent = JSON.parse(
+        vi.mocked(secureFs.writeFile).mock.calls[0][1] as string,
+      );
       expect(writtenContent).toMatchObject({
         version: 1,
         autoLoopWasRunning: true,
         maxConcurrency: 3,
-        projectPath: '/test/project',
-        branchName: 'feature-branch',
-        runningFeatureIds: ['feature-1', 'feature-2'],
+        projectPath: "/test/project",
+        branchName: "feature-branch",
+        runningFeatureIds: ["feature-1", "feature-2"],
       });
       expect(writtenContent.savedAt).toBeDefined();
     });
 
-    it('filters running features by project path', async () => {
+    it("filters running features by project path", async () => {
       mockConcurrencyManager.getAllRunning.mockReturnValue([
-        { featureId: 'feature-1', projectPath: '/project-a' },
-        { featureId: 'feature-2', projectPath: '/project-b' },
+        { featureId: "feature-1", projectPath: "/project-a" },
+        { featureId: "feature-2", projectPath: "/project-b" },
       ]);
 
-      await service.saveExecutionStateForProject('/project-a', null, 2);
+      await service.saveExecutionStateForProject("/project-a", null, 2);
 
-      const writtenContent = JSON.parse(vi.mocked(secureFs.writeFile).mock.calls[0][1] as string);
-      expect(writtenContent.runningFeatureIds).toEqual(['feature-1']);
+      const writtenContent = JSON.parse(
+        vi.mocked(secureFs.writeFile).mock.calls[0][1] as string,
+      );
+      expect(writtenContent.runningFeatureIds).toEqual(["feature-1"]);
     });
 
-    it('handles null branch name for main worktree', async () => {
+    it("handles null branch name for main worktree", async () => {
       mockConcurrencyManager.getAllRunning.mockReturnValue([]);
-      await service.saveExecutionStateForProject('/test/project', null, 1);
+      await service.saveExecutionStateForProject("/test/project", null, 1);
 
-      const writtenContent = JSON.parse(vi.mocked(secureFs.writeFile).mock.calls[0][1] as string);
+      const writtenContent = JSON.parse(
+        vi.mocked(secureFs.writeFile).mock.calls[0][1] as string,
+      );
       expect(writtenContent.branchName).toBeNull();
     });
   });
 
-  describe('saveExecutionState (legacy)', () => {
-    it('saves execution state with legacy format', async () => {
+  describe("saveExecutionState (legacy)", () => {
+    it("saves execution state with legacy format", async () => {
       mockConcurrencyManager.getAllRunning.mockReturnValue([
-        { featureId: 'feature-1', projectPath: '/test' },
+        { featureId: "feature-1", projectPath: "/test" },
       ]);
 
-      await service.saveExecutionState('/test/project', true, 5);
+      await service.saveExecutionState("/test/project", true, 5);
 
       expect(secureFs.writeFile).toHaveBeenCalled();
-      const writtenContent = JSON.parse(vi.mocked(secureFs.writeFile).mock.calls[0][1] as string);
+      const writtenContent = JSON.parse(
+        vi.mocked(secureFs.writeFile).mock.calls[0][1] as string,
+      );
       expect(writtenContent).toMatchObject({
         autoLoopWasRunning: true,
         maxConcurrency: 5,
@@ -228,564 +247,612 @@ describe('recovery-service.ts', () => {
     });
   });
 
-  describe('loadExecutionState', () => {
-    it('parses JSON correctly when file exists', async () => {
+  describe("loadExecutionState", () => {
+    it("parses JSON correctly when file exists", async () => {
       const mockState = {
         version: 1,
         autoLoopWasRunning: true,
         maxConcurrency: 4,
-        projectPath: '/test/project',
-        branchName: 'dev',
-        runningFeatureIds: ['f1', 'f2'],
-        savedAt: '2026-01-27T12:00:00Z',
+        projectPath: "/test/project",
+        branchName: "dev",
+        runningFeatureIds: ["f1", "f2"],
+        savedAt: "2026-01-27T12:00:00Z",
       };
-      vi.mocked(secureFs.readFile).mockResolvedValueOnce(JSON.stringify(mockState));
+      vi.mocked(secureFs.readFile).mockResolvedValueOnce(
+        JSON.stringify(mockState),
+      );
 
-      const result = await service.loadExecutionState('/test/project');
+      const result = await service.loadExecutionState("/test/project");
 
       expect(result).toEqual(mockState);
     });
 
-    it('returns default state on ENOENT error', async () => {
-      const error = new Error('File not found') as NodeJS.ErrnoException;
-      error.code = 'ENOENT';
+    it("returns default state on ENOENT error", async () => {
+      const error = new Error("File not found") as NodeJS.ErrnoException;
+      error.code = "ENOENT";
       vi.mocked(secureFs.readFile).mockRejectedValueOnce(error);
 
-      const result = await service.loadExecutionState('/test/project');
+      const result = await service.loadExecutionState("/test/project");
 
       expect(result).toEqual(DEFAULT_EXECUTION_STATE);
     });
 
-    it('returns default state on other errors and logs', async () => {
-      vi.mocked(secureFs.readFile).mockRejectedValueOnce(new Error('Permission denied'));
+    it("returns default state on other errors and logs", async () => {
+      vi.mocked(secureFs.readFile).mockRejectedValueOnce(
+        new Error("Permission denied"),
+      );
 
-      const result = await service.loadExecutionState('/test/project');
+      const result = await service.loadExecutionState("/test/project");
 
       expect(result).toEqual(DEFAULT_EXECUTION_STATE);
     });
   });
 
-  describe('clearExecutionState', () => {
-    it('removes execution state file', async () => {
-      await service.clearExecutionState('/test/project');
+  describe("clearExecutionState", () => {
+    it("removes execution state file", async () => {
+      await service.clearExecutionState("/test/project");
 
-      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.pegasus/execution-state.json');
-    });
-
-    it('does not throw on ENOENT error', async () => {
-      const error = new Error('File not found') as NodeJS.ErrnoException;
-      error.code = 'ENOENT';
-      vi.mocked(secureFs.unlink).mockRejectedValueOnce(error);
-
-      await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
-    });
-
-    it('logs error on other failures', async () => {
-      vi.mocked(secureFs.unlink).mockRejectedValueOnce(new Error('Permission denied'));
-
-      await expect(service.clearExecutionState('/test/project')).resolves.not.toThrow();
-    });
-  });
-
-  describe('contextExists', () => {
-    it('returns true when agent-output.md exists', async () => {
-      vi.mocked(secureFs.access).mockResolvedValueOnce(undefined);
-
-      const result = await service.contextExists('/test/project', 'feature-1');
-
-      expect(result).toBe(true);
-      expect(secureFs.access).toHaveBeenCalledWith(
-        normalizePath('/test/project/.pegasus/features/feature-1/agent-output.md')
+      expect(secureFs.unlink).toHaveBeenCalledWith(
+        "/test/project/.pegasus/execution-state.json",
       );
     });
 
-    it('returns false when agent-output.md is missing', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+    it("does not throw on ENOENT error", async () => {
+      const error = new Error("File not found") as NodeJS.ErrnoException;
+      error.code = "ENOENT";
+      vi.mocked(secureFs.unlink).mockRejectedValueOnce(error);
 
-      const result = await service.contextExists('/test/project', 'feature-1');
+      await expect(
+        service.clearExecutionState("/test/project"),
+      ).resolves.not.toThrow();
+    });
+
+    it("logs error on other failures", async () => {
+      vi.mocked(secureFs.unlink).mockRejectedValueOnce(
+        new Error("Permission denied"),
+      );
+
+      await expect(
+        service.clearExecutionState("/test/project"),
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe("contextExists", () => {
+    it("returns true when agent-output.md exists", async () => {
+      vi.mocked(secureFs.access).mockResolvedValueOnce(undefined);
+
+      const result = await service.contextExists("/test/project", "feature-1");
+
+      expect(result).toBe(true);
+      expect(secureFs.access).toHaveBeenCalledWith(
+        normalizePath(
+          "/test/project/.pegasus/features/feature-1/agent-output.md",
+        ),
+      );
+    });
+
+    it("returns false when agent-output.md is missing", async () => {
+      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error("ENOENT"));
+
+      const result = await service.contextExists("/test/project", "feature-1");
 
       expect(result).toBe(false);
     });
   });
 
-  describe('resumeFeature', () => {
+  describe("resumeFeature", () => {
     const mockFeature: Feature = {
-      id: 'feature-1',
-      title: 'Test Feature',
-      description: 'A test feature',
-      status: 'in_progress',
+      id: "feature-1",
+      title: "Test Feature",
+      description: "A test feature",
+      status: "in_progress",
     };
 
     beforeEach(() => {
       mockLoadFeature.mockResolvedValue(mockFeature);
     });
 
-    it('skips if feature already running (idempotent)', async () => {
+    it("skips if feature already running (idempotent)", async () => {
       mockIsFeatureRunning.mockReturnValueOnce(true);
 
-      await service.resumeFeature('/test/project', 'feature-1');
+      await service.resumeFeature("/test/project", "feature-1");
 
       expect(mockLoadFeature).not.toHaveBeenCalled();
       expect(mockExecuteFeature).not.toHaveBeenCalled();
     });
 
-    it('detects pipeline status for feature', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
-      await service.resumeFeature('/test/project', 'feature-1');
+    it("detects pipeline status for feature", async () => {
+      vi.mocked(secureFs.access).mockRejectedValue(new Error("ENOENT"));
+      await service.resumeFeature("/test/project", "feature-1");
 
       expect(mockDetectPipelineStatus).toHaveBeenCalledWith(
-        '/test/project',
-        'feature-1',
-        'in_progress'
+        "/test/project",
+        "feature-1",
+        "in_progress",
       );
     });
 
-    it('delegates to resumePipeline for pipeline features', async () => {
+    it("delegates to resumePipeline for pipeline features", async () => {
       const pipelineInfo = {
         isPipeline: true,
-        stepId: 'test',
+        stepId: "test",
         stepIndex: 1,
         totalSteps: 3,
         step: {
-          id: 'test',
-          name: 'Test Step',
-          command: 'pnpm test',
-          type: 'test' as const,
+          id: "test",
+          name: "Test Step",
+          command: "pnpm test",
+          type: "test" as const,
           order: 1,
         },
         config: null,
       };
       mockDetectPipelineStatus.mockResolvedValueOnce(pipelineInfo);
 
-      await service.resumeFeature('/test/project', 'feature-1');
+      await service.resumeFeature("/test/project", "feature-1");
 
       expect(mockResumePipeline).toHaveBeenCalledWith(
-        '/test/project',
+        "/test/project",
         mockFeature,
         false,
-        pipelineInfo
+        pipelineInfo,
       );
       expect(mockExecuteFeature).not.toHaveBeenCalled();
     });
 
-    it('calls executeFeature with continuation prompt when context exists', async () => {
+    it("calls executeFeature with continuation prompt when context exists", async () => {
       // Reset settings-helpers mock before this test
-      const settingsHelpers = await import('@/lib/settings-helpers.js');
+      const settingsHelpers = await import("@/lib/settings-helpers.js");
       vi.mocked(settingsHelpers.getPromptCustomization).mockResolvedValue({
         taskExecution: {
           resumeFeatureTemplate:
-            'Resume: {{featurePrompt}}\n\nPrevious context:\n{{previousContext}}',
-          implementationInstructions: '',
-          playwrightVerificationInstructions: '',
+            "Resume: {{featurePrompt}}\n\nPrevious context:\n{{previousContext}}",
+          implementationInstructions: "",
+          playwrightVerificationInstructions: "",
         },
       } as any);
 
       vi.mocked(secureFs.access).mockResolvedValueOnce(undefined);
-      vi.mocked(secureFs.readFile).mockResolvedValueOnce('Previous agent output content');
+      vi.mocked(secureFs.readFile).mockResolvedValueOnce(
+        "Previous agent output content",
+      );
 
-      await service.resumeFeature('/test/project', 'feature-1');
+      await service.resumeFeature("/test/project", "feature-1");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_feature_resuming',
+        "auto_mode_feature_resuming",
         expect.objectContaining({
-          featureId: 'feature-1',
+          featureId: "feature-1",
           hasContext: true,
-        })
+        }),
       );
       expect(mockExecuteFeature).toHaveBeenCalledWith(
-        '/test/project',
-        'feature-1',
+        "/test/project",
+        "feature-1",
         false,
         false,
         undefined,
         expect.objectContaining({
-          continuationPrompt: expect.stringContaining('Previous agent output content'),
+          continuationPrompt: expect.stringContaining(
+            "Previous agent output content",
+          ),
           _calledInternally: true,
-        })
+        }),
       );
     });
 
-    it('calls executeFeature fresh when no context', async () => {
-      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error('ENOENT'));
+    it("calls executeFeature fresh when no context", async () => {
+      vi.mocked(secureFs.access).mockRejectedValueOnce(new Error("ENOENT"));
 
-      await service.resumeFeature('/test/project', 'feature-1');
+      await service.resumeFeature("/test/project", "feature-1");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_feature_resuming',
+        "auto_mode_feature_resuming",
         expect.objectContaining({
-          featureId: 'feature-1',
+          featureId: "feature-1",
           hasContext: false,
-        })
+        }),
       );
       expect(mockExecuteFeature).toHaveBeenCalledWith(
-        '/test/project',
-        'feature-1',
+        "/test/project",
+        "feature-1",
         false,
         false,
         undefined,
         expect.objectContaining({
           _calledInternally: true,
-        })
+        }),
       );
     });
 
-    it('releases running feature in finally block', async () => {
-      mockLoadFeature.mockRejectedValueOnce(new Error('Feature not found'));
+    it("releases running feature in finally block", async () => {
+      mockLoadFeature.mockRejectedValueOnce(new Error("Feature not found"));
 
-      await expect(service.resumeFeature('/test/project', 'feature-1')).rejects.toThrow();
+      await expect(
+        service.resumeFeature("/test/project", "feature-1"),
+      ).rejects.toThrow();
 
-      expect(mockReleaseRunningFeature).toHaveBeenCalledWith('feature-1');
+      expect(mockReleaseRunningFeature).toHaveBeenCalledWith("feature-1");
     });
 
-    it('throws error if feature not found', async () => {
+    it("throws error if feature not found", async () => {
       mockLoadFeature.mockResolvedValueOnce(null);
 
-      await expect(service.resumeFeature('/test/project', 'feature-1')).rejects.toThrow(
-        'Feature feature-1 not found'
-      );
+      await expect(
+        service.resumeFeature("/test/project", "feature-1"),
+      ).rejects.toThrow("Feature feature-1 not found");
     });
 
-    it('acquires running feature with allowReuse when calledInternally', async () => {
-      vi.mocked(secureFs.access).mockRejectedValue(new Error('ENOENT'));
-      await service.resumeFeature('/test/project', 'feature-1', false, true);
+    it("acquires running feature with allowReuse when calledInternally", async () => {
+      vi.mocked(secureFs.access).mockRejectedValue(new Error("ENOENT"));
+      await service.resumeFeature("/test/project", "feature-1", false, true);
 
       expect(mockAcquireRunningFeature).toHaveBeenCalledWith({
-        featureId: 'feature-1',
-        projectPath: '/test/project',
+        featureId: "feature-1",
+        projectPath: "/test/project",
         isAutoMode: false,
         allowReuse: true,
       });
     });
   });
 
-  describe('resumeInterruptedFeatures', () => {
-    it('finds features with in_progress status', async () => {
+  describe("resumeInterruptedFeatures", () => {
+    it("finds features with in_progress status", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
-        { name: 'feature-2', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
+        { name: "feature-2", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery)
         .mockResolvedValueOnce({
-          data: { id: 'feature-1', title: 'Feature 1', status: 'in_progress' },
+          data: { id: "feature-1", title: "Feature 1", status: "in_progress" },
           wasRecovered: false,
         })
         .mockResolvedValueOnce({
-          data: { id: 'feature-2', title: 'Feature 2', status: 'backlog' },
+          data: { id: "feature-2", title: "Feature 2", status: "backlog" },
           wasRecovered: false,
         });
 
       mockLoadFeature.mockResolvedValue({
-        id: 'feature-1',
-        title: 'Feature 1',
-        status: 'in_progress',
-        description: 'Test',
+        id: "feature-1",
+        title: "Feature 1",
+        status: "in_progress",
+        description: "Test",
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
-          featureIds: ['feature-1'],
-        })
+          featureIds: ["feature-1"],
+        }),
       );
     });
 
-    it('finds features with interrupted status', async () => {
+    it("finds features with interrupted status", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'interrupted' },
+        data: { id: "feature-1", title: "Feature 1", status: "interrupted" },
         wasRecovered: false,
       });
 
       mockLoadFeature.mockResolvedValue({
-        id: 'feature-1',
-        title: 'Feature 1',
-        status: 'interrupted',
-        description: 'Test',
+        id: "feature-1",
+        title: "Feature 1",
+        status: "interrupted",
+        description: "Test",
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
-          featureIds: ['feature-1'],
-        })
+          featureIds: ["feature-1"],
+        }),
       );
     });
 
-    it('finds features with pipeline_* status', async () => {
+    it("finds features with pipeline_* status", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'pipeline_test' },
+        data: { id: "feature-1", title: "Feature 1", status: "pipeline_test" },
         wasRecovered: false,
       });
 
       mockLoadFeature.mockResolvedValue({
-        id: 'feature-1',
-        title: 'Feature 1',
-        status: 'pipeline_test',
-        description: 'Test',
+        id: "feature-1",
+        title: "Feature 1",
+        status: "pipeline_test",
+        description: "Test",
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
           features: expect.arrayContaining([
-            expect.objectContaining({ id: 'feature-1', status: 'pipeline_test' }),
+            expect.objectContaining({
+              id: "feature-1",
+              status: "pipeline_test",
+            }),
           ]),
-        })
+        }),
       );
     });
 
-    it('finds reconciled features using execution state (ready/backlog from previously running)', async () => {
+    it("finds reconciled features using execution state (ready/backlog from previously running)", async () => {
       // Simulate execution state with previously running feature IDs
       const executionState = {
         version: 1,
         autoLoopWasRunning: true,
         maxConcurrency: 2,
-        projectPath: '/test/project',
+        projectPath: "/test/project",
         branchName: null,
-        runningFeatureIds: ['feature-1', 'feature-2'],
-        savedAt: '2026-01-27T12:00:00Z',
+        runningFeatureIds: ["feature-1", "feature-2"],
+        savedAt: "2026-01-27T12:00:00Z",
       };
-      vi.mocked(secureFs.readFile).mockResolvedValueOnce(JSON.stringify(executionState));
+      vi.mocked(secureFs.readFile).mockResolvedValueOnce(
+        JSON.stringify(executionState),
+      );
 
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
-        { name: 'feature-2', isDirectory: () => true } as any,
-        { name: 'feature-3', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
+        { name: "feature-2", isDirectory: () => true } as any,
+        { name: "feature-3", isDirectory: () => true } as any,
       ]);
       // feature-1 was reconciled from in_progress to ready
       // feature-2 was reconciled from in_progress to backlog
       // feature-3 is in backlog but was NOT previously running
       vi.mocked(utils.readJsonWithRecovery)
         .mockResolvedValueOnce({
-          data: { id: 'feature-1', title: 'Feature 1', status: 'ready' },
+          data: { id: "feature-1", title: "Feature 1", status: "ready" },
           wasRecovered: false,
         })
         .mockResolvedValueOnce({
-          data: { id: 'feature-2', title: 'Feature 2', status: 'backlog' },
+          data: { id: "feature-2", title: "Feature 2", status: "backlog" },
           wasRecovered: false,
         })
         .mockResolvedValueOnce({
-          data: { id: 'feature-3', title: 'Feature 3', status: 'backlog' },
+          data: { id: "feature-3", title: "Feature 3", status: "backlog" },
           wasRecovered: false,
         });
 
       mockLoadFeature
         .mockResolvedValueOnce({
-          id: 'feature-1',
-          title: 'Feature 1',
-          status: 'ready',
-          description: 'Test',
+          id: "feature-1",
+          title: "Feature 1",
+          status: "ready",
+          description: "Test",
         })
         .mockResolvedValueOnce({
-          id: 'feature-2',
-          title: 'Feature 2',
-          status: 'backlog',
-          description: 'Test',
+          id: "feature-2",
+          title: "Feature 2",
+          status: "backlog",
+          description: "Test",
         });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       // Should resume feature-1 and feature-2 (from execution state) but NOT feature-3
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
-          featureIds: ['feature-1', 'feature-2'],
-        })
+          featureIds: ["feature-1", "feature-2"],
+        }),
       );
     });
 
-    it('clears execution state after successful resume', async () => {
+    it("clears execution state after successful resume", async () => {
       // Simulate execution state
       const executionState = {
         version: 1,
         autoLoopWasRunning: true,
         maxConcurrency: 1,
-        projectPath: '/test/project',
+        projectPath: "/test/project",
         branchName: null,
-        runningFeatureIds: ['feature-1'],
-        savedAt: '2026-01-27T12:00:00Z',
+        runningFeatureIds: ["feature-1"],
+        savedAt: "2026-01-27T12:00:00Z",
       };
-      vi.mocked(secureFs.readFile).mockResolvedValueOnce(JSON.stringify(executionState));
+      vi.mocked(secureFs.readFile).mockResolvedValueOnce(
+        JSON.stringify(executionState),
+      );
 
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'ready' },
+        data: { id: "feature-1", title: "Feature 1", status: "ready" },
         wasRecovered: false,
       });
 
       mockLoadFeature.mockResolvedValue({
-        id: 'feature-1',
-        title: 'Feature 1',
-        status: 'ready',
-        description: 'Test',
+        id: "feature-1",
+        title: "Feature 1",
+        status: "ready",
+        description: "Test",
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       // Should clear execution state after resuming
-      expect(secureFs.unlink).toHaveBeenCalledWith('/test/project/.pegasus/execution-state.json');
+      expect(secureFs.unlink).toHaveBeenCalledWith(
+        "/test/project/.pegasus/execution-state.json",
+      );
     });
 
-    it('distinguishes features with/without context', async () => {
+    it("distinguishes features with/without context", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-with', isDirectory: () => true } as any,
-        { name: 'feature-without', isDirectory: () => true } as any,
+        { name: "feature-with", isDirectory: () => true } as any,
+        { name: "feature-without", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery)
         .mockResolvedValueOnce({
-          data: { id: 'feature-with', title: 'With Context', status: 'in_progress' },
+          data: {
+            id: "feature-with",
+            title: "With Context",
+            status: "in_progress",
+          },
           wasRecovered: false,
         })
         .mockResolvedValueOnce({
-          data: { id: 'feature-without', title: 'Without Context', status: 'in_progress' },
+          data: {
+            id: "feature-without",
+            title: "Without Context",
+            status: "in_progress",
+          },
           wasRecovered: false,
         });
 
       // First feature has context, second doesn't
       vi.mocked(secureFs.access)
         .mockResolvedValueOnce(undefined) // feature-with has context
-        .mockRejectedValueOnce(new Error('ENOENT')); // feature-without doesn't
+        .mockRejectedValueOnce(new Error("ENOENT")); // feature-without doesn't
 
       mockLoadFeature
         .mockResolvedValueOnce({
-          id: 'feature-with',
-          title: 'With Context',
-          status: 'in_progress',
-          description: 'Test',
+          id: "feature-with",
+          title: "With Context",
+          status: "in_progress",
+          description: "Test",
         })
         .mockResolvedValueOnce({
-          id: 'feature-without',
-          title: 'Without Context',
-          status: 'in_progress',
-          description: 'Test',
+          id: "feature-without",
+          title: "Without Context",
+          status: "in_progress",
+          description: "Test",
         });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
           features: expect.arrayContaining([
-            expect.objectContaining({ id: 'feature-with', hasContext: true }),
-            expect.objectContaining({ id: 'feature-without', hasContext: false }),
+            expect.objectContaining({ id: "feature-with", hasContext: true }),
+            expect.objectContaining({
+              id: "feature-without",
+              hasContext: false,
+            }),
           ]),
-        })
+        }),
       );
     });
 
-    it('emits auto_mode_resuming_features event', async () => {
+    it("emits auto_mode_resuming_features event", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'in_progress' },
+        data: { id: "feature-1", title: "Feature 1", status: "in_progress" },
         wasRecovered: false,
       });
 
       mockLoadFeature.mockResolvedValue({
-        id: 'feature-1',
-        title: 'Feature 1',
-        status: 'in_progress',
-        description: 'Test',
+        id: "feature-1",
+        title: "Feature 1",
+        status: "in_progress",
+        description: "Test",
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
+        "auto_mode_resuming_features",
         expect.objectContaining({
-          message: expect.stringContaining('interrupted feature'),
-          projectPath: '/test/project',
-        })
+          message: expect.stringContaining("interrupted feature"),
+          projectPath: "/test/project",
+        }),
       );
     });
 
-    it('skips features already running (idempotent)', async () => {
+    it("skips features already running (idempotent)", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'in_progress' },
+        data: { id: "feature-1", title: "Feature 1", status: "in_progress" },
         wasRecovered: false,
       });
 
       mockIsFeatureRunning.mockReturnValue(true);
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       // Should emit event but not actually resume
       expect(mockEventBus.emitAutoModeEvent).toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
-        expect.anything()
+        "auto_mode_resuming_features",
+        expect.anything(),
       );
       // But resumeFeature should exit early due to isFeatureRunning check
       expect(mockLoadFeature).not.toHaveBeenCalled();
     });
 
-    it('handles ENOENT for features directory gracefully', async () => {
-      const error = new Error('Directory not found') as NodeJS.ErrnoException;
-      error.code = 'ENOENT';
+    it("handles ENOENT for features directory gracefully", async () => {
+      const error = new Error("Directory not found") as NodeJS.ErrnoException;
+      error.code = "ENOENT";
       vi.mocked(secureFs.readdir).mockRejectedValueOnce(error);
 
-      await expect(service.resumeInterruptedFeatures('/test/project')).resolves.not.toThrow();
+      await expect(
+        service.resumeInterruptedFeatures("/test/project"),
+      ).resolves.not.toThrow();
     });
 
-    it('continues with other features when one fails', async () => {
+    it("continues with other features when one fails", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-fail', isDirectory: () => true } as any,
-        { name: 'feature-success', isDirectory: () => true } as any,
+        { name: "feature-fail", isDirectory: () => true } as any,
+        { name: "feature-success", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery)
         .mockResolvedValueOnce({
-          data: { id: 'feature-fail', title: 'Fail', status: 'in_progress' },
+          data: { id: "feature-fail", title: "Fail", status: "in_progress" },
           wasRecovered: false,
         })
         .mockResolvedValueOnce({
-          data: { id: 'feature-success', title: 'Success', status: 'in_progress' },
+          data: {
+            id: "feature-success",
+            title: "Success",
+            status: "in_progress",
+          },
           wasRecovered: false,
         });
 
       // First feature throws during resume, second succeeds
-      mockLoadFeature.mockRejectedValueOnce(new Error('Resume failed')).mockResolvedValueOnce({
-        id: 'feature-success',
-        title: 'Success',
-        status: 'in_progress',
-        description: 'Test',
-      });
+      mockLoadFeature
+        .mockRejectedValueOnce(new Error("Resume failed"))
+        .mockResolvedValueOnce({
+          id: "feature-success",
+          title: "Success",
+          status: "in_progress",
+          description: "Test",
+        });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       // Should still attempt to resume the second feature
       expect(mockLoadFeature).toHaveBeenCalledTimes(2);
     });
 
-    it('logs info when no interrupted features found', async () => {
+    it("logs info when no interrupted features found", async () => {
       vi.mocked(secureFs.readdir).mockResolvedValueOnce([
-        { name: 'feature-1', isDirectory: () => true } as any,
+        { name: "feature-1", isDirectory: () => true } as any,
       ]);
       vi.mocked(utils.readJsonWithRecovery).mockResolvedValueOnce({
-        data: { id: 'feature-1', title: 'Feature 1', status: 'completed' },
+        data: { id: "feature-1", title: "Feature 1", status: "completed" },
         wasRecovered: false,
       });
 
-      await service.resumeInterruptedFeatures('/test/project');
+      await service.resumeInterruptedFeatures("/test/project");
 
       expect(mockEventBus.emitAutoModeEvent).not.toHaveBeenCalledWith(
-        'auto_mode_resuming_features',
-        expect.anything()
+        "auto_mode_resuming_features",
+        expect.anything(),
       );
     });
   });

@@ -7,10 +7,10 @@
  * Response: { success: true }
  */
 
-import type { Request, Response } from 'express';
-import type { PipelineService } from '../../../services/pipeline-service.js';
-import type { PipelineConfig } from '@pegasus/types';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { PipelineService } from "../../../services/pipeline-service.js";
+import type { PipelineConfig } from "@pegasus/types";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createSaveConfigHandler(pipelineService: PipelineService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -21,12 +21,14 @@ export function createSaveConfigHandler(pipelineService: PipelineService) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!config) {
-        res.status(400).json({ success: false, error: 'config is required' });
+        res.status(400).json({ success: false, error: "config is required" });
         return;
       }
 
@@ -36,7 +38,7 @@ export function createSaveConfigHandler(pipelineService: PipelineService) {
         success: true,
       });
     } catch (error) {
-      logError(error, 'Save pipeline config failed');
+      logError(error, "Save pipeline config failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

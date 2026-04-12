@@ -5,9 +5,13 @@
  * Results include the validation verdict, metadata, and timestamp for cache invalidation.
  */
 
-import * as secureFs from './secure-fs.js';
-import { getValidationsDir, getValidationDir, getValidationPath } from '@pegasus/platform';
-import type { StoredValidation } from '@pegasus/types';
+import * as secureFs from "./secure-fs.js";
+import {
+  getValidationsDir,
+  getValidationDir,
+  getValidationPath,
+} from "@pegasus/platform";
+import type { StoredValidation } from "@pegasus/types";
 
 // Re-export StoredValidation for convenience
 export type { StoredValidation };
@@ -27,7 +31,7 @@ const VALIDATION_CACHE_TTL_HOURS = 24;
 export async function writeValidation(
   projectPath: string,
   issueNumber: number,
-  data: StoredValidation
+  data: StoredValidation,
 ): Promise<void> {
   const validationDir = getValidationDir(projectPath, issueNumber);
   const validationPath = getValidationPath(projectPath, issueNumber);
@@ -36,7 +40,11 @@ export async function writeValidation(
   await secureFs.mkdir(validationDir, { recursive: true });
 
   // Write validation result
-  await secureFs.writeFile(validationPath, JSON.stringify(data, null, 2), 'utf-8');
+  await secureFs.writeFile(
+    validationPath,
+    JSON.stringify(data, null, 2),
+    "utf-8",
+  );
 }
 
 /**
@@ -48,11 +56,14 @@ export async function writeValidation(
  */
 export async function readValidation(
   projectPath: string,
-  issueNumber: number
+  issueNumber: number,
 ): Promise<StoredValidation | null> {
   try {
     const validationPath = getValidationPath(projectPath, issueNumber);
-    const content = (await secureFs.readFile(validationPath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(
+      validationPath,
+      "utf-8",
+    )) as string;
     return JSON.parse(content) as StoredValidation;
   } catch {
     // File doesn't exist or can't be read
@@ -66,11 +77,15 @@ export async function readValidation(
  * @param projectPath - Absolute path to project directory
  * @returns Array of stored validations
  */
-export async function getAllValidations(projectPath: string): Promise<StoredValidation[]> {
+export async function getAllValidations(
+  projectPath: string,
+): Promise<StoredValidation[]> {
   const validationsDir = getValidationsDir(projectPath);
 
   try {
-    const dirs = await secureFs.readdir(validationsDir, { withFileTypes: true });
+    const dirs = await secureFs.readdir(validationsDir, {
+      withFileTypes: true,
+    });
 
     // Read all validation files in parallel for better performance
     const promises = dirs
@@ -84,7 +99,9 @@ export async function getAllValidations(projectPath: string): Promise<StoredVali
       });
 
     const results = await Promise.all(promises);
-    const validations = results.filter((v): v is StoredValidation => v !== null);
+    const validations = results.filter(
+      (v): v is StoredValidation => v !== null,
+    );
 
     // Sort by issue number
     validations.sort((a, b) => a.issueNumber - b.issueNumber);
@@ -103,7 +120,10 @@ export async function getAllValidations(projectPath: string): Promise<StoredVali
  * @param issueNumber - GitHub issue number
  * @returns true if validation was deleted, false if not found
  */
-export async function deleteValidation(projectPath: string, issueNumber: number): Promise<boolean> {
+export async function deleteValidation(
+  projectPath: string,
+  issueNumber: number,
+): Promise<boolean> {
   try {
     const validationDir = getValidationDir(projectPath, issueNumber);
     await secureFs.rm(validationDir, { recursive: true, force: true });
@@ -135,7 +155,7 @@ export function isValidationStale(validation: StoredValidation): boolean {
  */
 export async function getValidationWithFreshness(
   projectPath: string,
-  issueNumber: number
+  issueNumber: number,
 ): Promise<{ validation: StoredValidation; isStale: boolean } | null> {
   const validation = await readValidation(projectPath, issueNumber);
   if (!validation) {
@@ -157,7 +177,7 @@ export async function getValidationWithFreshness(
  */
 export async function markValidationViewed(
   projectPath: string,
-  issueNumber: number
+  issueNumber: number,
 ): Promise<boolean> {
   const validation = await readValidation(projectPath, issueNumber);
   if (!validation) {
@@ -175,7 +195,9 @@ export async function markValidationViewed(
  * @param projectPath - Absolute path to project directory
  * @returns Number of unviewed validations
  */
-export async function getUnviewedValidationsCount(projectPath: string): Promise<number> {
+export async function getUnviewedValidationsCount(
+  projectPath: string,
+): Promise<number> {
   const validations = await getAllValidations(projectPath);
   return validations.filter((v) => !v.viewedAt && !isValidationStale(v)).length;
 }

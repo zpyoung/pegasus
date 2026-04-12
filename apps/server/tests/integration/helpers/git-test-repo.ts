@@ -1,11 +1,11 @@
 /**
  * Helper for creating test git repositories for integration tests
  */
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as os from "os";
 
 const execAsync = promisify(exec);
 
@@ -18,41 +18,46 @@ export interface TestRepo {
  * Create a temporary git repository for testing
  */
 export async function createTestGitRepo(): Promise<TestRepo> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pegasus-test-'));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "pegasus-test-"));
 
   // Initialize git repo with 'main' as the default branch (matching GitHub's standard)
-  await execAsync('git init --initial-branch=main', { cwd: tmpDir });
+  await execAsync("git init --initial-branch=main", { cwd: tmpDir });
 
   // Use environment variables instead of git config to avoid affecting user's git config
   // These env vars override git config without modifying it
   const gitEnv = {
     ...process.env,
-    GIT_AUTHOR_NAME: 'Test User',
-    GIT_AUTHOR_EMAIL: 'test@example.com',
-    GIT_COMMITTER_NAME: 'Test User',
-    GIT_COMMITTER_EMAIL: 'test@example.com',
+    GIT_AUTHOR_NAME: "Test User",
+    GIT_AUTHOR_EMAIL: "test@example.com",
+    GIT_COMMITTER_NAME: "Test User",
+    GIT_COMMITTER_EMAIL: "test@example.com",
   };
 
   // Create initial commit
-  await fs.writeFile(path.join(tmpDir, 'README.md'), '# Test Project\n');
-  await execAsync('git add .', { cwd: tmpDir, env: gitEnv });
-  await execAsync('git commit -m "Initial commit"', { cwd: tmpDir, env: gitEnv });
+  await fs.writeFile(path.join(tmpDir, "README.md"), "# Test Project\n");
+  await execAsync("git add .", { cwd: tmpDir, env: gitEnv });
+  await execAsync('git commit -m "Initial commit"', {
+    cwd: tmpDir,
+    env: gitEnv,
+  });
 
   return {
     path: tmpDir,
     cleanup: async () => {
       try {
         // Remove all worktrees first
-        const { stdout } = await execAsync('git worktree list --porcelain', {
+        const { stdout } = await execAsync("git worktree list --porcelain", {
           cwd: tmpDir,
-        }).catch(() => ({ stdout: '' }));
+        }).catch(() => ({ stdout: "" }));
 
         const worktrees = stdout
-          .split('\n\n')
+          .split("\n\n")
           .slice(1) // Skip main worktree
           .map((block) => {
-            const pathLine = block.split('\n').find((line) => line.startsWith('worktree '));
-            return pathLine ? pathLine.replace('worktree ', '') : null;
+            const pathLine = block
+              .split("\n")
+              .find((line) => line.startsWith("worktree "));
+            return pathLine ? pathLine.replace("worktree ", "") : null;
           })
           .filter(Boolean);
 
@@ -69,7 +74,7 @@ export async function createTestGitRepo(): Promise<TestRepo> {
         // Remove the repository
         await fs.rm(tmpDir, { recursive: true, force: true });
       } catch (error) {
-        console.error('Failed to cleanup test repo:', error);
+        console.error("Failed to cleanup test repo:", error);
       }
     },
   };
@@ -81,23 +86,26 @@ export async function createTestGitRepo(): Promise<TestRepo> {
 export async function createTestFeature(
   repoPath: string,
   featureId: string,
-  featureData: any
+  featureData: any,
 ): Promise<void> {
-  const featuresDir = path.join(repoPath, '.pegasus', 'features');
+  const featuresDir = path.join(repoPath, ".pegasus", "features");
   const featureDir = path.join(featuresDir, featureId);
 
   await fs.mkdir(featureDir, { recursive: true });
-  await fs.writeFile(path.join(featureDir, 'feature.json'), JSON.stringify(featureData, null, 2));
+  await fs.writeFile(
+    path.join(featureDir, "feature.json"),
+    JSON.stringify(featureData, null, 2),
+  );
 }
 
 /**
  * Get list of git branches
  */
 export async function listBranches(repoPath: string): Promise<string[]> {
-  const { stdout } = await execAsync('git branch --list', { cwd: repoPath });
+  const { stdout } = await execAsync("git branch --list", { cwd: repoPath });
   return stdout
-    .split('\n')
-    .map((line) => line.trim().replace(/^[*+]\s*/, ''))
+    .split("\n")
+    .map((line) => line.trim().replace(/^[*+]\s*/, ""))
     .filter(Boolean);
 }
 
@@ -106,16 +114,18 @@ export async function listBranches(repoPath: string): Promise<string[]> {
  */
 export async function listWorktrees(repoPath: string): Promise<string[]> {
   try {
-    const { stdout } = await execAsync('git worktree list --porcelain', {
+    const { stdout } = await execAsync("git worktree list --porcelain", {
       cwd: repoPath,
     });
 
     return stdout
-      .split('\n\n')
+      .split("\n\n")
       .slice(1) // Skip main worktree
       .map((block) => {
-        const pathLine = block.split('\n').find((line) => line.startsWith('worktree '));
-        return pathLine ? pathLine.replace('worktree ', '') : null;
+        const pathLine = block
+          .split("\n")
+          .find((line) => line.startsWith("worktree "));
+        return pathLine ? pathLine.replace("worktree ", "") : null;
       })
       .filter(Boolean) as string[];
   } catch {
@@ -126,7 +136,10 @@ export async function listWorktrees(repoPath: string): Promise<string[]> {
 /**
  * Check if a branch exists
  */
-export async function branchExists(repoPath: string, branchName: string): Promise<boolean> {
+export async function branchExists(
+  repoPath: string,
+  branchName: string,
+): Promise<boolean> {
   const branches = await listBranches(repoPath);
   return branches.includes(branchName);
 }
@@ -134,7 +147,10 @@ export async function branchExists(repoPath: string, branchName: string): Promis
 /**
  * Check if a worktree exists
  */
-export async function worktreeExists(repoPath: string, worktreePath: string): Promise<boolean> {
+export async function worktreeExists(
+  repoPath: string,
+  worktreePath: string,
+): Promise<boolean> {
   const worktrees = await listWorktrees(repoPath);
   return worktrees.some((wt) => wt === worktreePath);
 }

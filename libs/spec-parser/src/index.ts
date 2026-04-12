@@ -9,18 +9,23 @@
  */
 
 // Re-export types from @pegasus/types for convenience
-export type { SpecOutput } from '@pegasus/types';
+export type { SpecOutput } from "@pegasus/types";
 
 // XML utilities
-export { escapeXml, unescapeXml, extractXmlSection, extractXmlElements } from './xml-utils.js';
+export {
+  escapeXml,
+  unescapeXml,
+  extractXmlSection,
+  extractXmlElements,
+} from "./xml-utils.js";
 
 // XML to Spec parsing
-export { xmlToSpec } from './xml-to-spec.js';
-export type { ParseResult } from './xml-to-spec.js';
+export { xmlToSpec } from "./xml-to-spec.js";
+export type { ParseResult } from "./xml-to-spec.js";
 
 // Spec to XML conversion
-export { specToXml } from './spec-to-xml.js';
+export { specToXml } from "./spec-to-xml.js";
 
 // Validation
-export { validateSpec, isValidSpecXml } from './validate.js';
-export type { ValidationResult } from './validate.js';
+export { validateSpec, isValidSpecXml } from "./validate.js";
+export type { ValidationResult } from "./validate.js";

@@ -5,11 +5,11 @@
  * Shows toasts on success/error.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { ConvertToFeatureOptions } from '@pegasus/types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type { ConvertToFeatureOptions } from "@pegasus/types";
 
 interface ConvertInput {
   ideaId: string;
@@ -22,18 +22,28 @@ export function useConvertIdea(projectPath: string) {
   const mutation = useMutation({
     mutationFn: async ({ ideaId, options }: ConvertInput) => {
       const api = getElectronAPI();
-      if (!api.ideation?.convertToFeature) throw new Error('Ideation API not available');
-      const result = await api.ideation.convertToFeature(projectPath, ideaId, options);
-      if (!result.success) throw new Error(result.error || 'Failed to convert idea to feature');
+      if (!api.ideation?.convertToFeature)
+        throw new Error("Ideation API not available");
+      const result = await api.ideation.convertToFeature(
+        projectPath,
+        ideaId,
+        options,
+      );
+      if (!result.success)
+        throw new Error(result.error || "Failed to convert idea to feature");
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.ideation.ideas(projectPath) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
-      toast.success('Idea promoted to feature');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.ideation.ideas(projectPath),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
+      toast.success("Idea promoted to feature");
     },
     onError: (error: Error) => {
-      toast.error('Failed to promote idea', { description: error.message });
+      toast.error("Failed to promote idea", { description: error.message });
     },
     retry: 0,
   });

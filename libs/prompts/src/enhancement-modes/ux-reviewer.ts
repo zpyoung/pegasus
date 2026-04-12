@@ -3,7 +3,7 @@
  * Reviews and enhances task descriptions from a user experience and design perspective.
  */
 
-import type { EnhancementExample } from '@pegasus/types';
+import type { EnhancementExample } from "@pegasus/types";
 
 /**
  * System prompt for the "ux-reviewer" enhancement mode.
@@ -223,7 +223,7 @@ IMPORTANT: Output ONLY the new UX requirements section. Do NOT repeat or rewrite
  */
 export const UX_REVIEWER_EXAMPLES: EnhancementExample[] = [
   {
-    input: 'Add user profile page',
+    input: "Add user profile page",
     output: `UX Requirements:
 - **Layout**: Single-column layout on mobile, two-column layout on desktop (profile info left, edit form right)
 - **Visual Hierarchy**: Profile header with avatar (120x120px), name (24px font), and edit button prominently displayed
@@ -263,7 +263,7 @@ export const UX_REVIEWER_EXAMPLES: EnhancementExample[] = [
   - Follow existing form validation patterns`,
   },
   {
-    input: 'Add search functionality',
+    input: "Add search functionality",
     output: `UX Requirements:
 - **Search Input**:
   - Prominent search bar in header (desktop) or accessible via icon (mobile)
@@ -314,4 +314,4 @@ export const UX_REVIEWER_EXAMPLES: EnhancementExample[] = [
  * Description of what this enhancement mode does
  */
 export const UX_REVIEWER_DESCRIPTION =
-  'Review and enhance from a user experience and design perspective';
+  "Review and enhance from a user experience and design perspective";

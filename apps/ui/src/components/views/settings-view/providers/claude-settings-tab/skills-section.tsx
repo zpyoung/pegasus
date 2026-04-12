@@ -5,19 +5,20 @@
  * to load Skills from (user ~/.claude/skills/ or project .claude/skills/).
  */
 
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { Zap, Globe, FolderOpen, ExternalLink, Sparkles } from 'lucide-react';
-import { useSkillsSettings } from './hooks/use-skills-settings';
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { Zap, Globe, FolderOpen, ExternalLink, Sparkles } from "lucide-react";
+import { useSkillsSettings } from "./hooks/use-skills-settings";
 
 export function SkillsSection() {
-  const { enabled, sources, updateEnabled, updateSources, isLoading } = useSkillsSettings();
+  const { enabled, sources, updateEnabled, updateSources, isLoading } =
+    useSkillsSettings();
 
-  const toggleSource = (source: 'user' | 'project') => {
+  const toggleSource = (source: "user" | "project") => {
     if (sources.includes(source)) {
-      updateSources(sources.filter((s: 'user' | 'project') => s !== source));
+      updateSources(sources.filter((s: "user" | "project") => s !== source));
     } else {
       updateSources([...sources, source]);
     }
@@ -26,10 +27,10 @@ export function SkillsSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -43,7 +44,8 @@ export function SkillsSection() {
               Skills
               {enabled && (
                 <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500">
-                  {sources.length} source{sources.length !== 1 ? 's' : ''} active
+                  {sources.length} source{sources.length !== 1 ? "s" : ""}{" "}
+                  active
                 </span>
               )}
             </h3>
@@ -73,16 +75,16 @@ export function SkillsSection() {
               <label
                 htmlFor="source-user"
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200',
-                  sources.includes('user')
-                    ? 'border-amber-500/50 bg-amber-500/10'
-                    : 'border-border/50 bg-accent/20 hover:bg-accent/30'
+                  "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                  sources.includes("user")
+                    ? "border-amber-500/50 bg-amber-500/10"
+                    : "border-border/50 bg-accent/20 hover:bg-accent/30",
                 )}
               >
                 <Checkbox
                   id="source-user"
-                  checked={sources.includes('user')}
-                  onCheckedChange={() => toggleSource('user')}
+                  checked={sources.includes("user")}
+                  onCheckedChange={() => toggleSource("user")}
                   disabled={isLoading}
                   className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                 />
@@ -101,16 +103,16 @@ export function SkillsSection() {
               <label
                 htmlFor="source-project"
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200',
-                  sources.includes('project')
-                    ? 'border-amber-500/50 bg-amber-500/10'
-                    : 'border-border/50 bg-accent/20 hover:bg-accent/30'
+                  "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                  sources.includes("project")
+                    ? "border-amber-500/50 bg-amber-500/10"
+                    : "border-border/50 bg-accent/20 hover:bg-accent/30",
                 )}
               >
                 <Checkbox
                   id="source-project"
-                  checked={sources.includes('project')}
-                  onCheckedChange={() => toggleSource('project')}
+                  checked={sources.includes("project")}
+                  onCheckedChange={() => toggleSource("project")}
                   disabled={isLoading}
                   className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                 />
@@ -138,8 +140,12 @@ export function SkillsSection() {
               <div className="text-xs text-muted-foreground space-y-1">
                 <p className="font-medium text-foreground/80">Auto-Discovery</p>
                 <p>
-                  Skills are automatically discovered when agents start. Define skills as{' '}
-                  <code className="text-xs bg-muted px-1 rounded">SKILL.md</code> files.
+                  Skills are automatically discovered when agents start. Define
+                  skills as{" "}
+                  <code className="text-xs bg-muted px-1 rounded">
+                    SKILL.md
+                  </code>{" "}
+                  files.
                 </p>
               </div>
             </div>
@@ -160,7 +166,9 @@ export function SkillsSection() {
           <div className="text-center py-6 text-muted-foreground">
             <Zap className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">Skills are disabled</p>
-            <p className="text-xs mt-1">Enable to load filesystem-based capabilities</p>
+            <p className="text-xs mt-1">
+              Enable to load filesystem-based capabilities
+            </p>
           </div>
         )}
       </div>

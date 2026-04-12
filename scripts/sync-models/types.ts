@@ -4,7 +4,7 @@
 
 export interface ProviderAdapter {
   readonly name: string;
-  readonly tier: 'ci' | 'local'; // ci = runs in GitHub Actions; local = requires interactive auth
+  readonly tier: "ci" | "local"; // ci = runs in GitHub Actions; local = requires interactive auth
   fetchModels(): Promise<ModelEntry[]>;
 }
 
@@ -18,7 +18,7 @@ export interface ModelEntry {
   supportsTools?: boolean;
   supportsThinking?: boolean;
   reasoningCapable?: boolean;
-  stabilityTier?: 'ga' | 'preview' | 'deprecated';
+  stabilityTier?: "ga" | "preview" | "deprecated";
   pricing?: { inputPerMToken?: number; outputPerMToken?: number };
   aliases?: string[]; // Short names this model is known by
   defaultFor?: string; // If this is the default model for its provider

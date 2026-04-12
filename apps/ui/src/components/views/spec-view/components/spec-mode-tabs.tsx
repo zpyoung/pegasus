@@ -1,6 +1,6 @@
-import { Eye, Edit3, Code } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { SpecViewMode } from '../types';
+import { Eye, Edit3, Code } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { SpecViewMode } from "../types";
 
 interface SpecModeTabsProps {
   mode: SpecViewMode;
@@ -25,7 +25,11 @@ export function SpecModeTabs({
         <TabsTrigger
           value="view"
           disabled={disabled || !isParseValid}
-          title={!isParseValid ? 'Fix XML errors to enable View mode' : 'View formatted spec'}
+          title={
+            !isParseValid
+              ? "Fix XML errors to enable View mode"
+              : "View formatted spec"
+          }
           aria-label="View"
         >
           <Eye className="w-4 h-4" />
@@ -34,7 +38,11 @@ export function SpecModeTabs({
         <TabsTrigger
           value="edit"
           disabled={disabled || !isParseValid}
-          title={!isParseValid ? 'Fix XML errors to enable Edit mode' : 'Edit spec with form'}
+          title={
+            !isParseValid
+              ? "Fix XML errors to enable Edit mode"
+              : "Edit spec with form"
+          }
           aria-label="Edit"
         >
           <Edit3 className="w-4 h-4" />

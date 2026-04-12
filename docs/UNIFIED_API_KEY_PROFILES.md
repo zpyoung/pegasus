@@ -20,24 +20,24 @@ Claude Compatible Providers allow Pegasus to work with third-party API endpoints
 ```typescript
 // ClaudeCompatibleProviderType union — determines UI screen and default settings
 type ClaudeCompatibleProviderType =
-  | 'anthropic' // Direct Anthropic API (built-in)
-  | 'glm'       // z.AI GLM
-  | 'minimax'   // MiniMax
-  | 'openrouter'// OpenRouter proxy
-  | 'custom';   // User-defined custom provider
+  | "anthropic" // Direct Anthropic API (built-in)
+  | "glm" // z.AI GLM
+  | "minimax" // MiniMax
+  | "openrouter" // OpenRouter proxy
+  | "custom"; // User-defined custom provider
 
 export interface ClaudeCompatibleProvider {
-  id: string;                              // Unique identifier (UUID) — REQUIRED
-  name: string;                            // Display name (e.g., "z.AI GLM") — REQUIRED
+  id: string; // Unique identifier (UUID) — REQUIRED
+  name: string; // Display name (e.g., "z.AI GLM") — REQUIRED
   providerType: ClaudeCompatibleProviderType; // Provider type for icon/grouping — REQUIRED
-  models: ProviderModel[];                 // Models exposed by this provider — REQUIRED
-  baseUrl?: string;                        // API endpoint URL
-  apiKeySource?: ApiKeySource;             // 'inline' | 'env' | 'credentials'
-  apiKey?: string;                         // API key (when apiKeySource = 'inline')
-  useAuthToken?: boolean;                  // Use ANTHROPIC_AUTH_TOKEN header
-  timeoutMs?: number;                      // Request timeout in milliseconds
-  disableNonessentialTraffic?: boolean;    // Minimize non-essential API calls
-  enabled?: boolean;                       // Whether provider is active (default: true)
+  models: ProviderModel[]; // Models exposed by this provider — REQUIRED
+  baseUrl?: string; // API endpoint URL
+  apiKeySource?: ApiKeySource; // 'inline' | 'env' | 'credentials'
+  apiKey?: string; // API key (when apiKeySource = 'inline')
+  useAuthToken?: boolean; // Use ANTHROPIC_AUTH_TOKEN header
+  timeoutMs?: number; // Request timeout in milliseconds
+  disableNonessentialTraffic?: boolean; // Minimize non-essential API calls
+  enabled?: boolean; // Whether provider is active (default: true)
   providerSettings?: Record<string, unknown>; // Provider-specific settings
 }
 ```
@@ -110,20 +110,20 @@ The `buildEnv()` function in `claude-provider.ts` resolves API keys based on `ap
 ```typescript
 function buildEnv(
   providerConfig?: ClaudeCompatibleProvider,
-  credentials?: Credentials
+  credentials?: Credentials,
 ): Record<string, string | undefined> {
   if (providerConfig) {
     let apiKey: string | undefined;
-    const source = providerConfig.apiKeySource ?? 'inline';
+    const source = providerConfig.apiKeySource ?? "inline";
 
     switch (source) {
-      case 'inline':
+      case "inline":
         apiKey = providerConfig.apiKey;
         break;
-      case 'env':
+      case "env":
         apiKey = process.env.ANTHROPIC_API_KEY;
         break;
-      case 'credentials':
+      case "credentials":
         apiKey = credentials?.apiKeys?.anthropic;
         break;
     }
@@ -140,7 +140,7 @@ The `getProviderByModelId()` helper resolves provider configuration from model I
 export async function getProviderByModelId(
   modelId: string,
   settingsService: SettingsService,
-  logPrefix?: string
+  logPrefix?: string,
 ): Promise<{
   provider: ClaudeCompatibleProvider | undefined;
   modelConfig: ProviderModel | undefined;
@@ -164,7 +164,7 @@ export async function getPhaseModelWithOverrides(
   phase: PhaseModelKey,
   settingsService?: SettingsService | null,
   projectPath?: string,
-  logPrefix?: string
+  logPrefix?: string,
 ): Promise<{
   phaseModel: PhaseModelEntry;
   isProjectOverride: boolean;
@@ -297,13 +297,13 @@ The migration is automatic and preserves existing provider configurations.
 
 ### UI
 
-| File                                                                                              | Changes                                   |
-| ------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `apps/ui/src/components/views/settings-view/model-defaults/phase-model-selector.tsx`             | Provider model rendering, thinking levels |
-| `apps/ui/src/components/views/settings-view/model-defaults/bulk-replace-dialog.tsx`              | Bulk replace feature                      |
-| `apps/ui/src/components/views/settings-view/providers/claude-settings-tab/api-profiles-section.tsx` | Provider management UI                 |
-| `apps/ui/src/components/ui/provider-icon.tsx`                                                    | Provider-specific icons                   |
-| `apps/ui/src/hooks/use-project-settings-loader.ts`                                               | Load phaseModelOverrides                  |
+| File                                                                                                | Changes                                   |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `apps/ui/src/components/views/settings-view/model-defaults/phase-model-selector.tsx`                | Provider model rendering, thinking levels |
+| `apps/ui/src/components/views/settings-view/model-defaults/bulk-replace-dialog.tsx`                 | Bulk replace feature                      |
+| `apps/ui/src/components/views/settings-view/providers/claude-settings-tab/api-profiles-section.tsx` | Provider management UI                    |
+| `apps/ui/src/components/ui/provider-icon.tsx`                                                       | Provider-specific icons                   |
+| `apps/ui/src/hooks/use-project-settings-loader.ts`                                                  | Load phaseModelOverrides                  |
 
 ## Testing
 

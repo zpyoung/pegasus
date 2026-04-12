@@ -5,8 +5,8 @@
  * Users must acknowledge the risks before proceeding.
  */
 
-import { useState } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { useState } from "react";
+import { ShieldAlert } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,10 +14,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface SandboxRiskDialogProps {
   open: boolean;
@@ -25,7 +25,11 @@ interface SandboxRiskDialogProps {
   onDeny: () => void;
 }
 
-export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialogProps) {
+export function SandboxRiskDialog({
+  open,
+  onConfirm,
+  onDeny,
+}: SandboxRiskDialogProps) {
   const [skipInFuture, setSkipInFuture] = useState(false);
 
   const handleConfirm = () => {
@@ -53,24 +57,36 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
           <DialogDescription asChild>
             <div className="space-y-4 pt-2 pb-2">
               <p className="text-muted-foreground">
-                <strong>Warning:</strong> This application is running outside of a containerized
-                sandbox environment. AI agents will have direct access to your filesystem and can
-                execute commands on your system.
+                <strong>Warning:</strong> This application is running outside of
+                a containerized sandbox environment. AI agents will have direct
+                access to your filesystem and can execute commands on your
+                system.
               </p>
 
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-medium text-destructive">Potential Risks:</p>
+                <p className="text-sm font-medium text-destructive">
+                  Potential Risks:
+                </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                  <li>Agents can read, modify, or delete files on your system</li>
-                  <li>Agents can execute arbitrary commands and install software</li>
-                  <li>Agents can access environment variables and credentials</li>
-                  <li>Unintended side effects from agent actions may affect your system</li>
+                  <li>
+                    Agents can read, modify, or delete files on your system
+                  </li>
+                  <li>
+                    Agents can execute arbitrary commands and install software
+                  </li>
+                  <li>
+                    Agents can access environment variables and credentials
+                  </li>
+                  <li>
+                    Unintended side effects from agent actions may affect your
+                    system
+                  </li>
                 </ul>
               </div>
 
               <p className="text-sm text-muted-foreground">
-                For safer operation, consider running Pegasus in Docker. See the README for
-                instructions.
+                For safer operation, consider running Pegasus in Docker. See the
+                README for instructions.
               </p>
 
               <div className="bg-muted/50 border border-border rounded-lg p-4 space-y-2">
@@ -79,19 +95,27 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    Ensure <code className="bg-muted px-1 rounded">IS_CONTAINERIZED=true</code> is
-                    set in your docker-compose environment
+                    Ensure{" "}
+                    <code className="bg-muted px-1 rounded">
+                      IS_CONTAINERIZED=true
+                    </code>{" "}
+                    is set in your docker-compose environment
                   </li>
                   <li>
-                    Verify the server container has the environment variable:{' '}
+                    Verify the server container has the environment variable:{" "}
                     <code className="bg-muted px-1 rounded">
                       docker exec pegasus-server printenv IS_CONTAINERIZED
                     </code>
                   </li>
-                  <li>Rebuild and restart containers if you recently changed the configuration</li>
                   <li>
-                    Check the server logs for startup messages:{' '}
-                    <code className="bg-muted px-1 rounded">docker-compose logs server</code>
+                    Rebuild and restart containers if you recently changed the
+                    configuration
+                  </li>
+                  <li>
+                    Check the server logs for startup messages:{" "}
+                    <code className="bg-muted px-1 rounded">
+                      docker-compose logs server
+                    </code>
                   </li>
                 </ul>
               </div>
@@ -115,7 +139,12 @@ export function SandboxRiskDialog({ open, onConfirm, onDeny }: SandboxRiskDialog
             </Label>
           </div>
           <div className="flex gap-2 sm:gap-2 w-full sm:justify-end">
-            <Button variant="outline" onClick={onDeny} className="px-4" data-testid="sandbox-deny">
+            <Button
+              variant="outline"
+              onClick={onDeny}
+              className="px-4"
+              data-testid="sandbox-deny"
+            >
               Deny &amp; Exit
             </Button>
             <Button

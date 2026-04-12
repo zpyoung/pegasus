@@ -1,9 +1,20 @@
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Check, CircleDot, Globe, GitPullRequest, FlaskConical, AlertTriangle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import type { WorktreeInfo, DevServerInfo, TestSessionInfo } from '../types';
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Check,
+  CircleDot,
+  Globe,
+  GitPullRequest,
+  FlaskConical,
+  AlertTriangle,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import type { WorktreeInfo, DevServerInfo, TestSessionInfo } from "../types";
 import {
   truncateBranchName,
   getPRBadgeStyles,
@@ -11,7 +22,7 @@ import {
   getConflictBadgeStyles,
   getConflictTypeLabel,
   getTestStatusStyles,
-} from './worktree-indicator-utils';
+} from "./worktree-indicator-utils";
 
 /**
  * Maximum characters for branch name before truncation in dropdown items.
@@ -76,13 +87,13 @@ export function WorktreeDropdownItem({
   const { hasChanges, changedFilesCount, pr } = worktree;
 
   // Truncate long branch names using shared utility
-  const { truncated: truncatedBranch, isTruncated: isBranchNameTruncated } = truncateBranchName(
-    worktree.branch,
-    MAX_ITEM_BRANCH_NAME_LENGTH
-  );
+  const { truncated: truncatedBranch, isTruncated: isBranchNameTruncated } =
+    truncateBranchName(worktree.branch, MAX_ITEM_BRANCH_NAME_LENGTH);
 
   const branchNameElement = (
-    <span className={cn('font-mono text-xs truncate', isSelected && 'font-medium')}>
+    <span
+      className={cn("font-mono text-xs truncate", isSelected && "font-medium")}
+    >
       {truncatedBranch}
     </span>
   );
@@ -90,8 +101,11 @@ export function WorktreeDropdownItem({
   return (
     <DropdownMenuItem
       onSelect={onSelect}
-      className={cn('flex items-center gap-2 cursor-pointer pr-2', isSelected && 'bg-accent')}
-      aria-current={isSelected ? 'true' : undefined}
+      className={cn(
+        "flex items-center gap-2 cursor-pointer pr-2",
+        isSelected && "bg-accent",
+      )}
+      aria-current={isSelected ? "true" : undefined}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {/* Selection indicator */}
@@ -137,13 +151,13 @@ export function WorktreeDropdownItem({
         {hasChanges && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
-              getChangesBadgeStyles()
+              "inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border",
+              getChangesBadgeStyles(),
             )}
-            title={`${changedFilesCount ?? 'Some'} uncommitted file${changedFilesCount !== 1 ? 's' : ''}`}
+            title={`${changedFilesCount ?? "Some"} uncommitted file${changedFilesCount !== 1 ? "s" : ""}`}
           >
             <CircleDot className="w-2.5 h-2.5 mr-0.5" />
-            {changedFilesCount ?? '!'}
+            {changedFilesCount ?? "!"}
           </span>
         )}
 
@@ -181,8 +195,8 @@ export function WorktreeDropdownItem({
         {!isTestRunning && testSessionInfo && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 w-4',
-              getTestStatusStyles(testSessionInfo.status)
+              "inline-flex items-center justify-center h-4 w-4",
+              getTestStatusStyles(testSessionInfo.status),
             )}
             title={`Last test: ${testSessionInfo.status}`}
           >
@@ -192,7 +206,10 @@ export function WorktreeDropdownItem({
 
         {/* Auto mode indicator */}
         {isAutoModeRunning && (
-          <span className="flex items-center justify-center h-4 px-0.5" title="Auto Mode Running">
+          <span
+            className="flex items-center justify-center h-4 px-0.5"
+            title="Auto Mode Running"
+          >
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           </span>
         )}
@@ -201,10 +218,10 @@ export function WorktreeDropdownItem({
         {worktree.hasConflicts && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
-              getConflictBadgeStyles()
+              "inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border",
+              getConflictBadgeStyles(),
             )}
-            title={`${getConflictTypeLabel(worktree.conflictType)} conflicts${worktree.conflictFiles?.length ? ` (${worktree.conflictFiles.length} files)` : ''}`}
+            title={`${getConflictTypeLabel(worktree.conflictType)} conflicts${worktree.conflictFiles?.length ? ` (${worktree.conflictFiles.length} files)` : ""}`}
           >
             <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />
             {getConflictTypeLabel(worktree.conflictType)}
@@ -215,8 +232,8 @@ export function WorktreeDropdownItem({
         {pr && (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 h-4 px-1 text-[10px] font-medium rounded border',
-              getPRBadgeStyles(pr.state)
+              "inline-flex items-center gap-0.5 h-4 px-1 text-[10px] font-medium rounded border",
+              getPRBadgeStyles(pr.state),
             )}
             title={`PR #${pr.number}: ${pr.title}`}
           >

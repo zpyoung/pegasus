@@ -10,10 +10,10 @@
  * - Malformed request exploitation
  */
 
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from "express";
 
 // HTTP methods that typically include request bodies
-const METHODS_REQUIRING_JSON = ['POST', 'PUT', 'PATCH'];
+const METHODS_REQUIRING_JSON = ["POST", "PUT", "PATCH"];
 
 /**
  * Middleware that requires Content-Type: application/json for POST/PUT/PATCH requests
@@ -26,22 +26,26 @@ const METHODS_REQUIRING_JSON = ['POST', 'PUT', 'PATCH'];
  * - The request method is GET, DELETE, OPTIONS, HEAD, etc.
  * - OR the Content-Type is properly set to application/json (with optional charset)
  */
-export function requireJsonContentType(req: Request, res: Response, next: NextFunction): void {
+export function requireJsonContentType(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Skip validation for methods that don't require a body
   if (!METHODS_REQUIRING_JSON.includes(req.method)) {
     next();
     return;
   }
 
-  const contentType = req.headers['content-type'];
+  const contentType = req.headers["content-type"];
 
   // Check if Content-Type header exists and contains application/json
   // Allows for charset parameter: "application/json; charset=utf-8"
-  if (!contentType || !contentType.toLowerCase().includes('application/json')) {
+  if (!contentType || !contentType.toLowerCase().includes("application/json")) {
     res.status(415).json({
       success: false,
-      error: 'Unsupported Media Type',
-      message: 'Content-Type header must be application/json',
+      error: "Unsupported Media Type",
+      message: "Content-Type header must be application/json",
     });
     return;
   }

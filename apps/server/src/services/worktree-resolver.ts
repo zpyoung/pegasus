@@ -12,9 +12,9 @@
  * - Handles detached HEAD and bare worktrees gracefully
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
+import { exec } from "child_process";
+import { promisify } from "util";
+import path from "path";
 
 const execAsync = promisify(exec);
 
@@ -39,14 +39,16 @@ export interface WorktreeInfo {
  * 3. Listing all worktrees with normalized paths
  */
 export class WorktreeResolver {
-  private normalizeBranchName(branchName: string | null | undefined): string | null {
+  private normalizeBranchName(
+    branchName: string | null | undefined,
+  ): string | null {
     if (!branchName) return null;
     let normalized = branchName.trim();
     if (!normalized) return null;
 
-    normalized = normalized.replace(/^refs\/heads\//, '');
-    normalized = normalized.replace(/^refs\/remotes\/[^/]+\//, '');
-    normalized = normalized.replace(/^(origin|upstream)\//, '');
+    normalized = normalized.replace(/^refs\/heads\//, "");
+    normalized = normalized.replace(/^refs\/remotes\/[^/]+\//, "");
+    normalized = normalized.replace(/^(origin|upstream)\//, "");
 
     return normalized || null;
   }
@@ -59,7 +61,9 @@ export class WorktreeResolver {
    */
   async getCurrentBranch(projectPath: string): Promise<string | null> {
     try {
-      const { stdout } = await execAsync('git branch --show-current', { cwd: projectPath });
+      const { stdout } = await execAsync("git branch --show-current", {
+        cwd: projectPath,
+      });
       const branch = stdout.trim();
       return branch || null;
     } catch {
@@ -74,25 +78,28 @@ export class WorktreeResolver {
    * @param branchName - Branch name to find worktree for
    * @returns Absolute path to the worktree, or null if not found
    */
-  async findWorktreeForBranch(projectPath: string, branchName: string): Promise<string | null> {
+  async findWorktreeForBranch(
+    projectPath: string,
+    branchName: string,
+  ): Promise<string | null> {
     try {
       const normalizedTargetBranch = this.normalizeBranchName(branchName);
       if (!normalizedTargetBranch) return null;
 
-      const { stdout } = await execAsync('git worktree list --porcelain', {
+      const { stdout } = await execAsync("git worktree list --porcelain", {
         cwd: projectPath,
       });
 
-      const lines = stdout.split('\n');
+      const lines = stdout.split("\n");
       let currentPath: string | null = null;
       let currentBranch: string | null = null;
 
       for (const line of lines) {
-        if (line.startsWith('worktree ')) {
+        if (line.startsWith("worktree ")) {
           currentPath = line.slice(9);
-        } else if (line.startsWith('branch ')) {
+        } else if (line.startsWith("branch ")) {
           currentBranch = this.normalizeBranchName(line.slice(7));
-        } else if (line === '' && currentPath && currentBranch) {
+        } else if (line === "" && currentPath && currentBranch) {
           // End of a worktree entry
           if (currentBranch === normalizedTargetBranch) {
             // Resolve to absolute path - git may return relative paths
@@ -106,7 +113,11 @@ export class WorktreeResolver {
       }
 
       // Check the last entry (if file doesn't end with newline)
-      if (currentPath && currentBranch && currentBranch === normalizedTargetBranch) {
+      if (
+        currentPath &&
+        currentBranch &&
+        currentBranch === normalizedTargetBranch
+      ) {
         return this.resolvePath(projectPath, currentPath);
       }
 
@@ -124,25 +135,25 @@ export class WorktreeResolver {
    */
   async listWorktrees(projectPath: string): Promise<WorktreeInfo[]> {
     try {
-      const { stdout } = await execAsync('git worktree list --porcelain', {
+      const { stdout } = await execAsync("git worktree list --porcelain", {
         cwd: projectPath,
       });
 
       const worktrees: WorktreeInfo[] = [];
-      const lines = stdout.split('\n');
+      const lines = stdout.split("\n");
       let currentPath: string | null = null;
       let currentBranch: string | null = null;
       let isFirstWorktree = true;
 
       for (const line of lines) {
-        if (line.startsWith('worktree ')) {
+        if (line.startsWith("worktree ")) {
           currentPath = line.slice(9);
-        } else if (line.startsWith('branch ')) {
+        } else if (line.startsWith("branch ")) {
           currentBranch = this.normalizeBranchName(line.slice(7));
-        } else if (line.startsWith('detached')) {
+        } else if (line.startsWith("detached")) {
           // Detached HEAD - branch is null
           currentBranch = null;
-        } else if (line === '' && currentPath) {
+        } else if (line === "" && currentPath) {
           // End of a worktree entry
           worktrees.push({
             path: this.resolvePath(projectPath, currentPath),

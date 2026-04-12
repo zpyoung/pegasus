@@ -1,15 +1,15 @@
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   SquareTerminal,
   RefreshCw,
@@ -19,15 +19,15 @@ import {
   Palette,
   Type,
   X,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
-import { TERMINAL_FONT_OPTIONS } from '@/config/terminal-themes';
-import { DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
-import { useAvailableTerminals } from '@/components/views/board-view/worktree-panel/hooks/use-available-terminals';
-import { getTerminalIcon } from '@/components/icons/terminal-icons';
-import { TerminalConfigSection } from './terminal-config-section';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
+import { TERMINAL_FONT_OPTIONS } from "@/config/terminal-themes";
+import { DEFAULT_FONT_VALUE } from "@/config/ui-font-options";
+import { useAvailableTerminals } from "@/components/views/board-view/worktree-panel/hooks/use-available-terminals";
+import { getTerminalIcon } from "@/components/icons/terminal-icons";
+import { TerminalConfigSection } from "./terminal-config-section";
 
 export function TerminalSection() {
   const {
@@ -64,10 +64,10 @@ export function TerminalSection() {
     <div className="space-y-6">
       <div
         className={cn(
-          'rounded-2xl overflow-hidden',
-          'border border-border/50',
-          'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-          'shadow-sm shadow-black/5'
+          "rounded-2xl overflow-hidden",
+          "border border-border/50",
+          "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+          "shadow-sm shadow-black/5",
         )}
       >
         <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -75,18 +75,22 @@ export function TerminalSection() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center border border-green-500/20">
               <SquareTerminal className="w-5 h-5 text-green-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Terminal</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              Terminal
+            </h2>
           </div>
           <p className="text-sm text-muted-foreground/80 ml-12">
-            Customize terminal appearance and behavior. Theme follows your app theme in Appearance
-            settings.
+            Customize terminal appearance and behavior. Theme follows your app
+            theme in Appearance settings.
           </p>
         </div>
         <div className="p-6 space-y-6">
           {/* Default External Terminal */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Default External Terminal</Label>
+              <Label className="text-foreground font-medium">
+                Default External Terminal
+              </Label>
               <Button
                 variant="ghost"
                 size="sm"
@@ -96,20 +100,23 @@ export function TerminalSection() {
                 title="Refresh available terminals"
                 aria-label="Refresh available terminals"
               >
-                <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin')} />
+                <RefreshCw
+                  className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")}
+                />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Terminal to use when selecting "Open in Terminal" from the worktree menu
+              Terminal to use when selecting "Open in Terminal" from the
+              worktree menu
             </p>
             <Select
-              value={defaultTerminalId ?? 'integrated'}
+              value={defaultTerminalId ?? "integrated"}
               onValueChange={(value) => {
-                setDefaultTerminalId(value === 'integrated' ? null : value);
+                setDefaultTerminalId(value === "integrated" ? null : value);
                 toast.success(
-                  value === 'integrated'
-                    ? 'Integrated terminal set as default'
-                    : 'Default terminal changed'
+                  value === "integrated"
+                    ? "Integrated terminal set as default"
+                    : "Default terminal changed",
                 );
               }}
             >
@@ -145,19 +152,21 @@ export function TerminalSection() {
 
           {/* Default Open Mode */}
           <div className="space-y-3">
-            <Label className="text-foreground font-medium">Default Open Mode</Label>
+            <Label className="text-foreground font-medium">
+              Default Open Mode
+            </Label>
             <p className="text-xs text-muted-foreground">
-              How to open the integrated terminal when using "Open in Terminal" from the worktree
-              menu
+              How to open the integrated terminal when using "Open in Terminal"
+              from the worktree menu
             </p>
             <Select
               value={openTerminalMode}
-              onValueChange={(value: 'newTab' | 'split') => {
+              onValueChange={(value: "newTab" | "split") => {
                 setOpenTerminalMode(value);
                 toast.success(
-                  value === 'newTab'
-                    ? 'New terminals will open in new tabs'
-                    : 'New terminals will split the current tab'
+                  value === "newTab"
+                    ? "New terminals will open in new tabs"
+                    : "New terminals will split the current tab",
                 );
               }}
             >
@@ -188,8 +197,8 @@ export function TerminalSection() {
               value={fontFamily || DEFAULT_FONT_VALUE}
               onValueChange={(value) => {
                 setTerminalFontFamily(value);
-                toast.info('Font family changed', {
-                  description: 'Restart terminal for changes to take effect',
+                toast.info("Font family changed", {
+                  description: "Restart terminal for changes to take effect",
                 });
               }}
             >
@@ -201,7 +210,10 @@ export function TerminalSection() {
                   <SelectItem key={option.value} value={option.value}>
                     <span
                       style={{
-                        fontFamily: option.value === DEFAULT_FONT_VALUE ? undefined : option.value,
+                        fontFamily:
+                          option.value === DEFAULT_FONT_VALUE
+                            ? undefined
+                            : option.value,
                       }}
                     >
                       {option.label}
@@ -215,7 +227,9 @@ export function TerminalSection() {
           {/* Background Color */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Background Color</Label>
+              <Label className="text-foreground font-medium">
+                Background Color
+              </Label>
               {customBackgroundColor && (
                 <Button
                   variant="ghost"
@@ -223,7 +237,7 @@ export function TerminalSection() {
                   className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setTerminalBackgroundColor(null);
-                    toast.success('Background color reset to theme default');
+                    toast.success("Background color reset to theme default");
                   }}
                 >
                   <X className="w-3 h-3 mr-1" />
@@ -232,26 +246,29 @@ export function TerminalSection() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Override the terminal background color. Leave empty to use the theme default.
+              Override the terminal background color. Leave empty to use the
+              theme default.
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
                 <div
                   className="w-10 h-10 rounded-lg border border-border/50 shadow-sm flex items-center justify-center"
                   style={{
-                    backgroundColor: customBackgroundColor || 'var(--card)',
+                    backgroundColor: customBackgroundColor || "var(--card)",
                   }}
                 >
                   <Palette
                     className={cn(
-                      'w-5 h-5',
-                      customBackgroundColor ? 'text-white/80' : 'text-muted-foreground'
+                      "w-5 h-5",
+                      customBackgroundColor
+                        ? "text-white/80"
+                        : "text-muted-foreground",
                     )}
                   />
                 </div>
                 <Input
                   type="color"
-                  value={customBackgroundColor || '#000000'}
+                  value={customBackgroundColor || "#000000"}
                   onChange={(e) => {
                     const color = e.target.value;
                     setTerminalBackgroundColor(color);
@@ -261,12 +278,12 @@ export function TerminalSection() {
                 />
                 <Input
                   type="text"
-                  value={customBackgroundColor || ''}
+                  value={customBackgroundColor || ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     // Validate hex color format
-                    if (value === '' || /^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                      if (value === '' || /^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    if (value === "" || /^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      if (value === "" || /^#[0-9A-Fa-f]{6}$/.test(value)) {
                         setTerminalBackgroundColor(value || null);
                       }
                     }
@@ -281,7 +298,9 @@ export function TerminalSection() {
           {/* Foreground Color */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Foreground Color</Label>
+              <Label className="text-foreground font-medium">
+                Foreground Color
+              </Label>
               {customForegroundColor && (
                 <Button
                   variant="ghost"
@@ -289,7 +308,7 @@ export function TerminalSection() {
                   className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => {
                     setTerminalForegroundColor(null);
-                    toast.success('Foreground color reset to theme default');
+                    toast.success("Foreground color reset to theme default");
                   }}
                 >
                   <X className="w-3 h-3 mr-1" />
@@ -298,26 +317,30 @@ export function TerminalSection() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Override the terminal text/foreground color. Leave empty to use the theme default.
+              Override the terminal text/foreground color. Leave empty to use
+              the theme default.
             </p>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 flex-1">
                 <div
                   className="w-10 h-10 rounded-lg border border-border/50 shadow-sm flex items-center justify-center"
                   style={{
-                    backgroundColor: customForegroundColor || 'var(--foreground)',
+                    backgroundColor:
+                      customForegroundColor || "var(--foreground)",
                   }}
                 >
                   <Type
                     className={cn(
-                      'w-5 h-5',
-                      customForegroundColor ? 'text-black/80' : 'text-background'
+                      "w-5 h-5",
+                      customForegroundColor
+                        ? "text-black/80"
+                        : "text-background",
                     )}
                   />
                 </div>
                 <Input
                   type="color"
-                  value={customForegroundColor || '#ffffff'}
+                  value={customForegroundColor || "#ffffff"}
                   onChange={(e) => {
                     const color = e.target.value;
                     setTerminalForegroundColor(color);
@@ -327,12 +350,12 @@ export function TerminalSection() {
                 />
                 <Input
                   type="text"
-                  value={customForegroundColor || ''}
+                  value={customForegroundColor || ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     // Validate hex color format
-                    if (value === '' || /^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                      if (value === '' || /^#[0-9A-Fa-f]{6}$/.test(value)) {
+                    if (value === "" || /^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                      if (value === "" || /^#[0-9A-Fa-f]{6}$/.test(value)) {
                         setTerminalForegroundColor(value || null);
                       }
                     }
@@ -347,8 +370,12 @@ export function TerminalSection() {
           {/* Default Font Size */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Default Font Size</Label>
-              <span className="text-sm text-muted-foreground">{defaultFontSize}px</span>
+              <Label className="text-foreground font-medium">
+                Default Font Size
+              </Label>
+              <span className="text-sm text-muted-foreground">
+                {defaultFontSize}px
+              </span>
             </div>
             <Slider
               value={[defaultFontSize]}
@@ -364,7 +391,9 @@ export function TerminalSection() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-foreground font-medium">Line Height</Label>
-              <span className="text-sm text-muted-foreground">{lineHeight.toFixed(1)}</span>
+              <span className="text-sm text-muted-foreground">
+                {lineHeight.toFixed(1)}
+              </span>
             </div>
             <Slider
               value={[lineHeight]}
@@ -375,8 +404,8 @@ export function TerminalSection() {
                 setTerminalLineHeight(value);
               }}
               onValueCommit={() => {
-                toast.info('Line height changed', {
-                  description: 'Restart terminal for changes to take effect',
+                toast.info("Line height changed", {
+                  description: "Restart terminal for changes to take effect",
                 });
               }}
               className="flex-1"
@@ -386,7 +415,9 @@ export function TerminalSection() {
           {/* Scrollback Lines */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-foreground font-medium">Scrollback Buffer</Label>
+              <Label className="text-foreground font-medium">
+                Scrollback Buffer
+              </Label>
               <span className="text-sm text-muted-foreground">
                 {(scrollbackLines / 1000).toFixed(0)}k lines
               </span>
@@ -398,8 +429,8 @@ export function TerminalSection() {
               step={1000}
               onValueChange={([value]) => setTerminalScrollbackLines(value)}
               onValueCommit={() => {
-                toast.info('Scrollback changed', {
-                  description: 'Restart terminal for changes to take effect',
+                toast.info("Scrollback changed", {
+                  description: "Restart terminal for changes to take effect",
                 });
               }}
               className="flex-1"
@@ -408,9 +439,12 @@ export function TerminalSection() {
 
           {/* Default Run Script */}
           <div className="space-y-3">
-            <Label className="text-foreground font-medium">Default Run Script</Label>
+            <Label className="text-foreground font-medium">
+              Default Run Script
+            </Label>
             <p className="text-xs text-muted-foreground">
-              Command to run automatically when opening a new terminal (e.g., "claude", "codex")
+              Command to run automatically when opening a new terminal (e.g.,
+              "claude", "codex")
             </p>
             <Input
               value={defaultRunScript}
@@ -423,7 +457,9 @@ export function TerminalSection() {
           {/* Screen Reader Mode */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label className="text-foreground font-medium">Screen Reader Mode</Label>
+              <Label className="text-foreground font-medium">
+                Screen Reader Mode
+              </Label>
               <p className="text-xs text-muted-foreground">
                 Enable accessibility mode for screen readers
               </p>
@@ -433,10 +469,12 @@ export function TerminalSection() {
               onCheckedChange={(checked) => {
                 setTerminalScreenReaderMode(checked);
                 toast.success(
-                  checked ? 'Screen reader mode enabled' : 'Screen reader mode disabled',
+                  checked
+                    ? "Screen reader mode enabled"
+                    : "Screen reader mode disabled",
                   {
-                    description: 'Restart terminal for changes to take effect',
-                  }
+                    description: "Restart terminal for changes to take effect",
+                  },
                 );
               }}
             />

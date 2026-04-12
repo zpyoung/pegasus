@@ -19,28 +19,28 @@ pnpm add @pegasus/dependency-resolver
 Order features based on dependencies and priorities.
 
 ```typescript
-import { resolveDependencies } from '@pegasus/dependency-resolver';
-import type { Feature } from '@pegasus/types';
+import { resolveDependencies } from "@pegasus/dependency-resolver";
+import type { Feature } from "@pegasus/types";
 
 const features: Feature[] = [
   {
-    id: 'database',
-    category: 'backend',
-    description: 'Setup database',
+    id: "database",
+    category: "backend",
+    description: "Setup database",
     priority: 1,
   },
   {
-    id: 'auth',
-    category: 'backend',
-    description: 'Add authentication',
-    dependencies: ['database'],
+    id: "auth",
+    category: "backend",
+    description: "Add authentication",
+    dependencies: ["database"],
     priority: 2,
   },
   {
-    id: 'api',
-    category: 'backend',
-    description: 'Create API endpoints',
-    dependencies: ['auth'],
+    id: "api",
+    category: "backend",
+    description: "Create API endpoints",
+    dependencies: ["auth"],
     priority: 3,
   },
 ];
@@ -51,8 +51,8 @@ console.log(result.orderedFeatures);
 // [database, auth, api]
 
 if (result.hasCycle) {
-  console.error('Circular dependency detected!');
-  console.error('Features in cycle:', result.cyclicFeatures);
+  console.error("Circular dependency detected!");
+  console.error("Features in cycle:", result.cyclicFeatures);
 }
 ```
 
@@ -82,14 +82,14 @@ if (areDependenciesSatisfied(authFeature, allFeatures)) {
 Get list of incomplete dependencies blocking a feature.
 
 ```typescript
-import { getBlockingDependencies } from '@pegasus/dependency-resolver';
+import { getBlockingDependencies } from "@pegasus/dependency-resolver";
 
 const blocking = getBlockingDependencies(feature, allFeatures);
 
 if (blocking.length > 0) {
-  console.log(`Feature blocked by: ${blocking.join(', ')}`);
+  console.log(`Feature blocked by: ${blocking.join(", ")}`);
 } else {
-  console.log('No blocking dependencies');
+  console.log("No blocking dependencies");
 }
 ```
 
@@ -100,15 +100,16 @@ import {
   resolveDependencies,
   areDependenciesSatisfied,
   getBlockingDependencies,
-} from '@pegasus/dependency-resolver';
-import type { Feature } from '@pegasus/types';
+} from "@pegasus/dependency-resolver";
+import type { Feature } from "@pegasus/types";
 
 async function executeFeatures(features: Feature[]) {
   // Resolve dependency order
-  const { orderedFeatures, hasCycle, cyclicFeatures } = resolveDependencies(features);
+  const { orderedFeatures, hasCycle, cyclicFeatures } =
+    resolveDependencies(features);
 
   if (hasCycle) {
-    throw new Error(`Circular dependency: ${cyclicFeatures.join(' → ')}`);
+    throw new Error(`Circular dependency: ${cyclicFeatures.join(" → ")}`);
   }
 
   // Execute in order
@@ -116,7 +117,7 @@ async function executeFeatures(features: Feature[]) {
     // Check if dependencies are satisfied
     if (!areDependenciesSatisfied(feature, features)) {
       const blocking = getBlockingDependencies(feature, features);
-      console.log(`Skipping ${feature.id}, blocked by: ${blocking.join(', ')}`);
+      console.log(`Skipping ${feature.id}, blocked by: ${blocking.join(", ")}`);
       continue;
     }
 
@@ -125,7 +126,7 @@ async function executeFeatures(features: Feature[]) {
     await executeFeature(feature);
 
     // Mark as completed
-    feature.status = 'completed';
+    feature.status = "completed";
   }
 }
 ```

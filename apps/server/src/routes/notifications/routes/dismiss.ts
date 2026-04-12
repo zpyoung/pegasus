@@ -8,9 +8,9 @@
  * Response: { success: true, dismissed: boolean | count: number }
  */
 
-import type { Request, Response } from 'express';
-import type { NotificationService } from '../../../services/notification-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { NotificationService } from "../../../services/notification-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler for POST /api/notifications/dismiss
@@ -23,8 +23,10 @@ export function createDismissHandler(notificationService: NotificationService) {
     try {
       const { projectPath, notificationId } = req.body;
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -32,10 +34,12 @@ export function createDismissHandler(notificationService: NotificationService) {
       if (notificationId) {
         const dismissed = await notificationService.dismissNotification(
           projectPath,
-          notificationId
+          notificationId,
         );
         if (!dismissed) {
-          res.status(404).json({ success: false, error: 'Notification not found' });
+          res
+            .status(404)
+            .json({ success: false, error: "Notification not found" });
           return;
         }
         res.json({ success: true, dismissed: true });
@@ -46,7 +50,7 @@ export function createDismissHandler(notificationService: NotificationService) {
       const count = await notificationService.dismissAll(projectPath);
       res.json({ success: true, count });
     } catch (error) {
-      logError(error, 'Dismiss failed');
+      logError(error, "Dismiss failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

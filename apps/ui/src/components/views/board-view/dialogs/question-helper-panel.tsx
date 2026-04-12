@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * QuestionHelperPanel — transport adapter wiring @pegasus/chat-ui's ChatPanel
@@ -8,13 +8,17 @@
  * messages via HTTP.  No streaming state or rendering logic lives here.
  */
 
-import { useMemo, useState, useEffect } from 'react';
-import { ChatPanel } from '@pegasus/chat-ui';
-import type { ChatTransport, ChatStreamEvent, ChatMessage } from '@pegasus/chat-ui';
-import type { HelperChatPayload, PhaseModelEntry } from '@pegasus/types';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { useAppStore } from '@/store/app-store';
-import { AgentModelSelector } from '@/components/views/agent-view/shared/agent-model-selector';
+import { useMemo, useState, useEffect } from "react";
+import { ChatPanel } from "@pegasus/chat-ui";
+import type {
+  ChatTransport,
+  ChatStreamEvent,
+  ChatMessage,
+} from "@pegasus/chat-ui";
+import type { HelperChatPayload, PhaseModelEntry } from "@pegasus/types";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { useAppStore } from "@/store/app-store";
+import { AgentModelSelector } from "@/components/views/agent-view/shared/agent-model-selector";
 
 interface QuestionHelperPanelProps {
   featureId: string;
@@ -22,17 +26,17 @@ interface QuestionHelperPanelProps {
 }
 
 /** Fallback model when the user has not yet picked one for this feature. */
-const DEFAULT_HELPER_MODEL: PhaseModelEntry = { model: 'claude-sonnet' };
+const DEFAULT_HELPER_MODEL: PhaseModelEntry = { model: "claude-sonnet" };
 
 /** Convert server ConversationMessage[] to ChatMessage[] for initialMessages. */
 function toInitialMessages(
-  history: Array<{ role: string; content: string }>
+  history: Array<{ role: string; content: string }>,
 ): ChatMessage[] {
   return history
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       id: crypto.randomUUID(),
-      role: m.role as 'user' | 'assistant',
+      role: m.role as "user" | "assistant",
       content: m.content,
       timestamp: Date.now(),
     }));
@@ -42,26 +46,28 @@ function toInitialMessages(
  * Map a raw HelperChatPayload (from the WebSocket event bus) to the
  * ChatStreamEvent shape expected by @pegasus/chat-ui's useChatStream hook.
  */
-function mapPayloadToStreamEvent(payload: HelperChatPayload): ChatStreamEvent | null {
+function mapPayloadToStreamEvent(
+  payload: HelperChatPayload,
+): ChatStreamEvent | null {
   switch (payload.kind) {
-    case 'started':
-      return { type: 'started' };
-    case 'delta':
-      return { type: 'text_chunk', text: payload.text };
-    case 'tool_call':
+    case "started":
+      return { type: "started" };
+    case "delta":
+      return { type: "text_chunk", text: payload.text };
+    case "tool_call":
       return {
-        type: 'tool_call',
+        type: "tool_call",
         toolName: payload.toolName,
         toolId: payload.toolId,
         input: payload.input,
       };
-    case 'tool_complete':
-      return { type: 'tool_complete', toolId: payload.toolId };
-    case 'complete':
-      return { type: 'message_complete' };
-    case 'error':
-      return { type: 'error', message: payload.message };
-    case 'session_terminated':
+    case "tool_complete":
+      return { type: "tool_complete", toolId: payload.toolId };
+    case "complete":
+      return { type: "message_complete" };
+    case "error":
+      return { type: "error", message: payload.message };
+    case "session_terminated":
       // No corresponding ChatStreamEvent — silently ignore.
       return null;
     default:
@@ -69,17 +75,20 @@ function mapPayloadToStreamEvent(payload: HelperChatPayload): ChatStreamEvent | 
   }
 }
 
-export function QuestionHelperPanel({ featureId, projectPath }: QuestionHelperPanelProps) {
+export function QuestionHelperPanel({
+  featureId,
+  projectPath,
+}: QuestionHelperPanelProps) {
   const api = getHttpApiClient();
 
   // Narrow Zustand selectors: read stored model for this feature + the setter.
   // Using separate selectors keeps re-renders scoped — unrelated state changes
   // in the store won't trigger this component.
   const storedModel = useAppStore(
-    (state) => state.helperModelByFeature[featureId] ?? null
+    (state) => state.helperModelByFeature[featureId] ?? null,
   );
   const setHelperModelForFeature = useAppStore(
-    (state) => state.setHelperModelForFeature
+    (state) => state.setHelperModelForFeature,
   );
   const effectiveModel: PhaseModelEntry = storedModel ?? DEFAULT_HELPER_MODEL;
 
@@ -88,17 +97,22 @@ export function QuestionHelperPanel({ featureId, projectPath }: QuestionHelperPa
   // history fetch completes so useChatStream initializes with correct state.
   // Session is terminated on dialog close (FR-006), so this only helps within
   // a continuous dialog session (not across close/reopen cycles).
-  const [initialMessages, setInitialMessages] = useState<ChatMessage[] | null>(null);
+  const [initialMessages, setInitialMessages] = useState<ChatMessage[] | null>(
+    null,
+  );
   useEffect(() => {
-    api.questionHelper.getHistory(featureId).then((res) => {
-      if (res.success && res.history && res.history.length > 0) {
-        setInitialMessages(toInitialMessages(res.history));
-      } else {
+    api.questionHelper
+      .getHistory(featureId)
+      .then((res) => {
+        if (res.success && res.history && res.history.length > 0) {
+          setInitialMessages(toInitialMessages(res.history));
+        } else {
+          setInitialMessages([]);
+        }
+      })
+      .catch(() => {
         setInitialMessages([]);
-      }
-    }).catch(() => {
-      setInitialMessages([]);
-    });
+      });
     // Only run on mount (featureId is stable for the lifetime of the panel)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -112,13 +126,22 @@ export function QuestionHelperPanel({ featureId, projectPath }: QuestionHelperPa
     () => ({
       sendMessage: async (text: string) => {
         const currentEntry =
-          useAppStore.getState().helperModelByFeature[featureId] ?? DEFAULT_HELPER_MODEL;
-        await api.questionHelper.sendMessage(featureId, text, projectPath, currentEntry);
+          useAppStore.getState().helperModelByFeature[featureId] ??
+          DEFAULT_HELPER_MODEL;
+        await api.questionHelper.sendMessage(
+          featureId,
+          text,
+          projectPath,
+          currentEntry,
+        );
       },
 
       subscribeStream: (handler: (event: ChatStreamEvent) => void) => {
         return api.questionHelper.onHelperChatEvent((raw) => {
-          const event = raw as { featureId: string; payload: HelperChatPayload };
+          const event = raw as {
+            featureId: string;
+            payload: HelperChatPayload;
+          };
           // Filter to events for THIS feature only
           if (event.featureId !== featureId) return;
           const mapped = mapPayloadToStreamEvent(event.payload);
@@ -126,13 +149,17 @@ export function QuestionHelperPanel({ featureId, projectPath }: QuestionHelperPa
         });
       },
     }),
-    [api, featureId, projectPath]
+    [api, featureId, projectPath],
   );
 
   // Don't render until history fetch completes (avoids useChatStream
   // initializing with stale empty state before history arrives).
   if (initialMessages === null) {
-    return <div className="flex items-center justify-center h-full text-xs text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+        Loading…
+      </div>
+    );
   }
 
   return (
@@ -150,8 +177,8 @@ export function QuestionHelperPanel({ featureId, projectPath }: QuestionHelperPa
         <div className="space-y-1">
           <p className="font-medium text-sm">Ask about the codebase</p>
           <p className="text-xs">
-            I can read files, search for symbols, and help you understand the code to answer the
-            agent&apos;s questions.
+            I can read files, search for symbols, and help you understand the
+            code to answer the agent&apos;s questions.
           </p>
         </div>
       }

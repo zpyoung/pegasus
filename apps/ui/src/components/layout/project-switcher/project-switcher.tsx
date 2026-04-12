@@ -1,37 +1,41 @@
-import { useState, useCallback, useEffect, startTransition } from 'react';
-import { Plus, Bug, FolderOpen, BookOpen } from 'lucide-react';
-import { useNavigate, useLocation } from '@tanstack/react-router';
-import { cn, isMac } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { useOSDetection } from '@/hooks/use-os-detection';
-import { ProjectSwitcherItem } from './components/project-switcher-item';
-import { ProjectContextMenu } from './components/project-context-menu';
-import { EditProjectDialog } from './components/edit-project-dialog';
-import { NotificationBell } from './components/notification-bell';
-import { NewProjectModal } from '@/components/dialogs/new-project-modal';
-import { OnboardingDialog } from '@/components/layout/sidebar/dialogs';
-import { useProjectCreation } from '@/components/layout/sidebar/hooks';
+import { useState, useCallback, useEffect, startTransition } from "react";
+import { Plus, Bug, FolderOpen, BookOpen } from "lucide-react";
+import { useNavigate, useLocation } from "@tanstack/react-router";
+import { cn, isMac } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { useOSDetection } from "@/hooks/use-os-detection";
+import { ProjectSwitcherItem } from "./components/project-switcher-item";
+import { ProjectContextMenu } from "./components/project-context-menu";
+import { EditProjectDialog } from "./components/edit-project-dialog";
+import { NotificationBell } from "./components/notification-bell";
+import { NewProjectModal } from "@/components/dialogs/new-project-modal";
+import { OnboardingDialog } from "@/components/layout/sidebar/dialogs";
+import { useProjectCreation } from "@/components/layout/sidebar/hooks";
 import {
   MACOS_ELECTRON_TOP_PADDING_CLASS,
   SIDEBAR_FEATURE_FLAGS,
-} from '@/components/layout/sidebar/constants';
-import type { Project } from '@/lib/electron';
-import { getElectronAPI, isElectron } from '@/lib/electron';
-import { initializeProject, hasAppSpec, hasPegasusDir } from '@/lib/project-init';
-import { toast } from 'sonner';
-import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
-import type { FeatureCount } from '@/components/views/spec-view/types';
+} from "@/components/layout/sidebar/constants";
+import type { Project } from "@/lib/electron";
+import { getElectronAPI, isElectron } from "@/lib/electron";
+import {
+  initializeProject,
+  hasAppSpec,
+  hasPegasusDir,
+} from "@/lib/project-init";
+import { toast } from "sonner";
+import { CreateSpecDialog } from "@/components/views/spec-view/dialogs";
+import type { FeatureCount } from "@/components/views/spec-view/types";
 
 function getOSAbbreviation(os: string): string {
   switch (os) {
-    case 'mac':
-      return 'M';
-    case 'windows':
-      return 'W';
-    case 'linux':
-      return 'L';
+    case "mac":
+      return "M";
+    case "windows":
+      return "W";
+    case "linux":
+      return "L";
     default:
-      return '?';
+      return "?";
   }
 }
 
@@ -39,23 +43,32 @@ export function ProjectSwitcher() {
   const navigate = useNavigate();
   const location = useLocation();
   const { hideWiki } = SIDEBAR_FEATURE_FLAGS;
-  const isWikiActive = location.pathname === '/wiki';
+  const isWikiActive = location.pathname === "/wiki";
   const projects = useAppStore((s) => s.projects);
   const currentProject = useAppStore((s) => s.currentProject);
   const setCurrentProject = useAppStore((s) => s.setCurrentProject);
-  const upsertAndSetCurrentProject = useAppStore((s) => s.upsertAndSetCurrentProject);
-  const specCreatingForProject = useAppStore((s) => s.specCreatingForProject);
-  const setSpecCreatingForProject = useAppStore((s) => s.setSpecCreatingForProject);
-  const [contextMenuProject, setContextMenuProject] = useState<Project | null>(null);
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
-    null
+  const upsertAndSetCurrentProject = useAppStore(
+    (s) => s.upsertAndSetCurrentProject,
   );
-  const [editDialogProject, setEditDialogProject] = useState<Project | null>(null);
+  const specCreatingForProject = useAppStore((s) => s.specCreatingForProject);
+  const setSpecCreatingForProject = useAppStore(
+    (s) => s.setSpecCreatingForProject,
+  );
+  const [contextMenuProject, setContextMenuProject] = useState<Project | null>(
+    null,
+  );
+  const [contextMenuPosition, setContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [editDialogProject, setEditDialogProject] = useState<Project | null>(
+    null,
+  );
 
   // Setup dialog state for opening existing projects
   const [showSetupDialog, setShowSetupDialog] = useState(false);
   const [setupProjectPath, setSetupProjectPath] = useState<string | null>(null);
-  const [projectOverview, setProjectOverview] = useState('');
+  const [projectOverview, setProjectOverview] = useState("");
   const [generateFeatures, setGenerateFeatures] = useState(true);
   const [analyzeProject, setAnalyzeProject] = useState(true);
   const [featureCount, setFeatureCount] = useState<FeatureCount>(50);
@@ -64,9 +77,10 @@ export function ProjectSwitcher() {
   const isCreatingSpec = specCreatingForProject !== null;
 
   // Version info
-  const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+  const appVersion =
+    typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
   const { os } = useOSDetection();
-  const appMode = import.meta.env.VITE_APP_MODE || '?';
+  const appMode = import.meta.env.VITE_APP_MODE || "?";
   const versionSuffix = `${getOSAbbreviation(os)}${appMode}`;
 
   // Project creation state and handlers
@@ -103,14 +117,14 @@ export function ProjectSwitcher() {
   const handleProjectClick = useCallback(
     async (project: Project) => {
       if (project.id === currentProject?.id) {
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
         return;
       }
       try {
         // Ensure .pegasus directory structure exists before switching
         await initializeProject(project.path);
       } catch (error) {
-        console.error('Failed to initialize project during switch:', error);
+        console.error("Failed to initialize project during switch:", error);
         // Continue with switch even if initialization fails -
         // the project may already be initialized
       }
@@ -123,10 +137,10 @@ export function ProjectSwitcher() {
       startTransition(() => {
         setCurrentProject(project);
         // Navigate to board view when switching projects
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       });
     },
-    [currentProject?.id, setCurrentProject, navigate]
+    [currentProject?.id, setCurrentProject, navigate],
   );
 
   const handleNewProject = () => {
@@ -136,16 +150,16 @@ export function ProjectSwitcher() {
 
   const handleOnboardingSkip = () => {
     setShowOnboardingDialog(false);
-    navigate({ to: '/board' });
+    navigate({ to: "/board" });
   };
 
   const handleBugReportClick = useCallback(() => {
     const api = getElectronAPI();
-    api.openExternalLink('https://github.com/zpyoung/pegasus/issues');
+    api.openExternalLink("https://github.com/zpyoung/pegasus/issues");
   }, []);
 
   const handleWikiClick = useCallback(() => {
-    navigate({ to: '/wiki' });
+    navigate({ to: "/wiki" });
   }, [navigate]);
 
   /**
@@ -158,7 +172,8 @@ export function ProjectSwitcher() {
     if (!result.canceled && result.filePaths[0]) {
       const path = result.filePaths[0];
       // Extract folder name from path (works on both Windows and Mac/Linux)
-      const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
+      const name =
+        path.split(/[/\\]/).filter(Boolean).pop() || "Untitled Project";
 
       try {
         // Check if this is a brand new project (no .pegasus directory)
@@ -168,8 +183,8 @@ export function ProjectSwitcher() {
         const initResult = await initializeProject(path);
 
         if (!initResult.success) {
-          toast.error('Failed to initialize project', {
-            description: initResult.error || 'Unknown error occurred',
+          toast.error("Failed to initialize project", {
+            description: initResult.error || "Unknown error occurred",
           });
           return;
         }
@@ -185,25 +200,31 @@ export function ProjectSwitcher() {
           // This is a brand new project - show setup dialog
           setSetupProjectPath(path);
           setShowSetupDialog(true);
-          toast.success('Project opened', {
+          toast.success("Project opened", {
             description: `Opened ${name}. Let's set up your app specification!`,
           });
-        } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
-          toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
-            description: `Set up ${initResult.createdFiles.length} file(s) in .pegasus`,
-          });
+        } else if (
+          initResult.createdFiles &&
+          initResult.createdFiles.length > 0
+        ) {
+          toast.success(
+            initResult.isNewProject ? "Project initialized" : "Project updated",
+            {
+              description: `Set up ${initResult.createdFiles.length} file(s) in .pegasus`,
+            },
+          );
         } else {
-          toast.success('Project opened', {
+          toast.success("Project opened", {
             description: `Opened ${name}`,
           });
         }
 
         // Navigate to board view
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       } catch (error) {
-        console.error('Failed to open project:', error);
-        toast.error('Failed to open project', {
-          description: error instanceof Error ? error.message : 'Unknown error',
+        console.error("Failed to open project:", error);
+        toast.error("Failed to open project", {
+          description: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
@@ -219,7 +240,7 @@ export function ProjectSwitcher() {
     try {
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        toast.error('Spec regeneration not available');
+        toast.error("Spec regeneration not available");
         setSpecCreatingForProject(null);
         return;
       }
@@ -228,12 +249,12 @@ export function ProjectSwitcher() {
         projectOverview,
         generateFeatures,
         analyzeProject,
-        featureCount
+        featureCount,
       );
     } catch (error) {
-      console.error('Failed to generate spec:', error);
-      toast.error('Failed to generate spec', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      console.error("Failed to generate spec:", error);
+      toast.error("Failed to generate spec", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
       setSpecCreatingForProject(null);
     }
@@ -256,7 +277,11 @@ export function ProjectSwitcher() {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ignore if user is typing in an input, textarea, or contenteditable
       const target = event.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
         return;
       }
 
@@ -269,9 +294,9 @@ export function ProjectSwitcher() {
       const key = event.key;
       let projectIndex: number | null = null;
 
-      if (key >= '1' && key <= '9') {
+      if (key >= "1" && key <= "9") {
         projectIndex = parseInt(key, 10) - 1; // "1" -> 0, "9" -> 8
-      } else if (key === '0') {
+      } else if (key === "0") {
         projectIndex = 9; // "0" -> 9
       }
 
@@ -283,31 +308,31 @@ export function ProjectSwitcher() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [projects, currentProject, handleProjectClick]);
 
   return (
     <>
       <aside
         className={cn(
-          'flex-shrink-0 flex flex-col w-16 z-50 relative',
+          "flex-shrink-0 flex flex-col w-16 z-50 relative",
           // Glass morphism background with gradient
-          'bg-gradient-to-b from-sidebar/95 via-sidebar/85 to-sidebar/90 backdrop-blur-2xl',
+          "bg-gradient-to-b from-sidebar/95 via-sidebar/85 to-sidebar/90 backdrop-blur-2xl",
           // Premium border with subtle glow
-          'border-r border-border/60 shadow-[1px_0_20px_-5px_rgba(0,0,0,0.1)]'
+          "border-r border-border/60 shadow-[1px_0_20px_-5px_rgba(0,0,0,0.1)]",
         )}
         data-testid="project-switcher"
       >
         {/* Pegasus Logo and Version */}
         <div
           className={cn(
-            'flex flex-col items-center pb-2 px-2',
-            isMac && isElectron() ? MACOS_ELECTRON_TOP_PADDING_CLASS : 'pt-3'
+            "flex flex-col items-center pb-2 px-2",
+            isMac && isElectron() ? MACOS_ELECTRON_TOP_PADDING_CLASS : "pt-3",
           )}
         >
           <button
-            onClick={() => navigate({ to: '/dashboard' })}
+            onClick={() => navigate({ to: "/dashboard" })}
             className="group flex flex-col items-center gap-0.5"
             title="Go to Dashboard"
           >
@@ -327,11 +352,21 @@ export function ProjectSwitcher() {
                   y2="256"
                   gradientUnits="userSpaceOnUse"
                 >
-                  <stop offset="0%" style={{ stopColor: 'var(--brand-400)' }} />
-                  <stop offset="100%" style={{ stopColor: 'var(--brand-600)' }} />
+                  <stop offset="0%" style={{ stopColor: "var(--brand-400)" }} />
+                  <stop
+                    offset="100%"
+                    style={{ stopColor: "var(--brand-600)" }}
+                  />
                 </linearGradient>
               </defs>
-              <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg-switcher)" />
+              <rect
+                x="16"
+                y="16"
+                width="224"
+                height="224"
+                rx="56"
+                fill="url(#bg-switcher)"
+              />
               <g
                 fill="none"
                 stroke="#FFFFFF"
@@ -376,11 +411,11 @@ export function ProjectSwitcher() {
               <button
                 onClick={handleNewProject}
                 className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                  "w-full aspect-square rounded-xl flex items-center justify-center",
+                  "transition-all duration-200 ease-out",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-accent/50 border border-transparent hover:border-border/40",
+                  "hover:shadow-sm hover:scale-105 active:scale-95",
                 )}
                 title="New Project"
                 data-testid="new-project-button"
@@ -390,11 +425,11 @@ export function ProjectSwitcher() {
               <button
                 onClick={handleOpenFolder}
                 className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                  "w-full aspect-square rounded-xl flex items-center justify-center",
+                  "transition-all duration-200 ease-out",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-accent/50 border border-transparent hover:border-border/40",
+                  "hover:shadow-sm hover:scale-105 active:scale-95",
                 )}
                 title="Open Project"
                 data-testid="open-project-button"
@@ -410,11 +445,11 @@ export function ProjectSwitcher() {
               <button
                 onClick={handleNewProject}
                 className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                  "w-full aspect-square rounded-xl flex items-center justify-center",
+                  "transition-all duration-200 ease-out",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-accent/50 border border-transparent hover:border-border/40",
+                  "hover:shadow-sm hover:scale-105 active:scale-95",
                 )}
                 title="New Project"
                 data-testid="new-project-button"
@@ -424,11 +459,11 @@ export function ProjectSwitcher() {
               <button
                 onClick={handleOpenFolder}
                 className={cn(
-                  'w-full aspect-square rounded-xl flex items-center justify-center',
-                  'transition-all duration-200 ease-out',
-                  'text-muted-foreground hover:text-foreground',
-                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                  "w-full aspect-square rounded-xl flex items-center justify-center",
+                  "transition-all duration-200 ease-out",
+                  "text-muted-foreground hover:text-foreground",
+                  "hover:bg-accent/50 border border-transparent hover:border-border/40",
+                  "hover:shadow-sm hover:scale-105 active:scale-95",
                 )}
                 title="Open Project"
                 data-testid="open-project-button"
@@ -446,26 +481,29 @@ export function ProjectSwitcher() {
             <button
               onClick={handleWikiClick}
               className={cn(
-                'w-full aspect-square rounded-xl flex items-center justify-center',
-                'transition-all duration-200 ease-out',
+                "w-full aspect-square rounded-xl flex items-center justify-center",
+                "transition-all duration-200 ease-out",
                 isWikiActive
                   ? [
-                      'bg-gradient-to-r from-brand-500/20 via-brand-500/15 to-brand-600/10',
-                      'text-foreground',
-                      'border border-brand-500/30',
-                      'shadow-md shadow-brand-500/10',
+                      "bg-gradient-to-r from-brand-500/20 via-brand-500/15 to-brand-600/10",
+                      "text-foreground",
+                      "border border-brand-500/30",
+                      "shadow-md shadow-brand-500/10",
                     ]
                   : [
-                      'text-muted-foreground hover:text-foreground',
-                      'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                      'hover:shadow-sm hover:scale-105 active:scale-95',
-                    ]
+                      "text-muted-foreground hover:text-foreground",
+                      "hover:bg-accent/50 border border-transparent hover:border-border/40",
+                      "hover:shadow-sm hover:scale-105 active:scale-95",
+                    ],
               )}
               title="Wiki"
               data-testid="wiki-button"
             >
               <BookOpen
-                className={cn('w-5 h-5', isWikiActive && 'text-brand-500 drop-shadow-sm')}
+                className={cn(
+                  "w-5 h-5",
+                  isWikiActive && "text-brand-500 drop-shadow-sm",
+                )}
               />
             </button>
           )}
@@ -473,11 +511,11 @@ export function ProjectSwitcher() {
           <button
             onClick={handleBugReportClick}
             className={cn(
-              'w-full aspect-square rounded-xl flex items-center justify-center',
-              'transition-all duration-200 ease-out',
-              'text-muted-foreground hover:text-foreground',
-              'hover:bg-accent/50 border border-transparent hover:border-border/40',
-              'hover:shadow-sm hover:scale-105 active:scale-95'
+              "w-full aspect-square rounded-xl flex items-center justify-center",
+              "transition-all duration-200 ease-out",
+              "text-muted-foreground hover:text-foreground",
+              "hover:bg-accent/50 border border-transparent hover:border-border/40",
+              "hover:shadow-sm hover:scale-105 active:scale-95",
             )}
             title="Report Bug / Feature Request"
             data-testid="bug-report-button"

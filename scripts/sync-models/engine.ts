@@ -5,21 +5,26 @@
  * merges overrides, generates TypeScript files, and produces diff summary.
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { ProviderAdapter, ModelEntry, ProviderSnapshot, DiffSummary } from './types.js';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import type {
+  ProviderAdapter,
+  ModelEntry,
+  ProviderSnapshot,
+  DiffSummary,
+} from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
-const TYPES_SRC = path.join(PROJECT_ROOT, 'libs', 'types', 'src');
-const SNAPSHOTS_DIR = path.join(TYPES_SRC, 'snapshots');
-const REGISTRY_JSON = path.join(TYPES_SRC, 'model-registry.json');
-const OVERRIDES_JSON = path.join(TYPES_SRC, 'model-overrides.json');
-const REGISTRY_GEN = path.join(TYPES_SRC, 'model-registry.gen.ts');
-const CAPABILITIES_GEN = path.join(TYPES_SRC, 'model-capabilities.gen.ts');
-const DISPLAY_GEN = path.join(TYPES_SRC, 'model-display.gen.ts');
-const SUMMARY_FILE = '/tmp/sync-models-summary.md';
+const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
+const TYPES_SRC = path.join(PROJECT_ROOT, "libs", "types", "src");
+const SNAPSHOTS_DIR = path.join(TYPES_SRC, "snapshots");
+const REGISTRY_JSON = path.join(TYPES_SRC, "model-registry.json");
+const OVERRIDES_JSON = path.join(TYPES_SRC, "model-overrides.json");
+const REGISTRY_GEN = path.join(TYPES_SRC, "model-registry.gen.ts");
+const CAPABILITIES_GEN = path.join(TYPES_SRC, "model-capabilities.gen.ts");
+const DISPLAY_GEN = path.join(TYPES_SRC, "model-display.gen.ts");
+const SUMMARY_FILE = "/tmp/sync-models-summary.md";
 
 const DEFAULT_TTL_DAYS = 30;
 
@@ -33,11 +38,16 @@ export interface RunOptions {
 // Main orchestrator
 // ---------------------------------------------------------------------------
 
-export async function runSync(adapters: ProviderAdapter[], options: RunOptions): Promise<void> {
+export async function runSync(
+  adapters: ProviderAdapter[],
+  options: RunOptions,
+): Promise<void> {
   const { ciOnly, dryRun, ttlDays } = options;
 
   // Filter adapters by tier if running in CI mode
-  const activeAdapters = ciOnly ? adapters.filter((a) => a.tier === 'ci') : adapters;
+  const activeAdapters = ciOnly
+    ? adapters.filter((a) => a.tier === "ci")
+    : adapters;
   console.log(`Running ${activeAdapters.length} adapters (ciOnly=${ciOnly})`);
 
   // Ensure snapshots directory exists
@@ -47,7 +57,7 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
 
   // Step 1: Run all adapters in parallel
   const results = await Promise.allSettled(
-    activeAdapters.map((adapter) => runAdapter(adapter))
+    activeAdapters.map((adapter) => runAdapter(adapter)),
   );
 
   const failedProviders: Array<{ provider: string; error: string }> = [];
@@ -57,7 +67,7 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
     const adapter = activeAdapters[i];
     const result = results[i];
 
-    if (result.status === 'fulfilled') {
+    if (result.status === "fulfilled") {
       const snapshot: ProviderSnapshot = {
         provider: adapter.name,
         fetchedAt: new Date().toISOString(),
@@ -76,7 +86,9 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
 
   // Step 3: Check if all adapters failed
   if (failedProviders.length === activeAdapters.length) {
-    throw new Error('All adapters failed — aborting sync to prevent registry wipeout');
+    throw new Error(
+      "All adapters failed — aborting sync to prevent registry wipeout",
+    );
   }
 
   // Step 4: Load all valid snapshots (fresh + within TTL)
@@ -84,11 +96,15 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
   cutoffDate.setDate(cutoffDate.getDate() - ttlDays);
 
   const allSnapshots = loadAllSnapshots(cutoffDate);
-  const staleProviders = allSnapshots.filter((s) => s.stale).map((s) => s.provider);
+  const staleProviders = allSnapshots
+    .filter((s) => s.stale)
+    .map((s) => s.provider);
   const validSnapshots = allSnapshots.filter((s) => !s.stale);
 
   if (staleProviders.length > 0) {
-    console.warn(`Excluding stale providers (>${ttlDays} days): ${staleProviders.join(', ')}`);
+    console.warn(
+      `Excluding stale providers (>${ttlDays} days): ${staleProviders.join(", ")}`,
+    );
   }
 
   // Step 5: Merge all valid model entries, sorted by ID for deterministic output
@@ -106,13 +122,16 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
 
   // Step 9: Write registry JSON
   const registryData = {
-    version: '1.0',
+    version: "1.0",
     generatedAt: new Date().toISOString(),
     providers: providerMap,
   };
 
   if (!dryRun) {
-    fs.writeFileSync(REGISTRY_JSON, JSON.stringify(registryData, null, 2) + '\n');
+    fs.writeFileSync(
+      REGISTRY_JSON,
+      JSON.stringify(registryData, null, 2) + "\n",
+    );
     console.log(`Wrote ${REGISTRY_JSON}`);
   }
 
@@ -122,13 +141,20 @@ export async function runSync(adapters: ProviderAdapter[], options: RunOptions):
     generateCapabilitiesFile(mergedModels);
     generateDisplayFile(mergedModels);
   } else {
-    console.log('[dry-run] Would generate: model-registry.gen.ts, model-capabilities.gen.ts, model-display.gen.ts');
+    console.log(
+      "[dry-run] Would generate: model-registry.gen.ts, model-capabilities.gen.ts, model-display.gen.ts",
+    );
   }
 
   // Step 11: Compute and write diff summary
-  const diff = computeDiff(oldRegistry, mergedModels, staleProviders, failedProviders);
+  const diff = computeDiff(
+    oldRegistry,
+    mergedModels,
+    staleProviders,
+    failedProviders,
+  );
   const summary = formatSummary(diff, failedProviders, staleProviders);
-  console.log('\n' + summary);
+  console.log("\n" + summary);
 
   if (!dryRun) {
     fs.writeFileSync(SUMMARY_FILE, summary);
@@ -154,7 +180,10 @@ function snapshotPath(provider: string): string {
 }
 
 function writeSnapshot(provider: string, snapshot: ProviderSnapshot): void {
-  fs.writeFileSync(snapshotPath(provider), JSON.stringify(snapshot, null, 2) + '\n');
+  fs.writeFileSync(
+    snapshotPath(provider),
+    JSON.stringify(snapshot, null, 2) + "\n",
+  );
 }
 
 interface LoadedSnapshot {
@@ -167,19 +196,23 @@ interface LoadedSnapshot {
 function loadAllSnapshots(cutoff: Date): LoadedSnapshot[] {
   if (!fs.existsSync(SNAPSHOTS_DIR)) return [];
 
-  const files = fs.readdirSync(SNAPSHOTS_DIR).filter((f) => f.endsWith('.json'));
+  const files = fs
+    .readdirSync(SNAPSHOTS_DIR)
+    .filter((f) => f.endsWith(".json"));
   const result: LoadedSnapshot[] = [];
 
   for (const file of files) {
-    const provider = file.replace('.json', '');
+    const provider = file.replace(".json", "");
     try {
-      const raw = fs.readFileSync(path.join(SNAPSHOTS_DIR, file), 'utf-8');
+      const raw = fs.readFileSync(path.join(SNAPSHOTS_DIR, file), "utf-8");
       const snapshot = JSON.parse(raw) as ProviderSnapshot;
       const fetchedAt = new Date(snapshot.fetchedAt);
       const stale = fetchedAt < cutoff;
       result.push({ provider, models: snapshot.models, fetchedAt, stale });
     } catch (err) {
-      console.warn(`  [snapshot] Failed to load ${file}: ${(err as Error).message}`);
+      console.warn(
+        `  [snapshot] Failed to load ${file}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -199,7 +232,9 @@ export function mergeModels(models: ModelEntry[]): ModelEntry[] {
   return Array.from(map.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export function buildProviderMap(models: ModelEntry[]): Record<string, ModelEntry[]> {
+export function buildProviderMap(
+  models: ModelEntry[],
+): Record<string, ModelEntry[]> {
   const map: Record<string, ModelEntry[]> = {};
   for (const m of models) {
     if (!map[m.provider]) map[m.provider] = [];
@@ -210,9 +245,16 @@ export function buildProviderMap(models: ModelEntry[]): Record<string, ModelEntr
 
 /** Pure TTL filter — exported for testing (NFR-004) */
 export function filterSnapshotsByTTL(
-  snapshots: Array<{ provider: string; models: ModelEntry[]; fetchedAt: string }>,
-  cutoff: Date
-): { valid: Array<{ provider: string; models: ModelEntry[] }>; stale: string[] } {
+  snapshots: Array<{
+    provider: string;
+    models: ModelEntry[];
+    fetchedAt: string;
+  }>,
+  cutoff: Date,
+): {
+  valid: Array<{ provider: string; models: ModelEntry[] }>;
+  stale: string[];
+} {
   const valid: Array<{ provider: string; models: ModelEntry[] }> = [];
   const stale: string[] = [];
   for (const s of snapshots) {
@@ -232,7 +274,10 @@ export function filterSnapshotsByTTL(
 function loadOverrides(): Record<string, Partial<ModelEntry>> {
   if (!fs.existsSync(OVERRIDES_JSON)) return {};
   try {
-    return JSON.parse(fs.readFileSync(OVERRIDES_JSON, 'utf-8')) as Record<string, Partial<ModelEntry>>;
+    return JSON.parse(fs.readFileSync(OVERRIDES_JSON, "utf-8")) as Record<
+      string,
+      Partial<ModelEntry>
+    >;
   } catch {
     return {};
   }
@@ -240,7 +285,7 @@ function loadOverrides(): Record<string, Partial<ModelEntry>> {
 
 export function applyOverrides(
   models: ModelEntry[],
-  overrides: Record<string, Partial<ModelEntry>>
+  overrides: Record<string, Partial<ModelEntry>>,
 ): ModelEntry[] {
   return models.map((m) => {
     const override = overrides[m.id];
@@ -256,7 +301,7 @@ export function applyOverrides(
 function loadOldRegistry(): ModelEntry[] {
   if (!fs.existsSync(REGISTRY_JSON)) return [];
   try {
-    const data = JSON.parse(fs.readFileSync(REGISTRY_JSON, 'utf-8')) as {
+    const data = JSON.parse(fs.readFileSync(REGISTRY_JSON, "utf-8")) as {
       providers: Record<string, ModelEntry[]>;
     };
     return Object.values(data.providers).flat();
@@ -276,22 +321,26 @@ function loadOldRegistry(): ModelEntry[] {
 export function buildRegistryContent(
   models: ModelEntry[],
   providerMap: Record<string, ModelEntry[]>,
-  timestamp: string
+  timestamp: string,
 ): string {
-  const providerModelMapLines = Object.entries(providerMap).map(([provider, pModels]) => {
-    const ids = pModels.map((m) => `    '${m.id}'`).join(',\n');
-    return `  ${provider}: [\n${ids},\n  ] as const`;
-  });
+  const providerModelMapLines = Object.entries(providerMap).map(
+    ([provider, pModels]) => {
+      const ids = pModels.map((m) => `    '${m.id}'`).join(",\n");
+      return `  ${provider}: [\n${ids},\n  ] as const`;
+    },
+  );
 
-  const providerTypeLines = Object.entries(providerMap).map(([provider, pModels]) => {
-    const typeName = `${capitalize(provider)}ModelId`;
-    const ids = pModels.map((m) => `  | '${m.id}'`).join('\n');
-    return `export type ${typeName} =\n${ids};`;
-  });
+  const providerTypeLines = Object.entries(providerMap).map(
+    ([provider, pModels]) => {
+      const typeName = `${capitalize(provider)}ModelId`;
+      const ids = pModels.map((m) => `  | '${m.id}'`).join("\n");
+      return `export type ${typeName} =\n${ids};`;
+    },
+  );
 
   const modelIdTypes = Object.keys(providerMap)
     .map((p) => `${capitalize(p)}ModelId`)
-    .join('\n  | ');
+    .join("\n  | ");
 
   const aliasEntries: string[] = [];
   for (const m of models) {
@@ -302,7 +351,9 @@ export function buildRegistryContent(
     }
   }
 
-  const providerForModelEntries = models.map((m) => `  '${m.id}': '${m.provider}'`);
+  const providerForModelEntries = models.map(
+    (m) => `  '${m.id}': '${m.provider}'`,
+  );
 
   const defaultEntries = models
     .filter((m) => m.defaultFor)
@@ -313,33 +364,44 @@ export function buildRegistryContent(
 // Re-run: pnpm sync-models
 
 export const PROVIDER_MODEL_MAP = {
-${providerModelMapLines.join(',\n')},
+${providerModelMapLines.join(",\n")},
 } as const;
 
-${providerTypeLines.join('\n\n')}
+${providerTypeLines.join("\n\n")}
 
 export type ModelId =
   | ${modelIdTypes};
 
 export const MODEL_ALIASES: Record<string, string> = {
-${aliasEntries.join(',\n')},
+${aliasEntries.join(",\n")},
 };
 
 export const PROVIDER_FOR_MODEL: Record<string, string> = {
-${providerForModelEntries.join(',\n')},
+${providerForModelEntries.join(",\n")},
 };
 
 export const DEFAULT_MODELS_REGISTRY: Record<string, string> = {
-${defaultEntries.join(',\n')},
+${defaultEntries.join(",\n")},
 };
 `;
 }
 
-export function buildCapabilitiesContent(models: ModelEntry[], timestamp: string): string {
-  const reasoningModels = models.filter((m) => m.reasoningCapable).map((m) => `  '${m.id}'`);
-  const visionModels = models.filter((m) => m.supportsVision).map((m) => `  '${m.id}'`);
-  const toolModels = models.filter((m) => m.supportsTools).map((m) => `  '${m.id}'`);
-  const thinkingModels = models.filter((m) => m.supportsThinking).map((m) => `  '${m.id}'`);
+export function buildCapabilitiesContent(
+  models: ModelEntry[],
+  timestamp: string,
+): string {
+  const reasoningModels = models
+    .filter((m) => m.reasoningCapable)
+    .map((m) => `  '${m.id}'`);
+  const visionModels = models
+    .filter((m) => m.supportsVision)
+    .map((m) => `  '${m.id}'`);
+  const toolModels = models
+    .filter((m) => m.supportsTools)
+    .map((m) => `  '${m.id}'`);
+  const thinkingModels = models
+    .filter((m) => m.supportsThinking)
+    .map((m) => `  '${m.id}'`);
 
   const contextWindowEntries = models
     .filter((m) => m.contextWindow != null)
@@ -354,34 +416,37 @@ export function buildCapabilitiesContent(models: ModelEntry[], timestamp: string
 // Re-run: pnpm sync-models
 
 export const REASONING_CAPABLE_MODEL_IDS = new Set<string>([
-${reasoningModels.join(',\n')},
+${reasoningModels.join(",\n")},
 ]);
 
 export const VISION_CAPABLE_MODEL_IDS = new Set<string>([
-${visionModels.join(',\n')},
+${visionModels.join(",\n")},
 ]);
 
 export const TOOL_CAPABLE_MODEL_IDS = new Set<string>([
-${toolModels.join(',\n')},
+${toolModels.join(",\n")},
 ]);
 
 export const THINKING_CAPABLE_MODEL_IDS = new Set<string>([
-${thinkingModels.join(',\n')},
+${thinkingModels.join(",\n")},
 ]);
 
 export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
-${contextWindowEntries.join(',\n')},
+${contextWindowEntries.join(",\n")},
 };
 
 export const MODEL_MAX_OUTPUT_TOKENS: Record<string, number> = {
-${maxOutputEntries.join(',\n')},
+${maxOutputEntries.join(",\n")},
 };
 `;
 }
 
-export function buildDisplayContent(models: ModelEntry[], timestamp: string): string {
+export function buildDisplayContent(
+  models: ModelEntry[],
+  timestamp: string,
+): string {
   const displayNameEntries = models.map(
-    (m) => `  '${m.id}': '${m.name.replace(/'/g, "\\'")}'`
+    (m) => `  '${m.id}': '${m.name.replace(/'/g, "\\'")}'`,
   );
 
   return `// @generated by sync-models on ${timestamp} — DO NOT EDIT
@@ -389,7 +454,7 @@ export function buildDisplayContent(models: ModelEntry[], timestamp: string): st
 // Re-run: pnpm sync-models
 
 export const MODEL_DISPLAY_NAMES: Record<string, string> = {
-${displayNameEntries.join(',\n')},
+${displayNameEntries.join(",\n")},
 };
 
 export function getRegistryModelDisplayName(modelId: string): string | undefined {
@@ -404,9 +469,13 @@ export function getRegistryModelDisplayName(modelId: string): string | undefined
 
 function generateRegistryFile(
   models: ModelEntry[],
-  providerMap: Record<string, ModelEntry[]>
+  providerMap: Record<string, ModelEntry[]>,
 ): void {
-  const content = buildRegistryContent(models, providerMap, new Date().toISOString());
+  const content = buildRegistryContent(
+    models,
+    providerMap,
+    new Date().toISOString(),
+  );
   fs.writeFileSync(REGISTRY_GEN, content);
   console.log(`Wrote ${REGISTRY_GEN}`);
 }
@@ -431,7 +500,7 @@ export function computeDiff(
   oldModels: ModelEntry[],
   newModels: ModelEntry[],
   staleProviders: string[],
-  failedProviders: Array<{ provider: string; error: string }>
+  failedProviders: Array<{ provider: string; error: string }>,
 ): DiffSummary {
   const oldIds = new Set(oldModels.map((m) => m.id));
   const newIds = new Set(newModels.map((m) => m.id));
@@ -441,10 +510,14 @@ export function computeDiff(
 
   const oldMap = new Map(oldModels.map((m) => [m.id, m]));
   const updated = newModels
-    .filter((m) => oldIds.has(m.id) && JSON.stringify(m) !== JSON.stringify(oldMap.get(m.id)))
+    .filter(
+      (m) =>
+        oldIds.has(m.id) &&
+        JSON.stringify(m) !== JSON.stringify(oldMap.get(m.id)),
+    )
     .map((m) => m.id);
 
-  const aliasChanges: DiffSummary['aliasChanges'] = [];
+  const aliasChanges: DiffSummary["aliasChanges"] = [];
   for (const m of newModels) {
     const old = oldMap.get(m.id);
     if (old && JSON.stringify(old.aliases) !== JSON.stringify(m.aliases)) {
@@ -456,72 +529,81 @@ export function computeDiff(
     }
   }
 
-  return { added, removed, updated, aliasChanges, staleProviders, failedProviders };
+  return {
+    added,
+    removed,
+    updated,
+    aliasChanges,
+    staleProviders,
+    failedProviders,
+  };
 }
 
 export function formatSummary(
   diff: DiffSummary,
   failedProviders: Array<{ provider: string; error: string }>,
-  staleProviders: string[]
+  staleProviders: string[],
 ): string {
   const lines: string[] = [
-    '# Model Registry Sync Summary',
-    '',
+    "# Model Registry Sync Summary",
+    "",
     `**Generated**: ${new Date().toISOString()}`,
-    '',
+    "",
   ];
 
   if (failedProviders.length > 0) {
-    lines.push('## ⚠️ Failed Providers');
+    lines.push("## ⚠️ Failed Providers");
     for (const fp of failedProviders) {
       lines.push(`- **${fp.provider}**: ${fp.error}`);
     }
-    lines.push('');
+    lines.push("");
   }
 
   if (staleProviders.length > 0) {
-    lines.push('## 🕐 Stale Providers (excluded from output)');
+    lines.push("## 🕐 Stale Providers (excluded from output)");
     for (const sp of staleProviders) {
       lines.push(`- ${sp}`);
     }
-    lines.push('');
+    lines.push("");
   }
 
-  lines.push('## Changes');
-  lines.push('');
+  lines.push("## Changes");
+  lines.push("");
   lines.push(`- **Added**: ${diff.added.length} models`);
   lines.push(`- **Removed**: ${diff.removed.length} models`);
   lines.push(`- **Updated**: ${diff.updated.length} models`);
   lines.push(`- **Alias changes**: ${diff.aliasChanges.length}`);
-  lines.push('');
+  lines.push("");
 
   if (diff.added.length > 0) {
-    lines.push('### Added Models');
+    lines.push("### Added Models");
     for (const id of diff.added) lines.push(`- \`${id}\``);
-    lines.push('');
+    lines.push("");
   }
 
   if (diff.removed.length > 0) {
-    lines.push('### Removed Models');
+    lines.push("### Removed Models");
     for (const id of diff.removed) lines.push(`- \`${id}\``);
-    lines.push('');
+    lines.push("");
   }
 
   if (diff.updated.length > 0) {
-    lines.push('### Updated Models');
+    lines.push("### Updated Models");
     for (const id of diff.updated) lines.push(`- \`${id}\``);
-    lines.push('');
+    lines.push("");
   }
 
   if (diff.aliasChanges.length > 0) {
-    lines.push('### Alias Changes');
+    lines.push("### Alias Changes");
     for (const ac of diff.aliasChanges) {
-      lines.push(`- \`${ac.model}\`: [${ac.before.join(', ')}] → [${ac.after.join(', ')}]`);
+      lines.push(
+        `- \`${ac.model}\`: [${ac.before.join(", ")}] → [${ac.after.join(", ")}]`,
+      );
     }
-    lines.push('');
+    lines.push("");
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

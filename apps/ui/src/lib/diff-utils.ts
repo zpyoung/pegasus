@@ -8,7 +8,7 @@
 export interface ParsedDiffHunk {
   header: string;
   lines: {
-    type: 'context' | 'addition' | 'deletion' | 'header';
+    type: "context" | "addition" | "deletion" | "header";
     content: string;
     lineNumber?: { old?: number; new?: number };
   }[];
@@ -38,7 +38,7 @@ export function parseDiff(diffText: string): ParsedFileDiff[] {
   if (!diffText) return [];
 
   const files: ParsedFileDiff[] = [];
-  const lines = diffText.split('\n');
+  const lines = diffText.split("\n");
   let currentFile: ParsedFileDiff | null = null;
   let currentHunk: ParsedDiffHunk | null = null;
   let oldLineNum = 0;
@@ -47,14 +47,14 @@ export function parseDiff(diffText: string): ParsedFileDiff[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (line.startsWith('diff --git')) {
+    if (line.startsWith("diff --git")) {
       if (currentFile) {
         if (currentHunk) currentFile.hunks.push(currentHunk);
         files.push(currentFile);
       }
       const match = line.match(/diff --git a\/(.*?) b\/(.*)/);
       currentFile = {
-        filePath: match ? match[2] : 'unknown',
+        filePath: match ? match[2] : "unknown",
         hunks: [],
         additions: 0,
         deletions: 0,
@@ -63,59 +63,63 @@ export function parseDiff(diffText: string): ParsedFileDiff[] {
       continue;
     }
 
-    if (line.startsWith('new file mode')) {
+    if (line.startsWith("new file mode")) {
       if (currentFile) currentFile.isNew = true;
       continue;
     }
-    if (line.startsWith('deleted file mode')) {
+    if (line.startsWith("deleted file mode")) {
       if (currentFile) currentFile.isDeleted = true;
       continue;
     }
-    if (line.startsWith('rename from') || line.startsWith('rename to')) {
+    if (line.startsWith("rename from") || line.startsWith("rename to")) {
       if (currentFile) currentFile.isRenamed = true;
       continue;
     }
-    if (line.startsWith('index ') || line.startsWith('--- ') || line.startsWith('+++ ')) {
+    if (
+      line.startsWith("index ") ||
+      line.startsWith("--- ") ||
+      line.startsWith("+++ ")
+    ) {
       continue;
     }
 
-    if (line.startsWith('@@')) {
+    if (line.startsWith("@@")) {
       if (currentHunk && currentFile) currentFile.hunks.push(currentHunk);
       const hunkMatch = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
       oldLineNum = hunkMatch ? parseInt(hunkMatch[1], 10) : 1;
       newLineNum = hunkMatch ? parseInt(hunkMatch[2], 10) : 1;
       currentHunk = {
         header: line,
-        lines: [{ type: 'header', content: line }],
+        lines: [{ type: "header", content: line }],
       };
       continue;
     }
 
     if (currentHunk) {
       // Skip trailing empty line produced by split('\n') to avoid phantom context line
-      if (line === '' && i === lines.length - 1) {
+      if (line === "" && i === lines.length - 1) {
         continue;
       }
-      if (line.startsWith('+')) {
+      if (line.startsWith("+")) {
         currentHunk.lines.push({
-          type: 'addition',
+          type: "addition",
           content: line.substring(1),
           lineNumber: { new: newLineNum },
         });
         newLineNum++;
         if (currentFile) currentFile.additions++;
-      } else if (line.startsWith('-')) {
+      } else if (line.startsWith("-")) {
         currentHunk.lines.push({
-          type: 'deletion',
+          type: "deletion",
           content: line.substring(1),
           lineNumber: { old: oldLineNum },
         });
         oldLineNum++;
         if (currentFile) currentFile.deletions++;
-      } else if (line.startsWith(' ') || line === '') {
+      } else if (line.startsWith(" ") || line === "") {
         currentHunk.lines.push({
-          type: 'context',
-          content: line.substring(1) || '',
+          type: "context",
+          content: line.substring(1) || "",
           lineNumber: { old: oldLineNum, new: newLineNum },
         });
         oldLineNum++;
@@ -144,9 +148,9 @@ export function reconstructFilesFromDiff(diffText: string): {
   oldContent: string;
   newContent: string;
 } {
-  if (!diffText) return { oldContent: '', newContent: '' };
+  if (!diffText) return { oldContent: "", newContent: "" };
 
-  const lines = diffText.split('\n');
+  const lines = diffText.split("\n");
   const oldLines: string[] = [];
   const newLines: string[] = [];
   let inHunk = false;
@@ -156,23 +160,23 @@ export function reconstructFilesFromDiff(diffText: string): {
 
     // Skip diff header lines
     if (
-      line.startsWith('diff --git') ||
-      line.startsWith('index ') ||
-      line.startsWith('--- ') ||
-      line.startsWith('+++ ') ||
-      line.startsWith('new file mode') ||
-      line.startsWith('deleted file mode') ||
-      line.startsWith('rename from') ||
-      line.startsWith('rename to') ||
-      line.startsWith('similarity index') ||
-      line.startsWith('old mode') ||
-      line.startsWith('new mode')
+      line.startsWith("diff --git") ||
+      line.startsWith("index ") ||
+      line.startsWith("--- ") ||
+      line.startsWith("+++ ") ||
+      line.startsWith("new file mode") ||
+      line.startsWith("deleted file mode") ||
+      line.startsWith("rename from") ||
+      line.startsWith("rename to") ||
+      line.startsWith("similarity index") ||
+      line.startsWith("old mode") ||
+      line.startsWith("new mode")
     ) {
       continue;
     }
 
     // Hunk header
-    if (line.startsWith('@@')) {
+    if (line.startsWith("@@")) {
       inHunk = true;
       continue;
     }
@@ -180,30 +184,30 @@ export function reconstructFilesFromDiff(diffText: string): {
     if (!inHunk) continue;
 
     // Skip trailing empty line produced by split('\n')
-    if (line === '' && i === lines.length - 1) {
+    if (line === "" && i === lines.length - 1) {
       continue;
     }
 
     // "\ No newline at end of file" marker
-    if (line.startsWith('\\')) {
+    if (line.startsWith("\\")) {
       continue;
     }
 
-    if (line.startsWith('+')) {
+    if (line.startsWith("+")) {
       newLines.push(line.substring(1));
-    } else if (line.startsWith('-')) {
+    } else if (line.startsWith("-")) {
       oldLines.push(line.substring(1));
     } else {
       // Context line (starts with space or is empty within hunk)
-      const content = line.startsWith(' ') ? line.substring(1) : line;
+      const content = line.startsWith(" ") ? line.substring(1) : line;
       oldLines.push(content);
       newLines.push(content);
     }
   }
 
   return {
-    oldContent: oldLines.join('\n'),
-    newContent: newLines.join('\n'),
+    oldContent: oldLines.join("\n"),
+    newContent: newLines.join("\n"),
   };
 }
 
@@ -212,36 +216,41 @@ export function reconstructFilesFromDiff(diffText: string): {
  * Each entry in the returned array is a complete diff block for a single file.
  */
 export function splitDiffByFile(
-  combinedDiff: string
+  combinedDiff: string,
 ): { filePath: string; diff: string; isNew: boolean; isDeleted: boolean }[] {
   if (!combinedDiff) return [];
 
-  const results: { filePath: string; diff: string; isNew: boolean; isDeleted: boolean }[] = [];
-  const lines = combinedDiff.split('\n');
+  const results: {
+    filePath: string;
+    diff: string;
+    isNew: boolean;
+    isDeleted: boolean;
+  }[] = [];
+  const lines = combinedDiff.split("\n");
   let currentLines: string[] = [];
-  let currentFilePath = '';
+  let currentFilePath = "";
   let currentIsNew = false;
   let currentIsDeleted = false;
 
   for (const line of lines) {
-    if (line.startsWith('diff --git')) {
+    if (line.startsWith("diff --git")) {
       // Push previous file if exists
       if (currentLines.length > 0 && currentFilePath) {
         results.push({
           filePath: currentFilePath,
-          diff: currentLines.join('\n'),
+          diff: currentLines.join("\n"),
           isNew: currentIsNew,
           isDeleted: currentIsDeleted,
         });
       }
       currentLines = [line];
       const match = line.match(/diff --git a\/(.*?) b\/(.*)/);
-      currentFilePath = match ? match[2] : 'unknown';
+      currentFilePath = match ? match[2] : "unknown";
       currentIsNew = false;
       currentIsDeleted = false;
     } else {
-      if (line.startsWith('new file mode')) currentIsNew = true;
-      if (line.startsWith('deleted file mode')) currentIsDeleted = true;
+      if (line.startsWith("new file mode")) currentIsNew = true;
+      if (line.startsWith("deleted file mode")) currentIsDeleted = true;
       currentLines.push(line);
     }
   }
@@ -250,7 +259,7 @@ export function splitDiffByFile(
   if (currentLines.length > 0 && currentFilePath) {
     results.push({
       filePath: currentFilePath,
-      diff: currentLines.join('\n'),
+      diff: currentLines.join("\n"),
       isNew: currentIsNew,
       isDeleted: currentIsDeleted,
     });

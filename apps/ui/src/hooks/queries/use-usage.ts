@@ -5,11 +5,16 @@
  * These hooks include automatic polling for real-time usage updates.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import type { ClaudeUsage, CodexUsage, ZaiUsage, GeminiUsage } from '@/store/app-store';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import type {
+  ClaudeUsage,
+  CodexUsage,
+  ZaiUsage,
+  GeminiUsage,
+} from "@/store/app-store";
 
 /** Polling interval for usage data (60 seconds) */
 const USAGE_POLLING_INTERVAL = 60 * 1000;
@@ -33,11 +38,11 @@ export function useClaudeUsage(enabled = true) {
     queryFn: async (): Promise<ClaudeUsage> => {
       const api = getElectronAPI();
       if (!api.claude) {
-        throw new Error('Claude API bridge unavailable');
+        throw new Error("Claude API bridge unavailable");
       }
       const result = await api.claude.getUsage();
       // Check if result is an error response
-      if ('error' in result) {
+      if ("error" in result) {
         throw new Error(result.message || result.error);
       }
       return result;
@@ -69,11 +74,11 @@ export function useCodexUsage(enabled = true) {
     queryFn: async (): Promise<CodexUsage> => {
       const api = getElectronAPI();
       if (!api.codex) {
-        throw new Error('Codex API bridge unavailable');
+        throw new Error("Codex API bridge unavailable");
       }
       const result = await api.codex.getUsage();
       // Check if result is an error response
-      if ('error' in result) {
+      if ("error" in result) {
         throw new Error(result.message || result.error);
       }
       return result;
@@ -105,11 +110,11 @@ export function useZaiUsage(enabled = true) {
     queryFn: async (): Promise<ZaiUsage> => {
       const api = getElectronAPI();
       if (!api.zai) {
-        throw new Error('z.ai API bridge unavailable');
+        throw new Error("z.ai API bridge unavailable");
       }
       const result = await api.zai.getUsage();
       // Check if result is an error response
-      if ('error' in result) {
+      if ("error" in result) {
         throw new Error(result.message || result.error);
       }
       return result;
@@ -141,11 +146,11 @@ export function useGeminiUsage(enabled = true) {
     queryFn: async (): Promise<GeminiUsage> => {
       const api = getElectronAPI();
       if (!api.gemini) {
-        throw new Error('Gemini API bridge unavailable');
+        throw new Error("Gemini API bridge unavailable");
       }
       const result = await api.gemini.getUsage();
       // Check if result is an error-only response (no 'authenticated' field means it's the error variant)
-      if (!('authenticated' in result) && 'error' in result) {
+      if (!("authenticated" in result) && "error" in result) {
         throw new Error(result.message || result.error);
       }
       return result as GeminiUsage;

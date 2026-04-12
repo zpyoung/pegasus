@@ -1,7 +1,7 @@
-import { useMemo, useCallback } from 'react';
-import type { GitHubComment } from '@/lib/electron';
-import { useAppStore } from '@/store/app-store';
-import { useGitHubIssueComments } from '@/hooks/queries';
+import { useMemo, useCallback } from "react";
+import type { GitHubComment } from "@/lib/electron";
+import { useAppStore } from "@/store/app-store";
+import { useGitHubIssueComments } from "@/hooks/queries";
 
 interface UseIssueCommentsResult {
   comments: GitHubComment[];
@@ -14,12 +14,21 @@ interface UseIssueCommentsResult {
   refresh: () => void;
 }
 
-export function useIssueComments(issueNumber: number | null): UseIssueCommentsResult {
+export function useIssueComments(
+  issueNumber: number | null,
+): UseIssueCommentsResult {
   const { currentProject } = useAppStore();
 
   // Use React Query infinite query
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch, error } =
-    useGitHubIssueComments(currentProject?.path, issueNumber ?? undefined);
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+    error,
+  } = useGitHubIssueComments(currentProject?.path, issueNumber ?? undefined);
 
   // Flatten all pages into a single comments array
   const comments = useMemo(() => {

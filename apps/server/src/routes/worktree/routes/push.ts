@@ -7,9 +7,9 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { performPush } from '../../../services/push-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { performPush } from "../../../services/push-service.js";
 
 export function createPushHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -24,15 +24,19 @@ export function createPushHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
-      const result = await performPush(worktreePath, { remote, force, autoResolve });
+      const result = await performPush(worktreePath, {
+        remote,
+        force,
+        autoResolve,
+      });
 
       if (!result.success) {
-        const statusCode = isClientError(result.error ?? '') ? 400 : 500;
+        const statusCode = isClientError(result.error ?? "") ? 400 : 500;
         res.status(statusCode).json({
           success: false,
           error: result.error,
@@ -54,7 +58,7 @@ export function createPushHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Push worktree failed');
+      logError(error, "Push worktree failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -66,8 +70,8 @@ export function createPushHandler() {
  */
 function isClientError(errorMessage: string): boolean {
   return (
-    errorMessage.includes('detached HEAD') ||
-    errorMessage.includes('rejected') ||
-    errorMessage.includes('diverged')
+    errorMessage.includes("detached HEAD") ||
+    errorMessage.includes("rejected") ||
+    errorMessage.includes("diverged")
   );
 }

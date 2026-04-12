@@ -8,12 +8,15 @@ import {
   type RefObject,
   type ReactNode,
   type UIEvent,
-} from 'react';
-import { DragOverlay } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Button } from '@/components/ui/button';
-import { KanbanColumn, KanbanCard, EmptyStateCard } from './components';
-import { Feature, useAppStore, formatShortcut } from '@/store/app-store';
+} from "react";
+import { DragOverlay } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { Button } from "@/components/ui/button";
+import { KanbanColumn, KanbanCard, EmptyStateCard } from "./components";
+import { Feature, useAppStore, formatShortcut } from "@/store/app-store";
 import {
   Archive,
   Settings2,
@@ -22,13 +25,17 @@ import {
   Plus,
   CheckCircle2,
   Zap,
-} from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useResponsiveKanban } from '@/hooks/use-responsive-kanban';
-import { getColumnsWithPipeline, type ColumnId } from './constants';
-import type { PipelineConfig, FeatureTemplate } from '@pegasus/types';
-import { AddFeatureButton } from './components/add-feature-button';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useResponsiveKanban } from "@/hooks/use-responsive-kanban";
+import { getColumnsWithPipeline, type ColumnId } from "./constants";
+import type { PipelineConfig, FeatureTemplate } from "@pegasus/types";
+import { AddFeatureButton } from "./components/add-feature-button";
+import { cn } from "@/lib/utils";
 interface KanbanBoardProps {
   activeFeature: Feature | null;
   getColumnFeatures: (columnId: ColumnId) => Feature[];
@@ -75,10 +82,10 @@ interface KanbanBoardProps {
   onOpenPipelineSettings?: () => void;
   // Selection mode props
   isSelectionMode?: boolean;
-  selectionTarget?: 'backlog' | 'waiting_approval' | null;
+  selectionTarget?: "backlog" | "waiting_approval" | null;
   selectedFeatureIds?: Set<string>;
   onToggleFeatureSelection?: (featureId: string) => void;
-  onToggleSelectionMode?: (target?: 'backlog' | 'waiting_approval') => void;
+  onToggleSelectionMode?: (target?: "backlog" | "waiting_approval") => void;
   // Empty state action props
   onAiSuggest?: () => void;
   /** Whether currently dragging (hides empty states during drag) */
@@ -156,7 +163,8 @@ function VirtualizedList<Item extends VirtualListItem>({
   const [measureVersion, setMeasureVersion] = useState(0);
 
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
-  const shouldVirtualize = !isDragging && items.length >= virtualizationThreshold;
+  const shouldVirtualize =
+    !isDragging && items.length >= virtualizationThreshold;
 
   const itemSizes = useMemo(() => {
     return items.map((item) => {
@@ -188,7 +196,10 @@ function VirtualizedList<Item extends VirtualListItem>({
     }
 
     const firstVisible = findIndexForOffset(itemEnds, scrollTop);
-    const lastVisible = findIndexForOffset(itemEnds, scrollTop + viewportHeight);
+    const lastVisible = findIndexForOffset(
+      itemEnds,
+      scrollTop + viewportHeight,
+    );
     const overscannedStart = Math.max(0, firstVisible - overscan);
     const overscannedEnd = Math.min(items.length, lastVisible + overscan + 1);
 
@@ -197,9 +208,19 @@ function VirtualizedList<Item extends VirtualListItem>({
       endIndex: overscannedEnd,
       offsetTop: itemStarts[overscannedStart] ?? 0,
     };
-  }, [shouldVirtualize, items.length, itemEnds, itemStarts, overscan, scrollTop, viewportHeight]);
+  }, [
+    shouldVirtualize,
+    items.length,
+    itemEnds,
+    itemStarts,
+    overscan,
+    scrollTop,
+    viewportHeight,
+  ]);
 
-  const visibleItems = shouldVirtualize ? items.slice(startIndex, endIndex) : items;
+  const visibleItems = shouldVirtualize
+    ? items.slice(startIndex, endIndex)
+    : items;
 
   const onScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
     const target = event.currentTarget;
@@ -219,18 +240,19 @@ function VirtualizedList<Item extends VirtualListItem>({
       const previousHeight = measurementsRef.current.get(id);
       if (
         previousHeight === undefined ||
-        Math.abs(previousHeight - measuredHeight) > VIRTUALIZATION_MEASURE_EPSILON_PX
+        Math.abs(previousHeight - measuredHeight) >
+          VIRTUALIZATION_MEASURE_EPSILON_PX
       ) {
         measurementsRef.current.set(id, measuredHeight);
         setMeasureVersion((value) => value + 1);
       }
     },
-    [shouldVirtualize]
+    [shouldVirtualize],
   );
 
   useEffect(() => {
     const container = contentRef.current;
-    if (!container || typeof window === 'undefined') return;
+    if (!container || typeof window === "undefined") return;
 
     const updateHeight = () => {
       setViewportHeight(container.clientHeight);
@@ -238,9 +260,9 @@ function VirtualizedList<Item extends VirtualListItem>({
 
     updateHeight();
 
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateHeight);
-      return () => window.removeEventListener('resize', updateHeight);
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateHeight);
+      return () => window.removeEventListener("resize", updateHeight);
     }
 
     const observer = new ResizeObserver(() => updateHeight());
@@ -334,11 +356,15 @@ export const KanbanBoard = memo(function KanbanBoard({
   className,
 }: KanbanBoardProps) {
   // Generate columns including pipeline steps
-  const columns = useMemo(() => getColumnsWithPipeline(pipelineConfig), [pipelineConfig]);
+  const columns = useMemo(
+    () => getColumnsWithPipeline(pipelineConfig),
+    [pipelineConfig],
+  );
 
   // Get the keyboard shortcut for adding features
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
-  const addFeatureShortcut = addFeatureShortcutProp || keyboardShortcuts.addFeature || 'N';
+  const addFeatureShortcut =
+    addFeatureShortcutProp || keyboardShortcuts.addFeature || "N";
 
   // Use responsive column widths based on window size
   // containerStyle handles centering and ensures columns fit without horizontal scroll in Electron
@@ -347,9 +373,9 @@ export const KanbanBoard = memo(function KanbanBoard({
   return (
     <div
       className={cn(
-        'flex-1 overflow-x-auto px-5 pt-2 sm:pt-4 pb-0 sm:pb-4 relative',
-        'transition-opacity duration-200',
-        className
+        "flex-1 overflow-x-auto px-5 pt-2 sm:pt-4 pb-0 sm:pb-4 relative",
+        "transition-opacity duration-200",
+        className,
       )}
       style={backgroundImageStyle}
     >
@@ -391,7 +417,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                   disableItemSpacing={shouldVirtualize}
                   contentClassName="perf-contain"
                   headerAction={
-                    column.id === 'verified' ? (
+                    column.id === "verified" ? (
                       <div className="flex items-center gap-1">
                         {columnFeatures.length > 0 && (
                           <Tooltip>
@@ -423,7 +449,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                               <Archive className="w-3.5 h-3.5 text-muted-foreground" />
                               {completedCount > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
-                                  {completedCount > 99 ? '99+' : completedCount}
+                                  {completedCount > 99 ? "99+" : completedCount}
                                 </span>
                               )}
                             </Button>
@@ -433,7 +459,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                           </TooltipContent>
                         </Tooltip>
                       </div>
-                    ) : column.id === 'backlog' ? (
+                    ) : column.id === "backlog" ? (
                       <div className="flex items-center gap-1">
                         <div className="flex items-center">
                           <Button
@@ -460,16 +486,16 @@ export const KanbanBoard = memo(function KanbanBoard({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`h-6 px-2 text-xs ${selectionTarget === 'backlog' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
-                          onClick={() => onToggleSelectionMode?.('backlog')}
+                          className={`h-6 px-2 text-xs ${selectionTarget === "backlog" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
+                          onClick={() => onToggleSelectionMode?.("backlog")}
                           title={
-                            selectionTarget === 'backlog'
-                              ? 'Switch to Drag Mode'
-                              : 'Select Multiple'
+                            selectionTarget === "backlog"
+                              ? "Switch to Drag Mode"
+                              : "Select Multiple"
                           }
                           data-testid="selection-mode-button"
                         >
-                          {selectionTarget === 'backlog' ? (
+                          {selectionTarget === "backlog" ? (
                             <>
                               <GripVertical className="w-3.5 h-3.5 mr-1" />
                               Drag
@@ -482,20 +508,22 @@ export const KanbanBoard = memo(function KanbanBoard({
                           )}
                         </Button>
                       </div>
-                    ) : column.id === 'waiting_approval' ? (
+                    ) : column.id === "waiting_approval" ? (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-6 px-2 text-xs ${selectionTarget === 'waiting_approval' ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
-                        onClick={() => onToggleSelectionMode?.('waiting_approval')}
+                        className={`h-6 px-2 text-xs ${selectionTarget === "waiting_approval" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
+                        onClick={() =>
+                          onToggleSelectionMode?.("waiting_approval")
+                        }
                         title={
-                          selectionTarget === 'waiting_approval'
-                            ? 'Switch to Drag Mode'
-                            : 'Select Multiple'
+                          selectionTarget === "waiting_approval"
+                            ? "Switch to Drag Mode"
+                            : "Select Multiple"
                         }
                         data-testid="waiting-approval-selection-mode-button"
                       >
-                        {selectionTarget === 'waiting_approval' ? (
+                        {selectionTarget === "waiting_approval" ? (
                           <>
                             <GripVertical className="w-3.5 h-3.5 mr-1" />
                             Drag
@@ -507,7 +535,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                           </>
                         )}
                       </Button>
-                    ) : column.id === 'in_progress' ? (
+                    ) : column.id === "in_progress" ? (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -532,7 +560,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                     ) : undefined
                   }
                   footerAction={
-                    column.id === 'backlog' ? (
+                    column.id === "backlog" ? (
                       <AddFeatureButton
                         onAddFeature={onAddFeature}
                         onQuickAdd={onQuickAdd}
@@ -547,13 +575,19 @@ export const KanbanBoard = memo(function KanbanBoard({
                   {(() => {
                     const reduceEffects = shouldVirtualize;
                     const effectiveCardOpacity = reduceEffects
-                      ? Math.min(backgroundSettings.cardOpacity, REDUCED_CARD_OPACITY_PERCENT)
+                      ? Math.min(
+                          backgroundSettings.cardOpacity,
+                          REDUCED_CARD_OPACITY_PERCENT,
+                        )
                       : backgroundSettings.cardOpacity;
                     const effectiveGlassmorphism =
                       backgroundSettings.cardGlassmorphism && !reduceEffects;
 
                     return (
-                      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+                      <SortableContext
+                        items={itemIds}
+                        strategy={verticalListSortingStrategy}
+                      >
                         {/* Empty state card when column has no features */}
                         {columnFeatures.length === 0 && !isDragging && (
                           <EmptyStateCard
@@ -561,7 +595,9 @@ export const KanbanBoard = memo(function KanbanBoard({
                             columnTitle={column.title}
                             addFeatureShortcut={addFeatureShortcut}
                             isReadOnly={isReadOnly}
-                            onAiSuggest={column.id === 'backlog' ? onAiSuggest : undefined}
+                            onAiSuggest={
+                              column.id === "backlog" ? onAiSuggest : undefined
+                            }
                             opacity={effectiveCardOpacity}
                             glassmorphism={effectiveGlassmorphism}
                             customConfig={
@@ -575,23 +611,35 @@ export const KanbanBoard = memo(function KanbanBoard({
                           />
                         )}
                         {shouldVirtualize ? (
-                          <div className="relative" style={{ height: totalHeight }}>
+                          <div
+                            className="relative"
+                            style={{ height: totalHeight }}
+                          >
                             <div
                               className="absolute left-0 right-0"
-                              style={{ transform: `translateY(${offsetTop}px)` }}
+                              style={{
+                                transform: `translateY(${offsetTop}px)`,
+                              }}
                             >
                               {visibleItems.map((feature, index) => {
                                 const absoluteIndex = startIndex + index;
                                 let shortcutKey: string | undefined;
-                                if (column.id === 'in_progress' && absoluteIndex < 10) {
+                                if (
+                                  column.id === "in_progress" &&
+                                  absoluteIndex < 10
+                                ) {
                                   shortcutKey =
-                                    absoluteIndex === 9 ? '0' : String(absoluteIndex + 1);
+                                    absoluteIndex === 9
+                                      ? "0"
+                                      : String(absoluteIndex + 1);
                                 }
                                 return (
                                   <div
                                     key={feature.id}
                                     ref={registerItem(feature.id)}
-                                    style={{ marginBottom: `${KANBAN_CARD_GAP_PX}px` }}
+                                    style={{
+                                      marginBottom: `${KANBAN_CARD_GAP_PX}px`,
+                                    }}
                                   >
                                     <KanbanCard
                                       feature={feature}
@@ -601,20 +649,35 @@ export const KanbanBoard = memo(function KanbanBoard({
                                       onVerify={() => onVerify(feature)}
                                       onResume={() => onResume(feature)}
                                       onForceStop={() => onForceStop(feature)}
-                                      onManualVerify={() => onManualVerify(feature)}
-                                      onMoveBackToInProgress={() => onMoveBackToInProgress(feature)}
+                                      onManualVerify={() =>
+                                        onManualVerify(feature)
+                                      }
+                                      onMoveBackToInProgress={() =>
+                                        onMoveBackToInProgress(feature)
+                                      }
                                       onFollowUp={() => onFollowUp(feature)}
                                       onComplete={() => onComplete(feature)}
                                       onImplement={() => onImplement(feature)}
                                       onViewPlan={() => onViewPlan(feature)}
-                                      onApprovePlan={() => onApprovePlan(feature)}
-                                      onAnswerQuestion={onAnswerQuestion ? () => onAnswerQuestion(feature) : undefined}
+                                      onApprovePlan={() =>
+                                        onApprovePlan(feature)
+                                      }
+                                      onAnswerQuestion={
+                                        onAnswerQuestion
+                                          ? () => onAnswerQuestion(feature)
+                                          : undefined
+                                      }
                                       onSpawnTask={() => onSpawnTask?.(feature)}
                                       onDuplicate={() => onDuplicate?.(feature)}
-                                      onDuplicateAsChild={() => onDuplicateAsChild?.(feature)}
+                                      onDuplicateAsChild={() =>
+                                        onDuplicateAsChild?.(feature)
+                                      }
                                       onDuplicateAsChildMultiple={
                                         onDuplicateAsChildMultiple
-                                          ? () => onDuplicateAsChildMultiple(feature)
+                                          ? () =>
+                                              onDuplicateAsChildMultiple(
+                                                feature,
+                                              )
                                           : undefined
                                       }
                                       onCommitChanges={
@@ -622,18 +685,30 @@ export const KanbanBoard = memo(function KanbanBoard({
                                           ? () => onCommitChanges(feature)
                                           : undefined
                                       }
-                                      hasContext={featuresWithContext.has(feature.id)}
-                                      isCurrentAutoTask={runningAutoTasks.includes(feature.id)}
+                                      hasContext={featuresWithContext.has(
+                                        feature.id,
+                                      )}
+                                      isCurrentAutoTask={runningAutoTasks.includes(
+                                        feature.id,
+                                      )}
                                       shortcutKey={shortcutKey}
                                       opacity={effectiveCardOpacity}
                                       glassmorphism={effectiveGlassmorphism}
-                                      cardBorderEnabled={backgroundSettings.cardBorderEnabled}
-                                      cardBorderOpacity={backgroundSettings.cardBorderOpacity}
+                                      cardBorderEnabled={
+                                        backgroundSettings.cardBorderEnabled
+                                      }
+                                      cardBorderOpacity={
+                                        backgroundSettings.cardBorderOpacity
+                                      }
                                       reduceEffects={reduceEffects}
                                       isSelectionMode={isSelectionMode}
                                       selectionTarget={selectionTarget}
-                                      isSelected={selectedFeatureIds.has(feature.id)}
-                                      onToggleSelect={() => onToggleFeatureSelection?.(feature.id)}
+                                      isSelected={selectedFeatureIds.has(
+                                        feature.id,
+                                      )}
+                                      onToggleSelect={() =>
+                                        onToggleFeatureSelection?.(feature.id)
+                                      }
                                     />
                                   </div>
                                 );
@@ -643,8 +718,9 @@ export const KanbanBoard = memo(function KanbanBoard({
                         ) : (
                           columnFeatures.map((feature, index) => {
                             let shortcutKey: string | undefined;
-                            if (column.id === 'in_progress' && index < 10) {
-                              shortcutKey = index === 9 ? '0' : String(index + 1);
+                            if (column.id === "in_progress" && index < 10) {
+                              shortcutKey =
+                                index === 9 ? "0" : String(index + 1);
                             }
                             return (
                               <KanbanCard
@@ -657,16 +733,24 @@ export const KanbanBoard = memo(function KanbanBoard({
                                 onResume={() => onResume(feature)}
                                 onForceStop={() => onForceStop(feature)}
                                 onManualVerify={() => onManualVerify(feature)}
-                                onMoveBackToInProgress={() => onMoveBackToInProgress(feature)}
+                                onMoveBackToInProgress={() =>
+                                  onMoveBackToInProgress(feature)
+                                }
                                 onFollowUp={() => onFollowUp(feature)}
                                 onComplete={() => onComplete(feature)}
                                 onImplement={() => onImplement(feature)}
                                 onViewPlan={() => onViewPlan(feature)}
                                 onApprovePlan={() => onApprovePlan(feature)}
-                                onAnswerQuestion={onAnswerQuestion ? () => onAnswerQuestion(feature) : undefined}
+                                onAnswerQuestion={
+                                  onAnswerQuestion
+                                    ? () => onAnswerQuestion(feature)
+                                    : undefined
+                                }
                                 onSpawnTask={() => onSpawnTask?.(feature)}
                                 onDuplicate={() => onDuplicate?.(feature)}
-                                onDuplicateAsChild={() => onDuplicateAsChild?.(feature)}
+                                onDuplicateAsChild={() =>
+                                  onDuplicateAsChild?.(feature)
+                                }
                                 onDuplicateAsChildMultiple={
                                   onDuplicateAsChildMultiple
                                     ? () => onDuplicateAsChildMultiple(feature)
@@ -678,17 +762,25 @@ export const KanbanBoard = memo(function KanbanBoard({
                                     : undefined
                                 }
                                 hasContext={featuresWithContext.has(feature.id)}
-                                isCurrentAutoTask={runningAutoTasks.includes(feature.id)}
+                                isCurrentAutoTask={runningAutoTasks.includes(
+                                  feature.id,
+                                )}
                                 shortcutKey={shortcutKey}
                                 opacity={effectiveCardOpacity}
                                 glassmorphism={effectiveGlassmorphism}
-                                cardBorderEnabled={backgroundSettings.cardBorderEnabled}
-                                cardBorderOpacity={backgroundSettings.cardBorderOpacity}
+                                cardBorderEnabled={
+                                  backgroundSettings.cardBorderEnabled
+                                }
+                                cardBorderOpacity={
+                                  backgroundSettings.cardBorderOpacity
+                                }
                                 reduceEffects={reduceEffects}
                                 isSelectionMode={isSelectionMode}
                                 selectionTarget={selectionTarget}
                                 isSelected={selectedFeatureIds.has(feature.id)}
-                                onToggleSelect={() => onToggleFeatureSelection?.(feature.id)}
+                                onToggleSelect={() =>
+                                  onToggleFeatureSelection?.(feature.id)
+                                }
                               />
                             );
                           })
@@ -706,7 +798,7 @@ export const KanbanBoard = memo(function KanbanBoard({
       <DragOverlay
         dropAnimation={{
           duration: 200,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
         }}
       >
         {activeFeature && (

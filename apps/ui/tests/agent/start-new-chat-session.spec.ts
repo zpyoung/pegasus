@@ -4,9 +4,9 @@
  * Happy path: Start a new agent chat session
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -17,11 +17,11 @@ import {
   waitForNewSession,
   countSessionItems,
   authenticateForTests,
-} from '../utils';
+} from "../utils";
 
-const TEST_TEMP_DIR = createTempDirPath('agent-session-test');
+const TEST_TEMP_DIR = createTempDirPath("agent-session-test");
 
-test.describe('Agent Chat Session', () => {
+test.describe("Agent Chat Session", () => {
   let projectPath: string;
   const projectName = `test-project-${Date.now()}`;
 
@@ -34,24 +34,24 @@ test.describe('Agent Chat Session', () => {
     fs.mkdirSync(projectPath, { recursive: true });
 
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'features'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'sessions'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "features"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "sessions"), { recursive: true });
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: [] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: [] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for e2e testing.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for e2e testing.`,
     );
   });
 
@@ -59,21 +59,25 @@ test.describe('Agent Chat Session', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should start a new agent chat session', async ({ page }) => {
+  test("should start a new agent chat session", async ({ page }) => {
     // Ensure desktop viewport so SessionManager sidebar is visible (hidden below 1024px)
     await page.setViewportSize({ width: 1280, height: 720 });
 
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
 
     await authenticateForTests(page);
-    await page.goto('/');
+    await page.goto("/");
     await waitForNetworkIdle(page);
 
     // Navigate to agent view
     await navigateToAgent(page);
 
     // Verify we're on the agent view
-    await expect(page.locator('[data-testid="agent-view"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="agent-view"]')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Click new session button
     await clickNewSessionButton(page);

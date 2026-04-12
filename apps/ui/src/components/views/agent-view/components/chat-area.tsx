@@ -1,10 +1,10 @@
-import type { ImageAttachment } from '@/store/app-store';
-import { MessageList } from './message-list';
-import { NoSessionState } from './empty-states';
+import type { ImageAttachment } from "@/store/app-store";
+import { MessageList } from "./message-list";
+import { NoSessionState } from "./empty-states";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
   isError?: boolean;

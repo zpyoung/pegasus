@@ -7,7 +7,7 @@
  * - Test hook configurations against past events
  */
 
-import type { EventHookTrigger } from './settings.js';
+import type { EventHookTrigger } from "./settings.js";
 
 /**
  * StoredEvent - A single event record stored on disk

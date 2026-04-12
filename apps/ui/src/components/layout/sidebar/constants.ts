@@ -1,10 +1,10 @@
-import { darkThemes, lightThemes } from '@/config/theme-options';
+import { darkThemes, lightThemes } from "@/config/theme-options";
 
 /**
  * Tailwind class for top padding on macOS Electron to avoid overlapping with traffic light window controls.
  * This padding is applied conditionally when running on macOS in Electron.
  */
-export const MACOS_ELECTRON_TOP_PADDING_CLASS = 'pt-[38px]';
+export const MACOS_ELECTRON_TOP_PADDING_CLASS = "pt-[38px]";
 
 /**
  * Shared constants for theme submenu positioning and layout.
@@ -52,9 +52,9 @@ export const PROJECT_LIGHT_THEMES = lightThemes.map((opt) => ({
 }));
 
 export const SIDEBAR_FEATURE_FLAGS = {
-  hideTerminal: import.meta.env.VITE_HIDE_TERMINAL === 'true',
-  hideWiki: import.meta.env.VITE_HIDE_WIKI === 'true',
-  hideRunningAgents: import.meta.env.VITE_HIDE_RUNNING_AGENTS === 'true',
-  hideContext: import.meta.env.VITE_HIDE_CONTEXT === 'true',
-  hideSpecEditor: import.meta.env.VITE_HIDE_SPEC_EDITOR === 'true',
+  hideTerminal: import.meta.env.VITE_HIDE_TERMINAL === "true",
+  hideWiki: import.meta.env.VITE_HIDE_WIKI === "true",
+  hideRunningAgents: import.meta.env.VITE_HIDE_RUNNING_AGENTS === "true",
+  hideContext: import.meta.env.VITE_HIDE_CONTEXT === "true",
+  hideSpecEditor: import.meta.env.VITE_HIDE_SPEC_EDITOR === "true",
 } as const;

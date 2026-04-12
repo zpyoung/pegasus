@@ -6,10 +6,10 @@
  * - POST /api/setup/copilot/models/refresh - Force refresh models from CLI
  */
 
-import type { Request, Response } from 'express';
-import { CopilotProvider } from '../../../providers/copilot-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import type { ModelDefinition } from '@pegasus/types';
+import type { Request, Response } from "express";
+import { CopilotProvider } from "../../../providers/copilot-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import type { ModelDefinition } from "@pegasus/types";
 
 // Singleton provider instance for caching
 let providerInstance: CopilotProvider | null = null;
@@ -45,7 +45,7 @@ export function createGetCopilotModelsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const provider = getProvider();
-      const forceRefresh = req.query.refresh === 'true';
+      const forceRefresh = req.query.refresh === "true";
 
       let models: ModelDefinition[];
       let cached = true;
@@ -72,7 +72,7 @@ export function createGetCopilotModelsHandler() {
 
       res.json(response);
     } catch (error) {
-      logError(error, 'Get Copilot models failed');
+      logError(error, "Get Copilot models failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -101,7 +101,7 @@ export function createRefreshCopilotModelsHandler() {
 
       res.json(response);
     } catch (error) {
-      logError(error, 'Refresh Copilot models failed');
+      logError(error, "Refresh Copilot models failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -123,10 +123,10 @@ export function createClearCopilotCacheHandler() {
 
       res.json({
         success: true,
-        message: 'Copilot model cache cleared',
+        message: "Copilot model cache cleared",
       });
     } catch (error) {
-      logError(error, 'Clear Copilot cache failed');
+      logError(error, "Clear Copilot cache failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

@@ -4,7 +4,7 @@ project:
   language: python
   test_command: pytest
   lint_command: ruff check .
-  setup_command: ''
+  setup_command: ""
 git:
   default_branch: main
   branch_prefix: pegasus/

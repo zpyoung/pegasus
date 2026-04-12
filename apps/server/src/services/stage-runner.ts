@@ -24,7 +24,7 @@
  * - Report approval gates for stages that require user approval
  */
 
-import path from 'path';
+import path from "path";
 import type {
   AgentQuestion,
   CompletedStageState,
@@ -33,22 +33,22 @@ import type {
   ResolvedStage,
   StageCompilationContext,
   YamlPipelineDefaults,
-} from '@pegasus/types';
-import { createLogger } from '@pegasus/utils';
+} from "@pegasus/types";
+import { createLogger } from "@pegasus/utils";
 import {
   getFeatureDir,
   getPipelineStatePath,
   getStageOutputsDir,
   getStageOutputPath,
-} from '@pegasus/platform';
-import * as secureFs from '../lib/secure-fs.js';
-import { compileStage } from './pipeline-compiler.js';
-import { PauseExecutionError } from './pause-execution-error.js';
-import { formatAnsweredAgentQuestions } from './question-service.js';
-import type { TypedEventBus } from './typed-event-bus.js';
-import type { QuestionService } from './question-service.js';
+} from "@pegasus/platform";
+import * as secureFs from "../lib/secure-fs.js";
+import { compileStage } from "./pipeline-compiler.js";
+import { PauseExecutionError } from "./pause-execution-error.js";
+import { formatAnsweredAgentQuestions } from "./question-service.js";
+import type { TypedEventBus } from "./typed-event-bus.js";
+import type { QuestionService } from "./question-service.js";
 
-const logger = createLogger('StageRunner');
+const logger = createLogger("StageRunner");
 
 // ============================================================================
 // Types
@@ -69,7 +69,7 @@ export type StageRunAgentFn = (
   projectPath: string,
   imagePaths?: string[],
   model?: string,
-  options?: Record<string, unknown>
+  options?: Record<string, unknown>,
 ) => Promise<void>;
 
 /**
@@ -181,7 +181,7 @@ export class StageRunner {
   constructor(
     private eventBus: TypedEventBus,
     private runAgentFn: StageRunAgentFn,
-    private questionService?: QuestionService
+    private questionService?: QuestionService,
   ) {}
 
   // ==========================================================================
@@ -199,18 +199,18 @@ export class StageRunner {
    */
   async loadPipelineState(
     projectPath: string,
-    featureId: string
+    featureId: string,
   ): Promise<PipelineExecutionState | null> {
     try {
       const statePath = getPipelineStatePath(projectPath, featureId);
-      const content = (await secureFs.readFile(statePath, 'utf-8')) as string;
+      const content = (await secureFs.readFile(statePath, "utf-8")) as string;
       const state = JSON.parse(content) as PipelineExecutionState;
 
       // Validate version for forward compatibility
       if (state.version !== 1) {
         logger.warn(
           `Pipeline state for feature ${featureId} has unsupported version ${state.version}. ` +
-            `Ignoring persisted state and starting fresh.`
+            `Ignoring persisted state and starting fresh.`,
         );
         return null;
       }
@@ -236,19 +236,19 @@ export class StageRunner {
   async savePipelineState(
     projectPath: string,
     featureId: string,
-    state: PipelineExecutionState
+    state: PipelineExecutionState,
   ): Promise<void> {
     try {
       const statePath = getPipelineStatePath(projectPath, featureId);
       await secureFs.writeFile(
         statePath,
         JSON.stringify(state, null, 2),
-        'utf-8'
+        "utf-8",
       );
     } catch (error) {
       // Non-fatal: log but don't fail the pipeline
       logger.warn(
-        `Failed to save pipeline state for feature ${featureId}: ${(error as Error).message}`
+        `Failed to save pipeline state for feature ${featureId}: ${(error as Error).message}`,
       );
     }
   }
@@ -271,7 +271,7 @@ export class StageRunner {
     projectPath: string,
     featureId: string,
     stageId: string,
-    accumulatedContext: string
+    accumulatedContext: string,
   ): Promise<void> {
     try {
       // Ensure the stage-outputs directory exists
@@ -280,12 +280,12 @@ export class StageRunner {
 
       // Write the stage output snapshot
       const outputPath = getStageOutputPath(projectPath, featureId, stageId);
-      await secureFs.writeFile(outputPath, accumulatedContext, 'utf-8');
+      await secureFs.writeFile(outputPath, accumulatedContext, "utf-8");
     } catch (error) {
       // Non-fatal: log but don't fail the pipeline
       logger.warn(
         `Failed to save stage output for stage "${stageId}" ` +
-          `(feature ${featureId}): ${(error as Error).message}`
+          `(feature ${featureId}): ${(error as Error).message}`,
       );
     }
   }
@@ -301,7 +301,7 @@ export class StageRunner {
    */
   async clearPipelineState(
     projectPath: string,
-    featureId: string
+    featureId: string,
   ): Promise<void> {
     try {
       const statePath = getPipelineStatePath(projectPath, featureId);
@@ -332,7 +332,7 @@ export class StageRunner {
     projectPath: string,
     featureId: string,
     stages: ResolvedStage[],
-    pipelineName: string
+    pipelineName: string,
   ): Promise<{
     startIndex: number;
     accumulatedContext: string;
@@ -341,7 +341,11 @@ export class StageRunner {
     // Try to load persisted pipeline state
     const state = await this.loadPipelineState(projectPath, featureId);
 
-    if (state && state.pipelineName === pipelineName && state.completedStages.length > 0) {
+    if (
+      state &&
+      state.pipelineName === pipelineName &&
+      state.completedStages.length > 0
+    ) {
       // Validate that completed stages match the current pipeline configuration.
       // If stages have been reordered or removed, we can't safely resume.
       const isValid = state.completedStages.every((completed) => {
@@ -350,7 +354,8 @@ export class StageRunner {
       });
 
       if (isValid) {
-        const lastCompleted = state.completedStages[state.completedStages.length - 1];
+        const lastCompleted =
+          state.completedStages[state.completedStages.length - 1];
         const startIndex = lastCompleted.stageIndex + 1;
         const accumulatedContext = lastCompleted.accumulatedContextSnapshot;
         const stagesSkipped = startIndex;
@@ -360,12 +365,12 @@ export class StageRunner {
             `Resuming pipeline "${pipelineName}" for feature ${featureId} ` +
               `from stage ${startIndex + 1}/${stages.length} ` +
               `(${stagesSkipped} stage(s) already completed: ` +
-              `${state.completedStages.map((s) => s.stageId).join(', ')})`
+              `${state.completedStages.map((s) => s.stageId).join(", ")})`,
           );
         } else {
           logger.info(
             `All stages already completed for pipeline "${pipelineName}" ` +
-              `(feature ${featureId}). Nothing to execute.`
+              `(feature ${featureId}). Nothing to execute.`,
           );
         }
 
@@ -374,15 +379,21 @@ export class StageRunner {
 
       logger.warn(
         `Pipeline state for feature ${featureId} does not match current pipeline ` +
-          `configuration. Starting fresh execution.`
+          `configuration. Starting fresh execution.`,
       );
     }
 
     // Fallback: load any existing context from agent-output.md (legacy support)
-    let accumulatedContext = '';
-    const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
+    let accumulatedContext = "";
+    const contextPath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "agent-output.md",
+    );
     try {
-      accumulatedContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+      accumulatedContext = (await secureFs.readFile(
+        contextPath,
+        "utf-8",
+      )) as string;
     } catch {
       // No existing context — this is a fresh execution
     }
@@ -432,8 +443,16 @@ export class StageRunner {
     const totalStages = stages.length;
 
     // Resolve the resumption point (skip completed stages if any)
-    const { startIndex, accumulatedContext: initialContext, stagesSkipped } =
-      await this.resolveResumptionPoint(projectPath, featureId, stages, pipelineName);
+    const {
+      startIndex,
+      accumulatedContext: initialContext,
+      stagesSkipped,
+    } = await this.resolveResumptionPoint(
+      projectPath,
+      featureId,
+      stages,
+      pipelineName,
+    );
 
     let stagesCompleted = stagesSkipped;
     let accumulatedContext = initialContext;
@@ -451,31 +470,36 @@ export class StageRunner {
     }
 
     // Load existing pipeline state to append to, or create a new one
-    let pipelineState: PipelineExecutionState =
-      (await this.loadPipelineState(projectPath, featureId)) ?? {
-        version: 1,
-        pipelineName,
-        totalStages,
-        completedStages: [],
-        lastCompletedStageIndex: -1,
-        updatedAt: new Date().toISOString(),
-      };
+    let pipelineState: PipelineExecutionState = (await this.loadPipelineState(
+      projectPath,
+      featureId,
+    )) ?? {
+      version: 1,
+      pipelineName,
+      totalStages,
+      completedStages: [],
+      lastCompletedStageIndex: -1,
+      updatedAt: new Date().toISOString(),
+    };
 
     logger.info(
       `Starting stage execution for feature ${featureId}: ` +
         `${totalStages} stage(s) in pipeline "${pipelineName}"` +
         (stagesSkipped > 0
           ? ` (resuming from stage ${startIndex + 1}, ${stagesSkipped} skipped)`
-          : '')
+          : ""),
     );
 
     // Build stages context from existing question answers in feature.questionState.
     // This populates {{stages.<stageId>.question_response}} template variables for
     // subsequent stage prompt compilation.
-    const stagesContext: Record<string, { question_response?: string; question_responses?: string }> = {};
+    const stagesContext: Record<
+      string,
+      { question_response?: string; question_responses?: string }
+    > = {};
     if (feature.questionState?.questions) {
       for (const q of feature.questionState.questions) {
-        if (q.status === 'answered' && q.answer !== undefined) {
+        if (q.status === "answered" && q.answer !== undefined) {
           stagesContext[q.stageId] = {
             question_response: q.answer,
             question_responses: q.answer,
@@ -485,7 +509,10 @@ export class StageRunner {
     }
 
     // Load any existing context from agent-output.md for the contextPath reference
-    const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
+    const contextPath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "agent-output.md",
+    );
 
     for (let i = startIndex; i < stages.length; i++) {
       const stage = stages[i];
@@ -493,7 +520,7 @@ export class StageRunner {
       // Check for abort before starting each stage
       if (abortController.signal.aborted) {
         logger.info(
-          `Stage execution aborted before stage "${stage.id}" for feature ${featureId}`
+          `Stage execution aborted before stage "${stage.id}" for feature ${featureId}`,
         );
         return {
           success: false,
@@ -501,7 +528,7 @@ export class StageRunner {
           totalStages,
           accumulatedContext,
           aborted: true,
-          error: 'Pipeline execution aborted',
+          error: "Pipeline execution aborted",
           failedStageId: stage.id,
           stagesSkipped,
         };
@@ -513,30 +540,34 @@ export class StageRunner {
         const existingResponse = stagesContext[stage.id];
         if (!existingResponse?.question_response) {
           // Build the question options from shorthand string array (if provided)
-          const options = stage.question_meta?.options?.map((label) => ({ label })) ?? undefined;
+          const options =
+            stage.question_meta?.options?.map((label) => ({ label })) ??
+            undefined;
 
           const agentQuestion: AgentQuestion = {
             id: crypto.randomUUID(),
             stageId: stage.id,
             question: stage.question,
-            type: stage.question_meta?.type ?? 'free-text',
+            type: stage.question_meta?.type ?? "free-text",
             options,
-            status: 'pending',
+            status: "pending",
             askedAt: new Date().toISOString(),
-            source: 'yaml',
+            source: "yaml",
           };
 
           logger.info(
             `Stage "${stage.id}" requires user input before execution. ` +
-              `Asking question for feature ${featureId}.`
+              `Asking question for feature ${featureId}.`,
           );
 
-          await this.questionService.askQuestion(projectPath, featureId, [agentQuestion]);
-          throw new PauseExecutionError(featureId, 'question');
+          await this.questionService.askQuestion(projectPath, featureId, [
+            agentQuestion,
+          ]);
+          throw new PauseExecutionError(featureId, "question");
         }
 
         logger.info(
-          `Stage "${stage.id}" question already answered for feature ${featureId}. Proceeding.`
+          `Stage "${stage.id}" question already answered for feature ${featureId}. Proceeding.`,
         );
       }
 
@@ -552,7 +583,7 @@ export class StageRunner {
       if (compilationResult.hasMissingVariables) {
         logger.warn(
           `Stage "${stage.id}" has missing template variables: ` +
-            `${compilationResult.missingVariables.join(', ')}. Proceeding with empty values.`
+            `${compilationResult.missingVariables.join(", ")}. Proceeding with empty values.`,
         );
       }
 
@@ -560,7 +591,7 @@ export class StageRunner {
 
       // Emit stage started event
       // Uses 'pipeline_step_started' for compatibility with existing frontend event handling
-      this.eventBus.emitAutoModeEvent('pipeline_step_started', {
+      this.eventBus.emitAutoModeEvent("pipeline_step_started", {
         featureId,
         stepId: stage.id,
         stepName: stage.name,
@@ -570,7 +601,7 @@ export class StageRunner {
         pipelineName,
       });
 
-      this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+      this.eventBus.emitAutoModeEvent("auto_mode_progress", {
         featureId,
         branchName: config.branchName,
         content: `Starting pipeline stage ${i + 1}/${totalStages}: ${stage.name}`,
@@ -581,7 +612,7 @@ export class StageRunner {
         `Executing stage ${i + 1}/${totalStages}: "${stage.id}" (${stage.name}) ` +
           `for feature ${featureId} [model=${compiledStage.model}, ` +
           `max_turns=${compiledStage.max_turns}, ` +
-          `permission_mode=${compiledStage.permission_mode}]`
+          `permission_mode=${compiledStage.permission_mode}]`,
       );
 
       // Build the full stage prompt
@@ -590,7 +621,7 @@ export class StageRunner {
         feature,
         accumulatedContext,
         i,
-        totalStages
+        totalStages,
       );
 
       try {
@@ -605,7 +636,7 @@ export class StageRunner {
           compiledStage.model,
           {
             projectPath,
-            planningMode: 'skip', // Stages handle their own planning via prompt templates
+            planningMode: "skip", // Stages handle their own planning via prompt templates
             requirePlanApproval: false,
             previousContent: accumulatedContext,
             thinkingLevel: feature.thinkingLevel,
@@ -613,7 +644,7 @@ export class StageRunner {
             status: `pipeline_${stage.id}`,
             providerId: feature.providerId,
             branchName: config.branchName,
-          }
+          },
         );
       } catch (error) {
         // PauseExecutionError signals an intentional pause (the agent asked
@@ -627,27 +658,25 @@ export class StageRunner {
           throw error;
         }
 
-        const errorMessage = (error as Error).message || 'Unknown error';
+        const errorMessage = (error as Error).message || "Unknown error";
 
         // Check if the error was caused by an abort
         if (abortController.signal.aborted) {
-          logger.info(
-            `Stage "${stage.id}" aborted for feature ${featureId}`
-          );
+          logger.info(`Stage "${stage.id}" aborted for feature ${featureId}`);
           return {
             success: false,
             stagesCompleted,
             totalStages,
             accumulatedContext,
             aborted: true,
-            error: 'Pipeline execution aborted',
+            error: "Pipeline execution aborted",
             failedStageId: stage.id,
             stagesSkipped,
           };
         }
 
         logger.error(
-          `Stage "${stage.id}" failed for feature ${featureId}: ${errorMessage}`
+          `Stage "${stage.id}" failed for feature ${featureId}: ${errorMessage}`,
         );
 
         return {
@@ -666,18 +695,26 @@ export class StageRunner {
       // The agent writes its output to agent-output.md, which becomes the
       // accumulated context for subsequent stages
       try {
-        accumulatedContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+        accumulatedContext = (await secureFs.readFile(
+          contextPath,
+          "utf-8",
+        )) as string;
       } catch {
         // Context may not have been written — agent output may be empty
         logger.warn(
-          `Could not read agent output after stage "${stage.id}" for feature ${featureId}`
+          `Could not read agent output after stage "${stage.id}" for feature ${featureId}`,
         );
       }
 
       stagesCompleted++;
 
       // Persist per-stage output snapshot
-      await this.saveStageOutput(projectPath, featureId, stage.id, accumulatedContext);
+      await this.saveStageOutput(
+        projectPath,
+        featureId,
+        stage.id,
+        accumulatedContext,
+      );
 
       // Update and persist pipeline execution state
       const completedStageState: CompletedStageState = {
@@ -690,7 +727,10 @@ export class StageRunner {
 
       pipelineState = {
         ...pipelineState,
-        completedStages: [...pipelineState.completedStages, completedStageState],
+        completedStages: [
+          ...pipelineState.completedStages,
+          completedStageState,
+        ],
         lastCompletedStageIndex: i,
         updatedAt: new Date().toISOString(),
       };
@@ -698,7 +738,7 @@ export class StageRunner {
       await this.savePipelineState(projectPath, featureId, pipelineState);
 
       // Emit stage complete event
-      this.eventBus.emitAutoModeEvent('pipeline_step_complete', {
+      this.eventBus.emitAutoModeEvent("pipeline_step_complete", {
         featureId,
         stepId: stage.id,
         stepName: stage.name,
@@ -710,7 +750,7 @@ export class StageRunner {
 
       logger.info(
         `Stage "${stage.id}" completed (${stagesCompleted}/${totalStages}) ` +
-          `for feature ${featureId}`
+          `for feature ${featureId}`,
       );
 
       // Log approval gate status for stages that require approval
@@ -719,14 +759,14 @@ export class StageRunner {
       if (stage.requires_approval && i < stages.length - 1) {
         logger.info(
           `Stage "${stage.id}" requires approval before proceeding to next stage. ` +
-            `Approval handling is delegated to the caller.`
+            `Approval handling is delegated to the caller.`,
         );
       }
     }
 
     logger.info(
       `All ${totalStages} stage(s) completed successfully for feature ${featureId} ` +
-        `in pipeline "${pipelineName}"`
+        `in pipeline "${pipelineName}"`,
     );
 
     // Clear pipeline state after successful completion
@@ -763,35 +803,35 @@ export class StageRunner {
     feature: Feature,
     previousContext: string,
     stageIndex: number,
-    totalStages: number
+    totalStages: number,
   ): string {
     const parts: string[] = [];
 
     // Stage header with pipeline metadata
     parts.push(
-      `## Pipeline Stage ${stageIndex + 1}/${totalStages}: ${stage.name}`
+      `## Pipeline Stage ${stageIndex + 1}/${totalStages}: ${stage.name}`,
     );
-    parts.push('');
-    parts.push('This is an automated pipeline stage execution.');
-    parts.push('');
+    parts.push("");
+    parts.push("This is an automated pipeline stage execution.");
+    parts.push("");
 
     // Feature context
     if (feature.title || feature.description) {
-      parts.push('### Feature Context');
+      parts.push("### Feature Context");
       if (feature.title) {
         parts.push(`**Title:** ${feature.title}`);
       }
       if (feature.description) {
         parts.push(`**Description:** ${feature.description}`);
       }
-      parts.push('');
+      parts.push("");
     }
 
     // Previous stage output
     if (previousContext) {
-      parts.push('### Previous Work');
+      parts.push("### Previous Work");
       parts.push(previousContext);
-      parts.push('');
+      parts.push("");
     }
 
     // When the agent paused mid-stage for an AskUserQuestion call and was
@@ -803,41 +843,41 @@ export class StageRunner {
     const qaBlock = formatAnsweredAgentQuestions(feature.questionState);
     if (qaBlock) {
       parts.push(qaBlock);
-      parts.push('');
+      parts.push("");
     }
 
     // Stage instructions (the compiled prompt with resolved template variables)
-    parts.push('### Stage Instructions');
+    parts.push("### Stage Instructions");
     parts.push(stage.prompt);
-    parts.push('');
+    parts.push("");
 
     // Task directive
-    parts.push('### Task');
-    parts.push('Complete the stage instructions above.');
-    parts.push('');
+    parts.push("### Task");
+    parts.push("Complete the stage instructions above.");
+    parts.push("");
 
     // Summary requirement — consistent with PipelineOrchestrator format
     parts.push(
-      '**CRITICAL: After completing the instructions, you MUST output a summary using this EXACT format:**'
+      "**CRITICAL: After completing the instructions, you MUST output a summary using this EXACT format:**",
     );
-    parts.push('');
-    parts.push('<summary>');
+    parts.push("");
+    parts.push("<summary>");
     parts.push(`## Summary: ${stage.name}`);
-    parts.push('');
-    parts.push('### Changes Implemented');
-    parts.push('- [List all changes made in this stage]');
-    parts.push('');
-    parts.push('### Files Modified');
-    parts.push('- [List all files modified in this stage]');
-    parts.push('');
-    parts.push('### Outcome');
-    parts.push('- [Describe the result of this stage]');
-    parts.push('</summary>');
-    parts.push('');
+    parts.push("");
+    parts.push("### Changes Implemented");
+    parts.push("- [List all changes made in this stage]");
+    parts.push("");
+    parts.push("### Files Modified");
+    parts.push("- [List all files modified in this stage]");
+    parts.push("");
+    parts.push("### Outcome");
+    parts.push("- [Describe the result of this stage]");
+    parts.push("</summary>");
+    parts.push("");
     parts.push(
-      'The <summary> and </summary> tags MUST be on their own lines. This is REQUIRED.'
+      "The <summary> and </summary> tags MUST be on their own lines. This is REQUIRED.",
     );
 
-    return parts.join('\n');
+    return parts.join("\n");
   }
 }

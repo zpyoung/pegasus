@@ -4,104 +4,104 @@
  * mode that displays a branch label on every card (normalising null to mainBranch).
  */
 
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { CardContentSections } from '../../../src/components/views/board-view/components/kanban-card/card-content-sections';
-import type { Feature } from '@pegasus/types';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { CardContentSections } from "../../../src/components/views/board-view/components/kanban-card/card-content-sections";
+import type { Feature } from "@pegasus/types";
 
 function makeFeature(overrides: Partial<Feature> = {}): Feature {
   return {
-    id: 'feat-1',
-    title: 'Test Feature',
-    category: 'test',
-    description: '',
-    status: 'backlog',
+    id: "feat-1",
+    title: "Test Feature",
+    category: "test",
+    description: "",
+    status: "backlog",
     ...overrides,
   };
 }
 
-describe('CardContentSections — branch badge', () => {
+describe("CardContentSections — branch badge", () => {
   // ─── useWorktrees=false ───────────────────────────────────────────────────
 
-  describe('when useWorktrees is false', () => {
-    it('never renders a branch badge', () => {
+  describe("when useWorktrees is false", () => {
+    it("never renders a branch badge", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/x' })}
+          feature={makeFeature({ branchName: "feature/x" })}
           useWorktrees={false}
           showAllWorktrees={true}
           mainBranch="main"
-        />
+        />,
       );
-      expect(screen.queryByText('feature/x')).toBeNull();
-      expect(screen.queryByText('main')).toBeNull();
+      expect(screen.queryByText("feature/x")).toBeNull();
+      expect(screen.queryByText("main")).toBeNull();
     });
   });
 
   // ─── useWorktrees=true, showAllWorktrees=false ────────────────────────────
 
-  describe('when useWorktrees=true and showAllWorktrees=false (normal mode)', () => {
-    it('hides badge when feature has no branchName', () => {
+  describe("when useWorktrees=true and showAllWorktrees=false (normal mode)", () => {
+    it("hides badge when feature has no branchName", () => {
       render(
         <CardContentSections
           feature={makeFeature()}
           useWorktrees={true}
           showAllWorktrees={false}
-        />
+        />,
       );
       // No git-branch icon text or branch text
-      const badge = document.querySelector('.font-mono');
+      const badge = document.querySelector(".font-mono");
       expect(badge).toBeNull();
     });
 
-    it('shows badge with the feature branch when branchName is set', () => {
+    it("shows badge with the feature branch when branchName is set", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/my-feature' })}
+          feature={makeFeature({ branchName: "feature/my-feature" })}
           useWorktrees={true}
           showAllWorktrees={false}
-        />
+        />,
       );
-      expect(screen.getByText('feature/my-feature')).toBeInTheDocument();
+      expect(screen.getByText("feature/my-feature")).toBeInTheDocument();
     });
 
-    it('uses muted-foreground styling in normal mode', () => {
+    it("uses muted-foreground styling in normal mode", () => {
       const { container } = render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/x' })}
+          feature={makeFeature({ branchName: "feature/x" })}
           useWorktrees={true}
           showAllWorktrees={false}
-        />
+        />,
       );
-      const badgeWrapper = container.querySelector('.text-muted-foreground');
+      const badgeWrapper = container.querySelector(".text-muted-foreground");
       expect(badgeWrapper).not.toBeNull();
     });
   });
 
   // ─── useWorktrees=true, showAllWorktrees=true ─────────────────────────────
 
-  describe('when useWorktrees=true and showAllWorktrees=true (all-worktrees mode)', () => {
-    it('shows badge with the feature branchName when set', () => {
+  describe("when useWorktrees=true and showAllWorktrees=true (all-worktrees mode)", () => {
+    it("shows badge with the feature branchName when set", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/a' })}
+          feature={makeFeature({ branchName: "feature/a" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      expect(screen.getByText('feature/a')).toBeInTheDocument();
+      expect(screen.getByText("feature/a")).toBeInTheDocument();
     });
 
-    it('shows mainBranch when feature has no branchName and mainBranch is provided', () => {
+    it("shows mainBranch when feature has no branchName and mainBranch is provided", () => {
       render(
         <CardContentSections
           feature={makeFeature()}
           useWorktrees={true}
           showAllWorktrees={true}
           mainBranch="main"
-        />
+        />,
       );
-      expect(screen.getByText('main')).toBeInTheDocument();
+      expect(screen.getByText("main")).toBeInTheDocument();
     });
 
     it('falls back to "main" when feature has no branchName and mainBranch is undefined', () => {
@@ -110,9 +110,9 @@ describe('CardContentSections — branch badge', () => {
           feature={makeFeature()}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      expect(screen.getByText('main')).toBeInTheDocument();
+      expect(screen.getByText("main")).toBeInTheDocument();
     });
 
     it('falls back to "main" when both branchName and mainBranch are null', () => {
@@ -122,104 +122,105 @@ describe('CardContentSections — branch badge', () => {
           useWorktrees={true}
           showAllWorktrees={true}
           mainBranch={null}
-        />
+        />,
       );
-      expect(screen.getByText('main')).toBeInTheDocument();
+      expect(screen.getByText("main")).toBeInTheDocument();
     });
 
-    it('renders a pill badge (rounded-full) in all-worktrees mode', () => {
+    it("renders a pill badge (rounded-full) in all-worktrees mode", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/x' })}
+          feature={makeFeature({ branchName: "feature/x" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      const pill = screen.getByTestId('branch-badge-pill');
+      const pill = screen.getByTestId("branch-badge-pill");
       expect(pill).toBeInTheDocument();
-      expect(pill.classList.contains('rounded-full')).toBe(true);
+      expect(pill.classList.contains("rounded-full")).toBe(true);
     });
 
-    it('applies per-branch inline background color derived from branch name', () => {
+    it("applies per-branch inline background color derived from branch name", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/x' })}
+          feature={makeFeature({ branchName: "feature/x" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      const pill = screen.getByTestId('branch-badge-pill');
+      const pill = screen.getByTestId("branch-badge-pill");
       // jsdom normalizes hsl() to rgb(), so accept either format
       expect(pill.style.backgroundColor).toMatch(/^(hsl|rgb)\(/);
     });
 
-    it('different branches get different badge background colors', () => {
+    it("different branches get different badge background colors", () => {
       const { rerender } = render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/alpha' })}
+          feature={makeFeature({ branchName: "feature/alpha" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      const colorAlpha = screen.getByTestId('branch-badge-pill').style.backgroundColor;
+      const colorAlpha =
+        screen.getByTestId("branch-badge-pill").style.backgroundColor;
 
       rerender(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/beta' })}
+          feature={makeFeature({ branchName: "feature/beta" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      const colorBeta = screen.getByTestId('branch-badge-pill').style.backgroundColor;
+      const colorBeta =
+        screen.getByTestId("branch-badge-pill").style.backgroundColor;
 
       expect(colorAlpha).not.toBe(colorBeta);
     });
 
-    it('does NOT use muted-foreground styling in all-worktrees mode', () => {
+    it("does NOT use muted-foreground styling in all-worktrees mode", () => {
       const { container } = render(
         <CardContentSections
-          feature={makeFeature({ branchName: 'feature/x' })}
+          feature={makeFeature({ branchName: "feature/x" })}
           useWorktrees={true}
           showAllWorktrees={true}
-        />
+        />,
       );
-      const mutedWrapper = container.querySelector('.text-muted-foreground');
+      const mutedWrapper = container.querySelector(".text-muted-foreground");
       expect(mutedWrapper).toBeNull();
     });
   });
 
   // ─── PR URL section (unrelated to branch, regression guard) ──────────────
 
-  describe('PR URL section', () => {
-    it('renders a PR link when prUrl is a valid http URL', () => {
+  describe("PR URL section", () => {
+    it("renders a PR link when prUrl is a valid http URL", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ prUrl: 'https://github.com/org/repo/pull/42' })}
+          feature={makeFeature({
+            prUrl: "https://github.com/org/repo/pull/42",
+          })}
           useWorktrees={false}
-        />
+        />,
       );
-      expect(screen.getByTestId('pr-url-feat-1')).toBeInTheDocument();
-      expect(screen.getByText('Pull Request #42')).toBeInTheDocument();
+      expect(screen.getByTestId("pr-url-feat-1")).toBeInTheDocument();
+      expect(screen.getByText("Pull Request #42")).toBeInTheDocument();
     });
 
-    it('does not render a PR link when prUrl is absent', () => {
+    it("does not render a PR link when prUrl is absent", () => {
       render(
-        <CardContentSections
-          feature={makeFeature()}
-          useWorktrees={false}
-        />
+        <CardContentSections feature={makeFeature()} useWorktrees={false} />,
       );
-      expect(screen.queryByTestId('pr-url-feat-1')).toBeNull();
+      expect(screen.queryByTestId("pr-url-feat-1")).toBeNull();
     });
 
-    it('does not render a PR link when prUrl is not a valid http URL', () => {
+    it("does not render a PR link when prUrl is not a valid http URL", () => {
       render(
         <CardContentSections
-          feature={makeFeature({ prUrl: 'not-a-url' })}
+          feature={makeFeature({ prUrl: "not-a-url" })}
           useWorktrees={false}
-        />
+        />,
       );
-      expect(screen.queryByTestId('pr-url-feat-1')).toBeNull();
+      expect(screen.queryByTestId("pr-url-feat-1")).toBeNull();
     });
   });
 });

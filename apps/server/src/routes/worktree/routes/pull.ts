@@ -15,38 +15,43 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { performPull } from '../../../services/pull-service.js';
-import type { PullResult } from '../../../services/pull-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { performPull } from "../../../services/pull-service.js";
+import type { PullResult } from "../../../services/pull-service.js";
 
 export function createPullHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { worktreePath, remote, remoteBranch, stashIfNeeded } = req.body as {
-        worktreePath: string;
-        remote?: string;
-        /** Specific remote branch to pull (e.g. 'main'). When provided, pulls this branch from the remote regardless of tracking config. */
-        remoteBranch?: string;
-        /** When true, automatically stash local changes before pulling and reapply after */
-        stashIfNeeded?: boolean;
-      };
+      const { worktreePath, remote, remoteBranch, stashIfNeeded } =
+        req.body as {
+          worktreePath: string;
+          remote?: string;
+          /** Specific remote branch to pull (e.g. 'main'). When provided, pulls this branch from the remote regardless of tracking config. */
+          remoteBranch?: string;
+          /** When true, automatically stash local changes before pulling and reapply after */
+          stashIfNeeded?: boolean;
+        };
 
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
       // Execute the pull via the service
-      const result = await performPull(worktreePath, { remote, remoteBranch, stashIfNeeded });
+      const result = await performPull(worktreePath, {
+        remote,
+        remoteBranch,
+        stashIfNeeded,
+      });
 
       // Map service result to HTTP response
       mapResultToResponse(res, result);
     } catch (error) {
-      logError(error, 'Pull failed');
+      logError(error, "Pull failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -101,8 +106,8 @@ function mapResultToResponse(res: Response, result: PullResult): void {
  */
 function isClientError(errorMessage: string): boolean {
   return (
-    errorMessage.includes('detached HEAD') ||
-    errorMessage.includes('has no upstream branch') ||
-    errorMessage.includes('no tracking information')
+    errorMessage.includes("detached HEAD") ||
+    errorMessage.includes("has no upstream branch") ||
+    errorMessage.includes("no tracking information")
   );
 }

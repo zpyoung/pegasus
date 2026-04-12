@@ -3,20 +3,20 @@
  * Tests provider-aware model name display functionality
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AgentInfoPanel } from '../../../src/components/views/board-view/components/kanban-card/agent-info-panel';
-import { useAppStore } from '@pegasus/ui/store/app-store';
-import { useFeature, useAgentOutput } from '@pegasus/ui/hooks/queries';
-import { getElectronAPI } from '@pegasus/ui/lib/electron';
-import type { ClaudeCompatibleProvider } from '@pegasus/types';
-import type { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AgentInfoPanel } from "../../../src/components/views/board-view/components/kanban-card/agent-info-panel";
+import { useAppStore } from "@pegasus/ui/store/app-store";
+import { useFeature, useAgentOutput } from "@pegasus/ui/hooks/queries";
+import { getElectronAPI } from "@pegasus/ui/lib/electron";
+import type { ClaudeCompatibleProvider } from "@pegasus/types";
+import type { ReactNode } from "react";
 
 // Mock dependencies
-vi.mock('@pegasus/ui/store/app-store');
-vi.mock('@pegasus/ui/hooks/queries');
-vi.mock('@pegasus/ui/lib/electron');
+vi.mock("@pegasus/ui/store/app-store");
+vi.mock("@pegasus/ui/hooks/queries");
+vi.mock("@pegasus/ui/lib/electron");
 
 const mockUseAppStore = useAppStore as ReturnType<typeof vi.fn>;
 const mockUseFeature = useFeature as ReturnType<typeof vi.fn>;
@@ -34,32 +34,34 @@ function createWrapper() {
   });
 
   return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   };
 }
 
-describe('AgentInfoPanel', () => {
+describe("AgentInfoPanel", () => {
   const mockProviders: ClaudeCompatibleProvider[] = [
     {
-      id: 'moonshot-ai',
-      name: 'Moonshot AI',
+      id: "moonshot-ai",
+      name: "Moonshot AI",
       models: [
-        { id: 'claude-sonnet-4-5', displayName: 'Moonshot v1.8' },
-        { id: 'claude-opus-4-6', displayName: 'Moonshot v1.8 Pro' },
+        { id: "claude-sonnet-4-5", displayName: "Moonshot v1.8" },
+        { id: "claude-opus-4-6", displayName: "Moonshot v1.8 Pro" },
       ],
     },
     {
-      id: 'zhipu',
-      name: 'Zhipu AI',
-      models: [{ id: 'claude-sonnet-4-5', displayName: 'GLM 4.7' }],
+      id: "zhipu",
+      name: "Zhipu AI",
+      models: [{ id: "claude-sonnet-4-5", displayName: "GLM 4.7" }],
     },
   ];
 
   const createMockFeature = (overrides = {}) => ({
-    id: 'feature-test-123',
-    description: 'Test feature',
-    status: 'backlog',
-    model: 'claude-sonnet-4-5',
+    id: "feature-test-123",
+    description: "Test feature",
+    status: "backlog",
+    model: "claude-sonnet-4-5",
     providerId: undefined,
     ...overrides,
   });
@@ -68,12 +70,14 @@ describe('AgentInfoPanel', () => {
     vi.clearAllMocks();
 
     // Default mock implementations
-    mockUseAppStore.mockImplementation((selector: (state: Record<string, unknown>) => unknown) => {
-      const state = {
-        claudeCompatibleProviders: [],
-      };
-      return selector(state);
-    });
+    mockUseAppStore.mockImplementation(
+      (selector: (state: Record<string, unknown>) => unknown) => {
+        const state = {
+          claudeCompatibleProviders: [],
+        };
+        return selector(state);
+      },
+    );
 
     mockUseFeature.mockReturnValue({
       data: null,
@@ -88,67 +92,67 @@ describe('AgentInfoPanel', () => {
     mockGetElectronAPI.mockReturnValue(null);
   });
 
-  describe('Provider-aware model name display', () => {
-    it('should display provider displayName when providerId matches Moonshot AI', () => {
+  describe("Provider-aware model name display", () => {
+    it("should display provider displayName when providerId matches Moonshot AI", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
-        providerId: 'moonshot-ai',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
+        providerId: "moonshot-ai",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('Moonshot v1.8')).toBeInTheDocument();
+      expect(screen.getByText("Moonshot v1.8")).toBeInTheDocument();
     });
 
-    it('should display provider displayName when providerId matches Zhipu/GLM', () => {
+    it("should display provider displayName when providerId matches Zhipu/GLM", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
-        providerId: 'zhipu',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
+        providerId: "zhipu",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('GLM 4.7')).toBeInTheDocument();
+      expect(screen.getByText("GLM 4.7")).toBeInTheDocument();
     });
 
-    it('should fallback to default model name when providerId is not found', () => {
+    it("should fallback to default model name when providerId is not found", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
-        providerId: 'unknown-provider',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
+        providerId: "unknown-provider",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
@@ -156,23 +160,23 @@ describe('AgentInfoPanel', () => {
       });
 
       // Falls back to default formatting
-      expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
+      expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
 
-    it('should fallback to default model name when providers list is empty', () => {
+    it("should fallback to default model name when providers list is empty", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: [],
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
-        providerId: 'moonshot-ai',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
+        providerId: "moonshot-ai",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
@@ -180,22 +184,22 @@ describe('AgentInfoPanel', () => {
       });
 
       // Falls back to default formatting
-      expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
+      expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
 
-    it('should use default model name when providerId is undefined', () => {
+    it("should use default model name when providerId is undefined", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
         providerId: undefined,
       });
 
@@ -204,92 +208,98 @@ describe('AgentInfoPanel', () => {
       });
 
       // Uses default formatting since no providerId
-      expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
+      expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
 
-    it('should display correct model name for Opus models with provider', () => {
+    it("should display correct model name for Opus models with provider", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-opus-4-6',
-        providerId: 'moonshot-ai',
+        status: "backlog",
+        model: "claude-opus-4-6",
+        providerId: "moonshot-ai",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('Moonshot v1.8 Pro')).toBeInTheDocument();
+      expect(screen.getByText("Moonshot v1.8 Pro")).toBeInTheDocument();
     });
 
-    it('should memoize model format options to prevent unnecessary re-renders', () => {
+    it("should memoize model format options to prevent unnecessary re-renders", () => {
       mockUseAppStore.mockImplementation(
         (selector: (state: Record<string, unknown>) => unknown) => {
           const state = {
             claudeCompatibleProviders: mockProviders,
           };
           return selector(state);
-        }
+        },
       );
 
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
-        providerId: 'moonshot-ai',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
+        providerId: "moonshot-ai",
       });
 
       const { rerender } = render(
         <AgentInfoPanel feature={feature} projectPath="/test/project" />,
-        { wrapper: createWrapper() }
+        { wrapper: createWrapper() },
       );
 
       // Rerender with the same feature (simulating parent re-render)
-      rerender(<AgentInfoPanel feature={feature} projectPath="/test/project" />);
+      rerender(
+        <AgentInfoPanel feature={feature} projectPath="/test/project" />,
+      );
 
       // The component should use memoized options and still display correctly
-      expect(screen.getByText('Moonshot v1.8')).toBeInTheDocument();
+      expect(screen.getByText("Moonshot v1.8")).toBeInTheDocument();
     });
   });
 
-  describe('Model name display for different statuses', () => {
-    it('should show model info for backlog features', () => {
+  describe("Model name display for different statuses", () => {
+    it("should show model info for backlog features", () => {
       const feature = createMockFeature({
-        status: 'backlog',
-        model: 'claude-sonnet-4-5',
+        status: "backlog",
+        model: "claude-sonnet-4-5",
       });
 
       render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
+      expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
 
-    it('should show model info for in_progress features with agentInfo', () => {
+    it("should show model info for in_progress features with agentInfo", () => {
       mockUseAgentOutput.mockReturnValue({
         data: '🔧 Tool: Read\nInput: {"file": "test.ts"}',
         isLoading: false,
       });
 
       const feature = createMockFeature({
-        status: 'in_progress',
-        model: 'claude-sonnet-4-5',
+        status: "in_progress",
+        model: "claude-sonnet-4-5",
       });
 
       render(
-        <AgentInfoPanel feature={feature} projectPath="/test/project" isActivelyRunning={true} />,
-        { wrapper: createWrapper() }
+        <AgentInfoPanel
+          feature={feature}
+          projectPath="/test/project"
+          isActivelyRunning={true}
+        />,
+        { wrapper: createWrapper() },
       );
 
-      expect(screen.getByText('Sonnet 4.5')).toBeInTheDocument();
+      expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
   });
 });

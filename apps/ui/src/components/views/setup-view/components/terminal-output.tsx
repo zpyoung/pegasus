@@ -11,7 +11,9 @@ export function TerminalOutput({ lines }: TerminalOutputProps) {
         </div>
       ))}
       {lines.length === 0 && (
-        <div className="text-muted-foreground italic">Waiting for output...</div>
+        <div className="text-muted-foreground italic">
+          Waiting for output...
+        </div>
       )}
     </div>
   );

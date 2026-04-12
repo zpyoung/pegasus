@@ -1,33 +1,38 @@
-import { useState, useRef, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Palette, Upload, X, ImageIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { IconPicker } from '@/components/layout/project-switcher/components/icon-picker';
-import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import type { Project } from '@/lib/electron';
+import { useState, useRef, useEffect } from "react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Palette, Upload, X, ImageIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { IconPicker } from "@/components/layout/project-switcher/components/icon-picker";
+import { getAuthenticatedImageUrl } from "@/lib/api-fetch";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import type { Project } from "@/lib/electron";
 
 interface ProjectIdentitySectionProps {
   project: Project;
 }
 
-export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps) {
-  const { setProjectIcon, setProjectName, setProjectCustomIcon } = useAppStore();
-  const [projectName, setProjectNameLocal] = useState(project.name || '');
-  const [projectIcon, setProjectIconLocal] = useState<string | null>(project.icon || null);
+export function ProjectIdentitySection({
+  project,
+}: ProjectIdentitySectionProps) {
+  const { setProjectIcon, setProjectName, setProjectCustomIcon } =
+    useAppStore();
+  const [projectName, setProjectNameLocal] = useState(project.name || "");
+  const [projectIcon, setProjectIconLocal] = useState<string | null>(
+    project.icon || null,
+  );
   const [customIconPath, setCustomIconPathLocal] = useState<string | null>(
-    project.customIconPath || null
+    project.customIconPath || null,
   );
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync local state when project changes
   useEffect(() => {
-    setProjectNameLocal(project.name || '');
+    setProjectNameLocal(project.name || "");
     setProjectIconLocal(project.icon || null);
     setCustomIconPathLocal(project.customIconPath || null);
   }, [project]);
@@ -55,23 +60,25 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
     }
   };
 
-  const handleCustomIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomIconUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      toast.error('Invalid file type', {
-        description: 'Please upload a PNG, JPG, GIF, or WebP image.',
+      toast.error("Invalid file type", {
+        description: "Please upload a PNG, JPG, GIF, or WebP image.",
       });
       return;
     }
 
     // Validate file size (max 5MB for icons - allows animated GIFs)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large', {
-        description: 'Please upload an image smaller than 5MB.',
+      toast.error("File too large", {
+        description: "Please upload an image smaller than 5MB.",
       });
       return;
     }
@@ -87,33 +94,33 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
             base64Data,
             `project-icon-${file.name}`,
             file.type,
-            project.path
+            project.path,
           );
           if (result.success && result.path) {
             handleCustomIconChange(result.path);
-            toast.success('Icon uploaded successfully');
+            toast.success("Icon uploaded successfully");
           } else {
-            toast.error('Failed to upload icon', {
-              description: result.error || 'Please try again.',
+            toast.error("Failed to upload icon", {
+              description: result.error || "Please try again.",
             });
           }
         } catch {
-          toast.error('Failed to upload icon', {
-            description: 'Network error. Please try again.',
+          toast.error("Failed to upload icon", {
+            description: "Network error. Please try again.",
           });
         } finally {
           setIsUploadingIcon(false);
         }
       };
       reader.onerror = () => {
-        toast.error('Failed to read file', {
-          description: 'Please try again with a different file.',
+        toast.error("Failed to read file", {
+          description: "Please try again with a different file.",
         });
         setIsUploadingIcon(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      toast.error('Failed to upload icon');
+      toast.error("Failed to upload icon");
       setIsUploadingIcon(false);
     }
   };
@@ -121,17 +128,17 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
   const handleRemoveCustomIcon = () => {
     handleCustomIconChange(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -139,10 +146,13 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Palette className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Project Identity</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Project Identity
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Customize how your project appears in the sidebar and project switcher.
+          Customize how your project appears in the sidebar and project
+          switcher.
         </p>
       </div>
       <div className="p-6 space-y-6">
@@ -205,7 +215,7 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
                   className="gap-1.5"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {isUploadingIcon ? 'Uploading...' : 'Upload Custom Icon'}
+                  {isUploadingIcon ? "Uploading..." : "Upload Custom Icon"}
                 </Button>
                 <p className="text-xs text-muted-foreground mt-1">
                   PNG, JPG, GIF or WebP. Max 5MB.
@@ -216,7 +226,10 @@ export function ProjectIdentitySection({ project }: ProjectIdentitySectionProps)
 
           {/* Preset Icon Picker - only show if no custom icon */}
           {!customIconPath && (
-            <IconPicker selectedIcon={projectIcon} onSelectIcon={handleIconChange} />
+            <IconPicker
+              selectedIcon={projectIcon}
+              onSelectIcon={handleIconChange}
+            />
           )}
         </div>
       </div>

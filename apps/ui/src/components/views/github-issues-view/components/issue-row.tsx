@@ -6,12 +6,12 @@ import {
   Sparkles,
   GitPullRequest,
   User,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import type { IssueRowProps } from '../types';
-import { isValidationStale } from '../utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { IssueRowProps } from "../types";
+import { isValidationStale } from "../utils";
 
 export function IssueRow({
   issue,
@@ -24,10 +24,12 @@ export function IssueRow({
 }: IssueRowProps) {
   // Check if validation exists and calculate staleness
   const validationHoursSince = cachedValidation
-    ? (Date.now() - new Date(cachedValidation.validatedAt).getTime()) / (1000 * 60 * 60)
+    ? (Date.now() - new Date(cachedValidation.validatedAt).getTime()) /
+      (1000 * 60 * 60)
     : null;
   const isValidationStaleValue =
-    validationHoursSince !== null && isValidationStale(cachedValidation!.validatedAt);
+    validationHoursSince !== null &&
+    isValidationStale(cachedValidation!.validatedAt);
 
   // Check if validation is unviewed (exists, not stale, not viewed)
   const hasUnviewedValidation =
@@ -40,12 +42,12 @@ export function IssueRow({
   return (
     <div
       className={cn(
-        'group flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors',
-        isSelected && 'bg-accent'
+        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/50 transition-colors",
+        isSelected && "bg-accent",
       )}
       onClick={onClick}
     >
-      {issue.state === 'OPEN' ? (
+      {issue.state === "OPEN" ? (
         <Circle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
       ) : (
         <CheckCircle2 className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
@@ -58,7 +60,8 @@ export function IssueRow({
 
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-xs text-muted-foreground">
-            #{issue.number} opened {formatDate(issue.createdAt)} by {issue.author.login}
+            #{issue.number} opened {formatDate(issue.createdAt)} by{" "}
+            {issue.author.login}
           </span>
         </div>
 
@@ -82,7 +85,7 @@ export function IssueRow({
           {issue.linkedPRs && issue.linkedPRs.length > 0 && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
               <GitPullRequest className="h-3 w-3" />
-              {issue.linkedPRs.length} PR{issue.linkedPRs.length > 1 ? 's' : ''}
+              {issue.linkedPRs.length} PR{issue.linkedPRs.length > 1 ? "s" : ""}
             </span>
           )}
 
@@ -90,7 +93,7 @@ export function IssueRow({
           {issue.assignees && issue.assignees.length > 0 && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">
               <User className="h-3 w-3" />
-              {issue.assignees.map((a) => a.login).join(', ')}
+              {issue.assignees.map((a) => a.login).join(", ")}
             </span>
           )}
 

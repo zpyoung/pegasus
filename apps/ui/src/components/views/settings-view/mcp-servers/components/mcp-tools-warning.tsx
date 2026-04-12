@@ -1,5 +1,5 @@
-import { AlertTriangle } from 'lucide-react';
-import { MAX_RECOMMENDED_TOOLS } from '../constants';
+import { AlertTriangle } from "lucide-react";
+import { MAX_RECOMMENDED_TOOLS } from "../constants";
 
 interface MCPToolsWarningProps {
   totalTools: number;
@@ -15,8 +15,9 @@ export function MCPToolsWarning({ totalTools }: MCPToolsWarningProps) {
             High tool count detected ({totalTools} tools)
           </p>
           <p className="text-muted-foreground mt-1">
-            Having more than {MAX_RECOMMENDED_TOOLS} MCP tools may degrade AI model performance.
-            Consider disabling unused servers or removing unnecessary tools.
+            Having more than {MAX_RECOMMENDED_TOOLS} MCP tools may degrade AI
+            model performance. Consider disabling unused servers or removing
+            unnecessary tools.
           </p>
         </div>
       </div>

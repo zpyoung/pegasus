@@ -7,16 +7,19 @@ import {
   isValidBranchName,
   isValidRemoteName,
   MAX_BRANCH_NAME_LENGTH,
-} from '@pegasus/utils';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+} from "@pegasus/utils";
+import { exec } from "child_process";
+import { promisify } from "util";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
 // Re-export execGitCommand from the canonical shared module so any remaining
 // consumers that import from this file continue to work.
-export { execGitCommand } from '../../lib/git.js';
+export { execGitCommand } from "../../lib/git.js";
 
-const logger = createLogger('Worktree');
+const logger = createLogger("Worktree");
 export const execAsync = promisify(exec);
 
 // Re-export git validation utilities from the canonical shared module so
@@ -27,10 +30,10 @@ export { isValidBranchName, isValidRemoteName, MAX_BRANCH_NAME_LENGTH };
 // Extended PATH configuration for Electron apps
 // ============================================================================
 
-const pathSeparator = process.platform === 'win32' ? ';' : ':';
+const pathSeparator = process.platform === "win32" ? ";" : ":";
 const additionalPaths: string[] = [];
 
-if (process.platform === 'win32') {
+if (process.platform === "win32") {
   // Windows paths
   if (process.env.LOCALAPPDATA) {
     additionalPaths.push(`${process.env.LOCALAPPDATA}\\Programs\\Git\\cmd`);
@@ -38,16 +41,16 @@ if (process.platform === 'win32') {
   if (process.env.PROGRAMFILES) {
     additionalPaths.push(`${process.env.PROGRAMFILES}\\Git\\cmd`);
   }
-  if (process.env['ProgramFiles(x86)']) {
-    additionalPaths.push(`${process.env['ProgramFiles(x86)']}\\Git\\cmd`);
+  if (process.env["ProgramFiles(x86)"]) {
+    additionalPaths.push(`${process.env["ProgramFiles(x86)"]}\\Git\\cmd`);
   }
 } else {
   // Unix/Mac paths
   additionalPaths.push(
-    '/opt/homebrew/bin', // Homebrew on Apple Silicon
-    '/usr/local/bin', // Homebrew on Intel Mac, common Linux location
-    '/home/linuxbrew/.linuxbrew/bin', // Linuxbrew
-    `${process.env.HOME}/.local/bin` // pipx, other user installs
+    "/opt/homebrew/bin", // Homebrew on Apple Silicon
+    "/usr/local/bin", // Homebrew on Intel Mac, common Linux location
+    "/home/linuxbrew/.linuxbrew/bin", // Linuxbrew
+    `${process.env.HOME}/.local/bin`, // pipx, other user installs
   );
 }
 
@@ -70,7 +73,8 @@ export const execEnv = {
  */
 export async function isGhCliAvailable(): Promise<boolean> {
   try {
-    const checkCommand = process.platform === 'win32' ? 'where gh' : 'command -v gh';
+    const checkCommand =
+      process.platform === "win32" ? "where gh" : "command -v gh";
     await execAsync(checkCommand, { env: execEnv });
     return true;
   } catch {
@@ -78,7 +82,7 @@ export async function isGhCliAvailable(): Promise<boolean> {
   }
 }
 
-export const PEGASUS_INITIAL_COMMIT_MESSAGE = 'chore: pegasus initial commit';
+export const PEGASUS_INITIAL_COMMIT_MESSAGE = "chore: pegasus initial commit";
 
 /**
  * Normalize path separators to forward slashes for cross-platform consistency.
@@ -86,7 +90,7 @@ export const PEGASUS_INITIAL_COMMIT_MESSAGE = 'chore: pegasus initial commit';
  * from git commands (which may use forward slashes).
  */
 export function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/');
+  return p.replace(/\\/g, "/");
 }
 
 /**
@@ -95,7 +99,7 @@ export function normalizePath(p: string): string {
  */
 export async function hasCommits(repoPath: string): Promise<boolean> {
   try {
-    await execAsync('git rev-parse --verify HEAD', { cwd: repoPath });
+    await execAsync("git rev-parse --verify HEAD", { cwd: repoPath });
     return true;
   } catch {
     return false;
@@ -107,21 +111,30 @@ export async function hasCommits(repoPath: string): Promise<boolean> {
  * These are expected in test environments with mock paths
  */
 export function isENOENT(error: unknown): boolean {
-  return error !== null && typeof error === 'object' && 'code' in error && error.code === 'ENOENT';
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
 }
 
 /**
  * Check if a path is a mock/test path that doesn't exist
  */
 export function isMockPath(worktreePath: string): boolean {
-  return worktreePath.startsWith('/mock/') || worktreePath.includes('/mock/');
+  return worktreePath.startsWith("/mock/") || worktreePath.includes("/mock/");
 }
 
 /**
  * Conditionally log worktree errors - suppress ENOENT for mock paths
  * to reduce noise in test output
  */
-export function logWorktreeError(error: unknown, message: string, worktreePath?: string): void {
+export function logWorktreeError(
+  error: unknown,
+  message: string,
+  worktreePath?: string,
+): void {
   // Don't log ENOENT errors for mock paths (expected in tests)
   if (isENOENT(error) && worktreePath && isMockPath(worktreePath)) {
     return;
@@ -141,23 +154,28 @@ export const logError = createLogError(logger);
  */
 export async function ensureInitialCommit(
   repoPath: string,
-  env?: Record<string, string>
+  env?: Record<string, string>,
 ): Promise<boolean> {
   try {
-    await execAsync('git rev-parse --verify HEAD', { cwd: repoPath });
+    await execAsync("git rev-parse --verify HEAD", { cwd: repoPath });
     return false;
   } catch {
     try {
-      await execAsync(`git commit --allow-empty -m "${PEGASUS_INITIAL_COMMIT_MESSAGE}"`, {
-        cwd: repoPath,
-        env: { ...process.env, ...env },
-      });
-      logger.info(`[Worktree] Created initial empty commit to enable worktrees in ${repoPath}`);
+      await execAsync(
+        `git commit --allow-empty -m "${PEGASUS_INITIAL_COMMIT_MESSAGE}"`,
+        {
+          cwd: repoPath,
+          env: { ...process.env, ...env },
+        },
+      );
+      logger.info(
+        `[Worktree] Created initial empty commit to enable worktrees in ${repoPath}`,
+      );
       return true;
     } catch (error) {
       const reason = getErrorMessageShared(error);
       throw new Error(
-        `Failed to create initial git commit. Please commit manually and retry. ${reason}`
+        `Failed to create initial git commit. Please commit manually and retry. ${reason}`,
       );
     }
   }

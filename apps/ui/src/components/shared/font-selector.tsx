@@ -4,8 +4,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
+} from "@/components/ui/select";
+import { DEFAULT_FONT_VALUE } from "@/config/ui-font-options";
 
 interface FontOption {
   value: string;
@@ -23,7 +23,13 @@ interface FontSelectorProps {
 /**
  * Reusable font selector component with live preview styling
  */
-export function FontSelector({ id, value, options, placeholder, onChange }: FontSelectorProps) {
+export function FontSelector({
+  id,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: FontSelectorProps) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger id={id} className="w-full">
@@ -34,7 +40,10 @@ export function FontSelector({ id, value, options, placeholder, onChange }: Font
           <SelectItem key={option.value} value={option.value}>
             <span
               style={{
-                fontFamily: option.value === DEFAULT_FONT_VALUE ? undefined : option.value,
+                fontFamily:
+                  option.value === DEFAULT_FONT_VALUE
+                    ? undefined
+                    : option.value,
               }}
             >
               {option.label}

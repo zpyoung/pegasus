@@ -13,6 +13,7 @@ baseline.
 ### ✨ Added
 
 #### 🔌 Multi-provider AI support
+
 - Pluggable provider adapters for **Anthropic**, **GitHub Copilot**, **Cursor**,
   **Google Gemini**, **OpenAI**, and **OpenCode**, each with their own
   model-resolution and authentication paths.
@@ -25,6 +26,7 @@ baseline.
 - Unified credential storage and per-project model selection UI.
 
 #### ⚙️ YAML pipeline execution
+
 - New `StageRunner` executes multi-stage YAML pipelines end-to-end (see
   `libs/types/src/yaml-pipeline.ts`, ~6,800 lines added across the feature).
 - When a pipeline is selected for a task, the legacy planning section is hidden.
@@ -36,6 +38,7 @@ baseline.
 - **Pipeline optimizations** for large runs.
 
 #### 💡 Idea Board (ADR-003)
+
 - Ideation dashboard replaced with a 3-column kanban board built on the shared
   `KanbanColumn` infrastructure.
 - AI suggestions now create raw ideas (not features). Only ideas with
@@ -45,6 +48,7 @@ baseline.
   quick-add input from any page.
 
 #### 🤖 Agent workflow improvements
+
 - **Plan revisions with file-hash tracking** — uses `git hash-object` per file
   for accurate before/after diffing instead of path-presence sets.
 - **Per-task commits** — agent-modified files are tracked per task and
@@ -55,6 +59,7 @@ baseline.
 - **Generation jobs indicator** and prompt-command popover surfaced in the UI.
 
 #### 🌳 Worktree enhancements
+
 - **Symlink support** for worktree files, so shared config can be mirrored
   across feature worktrees.
 - **"All worktrees" view** — see tasks from every worktree even when the
@@ -66,6 +71,7 @@ baseline.
 - Formatted worktree-init script output.
 
 #### 📦 Distribution & auto-update
+
 - **Electron auto-updater** wired to GitHub Releases.
 - **1-click update flow** for unsigned macOS builds: opens the GitHub release
   page in the browser when a new version is detected (Squirrel.Mac doesn't
@@ -83,6 +89,7 @@ baseline.
   architecture.
 
 #### 🏗️ Dev & build infrastructure
+
 - **Migration to pnpm workspaces** from npm, with `apps/*` and `libs/*` layout.
 - **Rebranded** all package scopes, env vars, directories, and docs from
   `automaker` / `AUTOMAKER_*` / `.automaker` to `pegasus` / `PEGASUS_*` /
@@ -95,6 +102,7 @@ baseline.
 - **`.vite/` build cache** added to `.gitignore`.
 
 #### 💾 Persistence
+
 - **Last-used phase overrides** are now remembered across sessions.
 - **Last-selected model** persists and is restored on project reopen.
 

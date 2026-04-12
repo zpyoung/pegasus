@@ -1,8 +1,8 @@
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { GitBranch, Workflow } from 'lucide-react';
-import { usePipelineConfig } from '@/hooks/queries/use-pipeline';
-import { cn } from '@/lib/utils';
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { GitBranch, Workflow } from "lucide-react";
+import { usePipelineConfig } from "@/hooks/queries/use-pipeline";
+import { cn } from "@/lib/utils";
 
 interface PipelineExclusionControlsProps {
   projectPath: string | undefined;
@@ -21,13 +21,15 @@ export function PipelineExclusionControls({
   projectPath,
   excludedPipelineSteps,
   onExcludedStepsChange,
-  testIdPrefix = 'pipeline-exclusion',
+  testIdPrefix = "pipeline-exclusion",
   disabled = false,
 }: PipelineExclusionControlsProps) {
   const { data: pipelineConfig, isLoading } = usePipelineConfig(projectPath);
 
   // Sort steps by order
-  const sortedSteps = [...(pipelineConfig?.steps || [])].sort((a, b) => a.order - b.order);
+  const sortedSteps = [...(pipelineConfig?.steps || [])].sort(
+    (a, b) => a.order - b.order,
+  );
 
   // If no pipeline steps exist or loading, don't render anything
   if (isLoading || sortedSteps.length === 0) {
@@ -38,14 +40,18 @@ export function PipelineExclusionControls({
     const isCurrentlyExcluded = excludedPipelineSteps.includes(stepId);
     if (isCurrentlyExcluded) {
       // Remove from exclusions (enable the step)
-      onExcludedStepsChange(excludedPipelineSteps.filter((id) => id !== stepId));
+      onExcludedStepsChange(
+        excludedPipelineSteps.filter((id) => id !== stepId),
+      );
     } else {
       // Add to exclusions (disable the step)
       onExcludedStepsChange([...excludedPipelineSteps, stepId]);
     }
   };
 
-  const allExcluded = sortedSteps.every((step) => excludedPipelineSteps.includes(step.id));
+  const allExcluded = sortedSteps.every((step) =>
+    excludedPipelineSteps.includes(step.id),
+  );
 
   return (
     <div className="space-y-3">
@@ -61,26 +67,28 @@ export function PipelineExclusionControls({
             <div
               key={step.id}
               className={cn(
-                'flex items-center justify-between gap-3 px-3 py-2 rounded-md border',
+                "flex items-center justify-between gap-3 px-3 py-2 rounded-md border",
                 isIncluded
-                  ? 'border-border/50 bg-muted/30'
-                  : 'border-border/30 bg-muted/10 opacity-60'
+                  ? "border-border/50 bg-muted/30"
+                  : "border-border/30 bg-muted/10 opacity-60",
               )}
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <div
                   className={cn(
-                    'w-2 h-2 rounded-full flex-shrink-0',
-                    step.colorClass || 'bg-gray-400'
+                    "w-2 h-2 rounded-full flex-shrink-0",
+                    step.colorClass || "bg-gray-400",
                   )}
                   style={{
-                    backgroundColor: step.colorClass?.startsWith('#') ? step.colorClass : undefined,
+                    backgroundColor: step.colorClass?.startsWith("#")
+                      ? step.colorClass
+                      : undefined,
                   }}
                 />
                 <span
                   className={cn(
-                    'text-sm truncate',
-                    isIncluded ? 'text-foreground' : 'text-muted-foreground'
+                    "text-sm truncate",
+                    isIncluded ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {step.name}
@@ -91,7 +99,7 @@ export function PipelineExclusionControls({
                 onCheckedChange={() => toggleStep(step.id)}
                 disabled={disabled}
                 data-testid={`${testIdPrefix}-step-${step.id}`}
-                aria-label={`${isIncluded ? 'Disable' : 'Enable'} ${step.name} pipeline step`}
+                aria-label={`${isIncluded ? "Disable" : "Enable"} ${step.name} pipeline step`}
               />
             </div>
           );
@@ -101,12 +109,14 @@ export function PipelineExclusionControls({
       {allExcluded && (
         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
           <GitBranch className="w-3.5 h-3.5" />
-          All pipeline steps disabled. Feature will skip directly to verification.
+          All pipeline steps disabled. Feature will skip directly to
+          verification.
         </p>
       )}
 
       <p className="text-xs text-muted-foreground">
-        Enabled steps will run after implementation. Disable steps to skip them for this feature.
+        Enabled steps will run after implementation. Disable steps to skip them
+        for this feature.
       </p>
     </div>
   );

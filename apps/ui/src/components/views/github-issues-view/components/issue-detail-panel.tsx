@@ -14,18 +14,18 @@ import {
   ChevronUp,
   Plus,
   ArrowLeft,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Markdown } from '@/components/ui/markdown';
-import { cn } from '@/lib/utils';
-import type { IssueDetailPanelProps } from '../types';
-import { isValidationStale } from '../utils';
-import { ModelOverrideTrigger } from '@/components/shared';
-import { useIssueComments } from '../hooks';
-import { CommentItem } from './comment-item';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Markdown } from "@/components/ui/markdown";
+import { cn } from "@/lib/utils";
+import type { IssueDetailPanelProps } from "../types";
+import { isValidationStale } from "../utils";
+import { ModelOverrideTrigger } from "@/components/shared";
+import { useIssueComments } from "../hooks";
+import { CommentItem } from "./comment-item";
 
 export function IssueDetailPanel({
   issue,
@@ -47,7 +47,8 @@ export function IssueDetailPanel({
 
   // Comments state
   const [commentsExpanded, setCommentsExpanded] = useState(true);
-  const [includeCommentsInAnalysis, setIncludeCommentsInAnalysis] = useState(true);
+  const [includeCommentsInAnalysis, setIncludeCommentsInAnalysis] =
+    useState(true);
   const {
     comments,
     totalCount,
@@ -63,7 +64,8 @@ export function IssueDetailPanel({
     return {
       forceRevalidate,
       modelEntry: modelOverride.effectiveModelEntry, // Pass the full PhaseModelEntry to preserve thinking level
-      comments: includeCommentsInAnalysis && comments.length > 0 ? comments : undefined,
+      comments:
+        includeCommentsInAnalysis && comments.length > 0 ? comments : undefined,
       linkedPRs: issue.linkedPRs?.map((pr) => ({
         number: pr.number,
         title: pr.title,
@@ -89,7 +91,7 @@ export function IssueDetailPanel({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          {issue.state === 'OPEN' ? (
+          {issue.state === "OPEN" ? (
             <Circle className="h-4 w-4 text-green-500 shrink-0" />
           ) : (
             <CheckCircle2 className="h-4 w-4 text-purple-500 shrink-0" />
@@ -98,12 +100,17 @@ export function IssueDetailPanel({
             #{issue.number} {issue.title}
           </span>
         </div>
-        <div className={cn('flex items-center gap-2 shrink-0', isMobile && 'gap-1')}>
+        <div
+          className={cn(
+            "flex items-center gap-2 shrink-0",
+            isMobile && "gap-1",
+          )}
+        >
           {(() => {
             if (isValidating) {
               return (
                 <Button variant="default" size="sm" loading>
-                  {isMobile ? '...' : 'Validating...'}
+                  {isMobile ? "..." : "Validating..."}
                 </Button>
               );
             }
@@ -119,12 +126,14 @@ export function IssueDetailPanel({
                     title="View Result"
                   >
                     <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
-                    {!isMobile && 'View Result'}
+                    {!isMobile && "View Result"}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onShowRevalidateConfirm(getValidationOptions(true))}
+                    onClick={() =>
+                      onShowRevalidateConfirm(getValidationOptions(true))
+                    }
                     title="Re-validate"
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -144,7 +153,7 @@ export function IssueDetailPanel({
                     title="View (stale)"
                   >
                     <Clock className="h-4 w-4 mr-1 text-yellow-500" />
-                    {!isMobile && 'View (stale)'}
+                    {!isMobile && "View (stale)"}
                   </Button>
                   <ModelOverrideTrigger
                     currentModelEntry={modelOverride.effectiveModelEntry}
@@ -158,12 +167,14 @@ export function IssueDetailPanel({
                   <Button
                     variant="default"
                     size="sm"
-                    onClick={() => onValidateIssue(issue, getValidationOptions(true))}
+                    onClick={() =>
+                      onValidateIssue(issue, getValidationOptions(true))
+                    }
                     aria-label="Re-validate"
                     title="Re-validate"
                   >
                     <Wand2 className="h-4 w-4 mr-1" />
-                    {!isMobile && 'Re-validate'}
+                    {!isMobile && "Re-validate"}
                   </Button>
                 </>
               );
@@ -188,7 +199,7 @@ export function IssueDetailPanel({
                   title="Validate with AI"
                 >
                   <Wand2 className="h-4 w-4 mr-1" />
-                  {!isMobile && 'Validate with AI'}
+                  {!isMobile && "Validate with AI"}
                 </Button>
               </>
             );
@@ -200,8 +211,8 @@ export function IssueDetailPanel({
             aria-label="Create Feature"
             title="Create a new feature to address this issue"
           >
-            <Plus className={cn('h-4 w-4', !isMobile && 'mr-1')} />
-            {!isMobile && 'Create Feature'}
+            <Plus className={cn("h-4 w-4", !isMobile && "mr-1")} />
+            {!isMobile && "Create Feature"}
           </Button>
           <Button
             variant="outline"
@@ -222,7 +233,7 @@ export function IssueDetailPanel({
       </div>
 
       {/* Issue Detail Content */}
-      <div className={cn('flex-1 overflow-auto', isMobile ? 'p-4' : 'p-6')}>
+      <div className={cn("flex-1 overflow-auto", isMobile ? "p-4" : "p-6")}>
         {/* Title */}
         <h1 className="text-xl font-bold mb-2">{issue.title}</h1>
 
@@ -230,17 +241,19 @@ export function IssueDetailPanel({
         <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
           <span
             className={cn(
-              'px-2 py-0.5 rounded-full text-xs font-medium',
-              issue.state === 'OPEN'
-                ? 'bg-green-500/10 text-green-500'
-                : 'bg-purple-500/10 text-purple-500'
+              "px-2 py-0.5 rounded-full text-xs font-medium",
+              issue.state === "OPEN"
+                ? "bg-green-500/10 text-green-500"
+                : "bg-purple-500/10 text-purple-500",
             )}
           >
-            {issue.state === 'OPEN' ? 'Open' : 'Closed'}
+            {issue.state === "OPEN" ? "Open" : "Closed"}
           </span>
           <span>
-            #{issue.number} opened {formatDate(issue.createdAt)} by{' '}
-            <span className="font-medium text-foreground">{issue.author.login}</span>
+            #{issue.number} opened {formatDate(issue.createdAt)} by{" "}
+            <span className="font-medium text-foreground">
+              {issue.author.login}
+            </span>
           </span>
         </div>
 
@@ -297,19 +310,26 @@ export function IssueDetailPanel({
             </div>
             <div className="space-y-2">
               {issue.linkedPRs.map((pr) => (
-                <div key={pr.number} className="flex items-center justify-between text-sm">
+                <div
+                  key={pr.number}
+                  className="flex items-center justify-between text-sm"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <span
                       className={cn(
-                        'px-1.5 py-0.5 text-xs font-medium rounded',
-                        pr.state === 'open'
-                          ? 'bg-green-500/10 text-green-500'
-                          : pr.state === 'merged'
-                            ? 'bg-purple-500/10 text-purple-500'
-                            : 'bg-red-500/10 text-red-500'
+                        "px-1.5 py-0.5 text-xs font-medium rounded",
+                        pr.state === "open"
+                          ? "bg-green-500/10 text-green-500"
+                          : pr.state === "merged"
+                            ? "bg-purple-500/10 text-purple-500"
+                            : "bg-red-500/10 text-red-500",
                       )}
                     >
-                      {pr.state === 'open' ? 'Open' : pr.state === 'merged' ? 'Merged' : 'Closed'}
+                      {pr.state === "open"
+                        ? "Open"
+                        : pr.state === "merged"
+                          ? "Merged"
+                          : "Closed"}
                     </span>
                     <span className="text-muted-foreground">#{pr.number}</span>
                     <span className="truncate">{pr.title}</span>
@@ -332,7 +352,9 @@ export function IssueDetailPanel({
         {issue.body ? (
           <Markdown className="text-sm">{issue.body}</Markdown>
         ) : (
-          <p className="text-sm text-muted-foreground italic">No description provided.</p>
+          <p className="text-sm text-muted-foreground italic">
+            No description provided.
+          </p>
         )}
 
         {/* Comments Section */}
@@ -369,7 +391,9 @@ export function IssueDetailPanel({
               {commentsError ? (
                 <p className="text-sm text-red-500">{commentsError}</p>
               ) : comments.length === 0 && !commentsLoading ? (
-                <p className="text-sm text-muted-foreground italic">No comments yet.</p>
+                <p className="text-sm text-muted-foreground italic">
+                  No comments yet.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {comments.map((comment) => (
@@ -385,7 +409,7 @@ export function IssueDetailPanel({
                       onClick={loadMore}
                       loading={loadingMore}
                     >
-                      {loadingMore ? 'Loading...' : 'Load More Comments'}
+                      {loadingMore ? "Loading..." : "Load More Comments"}
                     </Button>
                   )}
                 </div>

@@ -3,7 +3,7 @@
  * Makes verbose descriptions concise and focused.
  */
 
-import type { EnhancementExample } from '@pegasus/types';
+import type { EnhancementExample } from "@pegasus/types";
 
 /**
  * System prompt for the "simplify" enhancement mode.
@@ -71,4 +71,5 @@ Enhancements:
 /**
  * Description of what this enhancement mode does
  */
-export const SIMPLIFY_DESCRIPTION = 'Make verbose descriptions concise and focused';
+export const SIMPLIFY_DESCRIPTION =
+  "Make verbose descriptions concise and focused";

@@ -3,11 +3,11 @@
  * Centralizes the logic for determining where projects should be created/opened
  */
 
-import { createLogger } from '@pegasus/utils/logger';
-import { getHttpApiClient } from './http-api-client';
-import { useAppStore } from '@/store/app-store';
+import { createLogger } from "@pegasus/utils/logger";
+import { getHttpApiClient } from "./http-api-client";
+import { useAppStore } from "@/store/app-store";
 
-const logger = createLogger('WorkspaceConfig');
+const logger = createLogger("WorkspaceConfig");
 
 /**
  * Browser-compatible path join utility
@@ -17,13 +17,13 @@ function joinPath(...parts: string[]): string {
   // Remove empty parts and normalize separators
   const normalized = parts
     .filter((p) => p)
-    .map((p) => p.replace(/\\/g, '/'))
-    .join('/')
-    .replace(/\/+/g, '/'); // Remove duplicate slashes
+    .map((p) => p.replace(/\\/g, "/"))
+    .join("/")
+    .replace(/\/+/g, "/"); // Remove duplicate slashes
 
   // Preserve leading slash if first part had it
-  const hasLeadingSlash = parts[0]?.startsWith('/');
-  return hasLeadingSlash ? '/' + normalized.replace(/^\//, '') : normalized;
+  const hasLeadingSlash = parts[0]?.startsWith("/");
+  return hasLeadingSlash ? "/" + normalized.replace(/^\//, "") : normalized;
 }
 
 /**
@@ -35,16 +35,16 @@ async function getDefaultDocumentsPath(): Promise<string | null> {
     // In Electron mode, use the native getPath API directly from the preload script
     // This returns the actual system Documents folder (e.g., C:\Users\<user>\Documents on Windows)
     // Note: The HTTP client's getPath returns incorrect Unix-style paths for 'documents'
-    if (typeof window !== 'undefined' && window.electronAPI?.getPath) {
-      const documentsPath = await window.electronAPI.getPath('documents');
-      return joinPath(documentsPath, 'Pegasus');
+    if (typeof window !== "undefined" && window.electronAPI?.getPath) {
+      const documentsPath = await window.electronAPI.getPath("documents");
+      return joinPath(documentsPath, "Pegasus");
     }
 
     // In web mode (no Electron), we can't access the user's Documents folder
     // Return null to let the caller use other fallback mechanisms (like server's DATA_DIR)
     return null;
   } catch (error) {
-    logger.error('Failed to get documents path:', error);
+    logger.error("Failed to get documents path:", error);
     return null;
   }
 }
@@ -83,7 +83,7 @@ export async function getDefaultWorkspaceDirectory(): Promise<string | null> {
 
       // Try to get Documents/Pegasus
       const documentsPath = await getDefaultDocumentsPath();
-      logger.info('Default documentsPath resolved to:', documentsPath);
+      logger.info("Default documentsPath resolved to:", documentsPath);
       if (documentsPath) {
         return documentsPath;
       }
@@ -104,7 +104,7 @@ export async function getDefaultWorkspaceDirectory(): Promise<string | null> {
     const documentsPath = await getDefaultDocumentsPath();
     return documentsPath;
   } catch (error) {
-    logger.error('Failed to get default workspace directory:', error);
+    logger.error("Failed to get default workspace directory:", error);
 
     // On error, try last used dir and Documents
     const lastUsedDir = useAppStore.getState().lastProjectDir;

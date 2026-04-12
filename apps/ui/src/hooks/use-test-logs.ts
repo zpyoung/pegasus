@@ -10,18 +10,18 @@
  * and streaming, making it ideal for log display components.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
-import { pathsEqual } from '@/lib/utils';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
+import { pathsEqual } from "@/lib/utils";
 import type {
   TestRunStatus,
   TestRunnerStartedEvent,
   TestRunnerOutputEvent,
   TestRunnerCompletedEvent,
-} from '@/types/electron';
+} from "@/types/electron";
 
-const logger = createLogger('TestLogs');
+const logger = createLogger("TestLogs");
 
 // ============================================================================
 // Types
@@ -72,7 +72,7 @@ export interface UseTestLogsOptions {
 // ============================================================================
 
 const initialState: TestLogState = {
-  logs: '',
+  logs: "",
   isLoading: false,
   error: null,
   status: null,
@@ -132,7 +132,7 @@ export function useTestLogs({
   /**
    * Derived state: whether tests are currently running
    */
-  const isRunning = state.status === 'running' || state.status === 'pending';
+  const isRunning = state.status === "running" || state.status === "pending";
 
   /**
    * Fetch buffered logs from the server
@@ -153,19 +153,30 @@ export function useTestLogs({
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: 'Test logs API not available',
+          error: "Test logs API not available",
         }));
         return;
       }
 
-      const result = await api.worktree.getTestLogs(worktreePath ?? undefined, targetSessionId);
+      const result = await api.worktree.getTestLogs(
+        worktreePath ?? undefined,
+        targetSessionId,
+      );
 
       // Check if this request is still current (prevent stale updates)
       if (seq !== fetchSeq.current) return;
 
       if (result.success && result.result) {
-        const { sessionId, command, status, testFile, logs, startedAt, finishedAt, exitCode } =
-          result.result;
+        const {
+          sessionId,
+          command,
+          status,
+          testFile,
+          logs,
+          startedAt,
+          finishedAt,
+          exitCode,
+        } = result.result;
 
         // Update current session ID for event filtering
         currentSessionId.current = sessionId;
@@ -196,11 +207,11 @@ export function useTestLogs({
     } catch (error) {
       // Check if this request is still current
       if (seq !== fetchSeq.current) return;
-      logger.error('Failed to fetch test logs:', error);
+      logger.error("Failed to fetch test logs:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch logs',
+        error: error instanceof Error ? error.message : "Failed to fetch logs",
       }));
     }
   }, [worktreePath, targetSessionId]);
@@ -241,7 +252,7 @@ export function useTestLogs({
 
     const api = getElectronAPI();
     if (!api?.worktree?.onTestRunnerEvent) {
-      logger.warn('Test runner event subscription not available');
+      logger.warn("Test runner event subscription not available");
       return;
     }
 
@@ -261,16 +272,16 @@ export function useTestLogs({
       }
 
       switch (event.type) {
-        case 'test-runner:started': {
+        case "test-runner:started": {
           const payload = event.payload as TestRunnerStartedEvent;
-          logger.info('Test run started:', payload);
+          logger.info("Test run started:", payload);
 
           // Update current session ID for future event filtering
           currentSessionId.current = payload.sessionId;
 
           setState((prev) => ({
             ...prev,
-            status: 'running',
+            status: "running",
             sessionId: payload.sessionId,
             command: payload.command,
             testFile: payload.testFile ?? null,
@@ -279,18 +290,21 @@ export function useTestLogs({
             exitCode: null,
             duration: null,
             // Clear logs on new test run start
-            logs: '',
+            logs: "",
             error: null,
           }));
           hasFetchedInitialLogs.current = false;
           break;
         }
 
-        case 'test-runner:output': {
+        case "test-runner:output": {
           const payload = event.payload as TestRunnerOutputEvent;
 
           // Only append if this is for our current session
-          if (currentSessionId.current && payload.sessionId !== currentSessionId.current) {
+          if (
+            currentSessionId.current &&
+            payload.sessionId !== currentSessionId.current
+          ) {
             return;
           }
 
@@ -301,12 +315,15 @@ export function useTestLogs({
           break;
         }
 
-        case 'test-runner:completed': {
+        case "test-runner:completed": {
           const payload = event.payload as TestRunnerCompletedEvent;
-          logger.info('Test run completed:', payload);
+          logger.info("Test run completed:", payload);
 
           // Only update if this is for our current session
-          if (currentSessionId.current && payload.sessionId !== currentSessionId.current) {
+          if (
+            currentSessionId.current &&
+            payload.sessionId !== currentSessionId.current
+          ) {
             return;
           }
 
@@ -370,19 +387,19 @@ export function useTestLogEvents(handlers: {
   useEffect(() => {
     const api = getElectronAPI();
     if (!api?.worktree?.onTestRunnerEvent) {
-      logger.warn('Test runner event subscription not available');
+      logger.warn("Test runner event subscription not available");
       return;
     }
 
     const unsubscribe = api.worktree.onTestRunnerEvent((event) => {
       switch (event.type) {
-        case 'test-runner:started':
+        case "test-runner:started":
           onStarted?.(event.payload as TestRunnerStartedEvent);
           break;
-        case 'test-runner:output':
+        case "test-runner:output":
           onOutput?.(event.payload as TestRunnerOutputEvent);
           break;
-        case 'test-runner:completed':
+        case "test-runner:completed":
           onCompleted?.(event.payload as TestRunnerCompletedEvent);
           break;
       }

@@ -16,11 +16,11 @@
  * the requireGitRepoOnly middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import * as path from 'path';
-import * as fs from 'fs';
-import { getErrorMessage, logError } from '@pegasus/utils';
-import { execGitCommand } from '../../../lib/git.js';
+import type { Request, Response } from "express";
+import * as path from "path";
+import * as fs from "fs";
+import { getErrorMessage, logError } from "@pegasus/utils";
+import { execGitCommand } from "../../../lib/git.js";
 
 /**
  * Validate that a file path does not escape the worktree directory.
@@ -34,7 +34,8 @@ function validateFilePath(filePath: string, worktreePath: string): boolean {
 
   // First, perform lexical prefix check
   const lexicalOk =
-    resolved.startsWith(normalizedWorktree + path.sep) || resolved === normalizedWorktree;
+    resolved.startsWith(normalizedWorktree + path.sep) ||
+    resolved === normalizedWorktree;
   if (!lexicalOk) {
     return false;
   }
@@ -44,7 +45,10 @@ function validateFilePath(filePath: string, worktreePath: string): boolean {
   try {
     const realResolved = fs.realpathSync(resolved);
     const realWorktree = fs.realpathSync(normalizedWorktree);
-    return realResolved.startsWith(realWorktree + path.sep) || realResolved === realWorktree;
+    return (
+      realResolved.startsWith(realWorktree + path.sep) ||
+      realResolved === realWorktree
+    );
   } catch {
     // If realpath fails (e.g., target doesn't exist yet for untracked files),
     // fall back to the lexical startsWith check which already passed above.
@@ -57,10 +61,14 @@ function validateFilePath(filePath: string, worktreePath: string): boolean {
  * For renamed files (R status), git reports "old_path -> new_path" and
  * we need the new path to match what parseGitStatus() returns in git-utils.
  */
-function parseFilePath(rawPath: string, indexStatus: string, workTreeStatus: string): string {
+function parseFilePath(
+  rawPath: string,
+  indexStatus: string,
+  workTreeStatus: string,
+): string {
   const trimmedPath = rawPath.trim();
-  if (indexStatus === 'R' || workTreeStatus === 'R') {
-    const arrowIndex = trimmedPath.indexOf(' -> ');
+  if (indexStatus === "R" || workTreeStatus === "R") {
+    const arrowIndex = trimmedPath.indexOf(" -> ");
     if (arrowIndex !== -1) {
       return trimmedPath.slice(arrowIndex + 4);
     }
@@ -79,20 +87,23 @@ export function createDiscardChangesHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
       // Check for uncommitted changes first
-      const status = await execGitCommand(['status', '--porcelain'], worktreePath);
+      const status = await execGitCommand(
+        ["status", "--porcelain"],
+        worktreePath,
+      );
 
       if (!status.trim()) {
         res.json({
           success: true,
           result: {
             discarded: false,
-            message: 'No changes to discard',
+            message: "No changes to discard",
           },
         });
         return;
@@ -100,15 +111,15 @@ export function createDiscardChangesHandler() {
 
       // Get branch name before discarding
       const branchOutput = await execGitCommand(
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        worktreePath
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        worktreePath,
       );
       const branchName = branchOutput.trim();
 
       // Parse the status output to categorize files
       // Git --porcelain format: XY PATH where X=index status, Y=worktree status
       // For renamed files: XY OLD_PATH -> NEW_PATH
-      const statusLines = status.trim().split('\n').filter(Boolean);
+      const statusLines = status.trim().split("\n").filter(Boolean);
       const allFiles = statusLines.map((line) => {
         const fileStatus = line.substring(0, 2);
         const rawPath = line.slice(3);
@@ -121,18 +132,21 @@ export function createDiscardChangesHandler() {
       });
 
       // Determine which files to discard
-      const isSelectiveDiscard = files && files.length > 0 && files.length < allFiles.length;
+      const isSelectiveDiscard =
+        files && files.length > 0 && files.length < allFiles.length;
 
       if (isSelectiveDiscard) {
         // Selective discard: only discard the specified files
         const filesToDiscard = new Set(files);
 
         // Validate all requested file paths stay within the worktree
-        const invalidPaths = files.filter((f) => !validateFilePath(f, worktreePath));
+        const invalidPaths = files.filter(
+          (f) => !validateFilePath(f, worktreePath),
+        );
         if (invalidPaths.length > 0) {
           res.status(400).json({
             success: false,
-            error: `Invalid file paths detected (path traversal): ${invalidPaths.join(', ')}`,
+            error: `Invalid file paths detected (path traversal): ${invalidPaths.join(", ")}`,
           });
           return;
         }
@@ -156,9 +170,9 @@ export function createDiscardChangesHandler() {
           const indexStatus = xy.charAt(0);
           const workTreeStatus = xy.charAt(1);
 
-          if (indexStatus === '?' && workTreeStatus === '?') {
+          if (indexStatus === "?" && workTreeStatus === "?") {
             untrackedFiles.push(file.path);
-          } else if (indexStatus === 'A') {
+          } else if (indexStatus === "A") {
             // Staged-new file: must be reset (unstaged) then cleaned (deleted).
             // Never pass to trackedModified — the file has no HEAD version to
             // check out, so `git checkout --` would fail or do nothing.
@@ -166,11 +180,11 @@ export function createDiscardChangesHandler() {
             untrackedFiles.push(file.path);
           } else {
             // Check if the file has staged changes (index status X)
-            if (indexStatus !== ' ' && indexStatus !== '?') {
+            if (indexStatus !== " " && indexStatus !== "?") {
               stagedFiles.push(file.path);
             }
             // Check for working tree changes (worktree status Y): handles MM, MD, etc.
-            if (workTreeStatus !== ' ' && workTreeStatus !== '?') {
+            if (workTreeStatus !== " " && workTreeStatus !== "?") {
               trackedModified.push(file.path);
             }
           }
@@ -189,7 +203,10 @@ export function createDiscardChangesHandler() {
         // 1. Unstage selected staged files (using execFile to bypass shell)
         if (stagedFiles.length > 0) {
           try {
-            await execGitCommand(['reset', 'HEAD', '--', ...stagedFiles], worktreePath);
+            await execGitCommand(
+              ["reset", "HEAD", "--", ...stagedFiles],
+              worktreePath,
+            );
           } catch (error) {
             const msg = getErrorMessage(error);
             logError(error, `Failed to unstage files: ${msg}`);
@@ -200,7 +217,10 @@ export function createDiscardChangesHandler() {
         // 2. Revert selected tracked file changes
         if (trackedModified.length > 0) {
           try {
-            await execGitCommand(['checkout', '--', ...trackedModified], worktreePath);
+            await execGitCommand(
+              ["checkout", "--", ...trackedModified],
+              worktreePath,
+            );
           } catch (error) {
             const msg = getErrorMessage(error);
             logError(error, `Failed to revert tracked files: ${msg}`);
@@ -212,7 +232,10 @@ export function createDiscardChangesHandler() {
         // Use -ffd (double force) to also handle nested git repositories
         if (untrackedFiles.length > 0) {
           try {
-            await execGitCommand(['clean', '-ffd', '--', ...untrackedFiles], worktreePath);
+            await execGitCommand(
+              ["clean", "-ffd", "--", ...untrackedFiles],
+              worktreePath,
+            );
           } catch (error) {
             const msg = getErrorMessage(error);
             logError(error, `Failed to clean untracked files: ${msg}`);
@@ -223,17 +246,20 @@ export function createDiscardChangesHandler() {
         const fileCount = files.length;
 
         // Verify the remaining state
-        const finalStatus = await execGitCommand(['status', '--porcelain'], worktreePath);
+        const finalStatus = await execGitCommand(
+          ["status", "--porcelain"],
+          worktreePath,
+        );
 
         const remainingCount = finalStatus.trim()
-          ? finalStatus.trim().split('\n').filter(Boolean).length
+          ? finalStatus.trim().split("\n").filter(Boolean).length
           : 0;
         const actualDiscarded = allFiles.length - remainingCount;
 
         let message =
           actualDiscarded < fileCount
             ? `Discarded ${actualDiscarded} of ${fileCount} selected files, ${remainingCount} files remaining`
-            : `Discarded ${actualDiscarded} ${actualDiscarded === 1 ? 'file' : 'files'}`;
+            : `Discarded ${actualDiscarded} ${actualDiscarded === 1 ? "file" : "files"}`;
 
         res.json({
           success: true,
@@ -253,7 +279,7 @@ export function createDiscardChangesHandler() {
 
         // 1. Reset any staged changes
         try {
-          await execGitCommand(['reset', 'HEAD'], worktreePath);
+          await execGitCommand(["reset", "HEAD"], worktreePath);
         } catch (error) {
           const msg = getErrorMessage(error);
           logError(error, `git reset HEAD failed: ${msg}`);
@@ -262,7 +288,7 @@ export function createDiscardChangesHandler() {
 
         // 2. Discard changes in tracked files
         try {
-          await execGitCommand(['checkout', '.'], worktreePath);
+          await execGitCommand(["checkout", "."], worktreePath);
         } catch (error) {
           const msg = getErrorMessage(error);
           logError(error, `git checkout . failed: ${msg}`);
@@ -272,7 +298,7 @@ export function createDiscardChangesHandler() {
         // 3. Remove untracked files and directories
         // Use -ffd (double force) to also handle nested git repositories
         try {
-          await execGitCommand(['clean', '-ffd', '--'], worktreePath);
+          await execGitCommand(["clean", "-ffd", "--"], worktreePath);
         } catch (error) {
           const msg = getErrorMessage(error);
           logError(error, `git clean -ffd failed: ${msg}`);
@@ -280,10 +306,16 @@ export function createDiscardChangesHandler() {
         }
 
         // Verify all changes were discarded
-        const finalStatus = await execGitCommand(['status', '--porcelain'], worktreePath);
+        const finalStatus = await execGitCommand(
+          ["status", "--porcelain"],
+          worktreePath,
+        );
 
         if (finalStatus.trim()) {
-          const remainingCount = finalStatus.trim().split('\n').filter(Boolean).length;
+          const remainingCount = finalStatus
+            .trim()
+            .split("\n")
+            .filter(Boolean).length;
           res.json({
             success: true,
             result: {
@@ -303,14 +335,14 @@ export function createDiscardChangesHandler() {
               filesDiscarded: fileCount,
               filesRemaining: 0,
               branch: branchName,
-              message: `Discarded ${fileCount} ${fileCount === 1 ? 'file' : 'files'}`,
+              message: `Discarded ${fileCount} ${fileCount === 1 ? "file" : "files"}`,
               ...(warnings.length > 0 && { warnings }),
             },
           });
         }
       }
     } catch (error) {
-      logError(error, 'Discard changes failed');
+      logError(error, "Discard changes failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -2,11 +2,11 @@
  * POST /diffs endpoint - Get diffs for a worktree
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import * as secureFs from '../../../lib/secure-fs.js';
-import { getErrorMessage, logError } from '../common.js';
-import { getGitRepositoryDiffs } from '../../common.js';
+import type { Request, Response } from "express";
+import path from "path";
+import * as secureFs from "../../../lib/secure-fs.js";
+import { getErrorMessage, logError } from "../common.js";
+import { getGitRepositoryDiffs } from "../../common.js";
 
 export function createDiffsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +20,7 @@ export function createDiffsHandler() {
       if (!projectPath || !featureId) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and featureId required',
+          error: "projectPath and featureId required",
         });
         return;
       }
@@ -42,8 +42,12 @@ export function createDiffsHandler() {
       // Git worktrees are stored in project directory
       // Sanitize featureId the same way it's sanitized when creating worktrees
       // (see create.ts: branchName.replace(/[^a-zA-Z0-9_-]/g, '-'))
-      const sanitizedFeatureId = featureId.replace(/[^a-zA-Z0-9_-]/g, '-');
-      const worktreePath = path.join(projectPath, '.worktrees', sanitizedFeatureId);
+      const sanitizedFeatureId = featureId.replace(/[^a-zA-Z0-9_-]/g, "-");
+      const worktreePath = path.join(
+        projectPath,
+        ".worktrees",
+        sanitizedFeatureId,
+      );
 
       try {
         // Check if worktree exists
@@ -62,8 +66,11 @@ export function createDiffsHandler() {
         // Worktree doesn't exist - fallback to main project path
         const code = (innerError as NodeJS.ErrnoException | undefined)?.code;
         // ENOENT is expected when a feature has no worktree; don't log as an error.
-        if (code && code !== 'ENOENT') {
-          logError(innerError, 'Worktree access failed, falling back to main project');
+        if (code && code !== "ENOENT") {
+          logError(
+            innerError,
+            "Worktree access failed, falling back to main project",
+          );
         }
 
         try {
@@ -76,12 +83,12 @@ export function createDiffsHandler() {
             ...(result.mergeState ? { mergeState: result.mergeState } : {}),
           });
         } catch (fallbackError) {
-          logError(fallbackError, 'Fallback to main project also failed');
-          res.json({ success: true, diff: '', files: [], hasChanges: false });
+          logError(fallbackError, "Fallback to main project also failed");
+          res.json({ success: true, diff: "", files: [], hasChanges: false });
         }
       }
     } catch (error) {
-      logError(error, 'Get worktree diffs failed');
+      logError(error, "Get worktree diffs failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

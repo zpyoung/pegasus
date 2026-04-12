@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle } from "lucide-react";
 
 interface SecurityNoticeProps {
   title?: string;
@@ -6,7 +6,7 @@ interface SecurityNoticeProps {
 }
 
 export function SecurityNotice({
-  title = 'Security Notice',
+  title = "Security Notice",
   message = "API keys are stored in your browser's local storage. Never share your API keys or commit them to version control.",
 }: SecurityNoticeProps) {
   return (

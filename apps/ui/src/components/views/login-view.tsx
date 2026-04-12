@@ -11,8 +11,8 @@
  *   checking_setup → redirecting
  */
 
-import { useReducer, useEffect, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { useReducer, useEffect, useRef } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   login,
   getHttpApiClient,
@@ -21,38 +21,38 @@ import {
   getSessionToken,
   initApiKey,
   waitForApiKeyInit,
-} from '@/lib/http-api-client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { KeyRound, AlertCircle, RefreshCw, ServerCrash } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useAuthStore } from '@/store/auth-store';
-import { useSetupStore } from '@/store/setup-store';
+} from "@/lib/http-api-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { KeyRound, AlertCircle, RefreshCw, ServerCrash } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuthStore } from "@/store/auth-store";
+import { useSetupStore } from "@/store/setup-store";
 
 // =============================================================================
 // State Machine Types
 // =============================================================================
 
 type State =
-  | { phase: 'checking_server'; attempt: number }
-  | { phase: 'server_error'; message: string }
-  | { phase: 'awaiting_login'; apiKey: string; error: string | null }
-  | { phase: 'logging_in'; apiKey: string }
-  | { phase: 'checking_setup' }
-  | { phase: 'redirecting'; to: string };
+  | { phase: "checking_server"; attempt: number }
+  | { phase: "server_error"; message: string }
+  | { phase: "awaiting_login"; apiKey: string; error: string | null }
+  | { phase: "logging_in"; apiKey: string }
+  | { phase: "checking_setup" }
+  | { phase: "redirecting"; to: string };
 
 type Action =
-  | { type: 'SERVER_CHECK_RETRY'; attempt: number }
-  | { type: 'SERVER_ERROR'; message: string }
-  | { type: 'AUTH_REQUIRED' }
-  | { type: 'AUTH_VALID' }
-  | { type: 'UPDATE_API_KEY'; value: string }
-  | { type: 'SUBMIT_LOGIN' }
-  | { type: 'LOGIN_ERROR'; message: string }
-  | { type: 'REDIRECT'; to: string }
-  | { type: 'RETRY_SERVER_CHECK' };
+  | { type: "SERVER_CHECK_RETRY"; attempt: number }
+  | { type: "SERVER_ERROR"; message: string }
+  | { type: "AUTH_REQUIRED" }
+  | { type: "AUTH_VALID" }
+  | { type: "UPDATE_API_KEY"; value: string }
+  | { type: "SUBMIT_LOGIN" }
+  | { type: "LOGIN_ERROR"; message: string }
+  | { type: "REDIRECT"; to: string }
+  | { type: "RETRY_SERVER_CHECK" };
 
-const initialState: State = { phase: 'checking_server', attempt: 1 };
+const initialState: State = { phase: "checking_server", attempt: 1 };
 
 // =============================================================================
 // State Machine Reducer
@@ -60,35 +60,39 @@ const initialState: State = { phase: 'checking_server', attempt: 1 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case 'SERVER_CHECK_RETRY':
-      return { phase: 'checking_server', attempt: action.attempt };
+    case "SERVER_CHECK_RETRY":
+      return { phase: "checking_server", attempt: action.attempt };
 
-    case 'SERVER_ERROR':
-      return { phase: 'server_error', message: action.message };
+    case "SERVER_ERROR":
+      return { phase: "server_error", message: action.message };
 
-    case 'AUTH_REQUIRED':
-      return { phase: 'awaiting_login', apiKey: '', error: null };
+    case "AUTH_REQUIRED":
+      return { phase: "awaiting_login", apiKey: "", error: null };
 
-    case 'AUTH_VALID':
-      return { phase: 'checking_setup' };
+    case "AUTH_VALID":
+      return { phase: "checking_setup" };
 
-    case 'UPDATE_API_KEY':
-      if (state.phase !== 'awaiting_login') return state;
+    case "UPDATE_API_KEY":
+      if (state.phase !== "awaiting_login") return state;
       return { ...state, apiKey: action.value };
 
-    case 'SUBMIT_LOGIN':
-      if (state.phase !== 'awaiting_login') return state;
-      return { phase: 'logging_in', apiKey: state.apiKey };
+    case "SUBMIT_LOGIN":
+      if (state.phase !== "awaiting_login") return state;
+      return { phase: "logging_in", apiKey: state.apiKey };
 
-    case 'LOGIN_ERROR':
-      if (state.phase !== 'logging_in') return state;
-      return { phase: 'awaiting_login', apiKey: state.apiKey, error: action.message };
+    case "LOGIN_ERROR":
+      if (state.phase !== "logging_in") return state;
+      return {
+        phase: "awaiting_login",
+        apiKey: state.apiKey,
+        error: action.message,
+      };
 
-    case 'REDIRECT':
-      return { phase: 'redirecting', to: action.to };
+    case "REDIRECT":
+      return { phase: "redirecting", to: action.to };
 
-    case 'RETRY_SERVER_CHECK':
-      return { phase: 'checking_server', attempt: 1 };
+    case "RETRY_SERVER_CHECK":
+      return { phase: "checking_server", attempt: 1 };
 
     default:
       return state;
@@ -101,7 +105,7 @@ function reducer(state: State, action: Action): State {
 
 const MAX_RETRIES = 5;
 const BACKOFF_BASE_MS = 400;
-const NO_STORE_CACHE_MODE: RequestCache = 'no-store';
+const NO_STORE_CACHE_MODE: RequestCache = "no-store";
 
 // =============================================================================
 // Imperative Flow Logic (runs once on mount)
@@ -127,24 +131,24 @@ async function checkAuthStatusSafe(): Promise<{ authenticated: boolean }> {
   await waitForApiKeyInit();
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   // Electron mode: use API key header
   const apiKey = getApiKey();
   if (apiKey) {
-    headers['X-API-Key'] = apiKey;
+    headers["X-API-Key"] = apiKey;
   }
 
   // Add session token header if available (web mode)
   const sessionToken = getSessionToken();
   if (sessionToken) {
-    headers['X-Session-Token'] = sessionToken;
+    headers["X-Session-Token"] = sessionToken;
   }
 
   const response = await fetch(`${serverUrl}/api/auth/status`, {
     headers,
-    credentials: 'include',
+    credentials: "include",
     signal: AbortSignal.timeout(5000),
     cache: NO_STORE_CACHE_MODE,
   });
@@ -159,8 +163,11 @@ async function checkAuthStatusSafe(): Promise<{ authenticated: boolean }> {
  */
 async function checkServerAndSession(
   dispatch: React.Dispatch<Action>,
-  setAuthState: (state: { isAuthenticated: boolean; authChecked: boolean }) => void,
-  signal?: AbortSignal
+  setAuthState: (state: {
+    isAuthenticated: boolean;
+    authChecked: boolean;
+  }) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     // Return early if the component has unmounted
@@ -168,7 +175,7 @@ async function checkServerAndSession(
       return;
     }
 
-    dispatch({ type: 'SERVER_CHECK_RETRY', attempt });
+    dispatch({ type: "SERVER_CHECK_RETRY", attempt });
 
     try {
       const result = await checkAuthStatusSafe();
@@ -181,23 +188,27 @@ async function checkServerAndSession(
       if (result.authenticated) {
         // Server is reachable and we're authenticated
         setAuthState({ isAuthenticated: true, authChecked: true });
-        dispatch({ type: 'AUTH_VALID' });
+        dispatch({ type: "AUTH_VALID" });
         return;
       }
 
       // Server is reachable but we need to login
-      dispatch({ type: 'AUTH_REQUIRED' });
+      dispatch({ type: "AUTH_REQUIRED" });
       return;
     } catch (error: unknown) {
       // Network error - server is not reachable
-      console.debug(`Server check attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+      console.debug(
+        `Server check attempt ${attempt}/${MAX_RETRIES} failed:`,
+        error,
+      );
 
       if (attempt === MAX_RETRIES) {
         // Return early if the component has unmounted
         if (!signal?.aborted) {
           dispatch({
-            type: 'SERVER_ERROR',
-            message: 'Unable to connect to server. Please check that the server is running.',
+            type: "SERVER_ERROR",
+            message:
+              "Unable to connect to server. Please check that the server is running.",
           });
         }
         return;
@@ -212,7 +223,7 @@ async function checkServerAndSession(
 
 async function checkSetupStatus(
   dispatch: React.Dispatch<Action>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<void> {
   const httpClient = getHttpApiClient();
 
@@ -227,18 +238,19 @@ async function checkSetupStatus(
     if (result.success && result.settings) {
       // Check the setupComplete field from settings
       // This is set to true when user completes the setup wizard
-      const setupComplete = (result.settings as { setupComplete?: boolean }).setupComplete === true;
+      const setupComplete =
+        (result.settings as { setupComplete?: boolean }).setupComplete === true;
 
       // IMPORTANT: Update the Zustand store BEFORE redirecting
       // Otherwise __root.tsx routing effect will override our redirect
       // because it reads setupComplete from the store (which defaults to false)
       useSetupStore.getState().setSetupComplete(setupComplete);
 
-      dispatch({ type: 'REDIRECT', to: setupComplete ? '/' : '/setup' });
+      dispatch({ type: "REDIRECT", to: setupComplete ? "/" : "/setup" });
     } else {
       // No settings yet = first run = need setup
       useSetupStore.getState().setSetupComplete(false);
-      dispatch({ type: 'REDIRECT', to: '/setup' });
+      dispatch({ type: "REDIRECT", to: "/setup" });
     }
   } catch {
     // Return early if aborted
@@ -247,26 +259,32 @@ async function checkSetupStatus(
     }
     // If we can't get settings, go to setup to be safe
     useSetupStore.getState().setSetupComplete(false);
-    dispatch({ type: 'REDIRECT', to: '/setup' });
+    dispatch({ type: "REDIRECT", to: "/setup" });
   }
 }
 
 async function performLogin(
   apiKey: string,
   dispatch: React.Dispatch<Action>,
-  setAuthState: (state: { isAuthenticated: boolean; authChecked: boolean }) => void
+  setAuthState: (state: {
+    isAuthenticated: boolean;
+    authChecked: boolean;
+  }) => void,
 ): Promise<void> {
   try {
     const result = await login(apiKey.trim());
 
     if (result.success) {
       setAuthState({ isAuthenticated: true, authChecked: true });
-      dispatch({ type: 'AUTH_VALID' });
+      dispatch({ type: "AUTH_VALID" });
     } else {
-      dispatch({ type: 'LOGIN_ERROR', message: result.error || 'Invalid API key' });
+      dispatch({
+        type: "LOGIN_ERROR",
+        message: result.error || "Invalid API key",
+      });
     }
   } catch {
-    dispatch({ type: 'LOGIN_ERROR', message: 'Failed to connect to server' });
+    dispatch({ type: "LOGIN_ERROR", message: "Failed to connect to server" });
   }
 }
 
@@ -284,7 +302,7 @@ export function LoginView() {
   // This ensures getApiKey() returns a valid value in checkAuthStatusSafe()
   useEffect(() => {
     initApiKey().catch((error) => {
-      console.warn('Failed to initialize API key:', error);
+      console.warn("Failed to initialize API key:", error);
     });
   }, []);
 
@@ -304,7 +322,7 @@ export function LoginView() {
 
   // When we enter checking_setup phase, check setup status
   useEffect(() => {
-    if (state.phase === 'checking_setup') {
+    if (state.phase === "checking_setup") {
       const controller = new AbortController();
       checkSetupStatus(dispatch, controller.signal);
 
@@ -316,7 +334,7 @@ export function LoginView() {
 
   // When we enter redirecting phase, navigate
   useEffect(() => {
-    if (state.phase === 'redirecting') {
+    if (state.phase === "redirecting") {
       navigate({ to: state.to });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- state.to only accessed when phase is redirecting
@@ -325,9 +343,9 @@ export function LoginView() {
   // Handle login form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (state.phase !== 'awaiting_login' || !state.apiKey.trim()) return;
+    if (state.phase !== "awaiting_login" || !state.apiKey.trim()) return;
 
-    dispatch({ type: 'SUBMIT_LOGIN' });
+    dispatch({ type: "SUBMIT_LOGIN" });
     performLogin(state.apiKey, dispatch, setAuthState);
   };
 
@@ -336,7 +354,7 @@ export function LoginView() {
     // Abort any previous retry request
     retryControllerRef.current?.abort();
 
-    dispatch({ type: 'RETRY_SERVER_CHECK' });
+    dispatch({ type: "RETRY_SERVER_CHECK" });
     const controller = new AbortController();
     retryControllerRef.current = controller;
     checkServerAndSession(dispatch, setAuthState, controller.signal);
@@ -347,14 +365,16 @@ export function LoginView() {
   // =============================================================================
 
   // Checking server connectivity
-  if (state.phase === 'checking_server') {
+  if (state.phase === "checking_server") {
     return (
       <div className="flex min-h-full items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
           <Spinner size="xl" className="mx-auto" />
           <p className="text-sm text-muted-foreground">
             Connecting to server
-            {state.attempt > 1 ? ` (attempt ${state.attempt}/${MAX_RETRIES})` : '...'}
+            {state.attempt > 1
+              ? ` (attempt ${state.attempt}/${MAX_RETRIES})`
+              : "..."}
           </p>
         </div>
       </div>
@@ -362,7 +382,7 @@ export function LoginView() {
   }
 
   // Server unreachable after retries
-  if (state.phase === 'server_error') {
+  if (state.phase === "server_error") {
     return (
       <div className="flex min-h-full items-center justify-center bg-background p-4">
         <div className="w-full max-w-md space-y-6 text-center">
@@ -370,7 +390,9 @@ export function LoginView() {
             <ServerCrash className="h-8 w-8 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Server Unavailable</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Server Unavailable
+            </h1>
             <p className="text-sm text-muted-foreground">{state.message}</p>
           </div>
           <Button onClick={handleRetry} variant="outline" className="gap-2">
@@ -383,13 +405,15 @@ export function LoginView() {
   }
 
   // Checking setup status after auth
-  if (state.phase === 'checking_setup' || state.phase === 'redirecting') {
+  if (state.phase === "checking_setup" || state.phase === "redirecting") {
     return (
       <div className="flex min-h-full items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
           <Spinner size="xl" className="mx-auto" />
           <p className="text-sm text-muted-foreground">
-            {state.phase === 'checking_setup' ? 'Loading settings...' : 'Redirecting...'}
+            {state.phase === "checking_setup"
+              ? "Loading settings..."
+              : "Redirecting..."}
           </p>
         </div>
       </div>
@@ -397,9 +421,9 @@ export function LoginView() {
   }
 
   // Login form (awaiting_login or logging_in)
-  const isLoggingIn = state.phase === 'logging_in';
+  const isLoggingIn = state.phase === "logging_in";
   const apiKey = state.apiKey;
-  const error = state.phase === 'awaiting_login' ? state.error : null;
+  const error = state.phase === "awaiting_login" ? state.error : null;
 
   return (
     <div className="flex min-h-full items-center justify-center bg-background p-4">
@@ -409,7 +433,9 @@ export function LoginView() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <KeyRound className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="mt-6 text-2xl font-bold tracking-tight">Authentication Required</h1>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight">
+            Authentication Required
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Enter the API key shown in the server console to continue.
           </p>
@@ -426,7 +452,9 @@ export function LoginView() {
               type="password"
               placeholder="Enter API key..."
               value={apiKey}
-              onChange={(e) => dispatch({ type: 'UPDATE_API_KEY', value: e.target.value })}
+              onChange={(e) =>
+                dispatch({ type: "UPDATE_API_KEY", value: e.target.value })
+              }
               disabled={isLoggingIn}
               autoFocus
               className="font-mono"
@@ -453,7 +481,7 @@ export function LoginView() {
                 Authenticating...
               </>
             ) : (
-              'Login'
+              "Login"
             )}
           </Button>
         </form>

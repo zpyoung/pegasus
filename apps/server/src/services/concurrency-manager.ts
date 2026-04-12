@@ -12,13 +12,15 @@
  * - release() with force:true bypasses leaseCount check
  */
 
-import type { ModelProvider } from '@pegasus/types';
+import type { ModelProvider } from "@pegasus/types";
 
 /**
  * Function type for getting the current branch of a project.
  * Injected to allow for testing and decoupling from git operations.
  */
-export type GetCurrentBranchFn = (projectPath: string) => Promise<string | null>;
+export type GetCurrentBranchFn = (
+  projectPath: string,
+) => Promise<string | null>;
 
 /**
  * Represents a running feature execution with all tracking metadata
@@ -62,7 +64,7 @@ export class ConcurrencyManager {
    *                           If not provided, defaults to returning 'main'.
    */
   constructor(getCurrentBranch?: GetCurrentBranchFn) {
-    this.getCurrentBranch = getCurrentBranch ?? (() => Promise.resolve('main'));
+    this.getCurrentBranch = getCurrentBranch ?? (() => Promise.resolve("main"));
   }
 
   /**
@@ -82,7 +84,7 @@ export class ConcurrencyManager {
     const existing = this.runningFeatures.get(params.featureId);
     if (existing) {
       if (!params.allowReuse) {
-        throw new Error('already running');
+        throw new Error("already running");
       }
       existing.leaseCount += 1;
       return existing;
@@ -180,7 +182,7 @@ export class ConcurrencyManager {
   async getRunningCountForWorktree(
     projectPath: string,
     branchName: string | null,
-    options?: { autoModeOnly?: boolean }
+    options?: { autoModeOnly?: boolean },
   ): Promise<number> {
     // Get the actual primary branch name for the project
     const primaryBranch = await this.getCurrentBranch(projectPath);
@@ -197,13 +199,17 @@ export class ConcurrencyManager {
       if (branchName === null) {
         // Main worktree: match features with branchName === null OR branchName matching primary branch
         const isPrimaryBranch =
-          featureBranch === null || (primaryBranch && featureBranch === primaryBranch);
+          featureBranch === null ||
+          (primaryBranch && featureBranch === primaryBranch);
         if (feature.projectPath === projectPath && isPrimaryBranch) {
           count++;
         }
       } else {
         // Feature worktree: exact match
-        if (feature.projectPath === projectPath && featureBranch === branchName) {
+        if (
+          feature.projectPath === projectPath &&
+          featureBranch === branchName
+        ) {
           count++;
         }
       }
@@ -232,7 +238,7 @@ export class ConcurrencyManager {
    */
   async getRunningFeaturesForWorktree(
     projectPath: string,
-    branchName: string | null
+    branchName: string | null,
   ): Promise<string[]> {
     const primaryBranch = await this.getCurrentBranch(projectPath);
     const featureIds: string[] = [];
@@ -244,7 +250,8 @@ export class ConcurrencyManager {
       if (branchName === null) {
         // Main worktree: match features with null branchName OR primary branch name
         const isPrimaryBranch =
-          featureBranch === null || (primaryBranch && featureBranch === primaryBranch);
+          featureBranch === null ||
+          (primaryBranch && featureBranch === primaryBranch);
         if (isPrimaryBranch) featureIds.push(feature.featureId);
       } else {
         // Feature worktree: exact match
@@ -261,7 +268,10 @@ export class ConcurrencyManager {
    * @param featureId - ID of the feature to update
    * @param updates - Partial RunningFeature properties to update
    */
-  updateRunningFeature(featureId: string, updates: Partial<RunningFeature>): void {
+  updateRunningFeature(
+    featureId: string,
+    updates: Partial<RunningFeature>,
+  ): void {
     const entry = this.runningFeatures.get(featureId);
     if (!entry) {
       return;

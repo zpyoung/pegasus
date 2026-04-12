@@ -1,24 +1,32 @@
-import { useState, useEffect, useCallback, type KeyboardEvent } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ScrollText, Save, RotateCcw, Info, Plus, GripVertical, Trash2 } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { useProjectSettings } from '@/hooks/queries';
-import { useUpdateProjectSettings } from '@/hooks/mutations';
-import type { Project } from '@/lib/electron';
-import { DEFAULT_TERMINAL_SCRIPTS } from './terminal-scripts-constants';
+import { useState, useEffect, useCallback, type KeyboardEvent } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  ScrollText,
+  Save,
+  RotateCcw,
+  Info,
+  Plus,
+  GripVertical,
+  Trash2,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { useProjectSettings } from "@/hooks/queries";
+import { useUpdateProjectSettings } from "@/hooks/mutations";
+import type { Project } from "@/lib/electron";
+import { DEFAULT_TERMINAL_SCRIPTS } from "./terminal-scripts-constants";
 
 /** Preset scripts for quick addition */
 const SCRIPT_PRESETS = [
-  { name: 'Dev Server', command: 'pnpm dev' },
-  { name: 'Build', command: 'pnpm build' },
-  { name: 'Test', command: 'pnpm test' },
-  { name: 'Lint', command: 'pnpm lint' },
-  { name: 'Format', command: 'pnpm format' },
-  { name: 'Type Check', command: 'pnpm typecheck' },
-  { name: 'Start', command: 'pnpm start' },
-  { name: 'Clean', command: 'pnpm clean' },
+  { name: "Dev Server", command: "pnpm dev" },
+  { name: "Build", command: "pnpm build" },
+  { name: "Test", command: "pnpm test" },
+  { name: "Lint", command: "pnpm lint" },
+  { name: "Format", command: "pnpm format" },
+  { name: "Type Check", command: "pnpm typecheck" },
+  { name: "Start", command: "pnpm start" },
+  { name: "Clean", command: "pnpm clean" },
 ] as const;
 
 interface ScriptEntry {
@@ -36,9 +44,15 @@ function generateId(): string {
   return `script-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps) {
+export function TerminalScriptsSection({
+  project,
+}: TerminalScriptsSectionProps) {
   // Fetch project settings using TanStack Query
-  const { data: projectSettings, isLoading, isError } = useProjectSettings(project.path);
+  const {
+    data: projectSettings,
+    isLoading,
+    isError,
+  } = useProjectSettings(project.path);
 
   // Mutation hook for updating project settings
   const updateSettingsMutation = useUpdateProjectSettings(project.path);
@@ -65,7 +79,11 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
       const configured = projectSettings.terminalScripts;
       const scriptList =
         configured && configured.length > 0
-          ? configured.map((s) => ({ id: s.id, name: s.name, command: s.command }))
+          ? configured.map((s) => ({
+              id: s.id,
+              name: s.name,
+              command: s.command,
+            }))
           : DEFAULT_TERMINAL_SCRIPTS.map((s) => ({ ...s }));
       setScripts(scriptList);
       setOriginalScripts(JSON.parse(JSON.stringify(scriptList)));
@@ -73,13 +91,16 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
   }, [projectSettings, project.path]);
 
   // Check if there are unsaved changes
-  const hasChanges = JSON.stringify(scripts) !== JSON.stringify(originalScripts);
+  const hasChanges =
+    JSON.stringify(scripts) !== JSON.stringify(originalScripts);
   const isSaving = updateSettingsMutation.isPending;
 
   // Save scripts
   const handleSave = useCallback(() => {
     // Filter out scripts with empty names or commands
-    const validScripts = scripts.filter((s) => s.name.trim() && s.command.trim());
+    const validScripts = scripts.filter(
+      (s) => s.name.trim() && s.command.trim(),
+    );
     const normalizedScripts = validScripts.map((s) => ({
       id: s.id,
       name: s.name.trim(),
@@ -93,7 +114,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
           setScripts(normalizedScripts);
           setOriginalScripts(JSON.parse(JSON.stringify(normalizedScripts)));
         },
-      }
+      },
     );
   }, [scripts, updateSettingsMutation]);
 
@@ -104,16 +125,22 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
 
   // Add a new empty script entry
   const handleAddScript = useCallback(() => {
-    setScripts((prev) => [...prev, { id: generateId(), name: '', command: '' }]);
+    setScripts((prev) => [
+      ...prev,
+      { id: generateId(), name: "", command: "" },
+    ]);
   }, []);
 
   // Add a preset script
-  const handleAddPreset = useCallback((preset: { name: string; command: string }) => {
-    setScripts((prev) => [
-      ...prev,
-      { id: generateId(), name: preset.name, command: preset.command },
-    ]);
-  }, []);
+  const handleAddPreset = useCallback(
+    (preset: { name: string; command: string }) => {
+      setScripts((prev) => [
+        ...prev,
+        { id: generateId(), name: preset.name, command: preset.command },
+      ]);
+    },
+    [],
+  );
 
   // Remove a script by index
   const handleRemoveScript = useCallback((index: number) => {
@@ -122,21 +149,23 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
 
   // Update a script field
   const handleUpdateScript = useCallback(
-    (index: number, field: 'name' | 'command', value: string) => {
-      setScripts((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+    (index: number, field: "name" | "command", value: string) => {
+      setScripts((prev) =>
+        prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)),
+      );
     },
-    []
+    [],
   );
 
   // Handle keyboard shortcuts (Enter to save)
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter' && hasChanges && !isSaving) {
+      if (e.key === "Enter" && hasChanges && !isSaving) {
         e.preventDefault();
         handleSave();
       }
     },
-    [hasChanges, isSaving, handleSave]
+    [hasChanges, isSaving, handleSave],
   );
 
   // Drag and drop handlers for reordering
@@ -150,14 +179,18 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
       if (draggedIndex === null || draggedIndex === index) return;
       setDragOverIndex(index);
     },
-    [draggedIndex]
+    [draggedIndex],
   );
 
   // Accept the drop so the browser sets dropEffect correctly (prevents 'none')
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
+      if (
+        draggedIndex !== null &&
+        dragOverIndex !== null &&
+        draggedIndex !== dragOverIndex
+      ) {
         setScripts((prev) => {
           const newScripts = [...prev];
           const [removed] = newScripts.splice(draggedIndex, 1);
@@ -168,7 +201,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
       setDraggedIndex(null);
       setDragOverIndex(null);
     },
-    [draggedIndex, dragOverIndex]
+    [draggedIndex, dragOverIndex],
   );
 
   const handleDragEnd = useCallback((_e: React.DragEvent) => {
@@ -182,10 +215,10 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -199,8 +232,8 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure quick-access scripts that appear in the terminal header dropdown. Click any
-          script to run it instantly.
+          Configure quick-access scripts that appear in the terminal header
+          dropdown. Click any script to run it instantly.
         </p>
       </div>
 
@@ -221,9 +254,10 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                 <div
                   key={script.id}
                   className={cn(
-                    'flex items-center gap-2 p-2 rounded-lg border border-border/30 bg-accent/10 transition-all',
-                    draggedIndex === index && 'opacity-50',
-                    dragOverIndex === index && 'border-brand-500/50 bg-brand-500/5'
+                    "flex items-center gap-2 p-2 rounded-lg border border-border/30 bg-accent/10 transition-all",
+                    draggedIndex === index && "opacity-50",
+                    dragOverIndex === index &&
+                      "border-brand-500/50 bg-brand-500/5",
                   )}
                   draggable
                   onDragStart={() => handleDragStart(index)}
@@ -242,7 +276,9 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                   {/* Script name */}
                   <Input
                     value={script.name}
-                    onChange={(e) => handleUpdateScript(index, 'name', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateScript(index, "name", e.target.value)
+                    }
                     onKeyDown={handleKeyDown}
                     placeholder="Script name"
                     className="h-8 text-sm flex-[0.4] min-w-0"
@@ -251,7 +287,9 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                   {/* Script command */}
                   <Input
                     value={script.command}
-                    onChange={(e) => handleUpdateScript(index, 'command', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateScript(index, "command", e.target.value)
+                    }
                     onKeyDown={handleKeyDown}
                     placeholder="Command to run"
                     className="h-8 text-sm font-mono flex-[0.6] min-w-0"
@@ -263,7 +301,7 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                     size="sm"
                     onClick={() => handleRemoveScript(index)}
                     className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
-                    aria-label={`Remove ${script.name || 'script'}`}
+                    aria-label={`Remove ${script.name || "script"}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
@@ -278,7 +316,12 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
             </div>
 
             {/* Add Script Button */}
-            <Button variant="outline" size="sm" onClick={handleAddScript} className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddScript}
+              className="gap-1.5"
+            >
               <Plus className="w-3.5 h-3.5" />
               Add Script
             </Button>
@@ -288,7 +331,9 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
 
             {/* Presets */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-foreground">Quick Add Presets</h3>
+              <h3 className="text-sm font-medium text-foreground">
+                Quick Add Presets
+              </h3>
               <div className="flex flex-wrap gap-1.5">
                 {SCRIPT_PRESETS.map((preset) => (
                   <Button
@@ -308,12 +353,15 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
             <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/20 border border-border/30">
               <Info className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
-                <p className="font-medium text-foreground mb-1">Terminal Quick Scripts</p>
+                <p className="font-medium text-foreground mb-1">
+                  Terminal Quick Scripts
+                </p>
                 <p>
-                  These scripts appear in the terminal header as a dropdown menu (the{' '}
-                  <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" /> icon).
-                  Clicking a script will type the command into the active terminal and press Enter.
-                  Drag to reorder scripts.
+                  These scripts appear in the terminal header as a dropdown menu
+                  (the{" "}
+                  <ScrollText className="inline-block w-3 h-3 mx-0.5 align-middle" />{" "}
+                  icon). Clicking a script will type the command into the active
+                  terminal and press Enter. Drag to reorder scripts.
                 </p>
               </div>
             </div>
@@ -336,7 +384,11 @@ export function TerminalScriptsSection({ project }: TerminalScriptsSectionProps)
                 disabled={!hasChanges || isSaving}
                 className="gap-1.5"
               >
-                {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
+                {isSaving ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
                 Save
               </Button>
             </div>

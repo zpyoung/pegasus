@@ -1,7 +1,7 @@
 export const commitTemplate = {
-  id: 'commit',
-  name: 'Commit Changes',
-  colorClass: 'bg-purple-500/20',
+  id: "commit",
+  name: "Commit Changes",
+  colorClass: "bg-purple-500/20",
   instructions: `## Commit Changes Step
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST COMMIT ALL CHANGES USING CONVENTIONAL COMMIT FORMAT ⚠️

@@ -4,8 +4,8 @@
  * Uses fast-xml-parser for robust XML parsing.
  */
 
-import { XMLParser } from 'fast-xml-parser';
-import type { SpecOutput } from '@pegasus/types';
+import { XMLParser } from "fast-xml-parser";
+import type { SpecOutput } from "@pegasus/types";
 
 /**
  * Result of parsing XML content.
@@ -23,13 +23,13 @@ const parser = new XMLParser({
   // Preserve arrays for elements that can have multiple values
   isArray: (name) => {
     return [
-      'technology',
-      'capability',
-      'feature',
-      'location',
-      'requirement',
-      'guideline',
-      'phase',
+      "technology",
+      "capability",
+      "feature",
+      "location",
+      "requirement",
+      "guideline",
+      "phase",
     ].includes(name);
   },
 });
@@ -38,10 +38,10 @@ const parser = new XMLParser({
  * Safely get a string value from parsed XML, handling various input types.
  */
 function getString(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number') return String(value);
-  if (value === null || value === undefined) return '';
-  return '';
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number") return String(value);
+  if (value === null || value === undefined) return "";
+  return "";
 }
 
 /**
@@ -59,10 +59,12 @@ function getStringArray(value: unknown): string[] {
 /**
  * Parse implemented features from the parsed XML object.
  */
-function parseImplementedFeatures(featuresSection: unknown): SpecOutput['implemented_features'] {
-  const features: SpecOutput['implemented_features'] = [];
+function parseImplementedFeatures(
+  featuresSection: unknown,
+): SpecOutput["implemented_features"] {
+  const features: SpecOutput["implemented_features"] = [];
 
-  if (!featuresSection || typeof featuresSection !== 'object') {
+  if (!featuresSection || typeof featuresSection !== "object") {
     return features;
   }
 
@@ -74,7 +76,7 @@ function parseImplementedFeatures(featuresSection: unknown): SpecOutput['impleme
   const featureArray = Array.isArray(featureList) ? featureList : [featureList];
 
   for (const feature of featureArray) {
-    if (typeof feature !== 'object' || feature === null) continue;
+    if (typeof feature !== "object" || feature === null) continue;
 
     const f = feature as Record<string, unknown>;
     const name = getString(f.name);
@@ -82,13 +84,19 @@ function parseImplementedFeatures(featuresSection: unknown): SpecOutput['impleme
 
     if (!name) continue;
 
-    const locationsSection = f.file_locations as Record<string, unknown> | undefined;
-    const file_locations = locationsSection ? getStringArray(locationsSection.location) : undefined;
+    const locationsSection = f.file_locations as
+      | Record<string, unknown>
+      | undefined;
+    const file_locations = locationsSection
+      ? getStringArray(locationsSection.location)
+      : undefined;
 
     features.push({
       name,
       description,
-      ...(file_locations && file_locations.length > 0 ? { file_locations } : {}),
+      ...(file_locations && file_locations.length > 0
+        ? { file_locations }
+        : {}),
     });
   }
 
@@ -98,8 +106,10 @@ function parseImplementedFeatures(featuresSection: unknown): SpecOutput['impleme
 /**
  * Parse implementation roadmap phases from the parsed XML object.
  */
-function parseImplementationRoadmap(roadmapSection: unknown): SpecOutput['implementation_roadmap'] {
-  if (!roadmapSection || typeof roadmapSection !== 'object') {
+function parseImplementationRoadmap(
+  roadmapSection: unknown,
+): SpecOutput["implementation_roadmap"] {
+  if (!roadmapSection || typeof roadmapSection !== "object") {
     return undefined;
   }
 
@@ -109,10 +119,10 @@ function parseImplementationRoadmap(roadmapSection: unknown): SpecOutput['implem
   if (!phaseList) return undefined;
 
   const phaseArray = Array.isArray(phaseList) ? phaseList : [phaseList];
-  const roadmap: NonNullable<SpecOutput['implementation_roadmap']> = [];
+  const roadmap: NonNullable<SpecOutput["implementation_roadmap"]> = [];
 
   for (const phase of phaseArray) {
-    if (typeof phase !== 'object' || phase === null) continue;
+    if (typeof phase !== "object" || phase === null) continue;
 
     const p = phase as Record<string, unknown>;
     const phaseName = getString(p.name);
@@ -122,8 +132,10 @@ function parseImplementationRoadmap(roadmapSection: unknown): SpecOutput['implem
     if (!phaseName) continue;
 
     const status = (
-      ['completed', 'in_progress', 'pending'].includes(statusRaw) ? statusRaw : 'pending'
-    ) as 'completed' | 'in_progress' | 'pending';
+      ["completed", "in_progress", "pending"].includes(statusRaw)
+        ? statusRaw
+        : "pending"
+    ) as "completed" | "in_progress" | "pending";
 
     roadmap.push({ phase: phaseName, status, description });
   }
@@ -141,11 +153,11 @@ export function xmlToSpec(xmlContent: string): ParseResult {
   const errors: string[] = [];
 
   // Check for root element before parsing
-  if (!xmlContent.includes('<project_specification>')) {
+  if (!xmlContent.includes("<project_specification>")) {
     return {
       success: false,
       spec: null,
-      errors: ['Missing <project_specification> root element'],
+      errors: ["Missing <project_specification> root element"],
     };
   }
 
@@ -157,56 +169,80 @@ export function xmlToSpec(xmlContent: string): ParseResult {
     return {
       success: false,
       spec: null,
-      errors: [`XML parsing error: ${e instanceof Error ? e.message : 'Unknown error'}`],
+      errors: [
+        `XML parsing error: ${e instanceof Error ? e.message : "Unknown error"}`,
+      ],
     };
   }
 
-  const root = parsed.project_specification as Record<string, unknown> | undefined;
+  const root = parsed.project_specification as
+    | Record<string, unknown>
+    | undefined;
 
   if (!root) {
     return {
       success: false,
       spec: null,
-      errors: ['Missing <project_specification> root element'],
+      errors: ["Missing <project_specification> root element"],
     };
   }
 
   // Extract required fields
   const project_name = getString(root.project_name);
   if (!project_name) {
-    errors.push('Missing or empty <project_name>');
+    errors.push("Missing or empty <project_name>");
   }
 
   const overview = getString(root.overview);
   if (!overview) {
-    errors.push('Missing or empty <overview>');
+    errors.push("Missing or empty <overview>");
   }
 
   // Extract technology stack
-  const techSection = root.technology_stack as Record<string, unknown> | undefined;
-  const technology_stack = techSection ? getStringArray(techSection.technology) : [];
+  const techSection = root.technology_stack as
+    | Record<string, unknown>
+    | undefined;
+  const technology_stack = techSection
+    ? getStringArray(techSection.technology)
+    : [];
   if (technology_stack.length === 0) {
-    errors.push('Missing or empty <technology_stack>');
+    errors.push("Missing or empty <technology_stack>");
   }
 
   // Extract core capabilities
-  const capSection = root.core_capabilities as Record<string, unknown> | undefined;
-  const core_capabilities = capSection ? getStringArray(capSection.capability) : [];
+  const capSection = root.core_capabilities as
+    | Record<string, unknown>
+    | undefined;
+  const core_capabilities = capSection
+    ? getStringArray(capSection.capability)
+    : [];
   if (core_capabilities.length === 0) {
-    errors.push('Missing or empty <core_capabilities>');
+    errors.push("Missing or empty <core_capabilities>");
   }
 
   // Extract implemented features
-  const implemented_features = parseImplementedFeatures(root.implemented_features);
+  const implemented_features = parseImplementedFeatures(
+    root.implemented_features,
+  );
 
   // Extract optional sections
-  const reqSection = root.additional_requirements as Record<string, unknown> | undefined;
-  const additional_requirements = reqSection ? getStringArray(reqSection.requirement) : undefined;
+  const reqSection = root.additional_requirements as
+    | Record<string, unknown>
+    | undefined;
+  const additional_requirements = reqSection
+    ? getStringArray(reqSection.requirement)
+    : undefined;
 
-  const guideSection = root.development_guidelines as Record<string, unknown> | undefined;
-  const development_guidelines = guideSection ? getStringArray(guideSection.guideline) : undefined;
+  const guideSection = root.development_guidelines as
+    | Record<string, unknown>
+    | undefined;
+  const development_guidelines = guideSection
+    ? getStringArray(guideSection.guideline)
+    : undefined;
 
-  const implementation_roadmap = parseImplementationRoadmap(root.implementation_roadmap);
+  const implementation_roadmap = parseImplementationRoadmap(
+    root.implementation_roadmap,
+  );
 
   // Build spec object
   const spec: SpecOutput = {

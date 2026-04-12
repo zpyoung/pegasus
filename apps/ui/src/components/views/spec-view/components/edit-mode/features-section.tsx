@@ -1,17 +1,21 @@
-import { Plus, X, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { ListChecks } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { SpecOutput } from '@pegasus/spec-parser';
-import { generateUUID } from '@/lib/utils';
+import { Plus, X, ChevronDown, ChevronUp, FolderOpen } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { ListChecks } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import type { SpecOutput } from "@pegasus/spec-parser";
+import { generateUUID } from "@/lib/utils";
 
-type Feature = SpecOutput['implemented_features'][number];
+type Feature = SpecOutput["implemented_features"][number];
 
 interface FeaturesSectionProps {
   features: Feature[];
@@ -59,7 +63,7 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
     const locationIds = feature._locationIds || [];
     onChange({
       ...feature,
-      file_locations: [...locations, ''],
+      file_locations: [...locations, ""],
       _locationIds: [...locationIds, generateUUID()],
     });
   };
@@ -73,7 +77,8 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
     const newLocationIds = locationIds.filter((id) => id !== locId);
     onChange({
       ...feature,
-      file_locations: newLocations && newLocations.length > 0 ? newLocations : undefined,
+      file_locations:
+        newLocations && newLocations.length > 0 ? newLocations : undefined,
       _locationIds: newLocationIds.length > 0 ? newLocationIds : undefined,
     });
   };
@@ -94,7 +99,11 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
         <div className="flex items-center gap-2 p-3">
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="p-1 h-auto">
-              {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {isOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </Button>
           </CollapsibleTrigger>
           <div className="flex-1 min-w-0">
@@ -147,16 +156,21 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
                 </Button>
               </div>
               {(feature.file_locations || []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No file locations specified.</p>
+                <p className="text-sm text-muted-foreground">
+                  No file locations specified.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {(feature.file_locations || []).map((location, idx) => {
-                    const locId = feature._locationIds?.[idx] || `fallback-${idx}`;
+                    const locId =
+                      feature._locationIds?.[idx] || `fallback-${idx}`;
                     return (
                       <div key={locId} className="flex items-center gap-2">
                         <Input
                           value={location}
-                          onChange={(e) => handleLocationChange(locId, e.target.value)}
+                          onChange={(e) =>
+                            handleLocationChange(locId, e.target.value)
+                          }
                           placeholder="e.g., src/components/feature.tsx"
                           className="flex-1 font-mono text-sm"
                         />
@@ -184,7 +198,9 @@ function FeatureCard({ feature, index, onChange, onRemove }: FeatureCardProps) {
 
 export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
   // Track features with stable IDs
-  const [items, setItems] = useState<FeatureWithId[]>(() => features.map(featureToInternal));
+  const [items, setItems] = useState<FeatureWithId[]>(() =>
+    features.map(featureToInternal),
+  );
 
   // Track if we're making an internal change to avoid sync loops
   const isInternalChange = useRef(false);
@@ -199,7 +215,10 @@ export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
   }, [features]);
 
   const handleAdd = () => {
-    const newItems = [...items, featureToInternal({ name: '', description: '' })];
+    const newItems = [
+      ...items,
+      featureToInternal({ name: "", description: "" }),
+    ];
     setItems(newItems);
     isInternalChange.current = true;
     onChange(newItems.map(internalToFeature));
@@ -248,7 +267,13 @@ export function FeaturesSection({ features, onChange }: FeaturesSectionProps) {
             ))}
           </div>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleAdd}
+          className="gap-1"
+        >
           <Plus className="w-4 h-4" />
           Add Feature
         </Button>

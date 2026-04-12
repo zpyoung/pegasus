@@ -8,21 +8,21 @@
  * 3. The project is loaded and shown in the board view
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
   setupWelcomeView,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
 // Create unique temp dir for this test run
-const TEST_TEMP_DIR = createTempDirPath('open-project-test');
+const TEST_TEMP_DIR = createTempDirPath("open-project-test");
 
-test.describe('Open Project', () => {
+test.describe("Open Project", () => {
   test.beforeAll(async () => {
     // Create test temp directory
     if (!fs.existsSync(TEST_TEMP_DIR)) {
@@ -35,7 +35,9 @@ test.describe('Open Project', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should open an existing project directory from recent projects', async ({ page }) => {
+  test("should open an existing project directory from recent projects", async ({
+    page,
+  }) => {
     const projectName = `existing-project-${Date.now()}`;
     const projectPath = path.join(TEST_TEMP_DIR, projectName);
     const projectId = `project-${Date.now()}`;
@@ -45,26 +47,29 @@ test.describe('Open Project', () => {
 
     // Create a package.json to simulate a real project
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
+      path.join(projectPath, "package.json"),
       JSON.stringify(
         {
           name: projectName,
-          version: '1.0.0',
-          description: 'A test project for e2e testing',
+          version: "1.0.0",
+          description: "A test project for e2e testing",
         },
         null,
-        2
-      )
+        2,
+      ),
     );
 
     // Create a README.md
-    fs.writeFileSync(path.join(projectPath, 'README.md'), `# ${projectName}\n\nA test project.`);
+    fs.writeFileSync(
+      path.join(projectPath, "README.md"),
+      `# ${projectName}\n\nA test project.`,
+    );
 
     // Create a src directory with an index.ts file
-    fs.mkdirSync(path.join(projectPath, 'src'), { recursive: true });
+    fs.mkdirSync(path.join(projectPath, "src"), { recursive: true });
     fs.writeFileSync(
-      path.join(projectPath, 'src', 'index.ts'),
-      'export const hello = () => console.log("Hello World");'
+      path.join(projectPath, "src", "index.ts"),
+      'export const hello = () => console.log("Hello World");',
     );
 
     // Set up welcome view with the project in recent projects (but NOT as current project)
@@ -83,8 +88,8 @@ test.describe('Open Project', () => {
     // but our test project in the list. Subsequent GETs pass through so background refetch
     // doesn't overwrite the store after we open the project (which would show "No project selected").
     let getCount = 0;
-    await page.route('**/api/settings/global', async (route) => {
-      if (route.request().method() !== 'GET') {
+    await page.route("**/api/settings/global", async (route) => {
+      if (route.request().method() !== "GET") {
         return route.continue();
       }
       let response;
@@ -112,7 +117,7 @@ test.describe('Open Project', () => {
         };
         const existingProjects = json.settings.projects || [];
         const hasProject = existingProjects.some(
-          (p: { id: string; path: string }) => p.id === projectId
+          (p: { id: string; path: string }) => p.id === projectId,
         );
         if (!hasProject) {
           json.settings.projects = [testProject, ...existingProjects];
@@ -124,15 +129,19 @@ test.describe('Open Project', () => {
     // Now navigate to the app
     await authenticateForTests(page);
     // Navigate directly to dashboard to avoid auto-open which would bypass the project selection
-    await page.goto('/dashboard');
-    await page.waitForLoadState('load');
+    await page.goto("/dashboard");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
 
     // Wait for dashboard view
-    await expect(page.locator('[data-testid="dashboard-view"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="dashboard-view"]')).toBeVisible({
+      timeout: 15000,
+    });
 
     // Verify we see the "Recent Projects" section
-    await expect(page.getByText('Recent Projects')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Recent Projects")).toBeVisible({
+      timeout: 5000,
+    });
 
     // Look for our test project by name OR any available project
     // First try our specific project, if not found, use the first available project card
@@ -146,10 +155,13 @@ test.describe('Open Project', () => {
     if (!isOurProjectVisible) {
       // Our project isn't visible - use the first available recent project card instead
       // This tests the "open recent project" flow even if our specific project didn't get injected
-      const firstProjectCard = page.locator('[data-testid^="project-card-"]').first();
+      const firstProjectCard = page
+        .locator('[data-testid^="project-card-"]')
+        .first();
       await expect(firstProjectCard).toBeVisible({ timeout: 5000 });
       // Get the project name from the card to verify later
-      targetProjectName = (await firstProjectCard.locator('p').first().textContent()) || '';
+      targetProjectName =
+        (await firstProjectCard.locator("p").first().textContent()) || "";
       recentProjectCard = firstProjectCard;
     }
 
@@ -159,10 +171,14 @@ test.describe('Open Project', () => {
     await page.waitForURL(/\/board/, { timeout: 20000 });
 
     // Wait for the board view to appear (project was opened)
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 15000,
+    });
 
     // Expand sidebar if collapsed to see project name
-    const expandSidebarButton = page.locator('button:has-text("Expand sidebar")');
+    const expandSidebarButton = page.locator(
+      'button:has-text("Expand sidebar")',
+    );
     if (await expandSidebarButton.isVisible()) {
       await expandSidebarButton.click();
       await page.waitForTimeout(300);
@@ -172,7 +188,9 @@ test.describe('Open Project', () => {
     // The project name appears in the project dropdown trigger
     if (targetProjectName) {
       await expect(
-        page.locator('[data-testid="project-dropdown-trigger"]').getByText(targetProjectName)
+        page
+          .locator('[data-testid="project-dropdown-trigger"]')
+          .getByText(targetProjectName),
       ).toBeVisible({
         timeout: 15000,
       });
@@ -183,7 +201,7 @@ test.describe('Open Project', () => {
     if (targetProjectName === projectName) {
       // Verify .pegasus directory was created (initialized for the first time)
       // Use polling since file creation may be async
-      const pegasusDir = path.join(projectPath, '.pegasus');
+      const pegasusDir = path.join(projectPath, ".pegasus");
       await expect(async () => {
         expect(fs.existsSync(pegasusDir)).toBe(true);
       }).toPass({ timeout: 10000 });
@@ -192,19 +210,21 @@ test.describe('Open Project', () => {
       // - .pegasus/categories.json
       // - .pegasus/features directory
       // - .pegasus/context directory
-      const categoriesPath = path.join(pegasusDir, 'categories.json');
+      const categoriesPath = path.join(pegasusDir, "categories.json");
       await expect(async () => {
         expect(fs.existsSync(categoriesPath)).toBe(true);
       }).toPass({ timeout: 10000 });
 
       // Verify subdirectories were created
-      expect(fs.existsSync(path.join(pegasusDir, 'features'))).toBe(true);
-      expect(fs.existsSync(path.join(pegasusDir, 'context'))).toBe(true);
+      expect(fs.existsSync(path.join(pegasusDir, "features"))).toBe(true);
+      expect(fs.existsSync(path.join(pegasusDir, "context"))).toBe(true);
 
       // Verify the original project files still exist (weren't modified)
-      expect(fs.existsSync(path.join(projectPath, 'package.json'))).toBe(true);
-      expect(fs.existsSync(path.join(projectPath, 'README.md'))).toBe(true);
-      expect(fs.existsSync(path.join(projectPath, 'src', 'index.ts'))).toBe(true);
+      expect(fs.existsSync(path.join(projectPath, "package.json"))).toBe(true);
+      expect(fs.existsSync(path.join(projectPath, "README.md"))).toBe(true);
+      expect(fs.existsSync(path.join(projectPath, "src", "index.ts"))).toBe(
+        true,
+      );
     }
   });
 });

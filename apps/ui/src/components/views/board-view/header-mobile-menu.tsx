@@ -1,13 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   HeaderActionsPanel,
   HeaderActionsPanelTrigger,
-} from '@/components/ui/header-actions-panel';
-import { Bot, Wand2, GitBranch, Zap, FastForward } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { MobileUsageBar } from './mobile-usage-bar';
+} from "@/components/ui/header-actions-panel";
+import { Bot, Wand2, GitBranch, Zap, FastForward } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { MobileUsageBar } from "./mobile-usage-bar";
 
 interface HeaderMobileMenuProps {
   // Panel visibility
@@ -55,9 +55,16 @@ export function HeaderMobileMenu({
   return (
     <>
       <HeaderActionsPanelTrigger isOpen={isOpen} onToggle={onToggle} />
-      <HeaderActionsPanel isOpen={isOpen} onClose={onToggle} title="Board Controls">
+      <HeaderActionsPanel
+        isOpen={isOpen}
+        onClose={onToggle}
+        title="Board Controls"
+      >
         {/* Usage Bar - show if any provider is authenticated */}
-        {(showClaudeUsage || showCodexUsage || showZaiUsage || showGeminiUsage) && (
+        {(showClaudeUsage ||
+          showCodexUsage ||
+          showZaiUsage ||
+          showGeminiUsage) && (
           <div className="space-y-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Usage
@@ -88,8 +95,10 @@ export function HeaderMobileMenu({
               <div className="flex items-center gap-2">
                 <Zap
                   className={cn(
-                    'w-4 h-4',
-                    isAutoModeRunning ? 'text-yellow-500' : 'text-muted-foreground'
+                    "w-4 h-4",
+                    isAutoModeRunning
+                      ? "text-yellow-500"
+                      : "text-muted-foreground",
                   )}
                 />
                 <span className="text-sm font-medium">Auto Mode</span>
@@ -106,12 +115,16 @@ export function HeaderMobileMenu({
             {/* Skip Verification Toggle */}
             <div
               className="flex items-center justify-between p-3 pl-9 cursor-pointer hover:bg-accent/50 border-t border-border/30 transition-colors"
-              onClick={() => onSkipVerificationChange(!skipVerificationInAutoMode)}
+              onClick={() =>
+                onSkipVerificationChange(!skipVerificationInAutoMode)
+              }
               data-testid="mobile-skip-verification-toggle-container"
             >
               <div className="flex items-center gap-2">
                 <FastForward className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Skip Verification</span>
+                <span className="text-sm text-muted-foreground">
+                  Skip Verification
+                </span>
               </div>
               <Switch
                 id="mobile-skip-verification-toggle"
@@ -129,7 +142,9 @@ export function HeaderMobileMenu({
             >
               <div className="flex items-center gap-2 mb-3">
                 <Bot className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Max Agents</span>
+                <span className="text-sm text-muted-foreground">
+                  Max Agents
+                </span>
                 <span
                   className="text-sm text-muted-foreground ml-auto"
                   data-testid="mobile-concurrency-value"

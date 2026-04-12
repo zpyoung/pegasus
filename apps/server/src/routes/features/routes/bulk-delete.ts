@@ -2,9 +2,9 @@
  * POST /bulk-delete endpoint - Delete multiple features at once
  */
 
-import type { Request, Response } from 'express';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import { getErrorMessage, logError } from "../common.js";
 
 interface BulkDeleteRequest {
   projectPath: string;
@@ -22,10 +22,15 @@ export function createBulkDeleteHandler(featureLoader: FeatureLoader) {
     try {
       const { projectPath, featureIds } = req.body as BulkDeleteRequest;
 
-      if (!projectPath || !featureIds || !Array.isArray(featureIds) || featureIds.length === 0) {
+      if (
+        !projectPath ||
+        !featureIds ||
+        !Array.isArray(featureIds) ||
+        featureIds.length === 0
+      ) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and featureIds (non-empty array) are required',
+          error: "projectPath and featureIds (non-empty array) are required",
         });
         return;
       }
@@ -45,14 +50,17 @@ export function createBulkDeleteHandler(featureLoader: FeatureLoader) {
             return {
               featureId,
               success: false,
-              error: 'Deletion failed. Check server logs for details.',
+              error: "Deletion failed. Check server logs for details.",
             };
-          })
+          }),
         );
         results.push(...batchResults);
       }
 
-      const successCount = results.reduce((count, r) => count + (r.success ? 1 : 0), 0);
+      const successCount = results.reduce(
+        (count, r) => count + (r.success ? 1 : 0),
+        0,
+      );
       const failureCount = results.length - successCount;
 
       res.json({
@@ -62,7 +70,7 @@ export function createBulkDeleteHandler(featureLoader: FeatureLoader) {
         results,
       });
     } catch (error) {
-      logError(error, 'Bulk delete features failed');
+      logError(error, "Bulk delete features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

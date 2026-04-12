@@ -16,19 +16,19 @@
  *   SYNC_MODELS_TTL_DAYS - Freshness TTL in days (default: 30)
  */
 
-import { runSync } from './engine.js';
-import { anthropicAdapter } from './adapters/anthropic.js';
-import { openaiAdapter } from './adapters/openai.js';
-import { googleAdapter } from './adapters/google.js';
-import { copilotAdapter } from './adapters/copilot.js';
-import { cursorAdapter } from './adapters/cursor.js';
-import type { ProviderAdapter } from './types.js';
+import { runSync } from "./engine.js";
+import { anthropicAdapter } from "./adapters/anthropic.js";
+import { openaiAdapter } from "./adapters/openai.js";
+import { googleAdapter } from "./adapters/google.js";
+import { copilotAdapter } from "./adapters/copilot.js";
+import { cursorAdapter } from "./adapters/cursor.js";
+import type { ProviderAdapter } from "./types.js";
 
 const args = process.argv.slice(2);
 
-const ciOnly = args.includes('--ci');
-const dryRun = args.includes('--dry-run');
-const ttlDays = parseInt(process.env.SYNC_MODELS_TTL_DAYS ?? '30', 10);
+const ciOnly = args.includes("--ci");
+const dryRun = args.includes("--dry-run");
+const ttlDays = parseInt(process.env.SYNC_MODELS_TTL_DAYS ?? "30", 10);
 
 // Note: OpenCode is excluded — its model list is system-dependent and
 // discovered dynamically at server startup via OpencodeProvider.refreshModels()

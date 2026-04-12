@@ -1,4 +1,4 @@
-import type { EmptyStateProps } from '../types.js';
+import type { EmptyStateProps } from "../types.js";
 
 export function EmptyState({ children }: EmptyStateProps) {
   if (!children) return null;

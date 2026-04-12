@@ -3,11 +3,11 @@ import {
   getCodexAuthPath,
   systemPathExists,
   systemPathReadFile,
-} from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
-import type { CodexAppServerService } from './codex-app-server-service.js';
+} from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
+import type { CodexAppServerService } from "./codex-app-server-service.js";
 
-const logger = createLogger('CodexUsage');
+const logger = createLogger("CodexUsage");
 
 export interface CodexRateLimitWindow {
   limit: number;
@@ -18,7 +18,14 @@ export interface CodexRateLimitWindow {
   resetsAt: number;
 }
 
-export type CodexPlanType = 'free' | 'plus' | 'pro' | 'team' | 'enterprise' | 'edu' | 'unknown';
+export type CodexPlanType =
+  | "free"
+  | "plus"
+  | "pro"
+  | "team"
+  | "enterprise"
+  | "edu"
+  | "unknown";
 
 export interface CodexUsageData {
   rateLimits: {
@@ -39,12 +46,12 @@ export class CodexUsageService {
   private cachedCliPath: string | null = null;
   private appServerService: CodexAppServerService | null = null;
   private accountPlanTypeArray: CodexPlanType[] = [
-    'free',
-    'plus',
-    'pro',
-    'team',
-    'enterprise',
-    'edu',
+    "free",
+    "plus",
+    "pro",
+    "team",
+    "enterprise",
+    "edu",
   ];
 
   constructor(appServerService?: CodexAppServerService) {
@@ -67,12 +74,14 @@ export class CodexUsageService {
    * 2. Auth file JWT parsing (fallback for plan type)
    */
   async fetchUsageData(): Promise<CodexUsageData> {
-    logger.info('[fetchUsageData] Starting...');
+    logger.info("[fetchUsageData] Starting...");
     const cliPath = this.cachedCliPath || (await findCodexCliPath());
 
     if (!cliPath) {
-      logger.error('[fetchUsageData] Codex CLI not found');
-      throw new Error('Codex CLI not found. Please install it with: pnpm add -g @openai/codex');
+      logger.error("[fetchUsageData] Codex CLI not found");
+      throw new Error(
+        "Codex CLI not found. Please install it with: pnpm add -g @openai/codex",
+      );
     }
 
     logger.info(`[fetchUsageData] Using CLI path: ${cliPath}`);
@@ -80,25 +89,27 @@ export class CodexUsageService {
     // Try to get usage from Codex app-server (most reliable method)
     const appServerUsage = await this.fetchFromAppServer();
     if (appServerUsage) {
-      logger.info('[fetchUsageData] ✓ Fetched usage from app-server');
+      logger.info("[fetchUsageData] ✓ Fetched usage from app-server");
       return appServerUsage;
     }
 
-    logger.info('[fetchUsageData] App-server failed, trying auth file fallback...');
+    logger.info(
+      "[fetchUsageData] App-server failed, trying auth file fallback...",
+    );
 
     // Fallback: try to parse usage from auth file
     const authUsage = await this.fetchFromAuthFile();
     if (authUsage) {
-      logger.info('[fetchUsageData] ✓ Fetched usage from auth file');
+      logger.info("[fetchUsageData] ✓ Fetched usage from auth file");
       return authUsage;
     }
 
-    logger.info('[fetchUsageData] All methods failed, returning unknown');
+    logger.info("[fetchUsageData] All methods failed, returning unknown");
 
     // If all else fails, return unknown
     return {
       rateLimits: {
-        planType: 'unknown',
+        planType: "unknown",
       },
       lastUpdated: new Date().toISOString(),
     };
@@ -127,20 +138,22 @@ export class CodexUsageService {
 
       // Build response
       // Prefer planType from rateLimits (more accurate/current) over account (can be stale)
-      let planType: CodexPlanType = 'unknown';
+      let planType: CodexPlanType = "unknown";
 
       // First try rate limits planType (most accurate)
       const rateLimitsPlanType = rateLimitsResult?.rateLimits?.planType;
       if (rateLimitsPlanType) {
-        const normalizedType = rateLimitsPlanType.toLowerCase() as CodexPlanType;
+        const normalizedType =
+          rateLimitsPlanType.toLowerCase() as CodexPlanType;
         if (this.accountPlanTypeArray.includes(normalizedType)) {
           planType = normalizedType;
         }
       }
 
       // Fall back to account planType if rate limits didn't have it
-      if (planType === 'unknown' && accountResult.account?.planType) {
-        const normalizedType = accountResult.account.planType.toLowerCase() as CodexPlanType;
+      if (planType === "unknown" && accountResult.account?.planType) {
+        const normalizedType =
+          accountResult.account.planType.toLowerCase() as CodexPlanType;
         if (this.accountPlanTypeArray.includes(normalizedType)) {
           planType = normalizedType;
         }
@@ -180,11 +193,11 @@ export class CodexUsageService {
       }
 
       logger.info(
-        `[fetchFromAppServer] ✓ Plan: ${planType}, Primary: ${result.rateLimits?.primary?.usedPercent || 'N/A'}%, Secondary: ${result.rateLimits?.secondary?.usedPercent || 'N/A'}%`
+        `[fetchFromAppServer] ✓ Plan: ${planType}, Primary: ${result.rateLimits?.primary?.usedPercent || "N/A"}%, Secondary: ${result.rateLimits?.secondary?.usedPercent || "N/A"}%`,
       );
       return result;
     } catch (error) {
-      logger.error('[fetchFromAppServer] Failed:', error);
+      logger.error("[fetchFromAppServer] Failed:", error);
       return null;
     }
   }
@@ -200,31 +213,34 @@ export class CodexUsageService {
       const exists = systemPathExists(authFilePath);
 
       if (!exists) {
-        logger.warn('[getPlanTypeFromAuthFile] Auth file does not exist');
-        return 'unknown';
+        logger.warn("[getPlanTypeFromAuthFile] Auth file does not exist");
+        return "unknown";
       }
 
       const authContent = await systemPathReadFile(authFilePath);
       const authData = JSON.parse(authContent);
 
       if (!authData.tokens?.id_token) {
-        logger.info('[getPlanTypeFromAuthFile] No id_token in auth file');
-        return 'unknown';
+        logger.info("[getPlanTypeFromAuthFile] No id_token in auth file");
+        return "unknown";
       }
 
       const claims = this.parseJwt(authData.tokens.id_token);
       if (!claims) {
-        logger.info('[getPlanTypeFromAuthFile] Failed to parse JWT');
-        return 'unknown';
+        logger.info("[getPlanTypeFromAuthFile] Failed to parse JWT");
+        return "unknown";
       }
 
-      logger.info('[getPlanTypeFromAuthFile] JWT claims keys:', Object.keys(claims));
+      logger.info(
+        "[getPlanTypeFromAuthFile] JWT claims keys:",
+        Object.keys(claims),
+      );
 
       // Extract plan type from nested OpenAI auth object with type validation
-      const openaiAuthClaim = claims['https://api.openai.com/auth'];
+      const openaiAuthClaim = claims["https://api.openai.com/auth"];
       logger.info(
-        '[getPlanTypeFromAuthFile] OpenAI auth claim:',
-        JSON.stringify(openaiAuthClaim, null, 2)
+        "[getPlanTypeFromAuthFile] OpenAI auth claim:",
+        JSON.stringify(openaiAuthClaim, null, 2),
       );
 
       let accountType: string | undefined;
@@ -232,18 +248,20 @@ export class CodexUsageService {
 
       if (
         openaiAuthClaim &&
-        typeof openaiAuthClaim === 'object' &&
+        typeof openaiAuthClaim === "object" &&
         !Array.isArray(openaiAuthClaim)
       ) {
         const openaiAuth = openaiAuthClaim as Record<string, unknown>;
 
-        if (typeof openaiAuth.chatgpt_plan_type === 'string') {
+        if (typeof openaiAuth.chatgpt_plan_type === "string") {
           accountType = openaiAuth.chatgpt_plan_type;
         }
 
         // Check if subscription has expired
-        if (typeof openaiAuth.chatgpt_subscription_active_until === 'string') {
-          const expiryDate = new Date(openaiAuth.chatgpt_subscription_active_until);
+        if (typeof openaiAuth.chatgpt_subscription_active_until === "string") {
+          const expiryDate = new Date(
+            openaiAuth.chatgpt_subscription_active_until,
+          );
           if (!isNaN(expiryDate.getTime())) {
             isSubscriptionExpired = expiryDate < new Date();
           }
@@ -251,15 +269,15 @@ export class CodexUsageService {
       } else {
         // Fallback: try top-level claim names
         const possibleClaimNames = [
-          'https://chatgpt.com/account_type',
-          'account_type',
-          'plan',
-          'plan_type',
+          "https://chatgpt.com/account_type",
+          "account_type",
+          "plan",
+          "plan_type",
         ];
 
         for (const claimName of possibleClaimNames) {
           const claimValue = claims[claimName];
-          if (claimValue && typeof claimValue === 'string') {
+          if (claimValue && typeof claimValue === "string") {
             accountType = claimValue;
             break;
           }
@@ -267,29 +285,38 @@ export class CodexUsageService {
       }
 
       // If subscription is expired, treat as free plan
-      if (isSubscriptionExpired && accountType && accountType !== 'free') {
-        logger.info(`Subscription expired, using "free" instead of "${accountType}"`);
-        accountType = 'free';
+      if (isSubscriptionExpired && accountType && accountType !== "free") {
+        logger.info(
+          `Subscription expired, using "free" instead of "${accountType}"`,
+        );
+        accountType = "free";
       }
 
       if (accountType) {
         const normalizedType = accountType.toLowerCase() as CodexPlanType;
         logger.info(
-          `[getPlanTypeFromAuthFile] Account type: "${accountType}", normalized: "${normalizedType}"`
+          `[getPlanTypeFromAuthFile] Account type: "${accountType}", normalized: "${normalizedType}"`,
         );
         if (this.accountPlanTypeArray.includes(normalizedType)) {
-          logger.info(`[getPlanTypeFromAuthFile] Returning plan type: ${normalizedType}`);
+          logger.info(
+            `[getPlanTypeFromAuthFile] Returning plan type: ${normalizedType}`,
+          );
           return normalizedType;
         }
       } else {
-        logger.info('[getPlanTypeFromAuthFile] No account type found in claims');
+        logger.info(
+          "[getPlanTypeFromAuthFile] No account type found in claims",
+        );
       }
     } catch (error) {
-      logger.error('[getPlanTypeFromAuthFile] Failed to get plan type from auth file:', error);
+      logger.error(
+        "[getPlanTypeFromAuthFile] Failed to get plan type from auth file:",
+        error,
+      );
     }
 
-    logger.info('[getPlanTypeFromAuthFile] Returning unknown');
-    return 'unknown';
+    logger.info("[getPlanTypeFromAuthFile] Returning unknown");
+    return "unknown";
   }
 
   /**
@@ -297,13 +324,13 @@ export class CodexUsageService {
    * Reuses getPlanTypeFromAuthFile to avoid code duplication
    */
   private async fetchFromAuthFile(): Promise<CodexUsageData | null> {
-    logger.info('[fetchFromAuthFile] Starting...');
+    logger.info("[fetchFromAuthFile] Starting...");
     try {
       const planType = await this.getPlanTypeFromAuthFile();
       logger.info(`[fetchFromAuthFile] Got plan type: ${planType}`);
 
-      if (planType === 'unknown') {
-        logger.info('[fetchFromAuthFile] Plan type unknown, returning null');
+      if (planType === "unknown") {
+        logger.info("[fetchFromAuthFile] Plan type unknown, returning null");
         return null;
       }
 
@@ -314,10 +341,13 @@ export class CodexUsageService {
         lastUpdated: new Date().toISOString(),
       };
 
-      logger.info('[fetchFromAuthFile] Returning result:', JSON.stringify(result, null, 2));
+      logger.info(
+        "[fetchFromAuthFile] Returning result:",
+        JSON.stringify(result, null, 2),
+      );
       return result;
     } catch (error) {
-      logger.error('[fetchFromAuthFile] Failed to parse auth file:', error);
+      logger.error("[fetchFromAuthFile] Failed to parse auth file:", error);
     }
 
     return null;
@@ -328,17 +358,17 @@ export class CodexUsageService {
    */
   private parseJwt(token: string): Record<string, unknown> | null {
     try {
-      const parts = token.split('.');
+      const parts = token.split(".");
 
       if (parts.length !== 3) {
         return null;
       }
 
       const base64Url = parts[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
 
       // Use Buffer for Node.js environment
-      const jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
+      const jsonPayload = Buffer.from(base64, "base64").toString("utf-8");
 
       return JSON.parse(jsonPayload);
     } catch {

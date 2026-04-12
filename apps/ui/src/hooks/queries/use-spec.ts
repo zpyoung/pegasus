@@ -4,11 +4,11 @@
  * React Query hooks for fetching spec file content and regeneration status.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import { getGlobalEventsRecent } from '@/hooks/use-event-recency';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import { getGlobalEventsRecent } from "@/hooks/use-event-recency";
 
 interface SpecFileResult {
   content: string;
@@ -36,9 +36,9 @@ interface SpecRegenerationStatusResult {
  */
 export function useSpecFile(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.spec.file(projectPath ?? ''),
+    queryKey: queryKeys.spec.file(projectPath ?? ""),
     queryFn: async (): Promise<SpecFileResult> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
 
       const api = getElectronAPI();
       const result = await api.readFile(`${projectPath}/.pegasus/app_spec.txt`);
@@ -51,7 +51,7 @@ export function useSpecFile(projectPath: string | undefined) {
       }
 
       return {
-        content: '',
+        content: "",
         exists: false,
       };
     },
@@ -75,11 +75,14 @@ export function useSpecFile(projectPath: string | undefined) {
  * }
  * ```
  */
-export function useSpecRegenerationStatus(projectPath: string | undefined, enabled = true) {
+export function useSpecRegenerationStatus(
+  projectPath: string | undefined,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: queryKeys.specRegeneration.status(projectPath ?? ''),
+    queryKey: queryKeys.specRegeneration.status(projectPath ?? ""),
     queryFn: async (): Promise<SpecRegenerationStatusResult> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
 
       const api = getElectronAPI();
       if (!api.specRegeneration) {
@@ -101,6 +104,8 @@ export function useSpecRegenerationStatus(projectPath: string | undefined, enabl
     staleTime: 5000, // Check every 5 seconds when active
     // Disable polling when WebSocket events are recent (within 5s)
     // WebSocket invalidation handles updates in real-time
-    refetchInterval: enabled ? () => (getGlobalEventsRecent() ? false : 5000) : false,
+    refetchInterval: enabled
+      ? () => (getGlobalEventsRecent() ? false : 5000)
+      : false,
   });
 }

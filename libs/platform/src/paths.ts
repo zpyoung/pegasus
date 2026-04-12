@@ -9,9 +9,9 @@
  * Directory creation is handled separately by ensure* functions.
  */
 
-import * as secureFs from './secure-fs.js';
-import path from 'path';
-import os from 'os';
+import * as secureFs from "./secure-fs.js";
+import path from "path";
+import os from "os";
 
 /**
  * Get the pegasus data directory root for a project
@@ -23,7 +23,7 @@ import os from 'os';
  * @returns Absolute path to {projectPath}/.pegasus
  */
 export function getPegasusDir(projectPath: string): string {
-  return path.join(projectPath, '.pegasus');
+  return path.join(projectPath, ".pegasus");
 }
 
 /**
@@ -35,7 +35,7 @@ export function getPegasusDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/features
  */
 export function getFeaturesDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'features');
+  return path.join(getPegasusDir(projectPath), "features");
 }
 
 /**
@@ -60,8 +60,11 @@ export function getFeatureDir(projectPath: string, featureId: string): string {
  * @param featureId - Feature identifier
  * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/images
  */
-export function getFeatureImagesDir(projectPath: string, featureId: string): string {
-  return path.join(getFeatureDir(projectPath, featureId), 'images');
+export function getFeatureImagesDir(
+  projectPath: string,
+  featureId: string,
+): string {
+  return path.join(getFeatureDir(projectPath, featureId), "images");
 }
 
 /**
@@ -73,7 +76,7 @@ export function getFeatureImagesDir(projectPath: string, featureId: string): str
  * @returns Absolute path to {projectPath}/.pegasus/board
  */
 export function getBoardDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'board');
+  return path.join(getPegasusDir(projectPath), "board");
 }
 
 /**
@@ -85,7 +88,7 @@ export function getBoardDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/images
  */
 export function getImagesDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'images');
+  return path.join(getPegasusDir(projectPath), "images");
 }
 
 /**
@@ -97,7 +100,7 @@ export function getImagesDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/context
  */
 export function getContextDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'context');
+  return path.join(getPegasusDir(projectPath), "context");
 }
 
 /**
@@ -109,7 +112,7 @@ export function getContextDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/worktrees
  */
 export function getWorktreesDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'worktrees');
+  return path.join(getPegasusDir(projectPath), "worktrees");
 }
 
 /**
@@ -121,7 +124,7 @@ export function getWorktreesDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/validations
  */
 export function getValidationsDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'validations');
+  return path.join(getPegasusDir(projectPath), "validations");
 }
 
 /**
@@ -133,7 +136,10 @@ export function getValidationsDir(projectPath: string): string {
  * @param issueNumber - GitHub issue number
  * @returns Absolute path to {projectPath}/.pegasus/validations/{issueNumber}
  */
-export function getValidationDir(projectPath: string, issueNumber: number): string {
+export function getValidationDir(
+  projectPath: string,
+  issueNumber: number,
+): string {
   return path.join(getValidationsDir(projectPath), String(issueNumber));
 }
 
@@ -146,8 +152,14 @@ export function getValidationDir(projectPath: string, issueNumber: number): stri
  * @param issueNumber - GitHub issue number
  * @returns Absolute path to {projectPath}/.pegasus/validations/{issueNumber}/validation.json
  */
-export function getValidationPath(projectPath: string, issueNumber: number): string {
-  return path.join(getValidationDir(projectPath, issueNumber), 'validation.json');
+export function getValidationPath(
+  projectPath: string,
+  issueNumber: number,
+): string {
+  return path.join(
+    getValidationDir(projectPath, issueNumber),
+    "validation.json",
+  );
 }
 
 /**
@@ -159,7 +171,7 @@ export function getValidationPath(projectPath: string, issueNumber: number): str
  * @returns Absolute path to {projectPath}/.pegasus/app_spec.txt
  */
 export function getAppSpecPath(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'app_spec.txt');
+  return path.join(getPegasusDir(projectPath), "app_spec.txt");
 }
 
 /**
@@ -171,7 +183,7 @@ export function getAppSpecPath(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/notifications.json
  */
 export function getNotificationsPath(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'notifications.json');
+  return path.join(getPegasusDir(projectPath), "notifications.json");
 }
 
 /**
@@ -183,7 +195,7 @@ export function getNotificationsPath(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/active-branches.json
  */
 export function getBranchTrackingPath(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'active-branches.json');
+  return path.join(getPegasusDir(projectPath), "active-branches.json");
 }
 
 /**
@@ -196,7 +208,7 @@ export function getBranchTrackingPath(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/execution-state.json
  */
 export function getExecutionStatePath(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'execution-state.json');
+  return path.join(getPegasusDir(projectPath), "execution-state.json");
 }
 
 /**
@@ -227,7 +239,7 @@ export async function ensurePegasusDir(projectPath: string): Promise<string> {
  * @returns Absolute path to {projectPath}/.pegasus/ideation
  */
 export function getIdeationDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'ideation');
+  return path.join(getPegasusDir(projectPath), "ideation");
 }
 
 /**
@@ -239,7 +251,7 @@ export function getIdeationDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas
  */
 export function getIdeasDir(projectPath: string): string {
-  return path.join(getIdeationDir(projectPath), 'ideas');
+  return path.join(getIdeationDir(projectPath), "ideas");
 }
 
 /**
@@ -265,7 +277,7 @@ export function getIdeaDir(projectPath: string, ideaId: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas/{ideaId}/idea.json
  */
 export function getIdeaPath(projectPath: string, ideaId: string): string {
-  return path.join(getIdeaDir(projectPath, ideaId), 'idea.json');
+  return path.join(getIdeaDir(projectPath, ideaId), "idea.json");
 }
 
 /**
@@ -277,8 +289,11 @@ export function getIdeaPath(projectPath: string, ideaId: string): string {
  * @param ideaId - Idea identifier
  * @returns Absolute path to {projectPath}/.pegasus/ideation/ideas/{ideaId}/attachments
  */
-export function getIdeaAttachmentsDir(projectPath: string, ideaId: string): string {
-  return path.join(getIdeaDir(projectPath, ideaId), 'attachments');
+export function getIdeaAttachmentsDir(
+  projectPath: string,
+  ideaId: string,
+): string {
+  return path.join(getIdeaDir(projectPath, ideaId), "attachments");
 }
 
 /**
@@ -290,7 +305,7 @@ export function getIdeaAttachmentsDir(projectPath: string, ideaId: string): stri
  * @returns Absolute path to {projectPath}/.pegasus/ideation/sessions
  */
 export function getIdeationSessionsDir(projectPath: string): string {
-  return path.join(getIdeationDir(projectPath), 'sessions');
+  return path.join(getIdeationDir(projectPath), "sessions");
 }
 
 /**
@@ -302,7 +317,10 @@ export function getIdeationSessionsDir(projectPath: string): string {
  * @param sessionId - Session identifier
  * @returns Absolute path to {projectPath}/.pegasus/ideation/sessions/{sessionId}.json
  */
-export function getIdeationSessionPath(projectPath: string, sessionId: string): string {
+export function getIdeationSessionPath(
+  projectPath: string,
+  sessionId: string,
+): string {
   return path.join(getIdeationSessionsDir(projectPath), `${sessionId}.json`);
 }
 
@@ -315,7 +333,7 @@ export function getIdeationSessionPath(projectPath: string, sessionId: string): 
  * @returns Absolute path to {projectPath}/.pegasus/ideation/drafts
  */
 export function getIdeationDraftsDir(projectPath: string): string {
-  return path.join(getIdeationDir(projectPath), 'drafts');
+  return path.join(getIdeationDir(projectPath), "drafts");
 }
 
 /**
@@ -327,7 +345,7 @@ export function getIdeationDraftsDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/ideation/analysis.json
  */
 export function getIdeationAnalysisPath(projectPath: string): string {
-  return path.join(getIdeationDir(projectPath), 'analysis.json');
+  return path.join(getIdeationDir(projectPath), "analysis.json");
 }
 
 /**
@@ -343,7 +361,9 @@ export async function ensureIdeationDir(projectPath: string): Promise<string> {
   const ideationDir = getIdeationDir(projectPath);
   await secureFs.mkdir(ideationDir, { recursive: true });
   await secureFs.mkdir(getIdeasDir(projectPath), { recursive: true });
-  await secureFs.mkdir(getIdeationSessionsDir(projectPath), { recursive: true });
+  await secureFs.mkdir(getIdeationSessionsDir(projectPath), {
+    recursive: true,
+  });
   await secureFs.mkdir(getIdeationDraftsDir(projectPath), { recursive: true });
   return ideationDir;
 }
@@ -363,8 +383,14 @@ export async function ensureIdeationDir(projectPath: string): Promise<string> {
  * @param featureId - Feature identifier
  * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/pipeline-state.json
  */
-export function getPipelineStatePath(projectPath: string, featureId: string): string {
-  return path.join(getFeatureDir(projectPath, featureId), 'pipeline-state.json');
+export function getPipelineStatePath(
+  projectPath: string,
+  featureId: string,
+): string {
+  return path.join(
+    getFeatureDir(projectPath, featureId),
+    "pipeline-state.json",
+  );
 }
 
 /**
@@ -377,8 +403,11 @@ export function getPipelineStatePath(projectPath: string, featureId: string): st
  * @param featureId - Feature identifier
  * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/stage-outputs
  */
-export function getStageOutputsDir(projectPath: string, featureId: string): string {
-  return path.join(getFeatureDir(projectPath, featureId), 'stage-outputs');
+export function getStageOutputsDir(
+  projectPath: string,
+  featureId: string,
+): string {
+  return path.join(getFeatureDir(projectPath, featureId), "stage-outputs");
 }
 
 /**
@@ -392,7 +421,11 @@ export function getStageOutputsDir(projectPath: string, featureId: string): stri
  * @param stageId - Stage identifier
  * @returns Absolute path to {projectPath}/.pegasus/features/{featureId}/stage-outputs/{stageId}.md
  */
-export function getStageOutputPath(projectPath: string, featureId: string, stageId: string): string {
+export function getStageOutputPath(
+  projectPath: string,
+  featureId: string,
+  stageId: string,
+): string {
   return path.join(getStageOutputsDir(projectPath, featureId), `${stageId}.md`);
 }
 
@@ -410,7 +443,7 @@ export function getStageOutputPath(projectPath: string, featureId: string, stage
  * @returns Absolute path to {projectPath}/.pegasus/pipelines
  */
 export function getPipelinesDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'pipelines');
+  return path.join(getPegasusDir(projectPath), "pipelines");
 }
 
 /**
@@ -422,7 +455,10 @@ export function getPipelinesDir(projectPath: string): string {
  * @param pipelineSlug - Pipeline identifier slug (e.g., "feature", "bug-fix")
  * @returns Absolute path to {projectPath}/.pegasus/pipelines/{pipelineSlug}.yaml
  */
-export function getPipelineFilePath(projectPath: string, pipelineSlug: string): string {
+export function getPipelineFilePath(
+  projectPath: string,
+  pipelineSlug: string,
+): string {
   return path.join(getPipelinesDir(projectPath), `${pipelineSlug}.yaml`);
 }
 
@@ -453,7 +489,7 @@ export async function ensurePipelinesDir(projectPath: string): Promise<string> {
  * @returns Absolute path to ~/.pegasus/pipelines
  */
 export function getUserPipelinesDir(): string {
-  return path.join(os.homedir(), '.pegasus', 'pipelines');
+  return path.join(os.homedir(), ".pegasus", "pipelines");
 }
 
 /**
@@ -479,7 +515,7 @@ export function getUserPipelineFilePath(pipelineSlug: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/events
  */
 export function getEventHistoryDir(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'events');
+  return path.join(getPegasusDir(projectPath), "events");
 }
 
 /**
@@ -491,7 +527,7 @@ export function getEventHistoryDir(projectPath: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/events/index.json
  */
 export function getEventHistoryIndexPath(projectPath: string): string {
-  return path.join(getEventHistoryDir(projectPath), 'index.json');
+  return path.join(getEventHistoryDir(projectPath), "index.json");
 }
 
 /**
@@ -511,7 +547,9 @@ export function getEventPath(projectPath: string, eventId: string): string {
  * @param projectPath - Absolute path to project directory
  * @returns Promise resolving to the created events directory path
  */
-export async function ensureEventHistoryDir(projectPath: string): Promise<string> {
+export async function ensureEventHistoryDir(
+  projectPath: string,
+): Promise<string> {
   const eventsDir = getEventHistoryDir(projectPath);
   await secureFs.mkdir(eventsDir, { recursive: true });
   return eventsDir;
@@ -536,7 +574,7 @@ export async function ensureEventHistoryDir(projectPath: string): Promise<string
  * @returns Absolute path to {dataDir}/settings.json
  */
 export function getGlobalSettingsPath(dataDir: string): string {
-  return path.join(dataDir, 'settings.json');
+  return path.join(dataDir, "settings.json");
 }
 
 /**
@@ -549,7 +587,7 @@ export function getGlobalSettingsPath(dataDir: string): string {
  * @returns Absolute path to {dataDir}/credentials.json
  */
 export function getCredentialsPath(dataDir: string): string {
-  return path.join(dataDir, 'credentials.json');
+  return path.join(dataDir, "credentials.json");
 }
 
 /**
@@ -562,7 +600,7 @@ export function getCredentialsPath(dataDir: string): string {
  * @returns Absolute path to {projectPath}/.pegasus/settings.json
  */
 export function getProjectSettingsPath(projectPath: string): string {
-  return path.join(getPegasusDir(projectPath), 'settings.json');
+  return path.join(getPegasusDir(projectPath), "settings.json");
 }
 
 /**

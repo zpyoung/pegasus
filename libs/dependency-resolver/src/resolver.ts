@@ -5,7 +5,7 @@
  * Uses a modified Kahn's algorithm that respects both dependencies and priorities.
  */
 
-import type { Feature } from '@pegasus/types';
+import type { Feature } from "@pegasus/types";
 
 export interface DependencyResolutionResult {
   orderedFeatures: Feature[]; // Features in dependency-aware order
@@ -26,7 +26,9 @@ export interface DependencyResolutionResult {
  * @param features - Array of features to order
  * @returns Resolution result with ordered features and dependency metadata
  */
-export function resolveDependencies(features: Feature[]): DependencyResolutionResult {
+export function resolveDependencies(
+  features: Feature[],
+): DependencyResolutionResult {
   const featureMap = new Map<string, Feature>(features.map((f) => [f.id, f]));
   const inDegree = new Map<string, number>();
   const adjacencyList = new Map<string, string[]>(); // dependencyId -> [dependentIds]
@@ -56,7 +58,10 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
 
         // Check if dependency is incomplete (blocking)
         const depFeature = featureMap.get(depId)!;
-        if (depFeature.status !== 'completed' && depFeature.status !== 'verified') {
+        if (
+          depFeature.status !== "completed" &&
+          depFeature.status !== "verified"
+        ) {
           if (!blockedFeatures.has(feature.id)) {
             blockedFeatures.set(feature.id, []);
           }
@@ -71,7 +76,8 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
   const orderedFeatures: Feature[] = [];
 
   // Helper to sort features by priority (lower number = higher priority)
-  const sortByPriority = (a: Feature, b: Feature) => (a.priority ?? 2) - (b.priority ?? 2);
+  const sortByPriority = (a: Feature, b: Feature) =>
+    (a.priority ?? 2) - (b.priority ?? 2);
 
   // Start with features that have no dependencies (in-degree 0)
   for (const [id, degree] of inDegree) {
@@ -135,7 +141,10 @@ export function resolveDependencies(features: Feature[]): DependencyResolutionRe
  * @param featureMap - Map of all features by ID
  * @returns Array of cycles, where each cycle is an array of feature IDs
  */
-function detectCycles(features: Feature[], featureMap: Map<string, Feature>): string[][] {
+function detectCycles(
+  features: Feature[],
+  featureMap: Map<string, Feature>,
+): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
   const recursionStack = new Set<string>();
@@ -190,7 +199,7 @@ export interface DependencySatisfactionOptions {
 export function areDependenciesSatisfied(
   feature: Feature,
   allFeatures: Feature[],
-  options?: DependencySatisfactionOptions
+  options?: DependencySatisfactionOptions,
 ): boolean {
   if (!feature.dependencies || feature.dependencies.length === 0) {
     return true; // No dependencies = always ready
@@ -204,10 +213,10 @@ export function areDependenciesSatisfied(
 
     if (skipVerification) {
       // When skipping verification, only block if dependency is currently running
-      return dep.status !== 'running';
+      return dep.status !== "running";
     }
     // Default: require 'completed' or 'verified'
-    return dep.status === 'completed' || dep.status === 'verified';
+    return dep.status === "completed" || dep.status === "verified";
   });
 }
 
@@ -218,14 +227,17 @@ export function areDependenciesSatisfied(
  * @param allFeatures - All features in the project
  * @returns Array of feature IDs that are blocking this feature
  */
-export function getBlockingDependencies(feature: Feature, allFeatures: Feature[]): string[] {
+export function getBlockingDependencies(
+  feature: Feature,
+  allFeatures: Feature[],
+): string[] {
   if (!feature.dependencies || feature.dependencies.length === 0) {
     return [];
   }
 
   return feature.dependencies.filter((depId: string) => {
     const dep = allFeatures.find((f) => f.id === depId);
-    return dep && dep.status !== 'completed' && dep.status !== 'verified';
+    return dep && dep.status !== "completed" && dep.status !== "verified";
   });
 }
 
@@ -254,7 +266,7 @@ export function createFeatureMap(features: Feature[]): Map<string, Feature> {
  */
 export function getBlockingDependenciesFromMap(
   feature: Feature,
-  featureMap: Map<string, Feature>
+  featureMap: Map<string, Feature>,
 ): string[] {
   const dependencies = feature.dependencies;
   if (!dependencies || dependencies.length === 0) {
@@ -264,7 +276,7 @@ export function getBlockingDependenciesFromMap(
   const blockingDependencies: string[] = [];
   for (const depId of dependencies) {
     const dep = featureMap.get(depId);
-    if (dep && dep.status !== 'completed' && dep.status !== 'verified') {
+    if (dep && dep.status !== "completed" && dep.status !== "verified") {
       blockingDependencies.push(depId);
     }
   }
@@ -285,7 +297,7 @@ export function getBlockingDependenciesFromMap(
 export function wouldCreateCircularDependency(
   features: Feature[],
   sourceId: string,
-  targetId: string
+  targetId: string,
 ): boolean {
   const featureMap = new Map(features.map((f) => [f.id, f]));
   const visited = new Set<string>();
@@ -319,7 +331,11 @@ export function wouldCreateCircularDependency(
  * @param targetId - The feature that might depend on sourceId
  * @returns true if targetId already depends on sourceId
  */
-export function dependencyExists(features: Feature[], sourceId: string, targetId: string): boolean {
+export function dependencyExists(
+  features: Feature[],
+  sourceId: string,
+  targetId: string,
+): boolean {
   const targetFeature = features.find((f) => f.id === targetId);
   if (!targetFeature?.dependencies) return false;
   return targetFeature.dependencies.includes(sourceId);
@@ -349,7 +365,7 @@ export interface AncestorContext {
 export function getAncestors(
   feature: Feature,
   allFeatures: Feature[],
-  maxDepth: number = 10
+  maxDepth: number = 10,
 ): AncestorContext[] {
   const featureMap = new Map(allFeatures.map((f) => [f.id, f]));
   const ancestors: AncestorContext[] = [];
@@ -395,10 +411,10 @@ export function getAncestors(
  */
 export function formatAncestorContextForPrompt(
   ancestors: AncestorContext[],
-  selectedIds: Set<string>
+  selectedIds: Set<string>,
 ): string {
   const selectedAncestors = ancestors.filter((a) => selectedIds.has(a.id));
-  if (selectedAncestors.length === 0) return '';
+  if (selectedAncestors.length === 0) return "";
 
   // Separate parent (depth=-1) from other ancestors
   const parent = selectedAncestors.find((a) => a.depth === -1);
@@ -413,7 +429,7 @@ export function formatAncestorContextForPrompt(
 
     parentParts.push(`## Parent Task Context (Already Completed)`);
     parentParts.push(
-      `> **Note:** The following parent task has already been completed. This context is provided to help you understand the background and requirements for this sub-task. Do not re-implement the parent task - focus only on the new sub-task described below.`
+      `> **Note:** The following parent task has already been completed. This context is provided to help you understand the background and requirements for this sub-task. Do not re-implement the parent task - focus only on the new sub-task described below.`,
     );
     parentParts.push(`### ${parentTitle}`);
 
@@ -427,7 +443,7 @@ export function formatAncestorContextForPrompt(
       parentParts.push(`**Summary:** ${parent.summary}`);
     }
 
-    sections.push(parentParts.join('\n\n'));
+    sections.push(parentParts.join("\n\n"));
   }
 
   // Format other ancestors if any
@@ -448,11 +464,13 @@ export function formatAncestorContextForPrompt(
         parts.push(`**Summary:** ${ancestor.summary}`);
       }
 
-      return parts.join('\n\n');
+      return parts.join("\n\n");
     });
 
-    sections.push(`## Additional Ancestor Context\n\n${ancestorSections.join('\n\n---\n\n')}`);
+    sections.push(
+      `## Additional Ancestor Context\n\n${ancestorSections.join("\n\n---\n\n")}`,
+    );
   }
 
-  return sections.join('\n\n---\n\n');
+  return sections.join("\n\n---\n\n");
 }

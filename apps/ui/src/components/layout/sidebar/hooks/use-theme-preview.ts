@@ -1,5 +1,5 @@
-import { useRef, useCallback, useEffect } from 'react';
-import type { ThemeMode } from '@/store/app-store';
+import { useRef, useCallback, useEffect } from "react";
+import type { ThemeMode } from "@/store/app-store";
 
 interface UseThemePreviewProps {
   setPreviewTheme: (theme: ThemeMode | null) => void;
@@ -20,7 +20,7 @@ export function useThemePreview({ setPreviewTheme }: UseThemePreviewProps) {
         setPreviewTheme(value as ThemeMode);
       }, 16); // ~1 frame delay
     },
-    [setPreviewTheme]
+    [setPreviewTheme],
   );
 
   const handlePreviewLeave = useCallback(
@@ -34,7 +34,7 @@ export function useThemePreview({ setPreviewTheme }: UseThemePreviewProps) {
         setPreviewTheme(null);
       }
     },
-    [setPreviewTheme]
+    [setPreviewTheme],
   );
 
   // Cleanup timeout on unmount

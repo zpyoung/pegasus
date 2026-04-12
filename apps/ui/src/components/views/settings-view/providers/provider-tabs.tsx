@@ -1,5 +1,5 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AnthropicIcon,
   CursorIcon,
@@ -7,19 +7,25 @@ import {
   GeminiIcon,
   OpenCodeIcon,
   CopilotIcon,
-} from '@/components/ui/provider-icon';
-import { CursorSettingsTab } from './cursor-settings-tab';
-import { ClaudeSettingsTab } from './claude-settings-tab';
-import { CodexSettingsTab } from './codex-settings-tab';
-import { OpencodeSettingsTab } from './opencode-settings-tab';
-import { GeminiSettingsTab } from './gemini-settings-tab';
-import { CopilotSettingsTab } from './copilot-settings-tab';
+} from "@/components/ui/provider-icon";
+import { CursorSettingsTab } from "./cursor-settings-tab";
+import { ClaudeSettingsTab } from "./claude-settings-tab";
+import { CodexSettingsTab } from "./codex-settings-tab";
+import { OpencodeSettingsTab } from "./opencode-settings-tab";
+import { GeminiSettingsTab } from "./gemini-settings-tab";
+import { CopilotSettingsTab } from "./copilot-settings-tab";
 
 interface ProviderTabsProps {
-  defaultTab?: 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
+  defaultTab?:
+    | "claude"
+    | "cursor"
+    | "codex"
+    | "opencode"
+    | "gemini"
+    | "copilot";
 }
 
-export function ProviderTabs({ defaultTab = 'claude' }: ProviderTabsProps) {
+export function ProviderTabs({ defaultTab = "claude" }: ProviderTabsProps) {
   return (
     <Tabs defaultValue={defaultTab} className="w-full">
       <TabsList className="grid w-full grid-cols-6 mb-6">

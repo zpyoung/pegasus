@@ -5,35 +5,41 @@
  * real backends (Claude, Codex, etc.) so tests never call external APIs.
  */
 
-import type { ExecuteOptions } from '@pegasus/types';
-import { BaseProvider } from './base-provider.js';
-import type { ProviderMessage, InstallationStatus, ModelDefinition } from './types.js';
+import type { ExecuteOptions } from "@pegasus/types";
+import { BaseProvider } from "./base-provider.js";
+import type {
+  ProviderMessage,
+  InstallationStatus,
+  ModelDefinition,
+} from "./types.js";
 
-const MOCK_TEXT = 'Mock agent output for testing.';
+const MOCK_TEXT = "Mock agent output for testing.";
 
 export class MockProvider extends BaseProvider {
   getName(): string {
-    return 'mock';
+    return "mock";
   }
 
-  async *executeQuery(_options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    _options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     yield {
-      type: 'assistant',
+      type: "assistant",
       message: {
-        role: 'assistant',
-        content: [{ type: 'text', text: MOCK_TEXT }],
+        role: "assistant",
+        content: [{ type: "text", text: MOCK_TEXT }],
       },
     };
     yield {
-      type: 'result',
-      subtype: 'success',
+      type: "result",
+      subtype: "success",
     };
   }
 
   async detectInstallation(): Promise<InstallationStatus> {
     return {
       installed: true,
-      method: 'sdk',
+      method: "sdk",
       hasApiKey: true,
       authenticated: true,
     };
@@ -42,11 +48,11 @@ export class MockProvider extends BaseProvider {
   getAvailableModels(): ModelDefinition[] {
     return [
       {
-        id: 'mock-model',
-        name: 'Mock Model',
-        modelString: 'mock-model',
-        provider: 'mock',
-        description: 'Mock model for testing',
+        id: "mock-model",
+        name: "Mock Model",
+        modelString: "mock-model",
+        provider: "mock",
+        description: "Mock model for testing",
       },
     ];
   }

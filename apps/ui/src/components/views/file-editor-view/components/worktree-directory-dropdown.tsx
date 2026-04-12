@@ -9,9 +9,9 @@
  * it defaults to that worktree directory.
  */
 
-import { useMemo } from 'react';
-import { GitBranch, ChevronDown, Check, FolderRoot } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useMemo } from "react";
+import { GitBranch, ChevronDown, Check, FolderRoot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,10 +19,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useAppStore } from '@/store/app-store';
-import { useWorktrees } from '@/hooks/queries';
-import { pathsEqual } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu";
+import { useAppStore } from "@/store/app-store";
+import { useWorktrees } from "@/hooks/queries";
+import { pathsEqual } from "@/lib/utils";
 
 interface WorktreeDirectoryDropdownProps {
   projectPath: string;
@@ -33,13 +33,19 @@ interface WorktreeDirectoryDropdownProps {
 // a new array on every call, causing `forceStoreRerender` to trigger an infinite update loop.
 const EMPTY_WORKTREES: never[] = [];
 
-export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDropdownProps) {
+export function WorktreeDirectoryDropdown({
+  projectPath,
+}: WorktreeDirectoryDropdownProps) {
   // Select primitive/stable values directly from the store to prevent infinite re-renders.
   // Computed selectors that return new arrays/objects on every call (e.g. via `?? []`)
   // are compared by reference, causing Zustand to force re-renders on every store update.
-  const currentWorktree = useAppStore((s) => s.currentWorktreeByProject[projectPath] ?? null);
+  const currentWorktree = useAppStore(
+    (s) => s.currentWorktreeByProject[projectPath] ?? null,
+  );
   const setCurrentWorktree = useAppStore((s) => s.setCurrentWorktree);
-  const worktreesInStore = useAppStore((s) => s.worktreesByProject[projectPath] ?? EMPTY_WORKTREES);
+  const worktreesInStore = useAppStore(
+    (s) => s.worktreesByProject[projectPath] ?? EMPTY_WORKTREES,
+  );
   const useWorktreesEnabled = useAppStore((s) => {
     const projectOverride = s.useWorktreesByProject[projectPath];
     return projectOverride !== undefined ? projectOverride : s.useWorktrees;
@@ -50,7 +56,8 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
   const worktrees = useMemo(() => data?.worktrees ?? [], [data?.worktrees]);
 
   // Also consider store worktrees as fallback
-  const effectiveWorktrees = worktrees.length > 0 ? worktrees : worktreesInStore;
+  const effectiveWorktrees =
+    worktrees.length > 0 ? worktrees : worktreesInStore;
 
   // Don't render if worktrees are not enabled or only the main branch exists
   if (!useWorktreesEnabled || effectiveWorktrees.length <= 1) {
@@ -58,7 +65,7 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
   }
 
   const currentWorktreePath = currentWorktree?.path ?? null;
-  const currentBranch = currentWorktree?.branch ?? 'main';
+  const currentBranch = currentWorktree?.branch ?? "main";
 
   // Find main worktree
   const mainWorktree = effectiveWorktrees.find((w) => w.isMain);
@@ -66,7 +73,9 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
 
   // Determine display name for the selected worktree
   const selectedIsMain = currentWorktreePath === null;
-  const selectedBranchName = selectedIsMain ? (mainWorktree?.branch ?? 'main') : currentBranch;
+  const selectedBranchName = selectedIsMain
+    ? (mainWorktree?.branch ?? "main")
+    : currentBranch;
 
   // Truncate long branch names for the trigger button
   const maxTriggerLength = 20;
@@ -75,7 +84,10 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
       ? `${selectedBranchName.slice(0, maxTriggerLength)}...`
       : selectedBranchName;
 
-  const handleSelectWorktree = (worktreePath: string | null, branch: string) => {
+  const handleSelectWorktree = (
+    worktreePath: string | null,
+    branch: string,
+  ) => {
     setCurrentWorktree(projectPath, worktreePath, branch);
   };
 
@@ -107,10 +119,16 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
           >
             <FolderRoot className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
-              <span className="truncate block text-sm">{mainWorktree.branch}</span>
-              <span className="text-xs text-muted-foreground">Main directory</span>
+              <span className="truncate block text-sm">
+                {mainWorktree.branch}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Main directory
+              </span>
             </div>
-            {selectedIsMain && <Check className="w-3.5 h-3.5 shrink-0 text-primary" />}
+            {selectedIsMain && (
+              <Check className="w-3.5 h-3.5 shrink-0 text-primary" />
+            )}
           </DropdownMenuItem>
         )}
 
@@ -123,7 +141,8 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
             </DropdownMenuLabel>
             {otherWorktrees.map((wt) => {
               const isSelected =
-                currentWorktreePath !== null && pathsEqual(wt.path, currentWorktreePath);
+                currentWorktreePath !== null &&
+                pathsEqual(wt.path, currentWorktreePath);
               return (
                 <DropdownMenuItem
                   key={wt.path}
@@ -135,11 +154,14 @@ export function WorktreeDirectoryDropdown({ projectPath }: WorktreeDirectoryDrop
                     <span className="truncate block text-sm">{wt.branch}</span>
                     {wt.hasChanges && (
                       <span className="text-xs text-amber-500">
-                        {wt.changedFilesCount ?? ''} change{wt.changedFilesCount !== 1 ? 's' : ''}
+                        {wt.changedFilesCount ?? ""} change
+                        {wt.changedFilesCount !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 shrink-0 text-primary" />}
+                  {isSelected && (
+                    <Check className="w-3.5 h-3.5 shrink-0 text-primary" />
+                  )}
                 </DropdownMenuItem>
               );
             })}

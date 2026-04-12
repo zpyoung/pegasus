@@ -4,10 +4,14 @@
  */
 
 /** GitHub PR states as returned by the GitHub API (uppercase) */
-export type PRState = 'OPEN' | 'MERGED' | 'CLOSED';
+export type PRState = "OPEN" | "MERGED" | "CLOSED";
 
 /** Valid PR states for validation */
-export const PR_STATES: readonly PRState[] = ['OPEN', 'MERGED', 'CLOSED'] as const;
+export const PR_STATES: readonly PRState[] = [
+  "OPEN",
+  "MERGED",
+  "CLOSED",
+] as const;
 
 /**
  * Validates a PR state value from external APIs (e.g., GitHub CLI).
@@ -18,7 +22,7 @@ export const PR_STATES: readonly PRState[] = ['OPEN', 'MERGED', 'CLOSED'] as con
  * @returns A valid PRState value
  */
 export function validatePRState(state: string | undefined | null): PRState {
-  return PR_STATES.find((s) => s === state) ?? 'OPEN';
+  return PR_STATES.find((s) => s === state) ?? "OPEN";
 }
 
 /** PR information stored in worktree metadata */
@@ -82,7 +86,7 @@ export interface MergeStateInfo {
   /** Whether a merge is currently in progress */
   isMerging: boolean;
   /** Type of merge operation: 'merge' | 'rebase' | 'cherry-pick' | null */
-  mergeOperationType: 'merge' | 'rebase' | 'cherry-pick' | null;
+  mergeOperationType: "merge" | "rebase" | "cherry-pick" | null;
   /** Whether the merge completed cleanly (no conflicts) */
   isCleanMerge: boolean;
   /** Files affected by the merge */

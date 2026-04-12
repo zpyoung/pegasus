@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { ShellSyntaxEditor } from '@/components/ui/shell-syntax-editor';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { ShellSyntaxEditor } from "@/components/ui/shell-syntax-editor";
 import {
   GitBranch,
   Terminal,
@@ -19,15 +19,15 @@ import {
   FolderOpen,
   LayoutGrid,
   Pin,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { apiGet, apiPut, apiDelete } from '@/lib/api-fetch';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import type { Project } from '@/lib/electron';
-import { ProjectFileSelectorDialog } from '@/components/dialogs/project-file-selector-dialog';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { apiGet, apiPut, apiDelete } from "@/lib/api-fetch";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import type { Project } from "@/lib/electron";
+import { ProjectFileSelectorDialog } from "@/components/dialogs/project-file-selector-dialog";
 
 // Stable empty array reference to prevent unnecessary re-renders when no files are set
 const EMPTY_FILES: string[] = [];
@@ -44,56 +44,70 @@ interface InitScriptResponse {
   error?: string;
 }
 
-export function WorktreePreferencesSection({ project }: WorktreePreferencesSectionProps) {
+export function WorktreePreferencesSection({
+  project,
+}: WorktreePreferencesSectionProps) {
   // Use direct store subscriptions (not getter functions) so the component
   // properly re-renders when these values change in the store.
   const globalUseWorktrees = useAppStore((s) => s.useWorktrees);
-  const projectUseWorktrees = useAppStore((s) => s.useWorktreesByProject[project.path]);
+  const projectUseWorktrees = useAppStore(
+    (s) => s.useWorktreesByProject[project.path],
+  );
   const setProjectUseWorktrees = useAppStore((s) => s.setProjectUseWorktrees);
   const showIndicator = useAppStore(
-    (s) => s.showInitScriptIndicatorByProject[project.path] ?? true
+    (s) => s.showInitScriptIndicatorByProject[project.path] ?? true,
   );
-  const setShowInitScriptIndicator = useAppStore((s) => s.setShowInitScriptIndicator);
+  const setShowInitScriptIndicator = useAppStore(
+    (s) => s.setShowInitScriptIndicator,
+  );
   const defaultDeleteBranch = useAppStore(
-    (s) => s.defaultDeleteBranchByProject[project.path] ?? false
+    (s) => s.defaultDeleteBranchByProject[project.path] ?? false,
   );
   const setDefaultDeleteBranch = useAppStore((s) => s.setDefaultDeleteBranch);
   const autoDismiss = useAppStore(
-    (s) => s.autoDismissInitScriptIndicatorByProject[project.path] ?? true
+    (s) => s.autoDismissInitScriptIndicatorByProject[project.path] ?? true,
   );
-  const setAutoDismissInitScriptIndicator = useAppStore((s) => s.setAutoDismissInitScriptIndicator);
+  const setAutoDismissInitScriptIndicator = useAppStore(
+    (s) => s.setAutoDismissInitScriptIndicator,
+  );
   // Use a stable empty array reference to prevent new array on every render when
   // worktreeCopyFilesByProject[project.path] is undefined (not yet loaded).
-  const copyFilesFromStore = useAppStore((s) => s.worktreeCopyFilesByProject[project.path]);
+  const copyFilesFromStore = useAppStore(
+    (s) => s.worktreeCopyFilesByProject[project.path],
+  );
   const copyFiles = copyFilesFromStore ?? EMPTY_FILES;
   const setWorktreeCopyFiles = useAppStore((s) => s.setWorktreeCopyFiles);
 
   // Use a stable empty array reference to prevent new array on every render when
   // worktreeSymlinkFilesByProject[project.path] is undefined (not yet loaded).
-  const symlinkFilesFromStore = useAppStore((s) => s.worktreeSymlinkFilesByProject[project.path]);
+  const symlinkFilesFromStore = useAppStore(
+    (s) => s.worktreeSymlinkFilesByProject[project.path],
+  );
   const symlinkFiles = symlinkFilesFromStore ?? EMPTY_FILES;
   const setWorktreeSymlinkFiles = useAppStore((s) => s.setWorktreeSymlinkFiles);
 
   // Worktree display settings
-  const pinnedWorktreesCount = useAppStore((s) => s.getPinnedWorktreesCount(project.path));
+  const pinnedWorktreesCount = useAppStore((s) =>
+    s.getPinnedWorktreesCount(project.path),
+  );
   const setPinnedWorktreesCount = useAppStore((s) => s.setPinnedWorktreesCount);
 
   // Get effective worktrees setting (project override or global fallback)
   const effectiveUseWorktrees = projectUseWorktrees ?? globalUseWorktrees;
 
-  const [scriptContent, setScriptContent] = useState('');
-  const [originalContent, setOriginalContent] = useState('');
+  const [scriptContent, setScriptContent] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
   const [scriptExists, setScriptExists] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Copy files state
-  const [newCopyFilePath, setNewCopyFilePath] = useState('');
+  const [newCopyFilePath, setNewCopyFilePath] = useState("");
   const [fileSelectorOpen, setFileSelectorOpen] = useState(false);
 
   // Symlink files state
-  const [newSymlinkFilePath, setNewSymlinkFilePath] = useState('');
+  const [newSymlinkFilePath, setNewSymlinkFilePath] = useState("");
   const [symlinkFileSelectorOpen, setSymlinkFileSelectorOpen] = useState(false);
 
   // Ref for storing previous slider value for rollback on error
@@ -122,30 +136,45 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
           }
           // Also sync other settings to store
           if (response.settings.showInitScriptIndicator !== undefined) {
-            setShowInitScriptIndicator(currentPath, response.settings.showInitScriptIndicator);
+            setShowInitScriptIndicator(
+              currentPath,
+              response.settings.showInitScriptIndicator,
+            );
           }
           if (response.settings.defaultDeleteBranchWithWorktree !== undefined) {
-            setDefaultDeleteBranch(currentPath, response.settings.defaultDeleteBranchWithWorktree);
+            setDefaultDeleteBranch(
+              currentPath,
+              response.settings.defaultDeleteBranchWithWorktree,
+            );
           }
           if (response.settings.autoDismissInitScriptIndicator !== undefined) {
             setAutoDismissInitScriptIndicator(
               currentPath,
-              response.settings.autoDismissInitScriptIndicator
+              response.settings.autoDismissInitScriptIndicator,
             );
           }
           if (response.settings.worktreeCopyFiles !== undefined) {
-            setWorktreeCopyFiles(currentPath, response.settings.worktreeCopyFiles);
+            setWorktreeCopyFiles(
+              currentPath,
+              response.settings.worktreeCopyFiles,
+            );
           }
           if (response.settings.worktreeSymlinkFiles !== undefined) {
-            setWorktreeSymlinkFiles(currentPath, response.settings.worktreeSymlinkFiles);
+            setWorktreeSymlinkFiles(
+              currentPath,
+              response.settings.worktreeSymlinkFiles,
+            );
           }
           if (response.settings.pinnedWorktreesCount !== undefined) {
-            setPinnedWorktreesCount(currentPath, response.settings.pinnedWorktreesCount);
+            setPinnedWorktreesCount(
+              currentPath,
+              response.settings.pinnedWorktreesCount,
+            );
           }
         }
       } catch (error) {
         if (!isCancelled) {
-          console.error('Failed to load project settings:', error);
+          console.error("Failed to load project settings:", error);
         }
       }
     };
@@ -175,21 +204,21 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       setIsLoading(true);
       try {
         const response = await apiGet<InitScriptResponse>(
-          `/api/worktree/init-script?projectPath=${encodeURIComponent(currentPath)}`
+          `/api/worktree/init-script?projectPath=${encodeURIComponent(currentPath)}`,
         );
 
         // Avoid updating state if component unmounted or project changed
         if (isCancelled) return;
 
         if (response.success) {
-          const content = response.content || '';
+          const content = response.content || "";
           setScriptContent(content);
           setOriginalContent(content);
           setScriptExists(response.exists);
         }
       } catch (error) {
         if (!isCancelled) {
-          console.error('Failed to load init script:', error);
+          console.error("Failed to load init script:", error);
         }
       } finally {
         if (!isCancelled) {
@@ -210,24 +239,24 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     setIsSaving(true);
     try {
       const response = await apiPut<{ success: boolean; error?: string }>(
-        '/api/worktree/init-script',
+        "/api/worktree/init-script",
         {
           projectPath: project.path,
           content: scriptContent,
-        }
+        },
       );
       if (response.success) {
         setOriginalContent(scriptContent);
         setScriptExists(true);
-        toast.success('Init script saved');
+        toast.success("Init script saved");
       } else {
-        toast.error('Failed to save init script', {
+        toast.error("Failed to save init script", {
           description: response.error,
         });
       }
     } catch (error) {
-      console.error('Failed to save init script:', error);
-      toast.error('Failed to save init script');
+      console.error("Failed to save init script:", error);
+      toast.error("Failed to save init script");
     } finally {
       setIsSaving(false);
     }
@@ -243,24 +272,24 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     setIsDeleting(true);
     try {
       const response = await apiDelete<{ success: boolean; error?: string }>(
-        '/api/worktree/init-script',
+        "/api/worktree/init-script",
         {
           body: { projectPath: project.path },
-        }
+        },
       );
       if (response.success) {
-        setScriptContent('');
-        setOriginalContent('');
+        setScriptContent("");
+        setOriginalContent("");
         setScriptExists(false);
-        toast.success('Init script deleted');
+        toast.success("Init script deleted");
       } else {
-        toast.error('Failed to delete init script', {
+        toast.error("Failed to delete init script", {
           description: response.error,
         });
       }
     } catch (error) {
-      console.error('Failed to delete init script:', error);
-      toast.error('Failed to delete init script');
+      console.error("Failed to delete init script:", error);
+      toast.error("Failed to delete init script");
     } finally {
       setIsDeleting(false);
     }
@@ -277,12 +306,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     if (!trimmed) return;
 
     // Normalize: remove leading ./ or /
-    const normalized = trimmed.replace(/^\.\//, '').replace(/^\//, '');
+    const normalized = trimmed.replace(/^\.\//, "").replace(/^\//, "");
     if (!normalized) return;
 
     // Check for duplicates
     if (copyFiles.includes(normalized)) {
-      toast.error('File already in list', {
+      toast.error("File already in list", {
         description: `"${normalized}" is already configured for copying.`,
       });
       return;
@@ -291,7 +320,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     const prevFiles = copyFiles;
     const updatedFiles = [...copyFiles, normalized];
     setWorktreeCopyFiles(project.path, updatedFiles);
-    setNewCopyFilePath('');
+    setNewCopyFilePath("");
 
     // Persist to server
     try {
@@ -299,15 +328,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       await httpClient.settings.updateProject(project.path, {
         worktreeCopyFiles: updatedFiles,
       });
-      toast.success('Copy file added', {
+      toast.success("Copy file added", {
         description: `"${normalized}" will be copied to new worktrees.`,
       });
     } catch (error) {
       // Rollback optimistic update on failure
       setWorktreeCopyFiles(project.path, prevFiles);
       setNewCopyFilePath(normalized);
-      console.error('Failed to persist worktreeCopyFiles:', error);
-      toast.error('Failed to save copy files setting');
+      console.error("Failed to persist worktreeCopyFiles:", error);
+      toast.error("Failed to save copy files setting");
     }
   }, [project.path, newCopyFilePath, copyFiles, setWorktreeCopyFiles]);
 
@@ -324,15 +353,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeCopyFiles: updatedFiles,
         });
-        toast.success('Copy file removed');
+        toast.success("Copy file removed");
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeCopyFiles(project.path, prevFiles);
-        console.error('Failed to persist worktreeCopyFiles:', error);
-        toast.error('Failed to save copy files setting');
+        console.error("Failed to persist worktreeCopyFiles:", error);
+        toast.error("Failed to save copy files setting");
       }
     },
-    [project.path, copyFiles, setWorktreeCopyFiles]
+    [project.path, copyFiles, setWorktreeCopyFiles],
   );
 
   // Handle files selected from the file selector dialog
@@ -341,7 +370,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       // Filter out duplicates
       const newPaths = paths.filter((p) => !copyFiles.includes(p));
       if (newPaths.length === 0) {
-        toast.info('All selected files are already in the list');
+        toast.info("All selected files are already in the list");
         return;
       }
 
@@ -355,17 +384,20 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeCopyFiles: updatedFiles,
         });
-        toast.success(`${newPaths.length} ${newPaths.length === 1 ? 'file' : 'files'} added`, {
-          description: newPaths.map((p) => `"${p}"`).join(', '),
-        });
+        toast.success(
+          `${newPaths.length} ${newPaths.length === 1 ? "file" : "files"} added`,
+          {
+            description: newPaths.map((p) => `"${p}"`).join(", "),
+          },
+        );
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeCopyFiles(project.path, prevFiles);
-        console.error('Failed to persist worktreeCopyFiles:', error);
-        toast.error('Failed to save copy files setting');
+        console.error("Failed to persist worktreeCopyFiles:", error);
+        toast.error("Failed to save copy files setting");
       }
     },
-    [project.path, copyFiles, setWorktreeCopyFiles]
+    [project.path, copyFiles, setWorktreeCopyFiles],
   );
 
   // Add a new file path to symlink list
@@ -374,12 +406,12 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     if (!trimmed) return;
 
     // Normalize: remove leading ./ or /
-    const normalized = trimmed.replace(/^\.\//, '').replace(/^\//, '');
+    const normalized = trimmed.replace(/^\.\//, "").replace(/^\//, "");
     if (!normalized) return;
 
     // Check for duplicates
     if (symlinkFiles.includes(normalized)) {
-      toast.error('File already in list', {
+      toast.error("File already in list", {
         description: `"${normalized}" is already configured for symlinking.`,
       });
       return;
@@ -388,7 +420,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
     const prevFiles = symlinkFiles;
     const updatedFiles = [...symlinkFiles, normalized];
     setWorktreeSymlinkFiles(project.path, updatedFiles);
-    setNewSymlinkFilePath('');
+    setNewSymlinkFilePath("");
 
     // Persist to server
     try {
@@ -396,15 +428,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       await httpClient.settings.updateProject(project.path, {
         worktreeSymlinkFiles: updatedFiles,
       });
-      toast.success('Symlink file added', {
+      toast.success("Symlink file added", {
         description: `"${normalized}" will be symlinked to new worktrees.`,
       });
     } catch (error) {
       // Rollback optimistic update on failure
       setWorktreeSymlinkFiles(project.path, prevFiles);
       setNewSymlinkFilePath(normalized);
-      console.error('Failed to persist worktreeSymlinkFiles:', error);
-      toast.error('Failed to save symlink files setting');
+      console.error("Failed to persist worktreeSymlinkFiles:", error);
+      toast.error("Failed to save symlink files setting");
     }
   }, [project.path, newSymlinkFilePath, symlinkFiles, setWorktreeSymlinkFiles]);
 
@@ -421,15 +453,15 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeSymlinkFiles: updatedFiles,
         });
-        toast.success('Symlink file removed');
+        toast.success("Symlink file removed");
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeSymlinkFiles(project.path, prevFiles);
-        console.error('Failed to persist worktreeSymlinkFiles:', error);
-        toast.error('Failed to save symlink files setting');
+        console.error("Failed to persist worktreeSymlinkFiles:", error);
+        toast.error("Failed to save symlink files setting");
       }
     },
-    [project.path, symlinkFiles, setWorktreeSymlinkFiles]
+    [project.path, symlinkFiles, setWorktreeSymlinkFiles],
   );
 
   // Handle files selected from the file selector dialog for symlinks
@@ -438,7 +470,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
       // Filter out duplicates
       const newPaths = paths.filter((p) => !symlinkFiles.includes(p));
       if (newPaths.length === 0) {
-        toast.info('All selected files are already in the list');
+        toast.info("All selected files are already in the list");
         return;
       }
 
@@ -452,26 +484,29 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         await httpClient.settings.updateProject(project.path, {
           worktreeSymlinkFiles: updatedFiles,
         });
-        toast.success(`${newPaths.length} ${newPaths.length === 1 ? 'file' : 'files'} added`, {
-          description: newPaths.map((p) => `"${p}"`).join(', '),
-        });
+        toast.success(
+          `${newPaths.length} ${newPaths.length === 1 ? "file" : "files"} added`,
+          {
+            description: newPaths.map((p) => `"${p}"`).join(", "),
+          },
+        );
       } catch (error) {
         // Rollback optimistic update on failure
         setWorktreeSymlinkFiles(project.path, prevFiles);
-        console.error('Failed to persist worktreeSymlinkFiles:', error);
-        toast.error('Failed to save symlink files setting');
+        console.error("Failed to persist worktreeSymlinkFiles:", error);
+        toast.error("Failed to save symlink files setting");
       }
     },
-    [project.path, symlinkFiles, setWorktreeSymlinkFiles]
+    [project.path, symlinkFiles, setWorktreeSymlinkFiles],
   );
 
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -502,7 +537,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                   useWorktrees: value,
                 });
               } catch (error) {
-                console.error('Failed to persist useWorktrees:', error);
+                console.error("Failed to persist useWorktrees:", error);
               }
             }}
             className="mt-1"
@@ -517,8 +552,8 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               Enable Git Worktree Isolation
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Creates isolated git branches for each feature in this project. When disabled, agents
-              work directly in the main project directory.
+              Creates isolated git branches for each feature in this project.
+              When disabled, agents work directly in the main project directory.
             </p>
           </div>
         </div>
@@ -541,7 +576,10 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                   showInitScriptIndicator: value,
                 });
               } catch (error) {
-                console.error('Failed to persist showInitScriptIndicator:', error);
+                console.error(
+                  "Failed to persist showInitScriptIndicator:",
+                  error,
+                );
               }
             }}
             className="mt-1"
@@ -555,8 +593,8 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               Show Init Script Indicator
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Display a floating panel in the bottom-right corner showing init script execution
-              status and output when a worktree is created.
+              Display a floating panel in the bottom-right corner showing init
+              script execution status and output when a worktree is created.
             </p>
           </div>
         </div>
@@ -577,7 +615,10 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                     autoDismissInitScriptIndicator: value,
                   });
                 } catch (error) {
-                  console.error('Failed to persist autoDismissInitScriptIndicator:', error);
+                  console.error(
+                    "Failed to persist autoDismissInitScriptIndicator:",
+                    error,
+                  );
                 }
               }}
               className="mt-1"
@@ -590,7 +631,8 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                 Auto-dismiss After Completion
               </Label>
               <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                Automatically hide the indicator 5 seconds after the script completes.
+                Automatically hide the indicator 5 seconds after the script
+                completes.
               </p>
             </div>
           </div>
@@ -611,7 +653,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                   defaultDeleteBranch: value,
                 });
               } catch (error) {
-                console.error('Failed to persist defaultDeleteBranch:', error);
+                console.error("Failed to persist defaultDeleteBranch:", error);
               }
             }}
             className="mt-1"
@@ -625,7 +667,8 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               Delete Branch by Default
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When deleting a worktree, automatically check the "Also delete the branch" option.
+              When deleting a worktree, automatically check the "Also delete the
+              branch" option.
             </p>
           </div>
         </div>
@@ -637,11 +680,14 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-4 h-4 text-brand-500" />
-            <Label className="text-foreground font-medium">Display Settings</Label>
+            <Label className="text-foreground font-medium">
+              Display Settings
+            </Label>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Control how worktrees are presented in the panel. Pinned worktrees appear as tabs, and
-            remaining worktrees are available in a combined overflow dropdown.
+            Control how worktrees are presented in the panel. Pinned worktrees
+            appear as tabs, and remaining worktrees are available in a combined
+            overflow dropdown.
           </p>
 
           {/* Pinned Worktrees Count */}
@@ -662,7 +708,8 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                 </span>
               </div>
               <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                Number of worktree tabs to pin (excluding the main worktree, which is always shown).
+                Number of worktree tabs to pin (excluding the main worktree,
+                which is always shown).
               </p>
               <Slider
                 id="pinned-worktrees-count"
@@ -690,8 +737,11 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
                       pinnedWorktreesCount: newValue,
                     });
                   } catch (error) {
-                    console.error('Failed to persist pinnedWorktreesCount:', error);
-                    toast.error('Failed to save pinned worktrees setting');
+                    console.error(
+                      "Failed to persist pinnedWorktreesCount:",
+                      error,
+                    );
+                    toast.error("Failed to save pinned worktrees setting");
                     // Rollback optimistic update using captured previous value
                     setPinnedWorktreesCount(project.path, prev);
                   }
@@ -709,14 +759,16 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Copy className="w-4 h-4 text-brand-500" />
-            <Label className="text-foreground font-medium">Copy Files to Worktrees</Label>
+            <Label className="text-foreground font-medium">
+              Copy Files to Worktrees
+            </Label>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Specify files or directories (relative to project root) to automatically copy into new
-            worktrees. Useful for untracked files like{' '}
-            <code className="font-mono text-foreground/60">.env</code>,{' '}
-            <code className="font-mono text-foreground/60">.env.local</code>, or local config files
-            that aren&apos;t committed to git.
+            Specify files or directories (relative to project root) to
+            automatically copy into new worktrees. Useful for untracked files
+            like <code className="font-mono text-foreground/60">.env</code>,{" "}
+            <code className="font-mono text-foreground/60">.env.local</code>, or
+            local config files that aren&apos;t committed to git.
           </p>
 
           {/* Current file list */}
@@ -749,7 +801,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               value={newCopyFilePath}
               onChange={(e) => setNewCopyFilePath(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   handleAddCopyFile();
                 }
@@ -795,14 +847,17 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Link className="w-4 h-4 text-brand-500" />
-            <Label className="text-foreground font-medium">Symlink Files to Worktrees</Label>
+            <Label className="text-foreground font-medium">
+              Symlink Files to Worktrees
+            </Label>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Specify files or directories (relative to project root) to automatically symlink into
-            new worktrees. The symlink points back to the main project so changes are instantly
-            shared. Useful for untracked files like{' '}
-            <code className="font-mono text-foreground/60">.env</code> that should stay in sync
-            across all worktrees.
+            Specify files or directories (relative to project root) to
+            automatically symlink into new worktrees. The symlink points back to
+            the main project so changes are instantly shared. Useful for
+            untracked files like{" "}
+            <code className="font-mono text-foreground/60">.env</code> that
+            should stay in sync across all worktrees.
           </p>
 
           {/* Current symlink file list */}
@@ -835,7 +890,7 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
               value={newSymlinkFilePath}
               onChange={(e) => setNewSymlinkFilePath(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   handleAddSymlinkFile();
                 }
@@ -882,19 +937,25 @@ export function WorktreePreferencesSection({ project }: WorktreePreferencesSecti
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-brand-500" />
-              <Label className="text-foreground font-medium">Initialization Script</Label>
+              <Label className="text-foreground font-medium">
+                Initialization Script
+              </Label>
             </div>
           </div>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            Shell commands to run after a worktree is created. Runs once per worktree. Uses Git Bash
-            on Windows for cross-platform compatibility.
+            Shell commands to run after a worktree is created. Runs once per
+            worktree. Uses Git Bash on Windows for cross-platform compatibility.
           </p>
 
           {/* File path indicator */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60">
             <FileCode className="w-3.5 h-3.5" />
             <code className="font-mono">.pegasus/worktree-init.sh</code>
-            {hasChanges && <span className="text-amber-500 font-medium">(unsaved changes)</span>}
+            {hasChanges && (
+              <span className="text-amber-500 font-medium">
+                (unsaved changes)
+              </span>
+            )}
           </div>
 
           {isLoading ? (
@@ -935,7 +996,11 @@ pnpm install
                   disabled={!scriptExists || isSaving || isDeleting}
                   className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  {isDeleting ? <Spinner size="xs" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  {isDeleting ? (
+                    <Spinner size="xs" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
                   Delete
                 </Button>
                 <Button
@@ -944,7 +1009,11 @@ pnpm install
                   disabled={!hasChanges || isSaving || isDeleting}
                   className="gap-1.5"
                 >
-                  {isSaving ? <Spinner size="xs" /> : <Save className="w-3.5 h-3.5" />}
+                  {isSaving ? (
+                    <Spinner size="xs" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
                   Save
                 </Button>
               </div>

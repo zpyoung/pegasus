@@ -1,4 +1,11 @@
-import { useCallback, useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import {
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from "react";
 import {
   ReactFlow,
   Background,
@@ -14,18 +21,18 @@ import {
   Node,
   Connection,
   Edge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
-import { Feature, useAppStore } from '@/store/app-store';
-import { themeOptions } from '@/config/theme-options';
+import { Feature, useAppStore } from "@/store/app-store";
+import { themeOptions } from "@/config/theme-options";
 import {
   TaskNode,
   DependencyEdge,
   GraphControls,
   GraphLegend,
   GraphFilterControls,
-} from './components';
+} from "./components";
 import {
   useGraphNodes,
   useGraphLayout,
@@ -33,18 +40,18 @@ import {
   type TaskNodeData,
   type GraphFilterState,
   type NodeActionCallbacks,
-} from './hooks';
-import { cn } from '@/lib/utils';
-import { useDebounceValue } from 'usehooks-ts';
-import { SearchX, Plus, Wand2, ClipboardCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { PlanSettingsPopover } from '../board-view/dialogs/plan-settings-popover';
+} from "./hooks";
+import { cn } from "@/lib/utils";
+import { useDebounceValue } from "usehooks-ts";
+import { SearchX, Plus, Wand2, ClipboardCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PlanSettingsPopover } from "../board-view/dialogs/plan-settings-popover";
 import {
   GRAPH_LARGE_EDGE_COUNT,
   GRAPH_LARGE_NODE_COUNT,
   GRAPH_RENDER_MODE_COMPACT,
   GRAPH_RENDER_MODE_FULL,
-} from './constants';
+} from "./constants";
 
 // Define custom node and edge types - using any to avoid React Flow's strict typing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,15 +92,19 @@ interface GraphCanvasProps {
 }
 
 // Helper to get session storage key for viewport
-const getViewportStorageKey = (projectPath: string) => `graph-viewport:${projectPath}`;
+const getViewportStorageKey = (projectPath: string) =>
+  `graph-viewport:${projectPath}`;
 
 // Helper to save viewport to session storage
 const saveViewportToStorage = (
   projectPath: string,
-  viewport: { x: number; y: number; zoom: number }
+  viewport: { x: number; y: number; zoom: number },
 ) => {
   try {
-    sessionStorage.setItem(getViewportStorageKey(projectPath), JSON.stringify(viewport));
+    sessionStorage.setItem(
+      getViewportStorageKey(projectPath),
+      JSON.stringify(viewport),
+    );
   } catch {
     // Ignore storage errors
   }
@@ -101,7 +112,7 @@ const saveViewportToStorage = (
 
 // Helper to load viewport from session storage
 const loadViewportFromStorage = (
-  projectPath: string
+  projectPath: string,
 ): { x: number; y: number; zoom: number } | null => {
   try {
     const stored = sessionStorage.getItem(getViewportStorageKey(projectPath));
@@ -134,7 +145,7 @@ function GraphCanvasInner({
   worktreeSelector,
 }: GraphCanvasProps) {
   const [isLocked, setIsLocked] = useState(false);
-  const [layoutDirection, setLayoutDirection] = useState<'LR' | 'TB'>('LR');
+  const [layoutDirection, setLayoutDirection] = useState<"LR" | "TB">("LR");
   const { setViewport, getViewport, fitView } = useReactFlow();
 
   // Refs for tracking layout and viewport state
@@ -159,23 +170,27 @@ function GraphCanvasInner({
 
   // Determine React Flow color mode based on current theme
   const effectiveTheme = useAppStore((state) => state.getEffectiveTheme());
-  const [systemColorMode, setSystemColorMode] = useState<'dark' | 'light'>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const [systemColorMode, setSystemColorMode] = useState<"dark" | "light">(
+    () => {
+      if (typeof window === "undefined") return "dark";
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    },
+  );
 
   useEffect(() => {
-    if (effectiveTheme !== 'system') return;
-    if (typeof window === 'undefined') return;
+    if (effectiveTheme !== "system") return;
+    if (typeof window === "undefined") return;
 
-    const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const update = () => setSystemColorMode(mql.matches ? 'dark' : 'light');
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemColorMode(mql.matches ? "dark" : "light");
     update();
 
     // Safari < 14 fallback
     if (mql.addEventListener) {
-      mql.addEventListener('change', update);
-      return () => mql.removeEventListener('change', update);
+      mql.addEventListener("change", update);
+      return () => mql.removeEventListener("change", update);
     }
     mql.addListener(update);
     return () => mql.removeListener(update);
@@ -183,7 +198,11 @@ function GraphCanvasInner({
 
   const themeOption = themeOptions.find((t) => t.value === effectiveTheme);
   const colorMode =
-    effectiveTheme === 'system' ? systemColorMode : themeOption?.isDark ? 'dark' : 'light';
+    effectiveTheme === "system"
+      ? systemColorMode
+      : themeOption?.isDark
+        ? "dark"
+        : "light";
 
   // Filter state (category, status, and negative toggle are local to graph view)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -212,8 +231,11 @@ function GraphCanvasInner({
   }, [features]);
 
   const isLargeGraph =
-    features.length >= GRAPH_LARGE_NODE_COUNT || estimatedEdgeCount >= GRAPH_LARGE_EDGE_COUNT;
-  const renderMode = isLargeGraph ? GRAPH_RENDER_MODE_COMPACT : GRAPH_RENDER_MODE_FULL;
+    features.length >= GRAPH_LARGE_NODE_COUNT ||
+    estimatedEdgeCount >= GRAPH_LARGE_EDGE_COUNT;
+  const renderMode = isLargeGraph
+    ? GRAPH_RENDER_MODE_COMPACT
+    : GRAPH_RENDER_MODE_FULL;
 
   // Transform features to nodes and edges with filter results
   const { nodes: initialNodes, edges: initialEdges } = useGraphNodes({
@@ -227,10 +249,11 @@ function GraphCanvasInner({
   });
 
   // Apply layout
-  const { layoutedNodes, layoutedEdges, layoutVersion, runLayout } = useGraphLayout({
-    nodes: initialNodes,
-    edges: initialEdges,
-  });
+  const { layoutedNodes, layoutedEdges, layoutVersion, runLayout } =
+    useGraphLayout({
+      nodes: initialNodes,
+      edges: initialEdges,
+    });
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
@@ -244,7 +267,9 @@ function GraphCanvasInner({
     const layoutWasRecomputed = layoutVersion !== prevLayoutVersion.current;
 
     // Check if there are new nodes that need layout
-    const hasNewNodes = layoutedNodes.some((n) => !prevNodeIds.current.has(n.id));
+    const hasNewNodes = layoutedNodes.some(
+      (n) => !prevNodeIds.current.has(n.id),
+    );
 
     if (isInitialRender || layoutWasRecomputed) {
       // Apply full layout for initial render OR when layout was recomputed due to structure change
@@ -255,7 +280,9 @@ function GraphCanvasInner({
     } else if (hasNewNodes) {
       // New nodes added - need to re-layout but try to preserve existing positions
       setNodes((currentNodes) => {
-        const positionMap = new Map(currentNodes.map((n) => [n.id, n.position]));
+        const positionMap = new Map(
+          currentNodes.map((n) => [n.id, n.position]),
+        );
         return layoutedNodes.map((node) => ({
           ...node,
           position: positionMap.get(node.id) || node.position,
@@ -265,7 +292,9 @@ function GraphCanvasInner({
     } else {
       // No new nodes - just update data without changing positions
       setNodes((currentNodes) => {
-        const positionMap = new Map(currentNodes.map((n) => [n.id, n.position]));
+        const positionMap = new Map(
+          currentNodes.map((n) => [n.id, n.position]),
+        );
         return layoutedNodes.map((node) => ({
           ...node,
           position: positionMap.get(node.id) || node.position,
@@ -289,24 +318,44 @@ function GraphCanvasInner({
       }
       hasRestoredViewport.current = true;
     }
-  }, [layoutedNodes, layoutedEdges, layoutVersion, setNodes, setEdges, projectPath, setViewport]);
+  }, [
+    layoutedNodes,
+    layoutedEdges,
+    layoutVersion,
+    setNodes,
+    setEdges,
+    projectPath,
+    setViewport,
+  ]);
 
   // Force layout recalculation on initial mount when edges are available
   // This fixes timing issues when navigating directly to the graph route
   useEffect(() => {
     // Only run once: when we have nodes and edges but haven't done a layout with edges yet
-    if (!hasLayoutWithEdges.current && layoutedNodes.length > 0 && layoutedEdges.length > 0) {
+    if (
+      !hasLayoutWithEdges.current &&
+      layoutedNodes.length > 0 &&
+      layoutedEdges.length > 0
+    ) {
       hasLayoutWithEdges.current = true;
       // Small delay to ensure React Flow is mounted and ready
       const timeoutId = setTimeout(() => {
-        const { nodes: relayoutedNodes, edges: relayoutedEdges } = runLayout('LR');
+        const { nodes: relayoutedNodes, edges: relayoutedEdges } =
+          runLayout("LR");
         setNodes(relayoutedNodes);
         setEdges(relayoutedEdges);
         fitView({ padding: 0.2, duration: 300 });
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [layoutedNodes.length, layoutedEdges.length, runLayout, setNodes, setEdges, fitView]);
+  }, [
+    layoutedNodes.length,
+    layoutedEdges.length,
+    runLayout,
+    setNodes,
+    setEdges,
+    fitView,
+  ]);
 
   // Save viewport when user pans or zooms
   const handleMoveEnd = useCallback(() => {
@@ -318,19 +367,20 @@ function GraphCanvasInner({
 
   // Handle layout direction change
   const handleRunLayout = useCallback(
-    (direction: 'LR' | 'TB') => {
+    (direction: "LR" | "TB") => {
       setLayoutDirection(direction);
-      const { nodes: relayoutedNodes, edges: relayoutedEdges } = runLayout(direction);
+      const { nodes: relayoutedNodes, edges: relayoutedEdges } =
+        runLayout(direction);
       setNodes(relayoutedNodes);
       setEdges(relayoutedEdges);
       fitView({ padding: 0.2, duration: 300 });
     },
-    [runLayout, setNodes, setEdges, fitView]
+    [runLayout, setNodes, setEdges, fitView],
   );
 
   // Handle clear all filters
   const handleClearFilters = useCallback(() => {
-    onSearchQueryChange('');
+    onSearchQueryChange("");
     setSelectedCategories([]);
     setSelectedStatuses([]);
     setIsNegativeFilter(false);
@@ -341,7 +391,7 @@ function GraphCanvasInner({
     (_event: React.MouseEvent, node: Node<TaskNodeData>) => {
       onNodeDoubleClick?.(node.id);
     },
-    [onNodeDoubleClick]
+    [onNodeDoubleClick],
   );
 
   // Handle edge connection (creating dependencies)
@@ -354,7 +404,7 @@ function GraphCanvasInner({
       // - target = the node being dragged TO (the dependent task)
       await onCreateDependency?.(connection.source, connection.target);
     },
-    [onCreateDependency]
+    [onCreateDependency],
   );
 
   // Allow any connection between different nodes
@@ -364,14 +414,14 @@ function GraphCanvasInner({
       if (connection.source === connection.target) return false;
       return true;
     },
-    []
+    [],
   );
 
   // Handle orientation changes on mobile devices
   // When rotating from landscape to portrait, the view may incorrectly zoom in
   // This effect listens for orientation changes and calls fitView to correct the viewport
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Track the previous orientation to detect changes
     let previousWidth = window.innerWidth;
@@ -423,13 +473,13 @@ function GraphCanvasInner({
     };
 
     // Listen for orientation change event (mobile specific)
-    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener("orientationchange", handleOrientationChange);
     // Also listen for resize as a fallback (some browsers don't fire orientationchange)
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener('orientationchange', handleOrientationChange);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("resize", handleResize);
       // Clear any pending timeouts
       if (orientationTimeoutId) {
         clearTimeout(orientationTimeoutId);
@@ -443,10 +493,10 @@ function GraphCanvasInner({
   // Handle edge deletion (when user presses delete key or uses other deletion methods)
   const handleEdgesDelete = useCallback(
     (deletedEdges: Edge[]) => {
-      console.log('onEdgesDelete triggered', deletedEdges);
+      console.log("onEdgesDelete triggered", deletedEdges);
       deletedEdges.forEach((edge) => {
         if (nodeActionCallbacks?.onDeleteDependency) {
-          console.log('Calling onDeleteDependency from onEdgesDelete', {
+          console.log("Calling onDeleteDependency from onEdgesDelete", {
             source: edge.source,
             target: edge.target,
           });
@@ -454,7 +504,7 @@ function GraphCanvasInner({
         }
       });
     },
-    [nodeActionCallbacks]
+    [nodeActionCallbacks],
   );
 
   // MiniMap node color based on status
@@ -462,24 +512,24 @@ function GraphCanvasInner({
     const data = node.data as TaskNodeData | undefined;
     const status = data?.status;
     switch (status) {
-      case 'completed':
-      case 'verified':
-        return 'var(--status-success)';
-      case 'in_progress':
-        return 'var(--status-in-progress)';
-      case 'waiting_approval':
-        return 'var(--status-waiting)';
+      case "completed":
+      case "verified":
+        return "var(--status-success)";
+      case "in_progress":
+        return "var(--status-in-progress)";
+      case "waiting_approval":
+        return "var(--status-waiting)";
       default:
-        if (data?.isBlocked) return 'rgb(249, 115, 22)'; // orange-500
-        if (data?.error) return 'var(--status-error)';
-        return 'var(--muted-foreground)';
+        if (data?.isBlocked) return "rgb(249, 115, 22)"; // orange-500
+        if (data?.error) return "var(--status-error)";
+        return "var(--muted-foreground)";
     }
   }, []);
 
   const shouldRenderVisibleOnly = isLargeGraph;
 
   return (
-    <div className={cn('w-full h-full', className)} style={backgroundStyle}>
+    <div className={cn("w-full h-full", className)} style={backgroundStyle}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -517,7 +567,10 @@ function GraphCanvasInner({
           zoomable
           pannable
           className="border-border! rounded-lg shadow-lg"
-          style={{ backgroundColor: 'color-mix(in oklch, var(--popover) 90%, transparent)' }}
+          style={{
+            backgroundColor:
+              "color-mix(in oklch, var(--popover) 90%, transparent)",
+          }}
         />
 
         <GraphControls
@@ -569,8 +622,12 @@ function GraphCanvasInner({
                 {onPlanUseSelectedWorktreeBranchChange &&
                   planUseSelectedWorktreeBranch !== undefined && (
                     <PlanSettingsPopover
-                      planUseSelectedWorktreeBranch={planUseSelectedWorktreeBranch}
-                      onPlanUseSelectedWorktreeBranchChange={onPlanUseSelectedWorktreeBranchChange}
+                      planUseSelectedWorktreeBranch={
+                        planUseSelectedWorktreeBranch
+                      }
+                      onPlanUseSelectedWorktreeBranchChange={
+                        onPlanUseSelectedWorktreeBranchChange
+                      }
                     />
                   )}
               </div>
@@ -588,25 +645,34 @@ function GraphCanvasInner({
         </Panel>
 
         {/* Empty state when all nodes are filtered out */}
-        {filterResult.hasActiveFilter && filterResult.matchedNodeIds.size === 0 && (
-          <Panel position="top-center" className="mt-20">
-            <div
-              className="flex flex-col items-center gap-3 p-6 rounded-lg backdrop-blur-sm border border-border shadow-lg text-popover-foreground"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--popover) 95%, transparent)' }}
-            >
-              <SearchX className="w-10 h-10 text-muted-foreground" />
-              <div className="text-center">
-                <p className="text-sm font-medium">No matching tasks</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Try adjusting your filters or search query
-                </p>
+        {filterResult.hasActiveFilter &&
+          filterResult.matchedNodeIds.size === 0 && (
+            <Panel position="top-center" className="mt-20">
+              <div
+                className="flex flex-col items-center gap-3 p-6 rounded-lg backdrop-blur-sm border border-border shadow-lg text-popover-foreground"
+                style={{
+                  backgroundColor:
+                    "color-mix(in oklch, var(--popover) 95%, transparent)",
+                }}
+              >
+                <SearchX className="w-10 h-10 text-muted-foreground" />
+                <div className="text-center">
+                  <p className="text-sm font-medium">No matching tasks</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Try adjusting your filters or search query
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="mt-1"
+                >
+                  Clear Filters
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={handleClearFilters} className="mt-1">
-                Clear Filters
-              </Button>
-            </div>
-          </Panel>
-        )}
+            </Panel>
+          )}
       </ReactFlow>
     </div>
   );

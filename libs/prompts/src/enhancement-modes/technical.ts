@@ -3,7 +3,7 @@
  * Adds implementation details and technical specifications.
  */
 
-import type { EnhancementExample } from '@pegasus/types';
+import type { EnhancementExample } from "@pegasus/types";
 
 /**
  * System prompt for the "technical" enhancement mode.
@@ -41,7 +41,7 @@ IMPORTANT: Output ONLY the new technical details section. Do NOT repeat or rewri
  */
 export const TECHNICAL_EXAMPLES: EnhancementExample[] = [
   {
-    input: 'Add user profile page',
+    input: "Add user profile page",
     output: `Technical Implementation:
 - Frontend: React component at /profile route with form validation
 - API Endpoint: GET/PUT /api/users/:id for fetching and updating profile
@@ -58,7 +58,7 @@ Components:
 Security: Ensure users can only edit their own profile (auth middleware)`,
   },
   {
-    input: 'Add search functionality',
+    input: "Add search functionality",
     output: `Technical Implementation:
 - Search Engine: Use Elasticsearch or PostgreSQL full-text search
 - API: GET /api/search?q={query}&type={type}&page={page}
@@ -81,4 +81,5 @@ Performance:
 /**
  * Description of what this enhancement mode does
  */
-export const TECHNICAL_DESCRIPTION = 'Add implementation details and technical specifications';
+export const TECHNICAL_DESCRIPTION =
+  "Add implementation details and technical specifications";

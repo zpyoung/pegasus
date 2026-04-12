@@ -2,11 +2,11 @@
  * Common utilities and state for terminal routes
  */
 
-import { randomBytes } from 'crypto';
-import { createLogger } from '@pegasus/utils';
-import type { Request, Response, NextFunction } from 'express';
+import { randomBytes } from "crypto";
+import { createLogger } from "@pegasus/utils";
+import type { Request, Response, NextFunction } from "express";
 
-const logger = createLogger('Terminal');
+const logger = createLogger("Terminal");
 
 // Read env variables lazily to ensure dotenv has loaded them
 function getTerminalPassword(): string | undefined {
@@ -14,17 +14,21 @@ function getTerminalPassword(): string | undefined {
 }
 
 function getTerminalEnabledConfig(): boolean {
-  return process.env.TERMINAL_ENABLED !== 'false'; // Enabled by default
+  return process.env.TERMINAL_ENABLED !== "false"; // Enabled by default
 }
 
 // In-memory session tokens (would use Redis in production) - private
-const validTokens: Map<string, { createdAt: Date; expiresAt: Date }> = new Map();
+const validTokens: Map<string, { createdAt: Date; expiresAt: Date }> =
+  new Map();
 const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Add a token to the valid tokens map
  */
-export function addToken(token: string, data: { createdAt: Date; expiresAt: Date }): void {
+export function addToken(
+  token: string,
+  data: { createdAt: Date; expiresAt: Date },
+): void {
   validTokens.set(token, data);
 }
 
@@ -38,7 +42,9 @@ export function deleteToken(token: string): void {
 /**
  * Get token data for a given token
  */
-export function getTokenData(token: string): { createdAt: Date; expiresAt: Date } | undefined {
+export function getTokenData(
+  token: string,
+): { createdAt: Date; expiresAt: Date } | undefined {
   return validTokens.get(token);
 }
 
@@ -46,7 +52,7 @@ export function getTokenData(token: string): { createdAt: Date; expiresAt: Date 
  * Generate a cryptographically secure random token
  */
 export function generateToken(): string {
-  return `term-${randomBytes(32).toString('base64url')}`;
+  return `term-${randomBytes(32).toString("base64url")}`;
 }
 
 /**
@@ -99,12 +105,16 @@ export function isTerminalEnabled(): boolean {
  * Terminal authentication middleware
  * Checks for valid session token if password is configured
  */
-export function terminalAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function terminalAuthMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Check if terminal is enabled
   if (!getTerminalEnabledConfig()) {
     res.status(403).json({
       success: false,
-      error: 'Terminal access is disabled',
+      error: "Terminal access is disabled",
     });
     return;
   }
@@ -116,12 +126,13 @@ export function terminalAuthMiddleware(req: Request, res: Response, next: NextFu
   }
 
   // Check for session token
-  const token = (req.headers['x-terminal-token'] as string) || (req.query.token as string);
+  const token =
+    (req.headers["x-terminal-token"] as string) || (req.query.token as string);
 
   if (!validateTerminalToken(token)) {
     res.status(401).json({
       success: false,
-      error: 'Terminal authentication required',
+      error: "Terminal authentication required",
       passwordRequired: true,
     });
     return;
@@ -142,7 +153,10 @@ export function getTokenExpiryMs(): number {
   return TOKEN_EXPIRY_MS;
 }
 
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
 // Re-export shared utilities
 export { getErrorMessageShared as getErrorMessage };

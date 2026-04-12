@@ -3,15 +3,17 @@
  * Enforces ALLOWED_ROOT_DIRECTORY constraint with appData exception
  */
 
-import path from 'path';
+import path from "path";
 
 /**
  * Error thrown when a path is not allowed by security policy
  */
 export class PathNotAllowedError extends Error {
   constructor(filePath: string) {
-    super(`Path not allowed: ${filePath}. Must be within ALLOWED_ROOT_DIRECTORY or DATA_DIR.`);
-    this.name = 'PathNotAllowedError';
+    super(
+      `Path not allowed: ${filePath}. Must be within ALLOWED_ROOT_DIRECTORY or DATA_DIR.`,
+    );
+    this.name = "PathNotAllowedError";
   }
 }
 
@@ -31,9 +33,13 @@ export function initAllowedPaths(): void {
   const rootDir = process.env.ALLOWED_ROOT_DIRECTORY;
   if (rootDir) {
     allowedRootDirectory = path.resolve(rootDir);
-    console.log(`[Security] ✓ ALLOWED_ROOT_DIRECTORY configured: ${allowedRootDirectory}`);
+    console.log(
+      `[Security] ✓ ALLOWED_ROOT_DIRECTORY configured: ${allowedRootDirectory}`,
+    );
   } else {
-    console.log('[Security] ⚠️  ALLOWED_ROOT_DIRECTORY not set - allowing access to all paths');
+    console.log(
+      "[Security] ⚠️  ALLOWED_ROOT_DIRECTORY not set - allowing access to all paths",
+    );
   }
 
   // Load DATA_DIR (appData exception - always allowed)
@@ -66,7 +72,10 @@ export function isPathAllowed(filePath: string): boolean {
   }
 
   // Allow if within ALLOWED_ROOT_DIRECTORY
-  if (allowedRootDirectory && isPathWithinDirectory(resolvedPath, allowedRootDirectory)) {
+  if (
+    allowedRootDirectory &&
+    isPathWithinDirectory(resolvedPath, allowedRootDirectory)
+  ) {
     return true;
   }
 
@@ -92,14 +101,17 @@ export function validatePath(filePath: string): string {
  * Check if a path is within a directory, with protection against path traversal
  * Returns true only if resolvedPath is within directoryPath
  */
-export function isPathWithinDirectory(resolvedPath: string, directoryPath: string): boolean {
+export function isPathWithinDirectory(
+  resolvedPath: string,
+  directoryPath: string,
+): boolean {
   // Get the relative path from directory to the target
   const relativePath = path.relative(directoryPath, resolvedPath);
 
   // If relative path starts with "..", it's outside the directory
   // If relative path is absolute, it's outside the directory
   // If relative path is empty or ".", it's the directory itself
-  return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+  return !relativePath.startsWith("..") && !path.isAbsolute(relativePath);
 }
 
 /**

@@ -1,5 +1,5 @@
-import { CircleDot, RefreshCw } from 'lucide-react';
-import { Button } from './button';
+import { CircleDot, RefreshCw } from "lucide-react";
+import { Button } from "./button";
 
 interface ErrorStateProps {
   /** Error message to display */
@@ -14,9 +14,9 @@ interface ErrorStateProps {
 
 export function ErrorState({
   error,
-  title = 'Failed to Load',
+  title = "Failed to Load",
   onRetry,
-  retryText = 'Try Again',
+  retryText = "Try Again",
 }: ErrorStateProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center p-6">

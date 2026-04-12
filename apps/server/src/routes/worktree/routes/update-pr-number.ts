@@ -6,13 +6,19 @@
  * provided number only if GitHub CLI is unavailable.
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError, execAsync, execEnv, isGhCliAvailable } from '../common.js';
-import { updateWorktreePRInfo } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@pegasus/utils';
-import { validatePRState } from '@pegasus/types';
+import type { Request, Response } from "express";
+import {
+  getErrorMessage,
+  logError,
+  execAsync,
+  execEnv,
+  isGhCliAvailable,
+} from "../common.js";
+import { updateWorktreePRInfo } from "../../../lib/worktree-metadata.js";
+import { createLogger } from "@pegasus/utils";
+import { validatePRState } from "@pegasus/types";
 
-const logger = createLogger('UpdatePRNumber');
+const logger = createLogger("UpdatePRNumber");
 
 export function createUpdatePRNumberHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -24,33 +30,41 @@ export function createUpdatePRNumberHandler() {
       };
 
       if (!worktreePath) {
-        res.status(400).json({ success: false, error: 'worktreePath required' });
+        res
+          .status(400)
+          .json({ success: false, error: "worktreePath required" });
         return;
       }
 
       if (
         !prNumber ||
-        typeof prNumber !== 'number' ||
+        typeof prNumber !== "number" ||
         prNumber <= 0 ||
         !Number.isInteger(prNumber)
       ) {
-        res.status(400).json({ success: false, error: 'prNumber must be a positive integer' });
+        res.status(400).json({
+          success: false,
+          error: "prNumber must be a positive integer",
+        });
         return;
       }
 
       const effectiveProjectPath = projectPath || worktreePath;
 
       // Get current branch name
-      const { stdout: branchOutput } = await execAsync('git rev-parse --abbrev-ref HEAD', {
-        cwd: worktreePath,
-        env: execEnv,
-      });
+      const { stdout: branchOutput } = await execAsync(
+        "git rev-parse --abbrev-ref HEAD",
+        {
+          cwd: worktreePath,
+          env: execEnv,
+        },
+      );
       const branchName = branchOutput.trim();
 
-      if (!branchName || branchName === 'HEAD') {
+      if (!branchName || branchName === "HEAD") {
         res.status(400).json({
           success: false,
-          error: 'Cannot update PR number in detached HEAD state',
+          error: "Cannot update PR number in detached HEAD state",
         });
         return;
       }
@@ -61,9 +75,9 @@ export function createUpdatePRNumberHandler() {
       if (ghCliAvailable) {
         try {
           // Detect repository for gh CLI
-          let repoFlag = '';
+          let repoFlag = "";
           try {
-            const { stdout: remotes } = await execAsync('git remote -v', {
+            const { stdout: remotes } = await execAsync("git remote -v", {
               cwd: worktreePath,
               env: execEnv,
             });
@@ -74,15 +88,21 @@ export function createUpdatePRNumberHandler() {
 
             for (const line of lines) {
               const match =
-                line.match(/^(\w+)\s+.*[:/]([^/]+)\/([^/\s]+?)(?:\.git)?\s+\(fetch\)/) ||
-                line.match(/^(\w+)\s+git@[^:]+:([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/) ||
-                line.match(/^(\w+)\s+https?:\/\/[^/]+\/([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/);
+                line.match(
+                  /^(\w+)\s+.*[:/]([^/]+)\/([^/\s]+?)(?:\.git)?\s+\(fetch\)/,
+                ) ||
+                line.match(
+                  /^(\w+)\s+git@[^:]+:([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/,
+                ) ||
+                line.match(
+                  /^(\w+)\s+https?:\/\/[^/]+\/([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/,
+                );
 
               if (match) {
                 const [, remoteName, owner, repo] = match;
-                if (remoteName === 'upstream') {
+                if (remoteName === "upstream") {
                   upstreamRepo = `${owner}/${repo}`;
-                } else if (remoteName === 'origin') {
+                } else if (remoteName === "origin") {
                   originOwner = owner;
                   originRepo = repo;
                 }
@@ -90,7 +110,10 @@ export function createUpdatePRNumberHandler() {
             }
 
             const targetRepo =
-              upstreamRepo || (originOwner && originRepo ? `${originOwner}/${originRepo}` : null);
+              upstreamRepo ||
+              (originOwner && originRepo
+                ? `${originOwner}/${originRepo}`
+                : null);
             if (targetRepo) {
               repoFlag = ` --repo "${targetRepo}"`;
             }
@@ -117,7 +140,9 @@ export function createUpdatePRNumberHandler() {
 
           await updateWorktreePRInfo(effectiveProjectPath, branchName, prInfo);
 
-          logger.info(`Updated PR tracking to #${prNumber} for branch ${branchName}`);
+          logger.info(
+            `Updated PR tracking to #${prNumber} for branch ${branchName}`,
+          );
 
           res.json({
             success: true,
@@ -139,13 +164,15 @@ export function createUpdatePRNumberHandler() {
         number: prNumber,
         url: `https://github.com/pulls/${prNumber}`,
         title: `PR #${prNumber}`,
-        state: validatePRState('OPEN'),
+        state: validatePRState("OPEN"),
         createdAt: new Date().toISOString(),
       };
 
       await updateWorktreePRInfo(effectiveProjectPath, branchName, prInfo);
 
-      logger.info(`Updated PR tracking to #${prNumber} for branch ${branchName} (no GitHub data)`);
+      logger.info(
+        `Updated PR tracking to #${prNumber} for branch ${branchName} (no GitHub data)`,
+      );
 
       res.json({
         success: true,
@@ -156,7 +183,7 @@ export function createUpdatePRNumberHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Update PR number failed');
+      logError(error, "Update PR number failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

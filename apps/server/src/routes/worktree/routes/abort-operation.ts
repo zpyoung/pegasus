@@ -5,47 +5,51 @@
  * and aborts it, returning the repository to a clean state.
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import * as fs from 'fs/promises';
-import { getErrorMessage, logError, execAsync } from '../common.js';
-import type { EventEmitter } from '../../../lib/events.js';
+import type { Request, Response } from "express";
+import path from "path";
+import * as fs from "fs/promises";
+import { getErrorMessage, logError, execAsync } from "../common.js";
+import type { EventEmitter } from "../../../lib/events.js";
 
 /**
  * Detect what type of conflict operation is currently in progress
  */
 async function detectOperation(
-  worktreePath: string
-): Promise<'merge' | 'rebase' | 'cherry-pick' | null> {
+  worktreePath: string,
+): Promise<"merge" | "rebase" | "cherry-pick" | null> {
   try {
-    const { stdout: gitDirRaw } = await execAsync('git rev-parse --git-dir', {
+    const { stdout: gitDirRaw } = await execAsync("git rev-parse --git-dir", {
       cwd: worktreePath,
     });
     const gitDir = path.resolve(worktreePath, gitDirRaw.trim());
 
-    const [rebaseMergeExists, rebaseApplyExists, mergeHeadExists, cherryPickHeadExists] =
-      await Promise.all([
-        fs
-          .access(path.join(gitDir, 'rebase-merge'))
-          .then(() => true)
-          .catch(() => false),
-        fs
-          .access(path.join(gitDir, 'rebase-apply'))
-          .then(() => true)
-          .catch(() => false),
-        fs
-          .access(path.join(gitDir, 'MERGE_HEAD'))
-          .then(() => true)
-          .catch(() => false),
-        fs
-          .access(path.join(gitDir, 'CHERRY_PICK_HEAD'))
-          .then(() => true)
-          .catch(() => false),
-      ]);
+    const [
+      rebaseMergeExists,
+      rebaseApplyExists,
+      mergeHeadExists,
+      cherryPickHeadExists,
+    ] = await Promise.all([
+      fs
+        .access(path.join(gitDir, "rebase-merge"))
+        .then(() => true)
+        .catch(() => false),
+      fs
+        .access(path.join(gitDir, "rebase-apply"))
+        .then(() => true)
+        .catch(() => false),
+      fs
+        .access(path.join(gitDir, "MERGE_HEAD"))
+        .then(() => true)
+        .catch(() => false),
+      fs
+        .access(path.join(gitDir, "CHERRY_PICK_HEAD"))
+        .then(() => true)
+        .catch(() => false),
+    ]);
 
-    if (rebaseMergeExists || rebaseApplyExists) return 'rebase';
-    if (mergeHeadExists) return 'merge';
-    if (cherryPickHeadExists) return 'cherry-pick';
+    if (rebaseMergeExists || rebaseApplyExists) return "rebase";
+    if (mergeHeadExists) return "merge";
+    if (cherryPickHeadExists) return "cherry-pick";
     return null;
   } catch {
     return null;
@@ -62,7 +66,7 @@ export function createAbortOperationHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -75,7 +79,7 @@ export function createAbortOperationHandler(events: EventEmitter) {
       if (!operation) {
         res.status(400).json({
           success: false,
-          error: 'No merge, rebase, or cherry-pick in progress',
+          error: "No merge, rebase, or cherry-pick in progress",
         });
         return;
       }
@@ -83,21 +87,21 @@ export function createAbortOperationHandler(events: EventEmitter) {
       // Abort the operation
       let abortCommand: string;
       switch (operation) {
-        case 'merge':
-          abortCommand = 'git merge --abort';
+        case "merge":
+          abortCommand = "git merge --abort";
           break;
-        case 'rebase':
-          abortCommand = 'git rebase --abort';
+        case "rebase":
+          abortCommand = "git rebase --abort";
           break;
-        case 'cherry-pick':
-          abortCommand = 'git cherry-pick --abort';
+        case "cherry-pick":
+          abortCommand = "git cherry-pick --abort";
           break;
       }
 
       await execAsync(abortCommand, { cwd: resolvedWorktreePath });
 
       // Emit event
-      events.emit('conflict:aborted', {
+      events.emit("conflict:aborted", {
         worktreePath: resolvedWorktreePath,
         operation,
       });
@@ -110,7 +114,7 @@ export function createAbortOperationHandler(events: EventEmitter) {
         },
       });
     } catch (error) {
-      logError(error, 'Abort operation failed');
+      logError(error, "Abort operation failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

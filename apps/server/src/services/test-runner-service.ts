@@ -11,12 +11,12 @@
  * - Cross-platform process cleanup (Windows/Unix)
  */
 
-import { spawn, execSync, type ChildProcess } from 'child_process';
-import * as secureFs from '../lib/secure-fs.js';
-import { createLogger } from '@pegasus/utils';
-import type { EventEmitter } from '../lib/events.js';
+import { spawn, execSync, type ChildProcess } from "child_process";
+import * as secureFs from "../lib/secure-fs.js";
+import { createLogger } from "@pegasus/utils";
+import type { EventEmitter } from "../lib/events.js";
 
-const logger = createLogger('TestRunnerService');
+const logger = createLogger("TestRunnerService");
 
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per test run
@@ -30,7 +30,13 @@ const OUTPUT_BATCH_SIZE = 8192; // Larger batch size to reduce event frequency
 /**
  * Status of a test run
  */
-export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
+export type TestRunStatus =
+  | "pending"
+  | "running"
+  | "passed"
+  | "failed"
+  | "cancelled"
+  | "error";
 
 /**
  * Information about an active test run session
@@ -115,7 +121,8 @@ class TestRunnerService {
   private appendToScrollback(session: TestRunSession, data: string): void {
     session.scrollbackBuffer += data;
     if (session.scrollbackBuffer.length > MAX_SCROLLBACK_SIZE) {
-      session.scrollbackBuffer = session.scrollbackBuffer.slice(-MAX_SCROLLBACK_SIZE);
+      session.scrollbackBuffer =
+        session.scrollbackBuffer.slice(-MAX_SCROLLBACK_SIZE);
     }
   }
 
@@ -136,15 +143,18 @@ class TestRunnerService {
       dataToSend = session.outputBuffer.slice(0, OUTPUT_BATCH_SIZE);
       session.outputBuffer = session.outputBuffer.slice(OUTPUT_BATCH_SIZE);
       // Schedule another flush for remaining data
-      session.flushTimeout = setTimeout(() => this.flushOutput(session), OUTPUT_THROTTLE_MS);
+      session.flushTimeout = setTimeout(
+        () => this.flushOutput(session),
+        OUTPUT_THROTTLE_MS,
+      );
     } else {
-      session.outputBuffer = '';
+      session.outputBuffer = "";
       session.flushTimeout = null;
     }
 
     // Emit output event for WebSocket streaming
     if (this.emitter) {
-      this.emitter.emit('test-runner:output', {
+      this.emitter.emit("test-runner:output", {
         sessionId: session.id,
         worktreePath: session.worktreePath,
         content: dataToSend,
@@ -173,7 +183,10 @@ class TestRunnerService {
 
     // Schedule flush if not already scheduled
     if (!session.flushTimeout) {
-      session.flushTimeout = setTimeout(() => this.flushOutput(session), OUTPUT_THROTTLE_MS);
+      session.flushTimeout = setTimeout(
+        () => this.flushOutput(session),
+        OUTPUT_THROTTLE_MS,
+      );
     }
 
     // Also log for debugging (existing behavior)
@@ -185,16 +198,16 @@ class TestRunnerService {
    */
   private killProcessTree(pid: number): void {
     try {
-      if (process.platform === 'win32') {
+      if (process.platform === "win32") {
         // Windows: use taskkill to kill process tree
-        execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' });
+        execSync(`taskkill /F /T /PID ${pid}`, { stdio: "ignore" });
       } else {
         // Unix: kill the process group
         try {
-          process.kill(-pid, 'SIGTERM');
+          process.kill(-pid, "SIGTERM");
         } catch {
           // Fallback to killing just the process
-          process.kill(pid, 'SIGTERM');
+          process.kill(pid, "SIGTERM");
         }
       }
     } catch (error) {
@@ -216,7 +229,7 @@ class TestRunnerService {
   private sanitizeTestFile(testFile: string): string {
     // Remove any shell metacharacters and normalize path
     // Allow only alphanumeric, dots, slashes, hyphens, underscores, colons (for Windows paths)
-    return testFile.replace(/[^a-zA-Z0-9.\\/_\-:]/g, '');
+    return testFile.replace(/[^a-zA-Z0-9.\\/_\-:]/g, "");
   }
 
   /**
@@ -231,7 +244,7 @@ class TestRunnerService {
     options: {
       command: string;
       testFile?: string;
-    }
+    },
   ): Promise<TestRunResult> {
     const { command, testFile } = options;
 
@@ -255,7 +268,7 @@ class TestRunnerService {
     if (!command) {
       return {
         success: false,
-        error: 'No test command provided',
+        error: "No test command provided",
       };
     }
 
@@ -283,11 +296,11 @@ class TestRunnerService {
       process: null,
       startedAt: new Date(),
       finishedAt: null,
-      status: 'pending',
+      status: "pending",
       exitCode: null,
       testFile,
-      scrollbackBuffer: '',
-      outputBuffer: '',
+      scrollbackBuffer: "",
+      outputBuffer: "",
       flushTimeout: null,
       stopping: false,
     };
@@ -295,22 +308,22 @@ class TestRunnerService {
     // Spawn the test process using shell
     const env = {
       ...process.env,
-      FORCE_COLOR: '1',
-      COLORTERM: 'truecolor',
-      TERM: 'xterm-256color',
-      CI: 'true', // Helps some test runners format output better
+      FORCE_COLOR: "1",
+      COLORTERM: "truecolor",
+      TERM: "xterm-256color",
+      CI: "true", // Helps some test runners format output better
     };
 
     const testProcess = spawn(finalCommand, [], {
       cwd: worktreePath,
       env,
       shell: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: process.platform !== 'win32', // Use process groups on Unix for cleanup
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: process.platform !== "win32", // Use process groups on Unix for cleanup
     });
 
     session.process = testProcess;
-    session.status = 'running';
+    session.status = "running";
 
     // Track if process failed early
     const status = { error: null as string | null, exited: false };
@@ -319,7 +332,7 @@ class TestRunnerService {
     const cleanupAndFinish = (
       exitCode: number | null,
       finalStatus: TestRunStatus,
-      errorMessage?: string
+      errorMessage?: string,
     ) => {
       session.finishedAt = new Date();
       session.exitCode = exitCode;
@@ -331,19 +344,23 @@ class TestRunnerService {
       }
 
       // Flush any remaining output
-      if (session.outputBuffer.length > 0 && this.emitter && !session.stopping) {
-        this.emitter.emit('test-runner:output', {
+      if (
+        session.outputBuffer.length > 0 &&
+        this.emitter &&
+        !session.stopping
+      ) {
+        this.emitter.emit("test-runner:output", {
           sessionId: session.id,
           worktreePath: session.worktreePath,
           content: session.outputBuffer,
           timestamp: new Date().toISOString(),
         });
-        session.outputBuffer = '';
+        session.outputBuffer = "";
       }
 
       // Emit completed event
       if (this.emitter && !session.stopping) {
-        this.emitter.emit('test-runner:completed', {
+        this.emitter.emit("test-runner:completed", {
           sessionId: session.id,
           worktreePath: session.worktreePath,
           command: session.command,
@@ -358,36 +375,36 @@ class TestRunnerService {
 
     // Capture stdout
     if (testProcess.stdout) {
-      testProcess.stdout.on('data', (data: Buffer) => {
+      testProcess.stdout.on("data", (data: Buffer) => {
         this.handleProcessOutput(session, data);
       });
     }
 
     // Capture stderr
     if (testProcess.stderr) {
-      testProcess.stderr.on('data', (data: Buffer) => {
+      testProcess.stderr.on("data", (data: Buffer) => {
         this.handleProcessOutput(session, data);
       });
     }
 
-    testProcess.on('error', (error) => {
+    testProcess.on("error", (error) => {
       logger.error(`Process error for ${sessionId}:`, error);
       status.error = error.message;
-      cleanupAndFinish(null, 'error', error.message);
+      cleanupAndFinish(null, "error", error.message);
     });
 
-    testProcess.on('exit', (code) => {
+    testProcess.on("exit", (code) => {
       logger.info(`Test process for ${worktreePath} exited with code ${code}`);
       status.exited = true;
 
       // Determine final status based on exit code
       let finalStatus: TestRunStatus;
       if (session.stopping) {
-        finalStatus = 'cancelled';
+        finalStatus = "cancelled";
       } else if (code === 0) {
-        finalStatus = 'passed';
+        finalStatus = "passed";
       } else {
-        finalStatus = 'failed';
+        finalStatus = "failed";
       }
 
       cleanupAndFinish(code, finalStatus);
@@ -409,7 +426,7 @@ class TestRunnerService {
     if (status.exited) {
       // Process already exited - check if it was immediate failure
       const exitedSession = this.sessions.get(sessionId);
-      if (exitedSession && exitedSession.status === 'error') {
+      if (exitedSession && exitedSession.status === "error") {
         return {
           success: false,
           error: `Test process exited immediately. Check output for details.`,
@@ -419,7 +436,7 @@ class TestRunnerService {
 
     // Emit started event
     if (this.emitter) {
-      this.emitter.emit('test-runner:started', {
+      this.emitter.emit("test-runner:started", {
         sessionId,
         worktreePath,
         command: finalCommand,
@@ -434,7 +451,7 @@ class TestRunnerService {
         sessionId,
         worktreePath,
         command: finalCommand,
-        status: 'running',
+        status: "running",
         testFile,
         message: `Tests started: ${finalCommand}`,
       },
@@ -461,7 +478,7 @@ class TestRunnerService {
       };
     }
 
-    if (session.status !== 'running') {
+    if (session.status !== "running") {
       return {
         success: true,
         result: {
@@ -487,16 +504,16 @@ class TestRunnerService {
       this.killProcessTree(session.process.pid);
     }
 
-    session.status = 'cancelled';
+    session.status = "cancelled";
     session.finishedAt = new Date();
 
     // Emit cancelled event
     if (this.emitter) {
-      this.emitter.emit('test-runner:completed', {
+      this.emitter.emit("test-runner:completed", {
         sessionId,
         worktreePath: session.worktreePath,
         command: session.command,
-        status: 'cancelled',
+        status: "cancelled",
         exitCode: null,
         duration: session.finishedAt.getTime() - session.startedAt.getTime(),
         timestamp: new Date().toISOString(),
@@ -507,7 +524,7 @@ class TestRunnerService {
       success: true,
       result: {
         sessionId,
-        message: 'Test run cancelled',
+        message: "Test run cancelled",
       },
     };
   }
@@ -517,7 +534,10 @@ class TestRunnerService {
    */
   getActiveSession(worktreePath: string): TestRunSession | undefined {
     for (const session of this.sessions.values()) {
-      if (session.worktreePath === worktreePath && session.status === 'running') {
+      if (
+        session.worktreePath === worktreePath &&
+        session.status === "running"
+      ) {
         return session;
       }
     }
@@ -620,7 +640,7 @@ class TestRunnerService {
   cleanupOldSessions(maxAgeMs: number = 30 * 60 * 1000): void {
     const now = Date.now();
     for (const [sessionId, session] of this.sessions.entries()) {
-      if (session.status !== 'running' && session.finishedAt) {
+      if (session.status !== "running" && session.finishedAt) {
         if (now - session.finishedAt.getTime() > maxAgeMs) {
           this.sessions.delete(sessionId);
           logger.debug(`Cleaned up old test session: ${sessionId}`);
@@ -636,7 +656,7 @@ class TestRunnerService {
     logger.info(`Cancelling all ${this.sessions.size} test sessions`);
 
     for (const session of this.sessions.values()) {
-      if (session.status === 'running') {
+      if (session.status === "running") {
         await this.stopTests(session.id);
       }
     }
@@ -662,18 +682,18 @@ export function getTestRunnerService(): TestRunnerService {
 }
 
 // Cleanup on process exit
-process.on('SIGTERM', () => {
+process.on("SIGTERM", () => {
   if (testRunnerServiceInstance) {
     testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGTERM:', err);
+      logger.error("Cleanup failed on SIGTERM:", err);
     });
   }
 });
 
-process.on('SIGINT', () => {
+process.on("SIGINT", () => {
   if (testRunnerServiceInstance) {
     testRunnerServiceInstance.cleanup().catch((err) => {
-      logger.error('Cleanup failed on SIGINT:', err);
+      logger.error("Cleanup failed on SIGINT:", err);
     });
   }
 });

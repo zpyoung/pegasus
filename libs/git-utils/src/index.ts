@@ -4,7 +4,7 @@
  */
 
 // Export command execution utilities
-export { execGitCommand } from './exec.js';
+export { execGitCommand } from "./exec.js";
 
 // Export types and constants
 export {
@@ -12,10 +12,15 @@ export {
   GIT_STATUS_MAP,
   type FileStatus,
   type MergeStateInfo,
-} from './types.js';
+} from "./types.js";
 
 // Export status utilities
-export { isGitRepo, parseGitStatus, detectMergeState, detectMergeCommit } from './status.js';
+export {
+  isGitRepo,
+  parseGitStatus,
+  detectMergeState,
+  detectMergeCommit,
+} from "./status.js";
 
 // Export diff utilities
 export {
@@ -24,10 +29,10 @@ export {
   listAllFilesInDirectory,
   generateDiffsForNonGitDirectory,
   getGitRepositoryDiffs,
-} from './diff.js';
+} from "./diff.js";
 
 // Export conflict utilities
-export { getConflictFiles } from './conflict.js';
+export { getConflictFiles } from "./conflict.js";
 
 // Export branch utilities
-export { getCurrentBranch } from './branch.js';
+export { getCurrentBranch } from "./branch.js";

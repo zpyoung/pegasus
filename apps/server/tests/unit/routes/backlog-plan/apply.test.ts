@@ -1,14 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockGetAll, mockCreate, mockUpdate, mockDelete, mockClearBacklogPlan } = vi.hoisted(() => ({
-  mockGetAll: vi.fn(),
-  mockCreate: vi.fn(),
-  mockUpdate: vi.fn(),
-  mockDelete: vi.fn(),
-  mockClearBacklogPlan: vi.fn(),
-}));
+const { mockGetAll, mockCreate, mockUpdate, mockDelete, mockClearBacklogPlan } =
+  vi.hoisted(() => ({
+    mockGetAll: vi.fn(),
+    mockCreate: vi.fn(),
+    mockUpdate: vi.fn(),
+    mockDelete: vi.fn(),
+    mockClearBacklogPlan: vi.fn(),
+  }));
 
-vi.mock('@/services/feature-loader.js', () => ({
+vi.mock("@/services/feature-loader.js", () => ({
   FeatureLoader: class {
     getAll = mockGetAll;
     create = mockCreate;
@@ -17,18 +18,19 @@ vi.mock('@/services/feature-loader.js', () => ({
   },
 }));
 
-vi.mock('@/routes/backlog-plan/common.js', () => ({
+vi.mock("@/routes/backlog-plan/common.js", () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
   },
   clearBacklogPlan: mockClearBacklogPlan,
-  getErrorMessage: (error: unknown) => (error instanceof Error ? error.message : String(error)),
+  getErrorMessage: (error: unknown) =>
+    error instanceof Error ? error.message : String(error),
   logError: vi.fn(),
 }));
 
-import { createApplyHandler } from '@/routes/backlog-plan/routes/apply.js';
+import { createApplyHandler } from "@/routes/backlog-plan/routes/apply.js";
 
 function createMockRes() {
   const res: {
@@ -42,21 +44,24 @@ function createMockRes() {
   return res;
 }
 
-describe('createApplyHandler', () => {
+describe("createApplyHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAll.mockResolvedValue([]);
-    mockCreate.mockResolvedValue({ id: 'feature-created' });
+    mockCreate.mockResolvedValue({ id: "feature-created" });
     mockUpdate.mockResolvedValue({});
     mockDelete.mockResolvedValue(true);
     mockClearBacklogPlan.mockResolvedValue(undefined);
   });
 
-  it('applies default feature model and planning settings when backlog plan additions omit them', async () => {
+  it("applies default feature model and planning settings when backlog plan additions omit them", async () => {
     const settingsService = {
       getGlobalSettings: vi.fn().mockResolvedValue({
-        defaultFeatureModel: { model: 'codex-gpt-5.2-codex', reasoningEffort: 'high' },
-        defaultPlanningMode: 'spec',
+        defaultFeatureModel: {
+          model: "codex-gpt-5.2-codex",
+          reasoningEffort: "high",
+        },
+        defaultPlanningMode: "spec",
         defaultRequirePlanApproval: true,
       }),
       getProjectSettings: vi.fn().mockResolvedValue({}),
@@ -64,15 +69,15 @@ describe('createApplyHandler', () => {
 
     const req = {
       body: {
-        projectPath: '/tmp/project',
+        projectPath: "/tmp/project",
         plan: {
           changes: [
             {
-              type: 'add',
+              type: "add",
               feature: {
-                id: 'feature-from-plan',
-                title: 'Created from plan',
-                description: 'desc',
+                id: "feature-from-plan",
+                title: "Created from plan",
+                description: "desc",
               },
             },
           ],
@@ -84,47 +89,47 @@ describe('createApplyHandler', () => {
     await createApplyHandler(settingsService)(req, res as any);
 
     expect(mockCreate).toHaveBeenCalledWith(
-      '/tmp/project',
+      "/tmp/project",
       expect.objectContaining({
-        model: 'codex-gpt-5.2-codex',
-        reasoningEffort: 'high',
-        planningMode: 'spec',
+        model: "codex-gpt-5.2-codex",
+        reasoningEffort: "high",
+        planningMode: "spec",
         requirePlanApproval: true,
-      })
+      }),
     );
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
-      })
+      }),
     );
   });
 
-  it('uses project default feature model override and enforces no approval for skip mode', async () => {
+  it("uses project default feature model override and enforces no approval for skip mode", async () => {
     const settingsService = {
       getGlobalSettings: vi.fn().mockResolvedValue({
-        defaultFeatureModel: { model: 'claude-opus' },
-        defaultPlanningMode: 'skip',
+        defaultFeatureModel: { model: "claude-opus" },
+        defaultPlanningMode: "skip",
         defaultRequirePlanApproval: true,
       }),
       getProjectSettings: vi.fn().mockResolvedValue({
         defaultFeatureModel: {
-          model: 'GLM-4.7',
-          providerId: 'provider-glm',
-          thinkingLevel: 'adaptive',
+          model: "GLM-4.7",
+          providerId: "provider-glm",
+          thinkingLevel: "adaptive",
         },
       }),
     } as any;
 
     const req = {
       body: {
-        projectPath: '/tmp/project',
+        projectPath: "/tmp/project",
         plan: {
           changes: [
             {
-              type: 'add',
+              type: "add",
               feature: {
-                id: 'feature-from-plan',
-                title: 'Created from plan',
+                id: "feature-from-plan",
+                title: "Created from plan",
               },
             },
           ],
@@ -136,14 +141,14 @@ describe('createApplyHandler', () => {
     await createApplyHandler(settingsService)(req, res as any);
 
     expect(mockCreate).toHaveBeenCalledWith(
-      '/tmp/project',
+      "/tmp/project",
       expect.objectContaining({
-        model: 'GLM-4.7',
-        providerId: 'provider-glm',
-        thinkingLevel: 'adaptive',
-        planningMode: 'skip',
+        model: "GLM-4.7",
+        providerId: "provider-glm",
+        thinkingLevel: "adaptive",
+        planningMode: "skip",
         requirePlanApproval: false,
-      })
+      }),
     );
   });
 });

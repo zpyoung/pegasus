@@ -4,44 +4,53 @@
  * POST /orphaned/bulk-resolve endpoint - Resolve multiple orphaned features at once
  */
 
-import crypto from 'crypto';
-import path from 'path';
-import type { Request, Response } from 'express';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { getErrorMessage, logError } from '../common.js';
-import { execGitCommand } from '../../../lib/git.js';
-import { deleteWorktreeMetadata } from '../../../lib/worktree-metadata.js';
-import { createLogger } from '@pegasus/utils';
+import crypto from "crypto";
+import path from "path";
+import type { Request, Response } from "express";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import { getErrorMessage, logError } from "../common.js";
+import { execGitCommand } from "../../../lib/git.js";
+import { deleteWorktreeMetadata } from "../../../lib/worktree-metadata.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('OrphanedFeatures');
+const logger = createLogger("OrphanedFeatures");
 
-type ResolveAction = 'delete' | 'create-worktree' | 'move-to-branch';
-const VALID_ACTIONS: ResolveAction[] = ['delete', 'create-worktree', 'move-to-branch'];
+type ResolveAction = "delete" | "create-worktree" | "move-to-branch";
+const VALID_ACTIONS: ResolveAction[] = [
+  "delete",
+  "create-worktree",
+  "move-to-branch",
+];
 
 export function createOrphanedListHandler(
   featureLoader: FeatureLoader,
-  autoModeService?: AutoModeServiceCompat
+  autoModeService?: AutoModeServiceCompat,
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath } = req.body as { projectPath: string };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!autoModeService) {
-        res.status(500).json({ success: false, error: 'Auto-mode service not available' });
+        res
+          .status(500)
+          .json({ success: false, error: "Auto-mode service not available" });
         return;
       }
 
-      const orphanedFeatures = await autoModeService.detectOrphanedFeatures(projectPath);
+      const orphanedFeatures =
+        await autoModeService.detectOrphanedFeatures(projectPath);
 
       res.json({ success: true, orphanedFeatures });
     } catch (error) {
-      logError(error, 'Detect orphaned features failed');
+      logError(error, "Detect orphaned features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -49,7 +58,7 @@ export function createOrphanedListHandler(
 
 export function createOrphanedResolveHandler(
   featureLoader: FeatureLoader,
-  _autoModeService?: AutoModeServiceCompat
+  _autoModeService?: AutoModeServiceCompat,
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -63,7 +72,7 @@ export function createOrphanedResolveHandler(
       if (!projectPath || !featureId || !action) {
         res.status(400).json({
           success: false,
-          error: 'projectPath, featureId, and action are required',
+          error: "projectPath, featureId, and action are required",
         });
         return;
       }
@@ -71,7 +80,7 @@ export function createOrphanedResolveHandler(
       if (!VALID_ACTIONS.includes(action)) {
         res.status(400).json({
           success: false,
-          error: `action must be one of: ${VALID_ACTIONS.join(', ')}`,
+          error: `action must be one of: ${VALID_ACTIONS.join(", ")}`,
         });
         return;
       }
@@ -81,17 +90,19 @@ export function createOrphanedResolveHandler(
         projectPath,
         featureId,
         action,
-        targetBranch
+        targetBranch,
       );
 
       if (!result.success) {
-        res.status(result.error === 'Feature not found' ? 404 : 500).json(result);
+        res
+          .status(result.error === "Feature not found" ? 404 : 500)
+          .json(result);
         return;
       }
 
       res.json(result);
     } catch (error) {
-      logError(error, 'Resolve orphaned feature failed');
+      logError(error, "Resolve orphaned feature failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -109,18 +120,18 @@ async function resolveOrphanedFeature(
   projectPath: string,
   featureId: string,
   action: ResolveAction,
-  targetBranch?: string | null
+  targetBranch?: string | null,
 ): Promise<BulkResolveResult> {
   try {
     const feature = await featureLoader.get(projectPath, featureId);
     if (!feature) {
-      return { featureId, success: false, error: 'Feature not found' };
+      return { featureId, success: false, error: "Feature not found" };
     }
 
     const missingBranch = feature.branchName;
 
     switch (action) {
-      case 'delete': {
+      case "delete": {
         if (missingBranch) {
           try {
             await deleteWorktreeMetadata(projectPath, missingBranch);
@@ -130,29 +141,48 @@ async function resolveOrphanedFeature(
         }
         const success = await featureLoader.delete(projectPath, featureId);
         if (!success) {
-          return { featureId, success: false, error: 'Deletion failed' };
+          return { featureId, success: false, error: "Deletion failed" };
         }
-        logger.info(`Deleted orphaned feature ${featureId} (branch: ${missingBranch})`);
-        return { featureId, success: true, action: 'deleted' };
+        logger.info(
+          `Deleted orphaned feature ${featureId} (branch: ${missingBranch})`,
+        );
+        return { featureId, success: true, action: "deleted" };
       }
 
-      case 'create-worktree': {
+      case "create-worktree": {
         if (!missingBranch) {
-          return { featureId, success: false, error: 'Feature has no branch name to recreate' };
+          return {
+            featureId,
+            success: false,
+            error: "Feature has no branch name to recreate",
+          };
         }
 
-        const sanitizedName = missingBranch.replace(/[^a-zA-Z0-9_-]/g, '-');
-        const hash = crypto.createHash('sha1').update(missingBranch).digest('hex').slice(0, 8);
-        const worktreesDir = path.join(projectPath, '.worktrees');
-        const worktreePath = path.join(worktreesDir, `${sanitizedName}-${hash}`);
+        const sanitizedName = missingBranch.replace(/[^a-zA-Z0-9_-]/g, "-");
+        const hash = crypto
+          .createHash("sha1")
+          .update(missingBranch)
+          .digest("hex")
+          .slice(0, 8);
+        const worktreesDir = path.join(projectPath, ".worktrees");
+        const worktreePath = path.join(
+          worktreesDir,
+          `${sanitizedName}-${hash}`,
+        );
 
         try {
-          await execGitCommand(['worktree', 'add', '-b', missingBranch, worktreePath], projectPath);
+          await execGitCommand(
+            ["worktree", "add", "-b", missingBranch, worktreePath],
+            projectPath,
+          );
         } catch (error) {
           const msg = getErrorMessage(error);
-          if (msg.includes('already exists')) {
+          if (msg.includes("already exists")) {
             try {
-              await execGitCommand(['worktree', 'add', worktreePath, missingBranch], projectPath);
+              await execGitCommand(
+                ["worktree", "add", worktreePath, missingBranch],
+                projectPath,
+              );
             } catch (innerError) {
               return {
                 featureId,
@@ -161,24 +191,31 @@ async function resolveOrphanedFeature(
               };
             }
           } else {
-            return { featureId, success: false, error: `Failed to create worktree: ${msg}` };
+            return {
+              featureId,
+              success: false,
+              error: `Failed to create worktree: ${msg}`,
+            };
           }
         }
 
         logger.info(
-          `Created worktree for orphaned feature ${featureId} at ${worktreePath} (branch: ${missingBranch})`
+          `Created worktree for orphaned feature ${featureId} at ${worktreePath} (branch: ${missingBranch})`,
         );
-        return { featureId, success: true, action: 'worktree-created' };
+        return { featureId, success: true, action: "worktree-created" };
       }
 
-      case 'move-to-branch': {
+      case "move-to-branch": {
         // Move the feature to a different branch (or clear branch to use main worktree)
         const newBranch = targetBranch || null;
 
         // Validate that the target branch exists if one is specified
         if (newBranch) {
           try {
-            await execGitCommand(['rev-parse', '--verify', newBranch], projectPath);
+            await execGitCommand(
+              ["rev-parse", "--verify", newBranch],
+              projectPath,
+            );
           } catch {
             return {
               featureId,
@@ -190,7 +227,7 @@ async function resolveOrphanedFeature(
 
         await featureLoader.update(projectPath, featureId, {
           branchName: newBranch,
-          status: 'pending',
+          status: "pending",
         });
 
         // Clean up old worktree metadata
@@ -202,11 +239,11 @@ async function resolveOrphanedFeature(
           }
         }
 
-        const destination = newBranch ?? 'main worktree';
+        const destination = newBranch ?? "main worktree";
         logger.info(
-          `Moved orphaned feature ${featureId} to ${destination} (was: ${missingBranch})`
+          `Moved orphaned feature ${featureId} to ${destination} (was: ${missingBranch})`,
         );
-        return { featureId, success: true, action: 'moved' };
+        return { featureId, success: true, action: "moved" };
       }
     }
   } catch (error) {
@@ -233,7 +270,8 @@ export function createOrphanedBulkResolveHandler(featureLoader: FeatureLoader) {
       ) {
         res.status(400).json({
           success: false,
-          error: 'projectPath, featureIds (non-empty array), and action are required',
+          error:
+            "projectPath, featureIds (non-empty array), and action are required",
         });
         return;
       }
@@ -241,7 +279,7 @@ export function createOrphanedBulkResolveHandler(featureLoader: FeatureLoader) {
       if (!VALID_ACTIONS.includes(action)) {
         res.status(400).json({
           success: false,
-          error: `action must be one of: ${VALID_ACTIONS.join(', ')}`,
+          error: `action must be one of: ${VALID_ACTIONS.join(", ")}`,
         });
         return;
       }
@@ -250,22 +288,28 @@ export function createOrphanedBulkResolveHandler(featureLoader: FeatureLoader) {
       // in parallel for delete/move-to-branch
       const results: BulkResolveResult[] = [];
 
-      if (action === 'create-worktree') {
+      if (action === "create-worktree") {
         for (const featureId of featureIds) {
           const result = await resolveOrphanedFeature(
             featureLoader,
             projectPath,
             featureId,
             action,
-            targetBranch
+            targetBranch,
           );
           results.push(result);
         }
       } else {
         const batchResults = await Promise.all(
           featureIds.map((featureId) =>
-            resolveOrphanedFeature(featureLoader, projectPath, featureId, action, targetBranch)
-          )
+            resolveOrphanedFeature(
+              featureLoader,
+              projectPath,
+              featureId,
+              action,
+              targetBranch,
+            ),
+          ),
         );
         results.push(...batchResults);
       }
@@ -280,7 +324,7 @@ export function createOrphanedBulkResolveHandler(featureLoader: FeatureLoader) {
         results,
       });
     } catch (error) {
-      logError(error, 'Bulk resolve orphaned features failed');
+      logError(error, "Bulk resolve orphaned features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

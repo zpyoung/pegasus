@@ -1,12 +1,12 @@
-import { Page, expect } from '@playwright/test';
-import { getByTestId, getButtonByText } from './elements';
+import { Page, expect } from "@playwright/test";
+import { getByTestId, getButtonByText } from "./elements";
 
 /**
  * Get the platform-specific modifier key (Meta for Mac, Control for Windows/Linux)
  * This is used for keyboard shortcuts like Cmd+Enter or Ctrl+Enter
  */
-export function getPlatformModifier(): 'Meta' | 'Control' {
-  return process.platform === 'darwin' ? 'Meta' : 'Control';
+export function getPlatformModifier(): "Meta" | "Control" {
+  return process.platform === "darwin" ? "Meta" : "Control";
 }
 
 /**
@@ -26,14 +26,17 @@ export async function clickElement(page: Page, testId: string): Promise<void> {
   // before any clickElement calls, so we skip the splash check here to avoid blocking when
   // other fixed overlays (e.g. HeaderActionsPanel backdrop at z-[60]) are present on the page.
   const element = page.locator(`[data-testid="${testId}"]`);
-  await element.waitFor({ state: 'visible', timeout: 10000 });
+  await element.waitFor({ state: "visible", timeout: 10000 });
   await element.click();
 }
 
 /**
  * Click a button by its text content
  */
-export async function clickButtonByText(page: Page, text: string): Promise<void> {
+export async function clickButtonByText(
+  page: Page,
+  text: string,
+): Promise<void> {
   const button = await getButtonByText(page, text);
   await button.click();
 }
@@ -41,7 +44,11 @@ export async function clickButtonByText(page: Page, text: string): Promise<void>
 /**
  * Fill an input field by its data-testid attribute
  */
-export async function fillInput(page: Page, testId: string, value: string): Promise<void> {
+export async function fillInput(
+  page: Page,
+  testId: string,
+  value: string,
+): Promise<void> {
   const input = await getByTestId(page, testId);
   await input.fill(value);
 }
@@ -58,7 +65,7 @@ export async function pressShortcut(page: Page, key: string): Promise<void> {
  * This wrapper ensures authentication happens before navigation
  */
 export async function gotoWithAuth(page: Page, url: string): Promise<void> {
-  const { authenticateForTests } = await import('../api/client');
+  const { authenticateForTests } = await import("../api/client");
   await authenticateForTests(page);
   await page.goto(url);
 }
@@ -80,9 +87,11 @@ export async function handleLoginScreenIfPresent(page: Page): Promise<boolean> {
 
   const appContent = page.locator(APP_CONTENT_SELECTOR);
   const loginInput = page
-    .locator('[data-testid="login-api-key-input"], input[type="password"][placeholder*="API key"]')
+    .locator(
+      '[data-testid="login-api-key-input"], input[type="password"][placeholder*="API key"]',
+    )
     .first();
-  const loggedOutPage = page.getByRole('heading', { name: /logged out/i });
+  const loggedOutPage = page.getByRole("heading", { name: /logged out/i });
   const goToLoginButton = page.locator('button:has-text("Go to login")');
 
   // Race between login screen, logged-out page, a delayed redirect to /login, and actual content
@@ -90,43 +99,47 @@ export async function handleLoginScreenIfPresent(page: Page): Promise<boolean> {
   const result = await Promise.race([
     appContent
       .first()
-      .waitFor({ state: 'visible', timeout: maxWaitMs })
-      .then(() => 'app-content' as const)
+      .waitFor({ state: "visible", timeout: maxWaitMs })
+      .then(() => "app-content" as const)
       .catch(() => null),
     page
-      .waitForURL((url) => url.pathname.includes('/login'), { timeout: maxWaitMs })
-      .then(() => 'login-redirect' as const)
+      .waitForURL((url) => url.pathname.includes("/login"), {
+        timeout: maxWaitMs,
+      })
+      .then(() => "login-redirect" as const)
       .catch(() => null),
     loginInput
-      .waitFor({ state: 'visible', timeout: maxWaitMs })
-      .then(() => 'login-input' as const)
+      .waitFor({ state: "visible", timeout: maxWaitMs })
+      .then(() => "login-input" as const)
       .catch(() => null),
     loggedOutPage
-      .waitFor({ state: 'visible', timeout: maxWaitMs })
-      .then(() => 'logged-out' as const)
+      .waitFor({ state: "visible", timeout: maxWaitMs })
+      .then(() => "logged-out" as const)
       .catch(() => null),
   ]);
 
   // Happy path: app content loaded, no login needed
-  if (result === 'app-content' || result === null) {
+  if (result === "app-content" || result === null) {
     return false;
   }
 
   // Handle logged-out page - click "Go to login" button and then login
-  if (result === 'logged-out') {
+  if (result === "logged-out") {
     await goToLoginButton.click();
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState("domcontentloaded");
     // Now handle the login screen
     return handleLoginScreenIfPresent(page);
   }
 
-  const loginVisible = result === 'login-redirect' || result === 'login-input';
+  const loginVisible = result === "login-redirect" || result === "login-input";
 
   if (loginVisible) {
     // Wait for login input to be visible if we were redirected
-    await loginInput.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await loginInput
+      .waitFor({ state: "visible", timeout: 5000 })
+      .catch(() => {});
 
-    const apiKey = process.env.PEGASUS_API_KEY || 'test-api-key-for-e2e-tests';
+    const apiKey = process.env.PEGASUS_API_KEY || "test-api-key-for-e2e-tests";
     await loginInput.fill(apiKey);
 
     // Wait for button to be enabled (it's disabled when input is empty)
@@ -138,11 +151,13 @@ export async function handleLoginScreenIfPresent(page: Page): Promise<boolean> {
 
     // Wait for navigation away from login - either to content or URL change
     await Promise.race([
-      page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 }),
-      appContent.first().waitFor({ state: 'visible', timeout: 15000 }),
+      page.waitForURL((url) => !url.pathname.includes("/login"), {
+        timeout: 15000,
+      }),
+      appContent.first().waitFor({ state: "visible", timeout: 15000 }),
     ]).catch(() => {});
 
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState("domcontentloaded");
 
     return true;
   }
@@ -172,12 +187,12 @@ export async function focusOnInput(page: Page, testId: string): Promise<void> {
  */
 export async function closeDialogWithEscape(
   page: Page,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<void> {
-  await page.keyboard.press('Escape');
+  await page.keyboard.press("Escape");
   const timeout = options?.timeout ?? 5000;
   const openDialog = page.locator('[role="dialog"][data-state="open"]').first();
   if ((await openDialog.count()) > 0) {
-    await openDialog.waitFor({ state: 'hidden', timeout }).catch(() => {});
+    await openDialog.waitFor({ state: "hidden", timeout }).catch(() => {});
   }
 }

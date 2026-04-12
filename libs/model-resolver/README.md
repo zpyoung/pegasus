@@ -19,25 +19,25 @@ pnpm add @pegasus/model-resolver
 Convert model aliases to full model identifiers.
 
 ```typescript
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import { CLAUDE_MODEL_MAP } from '@pegasus/types';
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import { CLAUDE_MODEL_MAP } from "@pegasus/types";
 
 // Resolve model string
-const model = resolveModelString('sonnet');
+const model = resolveModelString("sonnet");
 // Returns: 'claude-sonnet-4-20250514'
 
-const model2 = resolveModelString('haiku');
+const model2 = resolveModelString("haiku");
 // Returns: 'claude-haiku-4-5'
 
-const model3 = resolveModelString('opus');
+const model3 = resolveModelString("opus");
 // Returns: 'claude-opus-4-6'
 
 // Use with custom default
-const model4 = resolveModelString(undefined, 'claude-sonnet-4-20250514');
+const model4 = resolveModelString(undefined, "claude-sonnet-4-20250514");
 // Returns: 'claude-sonnet-4-20250514' (default)
 
 // Direct model ID passthrough
-const model5 = resolveModelString('claude-opus-4-6');
+const model5 = resolveModelString("claude-opus-4-6");
 // Returns: 'claude-opus-4-6' (unchanged)
 ```
 
@@ -46,13 +46,13 @@ const model5 = resolveModelString('claude-opus-4-6');
 Get the actual model that will be used.
 
 ```typescript
-import { getEffectiveModel } from '@pegasus/model-resolver';
+import { getEffectiveModel } from "@pegasus/model-resolver";
 
 // Get effective model with fallback chain
 const model = getEffectiveModel({
-  requestedModel: 'sonnet',
+  requestedModel: "sonnet",
   featureModel: undefined,
-  defaultModel: 'claude-sonnet-4-20250514',
+  defaultModel: "claude-sonnet-4-20250514",
 });
 ```
 
@@ -61,8 +61,8 @@ const model = getEffectiveModel({
 Access model mappings and defaults.
 
 ```typescript
-import { DEFAULT_MODELS } from '@pegasus/model-resolver';
-import { CLAUDE_MODEL_MAP } from '@pegasus/types';
+import { DEFAULT_MODELS } from "@pegasus/model-resolver";
+import { CLAUDE_MODEL_MAP } from "@pegasus/types";
 
 // Default models for different contexts
 console.log(DEFAULT_MODELS.claude); // 'claude-sonnet-4-20250514'
@@ -78,8 +78,8 @@ console.log(CLAUDE_MODEL_MAP.opus); // 'claude-opus-4-6'
 ## Usage Example
 
 ```typescript
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import type { Feature } from '@pegasus/types';
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import type { Feature } from "@pegasus/types";
 
 function prepareFeatureExecution(feature: Feature) {
   // Resolve model from feature or use default
@@ -96,10 +96,10 @@ function prepareFeatureExecution(feature: Feature) {
 
 // Example usage
 const feature: Feature = {
-  id: 'auth-feature',
-  category: 'backend',
-  description: 'Add authentication',
-  model: 'opus', // User-friendly alias
+  id: "auth-feature",
+  category: "backend",
+  description: "Add authentication",
+  model: "opus", // User-friendly alias
 };
 
 prepareFeatureExecution(feature);

@@ -7,8 +7,8 @@
  */
 
 // Import shared model constants and types
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@pegasus/types';
-import { resolveModelString } from '@pegasus/model-resolver';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from "@pegasus/types";
+import { resolveModelString } from "@pegasus/model-resolver";
 
 // Re-export for backward compatibility
 export { CLAUDE_MODEL_MAP, DEFAULT_MODELS, resolveModelString };
@@ -27,7 +27,8 @@ export function getChatModel(explicitModel?: string): string {
     return resolveModelString(explicitModel);
   }
 
-  const envModel = import.meta.env.PEGASUS_MODEL_CHAT || import.meta.env.PEGASUS_MODEL_DEFAULT;
+  const envModel =
+    import.meta.env.PEGASUS_MODEL_CHAT || import.meta.env.PEGASUS_MODEL_DEFAULT;
 
   if (envModel) {
     return resolveModelString(envModel);
@@ -40,14 +41,14 @@ export function getChatModel(explicitModel?: string): string {
  * Default allowed tools for chat interactions
  */
 export const CHAT_TOOLS = [
-  'Read',
-  'Write',
-  'Edit',
-  'Glob',
-  'Grep',
-  'Bash',
-  'WebSearch',
-  'WebFetch',
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep",
+  "Bash",
+  "WebSearch",
+  "WebFetch",
 ] as const;
 
 /**

@@ -26,52 +26,52 @@ import {
   Trees,
   Waves,
   Wind,
-} from 'lucide-react';
+} from "lucide-react";
 
 // Theme value type - all available themes
 export type Theme =
   // Dark themes (16)
-  | 'dark'
-  | 'retro'
-  | 'dracula'
-  | 'nord'
-  | 'monokai'
-  | 'tokyonight'
-  | 'solarized'
-  | 'gruvbox'
-  | 'catppuccin'
-  | 'onedark'
-  | 'synthwave'
-  | 'red'
-  | 'sunset'
-  | 'gray'
-  | 'forest'
-  | 'ocean'
-  | 'ember'
-  | 'ayu-dark'
-  | 'ayu-mirage'
-  | 'matcha'
+  | "dark"
+  | "retro"
+  | "dracula"
+  | "nord"
+  | "monokai"
+  | "tokyonight"
+  | "solarized"
+  | "gruvbox"
+  | "catppuccin"
+  | "onedark"
+  | "synthwave"
+  | "red"
+  | "sunset"
+  | "gray"
+  | "forest"
+  | "ocean"
+  | "ember"
+  | "ayu-dark"
+  | "ayu-mirage"
+  | "matcha"
   // Light themes
-  | 'light'
-  | 'cream'
-  | 'solarizedlight'
-  | 'github'
-  | 'paper'
-  | 'rose'
-  | 'mint'
-  | 'lavender'
-  | 'sand'
-  | 'sky'
-  | 'peach'
-  | 'snow'
-  | 'sepia'
-  | 'gruvboxlight'
-  | 'nordlight'
-  | 'blossom'
-  | 'ayu-light'
-  | 'onelight'
-  | 'bluloco'
-  | 'feather';
+  | "light"
+  | "cream"
+  | "solarizedlight"
+  | "github"
+  | "paper"
+  | "rose"
+  | "mint"
+  | "lavender"
+  | "sand"
+  | "sky"
+  | "peach"
+  | "snow"
+  | "sepia"
+  | "gruvboxlight"
+  | "nordlight"
+  | "blossom"
+  | "ayu-light"
+  | "onelight"
+  | "bluloco"
+  | "feather";
 
 export interface ThemeOption {
   value: Theme;
@@ -86,325 +86,325 @@ export interface ThemeOption {
 export const themeOptions: ReadonlyArray<ThemeOption> = [
   // Dark themes (20) - alphabetical, Dark first
   {
-    value: 'dark',
-    label: 'Dark',
+    value: "dark",
+    label: "Dark",
     Icon: Moon,
-    testId: 'dark-mode-button',
+    testId: "dark-mode-button",
     isDark: true,
-    color: '#3b82f6',
+    color: "#3b82f6",
   },
   {
-    value: 'ayu-dark',
-    label: 'Ayu Dark',
+    value: "ayu-dark",
+    label: "Ayu Dark",
     Icon: Moon,
-    testId: 'ayu-dark-mode-button',
+    testId: "ayu-dark-mode-button",
     isDark: true,
-    color: '#E6B450',
+    color: "#E6B450",
   },
   {
-    value: 'ayu-mirage',
-    label: 'Ayu Mirage',
+    value: "ayu-mirage",
+    label: "Ayu Mirage",
     Icon: Sparkles,
-    testId: 'ayu-mirage-mode-button',
+    testId: "ayu-mirage-mode-button",
     isDark: true,
-    color: '#FFCC66',
+    color: "#FFCC66",
   },
   {
-    value: 'catppuccin',
-    label: 'Catppuccin',
+    value: "catppuccin",
+    label: "Catppuccin",
     Icon: Cat,
-    testId: 'catppuccin-mode-button',
+    testId: "catppuccin-mode-button",
     isDark: true,
-    color: '#cba6f7',
+    color: "#cba6f7",
   },
   {
-    value: 'dracula',
-    label: 'Dracula',
+    value: "dracula",
+    label: "Dracula",
     Icon: Ghost,
-    testId: 'dracula-mode-button',
+    testId: "dracula-mode-button",
     isDark: true,
-    color: '#bd93f9',
+    color: "#bd93f9",
   },
   {
-    value: 'ember',
-    label: 'Ember',
+    value: "ember",
+    label: "Ember",
     Icon: Sunrise,
-    testId: 'ember-mode-button',
+    testId: "ember-mode-button",
     isDark: true,
-    color: '#fd971f',
+    color: "#fd971f",
   },
   {
-    value: 'forest',
-    label: 'Forest',
+    value: "forest",
+    label: "Forest",
     Icon: Leaf,
-    testId: 'forest-mode-button',
+    testId: "forest-mode-button",
     isDark: true,
-    color: '#22c55e',
+    color: "#22c55e",
   },
   {
-    value: 'gray',
-    label: 'Gray',
+    value: "gray",
+    label: "Gray",
     Icon: Square,
-    testId: 'gray-mode-button',
+    testId: "gray-mode-button",
     isDark: true,
-    color: '#6b7280',
+    color: "#6b7280",
   },
   {
-    value: 'gruvbox',
-    label: 'Gruvbox',
+    value: "gruvbox",
+    label: "Gruvbox",
     Icon: Trees,
-    testId: 'gruvbox-mode-button',
+    testId: "gruvbox-mode-button",
     isDark: true,
-    color: '#fe8019',
+    color: "#fe8019",
   },
   {
-    value: 'matcha',
-    label: 'Matcha',
+    value: "matcha",
+    label: "Matcha",
     Icon: Leaf,
-    testId: 'matcha-mode-button',
+    testId: "matcha-mode-button",
     isDark: true,
-    color: '#A4B07E',
+    color: "#A4B07E",
   },
   {
-    value: 'monokai',
-    label: 'Monokai',
+    value: "monokai",
+    label: "Monokai",
     Icon: Flame,
-    testId: 'monokai-mode-button',
+    testId: "monokai-mode-button",
     isDark: true,
-    color: '#f92672',
+    color: "#f92672",
   },
   {
-    value: 'nord',
-    label: 'Nord',
+    value: "nord",
+    label: "Nord",
     Icon: Snowflake,
-    testId: 'nord-mode-button',
+    testId: "nord-mode-button",
     isDark: true,
-    color: '#88c0d0',
+    color: "#88c0d0",
   },
   {
-    value: 'ocean',
-    label: 'Ocean',
+    value: "ocean",
+    label: "Ocean",
     Icon: Waves,
-    testId: 'ocean-mode-button',
+    testId: "ocean-mode-button",
     isDark: true,
-    color: '#06b6d4',
+    color: "#06b6d4",
   },
   {
-    value: 'onedark',
-    label: 'One Dark',
+    value: "onedark",
+    label: "One Dark",
     Icon: Atom,
-    testId: 'onedark-mode-button',
+    testId: "onedark-mode-button",
     isDark: true,
-    color: '#61afef',
+    color: "#61afef",
   },
   {
-    value: 'red',
-    label: 'Red',
+    value: "red",
+    label: "Red",
     Icon: Heart,
-    testId: 'red-mode-button',
+    testId: "red-mode-button",
     isDark: true,
-    color: '#ef4444',
+    color: "#ef4444",
   },
   {
-    value: 'retro',
-    label: 'Retro',
+    value: "retro",
+    label: "Retro",
     Icon: Terminal,
-    testId: 'retro-mode-button',
+    testId: "retro-mode-button",
     isDark: true,
-    color: '#22c55e',
+    color: "#22c55e",
   },
   {
-    value: 'solarized',
-    label: 'Solarized Dark',
+    value: "solarized",
+    label: "Solarized Dark",
     Icon: Eclipse,
-    testId: 'solarized-mode-button',
+    testId: "solarized-mode-button",
     isDark: true,
-    color: '#268bd2',
+    color: "#268bd2",
   },
   {
-    value: 'sunset',
-    label: 'Sunset',
+    value: "sunset",
+    label: "Sunset",
     Icon: CloudSun,
-    testId: 'sunset-mode-button',
+    testId: "sunset-mode-button",
     isDark: true,
-    color: '#f97316',
+    color: "#f97316",
   },
   {
-    value: 'synthwave',
-    label: 'Synthwave',
+    value: "synthwave",
+    label: "Synthwave",
     Icon: Radio,
-    testId: 'synthwave-mode-button',
+    testId: "synthwave-mode-button",
     isDark: true,
-    color: '#ff7edb',
+    color: "#ff7edb",
   },
   {
-    value: 'tokyonight',
-    label: 'Tokyo Night',
+    value: "tokyonight",
+    label: "Tokyo Night",
     Icon: Sparkles,
-    testId: 'tokyonight-mode-button',
+    testId: "tokyonight-mode-button",
     isDark: true,
-    color: '#bb9af7',
+    color: "#bb9af7",
   },
   // Light themes (20) - alphabetical, Light first
   {
-    value: 'light',
-    label: 'Light',
+    value: "light",
+    label: "Light",
     Icon: Sun,
-    testId: 'light-mode-button',
+    testId: "light-mode-button",
     isDark: false,
-    color: '#3b82f6',
+    color: "#3b82f6",
   },
   {
-    value: 'ayu-light',
-    label: 'Ayu Light',
+    value: "ayu-light",
+    label: "Ayu Light",
     Icon: Sun,
-    testId: 'ayu-light-mode-button',
+    testId: "ayu-light-mode-button",
     isDark: false,
-    color: '#F29718',
+    color: "#F29718",
   },
   {
-    value: 'blossom',
-    label: 'Blossom',
+    value: "blossom",
+    label: "Blossom",
     Icon: Cherry,
-    testId: 'blossom-mode-button',
+    testId: "blossom-mode-button",
     isDark: false,
-    color: '#ec4899',
+    color: "#ec4899",
   },
   {
-    value: 'bluloco',
-    label: 'Bluloco',
+    value: "bluloco",
+    label: "Bluloco",
     Icon: Waves,
-    testId: 'bluloco-mode-button',
+    testId: "bluloco-mode-button",
     isDark: false,
-    color: '#0099e1',
+    color: "#0099e1",
   },
   {
-    value: 'cream',
-    label: 'Cream',
+    value: "cream",
+    label: "Cream",
     Icon: Coffee,
-    testId: 'cream-mode-button',
+    testId: "cream-mode-button",
     isDark: false,
-    color: '#b45309',
+    color: "#b45309",
   },
   {
-    value: 'feather',
-    label: 'Feather',
+    value: "feather",
+    label: "Feather",
     Icon: Feather,
-    testId: 'feather-mode-button',
+    testId: "feather-mode-button",
     isDark: false,
-    color: '#FF7B2E',
+    color: "#FF7B2E",
   },
   {
-    value: 'github',
-    label: 'GitHub',
+    value: "github",
+    label: "GitHub",
     Icon: Github,
-    testId: 'github-mode-button',
+    testId: "github-mode-button",
     isDark: false,
-    color: '#0969da',
+    color: "#0969da",
   },
   {
-    value: 'gruvboxlight',
-    label: 'Gruvbox Light',
+    value: "gruvboxlight",
+    label: "Gruvbox Light",
     Icon: Trees,
-    testId: 'gruvboxlight-mode-button',
+    testId: "gruvboxlight-mode-button",
     isDark: false,
-    color: '#d65d0e',
+    color: "#d65d0e",
   },
   {
-    value: 'lavender',
-    label: 'Lavender',
+    value: "lavender",
+    label: "Lavender",
     Icon: Feather,
-    testId: 'lavender-mode-button',
+    testId: "lavender-mode-button",
     isDark: false,
-    color: '#8b5cf6',
+    color: "#8b5cf6",
   },
   {
-    value: 'mint',
-    label: 'Mint',
+    value: "mint",
+    label: "Mint",
     Icon: Wind,
-    testId: 'mint-mode-button',
+    testId: "mint-mode-button",
     isDark: false,
-    color: '#0d9488',
+    color: "#0d9488",
   },
   {
-    value: 'nordlight',
-    label: 'Nord Light',
+    value: "nordlight",
+    label: "Nord Light",
     Icon: Snowflake,
-    testId: 'nordlight-mode-button',
+    testId: "nordlight-mode-button",
     isDark: false,
-    color: '#5e81ac',
+    color: "#5e81ac",
   },
   {
-    value: 'onelight',
-    label: 'One Light',
+    value: "onelight",
+    label: "One Light",
     Icon: Atom,
-    testId: 'onelight-mode-button',
+    testId: "onelight-mode-button",
     isDark: false,
-    color: '#526FFF',
+    color: "#526FFF",
   },
   {
-    value: 'paper',
-    label: 'Paper',
+    value: "paper",
+    label: "Paper",
     Icon: Scroll,
-    testId: 'paper-mode-button',
+    testId: "paper-mode-button",
     isDark: false,
-    color: '#374151',
+    color: "#374151",
   },
   {
-    value: 'peach',
-    label: 'Peach',
+    value: "peach",
+    label: "Peach",
     Icon: Cherry,
-    testId: 'peach-mode-button',
+    testId: "peach-mode-button",
     isDark: false,
-    color: '#ea580c',
+    color: "#ea580c",
   },
   {
-    value: 'rose',
-    label: 'Rose',
+    value: "rose",
+    label: "Rose",
     Icon: Flower2,
-    testId: 'rose-mode-button',
+    testId: "rose-mode-button",
     isDark: false,
-    color: '#e11d48',
+    color: "#e11d48",
   },
   {
-    value: 'sand',
-    label: 'Sand',
+    value: "sand",
+    label: "Sand",
     Icon: Palmtree,
-    testId: 'sand-mode-button',
+    testId: "sand-mode-button",
     isDark: false,
-    color: '#d97706',
+    color: "#d97706",
   },
   {
-    value: 'sepia',
-    label: 'Sepia',
+    value: "sepia",
+    label: "Sepia",
     Icon: Coffee,
-    testId: 'sepia-mode-button',
+    testId: "sepia-mode-button",
     isDark: false,
-    color: '#92400e',
+    color: "#92400e",
   },
   {
-    value: 'sky',
-    label: 'Sky',
+    value: "sky",
+    label: "Sky",
     Icon: Sun,
-    testId: 'sky-mode-button',
+    testId: "sky-mode-button",
     isDark: false,
-    color: '#0284c7',
+    color: "#0284c7",
   },
   {
-    value: 'snow',
-    label: 'Snow',
+    value: "snow",
+    label: "Snow",
     Icon: Snowflake,
-    testId: 'snow-mode-button',
+    testId: "snow-mode-button",
     isDark: false,
-    color: '#3b82f6',
+    color: "#3b82f6",
   },
   {
-    value: 'solarizedlight',
-    label: 'Solarized Light',
+    value: "solarizedlight",
+    label: "Solarized Light",
     Icon: Sunrise,
-    testId: 'solarizedlight-mode-button',
+    testId: "solarizedlight-mode-button",
     isDark: false,
-    color: '#268bd2',
+    color: "#268bd2",
   },
 ];
 

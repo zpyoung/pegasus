@@ -1,6 +1,6 @@
 // Re-export shared types from @pegasus/types
-export type { PRState, WorktreePRInfo } from '@pegasus/types';
-import type { PRState, WorktreePRInfo } from '@pegasus/types';
+export type { PRState, WorktreePRInfo } from "@pegasus/types";
+import type { PRState, WorktreePRInfo } from "@pegasus/types";
 
 export interface WorktreeInfo {
   path: string;
@@ -14,7 +14,7 @@ export interface WorktreeInfo {
   /** Whether a merge, rebase, or cherry-pick is in progress with conflicts */
   hasConflicts?: boolean;
   /** Type of conflict operation in progress */
-  conflictType?: 'merge' | 'rebase' | 'cherry-pick';
+  conflictType?: "merge" | "rebase" | "cherry-pick";
   /** List of files with conflicts */
   conflictFiles?: string[];
   /** The branch that is the source of the conflict (e.g. the branch being merged in) */
@@ -45,7 +45,7 @@ export interface TestSessionInfo {
   worktreePath: string;
   /** The test command being run (from project settings) */
   command: string;
-  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled';
+  status: "pending" | "running" | "passed" | "failed" | "cancelled";
   testFile?: string;
   startedAt: string;
   finishedAt?: string;
@@ -91,7 +91,7 @@ export interface MergeConflictInfo {
   /** List of files with conflicts, if available */
   conflictFiles?: string[];
   /** Type of operation that caused the conflict */
-  operationType?: 'merge' | 'rebase' | 'cherry-pick';
+  operationType?: "merge" | "rebase" | "cherry-pick";
   /** Whether to squash commits when merging */
   squash?: boolean;
   /** Whether to delete the source worktree and branch after successful merge */
@@ -118,7 +118,7 @@ export interface StashApplyConflictInfo {
   worktreePath: string;
   branchName: string;
   stashRef: string;
-  operation: 'apply' | 'pop';
+  operation: "apply" | "pop";
   conflictFiles: string[];
 }
 
@@ -133,7 +133,9 @@ export interface WorktreePanelProps {
   onAddressPRComments: (worktree: WorktreeInfo, prInfo: PRInfo) => void;
   onAutoAddressPRComments: (worktree: WorktreeInfo, prInfo: PRInfo) => void;
   onResolveConflicts: (worktree: WorktreeInfo) => void;
-  onCreateMergeConflictResolutionFeature?: (conflictInfo: MergeConflictInfo) => void;
+  onCreateMergeConflictResolutionFeature?: (
+    conflictInfo: MergeConflictInfo,
+  ) => void;
   /** Called when branch switch stash reapply results in merge conflicts */
   onBranchSwitchConflict?: (conflictInfo: BranchSwitchConflictInfo) => void;
   /** Called when checkout fails and the stash-pop restoration itself produces merge conflicts */
@@ -142,7 +144,9 @@ export interface WorktreePanelProps {
   onStashApplyConflict?: (conflictInfo: StashApplyConflictInfo) => void;
   /** Called when a branch is deleted during merge - features should be reassigned to main */
   onBranchDeletedDuringMerge?: (branchName: string) => void;
-  onRemovedWorktrees?: (removedWorktrees: Array<{ path: string; branch: string }>) => void;
+  onRemovedWorktrees?: (
+    removedWorktrees: Array<{ path: string; branch: string }>,
+  ) => void;
   runningFeatureIds?: string[];
   features?: FeatureInfo[];
   branchCardCounts?: Record<string, number>; // Map of branch name to unarchived card count

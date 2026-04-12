@@ -58,6 +58,7 @@ The creation flow:
 11. **Run init script** (asynchronous) — if `.pegasus/worktree-init.sh` exists and has not yet run for this branch, it executes in the background.
 
 **Request body:**
+
 ```json
 {
   "projectPath": "/absolute/path/to/project",
@@ -67,6 +68,7 @@ The creation flow:
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -102,6 +104,7 @@ The list handler:
 6. Fetches GitHub PR status via `gh pr list` (cached for 2 minutes) and cross-references with locally stored metadata, preferring explicit user overrides over auto-detected branch PRs.
 
 **Request body:**
+
 ```json
 {
   "projectPath": "/absolute/path/to/project",
@@ -118,6 +121,7 @@ The list handler:
 Returns the git status for a specific worktree, identified by `featureId`. The `featureId` is sanitized the same way as the branch name during creation (non-`[a-zA-Z0-9_-]` characters replaced with dashes) to derive the worktree path.
 
 **Response fields:**
+
 - `modifiedFiles` — count of changed files
 - `files` — list of changed file paths
 - `diffStat` — output of `git diff --stat`
@@ -136,6 +140,7 @@ Stages and commits changes in a worktree.
 - The message is passed as a direct argument to avoid shell injection.
 
 **Request body:**
+
 ```json
 {
   "worktreePath": "/path/to/worktree",
@@ -159,6 +164,7 @@ Runs `git merge` directly in that worktree. Supports `--squash` and custom commi
 
 **Strategy 2: Target branch is not checked out anywhere**
 Uses git plumbing commands entirely in the object store without any checkout:
+
 - `git merge-tree --write-tree` to compute the merged tree
 - `git commit-tree` to create the merge commit
 - `git update-ref` to advance the target branch ref
@@ -166,6 +172,7 @@ Uses git plumbing commands entirely in the object store without any checkout:
 Both strategies fetch from the remote before merging (`git fetch <remote>`).
 
 **Conflict detection** uses three independent layers:
+
 1. Text matching on error output for `CONFLICT` and `Automatic merge failed` (with `LC_ALL=C` for locale safety).
 2. `git diff --name-only --diff-filter=U` to find unmerged paths.
 3. `git status --porcelain` checking for unmerged status codes (`UU`, `AA`, `DD`, `AU`, `UA`, `DU`, `UD`).
@@ -173,6 +180,7 @@ Both strategies fetch from the remote before merging (`git fetch <remote>`).
 When `deleteWorktreeAndBranch: true` is passed, the worktree and its branch are removed after a successful merge using `git worktree remove --force` followed by `git branch -D`. Main and master branches are never deleted.
 
 **Request body:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -189,6 +197,7 @@ When `deleteWorktreeAndBranch: true` is passed, the worktree and its branch are 
 ```
 
 **Conflict response (HTTP 409):**
+
 ```json
 {
   "success": false,
@@ -206,6 +215,7 @@ When `deleteWorktreeAndBranch: true` is passed, the worktree and its branch are 
 Rebases the current branch in a worktree onto a target branch (e.g., `origin/main`).
 
 The rebase service (`rebase-service.ts`):
+
 1. Validates the `ontoBranch` name — rejects empty strings and dash-prefixed names.
 2. Fetches from the configured remote before rebasing.
 3. Runs `git rebase -- <ontoBranch>` with `LC_ALL=C` for consistent English output.
@@ -216,6 +226,7 @@ The rebase service (`rebase-service.ts`):
 5. If conflicts are detected, aborts the rebase (`git rebase --abort`) and returns the list of conflicted files. This leaves the repository in a clean state.
 
 **Request body:**
+
 ```json
 {
   "worktreePath": "/path/to/worktree",
@@ -237,6 +248,7 @@ Applies one or more commits to the current branch of a worktree.
 - On conflict, the cherry-pick is aborted (`git cherry-pick --abort`).
 
 **Request body:**
+
 ```json
 {
   "worktreePath": "/path/to/worktree",
@@ -252,6 +264,7 @@ Applies one or more commits to the current branch of a worktree.
 **Abort**: `POST /worktrees/abort-operation`
 
 Detects the type of in-progress operation (merge, rebase, or cherry-pick) by checking for git state files/directories:
+
 - `MERGE_HEAD` → merge in progress
 - `rebase-merge/` or `rebase-apply/` → rebase in progress
 - `CHERRY_PICK_HEAD` → cherry-pick in progress
@@ -271,6 +284,7 @@ After manually resolving conflicts, stages the resolved files and runs the appro
 Removes a worktree and optionally deletes its branch.
 
 The deletion flow:
+
 1. Records the branch name before removing the directory.
 2. Runs `git worktree remove <path> --force`.
 3. If that fails (directory already manually deleted or bad state), falls back to `git worktree prune` and verifies the worktree is no longer listed.
@@ -279,6 +293,7 @@ The deletion flow:
 6. Migrates any features associated with the deleted branch back to the main worktree by setting their `branchName` to `null`.
 
 **Request body:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -324,6 +339,7 @@ Metadata for each worktree is stored at:
 ```
 
 Branch names are sanitized for filesystem safety:
+
 - Characters `/ \ : * ? " < > |` are replaced with dashes
 - Spaces become underscores
 - Trailing dots are removed
@@ -336,15 +352,16 @@ The `WorktreeMetadata` structure:
 ```typescript
 interface WorktreeMetadata {
   branch: string;
-  createdAt: string;       // ISO 8601 timestamp
-  pr?: WorktreePRInfo;     // Associated GitHub PR info
+  createdAt: string; // ISO 8601 timestamp
+  pr?: WorktreePRInfo; // Associated GitHub PR info
   initScriptRan?: boolean; // Whether the init script has run
-  initScriptStatus?: 'running' | 'success' | 'failed';
+  initScriptStatus?: "running" | "success" | "failed";
   initScriptError?: string;
 }
 ```
 
 Metadata is read/written via the functions in `apps/server/src/lib/worktree-metadata.ts`:
+
 - `readWorktreeMetadata(projectPath, branch)` — reads a single entry
 - `writeWorktreeMetadata(projectPath, branch, metadata)` — writes a single entry
 - `readAllWorktreeMetadata(projectPath)` — reads all entries into a `Map<string, WorktreeMetadata>`
@@ -359,18 +376,19 @@ When a worktree is created, Pegasus looks for `.pegasus/worktree-init.sh` in the
 
 The script runs with the worktree as its working directory and receives these environment variables:
 
-| Variable | Description |
-|---|---|
-| `PEGASUS_PROJECT_PATH` | Absolute path to the main project root |
-| `PEGASUS_WORKTREE_PATH` | Absolute path to the new worktree |
-| `PEGASUS_BRANCH` | Branch name for this worktree |
-| `PATH`, `HOME`, `USER` | Standard system variables |
-| `FORCE_COLOR`, `CLICOLOR_FORCE` | Force color output in terminals |
-| `GIT_TERMINAL_PROMPT` | Set to `0` to prevent interactive git prompts |
+| Variable                        | Description                                   |
+| ------------------------------- | --------------------------------------------- |
+| `PEGASUS_PROJECT_PATH`          | Absolute path to the main project root        |
+| `PEGASUS_WORKTREE_PATH`         | Absolute path to the new worktree             |
+| `PEGASUS_BRANCH`                | Branch name for this worktree                 |
+| `PATH`, `HOME`, `USER`          | Standard system variables                     |
+| `FORCE_COLOR`, `CLICOLOR_FORCE` | Force color output in terminals               |
+| `GIT_TERMINAL_PROMPT`           | Set to `0` to prevent interactive git prompts |
 
 Sensitive variables such as `ANTHROPIC_API_KEY` are intentionally not passed to the init script.
 
 **Shell selection:**
+
 - On Windows: Git Bash is preferred over WSL bash to avoid compatibility issues.
 - On Unix: `/bin/bash` or `/bin/sh` from `getShellPaths()`.
 
@@ -392,6 +410,7 @@ fi
 ```
 
 WebSocket events emitted during init script execution:
+
 - `worktree:init-started` — script has begun
 - `worktree:init-output` — streaming stdout/stderr lines
 - `worktree:init-completed` — script finished (includes `success`, `exitCode`)
@@ -410,6 +429,7 @@ Each worktree can run its own isolated dev server on a dynamically allocated por
 If `devCommand` is configured in project settings, that command is used. Otherwise Pegasus auto-detects the package manager (`pnpm`, `yarn`, `npm`, `bun`) and runs `<pm> run dev`.
 
 The dev server service (`dev-server-service.ts`) scans process output for a URL using a prioritized pattern list:
+
 1. Vite / Nuxt / SvelteKit / Astro / Angular: `Local: http://...`
 2. Next.js: `ready - started server on ..., url: http://...`
 3. Generic: `listening at http://...`, `running at http://...`
@@ -424,12 +444,12 @@ If no URL is detected within 30 seconds, the allocated port is returned as a fal
 
 Four stash endpoints operate within a worktree:
 
-| Endpoint | Description |
-|---|---|
-| `POST /worktrees/stash-push` | Create a stash; include untracked files by default |
-| `POST /worktrees/stash-list` | List all stashes with metadata and file lists |
-| `POST /worktrees/stash-apply` | Apply or pop a stash entry; detects conflicts |
-| `POST /worktrees/stash-drop` | Delete a stash entry by index |
+| Endpoint                      | Description                                        |
+| ----------------------------- | -------------------------------------------------- |
+| `POST /worktrees/stash-push`  | Create a stash; include untracked files by default |
+| `POST /worktrees/stash-list`  | List all stashes with metadata and file lists      |
+| `POST /worktrees/stash-apply` | Apply or pop a stash entry; detects conflicts      |
+| `POST /worktrees/stash-drop`  | Delete a stash entry by index                      |
 
 Stash push uses `execGitCommandWithLockRetry` to handle `index.lock` contention automatically.
 
@@ -441,14 +461,15 @@ Stash apply/pop uses two conflict detection layers: text matching on command out
 
 Conflict detection is used during the `list` endpoint's `includeDetails` pass and during merge/rebase/cherry-pick operations. It checks for git state files in the worktree's `.git` directory:
 
-| File/directory | Operation |
-|---|---|
-| `MERGE_HEAD` | Merge in progress |
-| `rebase-merge/` | Rebase in progress (interactive or otherwise) |
-| `rebase-apply/` | Rebase in progress (patch-apply mode) |
-| `CHERRY_PICK_HEAD` | Cherry-pick in progress |
+| File/directory     | Operation                                     |
+| ------------------ | --------------------------------------------- |
+| `MERGE_HEAD`       | Merge in progress                             |
+| `rebase-merge/`    | Rebase in progress (interactive or otherwise) |
+| `rebase-apply/`    | Rebase in progress (patch-apply mode)         |
+| `CHERRY_PICK_HEAD` | Cherry-pick in progress                       |
 
 The source branch involved in the conflict is resolved:
+
 - **Merge**: `MERGE_HEAD` is looked up with `git name-rev --refs=refs/heads/*`.
 - **Rebase**: `rebase-merge/onto-name` or `rebase-apply/onto-name` is read directly.
 - **Cherry-pick**: `CHERRY_PICK_HEAD` is looked up with `git name-rev`.
@@ -475,59 +496,59 @@ The `.pegasus/` data directory is always in the main worktree. The feature JSON 
 
 All endpoints are mounted under `/worktrees`. All `POST` endpoints accept and return JSON.
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/worktrees/create` | Create a new worktree for a branch |
-| `POST` | `/worktrees/delete` | Remove a worktree and optionally its branch |
-| `POST` | `/worktrees/list` | List all active worktrees |
-| `POST` | `/worktrees/info` | Get info about a single worktree |
-| `POST` | `/worktrees/status` | Get git status for a worktree |
-| `POST` | `/worktrees/commit` | Stage and commit changes |
-| `POST` | `/worktrees/merge` | Merge a branch into a target branch |
-| `POST` | `/worktrees/rebase` | Rebase current branch onto a target |
-| `POST` | `/worktrees/cherry-pick` | Cherry-pick commits onto current branch |
-| `POST` | `/worktrees/abort-operation` | Abort merge/rebase/cherry-pick |
-| `POST` | `/worktrees/continue-operation` | Continue after resolving conflicts |
-| `POST` | `/worktrees/push` | Push current branch to remote |
-| `POST` | `/worktrees/pull` | Pull latest from remote |
-| `POST` | `/worktrees/sync` | Sync branch with remote |
-| `POST` | `/worktrees/switch-branch` | Switch branch with auto-stash |
-| `POST` | `/worktrees/checkout-branch` | Checkout a branch |
-| `POST` | `/worktrees/list-branches` | List local and remote branches |
-| `POST` | `/worktrees/set-tracking` | Set remote tracking for a branch |
-| `POST` | `/worktrees/diffs` | Get file diffs for a worktree |
-| `POST` | `/worktrees/file-diff` | Get diff for a single file |
-| `POST` | `/worktrees/stage-files` | Stage or unstage specific files |
-| `POST` | `/worktrees/discard-changes` | Discard uncommitted changes |
-| `POST` | `/worktrees/check-changes` | Check if there are uncommitted changes |
-| `POST` | `/worktrees/commit-log` | Get recent commits for a worktree |
-| `POST` | `/worktrees/branch-commit-log` | Get commits for a specific branch |
-| `POST` | `/worktrees/generate-commit-message` | AI-generated commit message |
-| `POST` | `/worktrees/create-pr` | Create a GitHub pull request |
-| `POST` | `/worktrees/pr-info` | Get PR info for a branch |
-| `POST` | `/worktrees/update-pr-number` | Manually link a PR number |
-| `POST` | `/worktrees/generate-pr-description` | AI-generated PR description |
-| `POST` | `/worktrees/stash-push` | Create a stash |
-| `POST` | `/worktrees/stash-list` | List stash entries |
-| `POST` | `/worktrees/stash-apply` | Apply or pop a stash |
-| `POST` | `/worktrees/stash-drop` | Delete a stash entry |
-| `POST` | `/worktrees/start-dev` | Start a dev server for a worktree |
-| `POST` | `/worktrees/stop-dev` | Stop a dev server |
-| `POST` | `/worktrees/list-dev-servers` | List running dev servers |
-| `GET` | `/worktrees/dev-server-logs` | Stream dev server logs |
-| `POST` | `/worktrees/start-tests` | Start the test runner |
-| `POST` | `/worktrees/stop-tests` | Stop the test runner |
-| `GET` | `/worktrees/test-logs` | Stream test logs |
-| `GET` | `/worktrees/init-script` | Read the init script content |
-| `PUT` | `/worktrees/init-script` | Write or update the init script |
-| `DELETE` | `/worktrees/init-script` | Delete the init script |
-| `POST` | `/worktrees/run-init-script` | Force re-run the init script |
-| `POST` | `/worktrees/list-remotes` | List configured remotes |
-| `POST` | `/worktrees/add-remote` | Add a remote |
-| `POST` | `/worktrees/open-in-editor` | Open worktree in configured editor |
-| `POST` | `/worktrees/open-in-terminal` | Open worktree in terminal |
-| `POST` | `/worktrees/open-in-external-terminal` | Open in external terminal app |
-| `POST` | `/worktrees/init-git` | Initialize a git repository |
+| Method   | Path                                   | Description                                 |
+| -------- | -------------------------------------- | ------------------------------------------- |
+| `POST`   | `/worktrees/create`                    | Create a new worktree for a branch          |
+| `POST`   | `/worktrees/delete`                    | Remove a worktree and optionally its branch |
+| `POST`   | `/worktrees/list`                      | List all active worktrees                   |
+| `POST`   | `/worktrees/info`                      | Get info about a single worktree            |
+| `POST`   | `/worktrees/status`                    | Get git status for a worktree               |
+| `POST`   | `/worktrees/commit`                    | Stage and commit changes                    |
+| `POST`   | `/worktrees/merge`                     | Merge a branch into a target branch         |
+| `POST`   | `/worktrees/rebase`                    | Rebase current branch onto a target         |
+| `POST`   | `/worktrees/cherry-pick`               | Cherry-pick commits onto current branch     |
+| `POST`   | `/worktrees/abort-operation`           | Abort merge/rebase/cherry-pick              |
+| `POST`   | `/worktrees/continue-operation`        | Continue after resolving conflicts          |
+| `POST`   | `/worktrees/push`                      | Push current branch to remote               |
+| `POST`   | `/worktrees/pull`                      | Pull latest from remote                     |
+| `POST`   | `/worktrees/sync`                      | Sync branch with remote                     |
+| `POST`   | `/worktrees/switch-branch`             | Switch branch with auto-stash               |
+| `POST`   | `/worktrees/checkout-branch`           | Checkout a branch                           |
+| `POST`   | `/worktrees/list-branches`             | List local and remote branches              |
+| `POST`   | `/worktrees/set-tracking`              | Set remote tracking for a branch            |
+| `POST`   | `/worktrees/diffs`                     | Get file diffs for a worktree               |
+| `POST`   | `/worktrees/file-diff`                 | Get diff for a single file                  |
+| `POST`   | `/worktrees/stage-files`               | Stage or unstage specific files             |
+| `POST`   | `/worktrees/discard-changes`           | Discard uncommitted changes                 |
+| `POST`   | `/worktrees/check-changes`             | Check if there are uncommitted changes      |
+| `POST`   | `/worktrees/commit-log`                | Get recent commits for a worktree           |
+| `POST`   | `/worktrees/branch-commit-log`         | Get commits for a specific branch           |
+| `POST`   | `/worktrees/generate-commit-message`   | AI-generated commit message                 |
+| `POST`   | `/worktrees/create-pr`                 | Create a GitHub pull request                |
+| `POST`   | `/worktrees/pr-info`                   | Get PR info for a branch                    |
+| `POST`   | `/worktrees/update-pr-number`          | Manually link a PR number                   |
+| `POST`   | `/worktrees/generate-pr-description`   | AI-generated PR description                 |
+| `POST`   | `/worktrees/stash-push`                | Create a stash                              |
+| `POST`   | `/worktrees/stash-list`                | List stash entries                          |
+| `POST`   | `/worktrees/stash-apply`               | Apply or pop a stash                        |
+| `POST`   | `/worktrees/stash-drop`                | Delete a stash entry                        |
+| `POST`   | `/worktrees/start-dev`                 | Start a dev server for a worktree           |
+| `POST`   | `/worktrees/stop-dev`                  | Stop a dev server                           |
+| `POST`   | `/worktrees/list-dev-servers`          | List running dev servers                    |
+| `GET`    | `/worktrees/dev-server-logs`           | Stream dev server logs                      |
+| `POST`   | `/worktrees/start-tests`               | Start the test runner                       |
+| `POST`   | `/worktrees/stop-tests`                | Stop the test runner                        |
+| `GET`    | `/worktrees/test-logs`                 | Stream test logs                            |
+| `GET`    | `/worktrees/init-script`               | Read the init script content                |
+| `PUT`    | `/worktrees/init-script`               | Write or update the init script             |
+| `DELETE` | `/worktrees/init-script`               | Delete the init script                      |
+| `POST`   | `/worktrees/run-init-script`           | Force re-run the init script                |
+| `POST`   | `/worktrees/list-remotes`              | List configured remotes                     |
+| `POST`   | `/worktrees/add-remote`                | Add a remote                                |
+| `POST`   | `/worktrees/open-in-editor`            | Open worktree in configured editor          |
+| `POST`   | `/worktrees/open-in-terminal`          | Open worktree in terminal                   |
+| `POST`   | `/worktrees/open-in-external-terminal` | Open in external terminal app               |
+| `POST`   | `/worktrees/init-git`                  | Initialize a git repository                 |
 
 ---
 
@@ -535,44 +556,44 @@ All endpoints are mounted under `/worktrees`. All `POST` endpoints accept and re
 
 Server operations emit events to WebSocket subscribers for real-time UI updates.
 
-| Event | Emitted by |
-|---|---|
-| `worktree:deleted` | Delete handler |
-| `worktree:init-started` | Init script service |
-| `worktree:init-output` | Init script service (streaming) |
-| `worktree:init-completed` | Init script service |
-| `worktree:copy-files:copied` | WorktreeService.copyConfiguredFiles |
-| `worktree:copy-files:skipped` | WorktreeService.copyConfiguredFiles |
-| `worktree:copy-files:failed` | WorktreeService.copyConfiguredFiles |
-| `worktree:symlink-files:linked` | WorktreeService.symlinkConfiguredFiles |
-| `worktree:symlink-files:skipped` | WorktreeService.symlinkConfiguredFiles |
+| Event                                    | Emitted by                             |
+| ---------------------------------------- | -------------------------------------- |
+| `worktree:deleted`                       | Delete handler                         |
+| `worktree:init-started`                  | Init script service                    |
+| `worktree:init-output`                   | Init script service (streaming)        |
+| `worktree:init-completed`                | Init script service                    |
+| `worktree:copy-files:copied`             | WorktreeService.copyConfiguredFiles    |
+| `worktree:copy-files:skipped`            | WorktreeService.copyConfiguredFiles    |
+| `worktree:copy-files:failed`             | WorktreeService.copyConfiguredFiles    |
+| `worktree:symlink-files:linked`          | WorktreeService.symlinkConfiguredFiles |
+| `worktree:symlink-files:skipped`         | WorktreeService.symlinkConfiguredFiles |
 | `worktree:symlink-files:fallback-copied` | WorktreeService.symlinkConfiguredFiles |
-| `worktree:symlink-files:failed` | WorktreeService.symlinkConfiguredFiles |
-| `merge:start` | MergeService |
-| `merge:success` | MergeService |
-| `merge:conflict` | MergeService |
-| `merge:error` | MergeService |
-| `rebase:started` | Rebase handler |
-| `rebase:success` | Rebase handler |
-| `rebase:conflict` | Rebase handler |
-| `rebase:failure` | Rebase handler |
-| `cherry-pick:started` | CherryPickService |
-| `cherry-pick:success` | CherryPickService |
-| `cherry-pick:conflict` | CherryPickService |
-| `cherry-pick:abort` | CherryPickService |
-| `conflict:aborted` | Abort handler |
-| `switch:start` | WorktreeBranchService |
-| `switch:stash` | WorktreeBranchService |
-| `switch:checkout` | WorktreeBranchService |
-| `switch:pop` | WorktreeBranchService |
-| `switch:done` | WorktreeBranchService |
-| `switch:error` | WorktreeBranchService |
-| `stash:start` | StashService |
-| `stash:progress` | StashService |
-| `stash:conflicts` | StashService |
-| `stash:success` | StashService |
-| `stash:failure` | StashService |
-| `feature:migrated` | Delete handler |
+| `worktree:symlink-files:failed`          | WorktreeService.symlinkConfiguredFiles |
+| `merge:start`                            | MergeService                           |
+| `merge:success`                          | MergeService                           |
+| `merge:conflict`                         | MergeService                           |
+| `merge:error`                            | MergeService                           |
+| `rebase:started`                         | Rebase handler                         |
+| `rebase:success`                         | Rebase handler                         |
+| `rebase:conflict`                        | Rebase handler                         |
+| `rebase:failure`                         | Rebase handler                         |
+| `cherry-pick:started`                    | CherryPickService                      |
+| `cherry-pick:success`                    | CherryPickService                      |
+| `cherry-pick:conflict`                   | CherryPickService                      |
+| `cherry-pick:abort`                      | CherryPickService                      |
+| `conflict:aborted`                       | Abort handler                          |
+| `switch:start`                           | WorktreeBranchService                  |
+| `switch:stash`                           | WorktreeBranchService                  |
+| `switch:checkout`                        | WorktreeBranchService                  |
+| `switch:pop`                             | WorktreeBranchService                  |
+| `switch:done`                            | WorktreeBranchService                  |
+| `switch:error`                           | WorktreeBranchService                  |
+| `stash:start`                            | StashService                           |
+| `stash:progress`                         | StashService                           |
+| `stash:conflicts`                        | StashService                           |
+| `stash:success`                          | StashService                           |
+| `stash:failure`                          | StashService                           |
+| `feature:migrated`                       | Delete handler                         |
 
 ---
 

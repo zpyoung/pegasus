@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 
-export type SelectionTarget = 'backlog' | 'waiting_approval' | null;
+export type SelectionTarget = "backlog" | "waiting_approval" | null;
 
 interface UseSelectionModeReturn {
   isSelectionMode: boolean;
@@ -17,22 +17,27 @@ interface UseSelectionModeReturn {
 
 export function useSelectionMode(): UseSelectionModeReturn {
   const [selectionTarget, setSelectionTarget] = useState<SelectionTarget>(null);
-  const [selectedFeatureIds, setSelectedFeatureIds] = useState<Set<string>>(new Set());
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const isSelectionMode = selectionTarget !== null;
 
-  const toggleSelectionMode = useCallback((target: SelectionTarget = 'backlog') => {
-    setSelectionTarget((prev) => {
-      if (prev === target) {
-        // Exiting selection mode - clear selection
+  const toggleSelectionMode = useCallback(
+    (target: SelectionTarget = "backlog") => {
+      setSelectionTarget((prev) => {
+        if (prev === target) {
+          // Exiting selection mode - clear selection
+          setSelectedFeatureIds(new Set());
+          return null;
+        }
+        // Switching to a different target or entering selection mode
         setSelectedFeatureIds(new Set());
-        return null;
-      }
-      // Switching to a different target or entering selection mode
-      setSelectedFeatureIds(new Set());
-      return target;
-    });
-  }, []);
+        return target;
+      });
+    },
+    [],
+  );
 
   const exitSelectionMode = useCallback(() => {
     setSelectionTarget(null);
@@ -61,19 +66,19 @@ export function useSelectionMode(): UseSelectionModeReturn {
 
   const isFeatureSelected = useCallback(
     (featureId: string) => selectedFeatureIds.has(featureId),
-    [selectedFeatureIds]
+    [selectedFeatureIds],
   );
 
   // Handle Escape key to exit selection mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isSelectionMode) {
+      if (e.key === "Escape" && isSelectionMode) {
         exitSelectionMode();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isSelectionMode, exitSelectionMode]);
 
   return {

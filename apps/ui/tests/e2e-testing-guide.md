@@ -16,7 +16,7 @@ Best practices and patterns for writing reliable, non-flaky Playwright e2e tests
 Use the provided utility functions to set up localStorage state. These utilities hide the internal store structure and version details, making tests more maintainable.
 
 ```typescript
-import { setupWelcomeView, setupRealProject } from './utils';
+import { setupWelcomeView, setupRealProject } from "./utils";
 
 // Show welcome view with workspace directory configured
 await setupWelcomeView(page, { workspaceDir: TEST_TEMP_DIR });
@@ -26,9 +26,9 @@ await setupWelcomeView(page, {
   workspaceDir: TEST_TEMP_DIR,
   recentProjects: [
     {
-      id: 'project-123',
-      name: 'My Project',
-      path: '/path/to/project',
+      id: "project-123",
+      name: "My Project",
+      path: "/path/to/project",
       lastOpened: new Date().toISOString(),
     },
   ],
@@ -60,11 +60,11 @@ Store versions are defined in `tests/utils/project/setup.ts`:
 Create unique temp directories for test isolation:
 
 ```typescript
-import { createTempDirPath, cleanupTempDir } from './utils';
+import { createTempDirPath, cleanupTempDir } from "./utils";
 
-const TEST_TEMP_DIR = createTempDirPath('my-test-name');
+const TEST_TEMP_DIR = createTempDirPath("my-test-name");
 
-test.describe('My Tests', () => {
+test.describe("My Tests", () => {
   test.beforeAll(async () => {
     if (!fs.existsSync(TEST_TEMP_DIR)) {
       fs.mkdirSync(TEST_TEMP_DIR, { recursive: true });
@@ -92,7 +92,9 @@ E2E tests must **never** use the workspace/repo root (the project you're develop
 
 ```typescript
 // Good - uses Playwright's auto-waiting with expect
-await expect(page.locator('[data-testid="welcome-view"]')).toBeVisible({ timeout: 10000 });
+await expect(page.locator('[data-testid="welcome-view"]')).toBeVisible({
+  timeout: 10000,
+});
 
 // Avoid - manual waiting
 await page.waitForSelector('[data-testid="welcome-view"]');
@@ -103,11 +105,13 @@ await page.waitForSelector('[data-testid="welcome-view"]');
 **Important:** Use `load` state, NOT `networkidle`. This app has persistent connections (websockets, polling) that prevent the network from ever becoming "idle", causing `networkidle` to timeout.
 
 ```typescript
-await page.goto('/');
-await page.waitForLoadState('load');
+await page.goto("/");
+await page.waitForLoadState("load");
 
 // Then wait for specific elements to verify the page is ready
-await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 10000 });
+await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+  timeout: 10000,
+});
 ```
 
 **Why not `networkidle`?**
@@ -129,10 +133,14 @@ await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 
 await expect(button).toBeVisible();
 
 // Page load
-await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 10000 });
+await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+  timeout: 10000,
+});
 
 // Async operation completion
-await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+  timeout: 15000,
+});
 ```
 
 ## Element Selection
@@ -144,8 +152,8 @@ await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 
 const button = page.locator('[data-testid="create-new-project"]');
 
 // Avoid - brittle selectors
-const button = page.locator('.btn-primary');
-const button = page.getByText('Create');
+const button = page.locator(".btn-primary");
+const button = page.getByText("Create");
 ```
 
 ### Scope selectors when needed
@@ -157,7 +165,9 @@ When text appears in multiple places, scope to a parent:
 await expect(page.getByText(projectName)).toBeVisible();
 
 // Good - scoped to specific container
-await expect(page.locator('[data-testid="project-selector"]').getByText(projectName)).toBeVisible();
+await expect(
+  page.locator('[data-testid="project-selector"]').getByText(projectName),
+).toBeVisible();
 ```
 
 ### Handle strict mode violations
@@ -169,7 +179,10 @@ If a selector matches multiple elements:
 await page.locator('[data-testid="item"]').first().click();
 
 // Or scope to a unique parent
-await page.locator('[data-testid="sidebar"]').locator('[data-testid="item"]').click();
+await page
+  .locator('[data-testid="sidebar"]')
+  .locator('[data-testid="item"]')
+  .click();
 ```
 
 ## Clicking Elements
@@ -192,7 +205,9 @@ Some dialogs may appear briefly or auto-close. Don't rely on clicking them:
 // await closeButton.click();  // May fail if dialog closes first
 
 // Just verify the end state:
-await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+  timeout: 15000,
+});
 ```
 
 ## Filesystem Verification
@@ -201,16 +216,18 @@ Verify files were created after async operations:
 
 ```typescript
 // Wait for UI to confirm operation completed first
-await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 15000 });
+await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+  timeout: 15000,
+});
 
 // Then verify filesystem
 const projectPath = path.join(TEST_TEMP_DIR, projectName);
 expect(fs.existsSync(projectPath)).toBe(true);
 
-const appSpecPath = path.join(projectPath, '.pegasus', 'app_spec.txt');
+const appSpecPath = path.join(projectPath, ".pegasus", "app_spec.txt");
 expect(fs.existsSync(appSpecPath)).toBe(true);
 
-const content = fs.readFileSync(appSpecPath, 'utf-8');
+const content = fs.readFileSync(appSpecPath, "utf-8");
 expect(content).toContain(projectName);
 ```
 
@@ -219,7 +236,9 @@ expect(content).toContain(projectName);
 ### Use descriptive test names
 
 ```typescript
-test('should create a new blank project from welcome view', async ({ page }) => {
+test("should create a new blank project from welcome view", async ({
+  page,
+}) => {
   // ...
 });
 ```
@@ -236,7 +255,7 @@ test.describe('Project Creation', () => {
 ### Use serial mode when tests depend on each other
 
 ```typescript
-test.describe.configure({ mode: 'serial' });
+test.describe.configure({ mode: "serial" });
 ```
 
 ## Common Patterns
@@ -248,8 +267,8 @@ When multiple outcomes are possible (e.g., dialog or direct navigation):
 ```typescript
 // Wait for either the dialog or the board view
 await Promise.race([
-  initDialog.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
-  boardView.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+  initDialog.waitFor({ state: "visible", timeout: 10000 }).catch(() => {}),
+  boardView.waitFor({ state: "visible", timeout: 10000 }).catch(() => {}),
 ]);
 
 // Then handle whichever appeared
@@ -297,10 +316,10 @@ If tests timeout waiting for network idle, the app likely has persistent connect
 
 ```typescript
 // Bad - will timeout with persistent connections
-await page.waitForLoadState('networkidle');
+await page.waitForLoadState("networkidle");
 
 // Good - completes when page loads
-await page.waitForLoadState('load');
+await page.waitForLoadState("load");
 await expect(page.locator('[data-testid="my-element"]')).toBeVisible();
 ```
 

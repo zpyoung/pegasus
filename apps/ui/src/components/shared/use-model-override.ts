@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
-import { useAppStore } from '@/store/app-store';
-import type { ModelId, PhaseModelKey, PhaseModelEntry } from '@pegasus/types';
-import { DEFAULT_PHASE_MODELS } from '@pegasus/types';
+import { useState, useCallback, useMemo, useRef } from "react";
+import { useAppStore } from "@/store/app-store";
+import type { ModelId, PhaseModelKey, PhaseModelEntry } from "@pegasus/types";
+import { DEFAULT_PHASE_MODELS } from "@pegasus/types";
 
 export interface UseModelOverrideOptions {
   /** Which phase this override is for */
@@ -32,11 +32,13 @@ export interface UseModelOverrideResult {
  * Handles undefined/null gracefully (e.g., when phaseModels from server settings
  * is missing a recently-added phase key)
  */
-function normalizeEntry(entry: PhaseModelEntry | string | undefined | null): PhaseModelEntry {
+function normalizeEntry(
+  entry: PhaseModelEntry | string | undefined | null,
+): PhaseModelEntry {
   if (!entry) {
-    return { model: 'claude-sonnet' as ModelId };
+    return { model: "claude-sonnet" as ModelId };
   }
-  if (typeof entry === 'string') {
+  if (typeof entry === "string") {
     return { model: entry as ModelId };
   }
   return entry;
@@ -75,7 +77,12 @@ export function useModelOverride({
   phase,
   initialOverride = null,
 }: UseModelOverrideOptions): UseModelOverrideResult {
-  const { phaseModels, lastUsedPhaseOverrides, setLastUsedPhaseOverride, clearLastUsedPhaseOverride } = useAppStore();
+  const {
+    phaseModels,
+    lastUsedPhaseOverrides,
+    setLastUsedPhaseOverride,
+    clearLastUsedPhaseOverride,
+  } = useAppStore();
 
   // Hydrate initial state: prefer explicit initialOverride, then persisted last-used, then null
   const hydratedRef = useRef(false);
@@ -94,7 +101,9 @@ export function useModelOverride({
 
   // Normalize global default to PhaseModelEntry, with fallback to DEFAULT_PHASE_MODELS
   // This handles cases where settings haven't been migrated to include new phase models
-  const globalDefault = normalizeEntry(phaseModels[phase] ?? DEFAULT_PHASE_MODELS[phase]);
+  const globalDefault = normalizeEntry(
+    phaseModels[phase] ?? DEFAULT_PHASE_MODELS[phase],
+  );
 
   const effectiveModelEntry = useMemo(() => {
     return override ?? globalDefault;
@@ -118,7 +127,7 @@ export function useModelOverride({
         clearLastUsedPhaseOverride(phase);
       }
     },
-    [phase, setLastUsedPhaseOverride, clearLastUsedPhaseOverride]
+    [phase, setLastUsedPhaseOverride, clearLastUsedPhaseOverride],
   );
 
   const clearOverride = useCallback(() => {

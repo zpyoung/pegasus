@@ -7,9 +7,14 @@ import type {
   CodexUsageResponse,
   ZaiUsageResponse,
   GeminiUsageResponse,
-} from '@/store/app-store';
-import type { ParsedTask, FeatureStatusWithPipeline, MergeStateInfo, AgentQuestion } from '@pegasus/types';
-export type { MergeStateInfo } from '@pegasus/types';
+} from "@/store/app-store";
+import type {
+  ParsedTask,
+  FeatureStatusWithPipeline,
+  MergeStateInfo,
+  AgentQuestion,
+} from "@pegasus/types";
+export type { MergeStateInfo } from "@pegasus/types";
 
 export interface ImageAttachment {
   id?: string; // Optional - may not be present in messages loaded from server
@@ -21,7 +26,7 @@ export interface ImageAttachment {
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
   isError?: boolean;
@@ -43,36 +48,36 @@ export interface ToolResult {
 
 export type StreamEvent =
   | {
-      type: 'message';
+      type: "message";
       sessionId: string;
       message: Message;
     }
   | {
-      type: 'stream';
+      type: "stream";
       sessionId: string;
       messageId: string;
       content: string;
       isComplete: boolean;
     }
   | {
-      type: 'tool_use';
+      type: "tool_use";
       sessionId: string;
       tool: ToolUse;
     }
   | {
-      type: 'tool_result';
+      type: "tool_result";
       sessionId: string;
       tool: ToolResult;
     }
   | {
-      type: 'complete';
+      type: "complete";
       sessionId: string;
       messageId?: string;
       content: string;
       toolUses: ToolUse[];
     }
   | {
-      type: 'error';
+      type: "error";
       sessionId: string;
       error: string;
       message?: Message;
@@ -95,7 +100,7 @@ export interface SessionListItem {
 export interface AgentAPI {
   start: (
     sessionId: string,
-    workingDirectory?: string
+    workingDirectory?: string,
   ) => Promise<{
     success: boolean;
     messages?: Message[];
@@ -109,7 +114,7 @@ export interface AgentAPI {
     workingDirectory?: string,
     imagePaths?: string[],
     model?: string,
-    thinkingLevel?: string
+    thinkingLevel?: string,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -145,7 +150,7 @@ export interface SessionsAPI {
   create: (
     name: string,
     projectPath: string,
-    workingDirectory?: string
+    workingDirectory?: string,
   ) => Promise<{
     success: boolean;
     sessionId?: string;
@@ -156,7 +161,7 @@ export interface SessionsAPI {
   update: (
     sessionId: string,
     name?: string,
-    tags?: string[]
+    tags?: string[],
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -185,25 +190,25 @@ export interface SessionsAPI {
 
 export type AutoModeEvent =
   | {
-      type: 'auto_mode_started';
+      type: "auto_mode_started";
       message: string;
       projectPath?: string;
       branchName?: string | null;
     }
   | {
-      type: 'auto_mode_stopped';
+      type: "auto_mode_stopped";
       message: string;
       projectPath?: string;
       branchName?: string | null;
     }
   | {
-      type: 'auto_mode_idle';
+      type: "auto_mode_idle";
       message: string;
       projectPath?: string;
       branchName?: string | null;
     }
   | {
-      type: 'auto_mode_feature_start';
+      type: "auto_mode_feature_start";
       featureId: string;
       projectId?: string;
       projectPath?: string;
@@ -211,7 +216,7 @@ export type AutoModeEvent =
       feature: unknown;
     }
   | {
-      type: 'auto_mode_progress';
+      type: "auto_mode_progress";
       featureId: string;
       projectId?: string;
       projectPath?: string;
@@ -219,7 +224,7 @@ export type AutoModeEvent =
       content: string;
     }
   | {
-      type: 'auto_mode_tool';
+      type: "auto_mode_tool";
       featureId: string;
       projectId?: string;
       projectPath?: string;
@@ -228,7 +233,7 @@ export type AutoModeEvent =
       input: unknown;
     }
   | {
-      type: 'auto_mode_feature_complete';
+      type: "auto_mode_feature_complete";
       featureId: string;
       projectId?: string;
       projectPath?: string;
@@ -237,7 +242,7 @@ export type AutoModeEvent =
       message: string;
     }
   | {
-      type: 'pipeline_step_started';
+      type: "pipeline_step_started";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
@@ -247,7 +252,7 @@ export type AutoModeEvent =
       totalSteps: number;
     }
   | {
-      type: 'pipeline_step_complete';
+      type: "pipeline_step_complete";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
@@ -257,25 +262,25 @@ export type AutoModeEvent =
       totalSteps: number;
     }
   | {
-      type: 'auto_mode_error';
+      type: "auto_mode_error";
       error: string;
-      errorType?: 'authentication' | 'cancellation' | 'abort' | 'execution';
+      errorType?: "authentication" | "cancellation" | "abort" | "execution";
       featureId?: string;
       projectId?: string;
       projectPath?: string;
       branchName?: string | null;
     }
   | {
-      type: 'auto_mode_phase';
+      type: "auto_mode_phase";
       featureId: string;
       projectId?: string;
       projectPath?: string;
       branchName?: string | null;
-      phase: 'planning' | 'action' | 'verification';
+      phase: "planning" | "action" | "verification";
       message: string;
     }
   | {
-      type: 'auto_mode_ultrathink_preparation';
+      type: "auto_mode_ultrathink_preparation";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
@@ -285,24 +290,24 @@ export type AutoModeEvent =
       estimatedTime?: string;
     }
   | {
-      type: 'plan_approval_required';
+      type: "plan_approval_required";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
       planContent: string;
-      planningMode: 'lite' | 'spec' | 'full';
+      planningMode: "lite" | "spec" | "full";
       planVersion?: number;
     }
   | {
-      type: 'plan_auto_approved';
+      type: "plan_auto_approved";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
       planContent: string;
-      planningMode: 'lite' | 'spec' | 'full';
+      planningMode: "lite" | "spec" | "full";
     }
   | {
-      type: 'plan_approved';
+      type: "plan_approved";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
@@ -310,14 +315,14 @@ export type AutoModeEvent =
       planVersion?: number;
     }
   | {
-      type: 'plan_rejected';
+      type: "plan_rejected";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
       feedback?: string;
     }
   | {
-      type: 'plan_revision_requested';
+      type: "plan_revision_requested";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
@@ -326,14 +331,14 @@ export type AutoModeEvent =
       planVersion?: number;
     }
   | {
-      type: 'planning_started';
+      type: "planning_started";
       featureId: string;
       branchName?: string | null;
-      mode: 'lite' | 'spec' | 'full';
+      mode: "lite" | "spec" | "full";
       message: string;
     }
   | {
-      type: 'auto_mode_task_started';
+      type: "auto_mode_task_started";
       featureId: string;
       projectPath?: string;
       taskId: string;
@@ -342,7 +347,7 @@ export type AutoModeEvent =
       tasksTotal: number;
     }
   | {
-      type: 'auto_mode_task_complete';
+      type: "auto_mode_task_complete";
       featureId: string;
       projectPath?: string;
       taskId: string;
@@ -350,27 +355,27 @@ export type AutoModeEvent =
       tasksTotal: number;
     }
   | {
-      type: 'auto_mode_phase_complete';
+      type: "auto_mode_phase_complete";
       featureId: string;
       projectPath?: string;
       phaseNumber: number;
     }
   | {
-      type: 'auto_mode_task_status';
+      type: "auto_mode_task_status";
       featureId: string;
       projectPath?: string;
       taskId: string;
-      status: ParsedTask['status'];
+      status: ParsedTask["status"];
       tasks: ParsedTask[];
     }
   | {
-      type: 'auto_mode_summary';
+      type: "auto_mode_summary";
       featureId: string;
       projectPath?: string;
       summary: string;
     }
   | {
-      type: 'auto_mode_resuming_features';
+      type: "auto_mode_resuming_features";
       message: string;
       projectPath?: string;
       featureIds: string[];
@@ -381,7 +386,7 @@ export type AutoModeEvent =
       }>;
     }
   | {
-      type: 'feature_status_changed';
+      type: "feature_status_changed";
       featureId: string;
       projectPath?: string;
       status: FeatureStatusWithPipeline;
@@ -389,21 +394,21 @@ export type AutoModeEvent =
       reason?: string;
     }
   | {
-      type: 'features_reconciled';
+      type: "features_reconciled";
       projectPath?: string;
       reconciledCount: number;
       reconciledFeatureIds: string[];
       message: string;
     }
   | {
-      type: 'question_required';
+      type: "question_required";
       featureId: string;
       projectPath?: string;
       branchName?: string | null;
       questions: AgentQuestion[];
     }
   | {
-      type: 'question_answered';
+      type: "question_answered";
       featureId: string;
       projectPath?: string;
       questionId: string;
@@ -412,23 +417,23 @@ export type AutoModeEvent =
 
 export type SpecRegenerationEvent =
   | {
-      type: 'spec_regeneration_progress';
+      type: "spec_regeneration_progress";
       content: string;
       projectPath: string;
     }
   | {
-      type: 'spec_regeneration_tool';
+      type: "spec_regeneration_tool";
       tool: string;
       input: unknown;
       projectPath: string;
     }
   | {
-      type: 'spec_regeneration_complete';
+      type: "spec_regeneration_complete";
       message: string;
       projectPath: string;
     }
   | {
-      type: 'spec_regeneration_error';
+      type: "spec_regeneration_error";
       error: string;
       projectPath: string;
     };
@@ -439,7 +444,7 @@ export interface SpecRegenerationAPI {
     projectOverview: string,
     generateFeatures?: boolean,
     analyzeProject?: boolean,
-    maxFeatures?: number
+    maxFeatures?: number,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -450,7 +455,7 @@ export interface SpecRegenerationAPI {
     projectDefinition: string,
     generateFeatures?: boolean,
     analyzeProject?: boolean,
-    maxFeatures?: number
+    maxFeatures?: number,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -458,7 +463,7 @@ export interface SpecRegenerationAPI {
 
   generateFeatures: (
     projectPath: string,
-    maxFeatures?: number
+    maxFeatures?: number,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -489,7 +494,7 @@ export interface AutoModeAPI {
   start: (
     projectPath: string,
     branchName?: string | null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
   ) => Promise<{
     success: boolean;
     message?: string;
@@ -500,7 +505,7 @@ export interface AutoModeAPI {
 
   stop: (
     projectPath: string,
-    branchName?: string | null
+    branchName?: string | null,
   ) => Promise<{
     success: boolean;
     message?: string;
@@ -517,7 +522,7 @@ export interface AutoModeAPI {
 
   status: (
     projectPath?: string,
-    branchName?: string | null
+    branchName?: string | null,
   ) => Promise<{
     success: boolean;
     isRunning?: boolean;
@@ -534,7 +539,7 @@ export interface AutoModeAPI {
   runFeature: (
     projectPath: string,
     featureId: string,
-    useWorktrees?: boolean
+    useWorktrees?: boolean,
   ) => Promise<{
     success: boolean;
     passes?: boolean;
@@ -543,7 +548,7 @@ export interface AutoModeAPI {
 
   verifyFeature: (
     projectPath: string,
-    featureId: string
+    featureId: string,
   ) => Promise<{
     success: boolean;
     passes?: boolean;
@@ -553,7 +558,7 @@ export interface AutoModeAPI {
   resumeFeature: (
     projectPath: string,
     featureId: string,
-    useWorktrees?: boolean
+    useWorktrees?: boolean,
   ) => Promise<{
     success: boolean;
     passes?: boolean;
@@ -562,7 +567,7 @@ export interface AutoModeAPI {
 
   contextExists: (
     projectPath: string,
-    featureId: string
+    featureId: string,
   ) => Promise<{
     success: boolean;
     exists?: boolean;
@@ -580,7 +585,7 @@ export interface AutoModeAPI {
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    useWorktrees?: boolean
+    useWorktrees?: boolean,
   ) => Promise<{
     success: boolean;
     passes?: boolean;
@@ -589,7 +594,7 @@ export interface AutoModeAPI {
 
   commitFeature: (
     projectPath: string,
-    featureId: string
+    featureId: string,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -600,7 +605,7 @@ export interface AutoModeAPI {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -611,13 +616,15 @@ export interface AutoModeAPI {
 
 export interface ElectronAPI {
   // Platform info (exposed from preload)
-  platform?: 'darwin' | 'win32' | 'linux';
+  platform?: "darwin" | "win32" | "linux";
   isElectron?: boolean;
 
   ping: () => Promise<string>;
   getApiKey?: () => Promise<string | null>;
   quit?: () => Promise<void>;
-  openExternalLink: (url: string) => Promise<{ success: boolean; error?: string }>;
+  openExternalLink: (
+    url: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 
   // Dialog APIs
   openDirectory: () => Promise<{
@@ -637,7 +644,7 @@ export interface ElectronAPI {
   }>;
   writeFile: (
     filePath: string,
-    content: string
+    content: string,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -675,7 +682,7 @@ export interface ElectronAPI {
   copyItem?: (
     sourcePath: string,
     destinationPath: string,
-    overwrite?: boolean
+    overwrite?: boolean,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -684,7 +691,7 @@ export interface ElectronAPI {
   moveItem?: (
     sourcePath: string,
     destinationPath: string,
-    overwrite?: boolean
+    overwrite?: boolean,
   ) => Promise<{
     success: boolean;
     error?: string;
@@ -698,7 +705,7 @@ export interface ElectronAPI {
     data: string,
     filename: string,
     mimeType: string,
-    projectPath?: string
+    projectPath?: string,
   ) => Promise<{
     success: boolean;
     path?: string;
@@ -843,7 +850,7 @@ export interface WorktreeAPI {
       squash?: boolean;
       message?: string;
       deleteWorktreeAndBranch?: boolean;
-    }
+    },
   ) => Promise<{
     success: boolean;
     mergedBranch?: string;
@@ -861,7 +868,7 @@ export interface WorktreeAPI {
   rebase: (
     worktreePath: string,
     ontoBranch: string,
-    remote?: string
+    remote?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -878,7 +885,7 @@ export interface WorktreeAPI {
   // Get worktree info for a feature
   getInfo: (
     projectPath: string,
-    featureId: string
+    featureId: string,
   ) => Promise<{
     success: boolean;
     worktreePath?: string;
@@ -888,7 +895,10 @@ export interface WorktreeAPI {
   }>;
 
   // Get worktree status (changed files, commits)
-  getStatus: (projectPath: string, featureId: string) => Promise<WorktreeStatus>;
+  getStatus: (
+    projectPath: string,
+    featureId: string,
+  ) => Promise<WorktreeStatus>;
 
   // List all feature worktrees
   list: (projectPath: string) => Promise<{
@@ -901,7 +911,7 @@ export interface WorktreeAPI {
   listAll: (
     projectPath: string,
     includeDetails?: boolean,
-    forceRefreshGitHub?: boolean
+    forceRefreshGitHub?: boolean,
   ) => Promise<{
     success: boolean;
     worktrees?: Array<{
@@ -931,7 +941,7 @@ export interface WorktreeAPI {
   create: (
     projectPath: string,
     branchName: string,
-    baseBranch?: string
+    baseBranch?: string,
   ) => Promise<{
     success: boolean;
     worktree?: {
@@ -959,7 +969,7 @@ export interface WorktreeAPI {
   delete: (
     projectPath: string,
     worktreePath: string,
-    deleteBranch?: boolean
+    deleteBranch?: boolean,
   ) => Promise<{
     success: boolean;
     deleted?: {
@@ -973,7 +983,7 @@ export interface WorktreeAPI {
   commit: (
     worktreePath: string,
     message: string,
-    files?: string[]
+    files?: string[],
   ) => Promise<{
     success: boolean;
     result?: {
@@ -990,7 +1000,7 @@ export interface WorktreeAPI {
     worktreePath: string,
     model?: string,
     thinkingLevel?: string,
-    providerId?: string
+    providerId?: string,
   ) => Promise<{
     success: boolean;
     message?: string;
@@ -1003,7 +1013,7 @@ export interface WorktreeAPI {
     baseBranch?: string,
     model?: string,
     thinkingLevel?: string,
-    providerId?: string
+    providerId?: string,
   ) => Promise<{
     success: boolean;
     title?: string;
@@ -1016,7 +1026,7 @@ export interface WorktreeAPI {
     worktreePath: string,
     force?: boolean,
     remote?: string,
-    autoResolve?: boolean
+    autoResolve?: boolean,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1030,13 +1040,13 @@ export interface WorktreeAPI {
     diverged?: boolean;
     hasConflicts?: boolean;
     conflictFiles?: string[];
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
+    code?: "NOT_GIT_REPO" | "NO_COMMITS";
   }>;
 
   // Sync a worktree branch (pull then push)
   sync: (
     worktreePath: string,
-    remote?: string
+    remote?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1051,14 +1061,14 @@ export interface WorktreeAPI {
     error?: string;
     hasConflicts?: boolean;
     conflictFiles?: string[];
-    conflictSource?: 'pull' | 'stash';
+    conflictSource?: "pull" | "stash";
   }>;
 
   // Set the upstream tracking branch
   setTracking: (
     worktreePath: string,
     remote: string,
-    branch?: string
+    branch?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1083,7 +1093,7 @@ export interface WorktreeAPI {
       remote?: string;
       /** Remote to create the PR against (e.g. upstream). If not specified, inferred from repo setup. */
       targetRemote?: string;
-    }
+    },
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1106,7 +1116,7 @@ export interface WorktreeAPI {
   updatePRNumber: (
     worktreePath: string,
     prNumber: number,
-    projectPath?: string
+    projectPath?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1124,24 +1134,27 @@ export interface WorktreeAPI {
   }>;
 
   // Get file diffs for a feature worktree
-  getDiffs: (projectPath: string, featureId: string) => Promise<FileDiffsResult>;
+  getDiffs: (
+    projectPath: string,
+    featureId: string,
+  ) => Promise<FileDiffsResult>;
 
   // Get diff for a specific file in a worktree
   getFileDiff: (
     projectPath: string,
     featureId: string,
-    filePath: string
+    filePath: string,
   ) => Promise<FileDiffResult>;
 
   // Stage or unstage files in a worktree
   stageFiles: (
     worktreePath: string,
     files: string[],
-    operation: 'stage' | 'unstage'
+    operation: "stage" | "unstage",
   ) => Promise<{
     success: boolean;
     result?: {
-      operation: 'stage' | 'unstage';
+      operation: "stage" | "unstage";
       filesCount: number;
     };
     error?: string;
@@ -1152,7 +1165,7 @@ export interface WorktreeAPI {
     worktreePath: string,
     remote?: string,
     stashIfNeeded?: boolean,
-    remoteBranch?: string
+    remoteBranch?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1162,13 +1175,13 @@ export interface WorktreeAPI {
       hasLocalChanges?: boolean;
       localChangedFiles?: string[];
       hasConflicts?: boolean;
-      conflictSource?: 'pull' | 'stash';
+      conflictSource?: "pull" | "stash";
       conflictFiles?: string[];
       stashed?: boolean;
       stashRestored?: boolean;
     };
     error?: string;
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
+    code?: "NOT_GIT_REPO" | "NO_COMMITS";
   }>;
 
   // Check for uncommitted changes in a worktree
@@ -1190,7 +1203,7 @@ export interface WorktreeAPI {
     branchName: string,
     baseBranch?: string,
     stashChanges?: boolean,
-    includeUntracked?: boolean
+    includeUntracked?: boolean,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1201,7 +1214,7 @@ export interface WorktreeAPI {
       stashedChanges?: boolean;
     };
     error?: string;
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
+    code?: "NOT_GIT_REPO" | "NO_COMMITS";
     stashPopConflicts?: boolean;
     stashPopConflictMessage?: string;
   }>;
@@ -1210,7 +1223,7 @@ export interface WorktreeAPI {
   listBranches: (
     worktreePath: string,
     includeRemote?: boolean,
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1228,13 +1241,13 @@ export interface WorktreeAPI {
       trackingRemote?: string;
     };
     error?: string;
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS'; // Error codes for git status issues
+    code?: "NOT_GIT_REPO" | "NO_COMMITS"; // Error codes for git status issues
   }>;
 
   // Switch to an existing branch
   switchBranch: (
     worktreePath: string,
-    branchName: string
+    branchName: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1245,7 +1258,7 @@ export interface WorktreeAPI {
       stashedChanges: boolean;
     };
     error?: string;
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS' | 'UNCOMMITTED_CHANGES';
+    code?: "NOT_GIT_REPO" | "NO_COMMITS" | "UNCOMMITTED_CHANGES";
     /** True when the checkout failed AND the stash-pop used to restore changes produced merge conflicts */
     stashPopConflicts?: boolean;
     /** Human-readable message describing the stash-pop conflict situation */
@@ -1266,14 +1279,14 @@ export interface WorktreeAPI {
       }>;
     };
     error?: string;
-    code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
+    code?: "NOT_GIT_REPO" | "NO_COMMITS";
   }>;
 
   // Add a new remote to a git repository
   addRemote: (
     worktreePath: string,
     remoteName: string,
-    remoteUrl: string
+    remoteUrl: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1283,13 +1296,13 @@ export interface WorktreeAPI {
       message: string;
     };
     error?: string;
-    code?: 'REMOTE_EXISTS';
+    code?: "REMOTE_EXISTS";
   }>;
 
   // Open a worktree directory in the editor
   openInEditor: (
     worktreePath: string,
-    editorCommand?: string
+    editorCommand?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1375,7 +1388,7 @@ export interface WorktreeAPI {
   // Open worktree in an external terminal
   openInExternalTerminal: (
     worktreePath: string,
-    terminalId?: string
+    terminalId?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1398,7 +1411,7 @@ export interface WorktreeAPI {
   // Start a dev server for a worktree
   startDevServer: (
     projectPath: string,
-    worktreePath: string
+    worktreePath: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1452,19 +1465,28 @@ export interface WorktreeAPI {
     callback: (
       event:
         | {
-            type: 'dev-server:starting';
+            type: "dev-server:starting";
             payload: { worktreePath: string; timestamp: string };
           }
         | {
-            type: 'dev-server:started';
-            payload: { worktreePath: string; port: number; url: string; timestamp: string };
+            type: "dev-server:started";
+            payload: {
+              worktreePath: string;
+              port: number;
+              url: string;
+              timestamp: string;
+            };
           }
         | {
-            type: 'dev-server:output';
-            payload: { worktreePath: string; content: string; timestamp: string };
+            type: "dev-server:output";
+            payload: {
+              worktreePath: string;
+              content: string;
+              timestamp: string;
+            };
           }
         | {
-            type: 'dev-server:stopped';
+            type: "dev-server:stopped";
             payload: {
               worktreePath: string;
               port: number;
@@ -1474,21 +1496,21 @@ export interface WorktreeAPI {
             };
           }
         | {
-            type: 'dev-server:url-detected';
+            type: "dev-server:url-detected";
             payload: {
               worktreePath: string;
               url: string;
               port: number;
               timestamp: string;
             };
-          }
-    ) => void
+          },
+    ) => void,
   ) => () => void;
 
   // Get PR info and comments for a branch
   getPRInfo: (
     worktreePath: string,
-    branchName: string
+    branchName: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1535,7 +1557,7 @@ export interface WorktreeAPI {
   // Set init script content for a project
   setInitScript: (
     projectPath: string,
-    content: string
+    content: string,
   ) => Promise<{
     success: boolean;
     path?: string;
@@ -1552,7 +1574,7 @@ export interface WorktreeAPI {
   runInitScript: (
     projectPath: string,
     worktreePath: string,
-    branch: string
+    branch: string,
   ) => Promise<{
     success: boolean;
     message?: string;
@@ -1562,15 +1584,18 @@ export interface WorktreeAPI {
   // Subscribe to init script events
   onInitScriptEvent: (
     callback: (event: {
-      type: 'worktree:init-started' | 'worktree:init-output' | 'worktree:init-completed';
+      type:
+        | "worktree:init-started"
+        | "worktree:init-output"
+        | "worktree:init-completed";
       payload: unknown;
-    }) => void
+    }) => void,
   ) => () => void;
 
   // Discard changes for a worktree (optionally only specific files)
   discardChanges: (
     worktreePath: string,
-    files?: string[]
+    files?: string[],
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1588,7 +1613,7 @@ export interface WorktreeAPI {
   // Start tests for a worktree
   startTests: (
     worktreePath: string,
-    options?: { projectPath?: string; testFile?: string }
+    options?: { projectPath?: string; testFile?: string },
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1616,7 +1641,7 @@ export interface WorktreeAPI {
   // Get test logs for a session
   getTestLogs: (
     worktreePath?: string,
-    sessionId?: string
+    sessionId?: string,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1638,24 +1663,24 @@ export interface WorktreeAPI {
     callback: (
       event:
         | {
-            type: 'test-runner:started';
+            type: "test-runner:started";
             payload: TestRunnerStartedEvent;
           }
         | {
-            type: 'test-runner:output';
+            type: "test-runner:output";
             payload: TestRunnerOutputEvent;
           }
         | {
-            type: 'test-runner:completed';
+            type: "test-runner:completed";
             payload: TestRunnerCompletedEvent;
-          }
-    ) => void
+          },
+    ) => void,
   ) => () => void;
 
   // Get recent commit history for a worktree
   getCommitLog: (
     worktreePath: string,
-    limit?: number
+    limit?: number,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1679,7 +1704,7 @@ export interface WorktreeAPI {
   stashPush: (
     worktreePath: string,
     message?: string,
-    files?: string[]
+    files?: string[],
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1710,14 +1735,14 @@ export interface WorktreeAPI {
   stashApply: (
     worktreePath: string,
     stashIndex: number,
-    pop?: boolean
+    pop?: boolean,
   ) => Promise<{
     success: boolean;
     result?: {
       applied: boolean;
       hasConflicts: boolean;
       conflictFiles?: string[];
-      operation: 'apply' | 'pop';
+      operation: "apply" | "pop";
       stashIndex: number;
       message: string;
     };
@@ -1727,7 +1752,7 @@ export interface WorktreeAPI {
   // Drop (delete) a stash entry
   stashDrop: (
     worktreePath: string,
-    stashIndex: number
+    stashIndex: number,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1744,7 +1769,7 @@ export interface WorktreeAPI {
     commitHashes: string[],
     options?: {
       noCommit?: boolean;
-    }
+    },
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1782,7 +1807,7 @@ export interface WorktreeAPI {
   getBranchCommitLog: (
     worktreePath: string,
     branchName?: string,
-    limit?: number
+    limit?: number,
   ) => Promise<{
     success: boolean;
     result?: {
@@ -1804,7 +1829,13 @@ export interface WorktreeAPI {
 }
 
 // Test runner status type
-export type TestRunStatus = 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'error';
+export type TestRunStatus =
+  | "pending"
+  | "running"
+  | "passed"
+  | "failed"
+  | "cancelled"
+  | "error";
 
 // Test runner event payloads
 export interface TestRunnerStartedEvent {
@@ -1879,24 +1910,30 @@ export interface GitAPI {
   getDiffs: (projectPath: string) => Promise<FileDiffsResult>;
 
   // Get diff for a specific file in the main project
-  getFileDiff: (projectPath: string, filePath: string) => Promise<FileDiffResult>;
+  getFileDiff: (
+    projectPath: string,
+    filePath: string,
+  ) => Promise<FileDiffResult>;
 
   // Stage or unstage files in the main project
   stageFiles: (
     projectPath: string,
     files: string[],
-    operation: 'stage' | 'unstage'
+    operation: "stage" | "unstage",
   ) => Promise<{
     success: boolean;
     result?: {
-      operation: 'stage' | 'unstage';
+      operation: "stage" | "unstage";
       filesCount: number;
     };
     error?: string;
   }>;
 
   // Get detailed git info for a file (branch, last commit, diff stats, conflict status)
-  getDetails: (projectPath: string, filePath?: string) => Promise<GitDetailsResult>;
+  getDetails: (
+    projectPath: string,
+    filePath?: string,
+  ) => Promise<GitDetailsResult>;
 
   // Get enhanced status with per-file diff stats and staged/unstaged differentiation
   getEnhancedStatus: (projectPath: string) => Promise<EnhancedStatusResult>;
@@ -1913,14 +1950,14 @@ export interface ModelDefinition {
   maxOutputTokens?: number;
   supportsVision?: boolean;
   supportsTools?: boolean;
-  tier?: 'basic' | 'standard' | 'premium' | string;
+  tier?: "basic" | "standard" | "premium" | string;
   default?: boolean;
   hasReasoning?: boolean;
 }
 
 // Provider status type
 export interface ProviderStatus {
-  status: 'installed' | 'not_installed' | 'api_key_only';
+  status: "installed" | "not_installed" | "api_key_only";
   method?: string;
   version?: string;
   path?: string;
@@ -1947,7 +1984,9 @@ export interface ExtendedElectronAPI extends ElectronAPI {
   /** Check if running in external server mode (Electron-only) */
   isExternalServerMode?: () => Promise<boolean>;
   /** Get system paths (Electron-only) */
-  getPath?: (name: 'documents' | 'home' | 'appData' | 'userData') => Promise<string>;
+  getPath?: (
+    name: "documents" | "home" | "appData" | "userData",
+  ) => Promise<string>;
 }
 
 declare global {

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
-import { pathsEqual } from '@/lib/utils';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
+import { pathsEqual } from "@/lib/utils";
 
-const logger = createLogger('DevServerLogs');
+const logger = createLogger("DevServerLogs");
 
 // Maximum log buffer size (characters) - matches server-side MAX_SCROLLBACK_SIZE
 const MAX_LOG_BUFFER_SIZE = 50_000; // ~50KB
@@ -56,9 +56,12 @@ interface UseDevServerLogsOptions {
  * });
  * ```
  */
-export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevServerLogsOptions) {
+export function useDevServerLogs({
+  worktreePath,
+  autoSubscribe = true,
+}: UseDevServerLogsOptions) {
   const [state, setState] = useState<DevServerLogState>({
-    logs: '',
+    logs: "",
     logsVersion: 0,
     didTrim: false,
     isRunning: false,
@@ -79,7 +82,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
   // ensuring at most one React re-render per animation frame (~60fps max).
   // A fallback setTimeout ensures the buffer is flushed even when RAF is
   // throttled (e.g., when the tab is in the background).
-  const pendingOutputRef = useRef('');
+  const pendingOutputRef = useRef("");
   const rafIdRef = useRef<number | null>(null);
   const timerIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,7 +95,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
       clearTimeout(timerIdRef.current);
       timerIdRef.current = null;
     }
-    pendingOutputRef.current = '';
+    pendingOutputRef.current = "";
   }, []);
 
   /**
@@ -109,7 +112,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: 'Dev server logs API not available',
+          error: "Dev server logs API not available",
         }));
         return;
       }
@@ -138,11 +141,11 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         }));
       }
     } catch (error) {
-      logger.error('Failed to fetch dev server logs:', error);
+      logger.error("Failed to fetch dev server logs:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch logs',
+        error: error instanceof Error ? error.message : "Failed to fetch logs",
       }));
     }
   }, [worktreePath]);
@@ -153,7 +156,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
   const clearLogs = useCallback(() => {
     resetPendingOutput();
     setState({
-      logs: '',
+      logs: "",
       logsVersion: 0,
       didTrim: false,
       isRunning: false,
@@ -177,7 +180,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
     }
     const content = pendingOutputRef.current;
     if (!content) return;
-    pendingOutputRef.current = '';
+    pendingOutputRef.current = "";
 
     setState((prev) => {
       const combined = prev.logs + content;
@@ -186,8 +189,10 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
       if (didTrim) {
         const slicePoint = combined.length - MAX_LOG_BUFFER_SIZE;
         // Find the next newline after the slice point to avoid cutting a line in half
-        const firstNewlineIndex = combined.indexOf('\n', slicePoint);
-        newLogs = combined.slice(firstNewlineIndex > -1 ? firstNewlineIndex + 1 : slicePoint);
+        const firstNewlineIndex = combined.indexOf("\n", slicePoint);
+        newLogs = combined.slice(
+          firstNewlineIndex > -1 ? firstNewlineIndex + 1 : slicePoint,
+        );
       }
       return {
         ...prev,
@@ -230,7 +235,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
         timerIdRef.current = setTimeout(flushPendingOutput, 250);
       }
     },
-    [flushPendingOutput]
+    [flushPendingOutput],
   );
 
   // Clean up pending RAF on unmount to prevent state updates after unmount
@@ -256,7 +261,7 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
 
     const api = getElectronAPI();
     if (!api?.worktree?.onDevServerLogEvent) {
-      logger.warn('Dev server log event API not available');
+      logger.warn("Dev server log event API not available");
       return;
     }
 
@@ -265,10 +270,10 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
       if (!pathsEqual(event.payload.worktreePath, worktreePath)) return;
 
       switch (event.type) {
-        case 'dev-server:started': {
+        case "dev-server:started": {
           resetPendingOutput();
           const { payload } = event;
-          logger.info('Dev server started:', payload);
+          logger.info("Dev server started:", payload);
           setState((prev) => ({
             ...prev,
             isRunning: true,
@@ -278,12 +283,12 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
             exitCode: null,
             serverError: null,
             // Clear logs on restart
-            logs: '',
+            logs: "",
           }));
           hasFetchedInitialLogs.current = false;
           break;
         }
-        case 'dev-server:output': {
+        case "dev-server:output": {
           const { payload } = event;
           // Append the new output to existing logs
           if (payload.content) {
@@ -291,9 +296,9 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
           }
           break;
         }
-        case 'dev-server:stopped': {
+        case "dev-server:stopped": {
           const { payload } = event;
-          logger.info('Dev server stopped:', payload);
+          logger.info("Dev server stopped:", payload);
           setState((prev) => ({
             ...prev,
             isRunning: false,
@@ -302,9 +307,9 @@ export function useDevServerLogs({ worktreePath, autoSubscribe = true }: UseDevS
           }));
           break;
         }
-        case 'dev-server:url-detected': {
+        case "dev-server:url-detected": {
           const { payload } = event;
-          logger.info('Dev server URL detected:', payload);
+          logger.info("Dev server URL detected:", payload);
           setState((prev) => ({
             ...prev,
             url: payload.url,

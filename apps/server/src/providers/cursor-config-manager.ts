@@ -4,14 +4,18 @@
  * Manages Cursor CLI configuration stored in .pegasus/cursor-config.json
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { getAllCursorModelIds, type CursorCliConfig, type CursorModelId } from '@pegasus/types';
-import { createLogger } from '@pegasus/utils';
-import { getPegasusDir } from '@pegasus/platform';
+import * as fs from "fs";
+import * as path from "path";
+import {
+  getAllCursorModelIds,
+  type CursorCliConfig,
+  type CursorModelId,
+} from "@pegasus/types";
+import { createLogger } from "@pegasus/utils";
+import { getPegasusDir } from "@pegasus/platform";
 
 // Create logger for this module
-const logger = createLogger('CursorConfigManager');
+const logger = createLogger("CursorConfigManager");
 
 /**
  * Manages Cursor CLI configuration
@@ -23,7 +27,10 @@ export class CursorConfigManager {
 
   constructor(projectPath: string) {
     // Use getPegasusDir for consistent path resolution
-    this.configPath = path.join(getPegasusDir(projectPath), 'cursor-config.json');
+    this.configPath = path.join(
+      getPegasusDir(projectPath),
+      "cursor-config.json",
+    );
     this.config = this.loadConfig();
   }
 
@@ -33,18 +40,18 @@ export class CursorConfigManager {
   private loadConfig(): CursorCliConfig {
     try {
       if (fs.existsSync(this.configPath)) {
-        const content = fs.readFileSync(this.configPath, 'utf8');
+        const content = fs.readFileSync(this.configPath, "utf8");
         const parsed = JSON.parse(content) as CursorCliConfig;
         logger.debug(`Loaded config from ${this.configPath}`);
         return parsed;
       }
     } catch (error) {
-      logger.warn('Failed to load config:', error);
+      logger.warn("Failed to load config:", error);
     }
 
     // Return default config with all available models
     return {
-      defaultModel: 'cursor-sonnet-4.6',
+      defaultModel: "cursor-sonnet-4.6",
       models: getAllCursorModelIds(),
     };
   }
@@ -59,9 +66,9 @@ export class CursorConfigManager {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
-      logger.debug('Config saved');
+      logger.debug("Config saved");
     } catch (error) {
-      logger.error('Failed to save config:', error);
+      logger.error("Failed to save config:", error);
       throw error;
     }
   }
@@ -77,7 +84,7 @@ export class CursorConfigManager {
    * Get the default model
    */
   getDefaultModel(): CursorModelId {
-    return this.config.defaultModel || 'cursor-sonnet-4.6';
+    return this.config.defaultModel || "cursor-sonnet-4.6";
   }
 
   /**
@@ -93,7 +100,7 @@ export class CursorConfigManager {
    * Get enabled models
    */
   getEnabledModels(): CursorModelId[] {
-    return this.config.models || ['cursor-sonnet-4.6'];
+    return this.config.models || ["cursor-sonnet-4.6"];
   }
 
   /**
@@ -102,7 +109,7 @@ export class CursorConfigManager {
   setEnabledModels(models: CursorModelId[]): void {
     this.config.models = models;
     this.saveConfig();
-    logger.info(`Enabled models updated: ${models.join(', ')}`);
+    logger.info(`Enabled models updated: ${models.join(", ")}`);
   }
 
   /**
@@ -150,7 +157,7 @@ export class CursorConfigManager {
   setMcpServers(servers: string[]): void {
     this.config.mcpServers = servers;
     this.saveConfig();
-    logger.info(`MCP servers updated: ${servers.join(', ')}`);
+    logger.info(`MCP servers updated: ${servers.join(", ")}`);
   }
 
   /**
@@ -166,7 +173,7 @@ export class CursorConfigManager {
   setRules(rules: string[]): void {
     this.config.rules = rules;
     this.saveConfig();
-    logger.info(`Rules updated: ${rules.join(', ')}`);
+    logger.info(`Rules updated: ${rules.join(", ")}`);
   }
 
   /**
@@ -174,11 +181,11 @@ export class CursorConfigManager {
    */
   reset(): void {
     this.config = {
-      defaultModel: 'cursor-sonnet-4.6',
+      defaultModel: "cursor-sonnet-4.6",
       models: getAllCursorModelIds(),
     };
     this.saveConfig();
-    logger.info('Config reset to defaults');
+    logger.info("Config reset to defaults");
   }
 
   /**

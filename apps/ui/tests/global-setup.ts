@@ -5,21 +5,21 @@
  * all workers/tests can reuse it (avoiding per-test login overhead).
  */
 
-import { chromium, FullConfig } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import { chromium, FullConfig } from "@playwright/test";
+import fs from "fs";
+import path from "path";
 import {
   cleanupLeftoverFixtureWorkerDirs,
   cleanupLeftoverTestDirs,
-} from './utils/cleanup-test-dirs';
+} from "./utils/cleanup-test-dirs";
 
-const TEST_PORT = process.env.TEST_PORT || '3107';
-const TEST_SERVER_PORT = process.env.TEST_SERVER_PORT || '3108';
-const reuseServer = process.env.TEST_REUSE_SERVER === 'true';
+const TEST_PORT = process.env.TEST_PORT || "3107";
+const TEST_SERVER_PORT = process.env.TEST_SERVER_PORT || "3108";
+const reuseServer = process.env.TEST_REUSE_SERVER === "true";
 const API_BASE_URL = `http://127.0.0.1:${TEST_SERVER_PORT}`;
 const WEB_BASE_URL = `http://127.0.0.1:${TEST_PORT}`;
-const AUTH_DIR = path.join(__dirname, '.auth');
-const AUTH_STATE_PATH = path.join(AUTH_DIR, 'storage-state.json');
+const AUTH_DIR = path.join(__dirname, ".auth");
+const AUTH_STATE_PATH = path.join(AUTH_DIR, "storage-state.json");
 
 async function globalSetup(config: FullConfig) {
   // Clean up leftover test dirs and fixture worker copies from previous runs (aborted, crashed, etc.)
@@ -37,7 +37,7 @@ async function globalSetup(config: FullConfig) {
     } catch {
       throw new Error(
         `TEST_REUSE_SERVER is set but nothing is listening at ${baseURL}. ` +
-          'Start the UI and server first (e.g. from apps/ui: TEST_PORT=3107 TEST_SERVER_PORT=3108 pnpm dev; from apps/server: PORT=3108 pnpm run dev:test) or run tests without TEST_REUSE_SERVER.'
+          "Start the UI and server first (e.g. from apps/ui: TEST_PORT=3107 TEST_SERVER_PORT=3108 pnpm dev; from apps/server: PORT=3108 pnpm run dev:test) or run tests without TEST_REUSE_SERVER.",
       );
     }
   }
@@ -45,7 +45,7 @@ async function globalSetup(config: FullConfig) {
   // Authenticate once and save state for all workers
   await authenticateAndSaveState(config);
 
-  console.log('[GlobalSetup] Setup complete');
+  console.log("[GlobalSetup] Setup complete");
 }
 
 /**
@@ -56,7 +56,7 @@ async function authenticateAndSaveState(_config: FullConfig) {
   // Ensure auth directory exists
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
-  const apiKey = process.env.PEGASUS_API_KEY || 'test-api-key-for-e2e-tests';
+  const apiKey = process.env.PEGASUS_API_KEY || "test-api-key-for-e2e-tests";
 
   // Wait for backend to be ready (exponential backoff: 250ms → 500ms → 1s → 2s)
   const start = Date.now();
@@ -78,7 +78,9 @@ async function authenticateAndSaveState(_config: FullConfig) {
     backoff = Math.min(backoff * 2, 2000);
   }
   if (!healthy) {
-    throw new Error(`Backend health check timed out after 30s for ${API_BASE_URL}`);
+    throw new Error(
+      `Backend health check timed out after 30s for ${API_BASE_URL}`,
+    );
   }
 
   // Launch a browser to get a proper context for login
@@ -88,14 +90,20 @@ async function authenticateAndSaveState(_config: FullConfig) {
 
   try {
     // Navigate to the app first (needed for cookies to bind to the correct domain)
-    await page.goto(WEB_BASE_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(WEB_BASE_URL, {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
 
     // Login via API
-    const loginResponse = await page.request.post(`${API_BASE_URL}/api/auth/login`, {
-      data: { apiKey },
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 15000,
-    });
+    const loginResponse = await page.request.post(
+      `${API_BASE_URL}/api/auth/login`,
+      {
+        data: { apiKey },
+        headers: { "Content-Type": "application/json" },
+        timeout: 15000,
+      },
+    );
     const response = (await loginResponse.json().catch(() => null)) as {
       success?: boolean;
       token?: string;
@@ -103,8 +111,8 @@ async function authenticateAndSaveState(_config: FullConfig) {
 
     if (!response?.success || !response.token) {
       throw new Error(
-        '[GlobalSetup] Login failed - cannot proceed without authentication. ' +
-          'Check that the backend is running and PEGASUS_API_KEY is set correctly.'
+        "[GlobalSetup] Login failed - cannot proceed without authentication. " +
+          "Check that the backend is running and PEGASUS_API_KEY is set correctly.",
       );
     }
 
@@ -113,24 +121,27 @@ async function authenticateAndSaveState(_config: FullConfig) {
       {
         name: `pegasus_session_${TEST_SERVER_PORT}`,
         value: response.token,
-        domain: '127.0.0.1',
-        path: '/',
+        domain: "127.0.0.1",
+        path: "/",
         httpOnly: true,
-        sameSite: 'Lax',
+        sameSite: "Lax",
       },
     ]);
 
     // Verify auth works
-    const statusRes = await page.request.get(`${API_BASE_URL}/api/auth/status`, {
-      timeout: 5000,
-    });
+    const statusRes = await page.request.get(
+      `${API_BASE_URL}/api/auth/status`,
+      {
+        timeout: 5000,
+      },
+    );
     const statusJson = (await statusRes.json().catch(() => null)) as {
       authenticated?: boolean;
     } | null;
 
     if (!statusJson?.authenticated) {
       throw new Error(
-        '[GlobalSetup] Auth verification failed - session cookie was set but status check returned unauthenticated.'
+        "[GlobalSetup] Auth verification failed - session cookie was set but status check returned unauthenticated.",
       );
     }
 

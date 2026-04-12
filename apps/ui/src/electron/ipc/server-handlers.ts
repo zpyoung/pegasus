@@ -4,9 +4,9 @@
  * Handles server-related operations.
  */
 
-import { ipcMain } from 'electron';
-import { IPC_CHANNELS } from './channels';
-import { state } from '../state';
+import { ipcMain } from "electron";
+import { IPC_CHANNELS } from "./channels";
+import { state } from "../state";
 
 /**
  * Register server IPC handlers
@@ -19,6 +19,6 @@ export function registerServerHandlers(): void {
 
   // Ping - for connection check
   ipcMain.handle(IPC_CHANNELS.PING, async () => {
-    return 'pong';
+    return "pong";
   });
 }

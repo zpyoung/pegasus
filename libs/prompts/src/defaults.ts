@@ -23,8 +23,8 @@ import type {
   ResolvedContextDescriptionPrompts,
   ResolvedSuggestionsPrompts,
   ResolvedTaskExecutionPrompts,
-} from '@pegasus/types';
-import { STATIC_PORT, SERVER_PORT } from '@pegasus/types';
+} from "@pegasus/types";
+import { STATIC_PORT, SERVER_PORT } from "@pegasus/types";
 
 /**
  * ========================================================================
@@ -484,7 +484,7 @@ import {
   SIMPLIFY_SYSTEM_PROMPT,
   ACCEPTANCE_SYSTEM_PROMPT,
   UX_REVIEWER_SYSTEM_PROMPT,
-} from './enhancement.js';
+} from "./enhancement.js";
 
 /**
  * Default Enhancement prompts (from libs/prompts/src/enhancement.ts)
@@ -550,9 +550,10 @@ Rules:
 /**
  * Default Title Generation prompts (for AI feature title generation)
  */
-export const DEFAULT_TITLE_GENERATION_PROMPTS: ResolvedTitleGenerationPrompts = {
-  systemPrompt: DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT,
-};
+export const DEFAULT_TITLE_GENERATION_PROMPTS: ResolvedTitleGenerationPrompts =
+  {
+    systemPrompt: DEFAULT_TITLE_GENERATION_SYSTEM_PROMPT,
+  };
 
 /**
  * ========================================================================
@@ -629,9 +630,10 @@ Be thorough in your analysis but focus on files that are directly relevant to th
 /**
  * Default Issue Validation prompts (for GitHub issue validation)
  */
-export const DEFAULT_ISSUE_VALIDATION_PROMPTS: ResolvedIssueValidationPrompts = {
-  systemPrompt: DEFAULT_ISSUE_VALIDATION_SYSTEM_PROMPT,
-};
+export const DEFAULT_ISSUE_VALIDATION_PROMPTS: ResolvedIssueValidationPrompts =
+  {
+    systemPrompt: DEFAULT_ISSUE_VALIDATION_SYSTEM_PROMPT,
+  };
 
 /**
  * ========================================================================
@@ -782,10 +784,11 @@ Respond with ONLY the description text, no additional formatting, preamble, or e
 /**
  * Default Context Description prompts (for file/image descriptions)
  */
-export const DEFAULT_CONTEXT_DESCRIPTION_PROMPTS: ResolvedContextDescriptionPrompts = {
-  describeFilePrompt: DEFAULT_DESCRIBE_FILE_PROMPT,
-  describeImagePrompt: DEFAULT_DESCRIBE_IMAGE_PROMPT,
-};
+export const DEFAULT_CONTEXT_DESCRIPTION_PROMPTS: ResolvedContextDescriptionPrompts =
+  {
+    describeFilePrompt: DEFAULT_DESCRIBE_FILE_PROMPT,
+    describeImagePrompt: DEFAULT_DESCRIBE_IMAGE_PROMPT,
+  };
 
 /**
  * ========================================================================
@@ -794,13 +797,13 @@ export const DEFAULT_CONTEXT_DESCRIPTION_PROMPTS: ResolvedContextDescriptionProm
  */
 
 export const DEFAULT_SUGGESTIONS_FEATURES_PROMPT =
-  'Analyze this project and suggest new features that would add value.';
+  "Analyze this project and suggest new features that would add value.";
 export const DEFAULT_SUGGESTIONS_REFACTORING_PROMPT =
-  'Analyze this project and identify refactoring opportunities.';
+  "Analyze this project and identify refactoring opportunities.";
 export const DEFAULT_SUGGESTIONS_SECURITY_PROMPT =
-  'Analyze this project for security vulnerabilities and suggest fixes.';
+  "Analyze this project for security vulnerabilities and suggest fixes.";
 export const DEFAULT_SUGGESTIONS_PERFORMANCE_PROMPT =
-  'Analyze this project for performance issues and suggest optimizations.';
+  "Analyze this project for performance issues and suggest optimizations.";
 
 export const DEFAULT_SUGGESTIONS_BASE_TEMPLATE = `Look at the codebase and provide 3-5 concrete suggestions.
 
@@ -950,7 +953,7 @@ When done, include in your summary:
 - [Describe how the feature was verified with Playwright]`;
 
 export const DEFAULT_LEARNING_EXTRACTION_SYSTEM_PROMPT =
-  'You are a JSON extraction assistant. You MUST respond with ONLY valid JSON, no explanations, no markdown, no other text. Extract learnings from the provided implementation context and return them as JSON.';
+  "You are a JSON extraction assistant. You MUST respond with ONLY valid JSON, no explanations, no markdown, no other text. Extract learnings from the provided implementation context and return them as JSON.";
 
 export const DEFAULT_LEARNING_EXTRACTION_USER_TEMPLATE = `You are an Architecture Decision Record (ADR) extractor. Analyze this implementation and return ONLY JSON with learnings. No explanations.
 
@@ -1081,11 +1084,14 @@ Format your response as a structured markdown document.`;
 export const DEFAULT_TASK_EXECUTION_PROMPTS: ResolvedTaskExecutionPrompts = {
   taskPromptTemplate: DEFAULT_TASK_PROMPT_TEMPLATE,
   implementationInstructions: DEFAULT_IMPLEMENTATION_INSTRUCTIONS,
-  playwrightVerificationInstructions: DEFAULT_PLAYWRIGHT_VERIFICATION_INSTRUCTIONS,
+  playwrightVerificationInstructions:
+    DEFAULT_PLAYWRIGHT_VERIFICATION_INSTRUCTIONS,
   learningExtractionSystemPrompt: DEFAULT_LEARNING_EXTRACTION_SYSTEM_PROMPT,
-  learningExtractionUserPromptTemplate: DEFAULT_LEARNING_EXTRACTION_USER_TEMPLATE,
+  learningExtractionUserPromptTemplate:
+    DEFAULT_LEARNING_EXTRACTION_USER_TEMPLATE,
   planRevisionTemplate: DEFAULT_PLAN_REVISION_TEMPLATE,
-  continuationAfterApprovalTemplate: DEFAULT_CONTINUATION_AFTER_APPROVAL_TEMPLATE,
+  continuationAfterApprovalTemplate:
+    DEFAULT_CONTINUATION_AFTER_APPROVAL_TEMPLATE,
   resumeFeatureTemplate: DEFAULT_RESUME_FEATURE_TEMPLATE,
   projectAnalysisPrompt: DEFAULT_PROJECT_ANALYSIS_PROMPT,
 };

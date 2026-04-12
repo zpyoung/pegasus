@@ -1,1 +1,1 @@
-export { ProjectSwitcher } from './project-switcher';
+export { ProjectSwitcher } from "./project-switcher";

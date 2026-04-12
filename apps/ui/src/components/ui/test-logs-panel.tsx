@@ -1,9 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useCallback, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import {
   Terminal,
   ArrowDown,
@@ -15,13 +25,16 @@ import {
   CheckCircle2,
   XCircle,
   FlaskConical,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { XtermLogViewer, type XtermLogViewerRef } from '@/components/ui/xterm-log-viewer';
-import { useTestLogs } from '@/hooks/use-test-logs';
-import { useIsMobile } from '@/hooks/use-media-query';
-import type { TestRunStatus } from '@/types/electron';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import {
+  XtermLogViewer,
+  type XtermLogViewerRef,
+} from "@/components/ui/xterm-log-viewer";
+import { useTestLogs } from "@/hooks/use-test-logs";
+import { useIsMobile } from "@/hooks/use-media-query";
+import type { TestRunStatus } from "@/types/electron";
 
 // ============================================================================
 // Types
@@ -55,46 +68,48 @@ function getStatusIndicator(status: TestRunStatus | null): {
   icon?: React.ReactNode;
 } {
   switch (status) {
-    case 'running':
+    case "running":
       return {
-        text: 'Running',
-        className: 'bg-blue-500/10 text-blue-500',
-        icon: <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />,
+        text: "Running",
+        className: "bg-blue-500/10 text-blue-500",
+        icon: (
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+        ),
       };
-    case 'pending':
+    case "pending":
       return {
-        text: 'Pending',
-        className: 'bg-amber-500/10 text-amber-500',
+        text: "Pending",
+        className: "bg-amber-500/10 text-amber-500",
         icon: <Clock className="w-3 h-3" />,
       };
-    case 'passed':
+    case "passed":
       return {
-        text: 'Passed',
-        className: 'bg-green-500/10 text-green-500',
+        text: "Passed",
+        className: "bg-green-500/10 text-green-500",
         icon: <CheckCircle2 className="w-3 h-3" />,
       };
-    case 'failed':
+    case "failed":
       return {
-        text: 'Failed',
-        className: 'bg-red-500/10 text-red-500',
+        text: "Failed",
+        className: "bg-red-500/10 text-red-500",
         icon: <XCircle className="w-3 h-3" />,
       };
-    case 'cancelled':
+    case "cancelled":
       return {
-        text: 'Cancelled',
-        className: 'bg-yellow-500/10 text-yellow-500',
+        text: "Cancelled",
+        className: "bg-yellow-500/10 text-yellow-500",
         icon: <AlertCircle className="w-3 h-3" />,
       };
-    case 'error':
+    case "error":
       return {
-        text: 'Error',
-        className: 'bg-red-500/10 text-red-500',
+        text: "Error",
+        className: "bg-red-500/10 text-red-500",
         icon: <AlertCircle className="w-3 h-3" />,
       };
     default:
       return {
-        text: 'Idle',
-        className: 'bg-muted text-muted-foreground',
+        text: "Idle",
+        className: "bg-muted text-muted-foreground",
       };
   }
 }
@@ -210,7 +225,7 @@ function TestLogsPanelContent({
   const statusIndicator = getStatusIndicator(status);
   const formattedStartTime = formatTime(startedAt);
   const formattedDuration = formatDuration(duration);
-  const lineCount = logs ? logs.split('\n').length : 0;
+  const lineCount = logs ? logs.split("\n").length : 0;
 
   return (
     <>
@@ -223,8 +238,8 @@ function TestLogsPanelContent({
             {status && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium',
-                  statusIndicator.className
+                  "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium",
+                  statusIndicator.className,
                 )}
               >
                 {statusIndicator.icon}
@@ -232,7 +247,9 @@ function TestLogsPanelContent({
               </span>
             )}
             {formattedDuration && !isRunning && (
-              <span className="text-xs text-muted-foreground font-mono">{formattedDuration}</span>
+              <span className="text-xs text-muted-foreground font-mono">
+                {formattedDuration}
+              </span>
             )}
           </DialogTitle>
           <div className="flex items-center gap-1.5">
@@ -254,7 +271,11 @@ function TestLogsPanelContent({
               onClick={() => fetchLogs()}
               title="Refresh logs"
             >
-              {isLoading ? <Spinner size="xs" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              {isLoading ? (
+                <Spinner size="xs" />
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5" />
+              )}
             </Button>
           </div>
         </div>
@@ -270,13 +291,17 @@ function TestLogsPanelContent({
           {command && (
             <span className="inline-flex items-center gap-1.5">
               <span className="text-muted-foreground/60">Command</span>
-              <span className="font-mono text-primary truncate max-w-[200px]">{command}</span>
+              <span className="font-mono text-primary truncate max-w-[200px]">
+                {command}
+              </span>
             </span>
           )}
           {testFile && (
             <span className="inline-flex items-center gap-1.5">
               <span className="text-muted-foreground/60">File</span>
-              <span className="font-mono truncate max-w-[150px]">{testFile}</span>
+              <span className="font-mono truncate max-w-[150px]">
+                {testFile}
+              </span>
             </span>
           )}
           {formattedStartTime && (
@@ -299,7 +324,10 @@ function TestLogsPanelContent({
       )}
 
       {/* Log content area */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-zinc-950" data-testid="test-logs-content">
+      <div
+        className="flex-1 min-h-0 overflow-hidden bg-zinc-950"
+        data-testid="test-logs-content"
+      >
         {isLoading && !logs ? (
           <div className="flex items-center justify-center h-full min-h-[300px] text-muted-foreground">
             <Spinner size="md" className="mr-2" />
@@ -309,13 +337,17 @@ function TestLogsPanelContent({
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground p-8">
             <Terminal className="w-10 h-10 mb-3 opacity-20" />
             <p className="text-sm">No test run active</p>
-            <p className="text-xs mt-1 opacity-60">Start a test run to see logs here</p>
+            <p className="text-xs mt-1 opacity-60">
+              Start a test run to see logs here
+            </p>
           </div>
         ) : isRunning && !logs ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-muted-foreground p-8">
             <Spinner size="xl" className="mb-3" />
             <p className="text-sm">Waiting for output...</p>
-            <p className="text-xs mt-1 opacity-60">Logs will appear as tests generate output</p>
+            <p className="text-xs mt-1 opacity-60">
+              Logs will appear as tests generate output
+            </p>
           </div>
         ) : (
           <XtermLogViewer
@@ -332,9 +364,16 @@ function TestLogsPanelContent({
       {/* Footer status bar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-2 bg-muted/30 border-t border-border/50 text-xs text-muted-foreground">
         <div className="flex items-center gap-3">
-          <span className="font-mono">{lineCount > 0 ? `${lineCount} lines` : 'No output'}</span>
+          <span className="font-mono">
+            {lineCount > 0 ? `${lineCount} lines` : "No output"}
+          </span>
           {exitCode !== null && (
-            <span className={cn('font-mono', exitCode === 0 ? 'text-green-500' : 'text-red-500')}>
+            <span
+              className={cn(
+                "font-mono",
+                exitCode === 0 ? "text-green-500" : "text-red-500",
+              )}
+            >
               Exit: {exitCode}
             </span>
           )}

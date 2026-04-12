@@ -12,9 +12,9 @@ export interface ImageData {
  * Content block for image (Claude SDK format)
  */
 export interface ImageContentBlock {
-  type: 'image';
+  type: "image";
   source: {
-    type: 'base64';
+    type: "base64";
     media_type: string;
     data: string;
   };

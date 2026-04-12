@@ -4,9 +4,9 @@
  * Verifies that the list view shows a priority column and allows sorting by priority
  */
 
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 import {
   createTempDirPath,
   cleanupTempDir,
@@ -14,9 +14,9 @@ import {
   waitForNetworkIdle,
   authenticateForTests,
   handleLoginScreenIfPresent,
-} from '../utils';
+} from "../utils";
 
-const TEST_TEMP_DIR = createTempDirPath('list-view-priority-test');
+const TEST_TEMP_DIR = createTempDirPath("list-view-priority-test");
 
 // TODO: This test is skipped because setupRealProject only sets localStorage,
 // but the server's settings.json (set by setup-e2e-fixtures.mjs) takes precedence
@@ -24,7 +24,7 @@ const TEST_TEMP_DIR = createTempDirPath('list-view-priority-test');
 // but the server loads from the E2E Test Project fixture path.
 // Fix: Either modify setupRealProject to also update server settings, or
 // have the test add features through the UI instead of on disk.
-test.describe.skip('List View Priority Column', () => {
+test.describe.skip("List View Priority Column", () => {
   let projectPath: string;
   const projectName = `test-project-${Date.now()}`;
 
@@ -37,40 +37,40 @@ test.describe.skip('List View Priority Column', () => {
     fs.mkdirSync(projectPath, { recursive: true });
 
     fs.writeFileSync(
-      path.join(projectPath, 'package.json'),
-      JSON.stringify({ name: projectName, version: '1.0.0' }, null, 2)
+      path.join(projectPath, "package.json"),
+      JSON.stringify({ name: projectName, version: "1.0.0" }, null, 2),
     );
 
-    const pegasusDir = path.join(projectPath, '.pegasus');
+    const pegasusDir = path.join(projectPath, ".pegasus");
     fs.mkdirSync(pegasusDir, { recursive: true });
-    const featuresDir = path.join(pegasusDir, 'features');
+    const featuresDir = path.join(pegasusDir, "features");
     fs.mkdirSync(featuresDir, { recursive: true });
-    fs.mkdirSync(path.join(pegasusDir, 'context'), { recursive: true });
+    fs.mkdirSync(path.join(pegasusDir, "context"), { recursive: true });
 
     // Create test features with different priorities
     const features = [
       {
-        id: 'feature-high-priority',
-        description: 'High priority feature',
+        id: "feature-high-priority",
+        description: "High priority feature",
         priority: 1,
-        status: 'backlog',
-        category: 'test',
+        status: "backlog",
+        category: "test",
         createdAt: new Date().toISOString(),
       },
       {
-        id: 'feature-medium-priority',
-        description: 'Medium priority feature',
+        id: "feature-medium-priority",
+        description: "Medium priority feature",
         priority: 2,
-        status: 'backlog',
-        category: 'test',
+        status: "backlog",
+        category: "test",
         createdAt: new Date().toISOString(),
       },
       {
-        id: 'feature-low-priority',
-        description: 'Low priority feature',
+        id: "feature-low-priority",
+        description: "Low priority feature",
         priority: 3,
-        status: 'backlog',
-        category: 'test',
+        status: "backlog",
+        category: "test",
         createdAt: new Date().toISOString(),
       },
     ];
@@ -79,17 +79,20 @@ test.describe.skip('List View Priority Column', () => {
     for (const feature of features) {
       const featureDir = path.join(featuresDir, feature.id);
       fs.mkdirSync(featureDir, { recursive: true });
-      fs.writeFileSync(path.join(featureDir, 'feature.json'), JSON.stringify(feature, null, 2));
+      fs.writeFileSync(
+        path.join(featureDir, "feature.json"),
+        JSON.stringify(feature, null, 2),
+      );
     }
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'categories.json'),
-      JSON.stringify({ categories: ['test'] }, null, 2)
+      path.join(pegasusDir, "categories.json"),
+      JSON.stringify({ categories: ["test"] }, null, 2),
     );
 
     fs.writeFileSync(
-      path.join(pegasusDir, 'app_spec.txt'),
-      `# ${projectName}\n\nA test project for e2e testing.`
+      path.join(pegasusDir, "app_spec.txt"),
+      `# ${projectName}\n\nA test project for e2e testing.`,
     );
   });
 
@@ -97,52 +100,66 @@ test.describe.skip('List View Priority Column', () => {
     cleanupTempDir(TEST_TEMP_DIR);
   });
 
-  test('should display priority column in list view and allow sorting', async ({ page }) => {
-    await setupRealProject(page, projectPath, projectName, { setAsCurrent: true });
+  test("should display priority column in list view and allow sorting", async ({
+    page,
+  }) => {
+    await setupRealProject(page, projectPath, projectName, {
+      setAsCurrent: true,
+    });
 
     // Authenticate before navigating
     await authenticateForTests(page);
-    await page.goto('/board');
-    await page.waitForLoadState('load');
+    await page.goto("/board");
+    await page.waitForLoadState("load");
     await handleLoginScreenIfPresent(page);
     await waitForNetworkIdle(page);
 
-    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="board-view"]')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Switch to list view
     await page.click('[data-testid="view-toggle-list"]');
     await page.waitForTimeout(500);
 
     // Verify list view is active
-    await expect(page.locator('[data-testid="list-view"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="list-view"]')).toBeVisible({
+      timeout: 5000,
+    });
 
     // Verify priority column header exists
-    await expect(page.locator('[data-testid="list-header-priority"]')).toBeVisible();
-    await expect(page.locator('[data-testid="list-header-priority"]')).toContainText('Priority');
+    await expect(
+      page.locator('[data-testid="list-header-priority"]'),
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-testid="list-header-priority"]'),
+    ).toContainText("Priority");
 
     // Verify priority cells are displayed for our test features
     await expect(
-      page.locator('[data-testid="list-row-priority-feature-high-priority"]')
+      page.locator('[data-testid="list-row-priority-feature-high-priority"]'),
     ).toBeVisible();
     await expect(
-      page.locator('[data-testid="list-row-priority-feature-medium-priority"]')
+      page.locator('[data-testid="list-row-priority-feature-medium-priority"]'),
     ).toBeVisible();
     await expect(
-      page.locator('[data-testid="list-row-priority-feature-low-priority"]')
+      page.locator('[data-testid="list-row-priority-feature-low-priority"]'),
     ).toBeVisible();
 
     // Verify priority badges show H, M, L
     const highPriorityCell = page.locator(
-      '[data-testid="list-row-priority-feature-high-priority"]'
+      '[data-testid="list-row-priority-feature-high-priority"]',
     );
     const mediumPriorityCell = page.locator(
-      '[data-testid="list-row-priority-feature-medium-priority"]'
+      '[data-testid="list-row-priority-feature-medium-priority"]',
     );
-    const lowPriorityCell = page.locator('[data-testid="list-row-priority-feature-low-priority"]');
+    const lowPriorityCell = page.locator(
+      '[data-testid="list-row-priority-feature-low-priority"]',
+    );
 
-    await expect(highPriorityCell).toContainText('H');
-    await expect(mediumPriorityCell).toContainText('M');
-    await expect(lowPriorityCell).toContainText('L');
+    await expect(highPriorityCell).toContainText("H");
+    await expect(mediumPriorityCell).toContainText("M");
+    await expect(lowPriorityCell).toContainText("L");
 
     // Click on priority header to sort
     await page.click('[data-testid="list-header-priority"]');
@@ -155,7 +172,10 @@ test.describe.skip('List View Priority Column', () => {
 
     // The first row should be high priority (value 1 = lowest number = first in ascending)
     const firstRow = rows.first();
-    await expect(firstRow).toHaveAttribute('data-testid', 'list-row-feature-high-priority');
+    await expect(firstRow).toHaveAttribute(
+      "data-testid",
+      "list-row-feature-high-priority",
+    );
 
     // Click again to reverse sort (descending - low priority first)
     await page.click('[data-testid="list-header-priority"]');
@@ -163,6 +183,9 @@ test.describe.skip('List View Priority Column', () => {
 
     // Now the first row should be low priority (value 3 = highest number = first in descending)
     const firstRowDesc = rows.first();
-    await expect(firstRowDesc).toHaveAttribute('data-testid', 'list-row-feature-low-priority');
+    await expect(firstRowDesc).toHaveAttribute(
+      "data-testid",
+      "list-row-feature-low-priority",
+    );
   });
 });

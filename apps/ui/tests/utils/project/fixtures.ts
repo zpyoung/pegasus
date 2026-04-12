@@ -1,12 +1,12 @@
-import { Page } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
-import { getWorkspaceRoot, assertSafeProjectPath } from '../core/safe-paths';
+import { Page } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
+import { getWorkspaceRoot, assertSafeProjectPath } from "../core/safe-paths";
 
 export { getWorkspaceRoot };
 
 const WORKSPACE_ROOT = getWorkspaceRoot();
-const FIXTURE_PATH = path.join(WORKSPACE_ROOT, 'test/fixtures/projectA');
+const FIXTURE_PATH = path.join(WORKSPACE_ROOT, "test/fixtures/projectA");
 
 // Original spec content for resetting between tests
 const ORIGINAL_SPEC_CONTENT = `<app_spec>
@@ -31,13 +31,18 @@ let _workerFixturePath: string | null = null;
 function ensureFixtureExists(): void {
   if (fs.existsSync(FIXTURE_PATH)) return;
 
-  fs.mkdirSync(path.join(FIXTURE_PATH, '.pegasus/context'), { recursive: true });
+  fs.mkdirSync(path.join(FIXTURE_PATH, ".pegasus/context"), {
+    recursive: true,
+  });
 
-  fs.writeFileSync(path.join(FIXTURE_PATH, '.pegasus/app_spec.txt'), ORIGINAL_SPEC_CONTENT);
-  fs.writeFileSync(path.join(FIXTURE_PATH, '.pegasus/categories.json'), '[]');
   fs.writeFileSync(
-    path.join(FIXTURE_PATH, '.pegasus/context/context-metadata.json'),
-    '{"files": {}}'
+    path.join(FIXTURE_PATH, ".pegasus/app_spec.txt"),
+    ORIGINAL_SPEC_CONTENT,
+  );
+  fs.writeFileSync(path.join(FIXTURE_PATH, ".pegasus/categories.json"), "[]");
+  fs.writeFileSync(
+    path.join(FIXTURE_PATH, ".pegasus/context/context-metadata.json"),
+    '{"files": {}}',
   );
 }
 
@@ -55,13 +60,16 @@ function getWorkerFixturePath(): string {
   if (!fs.existsSync(FIXTURE_PATH)) {
     throw new Error(
       `E2E source fixture is missing at ${FIXTURE_PATH}. ` +
-        'Run the setup script to create it: from apps/ui, run `node scripts/setup-e2e-fixtures.mjs` (or use `pnpm test`, which runs it via pretest).'
+        "Run the setup script to create it: from apps/ui, run `node scripts/setup-e2e-fixtures.mjs` (or use `pnpm test`, which runs it via pretest).",
     );
   }
 
   // Use process.pid + a unique suffix to isolate per-worker
   const workerId = process.env.TEST_WORKER_INDEX || process.pid.toString();
-  const workerDir = path.join(WORKSPACE_ROOT, `test/fixtures/.worker-${workerId}`);
+  const workerDir = path.join(
+    WORKSPACE_ROOT,
+    `test/fixtures/.worker-${workerId}`,
+  );
 
   // Copy projectA fixture to worker directory if it doesn't exist
   if (!fs.existsSync(workerDir)) {
@@ -76,21 +84,21 @@ function getWorkerFixturePath(): string {
  * Get the worker-isolated context path
  */
 function getWorkerContextPath(): string {
-  return path.join(getWorkerFixturePath(), '.pegasus/context');
+  return path.join(getWorkerFixturePath(), ".pegasus/context");
 }
 
 /**
  * Get the worker-isolated memory path
  */
 function getWorkerMemoryPath(): string {
-  return path.join(getWorkerFixturePath(), '.pegasus/memory');
+  return path.join(getWorkerFixturePath(), ".pegasus/memory");
 }
 
 /**
  * Get the worker-isolated spec file path
  */
 function getWorkerSpecPath(): string {
-  return path.join(getWorkerFixturePath(), '.pegasus/app_spec.txt');
+  return path.join(getWorkerFixturePath(), ".pegasus/app_spec.txt");
 }
 
 /**
@@ -143,7 +151,10 @@ function resolveContextFixturePath(filename: string): string {
 /**
  * Create a context file directly on disk (for test setup)
  */
-export function createContextFileOnDisk(filename: string, content: string): void {
+export function createContextFileOnDisk(
+  filename: string,
+  content: string,
+): void {
   const filePath = resolveContextFixturePath(filename);
   fs.writeFileSync(filePath, content);
 }
@@ -164,7 +175,10 @@ function resolveMemoryFixturePath(filename: string): string {
 /**
  * Create a memory file directly on disk (for test setup)
  */
-export function createMemoryFileOnDisk(filename: string, content: string): void {
+export function createMemoryFileOnDisk(
+  filename: string,
+  content: string,
+): void {
   const filePath = resolveMemoryFixturePath(filename);
   fs.writeFileSync(filePath, content);
 }
@@ -193,13 +207,13 @@ export function memoryFileExistsOnDisk(filename: string): boolean {
  */
 export async function setupProjectWithFixture(
   page: Page,
-  projectPath: string = getWorkerFixturePath()
+  projectPath: string = getWorkerFixturePath(),
 ): Promise<void> {
   assertSafeProjectPath(projectPath);
   await page.addInitScript((pathArg: string) => {
     const mockProject = {
-      id: 'test-project-fixture',
-      name: 'projectA',
+      id: "test-project-fixture",
+      name: "projectA",
       path: pathArg,
       lastOpened: new Date().toISOString(),
     };
@@ -208,11 +222,11 @@ export async function setupProjectWithFixture(
       state: {
         projects: [mockProject],
         currentProject: mockProject,
-        currentView: 'board',
-        theme: 'dark',
+        currentView: "board",
+        theme: "dark",
         sidebarOpen: true,
         skipSandboxWarning: true,
-        apiKeys: { anthropic: '', google: '' },
+        apiKeys: { anthropic: "", google: "" },
         chatSessions: [],
         chatHistoryOpen: false,
         maxConcurrency: 3,
@@ -220,19 +234,19 @@ export async function setupProjectWithFixture(
       version: 2, // Must match app-store.ts persist version
     };
 
-    localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+    localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
     // Also mark setup as complete (fallback for when NEXT_PUBLIC_SKIP_SETUP isn't set)
     const setupState = {
       state: {
         isFirstRun: false,
         setupComplete: true,
-        currentStep: 'complete',
+        currentStep: "complete",
         skipClaudeSetup: false,
       },
       version: 0, // setup-store.ts doesn't specify a version, so zustand defaults to 0
     };
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     // Set settings cache so the fast-hydrate path uses our fixture project.
     // Without this, a stale settings cache from a previous test can override
@@ -249,15 +263,18 @@ export async function setupProjectWithFixture(
         },
       ],
       currentProjectId: mockProject.id,
-      theme: 'dark',
+      theme: "dark",
       sidebarOpen: true,
       maxConcurrency: 3,
       skipSandboxWarning: true,
     };
-    localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem(
+      "pegasus-settings-cache",
+      JSON.stringify(settingsCache),
+    );
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, projectPath);
 }
 
@@ -274,7 +291,7 @@ export function getFixturePath(): string {
  */
 export async function setupMockProjectWithProfiles(
   page: Page,
-  _options?: { customProfilesCount?: number }
+  _options?: { customProfilesCount?: number },
 ): Promise<void> {
   await setupProjectWithFixture(page);
 }

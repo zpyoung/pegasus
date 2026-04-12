@@ -2,9 +2,9 @@
  * Helper utilities for loading settings and context file handling across different parts of the server
  */
 
-import type { SettingsService } from '../services/settings-service.js';
-import type { ContextFilesResult, ContextFileInfo } from '@pegasus/utils';
-import { createLogger } from '@pegasus/utils';
+import type { SettingsService } from "../services/settings-service.js";
+import type { ContextFilesResult, ContextFileInfo } from "@pegasus/utils";
+import { createLogger } from "@pegasus/utils";
 import type {
   MCPServerConfig,
   McpServerConfig,
@@ -14,8 +14,8 @@ import type {
   PhaseModelKey,
   PhaseModelEntry,
   Credentials,
-} from '@pegasus/types';
-import { DEFAULT_PHASE_MODELS } from '@pegasus/types';
+} from "@pegasus/types";
+import { DEFAULT_PHASE_MODELS } from "@pegasus/types";
 import {
   mergeAutoModePrompts,
   mergeAgentPrompts,
@@ -29,9 +29,9 @@ import {
   mergeContextDescriptionPrompts,
   mergeSuggestionsPrompts,
   mergeTaskExecutionPrompts,
-} from '@pegasus/prompts';
+} from "@pegasus/prompts";
 
-const logger = createLogger('SettingsHelper');
+const logger = createLogger("SettingsHelper");
 
 /** Default number of agent turns used when no value is configured. */
 export const DEFAULT_MAX_TURNS = 10000;
@@ -52,19 +52,22 @@ export const MAX_ALLOWED_TURNS = 10000;
 export async function getAutoLoadClaudeMdSetting(
   projectPath: string,
   settingsService?: SettingsService | null,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<boolean> {
   if (!settingsService) {
-    logger.info(`${logPrefix} SettingsService not available, autoLoadClaudeMd defaulting to true`);
+    logger.info(
+      `${logPrefix} SettingsService not available, autoLoadClaudeMd defaulting to true`,
+    );
     return true;
   }
 
   try {
     // Check project settings first (takes precedence)
-    const projectSettings = await settingsService.getProjectSettings(projectPath);
+    const projectSettings =
+      await settingsService.getProjectSettings(projectPath);
     if (projectSettings.autoLoadClaudeMd !== undefined) {
       logger.info(
-        `${logPrefix} autoLoadClaudeMd from project settings: ${projectSettings.autoLoadClaudeMd}`
+        `${logPrefix} autoLoadClaudeMd from project settings: ${projectSettings.autoLoadClaudeMd}`,
       );
       return projectSettings.autoLoadClaudeMd;
     }
@@ -72,10 +75,15 @@ export async function getAutoLoadClaudeMdSetting(
     // Fall back to global settings
     const globalSettings = await settingsService.getGlobalSettings();
     const result = globalSettings.autoLoadClaudeMd ?? true;
-    logger.info(`${logPrefix} autoLoadClaudeMd from global settings: ${result}`);
+    logger.info(
+      `${logPrefix} autoLoadClaudeMd from global settings: ${result}`,
+    );
     return result;
   } catch (error) {
-    logger.error(`${logPrefix} Failed to load autoLoadClaudeMd setting:`, error);
+    logger.error(
+      `${logPrefix} Failed to load autoLoadClaudeMd setting:`,
+      error,
+    );
     throw error;
   }
 }
@@ -93,21 +101,22 @@ export async function getAutoLoadClaudeMdSetting(
 export async function getUseClaudeCodeSystemPromptSetting(
   projectPath: string,
   settingsService?: SettingsService | null,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<boolean> {
   if (!settingsService) {
     logger.info(
-      `${logPrefix} SettingsService not available, useClaudeCodeSystemPrompt defaulting to true`
+      `${logPrefix} SettingsService not available, useClaudeCodeSystemPrompt defaulting to true`,
     );
     return true;
   }
 
   try {
     // Check project settings first (takes precedence)
-    const projectSettings = await settingsService.getProjectSettings(projectPath);
+    const projectSettings =
+      await settingsService.getProjectSettings(projectPath);
     if (projectSettings.useClaudeCodeSystemPrompt !== undefined) {
       logger.info(
-        `${logPrefix} useClaudeCodeSystemPrompt from project settings: ${projectSettings.useClaudeCodeSystemPrompt}`
+        `${logPrefix} useClaudeCodeSystemPrompt from project settings: ${projectSettings.useClaudeCodeSystemPrompt}`,
       );
       return projectSettings.useClaudeCodeSystemPrompt;
     }
@@ -115,10 +124,15 @@ export async function getUseClaudeCodeSystemPromptSetting(
     // Fall back to global settings
     const globalSettings = await settingsService.getGlobalSettings();
     const result = globalSettings.useClaudeCodeSystemPrompt ?? true;
-    logger.info(`${logPrefix} useClaudeCodeSystemPrompt from global settings: ${result}`);
+    logger.info(
+      `${logPrefix} useClaudeCodeSystemPrompt from global settings: ${result}`,
+    );
     return result;
   } catch (error) {
-    logger.error(`${logPrefix} Failed to load useClaudeCodeSystemPrompt setting:`, error);
+    logger.error(
+      `${logPrefix} Failed to load useClaudeCodeSystemPrompt setting:`,
+      error,
+    );
     throw error;
   }
 }
@@ -135,11 +149,11 @@ export async function getUseClaudeCodeSystemPromptSetting(
  */
 export async function getDefaultMaxTurnsSetting(
   settingsService?: SettingsService | null,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<number> {
   if (!settingsService) {
     logger.info(
-      `${logPrefix} SettingsService not available, using default maxTurns=${DEFAULT_MAX_TURNS}`
+      `${logPrefix} SettingsService not available, using default maxTurns=${DEFAULT_MAX_TURNS}`,
     );
     return DEFAULT_MAX_TURNS;
   }
@@ -149,8 +163,13 @@ export async function getDefaultMaxTurnsSetting(
     const raw = globalSettings.defaultMaxTurns;
     const result = Number.isFinite(raw) ? (raw as number) : DEFAULT_MAX_TURNS;
     // Clamp to valid range
-    const clamped = Math.max(1, Math.min(MAX_ALLOWED_TURNS, Math.floor(result)));
-    logger.debug(`${logPrefix} defaultMaxTurns from global settings: ${clamped}`);
+    const clamped = Math.max(
+      1,
+      Math.min(MAX_ALLOWED_TURNS, Math.floor(result)),
+    );
+    logger.debug(
+      `${logPrefix} defaultMaxTurns from global settings: ${clamped}`,
+    );
     return clamped;
   } catch (error) {
     logger.error(`${logPrefix} Failed to load defaultMaxTurns setting:`, error);
@@ -172,7 +191,7 @@ export async function getDefaultMaxTurnsSetting(
  */
 export function filterClaudeMdFromContext(
   contextResult: ContextFilesResult,
-  autoLoadClaudeMd: boolean
+  autoLoadClaudeMd: boolean,
 ): string {
   // If autoLoadClaudeMd is disabled, return the original prompt unchanged
   if (!autoLoadClaudeMd || contextResult.files.length === 0) {
@@ -180,15 +199,19 @@ export function filterClaudeMdFromContext(
   }
 
   // Filter out CLAUDE.md (case-insensitive)
-  const nonClaudeFiles = contextResult.files.filter((f) => f.name.toLowerCase() !== 'claude.md');
+  const nonClaudeFiles = contextResult.files.filter(
+    (f) => f.name.toLowerCase() !== "claude.md",
+  );
 
   // If all files were CLAUDE.md, return empty string
   if (nonClaudeFiles.length === 0) {
-    return '';
+    return "";
   }
 
   // Rebuild prompt without CLAUDE.md using the same format as loadContextFiles
-  const formattedFiles = nonClaudeFiles.map((file) => formatContextFileEntry(file));
+  const formattedFiles = nonClaudeFiles.map((file) =>
+    formatContextFileEntry(file),
+  );
 
   return `# Project Context Files
 
@@ -203,7 +226,7 @@ If you need more details about a context file, you can read the full file at the
 
 ---
 
-${formattedFiles.join('\n\n---\n\n')}
+${formattedFiles.join("\n\n---\n\n")}
 
 ---
 
@@ -218,7 +241,9 @@ ${formattedFiles.join('\n\n---\n\n')}
 function formatContextFileEntry(file: ContextFileInfo): string {
   const header = `## ${file.name}`;
   const pathInfo = `**Path:** \`${file.path}\``;
-  const descriptionInfo = file.description ? `\n**Purpose:** ${file.description}` : '';
+  const descriptionInfo = file.description
+    ? `\n**Purpose:** ${file.description}`
+    : "";
   return `${header}\n${pathInfo}${descriptionInfo}\n\n${file.content}`;
 }
 
@@ -232,7 +257,7 @@ function formatContextFileEntry(file: ContextFileInfo): string {
  */
 export async function getMCPServersFromSettings(
   settingsService?: SettingsService | null,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<Record<string, McpServerConfig>> {
   if (!settingsService) {
     return {};
@@ -256,7 +281,7 @@ export async function getMCPServersFromSettings(
     }
 
     logger.info(
-      `${logPrefix} Loaded ${enabledServers.length} MCP server(s): ${enabledServers.map((s) => s.name).join(', ')}`
+      `${logPrefix} Loaded ${enabledServers.length} MCP server(s): ${enabledServers.map((s) => s.name).join(", ")}`,
     );
 
     return sdkServers;
@@ -271,23 +296,23 @@ export async function getMCPServersFromSettings(
  * Validates required fields and throws informative errors if missing.
  */
 function convertToSdkFormat(server: MCPServerConfig): McpServerConfig {
-  if (server.type === 'sse') {
+  if (server.type === "sse") {
     if (!server.url) {
       throw new Error(`SSE MCP server "${server.name}" is missing a URL.`);
     }
     return {
-      type: 'sse',
+      type: "sse",
       url: server.url,
       headers: server.headers,
     };
   }
 
-  if (server.type === 'http') {
+  if (server.type === "http") {
     if (!server.url) {
       throw new Error(`HTTP MCP server "${server.name}" is missing a URL.`);
     }
     return {
-      type: 'http',
+      type: "http",
       url: server.url,
       headers: server.headers,
     };
@@ -298,7 +323,7 @@ function convertToSdkFormat(server: MCPServerConfig): McpServerConfig {
     throw new Error(`Stdio MCP server "${server.name}" is missing a command.`);
   }
   return {
-    type: 'stdio',
+    type: "stdio",
     command: server.command,
     args: server.args,
     env: server.env,
@@ -315,7 +340,7 @@ function convertToSdkFormat(server: MCPServerConfig): McpServerConfig {
  */
 export async function getPromptCustomization(
   settingsService?: SettingsService | null,
-  logPrefix = '[PromptHelper]'
+  logPrefix = "[PromptHelper]",
 ): Promise<{
   autoMode: ReturnType<typeof mergeAutoModePrompts>;
   agent: ReturnType<typeof mergeAgentPrompts>;
@@ -342,7 +367,9 @@ export async function getPromptCustomization(
       // Fall through to use empty customization (all defaults)
     }
   } else {
-    logger.info(`${logPrefix} SettingsService not available, using default prompts`);
+    logger.info(
+      `${logPrefix} SettingsService not available, using default prompts`,
+    );
   }
 
   return {
@@ -355,7 +382,9 @@ export async function getPromptCustomization(
     issueValidation: mergeIssueValidationPrompts(customization.issueValidation),
     ideation: mergeIdeationPrompts(customization.ideation),
     appSpec: mergeAppSpecPrompts(customization.appSpec),
-    contextDescription: mergeContextDescriptionPrompts(customization.contextDescription),
+    contextDescription: mergeContextDescriptionPrompts(
+      customization.contextDescription,
+    ),
     suggestions: mergeSuggestionsPrompts(customization.suggestions),
     taskExecution: mergeTaskExecutionPrompts(customization.taskExecution),
   };
@@ -368,14 +397,16 @@ export async function getPromptCustomization(
  * @param settingsService - Settings service instance
  * @returns Skills configuration with enabled state, sources, and tool inclusion flag
  */
-export async function getSkillsConfiguration(settingsService: SettingsService): Promise<{
+export async function getSkillsConfiguration(
+  settingsService: SettingsService,
+): Promise<{
   enabled: boolean;
-  sources: Array<'user' | 'project'>;
+  sources: Array<"user" | "project">;
   shouldIncludeInTools: boolean;
 }> {
   const settings = await settingsService.getGlobalSettings();
   const enabled = settings.enableSkills ?? true; // Default enabled
-  const sources = settings.skillsSources ?? ['user', 'project']; // Default both sources
+  const sources = settings.skillsSources ?? ["user", "project"]; // Default both sources
 
   return {
     enabled,
@@ -391,14 +422,16 @@ export async function getSkillsConfiguration(settingsService: SettingsService): 
  * @param settingsService - Settings service instance
  * @returns Subagents configuration with enabled state, sources, and tool inclusion flag
  */
-export async function getSubagentsConfiguration(settingsService: SettingsService): Promise<{
+export async function getSubagentsConfiguration(
+  settingsService: SettingsService,
+): Promise<{
   enabled: boolean;
-  sources: Array<'user' | 'project'>;
+  sources: Array<"user" | "project">;
   shouldIncludeInTools: boolean;
 }> {
   const settings = await settingsService.getGlobalSettings();
   const enabled = settings.enableSubagents ?? true; // Default enabled
-  const sources = settings.subagentsSources ?? ['user', 'project']; // Default both sources
+  const sources = settings.subagentsSources ?? ["user", "project"]; // Default both sources
 
   return {
     enabled,
@@ -417,15 +450,19 @@ export async function getSubagentsConfiguration(settingsService: SettingsService
  */
 export async function getCustomSubagents(
   settingsService: SettingsService,
-  projectPath?: string
-): Promise<Record<string, import('@pegasus/types').AgentDefinition> | undefined> {
+  projectPath?: string,
+): Promise<
+  Record<string, import("@pegasus/types").AgentDefinition> | undefined
+> {
   // Get global subagents
   const globalSettings = await settingsService.getGlobalSettings();
   const globalSubagents = globalSettings.customSubagents || {};
 
   // If no project path, return only global subagents
   if (!projectPath) {
-    return Object.keys(globalSubagents).length > 0 ? globalSubagents : undefined;
+    return Object.keys(globalSubagents).length > 0
+      ? globalSubagents
+      : undefined;
   }
 
   // Get project-specific subagents
@@ -446,7 +483,7 @@ export interface ActiveClaudeApiProfileResult {
   /** The active profile, or undefined if using direct Anthropic API */
   profile: ClaudeApiProfile | undefined;
   /** Credentials for resolving 'credentials' apiKeySource */
-  credentials: import('@pegasus/types').Credentials | undefined;
+  credentials: import("@pegasus/types").Credentials | undefined;
 }
 
 /**
@@ -464,8 +501,8 @@ export interface ActiveClaudeApiProfileResult {
  */
 export async function getActiveClaudeApiProfile(
   settingsService?: SettingsService | null,
-  logPrefix = '[SettingsHelper]',
-  projectPath?: string
+  logPrefix = "[SettingsHelper]",
+  projectPath?: string,
 ): Promise<ActiveClaudeApiProfileResult> {
   if (!settingsService) {
     return { profile: undefined, credentials: undefined };
@@ -481,7 +518,8 @@ export async function getActiveClaudeApiProfile(
     let isProjectOverride = false;
 
     if (projectPath) {
-      const projectSettings = await settingsService.getProjectSettings(projectPath);
+      const projectSettings =
+        await settingsService.getProjectSettings(projectPath);
       // undefined = use global, null = explicit no profile, string = specific profile
       if (projectSettings.activeClaudeApiProfileId !== undefined) {
         activeProfileId = projectSettings.activeClaudeApiProfileId;
@@ -497,7 +535,9 @@ export async function getActiveClaudeApiProfile(
     // No active profile selected - use direct Anthropic API
     if (!activeProfileId) {
       if (isProjectOverride && activeProfileId === null) {
-        logger.info(`${logPrefix} Project explicitly using Direct Anthropic API`);
+        logger.info(
+          `${logPrefix} Project explicitly using Direct Anthropic API`,
+        );
       }
       return { profile: undefined, credentials };
     }
@@ -506,12 +546,14 @@ export async function getActiveClaudeApiProfile(
     const activeProfile = profiles.find((p) => p.id === activeProfileId);
 
     if (activeProfile) {
-      const overrideSuffix = isProjectOverride ? ' (project override)' : '';
-      logger.info(`${logPrefix} Using Claude API profile: ${activeProfile.name}${overrideSuffix}`);
+      const overrideSuffix = isProjectOverride ? " (project override)" : "";
+      logger.info(
+        `${logPrefix} Using Claude API profile: ${activeProfile.name}${overrideSuffix}`,
+      );
       return { profile: activeProfile, credentials };
     } else {
       logger.warn(
-        `${logPrefix} Active profile ID "${activeProfileId}" not found, falling back to direct Anthropic API`
+        `${logPrefix} Active profile ID "${activeProfileId}" not found, falling back to direct Anthropic API`,
       );
       return { profile: undefined, credentials };
     }
@@ -545,7 +587,7 @@ export interface ProviderByIdResult {
 export async function getProviderById(
   providerId: string,
   settingsService: SettingsService,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<ProviderByIdResult> {
   try {
     const globalSettings = await settingsService.getGlobalSettings();
@@ -556,7 +598,9 @@ export async function getProviderById(
 
     if (provider) {
       if (provider.enabled === false) {
-        logger.warn(`${logPrefix} Provider "${provider.name}" (${providerId}) is disabled`);
+        logger.warn(
+          `${logPrefix} Provider "${provider.name}" (${providerId}) is disabled`,
+        );
       } else {
         logger.debug(`${logPrefix} Found provider: ${provider.name}`);
       }
@@ -597,13 +641,15 @@ export async function getPhaseModelWithOverrides(
   phase: PhaseModelKey,
   settingsService?: SettingsService | null,
   projectPath?: string,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<PhaseModelWithOverridesResult> {
   // Handle undefined settingsService gracefully
   if (!settingsService) {
-    logger.info(`${logPrefix} SettingsService not available, using default for ${phase}`);
+    logger.info(
+      `${logPrefix} SettingsService not available, using default for ${phase}`,
+    );
     return {
-      phaseModel: DEFAULT_PHASE_MODELS[phase] || { model: 'sonnet' },
+      phaseModel: DEFAULT_PHASE_MODELS[phase] || { model: "sonnet" },
       isProjectOverride: false,
       provider: undefined,
       credentials: undefined,
@@ -621,7 +667,8 @@ export async function getPhaseModelWithOverrides(
 
     // Check for project override
     if (projectPath) {
-      const projectSettings = await settingsService.getProjectSettings(projectPath);
+      const projectSettings =
+        await settingsService.getProjectSettings(projectPath);
       const projectOverrides = projectSettings.phaseModelOverrides || {};
 
       if (projectOverrides[phase]) {
@@ -633,8 +680,10 @@ export async function getPhaseModelWithOverrides(
 
     // If no phase model found, use per-phase default
     if (!phaseModel) {
-      phaseModel = DEFAULT_PHASE_MODELS[phase] || { model: 'sonnet' };
-      logger.debug(`${logPrefix} No ${phase} configured, using default: ${phaseModel.model}`);
+      phaseModel = DEFAULT_PHASE_MODELS[phase] || { model: "sonnet" };
+      logger.debug(
+        `${logPrefix} No ${phase} configured, using default: ${phaseModel.model}`,
+      );
     }
 
     // Resolve provider if providerId is set
@@ -646,15 +695,17 @@ export async function getPhaseModelWithOverrides(
       if (provider) {
         if (provider.enabled === false) {
           logger.warn(
-            `${logPrefix} Provider "${provider.name}" for ${phase} is disabled, falling back to direct API`
+            `${logPrefix} Provider "${provider.name}" for ${phase} is disabled, falling back to direct API`,
           );
           provider = undefined;
         } else {
-          logger.debug(`${logPrefix} Using provider "${provider.name}" for ${phase}`);
+          logger.debug(
+            `${logPrefix} Using provider "${provider.name}" for ${phase}`,
+          );
         }
       } else {
         logger.warn(
-          `${logPrefix} Provider ${phaseModel.providerId} not found for ${phase}, falling back to direct API`
+          `${logPrefix} Provider ${phaseModel.providerId} not found for ${phase}, falling back to direct API`,
         );
       }
     }
@@ -666,10 +717,13 @@ export async function getPhaseModelWithOverrides(
       credentials,
     };
   } catch (error) {
-    logger.error(`${logPrefix} Failed to get phase model with overrides:`, error);
+    logger.error(
+      `${logPrefix} Failed to get phase model with overrides:`,
+      error,
+    );
     // Return a safe default
     return {
-      phaseModel: { model: 'sonnet' },
+      phaseModel: { model: "sonnet" },
       isProjectOverride: false,
       provider: undefined,
       credentials: undefined,
@@ -682,7 +736,7 @@ export interface ProviderByModelIdResult {
   /** The provider that contains this model, or undefined if not found */
   provider: ClaudeCompatibleProvider | undefined;
   /** The model configuration if found */
-  modelConfig: import('@pegasus/types').ProviderModel | undefined;
+  modelConfig: import("@pegasus/types").ProviderModel | undefined;
   /** Credentials for API key resolution */
   credentials: Credentials | undefined;
   /** The resolved Claude model ID to use for API calls (from mapsToClaudeModel) */
@@ -698,7 +752,7 @@ export interface ProviderContextResult {
   /** The resolved Claude model ID for SDK configuration */
   resolvedModel: string | undefined;
   /** The original model config from the provider if found */
-  modelConfig: import('@pegasus/types').ProviderModel | undefined;
+  modelConfig: import("@pegasus/types").ProviderModel | undefined;
 }
 
 /**
@@ -715,10 +769,10 @@ function isProviderEnabled(provider: ClaudeCompatibleProvider): boolean {
  */
 function findModelInProvider(
   provider: ClaudeCompatibleProvider,
-  modelId: string
-): import('@pegasus/types').ProviderModel | undefined {
+  modelId: string,
+): import("@pegasus/types").ProviderModel | undefined {
   return provider.models?.find(
-    (m) => m.id === modelId || m.id.toLowerCase() === modelId.toLowerCase()
+    (m) => m.id === modelId || m.id.toLowerCase() === modelId.toLowerCase(),
   );
 }
 
@@ -740,7 +794,7 @@ export async function resolveProviderContext(
   settingsService: SettingsService,
   modelId: string,
   providerId?: string,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<ProviderContextResult> {
   try {
     const globalSettings = await settingsService.getGlobalSettings();
@@ -748,11 +802,11 @@ export async function resolveProviderContext(
     const providers = globalSettings.claudeCompatibleProviders || [];
 
     logger.debug(
-      `${logPrefix} Resolving provider context: modelId="${modelId}", providerId="${providerId ?? 'none'}", providers count=${providers.length}`
+      `${logPrefix} Resolving provider context: modelId="${modelId}", providerId="${providerId ?? "none"}", providers count=${providers.length}`,
     );
 
     let provider: ClaudeCompatibleProvider | undefined;
-    let modelConfig: import('@pegasus/types').ProviderModel | undefined;
+    let modelConfig: import("@pegasus/types").ProviderModel | undefined;
 
     // 1. Try resolving by explicit providerId first (most reliable)
     if (providerId) {
@@ -760,23 +814,23 @@ export async function resolveProviderContext(
       if (provider) {
         if (!isProviderEnabled(provider)) {
           logger.warn(
-            `${logPrefix} Explicitly requested provider "${provider.name}" (${providerId}) is disabled (enabled=${provider.enabled})`
+            `${logPrefix} Explicitly requested provider "${provider.name}" (${providerId}) is disabled (enabled=${provider.enabled})`,
           );
         } else {
           logger.debug(
-            `${logPrefix} Found provider "${provider.name}" (${providerId}), enabled=${provider.enabled ?? 'undefined (treated as enabled)'}`
+            `${logPrefix} Found provider "${provider.name}" (${providerId}), enabled=${provider.enabled ?? "undefined (treated as enabled)"}`,
           );
           // Find the model config within this provider to check for mappings
           modelConfig = findModelInProvider(provider, modelId);
           if (!modelConfig && provider.models && provider.models.length > 0) {
             logger.debug(
-              `${logPrefix} Model "${modelId}" not found in provider "${provider.name}". Available models: ${provider.models.map((m) => m.id).join(', ')}`
+              `${logPrefix} Model "${modelId}" not found in provider "${provider.name}". Available models: ${provider.models.map((m) => m.id).join(", ")}`,
             );
           }
         }
       } else {
         logger.warn(
-          `${logPrefix} Explicitly requested provider "${providerId}" not found. Available providers: ${providers.map((p) => p.id).join(', ')}`
+          `${logPrefix} Explicitly requested provider "${providerId}" not found. Available providers: ${providers.map((p) => p.id).join(", ")}`,
         );
       }
     }
@@ -795,7 +849,9 @@ export async function resolveProviderContext(
             provider = p;
           }
           modelConfig = config;
-          logger.debug(`${logPrefix} Found model "${modelId}" in provider "${p.name}" (fallback)`);
+          logger.debug(
+            `${logPrefix} Found model "${modelId}" in provider "${p.name}" (fallback)`,
+          );
           break;
         }
       }
@@ -804,16 +860,16 @@ export async function resolveProviderContext(
     // 3. Resolve the mapped Claude model if specified
     let resolvedModel: string | undefined;
     if (modelConfig?.mapsToClaudeModel) {
-      const { resolveModelString } = await import('@pegasus/model-resolver');
+      const { resolveModelString } = await import("@pegasus/model-resolver");
       resolvedModel = resolveModelString(modelConfig.mapsToClaudeModel);
       logger.debug(
-        `${logPrefix} Model "${modelId}" maps to Claude model "${modelConfig.mapsToClaudeModel}" -> "${resolvedModel}"`
+        `${logPrefix} Model "${modelId}" maps to Claude model "${modelConfig.mapsToClaudeModel}" -> "${resolvedModel}"`,
       );
     }
 
     // Log final result for debugging
     logger.debug(
-      `${logPrefix} Provider context resolved: provider=${provider?.name ?? 'none'}, modelConfig=${modelConfig ? 'found' : 'not found'}, resolvedModel=${resolvedModel ?? modelId}`
+      `${logPrefix} Provider context resolved: provider=${provider?.name ?? "none"}, modelConfig=${modelConfig ? "found" : "not found"}, resolvedModel=${resolvedModel ?? modelId}`,
     );
 
     return { provider, credentials, resolvedModel, modelConfig };
@@ -844,7 +900,7 @@ export async function resolveProviderContext(
 export async function getProviderByModelId(
   modelId: string,
   settingsService: SettingsService,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<ProviderByModelIdResult> {
   try {
     const globalSettings = await settingsService.getGlobalSettings();
@@ -860,20 +916,23 @@ export async function getProviderByModelId(
 
       // Check if this provider has the model
       const modelConfig = provider.models?.find(
-        (m) => m.id === modelId || m.id.toLowerCase() === modelId.toLowerCase()
+        (m) => m.id === modelId || m.id.toLowerCase() === modelId.toLowerCase(),
       );
 
       if (modelConfig) {
-        logger.info(`${logPrefix} Found model "${modelId}" in provider "${provider.name}"`);
+        logger.info(
+          `${logPrefix} Found model "${modelId}" in provider "${provider.name}"`,
+        );
 
         // Resolve the mapped Claude model if specified
         let resolvedModel: string | undefined;
         if (modelConfig.mapsToClaudeModel) {
           // Import resolveModelString to convert alias to full model ID
-          const { resolveModelString } = await import('@pegasus/model-resolver');
+          const { resolveModelString } =
+            await import("@pegasus/model-resolver");
           resolvedModel = resolveModelString(modelConfig.mapsToClaudeModel);
           logger.info(
-            `${logPrefix} Model "${modelId}" maps to Claude model "${modelConfig.mapsToClaudeModel}" -> "${resolvedModel}"`
+            `${logPrefix} Model "${modelId}" maps to Claude model "${modelConfig.mapsToClaudeModel}" -> "${resolvedModel}"`,
           );
         }
 
@@ -910,12 +969,12 @@ export async function getProviderByModelId(
  */
 export async function getAllProviderModels(
   settingsService: SettingsService,
-  logPrefix = '[SettingsHelper]'
+  logPrefix = "[SettingsHelper]",
 ): Promise<
   Array<{
     providerId: string;
     providerName: string;
-    model: import('@pegasus/types').ProviderModel;
+    model: import("@pegasus/types").ProviderModel;
   }>
 > {
   try {
@@ -925,7 +984,7 @@ export async function getAllProviderModels(
     const allModels: Array<{
       providerId: string;
       providerName: string;
-      model: import('@pegasus/types').ProviderModel;
+      model: import("@pegasus/types").ProviderModel;
     }> = [];
 
     for (const provider of providers) {
@@ -944,7 +1003,7 @@ export async function getAllProviderModels(
     }
 
     logger.debug(
-      `${logPrefix} Found ${allModels.length} models from ${providers.length} providers`
+      `${logPrefix} Found ${allModels.length} models from ${providers.length} providers`,
     );
     return allModels;
   } catch (error) {

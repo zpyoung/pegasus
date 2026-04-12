@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { useEffect, useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   Dialog,
   DialogContent,
@@ -7,18 +7,26 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Wand2, Check, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import type { BacklogPlanResult, BacklogChange } from '@pegasus/types';
-import { ModelOverrideTrigger } from '@/components/shared/model-override-trigger';
-import { useModelOverride } from '@/components/shared/use-model-override';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Wand2,
+  Check,
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import type { BacklogPlanResult, BacklogChange } from "@pegasus/types";
+import { ModelOverrideTrigger } from "@/components/shared/model-override-trigger";
+import { useModelOverride } from "@/components/shared/use-model-override";
 
 interface BacklogPlanDialogProps {
   open: boolean;
@@ -34,7 +42,7 @@ interface BacklogPlanDialogProps {
   currentBranch?: string;
 }
 
-type DialogMode = 'input' | 'review' | 'applying';
+type DialogMode = "input" | "review" | "applying";
 
 export function BacklogPlanDialog({
   open,
@@ -47,11 +55,15 @@ export function BacklogPlanDialog({
   setIsGeneratingPlan,
   currentBranch,
 }: BacklogPlanDialogProps) {
-  const logger = createLogger('BacklogPlanDialog');
-  const [mode, setMode] = useState<DialogMode>('input');
-  const [prompt, setPrompt] = useState('');
-  const [expandedChanges, setExpandedChanges] = useState<Set<number>>(new Set());
-  const [selectedChanges, setSelectedChanges] = useState<Set<number>>(new Set());
+  const logger = createLogger("BacklogPlanDialog");
+  const [mode, setMode] = useState<DialogMode>("input");
+  const [prompt, setPrompt] = useState("");
+  const [expandedChanges, setExpandedChanges] = useState<Set<number>>(
+    new Set(),
+  );
+  const [selectedChanges, setSelectedChanges] = useState<Set<number>>(
+    new Set(),
+  );
 
   // Use the shared model override hook (with automatic persistence)
   const {
@@ -59,37 +71,37 @@ export function BacklogPlanDialog({
     effectiveModel,
     isOverridden: isModelOverridden,
     setOverride: setModelOverride,
-  } = useModelOverride({ phase: 'backlogPlanningModel' });
+  } = useModelOverride({ phase: "backlogPlanningModel" });
 
   // Set mode based on whether we have a pending result
   useEffect(() => {
     if (open) {
       if (pendingPlanResult) {
-        setMode('review');
+        setMode("review");
         // Select all changes by default
         setSelectedChanges(new Set(pendingPlanResult.changes.map((_, i) => i)));
         setExpandedChanges(new Set());
       } else {
-        setMode('input');
+        setMode("input");
       }
     }
   }, [open, pendingPlanResult]);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
-      toast.error('Please enter a prompt describing the changes you want');
+      toast.error("Please enter a prompt describing the changes you want");
       return;
     }
 
     const api = getElectronAPI();
     if (!api?.backlogPlan) {
-      logger.warn('Backlog plan API not available');
-      toast.error('API not available');
+      logger.warn("Backlog plan API not available");
+      toast.error("API not available");
       return;
     }
 
     // Start generation in background
-    logger.debug('Starting backlog plan generation', {
+    logger.debug("Starting backlog plan generation", {
       projectPath,
       promptLength: prompt.length,
       hasModelOverride: isModelOverridden,
@@ -100,27 +112,27 @@ export function BacklogPlanDialog({
       projectPath,
       prompt,
       effectiveModel,
-      currentBranch
+      currentBranch,
     );
     if (!result.success) {
-      logger.error('Backlog plan generation failed to start', {
+      logger.error("Backlog plan generation failed to start", {
         error: result.error,
         projectPath,
       });
       setIsGeneratingPlan(false);
-      toast.error(result.error || 'Failed to start plan generation');
+      toast.error(result.error || "Failed to start plan generation");
       return;
     }
 
     // Show toast and close dialog - generation runs in background
-    logger.debug('Backlog plan generation started', {
+    logger.debug("Backlog plan generation started", {
       projectPath,
       model: effectiveModel,
     });
-    toast.info('Generating plan... This will be ready soon!', {
+    toast.info("Generating plan... This will be ready soon!", {
       duration: 3000,
     });
-    setPrompt('');
+    setPrompt("");
     onClose();
   }, [
     logger,
@@ -138,21 +150,21 @@ export function BacklogPlanDialog({
 
     // Filter to only selected changes
     const selectedChangesList = pendingPlanResult.changes.filter((_, index) =>
-      selectedChanges.has(index)
+      selectedChanges.has(index),
     );
 
     if (selectedChangesList.length === 0) {
-      toast.error('Please select at least one change to apply');
+      toast.error("Please select at least one change to apply");
       return;
     }
 
     const api = getElectronAPI();
     if (!api?.backlogPlan) {
-      toast.error('API not available');
+      toast.error("API not available");
       return;
     }
 
-    setMode('applying');
+    setMode("applying");
 
     // Create a filtered plan result with only selected changes
     const filteredPlanResult: BacklogPlanResult = {
@@ -162,7 +174,7 @@ export function BacklogPlanDialog({
       dependencyUpdates:
         pendingPlanResult.dependencyUpdates?.filter((update) => {
           const isDeleting = selectedChangesList.some(
-            (c) => c.type === 'delete' && c.featureId === update.featureId
+            (c) => c.type === "delete" && c.featureId === update.featureId,
           );
           return !isDeleting;
         }) || [],
@@ -171,7 +183,7 @@ export function BacklogPlanDialog({
     const result = await api.backlogPlan.apply(
       projectPath,
       filteredPlanResult,
-      currentBranch ?? 'main'
+      currentBranch ?? "main",
     );
     if (result.success) {
       toast.success(`Applied ${result.appliedChanges?.length || 0} changes`);
@@ -179,8 +191,8 @@ export function BacklogPlanDialog({
       onPlanApplied?.();
       onClose();
     } else {
-      toast.error(result.error || 'Failed to apply plan');
-      setMode('review');
+      toast.error(result.error || "Failed to apply plan");
+      setMode("review");
     }
   }, [
     projectPath,
@@ -194,7 +206,7 @@ export function BacklogPlanDialog({
 
   const handleDiscard = useCallback(async () => {
     setPendingPlanResult(null);
-    setMode('input');
+    setMode("input");
 
     const api = getElectronAPI();
     if (api?.backlogPlan) {
@@ -235,36 +247,37 @@ export function BacklogPlanDialog({
     }
   };
 
-  const getChangeIcon = (type: BacklogChange['type']) => {
+  const getChangeIcon = (type: BacklogChange["type"]) => {
     switch (type) {
-      case 'add':
+      case "add":
         return <Plus className="w-4 h-4 text-green-500" />;
-      case 'update':
+      case "update":
         return <Pencil className="w-4 h-4 text-yellow-500" />;
-      case 'delete':
+      case "delete":
         return <Trash2 className="w-4 h-4 text-red-500" />;
     }
   };
 
   const getChangeLabel = (change: BacklogChange) => {
     switch (change.type) {
-      case 'add':
-        return change.feature?.title || 'New Feature';
-      case 'update':
+      case "add":
+        return change.feature?.title || "New Feature";
+      case "update":
         return `Update: ${change.featureId}`;
-      case 'delete':
+      case "delete":
         return `Delete: ${change.featureId}`;
     }
   };
 
   const renderContent = () => {
     switch (mode) {
-      case 'input':
+      case "input":
         return (
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              Describe the changes you want to make across your features. The AI will analyze your
-              current feature list and propose additions, updates, deletions, or restructuring.
+              Describe the changes you want to make across your features. The AI
+              will analyze your current feature list and propose additions,
+              updates, deletions, or restructuring.
             </div>
             <Textarea
               placeholder="e.g., Refactor onboarding into smaller features, add a dashboard feature that depends on authentication, and remove the legacy tour task."
@@ -274,24 +287,32 @@ export function BacklogPlanDialog({
               autoFocus
             />
             <div className="text-xs text-muted-foreground">
-              The AI will automatically handle dependency graph updates when adding or removing
-              features.
+              The AI will automatically handle dependency graph updates when
+              adding or removing features.
             </div>
             {isGeneratingPlan && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-                <Spinner size="sm" />A plan is currently being generated in the background...
+                <Spinner size="sm" />A plan is currently being generated in the
+                background...
               </div>
             )}
           </div>
         );
 
-      case 'review': {
+      case "review": {
         if (!pendingPlanResult) return null;
 
-        const additions = pendingPlanResult.changes.filter((c) => c.type === 'add');
-        const updates = pendingPlanResult.changes.filter((c) => c.type === 'update');
-        const deletions = pendingPlanResult.changes.filter((c) => c.type === 'delete');
-        const allSelected = selectedChanges.size === pendingPlanResult.changes.length;
+        const additions = pendingPlanResult.changes.filter(
+          (c) => c.type === "add",
+        );
+        const updates = pendingPlanResult.changes.filter(
+          (c) => c.type === "update",
+        );
+        const deletions = pendingPlanResult.changes.filter(
+          (c) => c.type === "delete",
+        );
+        const allSelected =
+          selectedChanges.size === pendingPlanResult.changes.length;
         const someSelected = selectedChanges.size > 0 && !allSelected;
 
         return (
@@ -299,7 +320,9 @@ export function BacklogPlanDialog({
             {/* Summary */}
             <div className="rounded-lg border bg-muted/30 p-4">
               <h4 className="font-medium mb-2">Summary</h4>
-              <p className="text-sm text-muted-foreground">{pendingPlanResult.summary}</p>
+              <p className="text-sm text-muted-foreground">
+                {pendingPlanResult.summary}
+              </p>
             </div>
 
             {/* Stats */}
@@ -330,9 +353,12 @@ export function BacklogPlanDialog({
                 indeterminate={someSelected}
                 onCheckedChange={toggleAllChanges}
               />
-              <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
-                {allSelected ? 'Deselect all' : 'Select all'} ({selectedChanges.size}/
-                {pendingPlanResult.changes.length})
+              <label
+                htmlFor="select-all"
+                className="text-sm font-medium cursor-pointer"
+              >
+                {allSelected ? "Deselect all" : "Select all"} (
+                {selectedChanges.size}/{pendingPlanResult.changes.length})
               </label>
             </div>
 
@@ -342,11 +368,14 @@ export function BacklogPlanDialog({
                 <div
                   key={index}
                   className={cn(
-                    'rounded-lg border p-3',
-                    change.type === 'add' && 'border-green-500/30 bg-green-500/5',
-                    change.type === 'update' && 'border-yellow-500/30 bg-yellow-500/5',
-                    change.type === 'delete' && 'border-red-500/30 bg-red-500/5',
-                    !selectedChanges.has(index) && 'opacity-50'
+                    "rounded-lg border p-3",
+                    change.type === "add" &&
+                      "border-green-500/30 bg-green-500/5",
+                    change.type === "update" &&
+                      "border-yellow-500/30 bg-yellow-500/5",
+                    change.type === "delete" &&
+                      "border-red-500/30 bg-red-500/5",
+                    !selectedChanges.has(index) && "opacity-50",
                   )}
                 >
                   <div className="flex items-center gap-2">
@@ -364,7 +393,9 @@ export function BacklogPlanDialog({
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                       )}
                       {getChangeIcon(change.type)}
-                      <span className="font-medium text-sm">{getChangeLabel(change)}</span>
+                      <span className="font-medium text-sm">
+                        {getChangeLabel(change)}
+                      </span>
                     </button>
                   </div>
 
@@ -374,12 +405,15 @@ export function BacklogPlanDialog({
                       {change.feature && (
                         <div className="rounded bg-background/50 p-2 text-xs font-mono">
                           {change.feature.description && (
-                            <p className="text-foreground">{change.feature.description}</p>
+                            <p className="text-foreground">
+                              {change.feature.description}
+                            </p>
                           )}
                           {change.feature.dependencies &&
                             change.feature.dependencies.length > 0 && (
                               <p className="text-muted-foreground mt-1">
-                                Dependencies: {change.feature.dependencies.join(', ')}
+                                Dependencies:{" "}
+                                {change.feature.dependencies.join(", ")}
                               </p>
                             )}
                         </div>
@@ -393,7 +427,7 @@ export function BacklogPlanDialog({
         );
       }
 
-      case 'applying':
+      case "applying":
         return (
           <div className="flex flex-col items-center justify-center py-12">
             <Spinner size="xl" className="mb-4" />
@@ -409,19 +443,19 @@ export function BacklogPlanDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
-            {mode === 'review' ? 'Review Plan' : 'Plan Feature Changes'}
+            {mode === "review" ? "Review Plan" : "Plan Feature Changes"}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'review'
-              ? 'Select which changes to apply to your features'
-              : 'Use AI to add, update, remove, or restructure your features'}
+            {mode === "review"
+              ? "Select which changes to apply to your features"
+              : "Use AI to add, update, remove, or restructure your features"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 overflow-y-auto">{renderContent()}</div>
 
         <DialogFooter>
-          {mode === 'input' && (
+          {mode === "input" && (
             <>
               <div className="flex items-center gap-2 mr-auto">
                 <span className="text-xs text-muted-foreground">Model:</span>
@@ -437,7 +471,10 @@ export function BacklogPlanDialog({
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button onClick={handleGenerate} disabled={!prompt.trim() || isGeneratingPlan}>
+              <Button
+                onClick={handleGenerate}
+                disabled={!prompt.trim() || isGeneratingPlan}
+              >
                 {isGeneratingPlan ? (
                   <>
                     <Spinner size="sm" className="mr-2" />
@@ -453,7 +490,7 @@ export function BacklogPlanDialog({
             </>
           )}
 
-          {mode === 'review' && (
+          {mode === "review" && (
             <>
               <Button variant="outline" onClick={handleDiscard}>
                 Discard
@@ -461,9 +498,13 @@ export function BacklogPlanDialog({
               <Button variant="outline" onClick={onClose}>
                 Review Later
               </Button>
-              <Button onClick={handleApply} disabled={selectedChanges.size === 0}>
+              <Button
+                onClick={handleApply}
+                disabled={selectedChanges.size === 0}
+              >
                 <Check className="w-4 h-4 mr-2" />
-                Apply {selectedChanges.size} Change{selectedChanges.size !== 1 ? 's' : ''}
+                Apply {selectedChanges.size} Change
+                {selectedChanges.size !== 1 ? "s" : ""}
               </Button>
             </>
           )}

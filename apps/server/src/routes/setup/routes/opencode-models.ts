@@ -7,13 +7,13 @@
  * - GET /api/setup/opencode/providers - Get authenticated providers
  */
 
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 import {
   OpencodeProvider,
   type OpenCodeProviderInfo,
-} from '../../../providers/opencode-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import type { ModelDefinition } from '@pegasus/types';
+} from "../../../providers/opencode-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import type { ModelDefinition } from "@pegasus/types";
 
 // Singleton provider instance for caching
 let providerInstance: OpencodeProvider | null = null;
@@ -59,7 +59,7 @@ export function createGetOpencodeModelsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const provider = getProvider();
-      const forceRefresh = req.query.refresh === 'true';
+      const forceRefresh = req.query.refresh === "true";
 
       let models: ModelDefinition[];
       let cached = true;
@@ -90,7 +90,7 @@ export function createGetOpencodeModelsHandler() {
 
       res.json(response);
     } catch (error) {
-      logError(error, 'Get OpenCode models failed');
+      logError(error, "Get OpenCode models failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -119,7 +119,7 @@ export function createRefreshOpencodeModelsHandler() {
 
       res.json(response);
     } catch (error) {
-      logError(error, 'Refresh OpenCode models failed');
+      logError(error, "Refresh OpenCode models failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -151,7 +151,7 @@ export function createGetOpencodeProvidersHandler() {
 
       res.json(response);
     } catch (error) {
-      logError(error, 'Get OpenCode providers failed');
+      logError(error, "Get OpenCode providers failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -173,10 +173,10 @@ export function createClearOpencodeCacheHandler() {
 
       res.json({
         success: true,
-        message: 'OpenCode model cache cleared',
+        message: "OpenCode model cache cleared",
       });
     } catch (error) {
-      logError(error, 'Clear OpenCode cache failed');
+      logError(error, "Clear OpenCode cache failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

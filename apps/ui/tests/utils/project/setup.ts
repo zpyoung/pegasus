@@ -1,5 +1,5 @@
-import { Page } from '@playwright/test';
-import { assertSafeProjectPath } from '../core/safe-paths';
+import { Page } from "@playwright/test";
+import { assertSafeProjectPath } from "../core/safe-paths";
 
 /**
  * Store version constants - centralized to avoid hardcoding across tests
@@ -39,7 +39,7 @@ export interface WelcomeViewSetupOptions {
  */
 export async function setupWelcomeView(
   page: Page,
-  options?: WelcomeViewSetupOptions
+  options?: WelcomeViewSetupOptions,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -54,18 +54,18 @@ export async function setupWelcomeView(
         state: {
           projects: opts?.recentProjects || [],
           currentProject: null,
-          currentView: 'welcome',
-          theme: 'dark',
+          currentView: "welcome",
+          theme: "dark",
           sidebarOpen: true,
           skipSandboxWarning: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
         },
         version: versions.APP_STORE,
       };
-      localStorage.setItem('pegasus-storage', JSON.stringify(appState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(appState));
 
       // Mark setup as complete to skip the setup wizard
       const setupState = {
@@ -76,7 +76,7 @@ export async function setupWelcomeView(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       // Set settings cache to ensure setupComplete is recognized on cold start.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -88,7 +88,7 @@ export async function setupWelcomeView(
         // Explicitly set currentProjectId to null so the fast-hydrate path
         // does not restore a stale project from a previous test.
         currentProjectId: null,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
       };
@@ -99,35 +99,38 @@ export async function setupWelcomeView(
         settingsCache.lastProjectDir = opts.workspaceDir;
       }
 
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Set workspace directory if provided (legacy fallback key)
       if (opts?.workspaceDir) {
-        localStorage.setItem('pegasus:lastProjectDir', opts.workspaceDir);
+        localStorage.setItem("pegasus:lastProjectDir", opts.workspaceDir);
       }
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
 
       // Set up a mechanism to keep currentProject null even after settings hydration.
       // Settings API might restore a project, so we watch for changes and override.
-      sessionStorage.setItem('pegasus-test-welcome-view', 'true');
+      sessionStorage.setItem("pegasus-test-welcome-view", "true");
 
       // Use a MutationObserver + storage event to detect when hydration sets a project,
       // then immediately override it back to null. This is more reliable than a fixed timeout.
       const enforceWelcomeView = () => {
-        const storage = localStorage.getItem('pegasus-storage');
+        const storage = localStorage.getItem("pegasus-storage");
         if (storage) {
           try {
             const state = JSON.parse(storage);
             if (
               state.state &&
-              sessionStorage.getItem('pegasus-test-welcome-view') === 'true' &&
+              sessionStorage.getItem("pegasus-test-welcome-view") === "true" &&
               state.state.currentProject !== null
             ) {
               state.state.currentProject = null;
-              state.state.currentView = 'welcome';
-              localStorage.setItem('pegasus-storage', JSON.stringify(state));
+              state.state.currentView = "welcome";
+              localStorage.setItem("pegasus-storage", JSON.stringify(state));
             }
           } catch {
             // Ignore parse errors
@@ -136,16 +139,16 @@ export async function setupWelcomeView(
       };
 
       // Listen for storage changes (catches hydration from settings API)
-      window.addEventListener('storage', enforceWelcomeView);
+      window.addEventListener("storage", enforceWelcomeView);
 
       // Also poll briefly to catch synchronous hydration that doesn't fire storage events
       const pollInterval = setInterval(enforceWelcomeView, 200);
       setTimeout(() => {
         clearInterval(pollInterval);
-        window.removeEventListener('storage', enforceWelcomeView);
+        window.removeEventListener("storage", enforceWelcomeView);
       }, 5000); // Stop after 5s - hydration should be done by then
     },
-    { opts: options, versions: STORE_VERSIONS }
+    { opts: options, versions: STORE_VERSIONS },
   );
 }
 
@@ -158,10 +161,10 @@ export async function setupWelcomeView(
  */
 export async function interceptSettingsForProject(
   page: Page,
-  project: TestProject
+  project: TestProject,
 ): Promise<void> {
-  await page.route('**/api/settings/global', async (route) => {
-    if (route.request().method() !== 'GET') {
+  await page.route("**/api/settings/global", async (route) => {
+    if (route.request().method() !== "GET") {
       return route.continue();
     }
     try {
@@ -210,7 +213,7 @@ export async function setupRealProject(
     projectId?: string;
     /** Skip settings API interception (default: false — interception is added automatically) */
     skipSettingsIntercept?: boolean;
-  }
+  },
 ): Promise<void> {
   assertSafeProjectPath(projectPath);
   await page.addInitScript(
@@ -240,18 +243,18 @@ export async function setupRealProject(
         state: {
           projects: allProjects,
           currentProject: currentProject,
-          currentView: currentProject ? 'board' : 'welcome',
-          theme: 'dark',
+          currentView: currentProject ? "board" : "welcome",
+          theme: "dark",
           sidebarOpen: true,
           skipSandboxWarning: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
         },
         version: versions.APP_STORE,
       };
-      localStorage.setItem('pegasus-storage', JSON.stringify(appState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(appState));
 
       // Mark setup as complete
       const setupState = {
@@ -262,7 +265,7 @@ export async function setupRealProject(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       // Set settings cache to ensure setupComplete is recognized on cold start.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -279,17 +282,25 @@ export async function setupRealProject(
         // Include currentProjectId so hydrateStoreFromSettings can restore
         // the current project directly (without relying on auto-open logic)
         currentProjectId: currentProject ? currentProject.id : null,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
         skipSandboxWarning: true,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
     },
-    { path: projectPath, name: projectName, opts: options, versions: STORE_VERSIONS }
+    {
+      path: projectPath,
+      name: projectName,
+      opts: options,
+      versions: STORE_VERSIONS,
+    },
   );
 
   // Automatically intercept settings API so server-side settings don't override the test project.
@@ -312,9 +323,9 @@ export async function setupRealProject(
 export async function setupMockProject(page: Page): Promise<void> {
   await page.addInitScript((versions: typeof STORE_VERSIONS) => {
     const mockProject = {
-      id: 'test-project-1',
-      name: 'Test Project',
-      path: '/mock/test-project',
+      id: "test-project-1",
+      name: "Test Project",
+      path: "/mock/test-project",
       lastOpened: new Date().toISOString(),
     };
 
@@ -322,9 +333,9 @@ export async function setupMockProject(page: Page): Promise<void> {
       state: {
         projects: [mockProject],
         currentProject: mockProject,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
-        apiKeys: { anthropic: '', google: '' },
+        apiKeys: { anthropic: "", google: "" },
         chatSessions: [],
         chatHistoryOpen: false,
         maxConcurrency: 3,
@@ -332,7 +343,7 @@ export async function setupMockProject(page: Page): Promise<void> {
       version: versions.APP_STORE,
     };
 
-    localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+    localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
     // Mark setup as complete to prevent redirect to /setup
     const setupState = {
@@ -343,7 +354,7 @@ export async function setupMockProject(page: Page): Promise<void> {
       },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     // Set settings cache so the fast hydrate path is taken on page load.
     const settingsCache = {
@@ -357,15 +368,18 @@ export async function setupMockProject(page: Page): Promise<void> {
           lastOpened: mockProject.lastOpened,
         },
       ],
-        currentProjectId: mockProject.id,
-      theme: 'dark',
+      currentProjectId: mockProject.id,
+      theme: "dark",
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem(
+      "pegasus-settings-cache",
+      JSON.stringify(settingsCache),
+    );
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, STORE_VERSIONS);
 }
 
@@ -374,14 +388,20 @@ export async function setupMockProject(page: Page): Promise<void> {
  */
 export async function setupMockProjectWithConcurrency(
   page: Page,
-  concurrency: number
+  concurrency: number,
 ): Promise<void> {
   await page.addInitScript(
-    ({ maxConcurrency, versions }: { maxConcurrency: number; versions: typeof STORE_VERSIONS }) => {
+    ({
+      maxConcurrency,
+      versions,
+    }: {
+      maxConcurrency: number;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -389,9 +409,9 @@ export async function setupMockProjectWithConcurrency(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: maxConcurrency,
@@ -399,14 +419,18 @@ export async function setupMockProjectWithConcurrency(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       // Mark setup as complete to prevent redirect to /setup
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -420,13 +444,16 @@ export async function setupMockProjectWithConcurrency(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: maxConcurrency,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
     },
-    { maxConcurrency: concurrency, versions: STORE_VERSIONS }
+    { maxConcurrency: concurrency, versions: STORE_VERSIONS },
   );
 }
 
@@ -436,7 +463,7 @@ export async function setupMockProjectWithConcurrency(
 export async function setupMockProjectAtConcurrencyLimit(
   page: Page,
   maxConcurrency: number = 1,
-  runningTasks: string[] = ['running-task-1']
+  runningTasks: string[] = ["running-task-1"],
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -449,9 +476,9 @@ export async function setupMockProjectAtConcurrencyLimit(
       versions: typeof STORE_VERSIONS;
     }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -459,9 +486,9 @@ export async function setupMockProjectAtConcurrencyLimit(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: maxConcurrency,
@@ -472,13 +499,17 @@ export async function setupMockProjectAtConcurrencyLimit(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -492,16 +523,19 @@ export async function setupMockProjectAtConcurrencyLimit(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: maxConcurrency,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
     },
-    { maxConcurrency, runningTasks, versions: STORE_VERSIONS }
+    { maxConcurrency, runningTasks, versions: STORE_VERSIONS },
   );
 }
 
@@ -517,17 +551,23 @@ export async function setupMockProjectWithFeatures(
       id: string;
       category: string;
       description: string;
-      status: 'backlog' | 'in_progress' | 'verified';
+      status: "backlog" | "in_progress" | "verified";
       steps?: string[];
     }>;
-  }
+  },
 ): Promise<void> {
   await page.addInitScript(
-    ({ opts, versions }: { opts: typeof options; versions: typeof STORE_VERSIONS }) => {
+    ({
+      opts,
+      versions,
+    }: {
+      opts: typeof options;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -537,9 +577,9 @@ export async function setupMockProjectWithFeatures(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: opts?.maxConcurrency ?? 3,
@@ -551,13 +591,17 @@ export async function setupMockProjectWithFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -571,20 +615,23 @@ export async function setupMockProjectWithFeatures(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Also store features in a global variable that the mock electron API can use
       // This is needed because the board-view loads features from the file system
       (window as { __mockFeatures?: unknown[] }).__mockFeatures = mockFeatures;
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
     },
-    { opts: options, versions: STORE_VERSIONS }
+    { opts: options, versions: STORE_VERSIONS },
   );
 }
 
@@ -595,7 +642,7 @@ export async function setupMockProjectWithFeatures(
 export async function setupMockProjectWithContextFile(
   page: Page,
   featureId: string,
-  contextContent: string = '# Agent Context\n\nPrevious implementation work...'
+  contextContent: string = "# Agent Context\n\nPrevious implementation work...",
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -608,9 +655,9 @@ export async function setupMockProjectWithContextFile(
       versions: typeof STORE_VERSIONS;
     }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -618,9 +665,9 @@ export async function setupMockProjectWithContextFile(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
@@ -628,13 +675,17 @@ export async function setupMockProjectWithContextFile(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -648,27 +699,36 @@ export async function setupMockProjectWithContextFile(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
 
       // Set up mock file system with a context file for the feature
       // This will be used by the mock electron API
       // Now uses features/{id}/agent-output.md path
       (
-        window as { __mockContextFile?: { featureId: string; path: string; content: string } }
+        window as {
+          __mockContextFile?: {
+            featureId: string;
+            path: string;
+            content: string;
+          };
+        }
       ).__mockContextFile = {
         featureId,
         path: `/mock/test-project/.pegasus/features/${featureId}/agent-output.md`,
         content: contextContent,
       };
     },
-    { featureId, contextContent, versions: STORE_VERSIONS }
+    { featureId, contextContent, versions: STORE_VERSIONS },
   );
 }
 
@@ -684,18 +744,24 @@ export async function setupMockProjectWithInProgressFeatures(
       id: string;
       category: string;
       description: string;
-      status: 'backlog' | 'in_progress' | 'verified';
+      status: "backlog" | "in_progress" | "verified";
       steps?: string[];
       startedAt?: string;
     }>;
-  }
+  },
 ): Promise<void> {
   await page.addInitScript(
-    ({ opts, versions }: { opts: typeof options; versions: typeof STORE_VERSIONS }) => {
+    ({
+      opts,
+      versions,
+    }: {
+      opts: typeof options;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -705,9 +771,9 @@ export async function setupMockProjectWithInProgressFeatures(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: opts?.maxConcurrency ?? 3,
@@ -719,13 +785,17 @@ export async function setupMockProjectWithInProgressFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -739,30 +809,42 @@ export async function setupMockProjectWithInProgressFeatures(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Also store features in a global variable that the mock electron API can use
       // This is needed because the board-view loads features from the file system
       (window as { __mockFeatures?: unknown[] }).__mockFeatures = mockFeatures;
     },
-    { opts: options, versions: STORE_VERSIONS }
+    { opts: options, versions: STORE_VERSIONS },
   );
 }
 
 /**
  * Set up a mock project with a specific current view for route persistence testing
  */
-export async function setupMockProjectWithView(page: Page, view: string): Promise<void> {
+export async function setupMockProjectWithView(
+  page: Page,
+  view: string,
+): Promise<void> {
   await page.addInitScript(
-    ({ currentView, versions }: { currentView: string; versions: typeof STORE_VERSIONS }) => {
+    ({
+      currentView,
+      versions,
+    }: {
+      currentView: string;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -771,9 +853,9 @@ export async function setupMockProjectWithView(page: Page, view: string): Promis
           projects: [mockProject],
           currentProject: mockProject,
           currentView: currentView,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
@@ -781,13 +863,17 @@ export async function setupMockProjectWithView(page: Page, view: string): Promis
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -801,13 +887,16 @@ export async function setupMockProjectWithView(page: Page, view: string): Promis
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
     },
-    { currentView: view, versions: STORE_VERSIONS }
+    { currentView: view, versions: STORE_VERSIONS },
   );
 }
 
@@ -820,55 +909,60 @@ export async function setupEmptyLocalStorage(page: Page): Promise<void> {
       state: {
         projects: [],
         currentProject: null,
-        currentView: 'welcome',
-        theme: 'dark',
+        currentView: "welcome",
+        theme: "dark",
         sidebarOpen: true,
-        apiKeys: { anthropic: '', google: '' },
+        apiKeys: { anthropic: "", google: "" },
         chatSessions: [],
         chatHistoryOpen: false,
         maxConcurrency: 3,
       },
       version: versions.APP_STORE,
     };
-    localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+    localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
     const setupState = {
       state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     const settingsCache = {
       setupComplete: true,
       isFirstRun: false,
       projects: [],
-      theme: 'dark',
+      theme: "dark",
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem(
+      "pegasus-settings-cache",
+      JSON.stringify(settingsCache),
+    );
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, STORE_VERSIONS);
 }
 
 /**
  * Set up mock projects in localStorage but with no current project (for recent projects list)
  */
-export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void> {
+export async function setupMockProjectsWithoutCurrent(
+  page: Page,
+): Promise<void> {
   await page.addInitScript((versions: typeof STORE_VERSIONS) => {
     const mockProjects = [
       {
-        id: 'test-project-1',
-        name: 'Test Project 1',
-        path: '/mock/test-project-1',
+        id: "test-project-1",
+        name: "Test Project 1",
+        path: "/mock/test-project-1",
         lastOpened: new Date().toISOString(),
       },
       {
-        id: 'test-project-2',
-        name: 'Test Project 2',
-        path: '/mock/test-project-2',
+        id: "test-project-2",
+        name: "Test Project 2",
+        path: "/mock/test-project-2",
         lastOpened: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
       },
     ];
@@ -877,10 +971,10 @@ export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void>
       state: {
         projects: mockProjects,
         currentProject: null,
-        currentView: 'welcome',
-        theme: 'dark',
+        currentView: "welcome",
+        theme: "dark",
         sidebarOpen: true,
-        apiKeys: { anthropic: '', google: '' },
+        apiKeys: { anthropic: "", google: "" },
         chatSessions: [],
         chatHistoryOpen: false,
         maxConcurrency: 3,
@@ -888,13 +982,13 @@ export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void>
       version: versions.APP_STORE,
     };
 
-    localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+    localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
     const setupState = {
       state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
       version: versions.SETUP_STORE,
     };
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     const settingsCache = {
       setupComplete: true,
@@ -905,14 +999,17 @@ export async function setupMockProjectsWithoutCurrent(page: Page): Promise<void>
         path: p.path,
         lastOpened: p.lastOpened,
       })),
-      theme: 'dark',
+      theme: "dark",
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem(
+      "pegasus-settings-cache",
+      JSON.stringify(settingsCache),
+    );
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, STORE_VERSIONS);
 }
 
@@ -928,19 +1025,25 @@ export async function setupMockProjectWithSkipTestsFeatures(
       id: string;
       category: string;
       description: string;
-      status: 'backlog' | 'in_progress' | 'verified';
+      status: "backlog" | "in_progress" | "verified";
       steps?: string[];
       startedAt?: string;
       skipTests?: boolean;
     }>;
-  }
+  },
 ): Promise<void> {
   await page.addInitScript(
-    ({ opts, versions }: { opts: typeof options; versions: typeof STORE_VERSIONS }) => {
+    ({
+      opts,
+      versions,
+    }: {
+      opts: typeof options;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -950,9 +1053,9 @@ export async function setupMockProjectWithSkipTestsFeatures(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: opts?.maxConcurrency ?? 3,
@@ -964,13 +1067,17 @@ export async function setupMockProjectWithSkipTestsFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -984,16 +1091,19 @@ export async function setupMockProjectWithSkipTestsFeatures(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
     },
-    { opts: options, versions: STORE_VERSIONS }
+    { opts: options, versions: STORE_VERSIONS },
   );
 }
 
@@ -1002,10 +1112,16 @@ export async function setupMockProjectWithSkipTestsFeatures(
  */
 export async function setupMockMultipleProjects(
   page: Page,
-  projectCount: number = 3
+  projectCount: number = 3,
 ): Promise<void> {
   await page.addInitScript(
-    ({ count, versions }: { count: number; versions: typeof STORE_VERSIONS }) => {
+    ({
+      count,
+      versions,
+    }: {
+      count: number;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProjects: TestProject[] = [];
       for (let i = 0; i < count; i++) {
         mockProjects.push({
@@ -1020,10 +1136,10 @@ export async function setupMockMultipleProjects(
         state: {
           projects: mockProjects,
           currentProject: mockProjects[0],
-          currentView: 'board',
-          theme: 'dark',
+          currentView: "board",
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
@@ -1031,7 +1147,7 @@ export async function setupMockMultipleProjects(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       // Mark setup as complete to prevent redirect to /setup
       const setupState = {
@@ -1042,7 +1158,7 @@ export async function setupMockMultipleProjects(
         },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       // Set settings cache so the fast hydrate path is taken on page load.
       // This prevents the server's setupComplete value (which may be false on fresh CI)
@@ -1059,16 +1175,19 @@ export async function setupMockMultipleProjects(
         // Include currentProjectId so hydrateStoreFromSettings can restore
         // the current project directly (without relying on auto-open logic)
         currentProjectId: mockProjects[0]?.id ?? null,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
     },
-    { count: projectCount, versions: STORE_VERSIONS }
+    { count: projectCount, versions: STORE_VERSIONS },
   );
 }
 
@@ -1078,7 +1197,7 @@ export async function setupMockMultipleProjects(
 export async function setupMockProjectWithAgentOutput(
   page: Page,
   featureId: string,
-  outputContent: string
+  outputContent: string,
 ): Promise<void> {
   await page.addInitScript(
     ({
@@ -1091,9 +1210,9 @@ export async function setupMockProjectWithAgentOutput(
       versions: typeof STORE_VERSIONS;
     }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -1101,9 +1220,9 @@ export async function setupMockProjectWithAgentOutput(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: 3,
@@ -1111,13 +1230,17 @@ export async function setupMockProjectWithAgentOutput(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -1131,26 +1254,35 @@ export async function setupMockProjectWithAgentOutput(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Disable splash screen in tests
-      localStorage.setItem('pegasus-disable-splash', 'true');
+      localStorage.setItem("pegasus-disable-splash", "true");
 
       // Set up mock file system with output content for the feature
       // Now uses features/{id}/agent-output.md path
       (
-        window as { __mockContextFile?: { featureId: string; path: string; content: string } }
+        window as {
+          __mockContextFile?: {
+            featureId: string;
+            path: string;
+            content: string;
+          };
+        }
       ).__mockContextFile = {
         featureId,
         path: `/mock/test-project/.pegasus/features/${featureId}/agent-output.md`,
         content: outputContent,
       };
     },
-    { featureId, outputContent, versions: STORE_VERSIONS }
+    { featureId, outputContent, versions: STORE_VERSIONS },
   );
 }
 
@@ -1166,19 +1298,25 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
       id: string;
       category: string;
       description: string;
-      status: 'backlog' | 'in_progress' | 'waiting_approval' | 'verified';
+      status: "backlog" | "in_progress" | "waiting_approval" | "verified";
       steps?: string[];
       startedAt?: string;
       skipTests?: boolean;
     }>;
-  }
+  },
 ): Promise<void> {
   await page.addInitScript(
-    ({ opts, versions }: { opts: typeof options; versions: typeof STORE_VERSIONS }) => {
+    ({
+      opts,
+      versions,
+    }: {
+      opts: typeof options;
+      versions: typeof STORE_VERSIONS;
+    }) => {
       const mockProject = {
-        id: 'test-project-1',
-        name: 'Test Project',
-        path: '/mock/test-project',
+        id: "test-project-1",
+        name: "Test Project",
+        path: "/mock/test-project",
         lastOpened: new Date().toISOString(),
       };
 
@@ -1188,9 +1326,9 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
         state: {
           projects: [mockProject],
           currentProject: mockProject,
-          theme: 'dark',
+          theme: "dark",
           sidebarOpen: true,
-          apiKeys: { anthropic: '', google: '' },
+          apiKeys: { anthropic: "", google: "" },
           chatSessions: [],
           chatHistoryOpen: false,
           maxConcurrency: opts?.maxConcurrency ?? 3,
@@ -1202,13 +1340,17 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
         version: versions.APP_STORE,
       };
 
-      localStorage.setItem('pegasus-storage', JSON.stringify(mockState));
+      localStorage.setItem("pegasus-storage", JSON.stringify(mockState));
 
       const setupState = {
-        state: { isFirstRun: false, setupComplete: true, skipClaudeSetup: false },
+        state: {
+          isFirstRun: false,
+          setupComplete: true,
+          skipClaudeSetup: false,
+        },
         version: versions.SETUP_STORE,
       };
-      localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+      localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
       const settingsCache = {
         setupComplete: true,
@@ -1222,16 +1364,19 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
           },
         ],
         currentProjectId: mockProject.id,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
         maxConcurrency: opts?.maxConcurrency ?? 3,
       };
-      localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+      localStorage.setItem(
+        "pegasus-settings-cache",
+        JSON.stringify(settingsCache),
+      );
 
       // Also store features in a global variable that the mock electron API can use
       (window as { __mockFeatures?: unknown[] }).__mockFeatures = mockFeatures;
     },
-    { opts: options, versions: STORE_VERSIONS }
+    { opts: options, versions: STORE_VERSIONS },
   );
 }
 
@@ -1241,20 +1386,20 @@ export async function setupMockProjectWithWaitingApprovalFeatures(
 export async function setupFirstRun(page: Page): Promise<void> {
   await page.addInitScript((versions: typeof STORE_VERSIONS) => {
     // Clear any existing setup state to simulate first run
-    localStorage.removeItem('pegasus-setup');
-    localStorage.removeItem('pegasus-storage');
+    localStorage.removeItem("pegasus-setup");
+    localStorage.removeItem("pegasus-storage");
 
     // Set up the setup store state for first run
     const setupState = {
       state: {
         isFirstRun: true,
         setupComplete: false,
-        currentStep: 'welcome',
+        currentStep: "welcome",
         claudeCliStatus: null,
         claudeAuthStatus: null,
         claudeInstallProgress: {
           isInstalling: false,
-          currentStep: '',
+          currentStep: "",
           progress: 0,
           output: [],
         },
@@ -1263,42 +1408,45 @@ export async function setupFirstRun(page: Page): Promise<void> {
       version: versions.SETUP_STORE, // Must match setup-store.ts persist version
     };
 
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     // Also set up app store to show setup view
     const appState = {
       state: {
         projects: [],
         currentProject: null,
-        theme: 'dark',
+        theme: "dark",
         sidebarOpen: true,
-        apiKeys: { anthropic: '', google: '' },
+        apiKeys: { anthropic: "", google: "" },
         chatSessions: [],
         chatHistoryOpen: false,
         maxConcurrency: 3,
         isAutoModeRunning: false,
         runningAutoTasks: [],
         autoModeActivityLog: [],
-        currentView: 'setup',
+        currentView: "setup",
       },
       version: versions.APP_STORE, // Must match app-store.ts persist version
     };
 
-    localStorage.setItem('pegasus-storage', JSON.stringify(appState));
+    localStorage.setItem("pegasus-storage", JSON.stringify(appState));
 
     // Anchor the settings cache so CI cannot hydrate a conflicting setupComplete value.
     const settingsCache = {
       setupComplete: false,
       isFirstRun: true,
       projects: [],
-      theme: 'dark',
+      theme: "dark",
       sidebarOpen: true,
       maxConcurrency: 3,
     };
-    localStorage.setItem('pegasus-settings-cache', JSON.stringify(settingsCache));
+    localStorage.setItem(
+      "pegasus-settings-cache",
+      JSON.stringify(settingsCache),
+    );
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, STORE_VERSIONS);
 }
 
@@ -1312,15 +1460,15 @@ export async function setupComplete(page: Page): Promise<void> {
       state: {
         isFirstRun: false,
         setupComplete: true,
-        currentStep: 'complete',
+        currentStep: "complete",
         skipClaudeSetup: false,
       },
       version: versions.SETUP_STORE,
     };
 
-    localStorage.setItem('pegasus-setup', JSON.stringify(setupState));
+    localStorage.setItem("pegasus-setup", JSON.stringify(setupState));
 
     // Disable splash screen in tests
-    localStorage.setItem('pegasus-disable-splash', 'true');
+    localStorage.setItem("pegasus-disable-splash", "true");
   }, STORE_VERSIONS);
 }

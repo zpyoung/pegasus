@@ -11,18 +11,18 @@
  *       → compileStage (per-stage template resolution) → StageCompilationResult
  */
 
-import { parse as yamlParse } from 'yaml';
-import Handlebars from 'handlebars';
-import { z } from 'zod';
-import { createLogger } from '@pegasus/utils';
+import { parse as yamlParse } from "yaml";
+import Handlebars from "handlebars";
+import { z } from "zod";
+import { createLogger } from "@pegasus/utils";
 import {
   getPipelineFilePath,
   getPipelinesDir,
   getUserPipelinesDir,
   getUserPipelineFilePath,
   systemPaths,
-} from '@pegasus/platform';
-import * as secureFs from '../lib/secure-fs.js';
+} from "@pegasus/platform";
+import * as secureFs from "../lib/secure-fs.js";
 import type {
   YamlPipelineConfig,
   ResolvedStage,
@@ -30,22 +30,22 @@ import type {
   PipelineSource,
   StageCompilationContext,
   StageCompilationResult,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
-const logger = createLogger('PipelineCompiler');
+const logger = createLogger("PipelineCompiler");
 
 // ============================================================================
 // Default Values
 // ============================================================================
 
 /** Default model when neither stage nor pipeline defaults specify one */
-const DEFAULT_MODEL = 'sonnet';
+const DEFAULT_MODEL = "sonnet";
 
 /** Default maximum turns when neither stage nor pipeline defaults specify */
 const DEFAULT_MAX_TURNS = 10;
 
 /** Default permission mode when neither stage nor pipeline defaults specify */
-const DEFAULT_PERMISSION_MODE = 'plan';
+const DEFAULT_PERMISSION_MODE = "plan";
 
 // ============================================================================
 // Zod Schemas
@@ -57,12 +57,15 @@ const DEFAULT_PERMISSION_MODE = 'plan';
  */
 export const claudeFlagsSchema = z
   .object({
-    model: z.string().min(1, 'Model must be a non-empty string').optional(),
-    permission_mode: z.string().min(1, 'Permission mode must be a non-empty string').optional(),
+    model: z.string().min(1, "Model must be a non-empty string").optional(),
+    permission_mode: z
+      .string()
+      .min(1, "Permission mode must be a non-empty string")
+      .optional(),
     max_turns: z
       .number()
-      .int('max_turns must be an integer')
-      .positive('max_turns must be a positive integer')
+      .int("max_turns must be an integer")
+      .positive("max_turns must be a positive integer")
       .optional(),
   })
   .strict();
@@ -75,19 +78,22 @@ export const stageConfigSchema = z
   .object({
     id: z
       .string()
-      .min(1, 'Stage id must be a non-empty string')
+      .min(1, "Stage id must be a non-empty string")
       .regex(
         /^[a-z][a-z0-9_-]*$/,
-        'Stage id must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, and underscores'
+        "Stage id must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, and underscores",
       ),
-    name: z.string().min(1, 'Stage name must be a non-empty string'),
-    prompt: z.string().min(1, 'Stage prompt must be a non-empty string'),
+    name: z.string().min(1, "Stage name must be a non-empty string"),
+    prompt: z.string().min(1, "Stage prompt must be a non-empty string"),
     claude_flags: claudeFlagsSchema.optional(),
     requires_approval: z.boolean().optional(),
-    question: z.string().min(1, 'Question must be a non-empty string').optional(),
+    question: z
+      .string()
+      .min(1, "Question must be a non-empty string")
+      .optional(),
     question_meta: z
       .object({
-        type: z.enum(['free-text', 'single-select', 'multi-select']).optional(),
+        type: z.enum(["free-text", "single-select", "multi-select"]).optional(),
         options: z.array(z.string()).optional(),
       })
       .optional(),
@@ -100,7 +106,7 @@ export const stageConfigSchema = z
  */
 export const executionConfigSchema = z
   .object({
-    mode: z.literal('session', 'Execution mode must be "session"'),
+    mode: z.literal("session", 'Execution mode must be "session"'),
   })
   .strict();
 
@@ -110,15 +116,18 @@ export const executionConfigSchema = z
  */
 export const pipelineDefaultsSchema = z
   .object({
-    model: z.string().min(1, 'Default model must be a non-empty string').optional(),
+    model: z
+      .string()
+      .min(1, "Default model must be a non-empty string")
+      .optional(),
     max_turns: z
       .number()
-      .int('Default max_turns must be an integer')
-      .positive('Default max_turns must be a positive integer')
+      .int("Default max_turns must be an integer")
+      .positive("Default max_turns must be a positive integer")
       .optional(),
     permission_mode: z
       .string()
-      .min(1, 'Default permission_mode must be a non-empty string')
+      .min(1, "Default permission_mode must be a non-empty string")
       .optional(),
   })
   .strict();
@@ -131,7 +140,7 @@ export const pipelineDefaultsSchema = z
  */
 export const pipelineInputSchema = z
   .object({
-    type: z.enum(['string', 'number', 'boolean']),
+    type: z.enum(["string", "number", "boolean"]),
     required: z.boolean().optional(),
     default: z.union([z.string(), z.number(), z.boolean()]).optional(),
     description: z.string().optional(),
@@ -149,14 +158,16 @@ export const pipelineInputSchema = z
  */
 export const yamlPipelineConfigSchema = z
   .object({
-    name: z.string().min(1, 'Pipeline name must be a non-empty string'),
-    description: z.string().min(1, 'Pipeline description must be a non-empty string'),
+    name: z.string().min(1, "Pipeline name must be a non-empty string"),
+    description: z
+      .string()
+      .min(1, "Pipeline description must be a non-empty string"),
     execution: executionConfigSchema.optional(),
     defaults: pipelineDefaultsSchema.optional(),
     inputs: z.record(z.string(), pipelineInputSchema).optional(),
     stages: z
       .array(stageConfigSchema)
-      .min(1, 'Pipeline must have at least one stage'),
+      .min(1, "Pipeline must have at least one stage"),
   })
   .strict()
   .refine(
@@ -165,9 +176,9 @@ export const yamlPipelineConfigSchema = z
       return new Set(ids).size === ids.length;
     },
     {
-      message: 'Stage IDs must be unique within a pipeline',
-      path: ['stages'],
-    }
+      message: "Stage IDs must be unique within a pipeline",
+      path: ["stages"],
+    },
   );
 
 // ============================================================================
@@ -229,10 +240,12 @@ export function validatePipeline(data: unknown): PipelineValidationResult {
     };
   }
 
-  const errors: PipelineValidationError[] = result.error.issues.map((issue) => ({
-    path: issue.path.length > 0 ? issue.path.join('.') : '(root)',
-    message: issue.message,
-  }));
+  const errors: PipelineValidationError[] = result.error.issues.map(
+    (issue) => ({
+      path: issue.path.length > 0 ? issue.path.join(".") : "(root)",
+      message: issue.message,
+    }),
+  );
 
   return {
     valid: false,
@@ -246,9 +259,11 @@ export function validatePipeline(data: unknown): PipelineValidationResult {
  * @param errors - Array of validation errors
  * @returns Formatted string suitable for logging or user display
  */
-export function formatValidationErrors(errors: PipelineValidationError[]): string {
-  if (errors.length === 0) return 'No errors';
-  return errors.map((e) => `  - ${e.path}: ${e.message}`).join('\n');
+export function formatValidationErrors(
+  errors: PipelineValidationError[],
+): string {
+  if (errors.length === 0) return "No errors";
+  return errors.map((e) => `  - ${e.path}: ${e.message}`).join("\n");
 }
 
 // ============================================================================
@@ -276,22 +291,20 @@ export function formatValidationErrors(errors: PipelineValidationError[]): strin
  */
 export async function loadPipeline(
   projectPath: string,
-  pipelineSlug: string
+  pipelineSlug: string,
 ): Promise<YamlPipelineConfig> {
   const filePath = getPipelineFilePath(projectPath, pipelineSlug);
 
   // Read the YAML file
   let rawContent: string;
   try {
-    rawContent = (await secureFs.readFile(filePath, 'utf-8')) as string;
+    rawContent = (await secureFs.readFile(filePath, "utf-8")) as string;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(
-        `Pipeline "${pipelineSlug}" not found at ${filePath}`
-      );
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`Pipeline "${pipelineSlug}" not found at ${filePath}`);
     }
     throw new Error(
-      `Failed to read pipeline "${pipelineSlug}": ${(error as Error).message}`
+      `Failed to read pipeline "${pipelineSlug}": ${(error as Error).message}`,
     );
   }
 
@@ -301,7 +314,7 @@ export async function loadPipeline(
     parsed = yamlParse(rawContent);
   } catch (error) {
     throw new Error(
-      `Failed to parse pipeline YAML "${pipelineSlug}": ${(error as Error).message}`
+      `Failed to parse pipeline YAML "${pipelineSlug}": ${(error as Error).message}`,
     );
   }
 
@@ -310,11 +323,13 @@ export async function loadPipeline(
   if (!validation.valid) {
     const errorDetails = formatValidationErrors(validation.errors);
     throw new Error(
-      `Pipeline "${pipelineSlug}" failed validation:\n${errorDetails}`
+      `Pipeline "${pipelineSlug}" failed validation:\n${errorDetails}`,
     );
   }
 
-  logger.info(`Loaded pipeline "${pipelineSlug}" with ${validation.config!.stages.length} stages`);
+  logger.info(
+    `Loaded pipeline "${pipelineSlug}" with ${validation.config!.stages.length} stages`,
+  );
   return validation.config!;
 }
 
@@ -347,8 +362,11 @@ export function compilePipeline(config: YamlPipelineConfig): ResolvedStage[] {
     prompt: stage.prompt,
     model: stage.claude_flags?.model ?? defaults.model ?? DEFAULT_MODEL,
     permission_mode:
-      stage.claude_flags?.permission_mode ?? defaults.permission_mode ?? DEFAULT_PERMISSION_MODE,
-    max_turns: stage.claude_flags?.max_turns ?? defaults.max_turns ?? DEFAULT_MAX_TURNS,
+      stage.claude_flags?.permission_mode ??
+      defaults.permission_mode ??
+      DEFAULT_PERMISSION_MODE,
+    max_turns:
+      stage.claude_flags?.max_turns ?? defaults.max_turns ?? DEFAULT_MAX_TURNS,
     requires_approval: stage.requires_approval ?? false,
     question: stage.question,
     question_meta: stage.question_meta,
@@ -370,7 +388,8 @@ export function compilePipeline(config: YamlPipelineConfig): ResolvedStage[] {
  *
  * Captures the dot-path portion (e.g., "task.description", "project.language").
  */
-const TEMPLATE_VARIABLE_REGEX = /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
+const TEMPLATE_VARIABLE_REGEX =
+  /\{\{\{?\s*([a-zA-Z_][a-zA-Z0-9_.]*)\s*\}?\}\}/g;
 
 /**
  * Extract all Handlebars variable references from a template string.
@@ -420,12 +439,15 @@ export function extractTemplateVariables(template: string): string[] {
  * // → undefined
  * ```
  */
-function resolveVariablePath(context: Record<string, unknown>, path: string): unknown {
-  const segments = path.split('.');
+function resolveVariablePath(
+  context: Record<string, unknown>,
+  path: string,
+): unknown {
+  const segments = path.split(".");
   let current: unknown = context;
 
   for (const segment of segments) {
-    if (current == null || typeof current !== 'object') {
+    if (current == null || typeof current !== "object") {
       return undefined;
     }
     current = (current as Record<string, unknown>)[segment];
@@ -447,7 +469,7 @@ function resolveVariablePath(context: Record<string, unknown>, path: string): un
  */
 function findMissingVariables(
   template: string,
-  context: Record<string, unknown>
+  context: Record<string, unknown>,
 ): string[] {
   const referenced = extractTemplateVariables(template);
   return referenced.filter((varPath) => {
@@ -513,14 +535,14 @@ function findMissingVariables(
  */
 export function compileStage(
   stage: ResolvedStage,
-  context: StageCompilationContext
+  context: StageCompilationContext,
 ): StageCompilationResult {
   // Build a flat context object for Handlebars resolution
   const templateContext: Record<string, unknown> = {
     task: context.task,
     project: context.project,
     inputs: context.inputs ?? {},
-    previous_context: context.previous_context ?? '',
+    previous_context: context.previous_context ?? "",
     stages: context.stages ?? {},
   };
 
@@ -529,7 +551,7 @@ export function compileStage(
 
   if (missingVariables.length > 0) {
     logger.warn(
-      `Stage "${stage.id}" has missing template variables: ${missingVariables.join(', ')}`
+      `Stage "${stage.id}" has missing template variables: ${missingVariables.join(", ")}`,
     );
   }
 
@@ -586,7 +608,7 @@ export function compileStage(
  */
 export function compileAllStages(
   stages: ResolvedStage[],
-  context: StageCompilationContext
+  context: StageCompilationContext,
 ): StageCompilationResult[] {
   return stages.map((stage) => compileStage(stage, context));
 }
@@ -605,19 +627,26 @@ export function compileAllStages(
  * @returns Promise resolving to the validated YamlPipelineConfig
  * @throws Error if the file cannot be read, parsed, or fails validation
  */
-async function loadUserPipeline(pipelineSlug: string): Promise<YamlPipelineConfig> {
+async function loadUserPipeline(
+  pipelineSlug: string,
+): Promise<YamlPipelineConfig> {
   const filePath = getUserPipelineFilePath(pipelineSlug);
 
   // Read the YAML file using systemPaths (not secureFs — path is outside project root)
   let rawContent: string;
   try {
-    rawContent = (await systemPaths.systemPathReadFile(filePath, 'utf-8')) as string;
+    rawContent = (await systemPaths.systemPathReadFile(
+      filePath,
+      "utf-8",
+    )) as string;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(`User pipeline "${pipelineSlug}" not found at ${filePath}`);
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        `User pipeline "${pipelineSlug}" not found at ${filePath}`,
+      );
     }
     throw new Error(
-      `Failed to read user pipeline "${pipelineSlug}": ${(error as Error).message}`
+      `Failed to read user pipeline "${pipelineSlug}": ${(error as Error).message}`,
     );
   }
 
@@ -627,7 +656,7 @@ async function loadUserPipeline(pipelineSlug: string): Promise<YamlPipelineConfi
     parsed = yamlParse(rawContent);
   } catch (error) {
     throw new Error(
-      `Failed to parse user pipeline YAML "${pipelineSlug}": ${(error as Error).message}`
+      `Failed to parse user pipeline YAML "${pipelineSlug}": ${(error as Error).message}`,
     );
   }
 
@@ -636,11 +665,13 @@ async function loadUserPipeline(pipelineSlug: string): Promise<YamlPipelineConfi
   if (!validation.valid) {
     const errorDetails = formatValidationErrors(validation.errors);
     throw new Error(
-      `User pipeline "${pipelineSlug}" failed validation:\n${errorDetails}`
+      `User pipeline "${pipelineSlug}" failed validation:\n${errorDetails}`,
     );
   }
 
-  logger.info(`Loaded user pipeline "${pipelineSlug}" with ${validation.config!.stages.length} stages`);
+  logger.info(
+    `Loaded user pipeline "${pipelineSlug}" with ${validation.config!.stages.length} stages`,
+  );
   return validation.config!;
 }
 
@@ -653,12 +684,12 @@ async function loadUserPipeline(pipelineSlug: string): Promise<YamlPipelineConfi
  */
 async function scanPipelineDirectory(
   dirPath: string,
-  source: PipelineSource
+  source: PipelineSource,
 ): Promise<string[]> {
   let entries: string[];
 
   try {
-    if (source === 'user') {
+    if (source === "user") {
       // User-level directory: use systemPaths (outside project root)
       entries = await systemPaths.systemPathReaddir(dirPath);
     } else {
@@ -666,7 +697,7 @@ async function scanPipelineDirectory(
       entries = (await secureFs.readdir(dirPath)) as string[];
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       logger.debug(`No pipelines directory at ${dirPath}`);
       return [];
     }
@@ -675,7 +706,7 @@ async function scanPipelineDirectory(
   }
 
   // Filter to only .yaml files
-  return entries.filter((f) => f.endsWith('.yaml'));
+  return entries.filter((f) => f.endsWith(".yaml"));
 }
 
 /**
@@ -711,16 +742,18 @@ async function scanPipelineDirectory(
  * // Result: Only the project-level "Custom Feature" pipeline is returned for slug "feature"
  * ```
  */
-export async function discoverPipelines(projectPath: string): Promise<DiscoveredPipeline[]> {
+export async function discoverPipelines(
+  projectPath: string,
+): Promise<DiscoveredPipeline[]> {
   // Map of slug → DiscoveredPipeline (user-level pipelines added first, then overridden by project)
   const pipelineMap = new Map<string, DiscoveredPipeline>();
 
   // 1. Scan user-level pipelines (~/.pegasus/pipelines/)
   const userDir = getUserPipelinesDir();
-  const userYamlFiles = await scanPipelineDirectory(userDir, 'user');
+  const userYamlFiles = await scanPipelineDirectory(userDir, "user");
 
   for (const filename of userYamlFiles) {
-    const slug = filename.replace(/\.yaml$/, '');
+    const slug = filename.replace(/\.yaml$/, "");
 
     try {
       const config = await loadUserPipeline(slug);
@@ -730,27 +763,29 @@ export async function discoverPipelines(projectPath: string): Promise<Discovered
         config,
         stageCount: config.stages.length,
         isBuiltIn: false,
-        source: 'user',
+        source: "user",
       });
     } catch (error) {
-      logger.warn(`Skipping invalid user pipeline "${slug}": ${(error as Error).message}`);
+      logger.warn(
+        `Skipping invalid user pipeline "${slug}": ${(error as Error).message}`,
+      );
     }
   }
 
   if (userYamlFiles.length > 0) {
     logger.info(
-      `Discovered ${pipelineMap.size} valid user-level pipeline(s) from ${userDir}`
+      `Discovered ${pipelineMap.size} valid user-level pipeline(s) from ${userDir}`,
     );
   }
 
   // 2. Scan project-level pipelines (.pegasus/pipelines/) — these override user-level
   const projectDir = getPipelinesDir(projectPath);
-  const projectYamlFiles = await scanPipelineDirectory(projectDir, 'project');
+  const projectYamlFiles = await scanPipelineDirectory(projectDir, "project");
   let projectCount = 0;
   let overrideCount = 0;
 
   for (const filename of projectYamlFiles) {
-    const slug = filename.replace(/\.yaml$/, '');
+    const slug = filename.replace(/\.yaml$/, "");
 
     try {
       const config = await loadPipeline(projectPath, slug);
@@ -766,23 +801,27 @@ export async function discoverPipelines(projectPath: string): Promise<Discovered
         config,
         stageCount: config.stages.length,
         isBuiltIn: false,
-        source: 'project',
+        source: "project",
       });
       projectCount++;
     } catch (error) {
-      logger.warn(`Skipping invalid project pipeline "${slug}": ${(error as Error).message}`);
+      logger.warn(
+        `Skipping invalid project pipeline "${slug}": ${(error as Error).message}`,
+      );
     }
   }
 
   if (projectYamlFiles.length > 0) {
     logger.info(
       `Discovered ${projectCount} valid project-level pipeline(s) from ${projectDir}` +
-        (overrideCount > 0 ? ` (${overrideCount} override(s))` : '')
+        (overrideCount > 0 ? ` (${overrideCount} override(s))` : ""),
     );
   }
 
   const discovered = [...pipelineMap.values()];
-  logger.info(`Total: ${discovered.length} pipeline(s) available for ${projectPath}`);
+  logger.info(
+    `Total: ${discovered.length} pipeline(s) available for ${projectPath}`,
+  );
   return discovered;
 }
 
@@ -803,7 +842,7 @@ export async function discoverPipelines(projectPath: string): Promise<Discovered
  */
 export async function loadAndCompilePipeline(
   projectPath: string,
-  pipelineSlug: string
+  pipelineSlug: string,
 ): Promise<ResolvedStage[]> {
   const config = await loadPipeline(projectPath, pipelineSlug);
   return compilePipeline(config);

@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { ChevronsUpDown, X, GitBranch, ArrowUp, ArrowDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import * as React from "react";
+import { ChevronsUpDown, X, GitBranch, ArrowUp, ArrowDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -9,11 +9,15 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { wouldCreateCircularDependency } from '@pegasus/dependency-resolver';
-import type { Feature } from '@pegasus/types';
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { wouldCreateCircularDependency } from "@pegasus/dependency-resolver";
+import type { Feature } from "@pegasus/types";
 
 interface DependencySelectorProps {
   /** The current feature being edited (null for add mode) */
@@ -25,13 +29,13 @@ interface DependencySelectorProps {
   /** All available features to select from */
   features: Feature[];
   /** Type of dependency - 'parent' means features this depends on, 'child' means features that depend on this */
-  type: 'parent' | 'child';
+  type: "parent" | "child";
   /** Placeholder text */
   placeholder?: string;
   /** Disabled state */
   disabled?: boolean;
   /** Test ID for testing */
-  'data-testid'?: string;
+  "data-testid"?: string;
 }
 
 export function DependencySelector({
@@ -42,10 +46,10 @@ export function DependencySelector({
   type,
   placeholder,
   disabled = false,
-  'data-testid': testId,
+  "data-testid": testId,
 }: DependencySelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState('');
+  const [inputValue, setInputValue] = React.useState("");
   const [triggerWidth, setTriggerWidth] = React.useState<number>(0);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
 
@@ -73,8 +77,8 @@ export function DependencySelector({
       return feature.title;
     }
     // Truncate description to 50 chars
-    const desc = feature.description || '';
-    return desc.length > 50 ? desc.slice(0, 47) + '...' : desc;
+    const desc = feature.description || "";
+    return desc.length > 50 ? desc.slice(0, 47) + "..." : desc;
   };
 
   // Filter out current feature and already selected features from options
@@ -105,15 +109,23 @@ export function DependencySelector({
 
       // For parent dependencies: we're adding featureId to currentFeature.dependencies
       // This would create a cycle if featureId already depends on currentFeatureId
-      if (type === 'parent') {
-        return wouldCreateCircularDependency(features, featureId, currentFeatureId);
+      if (type === "parent") {
+        return wouldCreateCircularDependency(
+          features,
+          featureId,
+          currentFeatureId,
+        );
       }
 
       // For child dependencies: we're adding currentFeatureId to featureId.dependencies
       // This would create a cycle if currentFeatureId already depends on featureId
-      return wouldCreateCircularDependency(features, currentFeatureId, featureId);
+      return wouldCreateCircularDependency(
+        features,
+        currentFeatureId,
+        featureId,
+      );
     },
-    [features, currentFeatureId, type]
+    [features, currentFeatureId, type],
   );
 
   // Get selected features for display
@@ -127,7 +139,7 @@ export function DependencySelector({
     if (!value.includes(featureId)) {
       onChange([...value, featureId]);
     }
-    setInputValue('');
+    setInputValue("");
   };
 
   const handleRemove = (featureId: string) => {
@@ -135,9 +147,11 @@ export function DependencySelector({
   };
 
   const defaultPlaceholder =
-    type === 'parent' ? 'Select parent dependencies...' : 'Select child dependencies...';
+    type === "parent"
+      ? "Select parent dependencies..."
+      : "Select child dependencies...";
 
-  const Icon = type === 'parent' ? ArrowUp : ArrowDown;
+  const Icon = type === "parent" ? ArrowUp : ArrowDown;
 
   return (
     <div className="space-y-2">
@@ -149,7 +163,7 @@ export function DependencySelector({
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
-            className={cn('w-full justify-between min-h-[40px]')}
+            className={cn("w-full justify-between min-h-[40px]")}
             data-testid={testId}
           >
             <span className="flex items-center gap-2 truncate text-muted-foreground">
@@ -192,13 +206,17 @@ export function DependencySelector({
                         }
                       }}
                       disabled={willCreateCycle}
-                      className={cn(willCreateCycle && 'opacity-50 cursor-not-allowed')}
+                      className={cn(
+                        willCreateCycle && "opacity-50 cursor-not-allowed",
+                      )}
                       data-testid={`${testId}-option-${feature.id}`}
                     >
                       <GitBranch className="w-4 h-4 mr-2 text-muted-foreground" />
                       <span className="flex-1 truncate">{label}</span>
                       {willCreateCycle && (
-                        <span className="ml-2 text-xs text-destructive">(circular)</span>
+                        <span className="ml-2 text-xs text-destructive">
+                          (circular)
+                        </span>
                       )}
                       {feature.status && (
                         <Badge variant="outline" className="ml-2 text-xs">
@@ -223,7 +241,9 @@ export function DependencySelector({
               variant="secondary"
               className="flex items-center gap-1 pr-1 text-xs"
             >
-              <span className="truncate max-w-[150px]">{getFeatureLabel(feature)}</span>
+              <span className="truncate max-w-[150px]">
+                {getFeatureLabel(feature)}
+              </span>
               <button
                 type="button"
                 onClick={(e) => {

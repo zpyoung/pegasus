@@ -1,24 +1,33 @@
-import { Page, Locator } from '@playwright/test';
-import { DEFAULT_ELEMENT_TIMEOUT_MS } from '../core/waiting';
+import { Page, Locator } from "@playwright/test";
+import { DEFAULT_ELEMENT_TIMEOUT_MS } from "../core/waiting";
 
 /**
  * Get a kanban card by feature ID
  */
-export async function getKanbanCard(page: Page, featureId: string): Promise<Locator> {
+export async function getKanbanCard(
+  page: Page,
+  featureId: string,
+): Promise<Locator> {
   return page.locator(`[data-testid="kanban-card-${featureId}"]`);
 }
 
 /**
  * Get a kanban column by its ID
  */
-export async function getKanbanColumn(page: Page, columnId: string): Promise<Locator> {
+export async function getKanbanColumn(
+  page: Page,
+  columnId: string,
+): Promise<Locator> {
   return page.locator(`[data-testid="kanban-column-${columnId}"]`);
 }
 
 /**
  * Get the width of a kanban column
  */
-export async function getKanbanColumnWidth(page: Page, columnId: string): Promise<number> {
+export async function getKanbanColumnWidth(
+  page: Page,
+  columnId: string,
+): Promise<number> {
   const column = page.locator(`[data-testid="kanban-column-${columnId}"]`);
   const box = await column.boundingBox();
   return box?.width ?? 0;
@@ -27,16 +36,19 @@ export async function getKanbanColumnWidth(page: Page, columnId: string): Promis
 /**
  * Check if a kanban column has CSS columns (masonry) layout
  */
-export async function hasKanbanColumnMasonryLayout(page: Page, columnId: string): Promise<boolean> {
+export async function hasKanbanColumnMasonryLayout(
+  page: Page,
+  columnId: string,
+): Promise<boolean> {
   const column = page.locator(`[data-testid="kanban-column-${columnId}"]`);
-  const contentDiv = column.locator('> div').nth(1); // Second child is the content area
+  const contentDiv = column.locator("> div").nth(1); // Second child is the content area
 
   const columnCount = await contentDiv.evaluate((el) => {
     const style = window.getComputedStyle(el);
     return style.columnCount;
   });
 
-  return columnCount === '2';
+  return columnCount === "2";
 }
 
 /**
@@ -45,10 +57,12 @@ export async function hasKanbanColumnMasonryLayout(page: Page, columnId: string)
 export async function dragKanbanCard(
   page: Page,
   featureId: string,
-  targetColumnId: string
+  targetColumnId: string,
 ): Promise<void> {
   const dragHandle = page.locator(`[data-testid="drag-handle-${featureId}"]`);
-  const targetColumn = page.locator(`[data-testid="kanban-column-${targetColumnId}"]`);
+  const targetColumn = page.locator(
+    `[data-testid="kanban-column-${targetColumnId}"]`,
+  );
 
   // Perform drag and drop
   await dragHandle.dragTo(targetColumn);
@@ -57,10 +71,15 @@ export async function dragKanbanCard(
 /**
  * Click the view output button on a kanban card
  */
-export async function clickViewOutput(page: Page, featureId: string): Promise<void> {
+export async function clickViewOutput(
+  page: Page,
+  featureId: string,
+): Promise<void> {
   // Try the running version first, then the in-progress version
   const runningBtn = page.locator(`[data-testid="view-output-${featureId}"]`);
-  const inProgressBtn = page.locator(`[data-testid="view-output-inprogress-${featureId}"]`);
+  const inProgressBtn = page.locator(
+    `[data-testid="view-output-inprogress-${featureId}"]`,
+  );
 
   if (await runningBtn.isVisible()) {
     await runningBtn.click();
@@ -76,7 +95,7 @@ export async function clickViewOutput(page: Page, featureId: string): Promise<vo
  */
 export async function isDragHandleVisibleForFeature(
   page: Page,
-  featureId: string
+  featureId: string,
 ): Promise<boolean> {
   const dragHandle = page.locator(`[data-testid="drag-handle-${featureId}"]`);
   return await dragHandle.isVisible().catch(() => false);
@@ -85,7 +104,10 @@ export async function isDragHandleVisibleForFeature(
 /**
  * Get the drag handle element for a specific feature card
  */
-export async function getDragHandleForFeature(page: Page, featureId: string): Promise<Locator> {
+export async function getDragHandleForFeature(
+  page: Page,
+  featureId: string,
+): Promise<Locator> {
   return page.locator(`[data-testid="drag-handle-${featureId}"]`);
 }
 
@@ -100,12 +122,15 @@ export async function clickAddFeature(page: Page): Promise<void> {
   // There may be multiple add-feature buttons on the page (header, empty state).
   // Use .first() to click the first visible one.
   const addButton = page.locator('[data-testid="add-feature-button"]').first();
-  await addButton.waitFor({ state: 'visible', timeout: DEFAULT_ELEMENT_TIMEOUT_MS });
+  await addButton.waitFor({
+    state: "visible",
+    timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
+  });
   await addButton.click({ timeout: 5000 });
 
   // Wait for dialog to be visible
   await page.waitForSelector('[data-testid="add-feature-dialog"]', {
-    state: 'visible',
+    state: "visible",
     timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
   });
 }
@@ -116,10 +141,12 @@ export async function clickAddFeature(page: Page): Promise<void> {
 export async function fillAddFeatureDialog(
   page: Page,
   description: string,
-  options?: { branch?: string; category?: string }
+  options?: { branch?: string; category?: string },
 ): Promise<void> {
   // Fill description (using the dropzone textarea)
-  const descriptionInput = page.locator('[data-testid="add-feature-dialog"] textarea').first();
+  const descriptionInput = page
+    .locator('[data-testid="add-feature-dialog"] textarea')
+    .first();
   await descriptionInput.fill(description);
 
   // Fill branch if provided (it's a combobox autocomplete)
@@ -128,34 +155,40 @@ export async function fillAddFeatureDialog(
     const otherBranchRadio = page
       .locator('[data-testid="feature-radio-group"]')
       .locator('[id="feature-other"]');
-    await otherBranchRadio.waitFor({ state: 'visible', timeout: 5000 });
+    await otherBranchRadio.waitFor({ state: "visible", timeout: 5000 });
     await otherBranchRadio.click();
 
     // Wait for the branch input to appear after radio click
     const branchInput = page.locator('[data-testid="feature-input"]');
-    await branchInput.waitFor({ state: 'visible', timeout: 5000 });
+    await branchInput.waitFor({ state: "visible", timeout: 5000 });
     await branchInput.click();
     // Wait for the command list popover to open
-    const commandInput = page.locator('[cmdk-input]');
-    await commandInput.waitFor({ state: 'visible', timeout: 5000 });
+    const commandInput = page.locator("[cmdk-input]");
+    await commandInput.waitFor({ state: "visible", timeout: 5000 });
     await commandInput.fill(options.branch);
     // Press Enter to select/create the branch
-    await commandInput.press('Enter');
+    await commandInput.press("Enter");
     // Wait for popover to close
-    await commandInput.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await commandInput
+      .waitFor({ state: "hidden", timeout: 5000 })
+      .catch(() => {});
   }
 
   // Fill category if provided (it's also a combobox autocomplete)
   if (options?.category) {
-    const categoryButton = page.locator('[data-testid="feature-category-input"]');
+    const categoryButton = page.locator(
+      '[data-testid="feature-category-input"]',
+    );
     await categoryButton.click();
     // Wait for the command list popover to open
-    const commandInput = page.locator('[cmdk-input]');
-    await commandInput.waitFor({ state: 'visible', timeout: 5000 });
+    const commandInput = page.locator("[cmdk-input]");
+    await commandInput.waitFor({ state: "visible", timeout: 5000 });
     await commandInput.fill(options.category);
-    await commandInput.press('Enter');
+    await commandInput.press("Enter");
     // Wait for popover to close
-    await commandInput.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await commandInput
+      .waitFor({ state: "hidden", timeout: 5000 })
+      .catch(() => {});
   }
 }
 
@@ -165,9 +198,12 @@ export async function fillAddFeatureDialog(
 export async function confirmAddFeature(page: Page): Promise<void> {
   await page.click('[data-testid="confirm-add-feature"]');
   // Wait for dialog to close
-  await page.waitForFunction(() => !document.querySelector('[data-testid="add-feature-dialog"]'), {
-    timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
-  });
+  await page.waitForFunction(
+    () => !document.querySelector('[data-testid="add-feature-dialog"]'),
+    {
+      timeout: DEFAULT_ELEMENT_TIMEOUT_MS,
+    },
+  );
 }
 
 /**
@@ -176,7 +212,7 @@ export async function confirmAddFeature(page: Page): Promise<void> {
 export async function addFeature(
   page: Page,
   description: string,
-  options?: { branch?: string; category?: string }
+  options?: { branch?: string; category?: string },
 ): Promise<void> {
   await clickAddFeature(page);
   await fillAddFeatureDialog(page, description, options);
@@ -197,22 +233,29 @@ export async function getWorktreeSelector(page: Page): Promise<Locator> {
 /**
  * Click on a branch button in the worktree selector
  */
-export async function selectWorktreeBranch(page: Page, branchName: string): Promise<void> {
-  const branchButton = page.getByRole('button', {
-    name: new RegExp(branchName, 'i'),
+export async function selectWorktreeBranch(
+  page: Page,
+  branchName: string,
+): Promise<void> {
+  const branchButton = page.getByRole("button", {
+    name: new RegExp(branchName, "i"),
   });
   await branchButton.click();
   // Wait for the button to become selected (aria-pressed="true")
-  await branchButton.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+  await branchButton
+    .waitFor({ state: "visible", timeout: 5000 })
+    .catch(() => {});
 }
 
 /**
  * Get the currently selected branch in the worktree selector
  */
-export async function getSelectedWorktreeBranch(page: Page): Promise<string | null> {
+export async function getSelectedWorktreeBranch(
+  page: Page,
+): Promise<string | null> {
   // The main branch button has aria-pressed="true" when selected
   const selectedButton = page.locator(
-    '[data-testid="worktree-selector"] button[aria-pressed="true"]'
+    '[data-testid="worktree-selector"] button[aria-pressed="true"]',
   );
   const text = await selectedButton.textContent().catch(() => null);
   return text?.trim() || null;
@@ -221,9 +264,12 @@ export async function getSelectedWorktreeBranch(page: Page): Promise<string | nu
 /**
  * Check if a branch button is visible in the worktree selector
  */
-export async function isWorktreeBranchVisible(page: Page, branchName: string): Promise<boolean> {
-  const branchButton = page.getByRole('button', {
-    name: new RegExp(branchName, 'i'),
+export async function isWorktreeBranchVisible(
+  page: Page,
+  branchName: string,
+): Promise<boolean> {
+  const branchButton = page.getByRole("button", {
+    name: new RegExp(branchName, "i"),
   });
   return await branchButton.isVisible().catch(() => false);
 }

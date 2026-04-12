@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { persist, type StorageValue } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, type StorageValue } from "zustand/middleware";
 import {
   updateTabWithContent,
   markTabAsSaved,
   normalizeLineEndings,
-} from './file-editor-dirty-utils';
+} from "./file-editor-dirty-utils";
 
 export interface FileTreeNode {
   name: string;
@@ -33,7 +33,7 @@ export interface EditorTab {
   fileSize: number;
 }
 
-export type MarkdownViewMode = 'editor' | 'preview' | 'split';
+export type MarkdownViewMode = "editor" | "preview" | "split";
 
 /** Enhanced git status per file, including diff stats and staged/unstaged info */
 export interface EnhancedGitFileStatus {
@@ -124,7 +124,7 @@ interface FileEditorState {
   setShowHiddenFiles: (show: boolean) => void;
   setExpandedFolders: (folders: Set<string>) => void;
 
-  openTab: (tab: Omit<EditorTab, 'id'>) => void;
+  openTab: (tab: Omit<EditorTab, "id">) => void;
   closeTab: (tabId: string) => void;
   closeAllTabs: () => void;
   setActiveTab: (tabId: string) => void;
@@ -165,7 +165,7 @@ const initialState = {
   showHiddenFiles: true,
   tabs: [] as EditorTab[],
   activeTabId: null as string | null,
-  markdownViewMode: 'split' as MarkdownViewMode,
+  markdownViewMode: "split" as MarkdownViewMode,
   mobileBrowserVisible: true,
   tabSize: 2,
   wordWrap: true,
@@ -173,7 +173,7 @@ const initialState = {
   maxFileSize: 1024 * 1024, // 1MB
   gitStatusMap: new Map<string, string>(),
   enhancedGitStatusMap: new Map<string, EnhancedGitFileStatus>(),
-  gitBranch: '',
+  gitBranch: "",
   activeFileGitDetails: null as GitFileDetailsInfo | null,
   showInlineDiff: false,
   activeFileDiff: null as string | null,
@@ -189,7 +189,7 @@ interface PersistedFileEditorState {
   markdownViewMode: MarkdownViewMode;
 }
 
-const STORE_NAME = 'pegasus-file-editor';
+const STORE_NAME = "pegasus-file-editor";
 
 export const useFileEditorStore = create<FileEditorState>()(
   persist(
@@ -229,7 +229,9 @@ export const useFileEditorStore = create<FileEditorState>()(
         // Enforce max open tabs – evict the oldest non-dirty tab when over the limit
         const MAX_TABS = 25;
         while (updatedTabs.length > MAX_TABS) {
-          const evictIdx = updatedTabs.findIndex((t) => t.id !== id && !t.isDirty);
+          const evictIdx = updatedTabs.findIndex(
+            (t) => t.id !== id && !t.isDirty,
+          );
           if (evictIdx === -1) break; // all other tabs are dirty, keep them
           updatedTabs.splice(evictIdx, 1);
         }
@@ -269,13 +271,17 @@ export const useFileEditorStore = create<FileEditorState>()(
 
       updateTabContent: (tabId, content) => {
         set({
-          tabs: get().tabs.map((t) => (t.id === tabId ? updateTabWithContent(t, content) : t)),
+          tabs: get().tabs.map((t) =>
+            t.id === tabId ? updateTabWithContent(t, content) : t,
+          ),
         });
       },
 
       markTabSaved: (tabId, content) => {
         set({
-          tabs: get().tabs.map((t) => (t.id === tabId ? markTabAsSaved(t, content) : t)),
+          tabs: get().tabs.map((t) =>
+            t.id === tabId ? markTabAsSaved(t, content) : t,
+          ),
         });
       },
 
@@ -299,21 +305,24 @@ export const useFileEditorStore = create<FileEditorState>()(
 
       updateTabScroll: (tabId, scrollTop) => {
         set({
-          tabs: get().tabs.map((t) => (t.id === tabId ? { ...t, scrollTop } : t)),
+          tabs: get().tabs.map((t) =>
+            t.id === tabId ? { ...t, scrollTop } : t,
+          ),
         });
       },
 
       updateTabCursor: (tabId, line, col) => {
         set({
           tabs: get().tabs.map((t) =>
-            t.id === tabId ? { ...t, cursorLine: line, cursorCol: col } : t
+            t.id === tabId ? { ...t, cursorLine: line, cursorCol: col } : t,
           ),
         });
       },
 
       setMarkdownViewMode: (mode) => set({ markdownViewMode: mode }),
 
-      setMobileBrowserVisible: (visible) => set({ mobileBrowserVisible: visible }),
+      setMobileBrowserVisible: (visible) =>
+        set({ mobileBrowserVisible: visible }),
 
       setTabSize: (size) => set({ tabSize: size }),
       setWordWrap: (wrap) => set({ wordWrap: wrap }),
@@ -322,7 +331,8 @@ export const useFileEditorStore = create<FileEditorState>()(
       setGitStatusMap: (map) => set({ gitStatusMap: map }),
       setEnhancedGitStatusMap: (map) => set({ enhancedGitStatusMap: map }),
       setGitBranch: (branch) => set({ gitBranch: branch }),
-      setActiveFileGitDetails: (details) => set({ activeFileGitDetails: details }),
+      setActiveFileGitDetails: (details) =>
+        set({ activeFileGitDetails: details }),
 
       setShowInlineDiff: (show) => set({ showInlineDiff: show }),
       setActiveFileDiff: (diff) => set({ activeFileDiff: diff }),
@@ -360,7 +370,9 @@ export const useFileEditorStore = create<FileEditorState>()(
           const raw = localStorage.getItem(name);
           if (!raw) return null;
           try {
-            const parsed = JSON.parse(raw) as StorageValue<PersistedFileEditorState>;
+            const parsed = JSON.parse(
+              raw,
+            ) as StorageValue<PersistedFileEditorState>;
             if (!parsed?.state) return null;
             // Normalize tabs: ensure originalContent is always a string. Tabs persisted
             // before originalContent was added to the schema have originalContent=undefined,
@@ -371,9 +383,9 @@ export const useFileEditorStore = create<FileEditorState>()(
             // CodeMirror normalization, or schema migration).
             const normalizedTabs = (parsed.state.tabs ?? []).map((tab) => {
               const originalContent = normalizeLineEndings(
-                tab.originalContent ?? tab.content ?? ''
+                tab.originalContent ?? tab.content ?? "",
               );
-              const content = tab.content ?? '';
+              const content = tab.content ?? "";
               return {
                 ...tab,
                 originalContent,
@@ -403,7 +415,7 @@ export const useFileEditorStore = create<FileEditorState>()(
                 tabs: state.tabs ?? [],
                 activeTabId: state.activeTabId ?? null,
                 expandedFolders: Array.from(state.expandedFolders ?? []),
-                markdownViewMode: state.markdownViewMode ?? 'split',
+                markdownViewMode: state.markdownViewMode ?? "split",
               },
             };
             localStorage.setItem(name, JSON.stringify(serializable));
@@ -426,7 +438,7 @@ export const useFileEditorStore = create<FileEditorState>()(
           state.tabs = state.tabs ?? [];
           state.activeTabId = state.activeTabId ?? null;
           state.expandedFolders = state.expandedFolders ?? new Set<string>();
-          state.markdownViewMode = state.markdownViewMode ?? 'split';
+          state.markdownViewMode = state.markdownViewMode ?? "split";
         }
         // Always ensure each tab has a valid originalContent field.
         // Tabs persisted before originalContent was added to the schema would have
@@ -436,16 +448,21 @@ export const useFileEditorStore = create<FileEditorState>()(
         // when the user next edits the file.
         if (Array.isArray((state as Record<string, unknown>).tabs)) {
           (state as Record<string, unknown>).tabs = (
-            (state as Record<string, unknown>).tabs as Array<Record<string, unknown>>
+            (state as Record<string, unknown>).tabs as Array<
+              Record<string, unknown>
+            >
           ).map((tab: Record<string, unknown>) => {
-            if (tab.originalContent === undefined || tab.originalContent === null) {
-              return { ...tab, originalContent: tab.content ?? '' };
+            if (
+              tab.originalContent === undefined ||
+              tab.originalContent === null
+            ) {
+              return { ...tab, originalContent: tab.content ?? "" };
             }
             return tab;
           });
         }
         return state as unknown as FileEditorState;
       },
-    }
-  )
+    },
+  ),
 );

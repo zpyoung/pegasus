@@ -37,7 +37,7 @@ libs/
 **Example:**
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@pegasus/types';
+import type { Feature, ExecuteOptions } from "@pegasus/types";
 ```
 
 **Never import from:** `services/feature-loader`, `providers/types`
@@ -65,7 +65,7 @@ import type { Feature, ExecuteOptions } from '@pegasus/types';
 **Example:**
 
 ```typescript
-import { getFeatureDir, ensurePegasusDir } from '@pegasus/platform';
+import { getFeatureDir, ensurePegasusDir } from "@pegasus/platform";
 ```
 
 **Never import from:** `lib/pegasus-paths`, `lib/subprocess-manager`, `lib/security`
@@ -93,11 +93,15 @@ import { getFeatureDir, ensurePegasusDir } from '@pegasus/platform';
 **Example:**
 
 ```typescript
-import { getEnhancementPrompt, buildUserPrompt, isValidEnhancementMode } from '@pegasus/prompts';
+import {
+  getEnhancementPrompt,
+  buildUserPrompt,
+  isValidEnhancementMode,
+} from "@pegasus/prompts";
 
-if (isValidEnhancementMode('improve')) {
-  const { systemPrompt, description } = getEnhancementPrompt('improve');
-  const userPrompt = buildUserPrompt('improve', description);
+if (isValidEnhancementMode("improve")) {
+  const { systemPrompt, description } = getEnhancementPrompt("improve");
+  const userPrompt = buildUserPrompt("improve", description);
   const result = await callClaude(systemPrompt, userPrompt);
 }
 ```
@@ -126,10 +130,10 @@ if (isValidEnhancementMode('improve')) {
 **Example:**
 
 ```typescript
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
 
 // Convert user input to model ID
-const modelId = resolveModelString('sonnet'); // → 'claude-sonnet-4-6'
+const modelId = resolveModelString("sonnet"); // → 'claude-sonnet-4-6'
 const fallback = resolveModelString(undefined, DEFAULT_MODELS.claude);
 ```
 
@@ -162,10 +166,17 @@ const fallback = resolveModelString(undefined, DEFAULT_MODELS.claude);
 **Example:**
 
 ```typescript
-import { resolveDependencies, areDependenciesSatisfied } from '@pegasus/dependency-resolver';
+import {
+  resolveDependencies,
+  areDependenciesSatisfied,
+} from "@pegasus/dependency-resolver";
 
-const { orderedFeatures, circularDependencies, missingDependencies, blockedFeatures } =
-  resolveDependencies(features);
+const {
+  orderedFeatures,
+  circularDependencies,
+  missingDependencies,
+  blockedFeatures,
+} = resolveDependencies(features);
 
 if (circularDependencies.length === 0) {
   for (const feature of orderedFeatures) {
@@ -201,7 +212,7 @@ if (circularDependencies.length === 0) {
 **Example:**
 
 ```typescript
-import { xmlToSpec, specToXml, validateSpec } from '@pegasus/spec-parser';
+import { xmlToSpec, specToXml, validateSpec } from "@pegasus/spec-parser";
 
 const result = xmlToSpec(rawXmlString);
 if (result.success) {
@@ -223,6 +234,7 @@ if (result.success) {
 **Import for:**
 
 Error handling:
+
 - `isAbortError(error)` - Check if error is an abort/cancellation
 - `isCancellationError(error)` - Check if error is cancellation
 - `isAuthenticationError(error)` - Check auth errors
@@ -237,6 +249,7 @@ Error handling:
 - `extractRetryAfter(error)` - Extract retry-after header value
 
 Logging:
+
 - `createLogger(context)` - Create a structured logger for a named context
 - `getLogLevel()` / `setLogLevel(level)` - Get/set global log level
 - `setColorsEnabled(enabled)` - Toggle ANSI colors
@@ -244,21 +257,25 @@ Logging:
 - `LogLevel` - Log level enum
 
 Conversation utilities:
+
 - `extractTextFromContent(content)` - Extract text from message content blocks
 - `normalizeContentBlocks(content)` - Normalize content to block array
 - `formatHistoryAsText(history)` - Format conversation history as plain text
 - `convertHistoryToMessages(history)` - Convert history to message format
 
 Image handling:
+
 - `getMimeTypeForImage(path)` - Get MIME type from file extension
 - `readImageAsBase64(path)` - Read image file as base64 string
 - `convertImagesToContentBlocks(images)` - Convert images to content blocks
 - `formatImagePathsForPrompt(paths)` - Format image paths for prompt injection
 
 Prompt building:
+
 - `buildPromptWithImages(text, images?)` - Build prompt with optional image content blocks; returns `PromptWithImages`
 
 File system:
+
 - `mkdirSafe(path)` - Create directory, ignoring EEXIST
 - `existsSafe(path)` - Check file existence without throwing
 - `atomicWriteJson(path, data, options?)` - Atomic JSON file write
@@ -268,11 +285,13 @@ File system:
 - `rotateBackups(path, count?)` - Rotate backup files
 
 Path utilities:
+
 - `normalizePath(path)` - Normalize path separators
 - `pathsEqual(a, b)` - Compare paths platform-independently
 - `sanitizeFilename(name)` - Strip unsafe characters from filenames
 
 Context & memory:
+
 - `loadContextFiles(options)` - Load context files from `.pegasus/context/`; returns `ContextFilesResult`
 - `getContextFilesSummary(result)` - Summarize loaded context files
 - `loadRelevantMemory(options)` - Load relevant memory files
@@ -282,10 +301,12 @@ Context & memory:
 - `getMemoryDir(projectPath)` - Get memory directory path
 
 Debounce/throttle:
+
 - `debounce(fn, wait, options?)` - Debounce a function
 - `throttle(fn, wait, options?)` - Throttle a function
 
 Git validation:
+
 - `isValidBranchName(name)` - Validate a git branch name
 - `isValidRemoteName(name)` - Validate a git remote name
 - `MAX_BRANCH_NAME_LENGTH` - Max allowed branch name length
@@ -293,9 +314,9 @@ Git validation:
 **Example:**
 
 ```typescript
-import { createLogger, classifyError } from '@pegasus/utils';
+import { createLogger, classifyError } from "@pegasus/utils";
 
-const logger = createLogger('FeatureExecutor');
+const logger = createLogger("FeatureExecutor");
 
 try {
   await runAgent(featureDir, options);
@@ -333,7 +354,7 @@ try {
 **Example:**
 
 ```typescript
-import { isGitRepo, getGitRepositoryDiffs } from '@pegasus/git-utils';
+import { isGitRepo, getGitRepositoryDiffs } from "@pegasus/git-utils";
 
 if (await isGitRepo(projectPath)) {
   const { diff, files, hasChanges } = await getGitRepositoryDiffs(projectPath);
@@ -359,12 +380,14 @@ if (await isGitRepo(projectPath)) {
 **Import for:**
 
 Types:
+
 - `ChatRole`, `ChatMessage`, `ChatStreamEvent` - Core chat data types
 - `ChatTransport`, `ChatStatus` - Transport and status types
 - `GroupedItem` - Grouped message item type
 - `ChatPanelProps`, `MessageListProps`, `MessageBubbleProps`, `ToolGroupProps`, `InputBarProps`, `EmptyStateProps` - Component prop types
 
 Components:
+
 - `ChatPanel` - Top-level chat panel component (composes all other components)
 - `MessageList` - Scrollable list of chat messages
 - `MessageBubble` - Individual message bubble
@@ -373,10 +396,12 @@ Components:
 - `EmptyState` - Empty state placeholder
 
 Hooks:
+
 - `useChatStream` - Hook to manage a streaming chat session
 - `useAutoScroll` - Hook to auto-scroll a container to the bottom
 
 Utilities:
+
 - `groupMessages(messages)` - Group consecutive messages for display
 - `getToolDescription(toolName)` - Human-readable tool description
 
@@ -398,15 +423,19 @@ function MyChatView() {
 ### Creating a Feature Executor
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@pegasus/types';
-import { createLogger, classifyError } from '@pegasus/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import { areDependenciesSatisfied } from '@pegasus/dependency-resolver';
-import { getFeatureDir } from '@pegasus/platform';
+import type { Feature, ExecuteOptions } from "@pegasus/types";
+import { createLogger, classifyError } from "@pegasus/utils";
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import { areDependenciesSatisfied } from "@pegasus/dependency-resolver";
+import { getFeatureDir } from "@pegasus/platform";
 
-const logger = createLogger('FeatureExecutor');
+const logger = createLogger("FeatureExecutor");
 
-async function executeFeature(feature: Feature, allFeatures: Feature[], projectPath: string) {
+async function executeFeature(
+  feature: Feature,
+  allFeatures: Feature[],
+  projectPath: string,
+) {
   // Check dependencies
   if (!areDependenciesSatisfied(feature, allFeatures)) {
     logger.warn(`Dependencies not satisfied for ${feature.id}`);
@@ -438,27 +467,27 @@ async function executeFeature(feature: Feature, allFeatures: Feature[], projectP
 ### Analyzing Git Changes
 
 ```typescript
-import { getGitRepositoryDiffs, parseGitStatus } from '@pegasus/git-utils';
-import { createLogger } from '@pegasus/utils';
+import { getGitRepositoryDiffs, parseGitStatus } from "@pegasus/git-utils";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('GitAnalyzer');
+const logger = createLogger("GitAnalyzer");
 
 async function analyzeChanges(projectPath: string) {
   const { diff, files, hasChanges } = await getGitRepositoryDiffs(projectPath);
 
   if (!hasChanges) {
-    logger.info('No changes detected');
+    logger.info("No changes detected");
     return;
   }
 
   // Group by status
-  const modified = files.filter((f) => f.status === 'M');
-  const added = files.filter((f) => f.status === 'A');
-  const deleted = files.filter((f) => f.status === 'D');
-  const untracked = files.filter((f) => f.status === '?');
+  const modified = files.filter((f) => f.status === "M");
+  const added = files.filter((f) => f.status === "A");
+  const deleted = files.filter((f) => f.status === "D");
+  const untracked = files.filter((f) => f.status === "?");
 
   logger.info(
-    `Changes: ${modified.length}M ${added.length}A ${deleted.length}D ${untracked.length}U`
+    `Changes: ${modified.length}M ${added.length}A ${deleted.length}D ${untracked.length}U`,
   );
 
   return diff;
@@ -468,26 +497,30 @@ async function analyzeChanges(projectPath: string) {
 ### Ordering Features for Execution
 
 ```typescript
-import type { Feature } from '@pegasus/types';
-import { resolveDependencies, getBlockingDependencies } from '@pegasus/dependency-resolver';
-import { createLogger } from '@pegasus/utils';
+import type { Feature } from "@pegasus/types";
+import {
+  resolveDependencies,
+  getBlockingDependencies,
+} from "@pegasus/dependency-resolver";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('FeatureOrdering');
+const logger = createLogger("FeatureOrdering");
 
 function orderAndFilterFeatures(features: Feature[]): Feature[] {
-  const { orderedFeatures, circularDependencies } = resolveDependencies(features);
+  const { orderedFeatures, circularDependencies } =
+    resolveDependencies(features);
 
   if (circularDependencies.length > 0) {
-    const cycle = circularDependencies[0].join(' → ');
+    const cycle = circularDependencies[0].join(" → ");
     logger.error(`Circular dependency detected: ${cycle}`);
-    throw new Error('Cannot execute features with circular dependencies');
+    throw new Error("Cannot execute features with circular dependencies");
   }
 
   // Filter to only ready features
   const readyFeatures = orderedFeatures.filter((feature) => {
     const blocking = getBlockingDependencies(feature, features);
     if (blocking.length > 0) {
-      logger.debug(`${feature.id} blocked by: ${blocking.join(', ')}`);
+      logger.debug(`${feature.id} blocked by: ${blocking.join(", ")}`);
       return false;
     }
     return true;
@@ -501,10 +534,10 @@ function orderAndFilterFeatures(features: Feature[]): Feature[] {
 ### Parsing and Validating an App Spec
 
 ```typescript
-import { xmlToSpec, validateSpec, specToXml } from '@pegasus/spec-parser';
-import { createLogger } from '@pegasus/utils';
+import { xmlToSpec, validateSpec, specToXml } from "@pegasus/spec-parser";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('SpecParser');
+const logger = createLogger("SpecParser");
 
 async function processSpec(rawXml: string): Promise<string> {
   const result = xmlToSpec(rawXml);
@@ -515,7 +548,7 @@ async function processSpec(rawXml: string): Promise<string> {
 
   const { errors } = validateSpec(result.spec);
   if (errors.length > 0) {
-    logger.warn(`Spec validation warnings: ${errors.join(', ')}`);
+    logger.warn(`Spec validation warnings: ${errors.join(", ")}`);
   }
 
   return specToXml(result.spec);
@@ -528,34 +561,34 @@ async function processSpec(rawXml: string): Promise<string> {
 
 ```typescript
 // Import types from @pegasus/types
-import type { Feature, ExecuteOptions } from '@pegasus/types';
+import type { Feature, ExecuteOptions } from "@pegasus/types";
 
 // Import constants from @pegasus/types
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from '@pegasus/types';
+import { CLAUDE_MODEL_MAP, DEFAULT_MODELS } from "@pegasus/types";
 
 // Import utilities from @pegasus/utils
-import { createLogger, classifyError } from '@pegasus/utils';
+import { createLogger, classifyError } from "@pegasus/utils";
 
 // Import prompts from @pegasus/prompts
-import { getEnhancementPrompt, isValidEnhancementMode } from '@pegasus/prompts';
+import { getEnhancementPrompt, isValidEnhancementMode } from "@pegasus/prompts";
 
 // Import platform utils from @pegasus/platform
-import { getFeatureDir, ensurePegasusDir } from '@pegasus/platform';
+import { getFeatureDir, ensurePegasusDir } from "@pegasus/platform";
 
 // Import model resolution from @pegasus/model-resolver
-import { resolveModelString } from '@pegasus/model-resolver';
+import { resolveModelString } from "@pegasus/model-resolver";
 
 // Import dependency resolution from @pegasus/dependency-resolver
-import { resolveDependencies } from '@pegasus/dependency-resolver';
+import { resolveDependencies } from "@pegasus/dependency-resolver";
 
 // Import git utils from @pegasus/git-utils
-import { getGitRepositoryDiffs } from '@pegasus/git-utils';
+import { getGitRepositoryDiffs } from "@pegasus/git-utils";
 
 // Import spec parsing from @pegasus/spec-parser
-import { xmlToSpec, specToXml } from '@pegasus/spec-parser';
+import { xmlToSpec, specToXml } from "@pegasus/spec-parser";
 
 // Import chat UI primitives from @pegasus/chat-ui
-import { ChatPanel, useChatStream } from '@pegasus/chat-ui';
+import { ChatPanel, useChatStream } from "@pegasus/chat-ui";
 ```
 
 ### DON'T
@@ -666,11 +699,11 @@ When writing tests:
 
 ```typescript
 // ✅ Import from packages
-import type { Feature } from '@pegasus/types';
-import { createLogger } from '@pegasus/utils';
+import type { Feature } from "@pegasus/types";
+import { createLogger } from "@pegasus/utils";
 
 // ❌ Don't import from src
-import { Feature } from '../../../src/services/feature-loader';
+import { Feature } from "../../../src/services/feature-loader";
 ```
 
 ## Summary for LLMs

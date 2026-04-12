@@ -1,10 +1,18 @@
-import { Panel } from '@xyflow/react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Panel } from "@xyflow/react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Filter,
   X,
@@ -17,28 +25,44 @@ import {
   CheckCircle2,
   CircleDot,
   Search,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   GraphFilterState,
   STATUS_FILTER_OPTIONS,
   StatusFilterValue,
-} from '../hooks/use-graph-filter';
+} from "../hooks/use-graph-filter";
 
 // Status display configuration
 const statusDisplayConfig: Record<
   StatusFilterValue,
   { label: string; icon: typeof Play; colorClass: string }
 > = {
-  running: { label: 'Running', icon: Play, colorClass: 'text-[var(--status-in-progress)]' },
-  paused: { label: 'Paused', icon: Pause, colorClass: 'text-[var(--status-warning)]' },
-  backlog: { label: 'Backlog', icon: Clock, colorClass: 'text-muted-foreground' },
-  waiting_approval: {
-    label: 'Waiting Approval',
-    icon: CircleDot,
-    colorClass: 'text-[var(--status-waiting)]',
+  running: {
+    label: "Running",
+    icon: Play,
+    colorClass: "text-[var(--status-in-progress)]",
   },
-  verified: { label: 'Verified', icon: CheckCircle2, colorClass: 'text-[var(--status-success)]' },
+  paused: {
+    label: "Paused",
+    icon: Pause,
+    colorClass: "text-[var(--status-warning)]",
+  },
+  backlog: {
+    label: "Backlog",
+    icon: Clock,
+    colorClass: "text-muted-foreground",
+  },
+  waiting_approval: {
+    label: "Waiting Approval",
+    icon: CircleDot,
+    colorClass: "text-[var(--status-waiting)]",
+  },
+  verified: {
+    label: "Verified",
+    icon: CheckCircle2,
+    colorClass: "text-[var(--status-success)]",
+  },
 };
 
 interface GraphFilterControlsProps {
@@ -64,7 +88,8 @@ export function GraphFilterControls({
   onNegativeFilterChange,
   onClearFilters,
 }: GraphFilterControlsProps) {
-  const { selectedCategories, selectedStatuses, isNegativeFilter } = filterState;
+  const { selectedCategories, selectedStatuses, isNegativeFilter } =
+    filterState;
 
   const handleCategoryToggle = (category: string) => {
     if (selectedCategories.includes(category)) {
@@ -100,24 +125,27 @@ export function GraphFilterControls({
 
   const categoryButtonLabel =
     selectedCategories.length === 0
-      ? 'All Categories'
+      ? "All Categories"
       : selectedCategories.length === 1
         ? selectedCategories[0]
         : `${selectedCategories.length} Categories`;
 
   const statusButtonLabel =
     selectedStatuses.length === 0
-      ? 'All Statuses'
+      ? "All Statuses"
       : selectedStatuses.length === 1
-        ? statusDisplayConfig[selectedStatuses[0] as StatusFilterValue]?.label ||
-          selectedStatuses[0]
+        ? statusDisplayConfig[selectedStatuses[0] as StatusFilterValue]
+            ?.label || selectedStatuses[0]
         : `${selectedStatuses.length} Statuses`;
 
   return (
     <Panel position="top-left" className="flex items-center gap-2">
       <div
         className="flex items-center gap-2 p-2 rounded-lg backdrop-blur-sm border border-border shadow-lg text-popover-foreground"
-        style={{ backgroundColor: 'color-mix(in oklch, var(--popover) 90%, transparent)' }}
+        style={{
+          backgroundColor:
+            "color-mix(in oklch, var(--popover) 90%, transparent)",
+        }}
       >
         {/* Search Input */}
         <div className="relative">
@@ -131,7 +159,7 @@ export function GraphFilterControls({
           />
           {searchQuery && (
             <button
-              onClick={() => onSearchQueryChange('')}
+              onClick={() => onSearchQueryChange("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label="Clear search"
             >
@@ -152,12 +180,15 @@ export function GraphFilterControls({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-8 px-2 gap-1.5',
-                    selectedCategories.length > 0 && 'bg-brand-500/20 text-brand-500'
+                    "h-8 px-2 gap-1.5",
+                    selectedCategories.length > 0 &&
+                      "bg-brand-500/20 text-brand-500",
                   )}
                 >
                   <Filter className="w-4 h-4" />
-                  <span className="text-xs max-w-[100px] truncate">{categoryButtonLabel}</span>
+                  <span className="text-xs max-w-[100px] truncate">
+                    {categoryButtonLabel}
+                  </span>
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -170,7 +201,9 @@ export function GraphFilterControls({
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground px-2 py-1">Categories</div>
+              <div className="text-xs font-medium text-muted-foreground px-2 py-1">
+                Categories
+              </div>
 
               {/* Select All option */}
               <div
@@ -186,8 +219,8 @@ export function GraphFilterControls({
                 />
                 <span className="text-sm font-medium">
                   {selectedCategories.length === availableCategories.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                    ? "Deselect All"
+                    : "Select All"}
                 </span>
               </div>
 
@@ -228,12 +261,15 @@ export function GraphFilterControls({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-8 px-2 gap-1.5',
-                    selectedStatuses.length > 0 && 'bg-brand-500/20 text-brand-500'
+                    "h-8 px-2 gap-1.5",
+                    selectedStatuses.length > 0 &&
+                      "bg-brand-500/20 text-brand-500",
                   )}
                 >
                   <CircleDot className="w-4 h-4" />
-                  <span className="text-xs max-w-[120px] truncate">{statusButtonLabel}</span>
+                  <span className="text-xs max-w-[120px] truncate">
+                    {statusButtonLabel}
+                  </span>
                   <ChevronDown className="w-3 h-3 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -246,7 +282,9 @@ export function GraphFilterControls({
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground px-2 py-1">Status</div>
+              <div className="text-xs font-medium text-muted-foreground px-2 py-1">
+                Status
+              </div>
 
               {/* Select All option */}
               <div
@@ -254,13 +292,15 @@ export function GraphFilterControls({
                 onClick={handleSelectAllStatuses}
               >
                 <Checkbox
-                  checked={selectedStatuses.length === STATUS_FILTER_OPTIONS.length}
+                  checked={
+                    selectedStatuses.length === STATUS_FILTER_OPTIONS.length
+                  }
                   onCheckedChange={handleSelectAllStatuses}
                 />
                 <span className="text-sm font-medium">
                   {selectedStatuses.length === STATUS_FILTER_OPTIONS.length
-                    ? 'Deselect All'
-                    : 'Select All'}
+                    ? "Deselect All"
+                    : "Select All"}
                 </span>
               </div>
 
@@ -281,7 +321,9 @@ export function GraphFilterControls({
                         checked={selectedStatuses.includes(status)}
                         onCheckedChange={() => handleStatusToggle(status)}
                       />
-                      <StatusIcon className={cn('w-3.5 h-3.5', config.colorClass)} />
+                      <StatusIcon
+                        className={cn("w-3.5 h-3.5", config.colorClass)}
+                      />
                       <span className="text-sm">{config.label}</span>
                     </div>
                   );
@@ -302,15 +344,15 @@ export function GraphFilterControls({
                 onClick={() => onNegativeFilterChange(!isNegativeFilter)}
                 aria-label={
                   isNegativeFilter
-                    ? 'Switch to show matching nodes'
-                    : 'Switch to hide matching nodes'
+                    ? "Switch to show matching nodes"
+                    : "Switch to hide matching nodes"
                 }
                 aria-pressed={isNegativeFilter}
                 className={cn(
-                  'flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors',
+                  "flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors",
                   isNegativeFilter
-                    ? 'bg-orange-500/20 text-orange-500'
-                    : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                    ? "bg-orange-500/20 text-orange-500"
+                    : "hover:bg-accent text-muted-foreground hover:text-foreground",
                 )}
               >
                 {isNegativeFilter ? (
@@ -335,8 +377,8 @@ export function GraphFilterControls({
           </TooltipTrigger>
           <TooltipContent>
             {isNegativeFilter
-              ? 'Negative filter: Highlighting non-matching nodes'
-              : 'Positive filter: Highlighting matching nodes'}
+              ? "Negative filter: Highlighting non-matching nodes"
+              : "Positive filter: Highlighting matching nodes"}
           </TooltipContent>
         </Tooltip>
 

@@ -86,16 +86,16 @@ Flags are resolved in layers: **stage > pipeline defaults > project config > use
 
 ## CLI Commands
 
-| Command | Description |
-|---------|-------------|
-| `pegasus init` | Scaffold `.pegasus/` with auto-detected settings and starter templates |
-| `pegasus run --pipeline <name> --desc "..."` | Create task, branch, worktree, and start pipeline |
-| `pegasus run --dry-run ...` | Show resolved commands without API calls |
-| `pegasus status` | List all active tasks with progress |
-| `pegasus status <task-id>` | Detailed status for one task |
-| `pegasus validate` | Check pipeline YAML files for errors |
-| `pegasus resume <task-id>` | Restart a failed/paused task from the failed stage |
-| `pegasus tui` | Launch the interactive terminal dashboard |
+| Command                                      | Description                                                            |
+| -------------------------------------------- | ---------------------------------------------------------------------- |
+| `pegasus init`                               | Scaffold `.pegasus/` with auto-detected settings and starter templates |
+| `pegasus run --pipeline <name> --desc "..."` | Create task, branch, worktree, and start pipeline                      |
+| `pegasus run --dry-run ...`                  | Show resolved commands without API calls                               |
+| `pegasus status`                             | List all active tasks with progress                                    |
+| `pegasus status <task-id>`                   | Detailed status for one task                                           |
+| `pegasus validate`                           | Check pipeline YAML files for errors                                   |
+| `pegasus resume <task-id>`                   | Restart a failed/paused task from the failed stage                     |
+| `pegasus tui`                                | Launch the interactive terminal dashboard                              |
 
 ## TUI Dashboard
 
@@ -140,7 +140,7 @@ defaults:
   model: claude-sonnet-4-20250514
   max_turns: 10
   permission_mode: plan
-  max_permission: acceptEdits  # deny-wins ceiling
+  max_permission: acceptEdits # deny-wins ceiling
 
 concurrency:
   max_tasks: 3

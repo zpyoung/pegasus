@@ -2,9 +2,9 @@
  * POST /session/get - Get an ideation session with messages
  */
 
-import type { Request, Response } from 'express';
-import type { IdeationService } from '../../../services/ideation-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { IdeationService } from "../../../services/ideation-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createSessionGetHandler(ideationService: IdeationService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -15,18 +15,22 @@ export function createSessionGetHandler(ideationService: IdeationService) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!sessionId) {
-        res.status(400).json({ success: false, error: 'sessionId is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "sessionId is required" });
         return;
       }
 
       const session = await ideationService.getSession(projectPath, sessionId);
       if (!session) {
-        res.status(404).json({ success: false, error: 'Session not found' });
+        res.status(404).json({ success: false, error: "Session not found" });
         return;
       }
 
@@ -38,7 +42,7 @@ export function createSessionGetHandler(ideationService: IdeationService) {
         messages: session.messages,
       });
     } catch (error) {
-      logError(error, 'Get session failed');
+      logError(error, "Get session failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

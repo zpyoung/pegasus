@@ -12,11 +12,11 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import { getErrorMessage, logError } from '../common.js';
-import { getBranchCommitLog } from '../../../services/branch-commit-log-service.js';
-import { isValidBranchName } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import { getErrorMessage, logError } from "../common.js";
+import { getBranchCommitLog } from "../../../services/branch-commit-log-service.js";
+import { isValidBranchName } from "@pegasus/utils";
 
 export function createBranchCommitLogHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -34,7 +34,7 @@ export function createBranchCommitLogHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -46,15 +46,16 @@ export function createBranchCommitLogHandler(events: EventEmitter) {
       if (branchName !== undefined && !isValidBranchName(branchName)) {
         res.status(400).json({
           success: false,
-          error: 'Invalid branchName: value contains unsafe characters or sequences',
+          error:
+            "Invalid branchName: value contains unsafe characters or sequences",
         });
         return;
       }
 
       // Emit start event so the frontend can observe progress
-      events.emit('branchCommitLog:start', {
+      events.emit("branchCommitLog:start", {
         worktreePath,
-        branchName: branchName || 'HEAD',
+        branchName: branchName || "HEAD",
         limit,
       });
 
@@ -62,14 +63,14 @@ export function createBranchCommitLogHandler(events: EventEmitter) {
       const result = await getBranchCommitLog(worktreePath, branchName, limit);
 
       // Emit progress with the number of commits fetched
-      events.emit('branchCommitLog:progress', {
+      events.emit("branchCommitLog:progress", {
         worktreePath,
         branchName: result.branch,
         commitsLoaded: result.total,
       });
 
       // Emit done event
-      events.emit('branchCommitLog:done', {
+      events.emit("branchCommitLog:done", {
         worktreePath,
         branchName: result.branch,
         total: result.total,
@@ -81,11 +82,11 @@ export function createBranchCommitLogHandler(events: EventEmitter) {
       });
     } catch (error) {
       // Emit error event so the frontend can react
-      events.emit('branchCommitLog:error', {
+      events.emit("branchCommitLog:error", {
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Get branch commit log failed');
+      logError(error, "Get branch commit log failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

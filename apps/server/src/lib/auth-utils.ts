@@ -2,10 +2,10 @@
  * Secure authentication utilities that avoid environment variable race conditions
  */
 
-import { spawn } from 'child_process';
-import { createLogger } from '@pegasus/utils';
+import { spawn } from "child_process";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('AuthUtils');
+const logger = createLogger("AuthUtils");
 
 export interface SecureAuthEnv {
   [key: string]: string | undefined;
@@ -22,40 +22,44 @@ export interface AuthValidationResult {
  */
 export function validateApiKey(
   key: string,
-  provider: 'anthropic' | 'openai' | 'cursor'
+  provider: "anthropic" | "openai" | "cursor",
 ): AuthValidationResult {
-  if (!key || typeof key !== 'string' || key.trim().length === 0) {
-    return { isValid: false, error: 'API key is required' };
+  if (!key || typeof key !== "string" || key.trim().length === 0) {
+    return { isValid: false, error: "API key is required" };
   }
 
   const trimmedKey = key.trim();
 
   switch (provider) {
-    case 'anthropic':
-      if (!trimmedKey.startsWith('sk-ant-')) {
+    case "anthropic":
+      if (!trimmedKey.startsWith("sk-ant-")) {
         return {
           isValid: false,
-          error: 'Invalid Anthropic API key format. Should start with "sk-ant-"',
+          error:
+            'Invalid Anthropic API key format. Should start with "sk-ant-"',
         };
       }
       if (trimmedKey.length < 20) {
-        return { isValid: false, error: 'Anthropic API key too short' };
+        return { isValid: false, error: "Anthropic API key too short" };
       }
       break;
 
-    case 'openai':
-      if (!trimmedKey.startsWith('sk-')) {
-        return { isValid: false, error: 'Invalid OpenAI API key format. Should start with "sk-"' };
+    case "openai":
+      if (!trimmedKey.startsWith("sk-")) {
+        return {
+          isValid: false,
+          error: 'Invalid OpenAI API key format. Should start with "sk-"',
+        };
       }
       if (trimmedKey.length < 20) {
-        return { isValid: false, error: 'OpenAI API key too short' };
+        return { isValid: false, error: "OpenAI API key too short" };
       }
       break;
 
-    case 'cursor':
+    case "cursor":
       // Cursor API keys might have different format
       if (trimmedKey.length < 10) {
-        return { isValid: false, error: 'Cursor API key too short' };
+        return { isValid: false, error: "Cursor API key too short" };
       }
       break;
   }
@@ -68,23 +72,25 @@ export function validateApiKey(
  * without modifying the global process.env
  */
 export function createSecureAuthEnv(
-  authMethod: 'cli' | 'api_key',
+  authMethod: "cli" | "api_key",
   apiKey?: string,
-  provider: 'anthropic' | 'openai' | 'cursor' = 'anthropic'
+  provider: "anthropic" | "openai" | "cursor" = "anthropic",
 ): SecureAuthEnv {
   const env: SecureAuthEnv = { ...process.env };
 
-  if (authMethod === 'cli') {
+  if (authMethod === "cli") {
     // For CLI auth, remove the API key to force CLI authentication
-    const envKey = provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
+    const envKey =
+      provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
     delete env[envKey];
-  } else if (authMethod === 'api_key' && apiKey) {
+  } else if (authMethod === "api_key" && apiKey) {
     // For API key auth, validate and set the provided key
     const validation = validateApiKey(apiKey, provider);
     if (!validation.isValid) {
       throw new Error(validation.error);
     }
-    const envKey = provider === 'openai' ? 'OPENAI_API_KEY' : 'ANTHROPIC_API_KEY';
+    const envKey =
+      provider === "openai" ? "OPENAI_API_KEY" : "ANTHROPIC_API_KEY";
     env[envKey] = validation.normalizedKey;
   }
 
@@ -123,41 +129,41 @@ export function spawnSecureAuth(
   options: {
     cwd?: string;
     timeout?: number;
-  } = {}
+  } = {},
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
   return new Promise((resolve, reject) => {
     const { cwd = process.cwd(), timeout = 30000 } = options;
 
-    logger.debug(`Spawning secure auth process: ${command} ${args.join(' ')}`);
+    logger.debug(`Spawning secure auth process: ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, {
       cwd,
       env: authEnv,
-      stdio: 'pipe',
+      stdio: "pipe",
       shell: false,
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
     let isResolved = false;
 
     const timeoutId = setTimeout(() => {
       if (!isResolved) {
-        child.kill('SIGTERM');
+        child.kill("SIGTERM");
         isResolved = true;
-        reject(new Error('Authentication process timed out'));
+        reject(new Error("Authentication process timed out"));
       }
     }, timeout);
 
-    child.stdout?.on('data', (data) => {
+    child.stdout?.on("data", (data) => {
       stdout += data.toString();
     });
 
-    child.stderr?.on('data', (data) => {
+    child.stderr?.on("data", (data) => {
       stderr += data.toString();
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       clearTimeout(timeoutId);
       if (!isResolved) {
         isResolved = true;
@@ -165,7 +171,7 @@ export function spawnSecureAuth(
       }
     });
 
-    child.on('error', (error) => {
+    child.on("error", (error) => {
       clearTimeout(timeoutId);
       if (!isResolved) {
         isResolved = true;
@@ -198,9 +204,9 @@ export class AuthSessionManager {
 
   static createSession(
     sessionId: string,
-    authMethod: 'cli' | 'api_key',
+    authMethod: "cli" | "api_key",
     apiKey?: string,
-    provider: 'anthropic' | 'openai' | 'cursor' = 'anthropic'
+    provider: "anthropic" | "openai" | "cursor" = "anthropic",
   ): SecureAuthEnv {
     const env = createSecureAuthEnv(authMethod, apiKey, provider);
     this.activeSessions.set(sessionId, env);
@@ -228,7 +234,7 @@ export class AuthRateLimiter {
 
   constructor(
     private maxAttempts = 5,
-    private windowMs = 60000
+    private windowMs = 60000,
   ) {}
 
   canAttempt(identifier: string): boolean {

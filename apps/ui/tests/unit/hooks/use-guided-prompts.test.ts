@@ -4,36 +4,50 @@
  * they maintain referential stability when underlying data hasn't changed.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook } from "@testing-library/react";
 
 // Mock the queries module
-vi.mock('@/hooks/queries', () => ({
+vi.mock("@/hooks/queries", () => ({
   useIdeationPrompts: vi.fn(),
 }));
 
 // Must import after mock setup
-import { useGuidedPrompts } from '../../../src/hooks/use-guided-prompts';
-import { useIdeationPrompts } from '@/hooks/queries';
+import { useGuidedPrompts } from "../../../src/hooks/use-guided-prompts";
+import { useIdeationPrompts } from "@/hooks/queries";
 
 const mockUseIdeationPrompts = vi.mocked(useIdeationPrompts);
 
-describe('useGuidedPrompts', () => {
+describe("useGuidedPrompts", () => {
   const mockPrompts = [
-    { id: 'p1', category: 'feature' as const, title: 'Prompt 1', prompt: 'Do thing 1' },
-    { id: 'p2', category: 'bugfix' as const, title: 'Prompt 2', prompt: 'Do thing 2' },
+    {
+      id: "p1",
+      category: "feature" as const,
+      title: "Prompt 1",
+      prompt: "Do thing 1",
+    },
+    {
+      id: "p2",
+      category: "bugfix" as const,
+      title: "Prompt 2",
+      prompt: "Do thing 2",
+    },
   ];
 
   const mockCategories = [
-    { id: 'feature' as const, label: 'Feature', description: 'Feature prompts' },
-    { id: 'bugfix' as const, label: 'Bug Fix', description: 'Bug fix prompts' },
+    {
+      id: "feature" as const,
+      label: "Feature",
+      description: "Feature prompts",
+    },
+    { id: "bugfix" as const, label: "Bug Fix", description: "Bug fix prompts" },
   ];
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should return empty arrays when data is undefined', () => {
+  it("should return empty arrays when data is undefined", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -48,7 +62,7 @@ describe('useGuidedPrompts', () => {
     expect(result.current.isLoading).toBe(true);
   });
 
-  it('should return prompts and categories when data is available', () => {
+  it("should return prompts and categories when data is available", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: mockPrompts, categories: mockCategories },
       isLoading: false,
@@ -63,7 +77,7 @@ describe('useGuidedPrompts', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it('should memoize prompts array reference when data has not changed', () => {
+  it("should memoize prompts array reference when data has not changed", () => {
     const stableData = { prompts: mockPrompts, categories: mockCategories };
 
     mockUseIdeationPrompts.mockReturnValue({
@@ -86,7 +100,7 @@ describe('useGuidedPrompts', () => {
     expect(result.current.categories).toBe(firstCategories);
   });
 
-  it('should update prompts reference when data.prompts changes', () => {
+  it("should update prompts reference when data.prompts changes", () => {
     const refetchFn = vi.fn();
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: mockPrompts, categories: mockCategories },
@@ -102,7 +116,12 @@ describe('useGuidedPrompts', () => {
     // Update with new prompts array
     const newPrompts = [
       ...mockPrompts,
-      { id: 'p3', category: 'feature' as const, title: 'Prompt 3', prompt: 'Do thing 3' },
+      {
+        id: "p3",
+        category: "feature" as const,
+        title: "Prompt 3",
+        prompt: "Do thing 3",
+      },
     ];
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: newPrompts, categories: mockCategories },
@@ -118,7 +137,7 @@ describe('useGuidedPrompts', () => {
     expect(result.current.prompts).toEqual(newPrompts);
   });
 
-  it('should filter prompts by category', () => {
+  it("should filter prompts by category", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: mockPrompts, categories: mockCategories },
       isLoading: false,
@@ -128,12 +147,14 @@ describe('useGuidedPrompts', () => {
 
     const { result } = renderHook(() => useGuidedPrompts());
 
-    const featurePrompts = result.current.getPromptsByCategory('feature' as const);
+    const featurePrompts = result.current.getPromptsByCategory(
+      "feature" as const,
+    );
     expect(featurePrompts).toHaveLength(1);
-    expect(featurePrompts[0].id).toBe('p1');
+    expect(featurePrompts[0].id).toBe("p1");
   });
 
-  it('should find prompt by id', () => {
+  it("should find prompt by id", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: mockPrompts, categories: mockCategories },
       isLoading: false,
@@ -143,11 +164,11 @@ describe('useGuidedPrompts', () => {
 
     const { result } = renderHook(() => useGuidedPrompts());
 
-    expect(result.current.getPromptById('p2')?.title).toBe('Prompt 2');
-    expect(result.current.getPromptById('nonexistent')).toBeUndefined();
+    expect(result.current.getPromptById("p2")?.title).toBe("Prompt 2");
+    expect(result.current.getPromptById("nonexistent")).toBeUndefined();
   });
 
-  it('should find category by id', () => {
+  it("should find category by id", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: { prompts: mockPrompts, categories: mockCategories },
       isLoading: false,
@@ -157,24 +178,28 @@ describe('useGuidedPrompts', () => {
 
     const { result } = renderHook(() => useGuidedPrompts());
 
-    expect(result.current.getCategoryById('feature' as const)?.label).toBe('Feature');
-    expect(result.current.getCategoryById('nonexistent' as never)).toBeUndefined();
+    expect(result.current.getCategoryById("feature" as const)?.label).toBe(
+      "Feature",
+    );
+    expect(
+      result.current.getCategoryById("nonexistent" as never),
+    ).toBeUndefined();
   });
 
-  it('should convert error to string', () => {
+  it("should convert error to string", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: undefined,
       isLoading: false,
-      error: new Error('Test error'),
+      error: new Error("Test error"),
       refetch: vi.fn(),
     } as ReturnType<typeof useIdeationPrompts>);
 
     const { result } = renderHook(() => useGuidedPrompts());
 
-    expect(result.current.error).toBe('Test error');
+    expect(result.current.error).toBe("Test error");
   });
 
-  it('should return null error when no error', () => {
+  it("should return null error when no error", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: undefined,
       isLoading: false,
@@ -187,7 +212,7 @@ describe('useGuidedPrompts', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('should memoize empty arrays when data is undefined across renders', () => {
+  it("should memoize empty arrays when data is undefined across renders", () => {
     mockUseIdeationPrompts.mockReturnValue({
       data: undefined,
       isLoading: true,

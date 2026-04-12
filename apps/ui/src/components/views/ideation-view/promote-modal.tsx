@@ -3,7 +3,7 @@
  * Exposes all options of the existing convertToFeature API.
  */
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ArrowUpRight } from 'lucide-react';
-import type { Idea, ConvertToFeatureOptions } from '@pegasus/types';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight } from "lucide-react";
+import type { Idea, ConvertToFeatureOptions } from "@pegasus/types";
 
 interface PromoteModalProps {
   idea: Idea | null;
@@ -25,8 +25,8 @@ interface PromoteModalProps {
 }
 
 const COLUMN_OPTIONS = [
-  { value: 'backlog', label: 'Backlog' },
-  { value: 'in_progress', label: 'In Progress' },
+  { value: "backlog", label: "Backlog" },
+  { value: "in_progress", label: "In Progress" },
 ] as const;
 
 export function PromoteModal({
@@ -36,18 +36,22 @@ export function PromoteModal({
   onPromote,
   isConverting,
 }: PromoteModalProps) {
-  const [column, setColumn] = useState<string>('backlog');
+  const [column, setColumn] = useState<string>("backlog");
   const [keepIdea, setKeepIdea] = useState(false);
-  const [tagsInput, setTagsInput] = useState('');
+  const [tagsInput, setTagsInput] = useState("");
 
   if (!idea) return null;
 
   const handleConfirm = () => {
     const tags = tagsInput
-      .split(',')
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    onPromote(idea.id, { column, keepIdea, tags: tags.length > 0 ? tags : undefined });
+    onPromote(idea.id, {
+      column,
+      keepIdea,
+      tags: tags.length > 0 ? tags : undefined,
+    });
   };
 
   return (
@@ -59,8 +63,8 @@ export function PromoteModal({
             Promote to Feature
           </DialogTitle>
           <DialogDescription>
-            This will create a new Feature from &ldquo;{idea.title}&rdquo; and add it to the Task
-            Board.
+            This will create a new Feature from &ldquo;{idea.title}&rdquo; and
+            add it to the Task Board.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,7 +85,9 @@ export function PromoteModal({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Tags (comma-separated, optional)</label>
+            <label className="text-sm font-medium">
+              Tags (comma-separated, optional)
+            </label>
             <input
               className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               value={tagsInput}
@@ -102,11 +108,15 @@ export function PromoteModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isConverting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isConverting}
+          >
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={isConverting}>
-            {isConverting ? 'Promoting…' : 'Promote to Feature'}
+            {isConverting ? "Promoting…" : "Promote to Feature"}
           </Button>
         </DialogFooter>
       </DialogContent>

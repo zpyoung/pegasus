@@ -8,7 +8,7 @@
  * automatically creating and starting an AI task.
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,17 +16,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, Wrench, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
-import type { BranchSwitchConflictInfo, StashPopConflictInfo } from '../worktree-panel/types';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Wrench, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import type {
+  BranchSwitchConflictInfo,
+  StashPopConflictInfo,
+} from "../worktree-panel/types";
 
-export type BranchConflictType = 'branch-switch' | 'stash-pop';
+export type BranchConflictType = "branch-switch" | "stash-pop";
 
 export type BranchConflictData =
-  | { type: 'branch-switch'; info: BranchSwitchConflictInfo }
-  | { type: 'stash-pop'; info: StashPopConflictInfo };
+  | { type: "branch-switch"; info: BranchSwitchConflictInfo }
+  | { type: "stash-pop"; info: StashPopConflictInfo };
 
 interface BranchConflictDialogProps {
   open: boolean;
@@ -42,8 +45,8 @@ export function BranchConflictDialog({
   onResolveWithAI,
 }: BranchConflictDialogProps) {
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info("Conflict markers left in place", {
+      description: "Edit the conflicting files to resolve conflicts manually.",
       duration: 6000,
     });
     onOpenChange(false);
@@ -58,28 +61,33 @@ export function BranchConflictDialog({
 
   if (!conflictData) return null;
 
-  const isBranchSwitch = conflictData.type === 'branch-switch';
-  const branchName = isBranchSwitch ? conflictData.info.branchName : conflictData.info.branchName;
+  const isBranchSwitch = conflictData.type === "branch-switch";
+  const branchName = isBranchSwitch
+    ? conflictData.info.branchName
+    : conflictData.info.branchName;
 
   const description = isBranchSwitch ? (
     <>
-      Merge conflicts occurred when switching from{' '}
+      Merge conflicts occurred when switching from{" "}
       <code className="font-mono bg-muted px-1 rounded">
         {(conflictData.info as BranchSwitchConflictInfo).previousBranch}
-      </code>{' '}
-      to <code className="font-mono bg-muted px-1 rounded">{branchName}</code>. Local changes were
-      stashed before switching and reapplying them caused conflicts.
+      </code>{" "}
+      to <code className="font-mono bg-muted px-1 rounded">{branchName}</code>.
+      Local changes were stashed before switching and reapplying them caused
+      conflicts.
     </>
   ) : (
     <>
-      The branch switch to <code className="font-mono bg-muted px-1 rounded">{branchName}</code>{' '}
-      failed and restoring the previously stashed local changes resulted in merge conflicts.
+      The branch switch to{" "}
+      <code className="font-mono bg-muted px-1 rounded">{branchName}</code>{" "}
+      failed and restoring the previously stashed local changes resulted in
+      merge conflicts.
     </>
   );
 
   const title = isBranchSwitch
-    ? 'Branch Switch Conflicts Detected'
-    : 'Stash Restore Conflicts Detected';
+    ? "Branch Switch Conflicts Detected"
+    : "Stash Restore Conflicts Detected";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,11 +102,15 @@ export function BranchConflictDialog({
               <span className="block">{description}</span>
 
               {!isBranchSwitch &&
-                (conflictData.info as StashPopConflictInfo).stashPopConflictMessage && (
+                (conflictData.info as StashPopConflictInfo)
+                  .stashPopConflictMessage && (
                   <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20">
                     <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
                     <span className="text-orange-500 text-sm">
-                      {(conflictData.info as StashPopConflictInfo).stashPopConflictMessage}
+                      {
+                        (conflictData.info as StashPopConflictInfo)
+                          .stashPopConflictMessage
+                      }
                     </span>
                   </div>
                 )}
@@ -109,12 +121,12 @@ export function BranchConflictDialog({
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                    conflicts automatically
+                    <strong>Resolve with AI</strong> &mdash; Creates a task to
+                    analyze and resolve conflicts automatically
                   </li>
                   <li>
-                    <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                    you to edit directly
+                    <strong>Resolve Manually</strong> &mdash; Leaves conflict
+                    markers in place for you to edit directly
                   </li>
                 </ul>
               </div>

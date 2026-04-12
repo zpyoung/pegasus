@@ -3,26 +3,29 @@
  * Each feature is stored in .pegasus/features/{featureId}/feature.json
  */
 
-import path from 'path';
-import type { Feature, DescriptionHistoryEntry } from '@pegasus/types';
+import path from "path";
+import type { Feature, DescriptionHistoryEntry } from "@pegasus/types";
 import {
   createLogger,
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
-} from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
+} from "@pegasus/utils";
+import * as secureFs from "../lib/secure-fs.js";
 import {
   getFeaturesDir,
   getFeatureDir,
   getFeatureImagesDir,
   getAppSpecPath,
   ensurePegasusDir,
-} from '@pegasus/platform';
-import { addImplementedFeature, type ImplementedFeature } from '../lib/xml-extractor.js';
+} from "@pegasus/platform";
+import {
+  addImplementedFeature,
+  type ImplementedFeature,
+} from "../lib/xml-extractor.js";
 
-const logger = createLogger('FeatureLoader');
+const logger = createLogger("FeatureLoader");
 
 // Re-export Feature type for convenience
 export type { Feature };
@@ -47,16 +50,24 @@ export class FeatureLoader {
    */
   private async deleteOrphanedImages(
     projectPath: string,
-    oldPaths: Array<string | { path: string; [key: string]: unknown }> | undefined,
-    newPaths: Array<string | { path: string; [key: string]: unknown }> | undefined
+    oldPaths:
+      | Array<string | { path: string; [key: string]: unknown }>
+      | undefined,
+    newPaths:
+      | Array<string | { path: string; [key: string]: unknown }>
+      | undefined,
   ): Promise<void> {
     if (!oldPaths || oldPaths.length === 0) {
       return;
     }
 
     // Build sets of paths for comparison
-    const oldPathSet = new Set(oldPaths.map((p) => (typeof p === 'string' ? p : p.path)));
-    const newPathSet = new Set((newPaths || []).map((p) => (typeof p === 'string' ? p : p.path)));
+    const oldPathSet = new Set(
+      oldPaths.map((p) => (typeof p === "string" ? p : p.path)),
+    );
+    const newPathSet = new Set(
+      (newPaths || []).map((p) => (typeof p === "string" ? p : p.path)),
+    );
 
     // Find images that were removed
     for (const oldPath of oldPathSet) {
@@ -79,8 +90,10 @@ export class FeatureLoader {
   private async migrateImages(
     projectPath: string,
     featureId: string,
-    imagePaths?: Array<string | { path: string; [key: string]: unknown }>
-  ): Promise<Array<string | { path: string; [key: string]: unknown }> | undefined> {
+    imagePaths?: Array<string | { path: string; [key: string]: unknown }>,
+  ): Promise<
+    Array<string | { path: string; [key: string]: unknown }> | undefined
+  > {
     if (!imagePaths || imagePaths.length === 0) {
       return imagePaths;
     }
@@ -88,11 +101,14 @@ export class FeatureLoader {
     const featureImagesDir = this.getFeatureImagesDir(projectPath, featureId);
     await secureFs.mkdir(featureImagesDir, { recursive: true });
 
-    const updatedPaths: Array<string | { path: string; [key: string]: unknown }> = [];
+    const updatedPaths: Array<
+      string | { path: string; [key: string]: unknown }
+    > = [];
 
     for (const imagePath of imagePaths) {
       try {
-        const originalPath = typeof imagePath === 'string' ? imagePath : imagePath.path;
+        const originalPath =
+          typeof imagePath === "string" ? imagePath : imagePath.path;
 
         // Skip if already in feature directory (already absolute path in external storage)
         if (originalPath.includes(`/features/${featureId}/images/`)) {
@@ -129,7 +145,7 @@ export class FeatureLoader {
         }
 
         // Update the path in the result (use absolute path)
-        if (typeof imagePath === 'string') {
+        if (typeof imagePath === "string") {
           updatedPaths.push(newPath);
         } else {
           updatedPaths.push({ ...imagePath, path: newPath });
@@ -156,21 +172,30 @@ export class FeatureLoader {
    * Get the path to a feature's feature.json file
    */
   getFeatureJsonPath(projectPath: string, featureId: string): string {
-    return path.join(this.getFeatureDir(projectPath, featureId), 'feature.json');
+    return path.join(
+      this.getFeatureDir(projectPath, featureId),
+      "feature.json",
+    );
   }
 
   /**
    * Get the path to a feature's agent-output.md file
    */
   getAgentOutputPath(projectPath: string, featureId: string): string {
-    return path.join(this.getFeatureDir(projectPath, featureId), 'agent-output.md');
+    return path.join(
+      this.getFeatureDir(projectPath, featureId),
+      "agent-output.md",
+    );
   }
 
   /**
    * Get the path to a feature's raw-output.jsonl file
    */
   getRawOutputPath(projectPath: string, featureId: string): string {
-    return path.join(this.getFeatureDir(projectPath, featureId), 'raw-output.jsonl');
+    return path.join(
+      this.getFeatureDir(projectPath, featureId),
+      "raw-output.jsonl",
+    );
   }
 
   /**
@@ -198,7 +223,7 @@ export class FeatureLoader {
       // secureFs.readdir returns Dirent[] but typed as generic; cast to access isDirectory()
       const entries = (await secureFs.readdir(featuresDir, {
         withFileTypes: true,
-      })) as import('fs').Dirent[];
+      })) as import("fs").Dirent[];
       const featureDirs = entries.filter((entry) => entry.isDirectory());
 
       // Load all features concurrently with automatic recovery from backups
@@ -207,10 +232,14 @@ export class FeatureLoader {
         const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
         // Use recovery-enabled read to handle corrupted files
-        const result = await readJsonWithRecovery<Feature | null>(featureJsonPath, null, {
-          maxBackups: DEFAULT_BACKUP_COUNT,
-          autoRestore: true,
-        });
+        const result = await readJsonWithRecovery<Feature | null>(
+          featureJsonPath,
+          null,
+          {
+            maxBackups: DEFAULT_BACKUP_COUNT,
+            autoRestore: true,
+          },
+        );
 
         logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -221,7 +250,9 @@ export class FeatureLoader {
         }
 
         if (!feature.id) {
-          logger.warn(`Feature ${featureId} missing required 'id' field, skipping`);
+          logger.warn(
+            `Feature ${featureId} missing required 'id' field, skipping`,
+          );
           return null;
         }
 
@@ -241,14 +272,14 @@ export class FeatureLoader {
 
       // Sort by creation order (feature IDs contain timestamp)
       features.sort((a, b) => {
-        const aTime = a.id ? parseInt(a.id.split('-')[1] || '0') : 0;
-        const bTime = b.id ? parseInt(b.id.split('-')[1] || '0') : 0;
+        const aTime = a.id ? parseInt(a.id.split("-")[1] || "0") : 0;
+        const bTime = b.id ? parseInt(b.id.split("-")[1] || "0") : 0;
         return aTime - bTime;
       });
 
       return features;
     } catch (error) {
-      logger.error('Failed to get all features:', error);
+      logger.error("Failed to get all features:", error);
       return [];
     }
   }
@@ -266,7 +297,10 @@ export class FeatureLoader {
    * @param title - Title to search for
    * @returns The matching feature or null if not found
    */
-  async findByTitle(projectPath: string, title: string): Promise<Feature | null> {
+  async findByTitle(
+    projectPath: string,
+    title: string,
+  ): Promise<Feature | null> {
     if (!title || !title.trim()) {
       return null;
     }
@@ -275,7 +309,10 @@ export class FeatureLoader {
     const features = await this.getAll(projectPath);
 
     for (const feature of features) {
-      if (feature.title && this.normalizeTitle(feature.title) === normalizedTitle) {
+      if (
+        feature.title &&
+        this.normalizeTitle(feature.title) === normalizedTitle
+      ) {
         return feature;
       }
     }
@@ -293,7 +330,7 @@ export class FeatureLoader {
   async findDuplicateTitle(
     projectPath: string,
     title: string,
-    excludeFeatureId?: string
+    excludeFeatureId?: string,
   ): Promise<Feature | null> {
     if (!title || !title.trim()) {
       return null;
@@ -308,7 +345,10 @@ export class FeatureLoader {
         continue;
       }
 
-      if (feature.title && this.normalizeTitle(feature.title) === normalizedTitle) {
+      if (
+        feature.title &&
+        this.normalizeTitle(feature.title) === normalizedTitle
+      ) {
         return feature;
       }
     }
@@ -324,10 +364,14 @@ export class FeatureLoader {
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
 
     // Use recovery-enabled read to handle corrupted files
-    const result = await readJsonWithRecovery<Feature | null>(featureJsonPath, null, {
-      maxBackups: DEFAULT_BACKUP_COUNT,
-      autoRestore: true,
-    });
+    const result = await readJsonWithRecovery<Feature | null>(
+      featureJsonPath,
+      null,
+      {
+        maxBackups: DEFAULT_BACKUP_COUNT,
+        autoRestore: true,
+      },
+    );
 
     logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -344,7 +388,10 @@ export class FeatureLoader {
   /**
    * Create a new feature
    */
-  async create(projectPath: string, featureData: Partial<Feature>): Promise<Feature> {
+  async create(
+    projectPath: string,
+    featureData: Partial<Feature>,
+  ): Promise<Feature> {
     const featureId = featureData.id || this.generateFeatureId();
     const featureDir = this.getFeatureDir(projectPath, featureId);
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
@@ -359,7 +406,7 @@ export class FeatureLoader {
     const migratedImagePaths = await this.migrateImages(
       projectPath,
       featureId,
-      featureData.imagePaths
+      featureData.imagePaths,
     );
 
     // Initialize description history with the initial description
@@ -368,14 +415,14 @@ export class FeatureLoader {
       initialHistory.push({
         description: featureData.description,
         timestamp: new Date().toISOString(),
-        source: 'initial',
+        source: "initial",
       });
     }
 
     // Ensure feature has required fields
     const feature: Feature = {
-      category: featureData.category || 'Uncategorized',
-      description: featureData.description || '',
+      category: featureData.category || "Uncategorized",
+      description: featureData.description || "",
       ...featureData,
       id: featureId,
       createdAt: featureData.createdAt || new Date().toISOString(),
@@ -391,7 +438,9 @@ export class FeatureLoader {
     delete featureToWrite.titleGenerating;
 
     // Write feature.json atomically with backup support
-    await atomicWriteJson(featureJsonPath, featureToWrite, { backupCount: DEFAULT_BACKUP_COUNT });
+    await atomicWriteJson(featureJsonPath, featureToWrite, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
 
     logger.info(`Created feature ${featureId}`);
     return feature;
@@ -410,9 +459,14 @@ export class FeatureLoader {
     projectPath: string,
     featureId: string,
     updates: Partial<Feature>,
-    descriptionHistorySource?: 'enhance' | 'edit',
-    enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer',
-    preEnhancementDescription?: string
+    descriptionHistorySource?: "enhance" | "edit",
+    enhancementMode?:
+      | "improve"
+      | "technical"
+      | "simplify"
+      | "acceptance"
+      | "ux-reviewer",
+    preEnhancementDescription?: string,
   ): Promise<Feature> {
     const feature = await this.get(projectPath, featureId);
     if (!feature) {
@@ -423,10 +477,18 @@ export class FeatureLoader {
     let updatedImagePaths = updates.imagePaths;
     if (updates.imagePaths !== undefined) {
       // Delete orphaned images (images that were removed)
-      await this.deleteOrphanedImages(projectPath, feature.imagePaths, updates.imagePaths);
+      await this.deleteOrphanedImages(
+        projectPath,
+        feature.imagePaths,
+        updates.imagePaths,
+      );
 
       // Migrate any new images
-      updatedImagePaths = await this.migrateImages(projectPath, featureId, updates.imagePaths);
+      updatedImagePaths = await this.migrateImages(
+        projectPath,
+        featureId,
+        updates.imagePaths,
+      );
     }
 
     // Track description history if description changed
@@ -441,7 +503,7 @@ export class FeatureLoader {
       // If this is an enhancement and we have the pre-enhancement description,
       // add the original text to history first (so user can restore to it)
       if (
-        descriptionHistorySource === 'enhance' &&
+        descriptionHistorySource === "enhance" &&
         preEnhancementDescription &&
         preEnhancementDescription.trim()
       ) {
@@ -451,7 +513,7 @@ export class FeatureLoader {
           const preEnhanceEntry: DescriptionHistoryEntry = {
             description: preEnhancementDescription,
             timestamp,
-            source: updatedHistory.length === 0 ? 'initial' : 'edit',
+            source: updatedHistory.length === 0 ? "initial" : "edit",
           };
           updatedHistory = [...updatedHistory, preEnhanceEntry];
         }
@@ -461,8 +523,10 @@ export class FeatureLoader {
       const historyEntry: DescriptionHistoryEntry = {
         description: updates.description,
         timestamp,
-        source: descriptionHistorySource || 'edit',
-        ...(descriptionHistorySource === 'enhance' && enhancementMode ? { enhancementMode } : {}),
+        source: descriptionHistorySource || "edit",
+        ...(descriptionHistorySource === "enhance" && enhancementMode
+          ? { enhancementMode }
+          : {}),
       };
       updatedHistory = [...updatedHistory, historyEntry];
     }
@@ -471,7 +535,9 @@ export class FeatureLoader {
     const updatedFeature: Feature = {
       ...feature,
       ...updates,
-      ...(updatedImagePaths !== undefined ? { imagePaths: updatedImagePaths } : {}),
+      ...(updatedImagePaths !== undefined
+        ? { imagePaths: updatedImagePaths }
+        : {}),
       descriptionHistory: updatedHistory,
     };
 
@@ -481,7 +547,9 @@ export class FeatureLoader {
 
     // Write back to file atomically with backup support
     const featureJsonPath = this.getFeatureJsonPath(projectPath, featureId);
-    await atomicWriteJson(featureJsonPath, featureToWrite, { backupCount: DEFAULT_BACKUP_COUNT });
+    await atomicWriteJson(featureJsonPath, featureToWrite, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
 
     logger.info(`Updated feature ${featureId}`);
     return updatedFeature;
@@ -505,13 +573,19 @@ export class FeatureLoader {
   /**
    * Get agent output for a feature
    */
-  async getAgentOutput(projectPath: string, featureId: string): Promise<string | null> {
+  async getAgentOutput(
+    projectPath: string,
+    featureId: string,
+  ): Promise<string | null> {
     try {
       const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-      const content = (await secureFs.readFile(agentOutputPath, 'utf-8')) as string;
+      const content = (await secureFs.readFile(
+        agentOutputPath,
+        "utf-8",
+      )) as string;
       return content;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
       logger.error(`Failed to get agent output for ${featureId}:`, error);
@@ -522,13 +596,19 @@ export class FeatureLoader {
   /**
    * Get raw output for a feature (JSONL format for debugging)
    */
-  async getRawOutput(projectPath: string, featureId: string): Promise<string | null> {
+  async getRawOutput(
+    projectPath: string,
+    featureId: string,
+  ): Promise<string | null> {
     try {
       const rawOutputPath = this.getRawOutputPath(projectPath, featureId);
-      const content = (await secureFs.readFile(rawOutputPath, 'utf-8')) as string;
+      const content = (await secureFs.readFile(
+        rawOutputPath,
+        "utf-8",
+      )) as string;
       return content;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
       logger.error(`Failed to get raw output for ${featureId}:`, error);
@@ -539,23 +619,30 @@ export class FeatureLoader {
   /**
    * Save agent output for a feature
    */
-  async saveAgentOutput(projectPath: string, featureId: string, content: string): Promise<void> {
+  async saveAgentOutput(
+    projectPath: string,
+    featureId: string,
+    content: string,
+  ): Promise<void> {
     const featureDir = this.getFeatureDir(projectPath, featureId);
     await secureFs.mkdir(featureDir, { recursive: true });
 
     const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
-    await secureFs.writeFile(agentOutputPath, content, 'utf-8');
+    await secureFs.writeFile(agentOutputPath, content, "utf-8");
   }
 
   /**
    * Delete agent output for a feature
    */
-  async deleteAgentOutput(projectPath: string, featureId: string): Promise<void> {
+  async deleteAgentOutput(
+    projectPath: string,
+    featureId: string,
+  ): Promise<void> {
     try {
       const agentOutputPath = this.getAgentOutputPath(projectPath, featureId);
       await secureFs.unlink(agentOutputPath);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
       }
     }
@@ -576,7 +663,7 @@ export class FeatureLoader {
   async syncFeatureToAppSpec(
     projectPath: string,
     feature: Feature,
-    fileLocations?: string[]
+    fileLocations?: string[],
   ): Promise<boolean> {
     try {
       const appSpecPath = getAppSpecPath(projectPath);
@@ -584,10 +671,12 @@ export class FeatureLoader {
       // Read the current app_spec.txt
       let specContent: string;
       try {
-        specContent = (await secureFs.readFile(appSpecPath, 'utf-8')) as string;
+        specContent = (await secureFs.readFile(appSpecPath, "utf-8")) as string;
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          logger.info(`No app_spec.txt found for project, skipping sync for feature ${feature.id}`);
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+          logger.info(
+            `No app_spec.txt found for project, skipping sync for feature ${feature.id}`,
+          );
           return false;
         }
         throw error;
@@ -598,25 +687,35 @@ export class FeatureLoader {
       const implementedFeature: ImplementedFeature = {
         name: featureName,
         description: feature.description,
-        ...(fileLocations && fileLocations.length > 0 ? { file_locations: fileLocations } : {}),
+        ...(fileLocations && fileLocations.length > 0
+          ? { file_locations: fileLocations }
+          : {}),
       };
 
       // Add the feature to the implemented_features section
-      const updatedSpecContent = addImplementedFeature(specContent, implementedFeature);
+      const updatedSpecContent = addImplementedFeature(
+        specContent,
+        implementedFeature,
+      );
 
       // Check if the content actually changed (feature might already exist)
       if (updatedSpecContent === specContent) {
-        logger.info(`Feature "${featureName}" already exists in app_spec.txt, skipping`);
+        logger.info(
+          `Feature "${featureName}" already exists in app_spec.txt, skipping`,
+        );
         return false;
       }
 
       // Write the updated spec back to the file
-      await secureFs.writeFile(appSpecPath, updatedSpecContent, 'utf-8');
+      await secureFs.writeFile(appSpecPath, updatedSpecContent, "utf-8");
 
       logger.info(`Synced feature "${featureName}" to app_spec.txt`);
       return true;
     } catch (error) {
-      logger.error(`Failed to sync feature ${feature.id} to app_spec.txt:`, error);
+      logger.error(
+        `Failed to sync feature ${feature.id} to app_spec.txt:`,
+        error,
+      );
       throw error;
     }
   }

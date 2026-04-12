@@ -5,10 +5,10 @@
  * committing, pushing, and creating pull requests.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
 
 /**
  * Create a new worktree
@@ -20,21 +20,33 @@ export function useCreateWorktree(projectPath: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ branchName, baseBranch }: { branchName: string; baseBranch?: string }) => {
+    mutationFn: async ({
+      branchName,
+      baseBranch,
+    }: {
+      branchName: string;
+      baseBranch?: string;
+    }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.create(projectPath, branchName, baseBranch);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.create(
+        projectPath,
+        branchName,
+        baseBranch,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to create worktree');
+        throw new Error(result.error || "Failed to create worktree");
       }
       return result.worktree;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Worktree created');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.all(projectPath),
+      });
+      toast.success("Worktree created");
     },
     onError: (error: Error) => {
-      toast.error('Failed to create worktree', {
+      toast.error("Failed to create worktree", {
         description: error.message,
       });
     },
@@ -59,19 +71,25 @@ export function useDeleteWorktree(projectPath: string) {
       deleteBranch?: boolean;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.delete(projectPath, worktreePath, deleteBranch);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.delete(
+        projectPath,
+        worktreePath,
+        deleteBranch,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to delete worktree');
+        throw new Error(result.error || "Failed to delete worktree");
       }
       return result.deleted;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      toast.success('Worktree deleted');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.all(projectPath),
+      });
+      toast.success("Worktree deleted");
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete worktree', {
+      toast.error("Failed to delete worktree", {
         description: error.message,
       });
     },
@@ -97,20 +115,20 @@ export function useCommitWorktree() {
       files?: string[];
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.commit(worktreePath, message, files);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to commit changes');
+        throw new Error(result.error || "Failed to commit changes");
       }
       return result.result;
     },
     onSuccess: (_, { worktreePath: _worktreePath }) => {
       // Invalidate all worktree queries since we don't know the project path
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes committed');
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      toast.success("Changes committed");
     },
     onError: (error: Error) => {
-      toast.error('Failed to commit changes', {
+      toast.error("Failed to commit changes", {
         description: error.message,
       });
     },
@@ -136,19 +154,19 @@ export function usePushWorktree() {
       remote?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.push(worktreePath, force, remote);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to push changes');
+        throw new Error(result.error || "Failed to push changes");
       }
       return result.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes pushed to remote');
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      toast.success("Changes pushed to remote");
     },
     onError: (error: Error) => {
-      toast.error('Failed to push changes', {
+      toast.error("Failed to push changes", {
         description: error.message,
       });
     },
@@ -178,19 +196,23 @@ export function usePullWorktree() {
       stashIfNeeded?: boolean;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.pull(worktreePath, remote, stashIfNeeded);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.pull(
+        worktreePath,
+        remote,
+        stashIfNeeded,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to pull changes');
+        throw new Error(result.error || "Failed to pull changes");
       }
       return result.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Changes pulled from remote');
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      toast.success("Changes pulled from remote");
     },
     onError: (error: Error) => {
-      toast.error('Failed to pull changes', {
+      toast.error("Failed to pull changes", {
         description: error.message,
       });
     },
@@ -206,21 +228,27 @@ export function useSyncWorktree() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ worktreePath, remote }: { worktreePath: string; remote?: string }) => {
+    mutationFn: async ({
+      worktreePath,
+      remote,
+    }: {
+      worktreePath: string;
+      remote?: string;
+    }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.sync(worktreePath, remote);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to sync');
+        throw new Error(result.error || "Failed to sync");
       }
       return result.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Branch synced with remote');
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      toast.success("Branch synced with remote");
     },
     onError: (error: Error) => {
-      toast.error('Failed to sync', {
+      toast.error("Failed to sync", {
         description: error.message,
       });
     },
@@ -246,21 +274,25 @@ export function useSetTracking() {
       branch?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.setTracking(worktreePath, remote, branch);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.setTracking(
+        worktreePath,
+        remote,
+        branch,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to set tracking branch');
+        throw new Error(result.error || "Failed to set tracking branch");
       }
       return result.result;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      toast.success('Tracking branch set', {
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      toast.success("Tracking branch set", {
         description: result?.message,
       });
     },
     onError: (error: Error) => {
-      toast.error('Failed to set tracking branch', {
+      toast.error("Failed to set tracking branch", {
         description: error.message,
       });
     },
@@ -291,21 +323,21 @@ export function useCreatePullRequest() {
       };
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.createPR(worktreePath, options);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to create pull request');
+        throw new Error(result.error || "Failed to create pull request");
       }
       return result.result;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      queryClient.invalidateQueries({ queryKey: ['github', 'prs'] });
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      queryClient.invalidateQueries({ queryKey: ["github", "prs"] });
       if (result?.prUrl) {
-        toast.success('Pull request created', {
+        toast.success("Pull request created", {
           description: `PR #${result.prNumber} created`,
           action: {
-            label: 'Open',
+            label: "Open",
             onClick: () => {
               const api = getElectronAPI();
               api.openExternalLink(result.prUrl!);
@@ -313,11 +345,11 @@ export function useCreatePullRequest() {
           },
         });
       } else if (result?.prAlreadyExisted) {
-        toast.info('Pull request already exists');
+        toast.info("Pull request already exists");
       }
     },
     onError: (error: Error) => {
-      toast.error('Failed to create pull request', {
+      toast.error("Failed to create pull request", {
         description: error.message,
       });
     },
@@ -347,26 +379,30 @@ export function useMergeWorktree(projectPath: string) {
       };
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.mergeFeature(
         projectPath,
         branchName,
         worktreePath,
         undefined, // targetBranch - use default (main)
-        options
+        options,
       );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to merge feature');
+        throw new Error(result.error || "Failed to merge feature");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.all(projectPath) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.features.all(projectPath) });
-      toast.success('Feature merged successfully');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.all(projectPath),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.features.all(projectPath),
+      });
+      toast.success("Feature merged successfully");
     },
     onError: (error: Error) => {
-      toast.error('Failed to merge feature', {
+      toast.error("Failed to merge feature", {
         description: error.message,
       });
     },
@@ -389,7 +425,11 @@ export function useMergeWorktree(projectPath: string) {
  * @returns Mutation for switching branches
  */
 export function useSwitchBranch(options?: {
-  onConflict?: (info: { worktreePath: string; branchName: string; previousBranch: string }) => void;
+  onConflict?: (info: {
+    worktreePath: string;
+    branchName: string;
+    previousBranch: string;
+  }) => void;
   onStashPopConflict?: (info: {
     worktreePath: string;
     branchName: string;
@@ -407,13 +447,15 @@ export function useSwitchBranch(options?: {
       branchName: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.switchBranch(worktreePath, branchName);
       if (!result.success) {
         // When the checkout failed and restoring the stash produced conflicts, surface
         // this as a structured error so the caller can create a board task for resolution.
         if (result.stashPopConflicts) {
-          const conflictError = new Error(result.error || 'Failed to switch branch');
+          const conflictError = new Error(
+            result.error || "Failed to switch branch",
+          );
           // Attach the extra metadata so onError can forward it to the callback.
           (
             conflictError as Error & {
@@ -432,7 +474,7 @@ export function useSwitchBranch(options?: {
             }
           ).stashPopConflictMessage =
             result.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts: please resolve conflicts before retrying.';
+            "Stash pop resulted in conflicts: please resolve conflicts before retrying.";
           (
             conflictError as Error & {
               stashPopConflicts: boolean;
@@ -451,18 +493,18 @@ export function useSwitchBranch(options?: {
           ).branchName = branchName;
           throw conflictError;
         }
-        throw new Error(result.error || 'Failed to switch branch');
+        throw new Error(result.error || "Failed to switch branch");
       }
       if (!result.result) {
-        throw new Error('Switch branch returned no result');
+        throw new Error("Switch branch returned no result");
       }
       return result.result;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
 
       if (data?.hasConflicts) {
-        toast.warning('Switched branch with conflicts', {
+        toast.warning("Switched branch with conflicts", {
           description: data.message,
           duration: 8000,
         });
@@ -473,8 +515,10 @@ export function useSwitchBranch(options?: {
           previousBranch: data.previousBranch,
         });
       } else {
-        const desc = data?.stashedChanges ? 'Local changes were stashed and reapplied' : undefined;
-        toast.success('Switched branch', { description: desc });
+        const desc = data?.stashedChanges
+          ? "Local changes were stashed and reapplied"
+          : undefined;
+        toast.success("Switched branch", { description: desc });
       }
     },
     onError: (error: Error) => {
@@ -492,10 +536,10 @@ export function useSwitchBranch(options?: {
       ) {
         // Checkout failed AND the stash-pop produced conflicts — notify the UI so it
         // can create an AI-assisted board task to guide the user through resolution.
-        toast.error('Branch switch failed with stash conflicts', {
+        toast.error("Branch switch failed with stash conflicts", {
           description:
             enrichedError.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
+            "Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.",
           duration: 10000,
         });
         options?.onStashPopConflict?.({
@@ -503,10 +547,10 @@ export function useSwitchBranch(options?: {
           branchName: enrichedError.branchName,
           stashPopConflictMessage:
             enrichedError.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
+            "Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.",
         });
       } else {
-        toast.error('Failed to switch branch', {
+        toast.error("Failed to switch branch", {
           description: error.message,
         });
       }
@@ -529,7 +573,11 @@ export function useSwitchBranch(options?: {
  * @returns Mutation for creating and checking out a new branch
  */
 export function useCheckoutBranch(options?: {
-  onConflict?: (info: { worktreePath: string; branchName: string; previousBranch: string }) => void;
+  onConflict?: (info: {
+    worktreePath: string;
+    branchName: string;
+    previousBranch: string;
+  }) => void;
   onStashPopConflict?: (info: {
     worktreePath: string;
     branchName: string;
@@ -553,18 +601,20 @@ export function useCheckoutBranch(options?: {
       includeUntracked?: boolean;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.checkoutBranch(
         worktreePath,
         branchName,
         baseBranch,
         stashChanges,
-        includeUntracked
+        includeUntracked,
       );
       if (!result.success) {
         // When the checkout failed and restoring the stash produced conflicts
         if (result.stashPopConflicts) {
-          const conflictError = new Error(result.error || 'Failed to checkout branch');
+          const conflictError = new Error(
+            result.error || "Failed to checkout branch",
+          );
           (
             conflictError as Error & {
               stashPopConflicts: boolean;
@@ -582,7 +632,7 @@ export function useCheckoutBranch(options?: {
             }
           ).stashPopConflictMessage =
             result.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts: please resolve conflicts before retrying.';
+            "Stash pop resulted in conflicts: please resolve conflicts before retrying.";
           (
             conflictError as Error & {
               stashPopConflicts: boolean;
@@ -601,26 +651,30 @@ export function useCheckoutBranch(options?: {
           ).branchName = branchName;
           throw conflictError;
         }
-        throw new Error(result.error || 'Failed to checkout branch');
+        throw new Error(result.error || "Failed to checkout branch");
       }
       return result.result;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
 
       if (data?.hasConflicts) {
-        toast.warning('Branch created with conflicts', {
+        toast.warning("Branch created with conflicts", {
           description: data.message,
           duration: 8000,
         });
         options?.onConflict?.({
           worktreePath: variables.worktreePath,
           branchName: data.newBranch ?? variables.branchName,
-          previousBranch: data.previousBranch ?? '',
+          previousBranch: data.previousBranch ?? "",
         });
       } else {
-        const desc = data?.stashedChanges ? 'Local changes were stashed and reapplied' : undefined;
-        toast.success('New branch created and checked out', { description: desc });
+        const desc = data?.stashedChanges
+          ? "Local changes were stashed and reapplied"
+          : undefined;
+        toast.success("New branch created and checked out", {
+          description: desc,
+        });
       }
     },
     onError: (error: Error) => {
@@ -636,10 +690,10 @@ export function useCheckoutBranch(options?: {
         enrichedError.worktreePath &&
         enrichedError.branchName
       ) {
-        toast.error('Branch creation failed with stash conflicts', {
+        toast.error("Branch creation failed with stash conflicts", {
           description:
             enrichedError.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
+            "Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.",
           duration: 10000,
         });
         options?.onStashPopConflict?.({
@@ -647,10 +701,10 @@ export function useCheckoutBranch(options?: {
           branchName: enrichedError.branchName,
           stashPopConflictMessage:
             enrichedError.stashPopConflictMessage ??
-            'Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.',
+            "Stash pop resulted in conflicts. Please resolve the conflicts in your working tree.",
         });
       } else {
-        toast.error('Failed to checkout branch', {
+        toast.error("Failed to checkout branch", {
           description: error.message,
         });
       }
@@ -673,15 +727,18 @@ export function useGeneratePRDescription() {
       baseBranch?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.generatePRDescription(worktreePath, baseBranch);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.generatePRDescription(
+        worktreePath,
+        baseBranch,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to generate PR description');
+        throw new Error(result.error || "Failed to generate PR description");
       }
-      return { title: result.title ?? '', body: result.body ?? '' };
+      return { title: result.title ?? "", body: result.body ?? "" };
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate PR description', {
+      toast.error("Failed to generate PR description", {
         description: error.message,
       });
     },
@@ -697,15 +754,15 @@ export function useGenerateCommitMessage() {
   return useMutation({
     mutationFn: async (worktreePath: string) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.generateCommitMessage(worktreePath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to generate commit message');
+        throw new Error(result.error || "Failed to generate commit message");
       }
-      return result.message ?? '';
+      return result.message ?? "";
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate commit message', {
+      toast.error("Failed to generate commit message", {
         description: error.message,
       });
     },
@@ -727,15 +784,18 @@ export function useOpenInEditor() {
       editorCommand?: string;
     }) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
-      const result = await api.worktree.openInEditor(worktreePath, editorCommand);
+      if (!api.worktree) throw new Error("Worktree API not available");
+      const result = await api.worktree.openInEditor(
+        worktreePath,
+        editorCommand,
+      );
       if (!result.success) {
-        throw new Error(result.error || 'Failed to open in editor');
+        throw new Error(result.error || "Failed to open in editor");
       }
       return result.result;
     },
     onError: (error: Error) => {
-      toast.error('Failed to open in editor', {
+      toast.error("Failed to open in editor", {
         description: error.message,
       });
     },
@@ -753,20 +813,20 @@ export function useInitGit() {
   return useMutation({
     mutationFn: async (projectPath: string) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.initGit(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to initialize git');
+        throw new Error(result.error || "Failed to initialize git");
       }
       return result.result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worktrees'] });
-      queryClient.invalidateQueries({ queryKey: ['github'] });
-      toast.success('Git repository initialized');
+      queryClient.invalidateQueries({ queryKey: ["worktrees"] });
+      queryClient.invalidateQueries({ queryKey: ["github"] });
+      toast.success("Git repository initialized");
     },
     onError: (error: Error) => {
-      toast.error('Failed to initialize git', {
+      toast.error("Failed to initialize git", {
         description: error.message,
       });
     },
@@ -785,19 +845,21 @@ export function useSetInitScript(projectPath: string) {
   return useMutation({
     mutationFn: async (content: string) => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.setInitScript(projectPath, content);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to save init script');
+        throw new Error(result.error || "Failed to save init script");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.initScript(projectPath) });
-      toast.success('Init script saved');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.initScript(projectPath),
+      });
+      toast.success("Init script saved");
     },
     onError: (error: Error) => {
-      toast.error('Failed to save init script', {
+      toast.error("Failed to save init script", {
         description: error.message,
       });
     },
@@ -816,19 +878,21 @@ export function useDeleteInitScript(projectPath: string) {
   return useMutation({
     mutationFn: async () => {
       const api = getElectronAPI();
-      if (!api.worktree) throw new Error('Worktree API not available');
+      if (!api.worktree) throw new Error("Worktree API not available");
       const result = await api.worktree.deleteInitScript(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to delete init script');
+        throw new Error(result.error || "Failed to delete init script");
       }
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.worktrees.initScript(projectPath) });
-      toast.success('Init script deleted');
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.worktrees.initScript(projectPath),
+      });
+      toast.success("Init script deleted");
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete init script', {
+      toast.error("Failed to delete init script", {
         description: error.message,
       });
     },

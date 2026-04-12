@@ -2,9 +2,9 @@
  * Common utilities for MCP routes
  */
 
-import { createLogger } from '@pegasus/utils';
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('MCP');
+const logger = createLogger("MCP");
 
 /**
  * Extract error message from unknown error

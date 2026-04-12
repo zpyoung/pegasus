@@ -1,15 +1,18 @@
-import { useAppStore } from '@/store/app-store';
-import type { ModelProvider } from '@pegasus/types';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { EyeOff, Eye } from 'lucide-react';
+import { useAppStore } from "@/store/app-store";
+import type { ModelProvider } from "@pegasus/types";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { EyeOff, Eye } from "lucide-react";
 
 interface ProviderToggleProps {
   provider: ModelProvider;
   providerLabel: string;
 }
 
-export function ProviderToggle({ provider, providerLabel }: ProviderToggleProps) {
+export function ProviderToggle({
+  provider,
+  providerLabel,
+}: ProviderToggleProps) {
   const { disabledProviders, toggleProviderDisabled } = useAppStore();
   const isDisabled = disabledProviders.includes(provider);
 
@@ -22,7 +25,9 @@ export function ProviderToggle({ provider, providerLabel }: ProviderToggleProps)
           <Eye className="w-4 h-4 text-primary" />
         )}
         <div>
-          <Label className="text-sm font-medium">Show {providerLabel} in model dropdowns</Label>
+          <Label className="text-sm font-medium">
+            Show {providerLabel} in model dropdowns
+          </Label>
           <p className="text-xs text-muted-foreground mt-0.5">
             {isDisabled
               ? `${providerLabel} models are hidden from all model selectors`
@@ -32,7 +37,9 @@ export function ProviderToggle({ provider, providerLabel }: ProviderToggleProps)
       </div>
       <Switch
         checked={!isDisabled}
-        onCheckedChange={(checked) => toggleProviderDisabled(provider, !checked)}
+        onCheckedChange={(checked) =>
+          toggleProviderDisabled(provider, !checked)
+        }
       />
     </div>
   );

@@ -1,7 +1,7 @@
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FileCode, Terminal } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FileCode, Terminal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ClaudeMdSettingsProps {
   autoLoadClaudeMd: boolean;
@@ -36,10 +36,10 @@ export function ClaudeMdSettings({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
       data-testid="claude-md-settings"
     >
@@ -48,7 +48,9 @@ export function ClaudeMdSettings({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Terminal className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Claude Agent SDK</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Claude Agent SDK
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
           Configure Claude Code system prompt and project instructions.
@@ -59,7 +61,9 @@ export function ClaudeMdSettings({
           <Checkbox
             id="use-claude-code-system-prompt"
             checked={useClaudeCodeSystemPrompt}
-            onCheckedChange={(checked) => onUseClaudeCodeSystemPromptChange(checked === true)}
+            onCheckedChange={(checked) =>
+              onUseClaudeCodeSystemPromptChange(checked === true)
+            }
             className="mt-1"
             data-testid="use-claude-code-system-prompt-checkbox"
           />
@@ -72,9 +76,9 @@ export function ClaudeMdSettings({
               Use Claude Code System Prompt
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Use Claude Code&apos;s built-in system prompt as the base for all agent sessions.
-              Pegasus&apos;s prompts are appended on top. When disabled, only Pegasus&apos;s
-              custom system prompt is used.
+              Use Claude Code&apos;s built-in system prompt as the base for all
+              agent sessions. Pegasus&apos;s prompts are appended on top. When
+              disabled, only Pegasus&apos;s custom system prompt is used.
             </p>
           </div>
         </div>
@@ -82,7 +86,9 @@ export function ClaudeMdSettings({
           <Checkbox
             id="auto-load-claude-md"
             checked={autoLoadClaudeMd}
-            onCheckedChange={(checked) => onAutoLoadClaudeMdChange(checked === true)}
+            onCheckedChange={(checked) =>
+              onAutoLoadClaudeMdChange(checked === true)
+            }
             className="mt-1"
             data-testid="auto-load-claude-md-checkbox"
           />
@@ -95,12 +101,13 @@ export function ClaudeMdSettings({
               Auto-load CLAUDE.md Files
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              Automatically load project instructions from{' '}
+              Automatically load project instructions from{" "}
               <code className="text-[10px] px-1 py-0.5 rounded bg-accent/50">
                 .claude/CLAUDE.md
-              </code>{' '}
-              files. When enabled, Claude will read and follow conventions specified in your
-              project&apos;s CLAUDE.md file. Project settings override global settings.
+              </code>{" "}
+              files. When enabled, Claude will read and follow conventions
+              specified in your project&apos;s CLAUDE.md file. Project settings
+              override global settings.
             </p>
           </div>
         </div>

@@ -6,9 +6,9 @@
  * before subscribing to real-time updates via WebSocket.
  */
 
-import type { Request, Response } from 'express';
-import { getDevServerService } from '../../../services/dev-server-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { getDevServerService } from "../../../services/dev-server-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createGetDevServerLogsHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +20,7 @@ export function createGetDevServerLogsHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath query parameter is required',
+          error: "worktreePath query parameter is required",
         });
         return;
       }
@@ -42,11 +42,11 @@ export function createGetDevServerLogsHandler() {
       } else {
         res.status(404).json({
           success: false,
-          error: result.error || 'Failed to get dev server logs',
+          error: result.error || "Failed to get dev server logs",
         });
       }
     } catch (error) {
-      logError(error, 'Get dev server logs failed');
+      logError(error, "Get dev server logs failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

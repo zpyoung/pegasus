@@ -12,23 +12,23 @@
  * resolveQuestion must call executeFeature directly.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock heavy dependencies that the facade pulls in transitively
-vi.mock('../../../../src/services/agent-executor.js');
-vi.mock('../../../../src/lib/settings-helpers.js');
-vi.mock('../../../../src/providers/provider-factory.js');
-vi.mock('../../../../src/lib/sdk-options.js');
-vi.mock('@pegasus/model-resolver', () => ({
+vi.mock("../../../../src/services/agent-executor.js");
+vi.mock("../../../../src/lib/settings-helpers.js");
+vi.mock("../../../../src/providers/provider-factory.js");
+vi.mock("../../../../src/lib/sdk-options.js");
+vi.mock("@pegasus/model-resolver", () => ({
   resolveModelString: vi.fn((model, fallback) => model || fallback),
-  DEFAULT_MODELS: { claude: 'claude-3-5-sonnet' },
+  DEFAULT_MODELS: { claude: "claude-3-5-sonnet" },
 }));
 
-import { AutoModeServiceFacade } from '../../../../src/services/auto-mode/facade.js';
+import { AutoModeServiceFacade } from "../../../../src/services/auto-mode/facade.js";
 
-const PROJECT_PATH = '/test/project';
-const FEATURE_ID = 'feat-resolve-question';
-const QUESTION_ID = 'q-1';
+const PROJECT_PATH = "/test/project";
+const FEATURE_ID = "feat-resolve-question";
+const QUESTION_ID = "q-1";
 
 interface MockSettingsService {
   getGlobalSettings: ReturnType<typeof vi.fn>;
@@ -36,7 +36,7 @@ interface MockSettingsService {
   getProjectSettings: ReturnType<typeof vi.fn>;
 }
 
-describe('AutoModeServiceFacade.resolveQuestion', () => {
+describe("AutoModeServiceFacade.resolveQuestion", () => {
   let facade: AutoModeServiceFacade;
   let mockSettingsService: MockSettingsService;
   let resolveAnswerSpy: ReturnType<typeof vi.fn>;
@@ -61,7 +61,7 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
       sharedServices: {
         eventBus: { emitAutoModeEvent: vi.fn() } as any,
         worktreeResolver: {
-          getCurrentBranch: vi.fn().mockResolvedValue('main'),
+          getCurrentBranch: vi.fn().mockResolvedValue("main"),
         } as any,
         concurrencyManager: {
           isRunning: vi.fn().mockReturnValue(false),
@@ -81,37 +81,41 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
     // the full execution pipeline. We use spyOn so the rest of the facade
     // remains intact.
     executeFeatureSpy = vi
-      .spyOn(facade, 'executeFeature')
+      .spyOn(facade, "executeFeature")
       .mockResolvedValue(undefined);
   });
 
-  it('persists the answer via questionService.resolveAnswer', async () => {
+  it("persists the answer via questionService.resolveAnswer", async () => {
     resolveAnswerSpy.mockResolvedValue({ allAnswered: false });
 
-    await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'my answer');
+    await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, "my answer");
 
     expect(resolveAnswerSpy).toHaveBeenCalledTimes(1);
     expect(resolveAnswerSpy).toHaveBeenCalledWith(
       PROJECT_PATH,
       FEATURE_ID,
       QUESTION_ID,
-      'my answer'
+      "my answer",
     );
   });
 
-  it('does NOT auto-resume when more questions are still pending', async () => {
+  it("does NOT auto-resume when more questions are still pending", async () => {
     resolveAnswerSpy.mockResolvedValue({ allAnswered: false });
 
-    const result = await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'partial answer');
+    const result = await facade.resolveQuestion(
+      FEATURE_ID,
+      QUESTION_ID,
+      "partial answer",
+    );
 
     expect(result.allAnswered).toBe(false);
     expect(executeFeatureSpy).not.toHaveBeenCalled();
   });
 
-  it('directly invokes executeFeature when the last question is answered', async () => {
+  it("directly invokes executeFeature when the last question is answered", async () => {
     resolveAnswerSpy.mockResolvedValue({ allAnswered: true });
 
-    await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'final answer');
+    await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, "final answer");
 
     expect(executeFeatureSpy).toHaveBeenCalledTimes(1);
     // Match resolvePlanApproval's signature: useWorktrees=true, isAutoMode=false
@@ -119,15 +123,19 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
     expect(executeFeatureSpy).toHaveBeenCalledWith(FEATURE_ID, true, false);
   });
 
-  it('returns the result from questionService unchanged', async () => {
+  it("returns the result from questionService unchanged", async () => {
     resolveAnswerSpy.mockResolvedValue({ allAnswered: true });
 
-    const result = await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'final answer');
+    const result = await facade.resolveQuestion(
+      FEATURE_ID,
+      QUESTION_ID,
+      "final answer",
+    );
 
     expect(result).toEqual({ allAnswered: true });
   });
 
-  it('does not await executeFeature so the HTTP response returns immediately', async () => {
+  it("does not await executeFeature so the HTTP response returns immediately", async () => {
     // Make executeFeature hang forever — if resolveQuestion awaited it, this
     // test would time out. Vitest's default test timeout (5s) is well below
     // any reasonable production HTTP timeout.
@@ -136,11 +144,15 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
       () =>
         new Promise<void>((resolve) => {
           resolveExecute = resolve;
-        })
+        }),
     );
     resolveAnswerSpy.mockResolvedValue({ allAnswered: true });
 
-    const result = await facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'final answer');
+    const result = await facade.resolveQuestion(
+      FEATURE_ID,
+      QUESTION_ID,
+      "final answer",
+    );
 
     expect(result.allAnswered).toBe(true);
     expect(executeFeatureSpy).toHaveBeenCalledTimes(1);
@@ -149,8 +161,8 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
     resolveExecute();
   });
 
-  it('does not rethrow when auto-resume fails (the answer was already saved)', async () => {
-    executeFeatureSpy.mockRejectedValue(new Error('execution boom'));
+  it("does not rethrow when auto-resume fails (the answer was already saved)", async () => {
+    executeFeatureSpy.mockRejectedValue(new Error("execution boom"));
     resolveAnswerSpy.mockResolvedValue({ allAnswered: true });
 
     // Must not throw — the answer was successfully persisted before the
@@ -158,7 +170,7 @@ describe('AutoModeServiceFacade.resolveQuestion', () => {
     // answer-submission failure to the client. Errors get logged + emitted
     // via auto_mode_error events from executeFeature itself.
     await expect(
-      facade.resolveQuestion(FEATURE_ID, QUESTION_ID, 'final answer')
+      facade.resolveQuestion(FEATURE_ID, QUESTION_ID, "final answer"),
     ).resolves.toEqual({ allAnswered: true });
   });
 });

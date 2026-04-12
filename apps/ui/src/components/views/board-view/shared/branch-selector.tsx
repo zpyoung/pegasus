@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Label } from '@/components/ui/label';
-import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from "@/components/ui/label";
+import { BranchAutocomplete } from "@/components/ui/branch-autocomplete";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface BranchSelectorProps {
   useCurrentBranch: boolean;
@@ -25,7 +25,7 @@ export function BranchSelector({
   branchCardCounts,
   currentBranch,
   disabled = false,
-  testIdPrefix = 'branch',
+  testIdPrefix = "branch",
 }: BranchSelectorProps) {
   // Validate: if "other branch" is selected, branch name is required
   const isBranchRequired = !useCurrentBranch;
@@ -35,22 +35,34 @@ export function BranchSelector({
     <div className="space-y-2">
       <Label id={`${testIdPrefix}-label`}>Target Branch</Label>
       <RadioGroup
-        value={useCurrentBranch ? 'current' : 'other'}
-        onValueChange={(value: string) => onUseCurrentBranchChange(value === 'current')}
+        value={useCurrentBranch ? "current" : "other"}
+        onValueChange={(value: string) =>
+          onUseCurrentBranchChange(value === "current")
+        }
         disabled={disabled}
         data-testid={`${testIdPrefix}-radio-group`}
         aria-labelledby={`${testIdPrefix}-label`}
       >
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="current" id={`${testIdPrefix}-current`} />
-          <Label htmlFor={`${testIdPrefix}-current`} className="font-normal cursor-pointer">
+          <Label
+            htmlFor={`${testIdPrefix}-current`}
+            className="font-normal cursor-pointer"
+          >
             Use current selected branch
-            {currentBranch && <span className="text-muted-foreground ml-1">({currentBranch})</span>}
+            {currentBranch && (
+              <span className="text-muted-foreground ml-1">
+                ({currentBranch})
+              </span>
+            )}
           </Label>
         </div>
         <div className="flex items-center space-x-2">
           <RadioGroupItem value="other" id={`${testIdPrefix}-other`} />
-          <Label htmlFor={`${testIdPrefix}-other`} className="font-normal cursor-pointer">
+          <Label
+            htmlFor={`${testIdPrefix}-other`}
+            className="font-normal cursor-pointer"
+          >
             Other branch
           </Label>
         </div>
@@ -81,8 +93,8 @@ export function BranchSelector({
       ) : (
         <p className="text-xs text-muted-foreground">
           {useCurrentBranch
-            ? 'Work will be done in the currently selected branch. A worktree will be created if needed.'
-            : 'Work will be done in this branch. A worktree will be created if needed.'}
+            ? "Work will be done in the currently selected branch. A worktree will be created if needed."
+            : "Work will be done in this branch. A worktree will be created if needed."}
         </p>
       )}
     </div>

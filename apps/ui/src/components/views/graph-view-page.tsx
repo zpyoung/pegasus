@@ -1,33 +1,42 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useAppStore, Feature, FeatureImagePath } from '@/store/app-store';
-import { useShallow } from 'zustand/react/shallow';
-import { GraphView } from './graph-view';
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useAppStore, Feature, FeatureImagePath } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
+import { GraphView } from "./graph-view";
 import {
   EditFeatureDialog,
   AddFeatureDialog,
   AgentOutputModal,
   BacklogPlanDialog,
-} from './board-view/dialogs';
-import { useBoardFeatures, useBoardActions, useBoardPersistence } from './board-view/hooks';
-import { useWorktrees } from './board-view/worktree-panel/hooks';
+} from "./board-view/dialogs";
+import {
+  useBoardFeatures,
+  useBoardActions,
+  useBoardPersistence,
+} from "./board-view/hooks";
+import { useWorktrees } from "./board-view/worktree-panel/hooks";
 import {
   WorktreeMobileDropdown,
   BranchSwitchDropdown,
-} from './board-view/worktree-panel/components';
-import type { BranchInfo, WorktreeInfo } from './board-view/worktree-panel/types';
-import { useAutoMode } from '@/hooks/use-auto-mode';
-import { useSwitchBranch } from '@/hooks/mutations';
-import { pathsEqual } from '@/lib/utils';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { createLogger } from '@pegasus/utils/logger';
-import { toast } from 'sonner';
-import type { BacklogPlanResult } from '@pegasus/types';
+} from "./board-view/worktree-panel/components";
+import type {
+  BranchInfo,
+  WorktreeInfo,
+} from "./board-view/worktree-panel/types";
+import { useAutoMode } from "@/hooks/use-auto-mode";
+import { useSwitchBranch } from "@/hooks/mutations";
+import { pathsEqual } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { createLogger } from "@pegasus/utils/logger";
+import { toast } from "sonner";
+import type { BacklogPlanResult } from "@pegasus/types";
 
-const logger = createLogger('GraphViewPage');
+const logger = createLogger("GraphViewPage");
 
 // Stable empty array to avoid infinite loop in selector
-const EMPTY_WORKTREES: ReturnType<ReturnType<typeof useAppStore.getState>['getWorktrees']> = [];
+const EMPTY_WORKTREES: ReturnType<
+  ReturnType<typeof useAppStore.getState>["getWorktrees"]
+> = [];
 
 export function GraphViewPage() {
   const {
@@ -50,14 +59,17 @@ export function GraphViewPage() {
       setWorktrees: state.setWorktrees,
       setCurrentWorktree: state.setCurrentWorktree,
       defaultSkipTests: state.defaultSkipTests,
-      addFeatureUseSelectedWorktreeBranch: state.addFeatureUseSelectedWorktreeBranch,
+      addFeatureUseSelectedWorktreeBranch:
+        state.addFeatureUseSelectedWorktreeBranch,
       planUseSelectedWorktreeBranch: state.planUseSelectedWorktreeBranch,
       setPlanUseSelectedWorktreeBranch: state.setPlanUseSelectedWorktreeBranch,
-    }))
+    })),
   );
 
   // Ensure worktrees are loaded when landing directly on graph view
-  const { handleSelectWorktree } = useWorktrees({ projectPath: currentProject?.path ?? '' });
+  const { handleSelectWorktree } = useWorktrees({
+    projectPath: currentProject?.path ?? "",
+  });
 
   const worktreesByProject = useAppStore((s) => s.worktreesByProject);
   const worktrees = useMemo(
@@ -65,7 +77,7 @@ export function GraphViewPage() {
       currentProject
         ? (worktreesByProject[currentProject.path] ?? EMPTY_WORKTREES)
         : EMPTY_WORKTREES,
-    [currentProject, worktreesByProject]
+    [currentProject, worktreesByProject],
   );
 
   // Load features
@@ -82,23 +94,28 @@ export function GraphViewPage() {
   const runningAutoTasks = autoMode.runningTasks;
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Dialog states
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [spawnParentFeature, setSpawnParentFeature] = useState<Feature | null>(null);
+  const [spawnParentFeature, setSpawnParentFeature] = useState<Feature | null>(
+    null,
+  );
   const [showOutputModal, setShowOutputModal] = useState(false);
   const [outputFeature, setOutputFeature] = useState<Feature | null>(null);
   const [showPlanDialog, setShowPlanDialog] = useState(false);
-  const [pendingBacklogPlan, setPendingBacklogPlan] = useState<BacklogPlanResult | null>(null);
+  const [pendingBacklogPlan, setPendingBacklogPlan] =
+    useState<BacklogPlanResult | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   // Worktree refresh key
   const [worktreeRefreshKey, setWorktreeRefreshKey] = useState(0);
 
   // Get current worktree info
-  const currentWorktreeInfo = currentProject ? getCurrentWorktree(currentProject.path) : null;
+  const currentWorktreeInfo = currentProject
+    ? getCurrentWorktree(currentProject.path)
+    : null;
   const currentWorktreePath = currentWorktreeInfo?.path ?? null;
 
   // Get the branch for the currently selected worktree
@@ -106,13 +123,15 @@ export function GraphViewPage() {
     if (currentWorktreePath === null) {
       return worktrees.find((w) => w.isMain);
     } else {
-      return worktrees.find((w) => !w.isMain && pathsEqual(w.path, currentWorktreePath));
+      return worktrees.find(
+        (w) => !w.isMain && pathsEqual(w.path, currentWorktreePath),
+      );
     }
   }, [worktrees, currentWorktreePath]);
 
   const currentWorktreeBranch = selectedWorktree?.branch ?? null;
   const selectedWorktreeBranch =
-    currentWorktreeBranch || worktrees.find((w) => w.isMain)?.branch || 'main';
+    currentWorktreeBranch || worktrees.find((w) => w.isMain)?.branch || "main";
 
   const repoDefaultBranch = worktrees.find((w) => w.isMain)?.branch;
 
@@ -120,19 +139,22 @@ export function GraphViewPage() {
   const branchCardCounts = useMemo(() => {
     return hookFeatures.reduce(
       (counts, feature) => {
-        if (feature.status !== 'completed') {
-          const branch = (feature.branchName as string | undefined) ?? repoDefaultBranch ?? 'main';
+        if (feature.status !== "completed") {
+          const branch =
+            (feature.branchName as string | undefined) ??
+            repoDefaultBranch ??
+            "main";
           counts[branch] = (counts[branch] || 0) + 1;
         }
         return counts;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
   }, [hookFeatures, repoDefaultBranch]);
 
   // Graph worktree selector state
   const [branches, setBranches] = useState<BranchInfo[]>([]);
-  const [branchFilter, setBranchFilter] = useState('');
+  const [branchFilter, setBranchFilter] = useState("");
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const switchBranchMutation = useSwitchBranch();
   const latestLoadBranchesId = useRef(0);
@@ -142,7 +164,7 @@ export function GraphViewPage() {
       ...worktree,
       isCurrent: worktree.isMain
         ? currentWorktreePath === null
-        : pathsEqual(worktree.path, currentWorktreePath ?? ''),
+        : pathsEqual(worktree.path, currentWorktreePath ?? ""),
       hasWorktree: worktree.hasWorktree ?? true,
     }));
   }, [worktrees, currentWorktreePath]);
@@ -151,20 +173,23 @@ export function GraphViewPage() {
     (worktree: WorktreeInfo) => {
       return worktree.isMain
         ? currentWorktreePath === null
-        : pathsEqual(worktree.path, currentWorktreePath ?? '');
+        : pathsEqual(worktree.path, currentWorktreePath ?? "");
     },
-    [currentWorktreePath]
+    [currentWorktreePath],
   );
 
   const selectedGraphWorktree = useMemo(
-    () => graphWorktrees.find((worktree) => isWorktreeSelected(worktree)) ?? null,
-    [graphWorktrees, isWorktreeSelected]
+    () =>
+      graphWorktrees.find((worktree) => isWorktreeSelected(worktree)) ?? null,
+    [graphWorktrees, isWorktreeSelected],
   );
 
   const filteredBranches = useMemo(() => {
     const query = branchFilter.trim().toLowerCase();
     if (!query) return branches;
-    return branches.filter((branch) => branch.name.toLowerCase().includes(query));
+    return branches.filter((branch) =>
+      branch.name.toLowerCase().includes(query),
+    );
   }, [branches, branchFilter]);
 
   const loadBranchesForWorktree = useCallback(async (worktreePath: string) => {
@@ -193,11 +218,14 @@ export function GraphViewPage() {
           name: branch.name,
           isCurrent: branch.isCurrent,
           isRemote: branch.isRemote,
-        }))
+        })),
       );
     } catch (error) {
       if (requestId !== latestLoadBranchesId.current) return;
-      logger.error('Error loading branches for graph worktree selector:', error);
+      logger.error(
+        "Error loading branches for graph worktree selector:",
+        error,
+      );
       setBranches([]);
     } finally {
       if (requestId === latestLoadBranchesId.current) {
@@ -211,23 +239,23 @@ export function GraphViewPage() {
       const matchingWorktree = worktrees.find((candidate) =>
         worktree.isMain
           ? candidate.isMain
-          : !candidate.isMain && pathsEqual(candidate.path, worktree.path)
+          : !candidate.isMain && pathsEqual(candidate.path, worktree.path),
       );
 
       if (matchingWorktree) {
         handleSelectWorktree(matchingWorktree);
       }
     },
-    [worktrees, handleSelectWorktree]
+    [worktrees, handleSelectWorktree],
   );
 
   const handleBranchDropdownOpenChange = useCallback(
     (open: boolean) => {
       if (!open || !selectedGraphWorktree) return;
-      setBranchFilter('');
+      setBranchFilter("");
       loadBranchesForWorktree(selectedGraphWorktree.path);
     },
-    [selectedGraphWorktree, loadBranchesForWorktree]
+    [selectedGraphWorktree, loadBranchesForWorktree],
   );
 
   const handleGraphSwitchBranch = useCallback(
@@ -237,7 +265,7 @@ export function GraphViewPage() {
         branchName,
       });
     },
-    [switchBranchMutation]
+    [switchBranchMutation],
   );
 
   const graphWorktreeSelector = useMemo(() => {
@@ -268,7 +296,9 @@ export function GraphViewPage() {
             onFilterChange={setBranchFilter}
             onSwitchBranch={handleGraphSwitchBranch}
             onCreateBranch={() => {
-              toast.info('Create branch is available in the board worktree panel.');
+              toast.info(
+                "Create branch is available in the board worktree panel.",
+              );
             }}
           />
         )}
@@ -314,7 +344,7 @@ export function GraphViewPage() {
           setBranchSuggestions(localBranches);
         }
       } catch (error) {
-        logger.error('Error fetching branches:', error);
+        logger.error("Error fetching branches:", error);
         setBranchSuggestions([]);
       }
     };
@@ -326,32 +356,38 @@ export function GraphViewPage() {
   useEffect(() => {
     const api = getElectronAPI();
     if (!api?.backlogPlan) {
-      logger.debug('Backlog plan API not available for event subscription');
+      logger.debug("Backlog plan API not available for event subscription");
       return;
     }
 
     const unsubscribe = api.backlogPlan.onEvent((data: unknown) => {
-      const event = data as { type: string; result?: BacklogPlanResult; error?: string };
-      logger.debug('Backlog plan event received', {
+      const event = data as {
+        type: string;
+        result?: BacklogPlanResult;
+        error?: string;
+      };
+      logger.debug("Backlog plan event received", {
         type: event.type,
         hasResult: Boolean(event.result),
         hasError: Boolean(event.error),
       });
-      if (event.type === 'backlog_plan_complete') {
+      if (event.type === "backlog_plan_complete") {
         setIsGeneratingPlan(false);
         if (event.result && event.result.changes?.length > 0) {
           setPendingBacklogPlan(event.result);
-          toast.success('Plan ready! Click to review.', {
+          toast.success("Plan ready! Click to review.", {
             duration: 10000,
             action: {
-              label: 'Review',
+              label: "Review",
               onClick: () => setShowPlanDialog(true),
             },
           });
         } else {
-          toast.info('No changes generated. Try again with a different prompt.');
+          toast.info(
+            "No changes generated. Try again with a different prompt.",
+          );
         }
-      } else if (event.type === 'backlog_plan_error') {
+      } else if (event.type === "backlog_plan_error") {
         setIsGeneratingPlan(false);
         toast.error(`Plan generation failed: ${event.error}`);
       }
@@ -388,39 +424,44 @@ export function GraphViewPage() {
 
   // Category suggestions
   const categorySuggestions = useMemo(() => {
-    const featureCategories = hookFeatures.map((f) => f.category).filter(Boolean);
+    const featureCategories = hookFeatures
+      .map((f) => f.category)
+      .filter(Boolean);
     const allCategories = [...featureCategories, ...persistedCategories];
     return [...new Set(allCategories)].sort();
   }, [hookFeatures, persistedCategories]);
 
   // Use persistence hook
-  const { persistFeatureCreate, persistFeatureUpdate, persistFeatureDelete } = useBoardPersistence({
-    currentProject,
-  });
+  const { persistFeatureCreate, persistFeatureUpdate, persistFeatureDelete } =
+    useBoardPersistence({
+      currentProject,
+    });
 
   // Follow-up state (simplified for graph view)
   const [followUpFeature, setFollowUpFeature] = useState<Feature | null>(null);
-  const [followUpPrompt, setFollowUpPrompt] = useState('');
-  const [followUpImagePaths, setFollowUpImagePaths] = useState<FeatureImagePath[]>([]);
+  const [followUpPrompt, setFollowUpPrompt] = useState("");
+  const [followUpImagePaths, setFollowUpImagePaths] = useState<
+    FeatureImagePath[]
+  >([]);
   const [, setFollowUpPreviewMap] = useState<Map<string, string>>(new Map());
 
   // In-progress features for shortcuts
   const inProgressFeaturesForShortcuts = useMemo(() => {
     return hookFeatures.filter((f) => {
       const isRunning = runningAutoTasks.includes(f.id);
-      return isRunning || f.status === 'in_progress';
+      return isRunning || f.status === "in_progress";
     });
   }, [hookFeatures, runningAutoTasks]);
 
   // Simple feature update handler for graph view (dependencies, etc.)
   const handleGraphUpdateFeature = useCallback(
     async (featureId: string, updates: Partial<Feature>) => {
-      logger.info('handleGraphUpdateFeature called', { featureId, updates });
+      logger.info("handleGraphUpdateFeature called", { featureId, updates });
       updateFeature(featureId, updates);
       await persistFeatureUpdate(featureId, updates);
-      logger.info('handleGraphUpdateFeature completed');
+      logger.info("handleGraphUpdateFeature completed");
     },
-    [updateFeature, persistFeatureUpdate]
+    [updateFeature, persistFeatureUpdate],
   );
 
   // Board actions hook
@@ -460,7 +501,9 @@ export function GraphViewPage() {
     onWorktreeAutoSelect: (newWorktree) => {
       if (!currentProject) return;
       const currentWorktrees = getWorktrees(currentProject.path);
-      const existingWorktree = currentWorktrees.find((w) => w.branch === newWorktree.branch);
+      const existingWorktree = currentWorktrees.find(
+        (w) => w.branch === newWorktree.branch,
+      );
 
       if (!existingWorktree) {
         const newWorktreeInfo = {
@@ -470,9 +513,16 @@ export function GraphViewPage() {
           isCurrent: false,
           hasWorktree: true,
         };
-        setWorktrees(currentProject.path, [...currentWorktrees, newWorktreeInfo]);
+        setWorktrees(currentProject.path, [
+          ...currentWorktrees,
+          newWorktreeInfo,
+        ]);
       }
-      setCurrentWorktree(currentProject.path, newWorktree.path, newWorktree.branch);
+      setCurrentWorktree(
+        currentProject.path,
+        newWorktree.path,
+        newWorktree.branch,
+      );
     },
     currentWorktreeBranch,
     stopFeature: autoMode.stopFeature,
@@ -481,38 +531,50 @@ export function GraphViewPage() {
   // Handle add and start feature
   const handleAddAndStartFeature = useCallback(
     async (featureData: Parameters<typeof handleAddFeature>[0]) => {
-      const featuresBeforeIds = new Set(useAppStore.getState().features.map((f) => f.id));
+      const featuresBeforeIds = new Set(
+        useAppStore.getState().features.map((f) => f.id),
+      );
       try {
         // Create feature directly with in_progress status to avoid brief backlog flash
-        await handleAddFeature({ ...featureData, initialStatus: 'in_progress' });
+        await handleAddFeature({
+          ...featureData,
+          initialStatus: "in_progress",
+        });
       } catch (error) {
-        logger.error('Failed to create feature:', error);
+        logger.error("Failed to create feature:", error);
         toast.error(
-          `Failed to create feature: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to create feature: ${error instanceof Error ? error.message : String(error)}`,
         );
         return;
       }
 
       const latestFeatures = useAppStore.getState().features;
-      const newFeature = latestFeatures.find((f) => !featuresBeforeIds.has(f.id));
+      const newFeature = latestFeatures.find(
+        (f) => !featuresBeforeIds.has(f.id),
+      );
 
       if (newFeature) {
         try {
           await handleStartImplementation(newFeature);
         } catch (startError) {
-          logger.error('Failed to start implementation, rolling back feature status:', startError);
+          logger.error(
+            "Failed to start implementation, rolling back feature status:",
+            startError,
+          );
           // Rollback: revert the newly created feature back to backlog so it isn't stuck in in_progress
           try {
             const { updateFeature } = useAppStore.getState();
-            updateFeature(newFeature.id, { status: 'backlog' });
+            updateFeature(newFeature.id, { status: "backlog" });
             // Also persist the rollback so it survives page refresh
-            await persistFeatureUpdate(newFeature.id, { status: 'backlog' });
-            logger.info(`Rolled back feature ${newFeature.id} status to backlog`);
+            await persistFeatureUpdate(newFeature.id, { status: "backlog" });
+            logger.info(
+              `Rolled back feature ${newFeature.id} status to backlog`,
+            );
           } catch (rollbackErr) {
-            logger.error('Failed to rollback feature status:', rollbackErr);
+            logger.error("Failed to rollback feature status:", rollbackErr);
           }
           toast.error(
-            `Failed to start feature: ${startError instanceof Error ? startError.message : String(startError)}`
+            `Failed to start feature: ${startError instanceof Error ? startError.message : String(startError)}`,
           );
         }
       } else {
@@ -520,35 +582,45 @@ export function GraphViewPage() {
         // persisted but not yet visible in the snapshot. Attempt to locate it
         // and roll it back so it doesn't remain stuck in 'in_progress'.
         logger.error(
-          'Newly created feature not found in store after handleAddFeature completed. ' +
-            `Store has ${latestFeatures.length} features, expected a new entry.`
+          "Newly created feature not found in store after handleAddFeature completed. " +
+            `Store has ${latestFeatures.length} features, expected a new entry.`,
         );
         // Best-effort: re-read the store to find any feature still in 'in_progress'
         // that wasn't in the original set. We must use a fresh snapshot here because
         // latestFeatures was captured before the async gap and may not contain the new entry.
         const freshFeatures = useAppStore.getState().features;
         const stuckFeature = freshFeatures.find(
-          (f) => f.status === 'in_progress' && !featuresBeforeIds.has(f.id)
+          (f) => f.status === "in_progress" && !featuresBeforeIds.has(f.id),
         );
         if (stuckFeature) {
           try {
             const { updateFeature } = useAppStore.getState();
-            updateFeature(stuckFeature.id, { status: 'backlog' });
-            await persistFeatureUpdate(stuckFeature.id, { status: 'backlog' });
-            logger.info(`Rolled back orphaned feature ${stuckFeature.id} status to backlog`);
+            updateFeature(stuckFeature.id, { status: "backlog" });
+            await persistFeatureUpdate(stuckFeature.id, { status: "backlog" });
+            logger.info(
+              `Rolled back orphaned feature ${stuckFeature.id} status to backlog`,
+            );
           } catch (rollbackErr) {
-            logger.error('Failed to rollback orphaned feature status:', rollbackErr);
+            logger.error(
+              "Failed to rollback orphaned feature status:",
+              rollbackErr,
+            );
           }
         }
-        toast.error('Feature was created but could not be started. Please try again.');
+        toast.error(
+          "Feature was created but could not be started. Please try again.",
+        );
       }
     },
-    [handleAddFeature, handleStartImplementation, persistFeatureUpdate]
+    [handleAddFeature, handleStartImplementation, persistFeatureUpdate],
   );
 
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="graph-view-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="graph-view-no-project"
+      >
         <p className="text-muted-foreground">No project selected</p>
       </div>
     );
@@ -556,7 +628,10 @@ export function GraphViewPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="graph-view-loading">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="graph-view-loading"
+      >
         <Spinner size="lg" />
       </div>
     );
@@ -644,8 +719,8 @@ export function GraphViewPage() {
       <AgentOutputModal
         open={showOutputModal}
         onClose={() => setShowOutputModal(false)}
-        featureDescription={outputFeature?.description || ''}
-        featureId={outputFeature?.id || ''}
+        featureDescription={outputFeature?.description || ""}
+        featureId={outputFeature?.id || ""}
         featureStatus={outputFeature?.status}
         onNumberKeyPress={handleOutputModalNumberKeyPress}
         branchName={outputFeature?.branchName}
@@ -661,7 +736,9 @@ export function GraphViewPage() {
         setPendingPlanResult={setPendingBacklogPlan}
         isGeneratingPlan={isGeneratingPlan}
         setIsGeneratingPlan={setIsGeneratingPlan}
-        currentBranch={planUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined}
+        currentBranch={
+          planUseSelectedWorktreeBranch ? selectedWorktreeBranch : undefined
+        }
       />
     </div>
   );

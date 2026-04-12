@@ -3,11 +3,11 @@
  * Returns branch, last commit info, diff stats, and conflict status
  */
 
-import type { Request, Response } from 'express';
-import { exec, execFile } from 'child_process';
-import { promisify } from 'util';
-import * as secureFs from '../../../lib/secure-fs.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { exec, execFile } from "child_process";
+import { promisify } from "util";
+import * as secureFs from "../../../lib/secure-fs.js";
+import { getErrorMessage, logError } from "../common.js";
 
 const execAsync = promisify(exec);
 const execFileAsync = promisify(execFile);
@@ -35,15 +35,18 @@ export function createDetailsHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath required' });
+        res.status(400).json({ success: false, error: "projectPath required" });
         return;
       }
 
       try {
         // Get current branch
-        const { stdout: branchRaw } = await execAsync('git rev-parse --abbrev-ref HEAD', {
-          cwd: projectPath,
-        });
+        const { stdout: branchRaw } = await execAsync(
+          "git rev-parse --abbrev-ref HEAD",
+          {
+            cwd: projectPath,
+          },
+        );
         const branch = branchRaw.trim();
 
         if (!filePath) {
@@ -56,24 +59,24 @@ export function createDetailsHandler() {
         }
 
         // Get last commit info for this file
-        let lastCommitHash = '';
-        let lastCommitMessage = '';
-        let lastCommitAuthor = '';
-        let lastCommitTimestamp = '';
+        let lastCommitHash = "";
+        let lastCommitMessage = "";
+        let lastCommitAuthor = "";
+        let lastCommitTimestamp = "";
 
         try {
           const { stdout: logOutput } = await execFileAsync(
-            'git',
-            ['log', '-1', '--format=%H|%s|%an|%aI', '--', filePath],
-            { cwd: projectPath }
+            "git",
+            ["log", "-1", "--format=%H|%s|%an|%aI", "--", filePath],
+            { cwd: projectPath },
           );
 
           if (logOutput.trim()) {
-            const parts = logOutput.trim().split('|');
-            lastCommitHash = parts[0] || '';
-            lastCommitMessage = parts[1] || '';
-            lastCommitAuthor = parts[2] || '';
-            lastCommitTimestamp = parts[3] || '';
+            const parts = logOutput.trim().split("|");
+            lastCommitHash = parts[0] || "";
+            lastCommitMessage = parts[1] || "";
+            lastCommitAuthor = parts[2] || "";
+            lastCommitTimestamp = parts[3] || "";
           }
         } catch {
           // File may not have any commits yet
@@ -86,19 +89,21 @@ export function createDetailsHandler() {
         try {
           // Check if file is untracked first
           const { stdout: statusLine } = await execFileAsync(
-            'git',
-            ['status', '--porcelain', '--', filePath],
-            { cwd: projectPath }
+            "git",
+            ["status", "--porcelain", "--", filePath],
+            { cwd: projectPath },
           );
 
-          if (statusLine.trim().startsWith('??')) {
+          if (statusLine.trim().startsWith("??")) {
             // Untracked file - count all lines as added using Node.js instead of shell
             try {
-              const fileContent = (await secureFs.readFile(filePath, 'utf-8')).toString();
-              const lines = fileContent.split('\n');
+              const fileContent = (
+                await secureFs.readFile(filePath, "utf-8")
+              ).toString();
+              const lines = fileContent.split("\n");
               // Don't count trailing empty line from final newline
               linesAdded =
-                lines.length > 0 && lines[lines.length - 1] === ''
+                lines.length > 0 && lines[lines.length - 1] === ""
                   ? lines.length - 1
                   : lines.length;
             } catch {
@@ -106,26 +111,26 @@ export function createDetailsHandler() {
             }
           } else {
             const { stdout: diffStatRaw } = await execFileAsync(
-              'git',
-              ['diff', '--numstat', 'HEAD', '--', filePath],
-              { cwd: projectPath }
+              "git",
+              ["diff", "--numstat", "HEAD", "--", filePath],
+              { cwd: projectPath },
             );
 
             if (diffStatRaw.trim()) {
-              const parts = diffStatRaw.trim().split('\t');
+              const parts = diffStatRaw.trim().split("\t");
               linesAdded = parseInt(parts[0], 10) || 0;
               linesRemoved = parseInt(parts[1], 10) || 0;
             }
 
             // Also check staged diff stats
             const { stdout: stagedDiffStatRaw } = await execFileAsync(
-              'git',
-              ['diff', '--numstat', '--cached', '--', filePath],
-              { cwd: projectPath }
+              "git",
+              ["diff", "--numstat", "--cached", "--", filePath],
+              { cwd: projectPath },
             );
 
             if (stagedDiffStatRaw.trim()) {
-              const parts = stagedDiffStatRaw.trim().split('\t');
+              const parts = stagedDiffStatRaw.trim().split("\t");
               linesAdded += parseInt(parts[0], 10) || 0;
               linesRemoved += parseInt(parts[1], 10) || 0;
             }
@@ -138,13 +143,13 @@ export function createDetailsHandler() {
         let isConflicted = false;
         let isStaged = false;
         let isUnstaged = false;
-        let statusLabel = '';
+        let statusLabel = "";
 
         try {
           const { stdout: statusOutput } = await execFileAsync(
-            'git',
-            ['status', '--porcelain', '--', filePath],
-            { cwd: projectPath }
+            "git",
+            ["status", "--porcelain", "--", filePath],
+            { cwd: projectPath },
           );
 
           if (statusOutput.trim()) {
@@ -153,51 +158,52 @@ export function createDetailsHandler() {
 
             // Check for conflicts (both modified, unmerged states)
             if (
-              indexStatus === 'U' ||
-              workTreeStatus === 'U' ||
-              (indexStatus === 'A' && workTreeStatus === 'A') ||
-              (indexStatus === 'D' && workTreeStatus === 'D')
+              indexStatus === "U" ||
+              workTreeStatus === "U" ||
+              (indexStatus === "A" && workTreeStatus === "A") ||
+              (indexStatus === "D" && workTreeStatus === "D")
             ) {
               isConflicted = true;
-              statusLabel = 'Conflicted';
+              statusLabel = "Conflicted";
             } else {
               // Staged changes (index has a status)
-              if (indexStatus !== ' ' && indexStatus !== '?') {
+              if (indexStatus !== " " && indexStatus !== "?") {
                 isStaged = true;
               }
               // Unstaged changes (work tree has a status)
-              if (workTreeStatus !== ' ' && workTreeStatus !== '?') {
+              if (workTreeStatus !== " " && workTreeStatus !== "?") {
                 isUnstaged = true;
               }
 
               // Build status label
               if (isStaged && isUnstaged) {
-                statusLabel = 'Staged + Modified';
+                statusLabel = "Staged + Modified";
               } else if (isStaged) {
-                statusLabel = 'Staged';
+                statusLabel = "Staged";
               } else {
-                const statusChar = workTreeStatus !== ' ' ? workTreeStatus : indexStatus;
+                const statusChar =
+                  workTreeStatus !== " " ? workTreeStatus : indexStatus;
                 switch (statusChar) {
-                  case 'M':
-                    statusLabel = 'Modified';
+                  case "M":
+                    statusLabel = "Modified";
                     break;
-                  case 'A':
-                    statusLabel = 'Added';
+                  case "A":
+                    statusLabel = "Added";
                     break;
-                  case 'D':
-                    statusLabel = 'Deleted';
+                  case "D":
+                    statusLabel = "Deleted";
                     break;
-                  case 'R':
-                    statusLabel = 'Renamed';
+                  case "R":
+                    statusLabel = "Renamed";
                     break;
-                  case 'C':
-                    statusLabel = 'Copied';
+                  case "C":
+                    statusLabel = "Copied";
                     break;
-                  case '?':
-                    statusLabel = 'Untracked';
+                  case "?":
+                    statusLabel = "Untracked";
                     break;
                   default:
-                    statusLabel = statusChar || '';
+                    statusLabel = statusChar || "";
                 }
               }
             }
@@ -222,26 +228,26 @@ export function createDetailsHandler() {
 
         res.json({ success: true, details });
       } catch (innerError) {
-        logError(innerError, 'Git details failed');
+        logError(innerError, "Git details failed");
         res.json({
           success: true,
           details: {
-            branch: '',
-            lastCommitHash: '',
-            lastCommitMessage: '',
-            lastCommitAuthor: '',
-            lastCommitTimestamp: '',
+            branch: "",
+            lastCommitHash: "",
+            lastCommitMessage: "",
+            lastCommitAuthor: "",
+            lastCommitTimestamp: "",
             linesAdded: 0,
             linesRemoved: 0,
             isConflicted: false,
             isStaged: false,
             isUnstaged: false,
-            statusLabel: '',
+            statusLabel: "",
           },
         });
       }
     } catch (error) {
-      logError(error, 'Get git details failed');
+      logError(error, "Get git details failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

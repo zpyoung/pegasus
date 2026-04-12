@@ -2,12 +2,12 @@
  * POST /auth-gemini endpoint - Connect Gemini CLI to the app
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs/promises";
+import * as path from "path";
 
-const DISCONNECTED_MARKER_FILE = '.gemini-disconnected';
+const DISCONNECTED_MARKER_FILE = ".gemini-disconnected";
 
 /**
  * Creates handler for POST /api/setup/auth-gemini
@@ -17,7 +17,7 @@ export function createAuthGeminiHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       const projectRoot = process.cwd();
-      const pegasusDir = path.join(projectRoot, '.pegasus');
+      const pegasusDir = path.join(projectRoot, ".pegasus");
       const markerPath = path.join(pegasusDir, DISCONNECTED_MARKER_FILE);
 
       // Remove the disconnection marker if it exists
@@ -29,10 +29,10 @@ export function createAuthGeminiHandler() {
 
       res.json({
         success: true,
-        message: 'Gemini CLI connected to app',
+        message: "Gemini CLI connected to app",
       });
     } catch (error) {
-      logError(error, 'Auth Gemini failed');
+      logError(error, "Auth Gemini failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

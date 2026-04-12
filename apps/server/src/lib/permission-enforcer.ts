@@ -2,10 +2,10 @@
  * Permission enforcement utilities for Cursor provider
  */
 
-import type { CursorCliConfigFile } from '@pegasus/types';
-import { createLogger } from '@pegasus/utils';
+import type { CursorCliConfigFile } from "@pegasus/types";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('PermissionEnforcer');
+const logger = createLogger("PermissionEnforcer");
 
 export interface PermissionCheckResult {
   allowed: boolean;
@@ -24,7 +24,7 @@ interface CursorToolCall {
  */
 export function checkToolCallPermission(
   toolCall: CursorToolCall,
-  permissions: CursorCliConfigFile | null
+  permissions: CursorCliConfigFile | null,
 ): PermissionCheckResult {
   if (!permissions || !permissions.permissions) {
     // If no permissions are configured, allow everything (backward compatibility)
@@ -128,7 +128,7 @@ function extractCommandName(command: string): string {
   // Remove leading spaces and get the first word
   const trimmed = command.trim();
   const firstWord = trimmed.split(/\s+/)[0];
-  return firstWord || 'unknown';
+  return firstWord || "unknown";
 }
 
 /**
@@ -141,13 +141,13 @@ function matchesRule(toolName: string, rule: string): boolean {
   }
 
   // Wildcard patterns
-  if (rule.includes('*')) {
-    const regex = new RegExp(rule.replace(/\*/g, '.*'));
+  if (rule.includes("*")) {
+    const regex = new RegExp(rule.replace(/\*/g, ".*"));
     return regex.test(toolName);
   }
 
   // Prefix match for shell commands (e.g., "Shell(git)" matches "Shell(git status)")
-  if (rule.startsWith('Shell(') && toolName.startsWith('Shell(')) {
+  if (rule.startsWith("Shell(") && toolName.startsWith("Shell(")) {
     const ruleCommand = rule.slice(6, -1); // Remove "Shell(" and ")"
     const toolCommand = extractCommandName(toolName.slice(6, -1)); // Remove "Shell(" and ")"
     return toolCommand.startsWith(ruleCommand);
@@ -162,23 +162,26 @@ function matchesRule(toolName: string, rule: string): boolean {
 export function logPermissionViolation(
   toolCall: CursorToolCall,
   reason: string,
-  sessionId?: string
+  sessionId?: string,
 ): void {
-  const sessionIdStr = sessionId ? ` [${sessionId}]` : '';
+  const sessionIdStr = sessionId ? ` [${sessionId}]` : "";
 
   if (toolCall.shellToolCall?.args?.command) {
     logger.warn(
-      `Permission violation${sessionIdStr}: Shell command blocked - ${toolCall.shellToolCall.args.command} (${reason})`
+      `Permission violation${sessionIdStr}: Shell command blocked - ${toolCall.shellToolCall.args.command} (${reason})`,
     );
   } else if (toolCall.readToolCall?.args?.path) {
     logger.warn(
-      `Permission violation${sessionIdStr}: Read operation blocked - ${toolCall.readToolCall.args.path} (${reason})`
+      `Permission violation${sessionIdStr}: Read operation blocked - ${toolCall.readToolCall.args.path} (${reason})`,
     );
   } else if (toolCall.writeToolCall?.args?.path) {
     logger.warn(
-      `Permission violation${sessionIdStr}: Write operation blocked - ${toolCall.writeToolCall.args.path} (${reason})`
+      `Permission violation${sessionIdStr}: Write operation blocked - ${toolCall.writeToolCall.args.path} (${reason})`,
     );
   } else {
-    logger.warn(`Permission violation${sessionIdStr}: Tool call blocked (${reason})`, { toolCall });
+    logger.warn(
+      `Permission violation${sessionIdStr}: Tool call blocked (${reason})`,
+      { toolCall },
+    );
   }
 }

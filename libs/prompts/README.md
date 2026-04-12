@@ -33,7 +33,7 @@ import {
   TECHNICAL_SYSTEM_PROMPT,
   SIMPLIFY_SYSTEM_PROMPT,
   ACCEPTANCE_SYSTEM_PROMPT,
-} from '@pegasus/prompts';
+} from "@pegasus/prompts";
 
 console.log(IMPROVE_SYSTEM_PROMPT); // Full system prompt for improve mode
 ```
@@ -45,9 +45,9 @@ console.log(IMPROVE_SYSTEM_PROMPT); // Full system prompt for improve mode
 Get complete prompt (system + user) for an enhancement mode:
 
 ```typescript
-import { getEnhancementPrompt } from '@pegasus/prompts';
+import { getEnhancementPrompt } from "@pegasus/prompts";
 
-const result = getEnhancementPrompt('improve', 'make app faster');
+const result = getEnhancementPrompt("improve", "make app faster");
 
 console.log(result.systemPrompt); // System instructions for improve mode
 console.log(result.userPrompt); // User prompt with examples and input
@@ -58,9 +58,9 @@ console.log(result.userPrompt); // User prompt with examples and input
 Get only the system prompt for a mode:
 
 ```typescript
-import { getSystemPrompt } from '@pegasus/prompts';
+import { getSystemPrompt } from "@pegasus/prompts";
 
-const systemPrompt = getSystemPrompt('technical');
+const systemPrompt = getSystemPrompt("technical");
 ```
 
 #### `getExamples(mode)`
@@ -68,9 +68,9 @@ const systemPrompt = getSystemPrompt('technical');
 Get few-shot examples for a mode:
 
 ```typescript
-import { getExamples } from '@pegasus/prompts';
+import { getExamples } from "@pegasus/prompts";
 
-const examples = getExamples('simplify');
+const examples = getExamples("simplify");
 // Returns array of { input, output } pairs
 ```
 
@@ -79,9 +79,9 @@ const examples = getExamples('simplify');
 Build user prompt with examples:
 
 ```typescript
-import { buildUserPrompt } from '@pegasus/prompts';
+import { buildUserPrompt } from "@pegasus/prompts";
 
-const userPrompt = buildUserPrompt('add login page', 'improve');
+const userPrompt = buildUserPrompt("add login page", "improve");
 // Includes examples + user's description
 ```
 
@@ -90,9 +90,9 @@ const userPrompt = buildUserPrompt('add login page', 'improve');
 Check if a mode is valid:
 
 ```typescript
-import { isValidEnhancementMode } from '@pegasus/prompts';
+import { isValidEnhancementMode } from "@pegasus/prompts";
 
-if (isValidEnhancementMode('improve')) {
+if (isValidEnhancementMode("improve")) {
   // Mode is valid
 }
 ```
@@ -102,7 +102,7 @@ if (isValidEnhancementMode('improve')) {
 Get list of all available modes:
 
 ```typescript
-import { getAvailableEnhancementModes } from '@pegasus/prompts';
+import { getAvailableEnhancementModes } from "@pegasus/prompts";
 
 const modes = getAvailableEnhancementModes();
 // Returns: ['improve', 'technical', 'simplify', 'acceptance']
@@ -113,37 +113,40 @@ const modes = getAvailableEnhancementModes();
 ### Basic Enhancement
 
 ```typescript
-import { getEnhancementPrompt } from '@pegasus/prompts';
+import { getEnhancementPrompt } from "@pegasus/prompts";
 
 async function enhanceDescription(description: string, mode: string) {
   const { systemPrompt, userPrompt } = getEnhancementPrompt(mode, description);
 
   const response = await claude.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: "claude-sonnet-4-20250514",
     max_tokens: 1024,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
+    messages: [{ role: "user", content: userPrompt }],
   });
 
   return response.content[0].text;
 }
 
 // Example usage
-const improved = await enhanceDescription('make app faster', 'improve');
+const improved = await enhanceDescription("make app faster", "improve");
 // → "Optimize application performance by profiling bottlenecks..."
 
-const technical = await enhanceDescription('add search', 'technical');
+const technical = await enhanceDescription("add search", "technical");
 // → "Implement full-text search with the following components:..."
 ```
 
 ### Mode Validation
 
 ```typescript
-import { isValidEnhancementMode, getAvailableEnhancementModes } from '@pegasus/prompts';
+import {
+  isValidEnhancementMode,
+  getAvailableEnhancementModes,
+} from "@pegasus/prompts";
 
 function validateAndEnhance(mode: string, description: string) {
   if (!isValidEnhancementMode(mode)) {
-    const available = getAvailableEnhancementModes().join(', ');
+    const available = getAvailableEnhancementModes().join(", ");
     throw new Error(`Invalid mode "${mode}". Available: ${available}`);
   }
 
@@ -154,12 +157,16 @@ function validateAndEnhance(mode: string, description: string) {
 ### Custom Prompt Building
 
 ```typescript
-import { getSystemPrompt, buildUserPrompt, getExamples } from '@pegasus/prompts';
+import {
+  getSystemPrompt,
+  buildUserPrompt,
+  getExamples,
+} from "@pegasus/prompts";
 
 // Get components separately for custom workflows
-const systemPrompt = getSystemPrompt('simplify');
-const examples = getExamples('simplify');
-const userPrompt = buildUserPrompt(userInput, 'simplify');
+const systemPrompt = getSystemPrompt("simplify");
+const examples = getExamples("simplify");
+const userPrompt = buildUserPrompt(userInput, "simplify");
 
 // Use with custom processing
 const response = await processWithClaude(systemPrompt, userPrompt);
@@ -168,33 +175,36 @@ const response = await processWithClaude(systemPrompt, userPrompt);
 ### Server Route Example
 
 ```typescript
-import { getEnhancementPrompt, isValidEnhancementMode } from '@pegasus/prompts';
-import { createLogger } from '@pegasus/utils';
+import { getEnhancementPrompt, isValidEnhancementMode } from "@pegasus/prompts";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('EnhancementRoute');
+const logger = createLogger("EnhancementRoute");
 
-app.post('/api/enhance', async (req, res) => {
+app.post("/api/enhance", async (req, res) => {
   const { description, mode } = req.body;
 
   if (!isValidEnhancementMode(mode)) {
-    return res.status(400).json({ error: 'Invalid enhancement mode' });
+    return res.status(400).json({ error: "Invalid enhancement mode" });
   }
 
   try {
-    const { systemPrompt, userPrompt } = getEnhancementPrompt(mode, description);
+    const { systemPrompt, userPrompt } = getEnhancementPrompt(
+      mode,
+      description,
+    );
 
     const result = await claude.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      messages: [{ role: "user", content: userPrompt }],
     });
 
     logger.info(`Enhanced with mode: ${mode}`);
     res.json({ enhanced: result.content[0].text });
   } catch (error) {
-    logger.error('Enhancement failed:', error);
-    res.status(500).json({ error: 'Enhancement failed' });
+    logger.error("Enhancement failed:", error);
+    res.status(500).json({ error: "Enhancement failed" });
   }
 });
 ```

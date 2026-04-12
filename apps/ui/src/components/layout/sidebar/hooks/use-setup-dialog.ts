@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('SetupDialog');
-import { toast } from 'sonner';
-import type { FeatureCount } from '@/components/views/spec-view/types';
+const logger = createLogger("SetupDialog");
+import { toast } from "sonner";
+import type { FeatureCount } from "@/components/views/spec-view/types";
 
 interface UseSetupDialogProps {
   setSpecCreatingForProject: (path: string | null) => void;
@@ -23,8 +23,8 @@ export function useSetupDialog({
 }: UseSetupDialogProps) {
   // Setup dialog state
   const [showSetupDialog, setShowSetupDialog] = useState(false);
-  const [setupProjectPath, setSetupProjectPath] = useState('');
-  const [projectOverview, setProjectOverview] = useState('');
+  const [setupProjectPath, setSetupProjectPath] = useState("");
+  const [projectOverview, setProjectOverview] = useState("");
   const [generateFeatures, setGenerateFeatures] = useState(true);
   const [analyzeProject, setAnalyzeProject] = useState(true);
   const [featureCount, setFeatureCount] = useState<FeatureCount>(50);
@@ -42,7 +42,7 @@ export function useSetupDialog({
     try {
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        toast.error('Spec regeneration not available');
+        toast.error("Spec regeneration not available");
         setSpecCreatingForProject(null);
         return;
       }
@@ -52,27 +52,28 @@ export function useSetupDialog({
         projectOverview.trim(),
         generateFeatures,
         analyzeProject,
-        generateFeatures ? featureCount : undefined // only pass maxFeatures if generating features
+        generateFeatures ? featureCount : undefined, // only pass maxFeatures if generating features
       );
 
       if (!result.success) {
-        logger.error('Failed to start spec creation:', result.error);
+        logger.error("Failed to start spec creation:", result.error);
         setSpecCreatingForProject(null);
-        toast.error('Failed to create specification', {
+        toast.error("Failed to create specification", {
           description: result.error,
         });
       } else {
         // Show processing toast to inform user
-        toast.info('Generating app specification...', {
-          description: "This may take a minute. You'll be notified when complete.",
+        toast.info("Generating app specification...", {
+          description:
+            "This may take a minute. You'll be notified when complete.",
         });
       }
       // If successful, we'll wait for the events to update the state
     } catch (error) {
-      logger.error('Failed to create spec:', error);
+      logger.error("Failed to create spec:", error);
       setSpecCreatingForProject(null);
-      toast.error('Failed to create specification', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to create specification", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }, [
@@ -89,17 +90,17 @@ export function useSetupDialog({
    */
   const handleSkipSetup = useCallback(() => {
     setShowSetupDialog(false);
-    setProjectOverview('');
-    setSetupProjectPath('');
+    setProjectOverview("");
+    setSetupProjectPath("");
 
     // Clear onboarding state if we came from onboarding
     if (newProjectPath) {
-      setNewProjectName('');
-      setNewProjectPath('');
+      setNewProjectName("");
+      setNewProjectPath("");
     }
 
-    toast.info('Setup skipped', {
-      description: 'You can set up your app_spec.txt later from the Spec view.',
+    toast.info("Setup skipped", {
+      description: "You can set up your app_spec.txt later from the Spec view.",
     });
   }, [newProjectPath, setNewProjectName, setNewProjectPath]);
 
@@ -110,7 +111,7 @@ export function useSetupDialog({
     setShowOnboardingDialog(false);
     // Navigate to the setup dialog flow
     setSetupProjectPath(newProjectPath);
-    setProjectOverview('');
+    setProjectOverview("");
     setShowSetupDialog(true);
   }, [newProjectPath, setShowOnboardingDialog]);
 
@@ -119,11 +120,14 @@ export function useSetupDialog({
    */
   const handleOnboardingSkip = useCallback(() => {
     setShowOnboardingDialog(false);
-    setNewProjectName('');
-    setNewProjectPath('');
-    toast.info('You can generate your app_spec.txt anytime from the Spec view', {
-      description: 'Your project is ready to use!',
-    });
+    setNewProjectName("");
+    setNewProjectPath("");
+    toast.info(
+      "You can generate your app_spec.txt anytime from the Spec view",
+      {
+        description: "Your project is ready to use!",
+      },
+    );
   }, [setShowOnboardingDialog, setNewProjectName, setNewProjectPath]);
 
   return {

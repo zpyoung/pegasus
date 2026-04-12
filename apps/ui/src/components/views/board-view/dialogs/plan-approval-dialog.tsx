@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,15 +8,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { PlanContentViewer } from './plan-content-viewer';
-import { Label } from '@/components/ui/label';
-import { Feature } from '@/store/app-store';
-import { Check, RefreshCw, Edit2, Eye } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { PlanContentViewer } from "./plan-content-viewer";
+import { Label } from "@/components/ui/label";
+import { Feature } from "@/store/app-store";
+import { Check, RefreshCw, Edit2, Eye } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 interface PlanApprovalDialogProps {
   open: boolean;
@@ -44,7 +44,7 @@ export function PlanApprovalDialog({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedPlan, setEditedPlan] = useState(planContent);
   const [showRejectFeedback, setShowRejectFeedback] = useState(false);
-  const [rejectFeedback, setRejectFeedback] = useState('');
+  const [rejectFeedback, setRejectFeedback] = useState("");
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   const DESCRIPTION_LIMIT = 250;
@@ -56,7 +56,7 @@ export function PlanApprovalDialog({
       setEditedPlan(planContent);
       setIsEditMode(false);
       setShowRejectFeedback(false);
-      setRejectFeedback('');
+      setRejectFeedback("");
       setShowFullDescription(false);
     }
   }, [open, planContent]);
@@ -65,7 +65,7 @@ export function PlanApprovalDialog({
   useEffect(() => {
     if (!isRevising && open) {
       setShowRejectFeedback(false);
-      setRejectFeedback('');
+      setRejectFeedback("");
     }
   }, [isRevising, open]);
 
@@ -85,7 +85,7 @@ export function PlanApprovalDialog({
 
   const handleCancelReject = () => {
     setShowRejectFeedback(false);
-    setRejectFeedback('');
+    setRejectFeedback("");
   };
 
   const handleClose = (open: boolean) => {
@@ -102,19 +102,23 @@ export function PlanApprovalDialog({
       >
         <DialogHeader>
           <DialogTitle>
-            {viewOnly ? 'View Plan' : 'Review Plan'}
+            {viewOnly ? "View Plan" : "Review Plan"}
             {feature?.title && feature.title.length <= TITLE_LIMIT && (
-              <span className="font-normal text-muted-foreground"> - {feature.title}</span>
+              <span className="font-normal text-muted-foreground">
+                {" "}
+                - {feature.title}
+              </span>
             )}
           </DialogTitle>
           <DialogDescription>
             {viewOnly
-              ? 'View the generated plan for this feature.'
-              : 'Review the generated plan before implementation begins.'}
+              ? "View the generated plan for this feature."
+              : "Review the generated plan before implementation begins."}
             {feature && (
               <span className="block mt-2 text-primary">
-                Feature:{' '}
-                {showFullDescription || feature.description.length <= DESCRIPTION_LIMIT
+                Feature:{" "}
+                {showFullDescription ||
+                feature.description.length <= DESCRIPTION_LIMIT
                   ? feature.description
                   : `${feature.description.slice(0, DESCRIPTION_LIMIT)}...`}
                 {feature.description.length > DESCRIPTION_LIMIT && (
@@ -123,7 +127,7 @@ export function PlanApprovalDialog({
                     onClick={() => setShowFullDescription(!showFullDescription)}
                     className="ml-1 text-muted-foreground hover:text-foreground underline text-sm"
                   >
-                    {showFullDescription ? 'show less' : 'show more'}
+                    {showFullDescription ? "show less" : "show more"}
                   </button>
                 )}
               </span>
@@ -136,7 +140,9 @@ export function PlanApprovalDialog({
           {isRevising && (
             <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
               <Spinner size="sm" className="shrink-0" />
-              <span>AI is revising the plan based on your feedback&hellip;</span>
+              <span>
+                AI is revising the plan based on your feedback&hellip;
+              </span>
             </div>
           )}
 
@@ -144,7 +150,7 @@ export function PlanApprovalDialog({
           {!viewOnly && (
             <div className="flex items-center justify-between mb-3">
               <Label className="text-sm text-muted-foreground">
-                {isEditMode ? 'Edit Mode' : 'View Mode'}
+                {isEditMode ? "Edit Mode" : "View Mode"}
               </Label>
               <Button
                 variant="outline"
@@ -168,7 +174,12 @@ export function PlanApprovalDialog({
           )}
 
           {/* Plan Content */}
-          <div className={cn("flex-1 overflow-y-auto sm:max-h-[60vh] border border-border rounded-lg", isRevising && "opacity-40 pointer-events-none")}>
+          <div
+            className={cn(
+              "flex-1 overflow-y-auto sm:max-h-[60vh] border border-border rounded-lg",
+              isRevising && "opacity-40 pointer-events-none",
+            )}
+          >
             {isEditMode && !viewOnly ? (
               <Textarea
                 value={editedPlan}
@@ -178,14 +189,16 @@ export function PlanApprovalDialog({
                 disabled={isLoading}
               />
             ) : (
-              <PlanContentViewer content={editedPlan || ''} className="p-4" />
+              <PlanContentViewer content={editedPlan || ""} className="p-4" />
             )}
           </div>
 
           {/* Revision Feedback Section - Only show when not in viewOnly mode */}
           {showRejectFeedback && !viewOnly && (
             <div className="mt-4 space-y-2">
-              <Label htmlFor="reject-feedback">What changes would you like?</Label>
+              <Label htmlFor="reject-feedback">
+                What changes would you like?
+              </Label>
               <Textarea
                 id="reject-feedback"
                 value={rejectFeedback}
@@ -195,7 +208,8 @@ export function PlanApprovalDialog({
                 disabled={isLoading}
               />
               <p className="text-xs text-muted-foreground">
-                Leave empty to cancel the feature, or provide feedback to regenerate the plan.
+                Leave empty to cancel the feature, or provide feedback to
+                regenerate the plan.
               </p>
             </div>
           )}
@@ -236,7 +250,7 @@ export function PlanApprovalDialog({
                 ) : (
                   <RefreshCw className="w-4 h-4 mr-2" />
                 )}
-                {rejectFeedback.trim() ? 'Revise Plan' : 'Cancel Feature'}
+                {rejectFeedback.trim() ? "Revise Plan" : "Cancel Feature"}
               </Button>
             </>
           ) : (

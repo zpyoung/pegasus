@@ -2,12 +2,12 @@
  * POST /start endpoint - Start auto mode loop for a project
  */
 
-import type { Request, Response } from 'express';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
-const logger = createLogger('AutoMode');
+const logger = createLogger("AutoMode");
 
 export function createStartHandler(autoModeService: AutoModeServiceCompat) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -21,7 +21,7 @@ export function createStartHandler(autoModeService: AutoModeServiceCompat) {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -30,10 +30,15 @@ export function createStartHandler(autoModeService: AutoModeServiceCompat) {
       const normalizedBranchName = branchName ?? null;
       const worktreeDesc = normalizedBranchName
         ? `worktree ${normalizedBranchName}`
-        : 'main worktree';
+        : "main worktree";
 
       // Check if already running
-      if (autoModeService.isAutoLoopRunningForProject(projectPath, normalizedBranchName)) {
+      if (
+        autoModeService.isAutoLoopRunningForProject(
+          projectPath,
+          normalizedBranchName,
+        )
+      ) {
         res.json({
           success: true,
           message: `Auto mode is already running for ${worktreeDesc}`,
@@ -44,14 +49,15 @@ export function createStartHandler(autoModeService: AutoModeServiceCompat) {
       }
 
       // Start the auto loop for this project/worktree
-      const resolvedMaxConcurrency = await autoModeService.startAutoLoopForProject(
-        projectPath,
-        normalizedBranchName,
-        maxConcurrency
-      );
+      const resolvedMaxConcurrency =
+        await autoModeService.startAutoLoopForProject(
+          projectPath,
+          normalizedBranchName,
+          maxConcurrency,
+        );
 
       logger.info(
-        `Started auto loop for ${worktreeDesc} in project: ${projectPath} with maxConcurrency: ${resolvedMaxConcurrency}`
+        `Started auto loop for ${worktreeDesc} in project: ${projectPath} with maxConcurrency: ${resolvedMaxConcurrency}`,
       );
 
       res.json({
@@ -60,7 +66,7 @@ export function createStartHandler(autoModeService: AutoModeServiceCompat) {
         branchName: normalizedBranchName,
       });
     } catch (error) {
-      logError(error, 'Start auto mode failed');
+      logError(error, "Start auto mode failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

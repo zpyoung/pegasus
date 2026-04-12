@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Dialog,
@@ -7,15 +7,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { ArrowDown, ArrowUp, Link2, X } from 'lucide-react';
-import type { Feature } from '@/store/app-store';
-import { cn } from '@/lib/utils';
-import { StatusBadge } from '../components';
-import type { FeatureStatusWithPipeline } from '@pegasus/types';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ArrowDown, ArrowUp, Link2, X } from "lucide-react";
+import type { Feature } from "@/store/app-store";
+import { cn } from "@/lib/utils";
+import { StatusBadge } from "../components";
+import type { FeatureStatusWithPipeline } from "@pegasus/types";
 
-export type DependencyLinkType = 'parent' | 'child';
+export type DependencyLinkType = "parent" | "child";
 
 interface DependencyLinkDialogProps {
   open: boolean;
@@ -60,13 +60,20 @@ export function DependencyLinkDialog({
           {/* Dragged feature */}
           <div className="p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-muted-foreground">Dragged Feature</span>
-              <StatusBadge status={draggedFeature.status as FeatureStatusWithPipeline} size="sm" />
+              <span className="text-xs text-muted-foreground">
+                Dragged Feature
+              </span>
+              <StatusBadge
+                status={draggedFeature.status as FeatureStatusWithPipeline}
+                size="sm"
+              />
             </div>
             <div className="text-sm font-medium line-clamp-3 break-words">
               {draggedFeature.description}
             </div>
-            <div className="text-xs text-muted-foreground/70 mt-1">{draggedFeature.category}</div>
+            <div className="text-xs text-muted-foreground/70 mt-1">
+              {draggedFeature.category}
+            </div>
           </div>
 
           {/* Arrow indicating direction */}
@@ -77,21 +84,28 @@ export function DependencyLinkDialog({
           {/* Target feature */}
           <div className="p-3 rounded-lg border bg-muted/30">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-muted-foreground">Target Feature</span>
-              <StatusBadge status={targetFeature.status as FeatureStatusWithPipeline} size="sm" />
+              <span className="text-xs text-muted-foreground">
+                Target Feature
+              </span>
+              <StatusBadge
+                status={targetFeature.status as FeatureStatusWithPipeline}
+                size="sm"
+              />
             </div>
             <div className="text-sm font-medium line-clamp-3 break-words">
               {targetFeature.description}
             </div>
-            <div className="text-xs text-muted-foreground/70 mt-1">{targetFeature.category}</div>
+            <div className="text-xs text-muted-foreground/70 mt-1">
+              {targetFeature.category}
+            </div>
           </div>
 
           {/* Existing link warning */}
           {existingLink && (
             <div className="p-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 text-sm text-yellow-600 dark:text-yellow-400">
               {draggedDependsOnTarget
-                ? 'The dragged feature already depends on the target feature.'
-                : 'The target feature already depends on the dragged feature.'}
+                ? "The dragged feature already depends on the target feature."
+                : "The target feature already depends on the dragged feature."}
             </div>
           )}
         </div>
@@ -100,30 +114,38 @@ export function DependencyLinkDialog({
           {/* Set as Parent - top */}
           <Button
             variant="default"
-            onClick={() => onLink('child')}
+            onClick={() => onLink("child")}
             disabled={draggedDependsOnTarget}
-            className={cn('w-full', draggedDependsOnTarget && 'opacity-50 cursor-not-allowed')}
+            className={cn(
+              "w-full",
+              draggedDependsOnTarget && "opacity-50 cursor-not-allowed",
+            )}
             title={
               draggedDependsOnTarget
-                ? 'This would create a circular dependency'
-                : 'Make target feature depend on dragged (dragged is parent)'
+                ? "This would create a circular dependency"
+                : "Make target feature depend on dragged (dragged is parent)"
             }
             data-testid="link-as-parent"
           >
             <ArrowUp className="w-4 h-4 mr-2" />
             Set as Parent
-            <span className="text-xs ml-1 opacity-70">(target depends on this)</span>
+            <span className="text-xs ml-1 opacity-70">
+              (target depends on this)
+            </span>
           </Button>
           {/* Set as Child - middle */}
           <Button
             variant="default"
-            onClick={() => onLink('parent')}
+            onClick={() => onLink("parent")}
             disabled={targetDependsOnDragged}
-            className={cn('w-full', targetDependsOnDragged && 'opacity-50 cursor-not-allowed')}
+            className={cn(
+              "w-full",
+              targetDependsOnDragged && "opacity-50 cursor-not-allowed",
+            )}
             title={
               targetDependsOnDragged
-                ? 'This would create a circular dependency'
-                : 'Make dragged feature depend on target (target is parent)'
+                ? "This would create a circular dependency"
+                : "Make dragged feature depend on target (target is parent)"
             }
             data-testid="link-as-child"
           >
@@ -132,7 +154,11 @@ export function DependencyLinkDialog({
             <span className="text-xs ml-1 opacity-70">(depends on target)</span>
           </Button>
           {/* Cancel - bottom */}
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="w-full"
+          >
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>

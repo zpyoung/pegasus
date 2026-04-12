@@ -5,93 +5,107 @@
  * delegating to GlobalAutoModeService and per-project facades.
  */
 
-import { Router } from 'express';
-import type { AutoModeServiceCompat } from '../../services/auto-mode/index.js';
-import { validatePathParams } from '../../middleware/validate-paths.js';
-import { createStopFeatureHandler } from './routes/stop-feature.js';
-import { createStatusHandler } from './routes/status.js';
-import { createRunFeatureHandler } from './routes/run-feature.js';
-import { createStartHandler } from './routes/start.js';
-import { createStopHandler } from './routes/stop.js';
-import { createVerifyFeatureHandler } from './routes/verify-feature.js';
-import { createResumeFeatureHandler } from './routes/resume-feature.js';
-import { createContextExistsHandler } from './routes/context-exists.js';
-import { createAnalyzeProjectHandler } from './routes/analyze-project.js';
-import { createFollowUpFeatureHandler } from './routes/follow-up-feature.js';
-import { createCommitFeatureHandler } from './routes/commit-feature.js';
-import { createApprovePlanHandler } from './routes/approve-plan.js';
-import { createAnswerQuestionHandler } from './routes/answer-question.js';
-import { createResumeInterruptedHandler } from './routes/resume-interrupted.js';
-import { createReconcileHandler } from './routes/reconcile.js';
+import { Router } from "express";
+import type { AutoModeServiceCompat } from "../../services/auto-mode/index.js";
+import { validatePathParams } from "../../middleware/validate-paths.js";
+import { createStopFeatureHandler } from "./routes/stop-feature.js";
+import { createStatusHandler } from "./routes/status.js";
+import { createRunFeatureHandler } from "./routes/run-feature.js";
+import { createStartHandler } from "./routes/start.js";
+import { createStopHandler } from "./routes/stop.js";
+import { createVerifyFeatureHandler } from "./routes/verify-feature.js";
+import { createResumeFeatureHandler } from "./routes/resume-feature.js";
+import { createContextExistsHandler } from "./routes/context-exists.js";
+import { createAnalyzeProjectHandler } from "./routes/analyze-project.js";
+import { createFollowUpFeatureHandler } from "./routes/follow-up-feature.js";
+import { createCommitFeatureHandler } from "./routes/commit-feature.js";
+import { createApprovePlanHandler } from "./routes/approve-plan.js";
+import { createAnswerQuestionHandler } from "./routes/answer-question.js";
+import { createResumeInterruptedHandler } from "./routes/resume-interrupted.js";
+import { createReconcileHandler } from "./routes/reconcile.js";
 
 /**
  * Create auto-mode routes.
  *
  * @param autoModeService - AutoModeServiceCompat instance
  */
-export function createAutoModeRoutes(autoModeService: AutoModeServiceCompat): Router {
+export function createAutoModeRoutes(
+  autoModeService: AutoModeServiceCompat,
+): Router {
   const router = Router();
 
   // Auto loop control routes
-  router.post('/start', validatePathParams('projectPath'), createStartHandler(autoModeService));
-  router.post('/stop', validatePathParams('projectPath'), createStopHandler(autoModeService));
+  router.post(
+    "/start",
+    validatePathParams("projectPath"),
+    createStartHandler(autoModeService),
+  );
+  router.post(
+    "/stop",
+    validatePathParams("projectPath"),
+    createStopHandler(autoModeService),
+  );
 
-  router.post('/stop-feature', createStopFeatureHandler(autoModeService));
-  router.post('/status', validatePathParams('projectPath?'), createStatusHandler(autoModeService));
+  router.post("/stop-feature", createStopFeatureHandler(autoModeService));
   router.post(
-    '/run-feature',
-    validatePathParams('projectPath'),
-    createRunFeatureHandler(autoModeService)
+    "/status",
+    validatePathParams("projectPath?"),
+    createStatusHandler(autoModeService),
   );
   router.post(
-    '/verify-feature',
-    validatePathParams('projectPath'),
-    createVerifyFeatureHandler(autoModeService)
+    "/run-feature",
+    validatePathParams("projectPath"),
+    createRunFeatureHandler(autoModeService),
   );
   router.post(
-    '/resume-feature',
-    validatePathParams('projectPath'),
-    createResumeFeatureHandler(autoModeService)
+    "/verify-feature",
+    validatePathParams("projectPath"),
+    createVerifyFeatureHandler(autoModeService),
   );
   router.post(
-    '/context-exists',
-    validatePathParams('projectPath'),
-    createContextExistsHandler(autoModeService)
+    "/resume-feature",
+    validatePathParams("projectPath"),
+    createResumeFeatureHandler(autoModeService),
   );
   router.post(
-    '/analyze-project',
-    validatePathParams('projectPath'),
-    createAnalyzeProjectHandler(autoModeService)
+    "/context-exists",
+    validatePathParams("projectPath"),
+    createContextExistsHandler(autoModeService),
   );
   router.post(
-    '/follow-up-feature',
-    validatePathParams('projectPath', 'imagePaths[]'),
-    createFollowUpFeatureHandler(autoModeService)
+    "/analyze-project",
+    validatePathParams("projectPath"),
+    createAnalyzeProjectHandler(autoModeService),
   );
   router.post(
-    '/commit-feature',
-    validatePathParams('projectPath', 'worktreePath?'),
-    createCommitFeatureHandler(autoModeService)
+    "/follow-up-feature",
+    validatePathParams("projectPath", "imagePaths[]"),
+    createFollowUpFeatureHandler(autoModeService),
   );
   router.post(
-    '/approve-plan',
-    validatePathParams('projectPath'),
-    createApprovePlanHandler(autoModeService)
+    "/commit-feature",
+    validatePathParams("projectPath", "worktreePath?"),
+    createCommitFeatureHandler(autoModeService),
   );
   router.post(
-    '/answer-question',
-    validatePathParams('projectPath'),
-    createAnswerQuestionHandler(autoModeService)
+    "/approve-plan",
+    validatePathParams("projectPath"),
+    createApprovePlanHandler(autoModeService),
   );
   router.post(
-    '/resume-interrupted',
-    validatePathParams('projectPath'),
-    createResumeInterruptedHandler(autoModeService)
+    "/answer-question",
+    validatePathParams("projectPath"),
+    createAnswerQuestionHandler(autoModeService),
   );
   router.post(
-    '/reconcile',
-    validatePathParams('projectPath'),
-    createReconcileHandler(autoModeService)
+    "/resume-interrupted",
+    validatePathParams("projectPath"),
+    createResumeInterruptedHandler(autoModeService),
+  );
+  router.post(
+    "/reconcile",
+    validatePathParams("projectPath"),
+    createReconcileHandler(autoModeService),
   );
 
   return router;

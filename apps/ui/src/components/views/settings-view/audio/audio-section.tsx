@@ -1,21 +1,24 @@
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Volume2, VolumeX } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Volume2, VolumeX } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AudioSectionProps {
   muteDoneSound: boolean;
   onMuteDoneSoundChange: (value: boolean) => void;
 }
 
-export function AudioSection({ muteDoneSound, onMuteDoneSoundChange }: AudioSectionProps) {
+export function AudioSection({
+  muteDoneSound,
+  onMuteDoneSoundChange,
+}: AudioSectionProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -23,7 +26,9 @@ export function AudioSection({ muteDoneSound, onMuteDoneSoundChange }: AudioSect
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
             <Volume2 className="w-5 h-5 text-brand-500" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Audio</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Audio
+          </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
           Configure audio and notification settings.
@@ -47,9 +52,9 @@ export function AudioSection({ muteDoneSound, onMuteDoneSoundChange }: AudioSect
               Mute notification sound when agents complete
             </Label>
             <p className="text-xs text-muted-foreground/80 leading-relaxed">
-              When enabled, disables the &quot;ding&quot; sound that plays when an agent completes a
-              feature. The feature will still move to the completed column, but without audio
-              notification.
+              When enabled, disables the &quot;ding&quot; sound that plays when
+              an agent completes a feature. The feature will still move to the
+              completed column, but without audio notification.
             </p>
           </div>
         </div>

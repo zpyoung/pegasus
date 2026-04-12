@@ -1,7 +1,7 @@
 export const optimizationTemplate = {
-  id: 'optimization',
-  name: 'Performance',
-  colorClass: 'bg-cyan-500/20',
+  id: "optimization",
+  name: "Performance",
+  colorClass: "bg-cyan-500/20",
   instructions: `## Performance Optimization Step
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODE WITH OPTIMIZATIONS ⚠️

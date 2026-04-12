@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { AgentExecutor } from '../../../src/services/agent-executor.js';
-import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
-import type { FeatureStateManager } from '../../../src/services/feature-state-manager.js';
-import type { PlanApprovalService } from '../../../src/services/plan-approval-service.js';
-import type { BaseProvider } from '../../../src/providers/base-provider.js';
-import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@pegasus/platform';
-import { buildPromptWithImages } from '@pegasus/utils';
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { AgentExecutor } from "../../../src/services/agent-executor.js";
+import type { TypedEventBus } from "../../../src/services/typed-event-bus.js";
+import type { FeatureStateManager } from "../../../src/services/feature-state-manager.js";
+import type { PlanApprovalService } from "../../../src/services/plan-approval-service.js";
+import type { BaseProvider } from "../../../src/providers/base-provider.js";
+import * as secureFs from "../../../src/lib/secure-fs.js";
+import { getFeatureDir } from "@pegasus/platform";
+import { buildPromptWithImages } from "@pegasus/utils";
 
-vi.mock('../../../src/lib/secure-fs.js', () => ({
+vi.mock("../../../src/lib/secure-fs.js", () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   writeFile: vi.fn().mockResolvedValue(undefined),
   appendFile: vi.fn().mockResolvedValue(undefined),
-  readFile: vi.fn().mockResolvedValue(''),
+  readFile: vi.fn().mockResolvedValue(""),
 }));
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   getFeatureDir: vi.fn(),
 }));
 
-vi.mock('@pegasus/utils', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@pegasus/utils')>();
+vi.mock("@pegasus/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@pegasus/utils")>();
   return {
     ...actual,
     buildPromptWithImages: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('@pegasus/utils', async (importOriginal) => {
   };
 });
 
-describe('AgentExecutor Summary Extraction', () => {
+describe("AgentExecutor Summary Extraction", () => {
   let mockEventBus: TypedEventBus;
   let mockFeatureStateManager: FeatureStateManager;
   let mockPlanApprovalService: PlanApprovalService;
@@ -55,16 +55,18 @@ describe('AgentExecutor Summary Extraction', () => {
       waitForApproval: vi.fn(),
     } as unknown as PlanApprovalService;
 
-    (getFeatureDir as Mock).mockReturnValue('/mock/feature/dir');
-    (buildPromptWithImages as Mock).mockResolvedValue({ content: 'mocked prompt' });
+    (getFeatureDir as Mock).mockReturnValue("/mock/feature/dir");
+    (buildPromptWithImages as Mock).mockResolvedValue({
+      content: "mocked prompt",
+    });
   });
 
-  it('should extract summary from new session content only', async () => {
+  it("should extract summary from new session content only", async () => {
     const executor = new AgentExecutor(
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
     );
 
     const previousContent = `Some previous work.
@@ -73,27 +75,27 @@ describe('AgentExecutor Summary Extraction', () => {
 <summary>New summary</summary>`;
 
     const mockProvider = {
-      getName: () => 'mock',
+      getName: () => "mock",
       executeQuery: vi.fn().mockImplementation(function* () {
         yield {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            content: [{ type: 'text', text: newWork }],
+            content: [{ type: "text", text: newWork }],
           },
         };
-        yield { type: 'result', subtype: 'success' };
+        yield { type: "result", subtype: "success" };
       }),
     } as unknown as BaseProvider;
 
     const options = {
-      workDir: '/test',
-      featureId: 'test-feature',
-      prompt: 'Test prompt',
-      projectPath: '/project',
+      workDir: "/test",
+      featureId: "test-feature",
+      prompt: "Test prompt",
+      projectPath: "/project",
       abortController: new AbortController(),
       provider: mockProvider,
-      effectiveBareModel: 'claude-sonnet',
-      planningMode: 'skip' as const,
+      effectiveBareModel: "claude-sonnet",
+      planningMode: "skip" as const,
       previousContent,
     };
 
@@ -108,25 +110,25 @@ describe('AgentExecutor Summary Extraction', () => {
 
     // Verify it called saveFeatureSummary with the NEW summary
     expect(callbacks.saveFeatureSummary).toHaveBeenCalledWith(
-      '/project',
-      'test-feature',
-      'New summary'
+      "/project",
+      "test-feature",
+      "New summary",
     );
 
     // Ensure it didn't call it with Old summary
     expect(callbacks.saveFeatureSummary).not.toHaveBeenCalledWith(
-      '/project',
-      'test-feature',
-      'Old summary'
+      "/project",
+      "test-feature",
+      "Old summary",
     );
   });
 
-  it('should not save summary if no summary in NEW session content', async () => {
+  it("should not save summary if no summary in NEW session content", async () => {
     const executor = new AgentExecutor(
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
     );
 
     const previousContent = `Some previous work.
@@ -134,27 +136,27 @@ describe('AgentExecutor Summary Extraction', () => {
     const newWork = `New implementation work without a summary tag.`;
 
     const mockProvider = {
-      getName: () => 'mock',
+      getName: () => "mock",
       executeQuery: vi.fn().mockImplementation(function* () {
         yield {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            content: [{ type: 'text', text: newWork }],
+            content: [{ type: "text", text: newWork }],
           },
         };
-        yield { type: 'result', subtype: 'success' };
+        yield { type: "result", subtype: "success" };
       }),
     } as unknown as BaseProvider;
 
     const options = {
-      workDir: '/test',
-      featureId: 'test-feature',
-      prompt: 'Test prompt',
-      projectPath: '/project',
+      workDir: "/test",
+      featureId: "test-feature",
+      prompt: "Test prompt",
+      projectPath: "/project",
       abortController: new AbortController(),
       provider: mockProvider,
-      effectiveBareModel: 'claude-sonnet',
-      planningMode: 'skip' as const,
+      effectiveBareModel: "claude-sonnet",
+      planningMode: "skip" as const,
       previousContent,
     };
 
@@ -171,101 +173,108 @@ describe('AgentExecutor Summary Extraction', () => {
     expect(callbacks.saveFeatureSummary).not.toHaveBeenCalled();
   });
 
-  it('should extract task summary and update task status during streaming', async () => {
+  it("should extract task summary and update task status during streaming", async () => {
     const executor = new AgentExecutor(
       mockEventBus,
       mockFeatureStateManager,
       mockPlanApprovalService,
-      null
+      null,
     );
 
     const mockProvider = {
-      getName: () => 'mock',
+      getName: () => "mock",
       executeQuery: vi.fn().mockImplementation(function* () {
         yield {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            content: [{ type: 'text', text: 'Working... ' }],
+            content: [{ type: "text", text: "Working... " }],
           },
         };
         yield {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            content: [{ type: 'text', text: '[TASK_COMPLETE] T001: Task finished successfully' }],
+            content: [
+              {
+                type: "text",
+                text: "[TASK_COMPLETE] T001: Task finished successfully",
+              },
+            ],
           },
         };
-        yield { type: 'result', subtype: 'success' };
+        yield { type: "result", subtype: "success" };
       }),
     } as unknown as BaseProvider;
 
     // We trigger executeTasksLoop by providing persistedTasks
     const options = {
-      workDir: '/test',
-      featureId: 'test-feature',
-      prompt: 'Test prompt',
-      projectPath: '/project',
+      workDir: "/test",
+      featureId: "test-feature",
+      prompt: "Test prompt",
+      projectPath: "/project",
       abortController: new AbortController(),
       provider: mockProvider,
-      effectiveBareModel: 'claude-sonnet',
-      planningMode: 'skip' as const,
-      existingApprovedPlanContent: 'Some plan',
-      persistedTasks: [{ id: 'T001', description: 'Task 1', status: 'pending' as const }],
+      effectiveBareModel: "claude-sonnet",
+      planningMode: "skip" as const,
+      existingApprovedPlanContent: "Some plan",
+      persistedTasks: [
+        { id: "T001", description: "Task 1", status: "pending" as const },
+      ],
     };
 
     const callbacks = {
       waitForApproval: vi.fn(),
       saveFeatureSummary: vi.fn(),
       updateFeatureSummary: vi.fn(),
-      buildTaskPrompt: vi.fn().mockReturnValue('task prompt'),
+      buildTaskPrompt: vi.fn().mockReturnValue("task prompt"),
     };
 
     await executor.execute(options, callbacks);
 
     // Verify it updated task status with summary
     expect(mockFeatureStateManager.updateTaskStatus).toHaveBeenCalledWith(
-      '/project',
-      'test-feature',
-      'T001',
-      'completed',
-      'Task finished successfully'
+      "/project",
+      "test-feature",
+      "T001",
+      "completed",
+      "Task finished successfully",
     );
   });
 
-  describe('Pipeline step summary fallback', () => {
-    it('should save fallback summary when extraction fails for pipeline step', async () => {
+  describe("Pipeline step summary fallback", () => {
+    it("should save fallback summary when extraction fails for pipeline step", async () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
       );
 
       // Content without a summary tag (extraction will fail)
-      const newWork = 'Implementation completed without summary tag.';
+      const newWork = "Implementation completed without summary tag.";
 
       const mockProvider = {
-        getName: () => 'mock',
+        getName: () => "mock",
         executeQuery: vi.fn().mockImplementation(function* () {
           yield {
-            type: 'assistant',
+            type: "assistant",
             message: {
-              content: [{ type: 'text', text: newWork }],
+              content: [{ type: "text", text: newWork }],
             },
           };
-          yield { type: 'result', subtype: 'success' };
+          yield { type: "result", subtype: "success" };
         }),
       } as unknown as BaseProvider;
 
       const options = {
-        workDir: '/test',
-        featureId: 'test-feature',
-        prompt: 'Test prompt',
-        projectPath: '/project',
+        workDir: "/test",
+        featureId: "test-feature",
+        prompt: "Test prompt",
+        projectPath: "/project",
         abortController: new AbortController(),
         provider: mockProvider,
-        effectiveBareModel: 'claude-sonnet',
-        planningMode: 'skip' as const,
-        status: 'pipeline_step1' as const, // Pipeline status triggers fallback
+        effectiveBareModel: "claude-sonnet",
+        planningMode: "skip" as const,
+        status: "pipeline_step1" as const, // Pipeline status triggers fallback
       };
 
       const callbacks = {
@@ -279,46 +288,46 @@ describe('AgentExecutor Summary Extraction', () => {
 
       // Verify fallback summary was saved with trimmed content
       expect(callbacks.saveFeatureSummary).toHaveBeenCalledWith(
-        '/project',
-        'test-feature',
-        'Implementation completed without summary tag.'
+        "/project",
+        "test-feature",
+        "Implementation completed without summary tag.",
       );
     });
 
-    it('should not save fallback for non-pipeline status when extraction fails', async () => {
+    it("should not save fallback for non-pipeline status when extraction fails", async () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
       );
 
       // Content without a summary tag
-      const newWork = 'Implementation completed without summary tag.';
+      const newWork = "Implementation completed without summary tag.";
 
       const mockProvider = {
-        getName: () => 'mock',
+        getName: () => "mock",
         executeQuery: vi.fn().mockImplementation(function* () {
           yield {
-            type: 'assistant',
+            type: "assistant",
             message: {
-              content: [{ type: 'text', text: newWork }],
+              content: [{ type: "text", text: newWork }],
             },
           };
-          yield { type: 'result', subtype: 'success' };
+          yield { type: "result", subtype: "success" };
         }),
       } as unknown as BaseProvider;
 
       const options = {
-        workDir: '/test',
-        featureId: 'test-feature',
-        prompt: 'Test prompt',
-        projectPath: '/project',
+        workDir: "/test",
+        featureId: "test-feature",
+        prompt: "Test prompt",
+        projectPath: "/project",
         abortController: new AbortController(),
         provider: mockProvider,
-        effectiveBareModel: 'claude-sonnet',
-        planningMode: 'skip' as const,
-        status: 'in_progress' as const, // Non-pipeline status
+        effectiveBareModel: "claude-sonnet",
+        planningMode: "skip" as const,
+        status: "in_progress" as const, // Non-pipeline status
       };
 
       const callbacks = {
@@ -334,40 +343,40 @@ describe('AgentExecutor Summary Extraction', () => {
       expect(callbacks.saveFeatureSummary).not.toHaveBeenCalled();
     });
 
-    it('should not save empty fallback for pipeline step', async () => {
+    it("should not save empty fallback for pipeline step", async () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
       );
 
       // Empty/whitespace-only content
-      const newWork = '   \n\t  ';
+      const newWork = "   \n\t  ";
 
       const mockProvider = {
-        getName: () => 'mock',
+        getName: () => "mock",
         executeQuery: vi.fn().mockImplementation(function* () {
           yield {
-            type: 'assistant',
+            type: "assistant",
             message: {
-              content: [{ type: 'text', text: newWork }],
+              content: [{ type: "text", text: newWork }],
             },
           };
-          yield { type: 'result', subtype: 'success' };
+          yield { type: "result", subtype: "success" };
         }),
       } as unknown as BaseProvider;
 
       const options = {
-        workDir: '/test',
-        featureId: 'test-feature',
-        prompt: 'Test prompt',
-        projectPath: '/project',
+        workDir: "/test",
+        featureId: "test-feature",
+        prompt: "Test prompt",
+        projectPath: "/project",
         abortController: new AbortController(),
         provider: mockProvider,
-        effectiveBareModel: 'claude-sonnet',
-        planningMode: 'skip' as const,
-        status: 'pipeline_step1' as const,
+        effectiveBareModel: "claude-sonnet",
+        planningMode: "skip" as const,
+        status: "pipeline_step1" as const,
       };
 
       const callbacks = {
@@ -383,12 +392,12 @@ describe('AgentExecutor Summary Extraction', () => {
       expect(callbacks.saveFeatureSummary).not.toHaveBeenCalled();
     });
 
-    it('should prefer extracted summary over fallback for pipeline step', async () => {
+    it("should prefer extracted summary over fallback for pipeline step", async () => {
       const executor = new AgentExecutor(
         mockEventBus,
         mockFeatureStateManager,
         mockPlanApprovalService,
-        null
+        null,
       );
 
       // Content WITH a summary tag
@@ -396,28 +405,28 @@ describe('AgentExecutor Summary Extraction', () => {
 <summary>Proper summary from extraction</summary>`;
 
       const mockProvider = {
-        getName: () => 'mock',
+        getName: () => "mock",
         executeQuery: vi.fn().mockImplementation(function* () {
           yield {
-            type: 'assistant',
+            type: "assistant",
             message: {
-              content: [{ type: 'text', text: newWork }],
+              content: [{ type: "text", text: newWork }],
             },
           };
-          yield { type: 'result', subtype: 'success' };
+          yield { type: "result", subtype: "success" };
         }),
       } as unknown as BaseProvider;
 
       const options = {
-        workDir: '/test',
-        featureId: 'test-feature',
-        prompt: 'Test prompt',
-        projectPath: '/project',
+        workDir: "/test",
+        featureId: "test-feature",
+        prompt: "Test prompt",
+        projectPath: "/project",
         abortController: new AbortController(),
         provider: mockProvider,
-        effectiveBareModel: 'claude-sonnet',
-        planningMode: 'skip' as const,
-        status: 'pipeline_step1' as const,
+        effectiveBareModel: "claude-sonnet",
+        planningMode: "skip" as const,
+        status: "pipeline_step1" as const,
       };
 
       const callbacks = {
@@ -431,15 +440,15 @@ describe('AgentExecutor Summary Extraction', () => {
 
       // Verify extracted summary was saved, not the full content
       expect(callbacks.saveFeatureSummary).toHaveBeenCalledWith(
-        '/project',
-        'test-feature',
-        'Proper summary from extraction'
+        "/project",
+        "test-feature",
+        "Proper summary from extraction",
       );
       // Ensure it didn't save the full content as fallback
       expect(callbacks.saveFeatureSummary).not.toHaveBeenCalledWith(
-        '/project',
-        'test-feature',
-        expect.stringContaining('Implementation details here')
+        "/project",
+        "test-feature",
+        expect.stringContaining("Implementation details here"),
       );
     });
   });

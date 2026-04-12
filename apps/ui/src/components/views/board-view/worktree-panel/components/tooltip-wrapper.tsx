@@ -1,5 +1,9 @@
-import type { ReactElement, ReactNode } from 'react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { ReactElement, ReactNode } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TooltipWrapperProps {
   /** The element to wrap with a tooltip */
@@ -9,7 +13,7 @@ interface TooltipWrapperProps {
   /** Whether to show the tooltip (if false, renders children without tooltip) */
   showTooltip: boolean;
   /** The side where the tooltip should appear */
-  side?: 'top' | 'right' | 'bottom' | 'left';
+  side?: "top" | "right" | "bottom" | "left";
 }
 
 /**
@@ -22,7 +26,7 @@ export function TooltipWrapper({
   children,
   tooltipContent,
   showTooltip,
-  side = 'left',
+  side = "left",
 }: TooltipWrapperProps) {
   if (!showTooltip) {
     return children;

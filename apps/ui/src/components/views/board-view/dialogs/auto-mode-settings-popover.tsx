@@ -1,8 +1,12 @@
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
-import { FastForward, Bot, Settings2 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { FastForward, Bot, Settings2 } from "lucide-react";
 
 interface AutoModeSettingsPopoverProps {
   skipVerificationInAutoMode: boolean;
@@ -43,7 +47,9 @@ export function AutoModeSettingsPopover({
           <div className="space-y-2 p-2 rounded-md bg-secondary/50">
             <div className="flex items-center gap-2">
               <Bot className="w-4 h-4 text-brand-500 shrink-0" />
-              <Label className="text-xs font-medium">Max Concurrent Agents</Label>
+              <Label className="text-xs font-medium">
+                Max Concurrent Agents
+              </Label>
               <span className="ml-auto text-xs text-muted-foreground">
                 {runningAgentsCount}/{maxConcurrency}
               </span>
@@ -58,10 +64,13 @@ export function AutoModeSettingsPopover({
                 className="flex-1"
                 data-testid="concurrency-slider"
               />
-              <span className="text-xs font-medium min-w-[2ch] text-right">{maxConcurrency}</span>
+              <span className="text-xs font-medium min-w-[2ch] text-right">
+                {maxConcurrency}
+              </span>
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Higher values process more features in parallel but use more API resources.
+              Higher values process more features in parallel but use more API
+              resources.
             </p>
           </div>
 
@@ -85,8 +94,9 @@ export function AutoModeSettingsPopover({
           </div>
 
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            When enabled, auto mode will grab features even if their dependencies are not verified,
-            as long as they are not currently running.
+            When enabled, auto mode will grab features even if their
+            dependencies are not verified, as long as they are not currently
+            running.
           </p>
         </div>
       </PopoverContent>

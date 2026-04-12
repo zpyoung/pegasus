@@ -4,10 +4,10 @@
  * Happy path: Import an image file to the context via the UI
  */
 
-import { test, expect } from '@playwright/test';
-import { Buffer } from 'buffer';
-import * as fs from 'fs';
-import * as path from 'path';
+import { test, expect } from "@playwright/test";
+import { Buffer } from "buffer";
+import * as fs from "fs";
+import * as path from "path";
 import {
   resetContextDirectory,
   setupProjectWithFixture,
@@ -16,15 +16,15 @@ import {
   waitForContextFile,
   waitForNetworkIdle,
   authenticateForTests,
-} from '../utils';
+} from "../utils";
 
-test.describe('Add Context Image', () => {
+test.describe("Add Context Image", () => {
   let testImagePath: string;
 
   test.beforeAll(async () => {
     // Create a simple test image (1x1 red PNG)
     const fixturePath = getFixturePath();
-    testImagePath = path.join(fixturePath, '..', 'test-image.png');
+    testImagePath = path.join(fixturePath, "..", "test-image.png");
 
     // Create a minimal PNG (1x1 pixel red image)
     const pngHeader = Buffer.from([
@@ -113,7 +113,7 @@ test.describe('Add Context Image', () => {
     }
   });
 
-  test('should import an image file to context', async ({ page }) => {
+  test("should import an image file to context", async ({ page }) => {
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
 

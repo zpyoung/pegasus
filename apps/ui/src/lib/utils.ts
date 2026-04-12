@@ -1,12 +1,12 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import type { ModelAlias, ModelProvider } from '@/store/app-store';
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { ModelAlias, ModelProvider } from "@/store/app-store";
 import {
   normalizeThinkingLevelForModel,
   normalizeReasoningEffortForModel,
   LEGACY_CLAUDE_ALIAS_MAP,
   type PhaseModelEntry,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,15 +16,20 @@ export function cn(...inputs: ClassValue[]) {
 // for components that already import it from here
 // NOTE: Using subpath export to avoid pulling in Node.js-specific dependencies
 // (the main @pegasus/utils barrel imports modules that depend on @pegasus/platform)
-export { getErrorMessage } from '@pegasus/utils/error-handler';
+export { getErrorMessage } from "@pegasus/utils/error-handler";
 
 /**
  * Migrate legacy model aliases to canonical prefixed IDs.
  * Returns the canonical ID if it's a legacy alias, otherwise returns the input unchanged.
  */
-export function migrateModelId(modelId: string | undefined): string | undefined {
+export function migrateModelId(
+  modelId: string | undefined,
+): string | undefined {
   if (!modelId) return modelId;
-  return LEGACY_CLAUDE_ALIAS_MAP[modelId as keyof typeof LEGACY_CLAUDE_ALIAS_MAP] || modelId;
+  return (
+    LEGACY_CLAUDE_ALIAS_MAP[modelId as keyof typeof LEGACY_CLAUDE_ALIAS_MAP] ||
+    modelId
+  );
 }
 
 /**
@@ -38,7 +43,10 @@ export function normalizeModelEntry(entry: PhaseModelEntry): PhaseModelEntry {
     model,
     providerId: entry.providerId,
     thinkingLevel: normalizeThinkingLevelForModel(model, entry.thinkingLevel),
-    reasoningEffort: normalizeReasoningEffortForModel(model, entry.reasoningEffort),
+    reasoningEffort: normalizeReasoningEffortForModel(
+      model,
+      entry.reasoningEffort,
+    ),
   };
 }
 
@@ -55,17 +63,17 @@ export function modelSupportsThinking(_model?: ModelAlias | string): boolean {
   if (!_model) return true;
 
   // Cursor models - don't show thinking controls
-  if (_model.startsWith('cursor-')) {
+  if (_model.startsWith("cursor-")) {
     return false;
   }
 
   // Codex models - use reasoningEffort, not thinkingLevel
-  if (_model.startsWith('codex-')) {
+  if (_model.startsWith("codex-")) {
     return false;
   }
 
   // Bare gpt- models (legacy) - assume Codex, no thinking controls
-  if (_model.startsWith('gpt-')) {
+  if (_model.startsWith("gpt-")) {
     return false;
   }
 
@@ -78,25 +86,25 @@ export function modelSupportsThinking(_model?: ModelAlias | string): boolean {
  * Mirrors the logic in apps/server/src/providers/provider-factory.ts
  */
 export function getProviderFromModel(model?: string): ModelProvider {
-  if (!model) return 'claude';
+  if (!model) return "claude";
 
   // Check for Cursor models (cursor- prefix)
-  if (model.startsWith('cursor-') || model.startsWith('cursor:')) {
-    return 'cursor';
+  if (model.startsWith("cursor-") || model.startsWith("cursor:")) {
+    return "cursor";
   }
 
   // Check for Codex/OpenAI models (codex- prefix, gpt- prefix, or o-series)
   if (
-    model.startsWith('codex-') ||
-    model.startsWith('codex:') ||
-    model.startsWith('gpt-') ||
+    model.startsWith("codex-") ||
+    model.startsWith("codex:") ||
+    model.startsWith("gpt-") ||
     /^o\d/.test(model)
   ) {
-    return 'codex';
+    return "codex";
   }
 
   // Default to Claude
-  return 'claude';
+  return "claude";
 }
 
 /**
@@ -106,28 +114,28 @@ export function getProviderFromModel(model?: string): ModelProvider {
 export function getModelDisplayName(model: ModelAlias | string): string {
   const displayNames: Record<string, string> = {
     // Claude aliases
-    haiku: 'Claude Haiku',
-    sonnet: 'Claude Sonnet',
-    opus: 'Claude Opus',
+    haiku: "Claude Haiku",
+    sonnet: "Claude Sonnet",
+    opus: "Claude Opus",
     // Claude canonical IDs (without version suffix)
-    'claude-haiku': 'Claude Haiku',
-    'claude-sonnet': 'Claude Sonnet',
-    'claude-opus': 'Claude Opus',
+    "claude-haiku": "Claude Haiku",
+    "claude-sonnet": "Claude Sonnet",
+    "claude-opus": "Claude Opus",
     // Claude full model IDs (returned by server)
-    'claude-haiku-4-5': 'Claude Haiku',
-    'claude-sonnet-4-20250514': 'Claude Sonnet',
-    'claude-opus-4-6': 'Claude Opus',
+    "claude-haiku-4-5": "Claude Haiku",
+    "claude-sonnet-4-20250514": "Claude Sonnet",
+    "claude-opus-4-6": "Claude Opus",
     // Codex models
-    'codex-gpt-5.2': 'GPT-5.2',
-    'codex-gpt-5.1-codex-max': 'GPT-5.1 Codex Max',
-    'codex-gpt-5.1-codex': 'GPT-5.1 Codex',
-    'codex-gpt-5.1-codex-mini': 'GPT-5.1 Codex Mini',
-    'codex-gpt-5.1': 'GPT-5.1',
+    "codex-gpt-5.2": "GPT-5.2",
+    "codex-gpt-5.1-codex-max": "GPT-5.1 Codex Max",
+    "codex-gpt-5.1-codex": "GPT-5.1 Codex",
+    "codex-gpt-5.1-codex-mini": "GPT-5.1 Codex Mini",
+    "codex-gpt-5.1": "GPT-5.1",
     // Cursor models (common ones)
-    'cursor-auto': 'Cursor Auto',
-    'cursor-composer-1': 'Composer 1',
-    'cursor-gpt-5.2': 'GPT-5.2',
-    'cursor-gpt-5.1': 'GPT-5.1',
+    "cursor-auto": "Cursor Auto",
+    "cursor-composer-1": "Composer 1",
+    "cursor-gpt-5.2": "GPT-5.2",
+    "cursor-gpt-5.1": "GPT-5.1",
   };
   return displayNames[model] || model;
 }
@@ -135,7 +143,10 @@ export function getModelDisplayName(model: ModelAlias | string): string {
 /**
  * Truncate a description string with ellipsis
  */
-export function truncateDescription(description: string, maxLength = 50): string {
+export function truncateDescription(
+  description: string,
+  maxLength = 50,
+): string {
   if (description.length <= maxLength) {
     return description;
   }
@@ -147,14 +158,17 @@ export function truncateDescription(description: string, maxLength = 50): string
  * This is important for cross-platform compatibility (Windows uses backslashes).
  */
 export function normalizePath(p: string): string {
-  return p.replace(/\\/g, '/');
+  return p.replace(/\\/g, "/");
 }
 
 /**
  * Compare two paths for equality, handling cross-platform differences.
  * Normalizes both paths to forward slashes before comparison.
  */
-export function pathsEqual(p1: string | undefined | null, p2: string | undefined | null): boolean {
+export function pathsEqual(
+  p1: string | undefined | null,
+  p2: string | undefined | null,
+): boolean {
   if (!p1 || !p2) return p1 === p2;
   return normalizePath(p1) === normalizePath(p2);
 }
@@ -164,11 +178,13 @@ export function pathsEqual(p1: string | undefined | null, p2: string | undefined
  * Checks Electron process.platform first, then falls back to navigator APIs.
  */
 export const isMac =
-  typeof process !== 'undefined' && process.platform === 'darwin'
+  typeof process !== "undefined" && process.platform === "darwin"
     ? true
-    : typeof navigator !== 'undefined' &&
+    : typeof navigator !== "undefined" &&
       (/Mac/.test(navigator.userAgent) ||
-        (navigator.platform ? navigator.platform.toLowerCase().includes('mac') : false));
+        (navigator.platform
+          ? navigator.platform.toLowerCase().includes("mac")
+          : false));
 
 /**
  * Sanitize a string for use in data-testid attributes.
@@ -192,10 +208,10 @@ export const isMac =
 export function sanitizeForTestId(name: string): string {
   return name
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**
@@ -207,8 +223,13 @@ export function sanitizeForTestId(name: string): string {
  * @returns A RFC 4122 compliant UUID v4 string (e.g., "550e8400-e29b-41d4-a716-446655440000")
  */
 export function generateUUID(): string {
-  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues === 'undefined') {
-    throw new Error('Cryptographically secure random number generator not available.');
+  if (
+    typeof crypto === "undefined" ||
+    typeof crypto.getRandomValues === "undefined"
+  ) {
+    throw new Error(
+      "Cryptographically secure random number generator not available.",
+    );
   }
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -218,7 +239,9 @@ export function generateUUID(): string {
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant RFC 4122
 
   // Convert to hex string with proper UUID format
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
+    "",
+  );
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
@@ -236,9 +259,9 @@ export function formatRelativeTime(date: Date): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? '' : 's'} ago`;
-  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? '' : 's'} ago`;
-  if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`;
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+  if (diffDay < 7) return `${diffDay} day${diffDay === 1 ? "" : "s"} ago`;
   return date.toLocaleDateString();
 }

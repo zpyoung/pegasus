@@ -5,14 +5,14 @@
  * from a feature description. Works with any configured provider (Claude, Cursor, etc.).
  */
 
-import type { Request, Response } from 'express';
-import { createLogger } from '@pegasus/utils';
-import { CLAUDE_MODEL_MAP } from '@pegasus/model-resolver';
-import { simpleQuery } from '../../../providers/simple-query-service.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getPromptCustomization } from '../../../lib/settings-helpers.js';
+import type { Request, Response } from "express";
+import { createLogger } from "@pegasus/utils";
+import { CLAUDE_MODEL_MAP } from "@pegasus/model-resolver";
+import { simpleQuery } from "../../../providers/simple-query-service.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getPromptCustomization } from "../../../lib/settings-helpers.js";
 
-const logger = createLogger('GenerateTitle');
+const logger = createLogger("GenerateTitle");
 
 interface GenerateTitleRequestBody {
   description: string;
@@ -30,16 +30,16 @@ interface GenerateTitleErrorResponse {
 }
 
 export function createGenerateTitleHandler(
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { description } = req.body as GenerateTitleRequestBody;
 
-      if (!description || typeof description !== 'string') {
+      if (!description || typeof description !== "string") {
         const response: GenerateTitleErrorResponse = {
           success: false,
-          error: 'description is required and must be a string',
+          error: "description is required and must be a string",
         };
         res.status(400).json(response);
         return;
@@ -49,16 +49,21 @@ export function createGenerateTitleHandler(
       if (trimmedDescription.length === 0) {
         const response: GenerateTitleErrorResponse = {
           success: false,
-          error: 'description cannot be empty',
+          error: "description cannot be empty",
         };
         res.status(400).json(response);
         return;
       }
 
-      logger.info(`Generating title for description: ${trimmedDescription.substring(0, 50)}...`);
+      logger.info(
+        `Generating title for description: ${trimmedDescription.substring(0, 50)}...`,
+      );
 
       // Get customized prompts from settings
-      const prompts = await getPromptCustomization(settingsService, '[GenerateTitle]');
+      const prompts = await getPromptCustomization(
+        settingsService,
+        "[GenerateTitle]",
+      );
       const systemPrompt = prompts.titleGeneration.systemPrompt;
 
       // Get credentials for API calls (uses hardcoded haiku model, no phase setting)
@@ -79,10 +84,10 @@ export function createGenerateTitleHandler(
       const title = result.text;
 
       if (!title || title.trim().length === 0) {
-        logger.warn('Received empty response from AI');
+        logger.warn("Received empty response from AI");
         const response: GenerateTitleErrorResponse = {
           success: false,
-          error: 'Failed to generate title - empty response',
+          error: "Failed to generate title - empty response",
         };
         res.status(500).json(response);
         return;
@@ -96,8 +101,9 @@ export function createGenerateTitleHandler(
       };
       res.json(response);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      logger.error('Title generation failed:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      logger.error("Title generation failed:", errorMessage);
 
       const response: GenerateTitleErrorResponse = {
         success: false,

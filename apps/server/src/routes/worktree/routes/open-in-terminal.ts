@@ -8,19 +8,19 @@
  * POST /open-in-external-terminal - Open a directory in an external terminal
  */
 
-import type { Request, Response } from 'express';
-import { isAbsolute } from 'path';
+import type { Request, Response } from "express";
+import { isAbsolute } from "path";
 import {
   openInTerminal,
   clearTerminalCache,
   detectAllTerminals,
   detectDefaultTerminal,
   openInExternalTerminal,
-} from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+} from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
-const logger = createLogger('open-in-terminal');
+const logger = createLogger("open-in-terminal");
 
 /**
  * Handler to open in system default terminal (integrated terminal behavior)
@@ -32,10 +32,10 @@ export function createOpenInTerminalHandler() {
         worktreePath: string;
       };
 
-      if (!worktreePath || typeof worktreePath !== 'string') {
+      if (!worktreePath || typeof worktreePath !== "string") {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required and must be a string',
+          error: "worktreePath required and must be a string",
         });
         return;
       }
@@ -44,7 +44,7 @@ export function createOpenInTerminalHandler() {
       if (!isAbsolute(worktreePath)) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath must be an absolute path',
+          error: "worktreePath must be an absolute path",
         });
         return;
       }
@@ -59,7 +59,7 @@ export function createOpenInTerminalHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Open in terminal failed');
+      logError(error, "Open in terminal failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -79,7 +79,7 @@ export function createGetAvailableTerminalsHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Get available terminals failed');
+      logError(error, "Get available terminals failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -103,7 +103,7 @@ export function createGetDefaultTerminalHandler() {
           : null,
       });
     } catch (error) {
-      logError(error, 'Get default terminal failed');
+      logError(error, "Get default terminal failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -122,7 +122,9 @@ export function createRefreshTerminalsHandler() {
       // Re-detect terminals (this will repopulate the cache)
       const terminals = await detectAllTerminals();
 
-      logger.info(`Terminal cache refreshed, found ${terminals.length} terminals`);
+      logger.info(
+        `Terminal cache refreshed, found ${terminals.length} terminals`,
+      );
 
       res.json({
         success: true,
@@ -132,7 +134,7 @@ export function createRefreshTerminalsHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Refresh terminals failed');
+      logError(error, "Refresh terminals failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -149,10 +151,10 @@ export function createOpenInExternalTerminalHandler() {
         terminalId?: string;
       };
 
-      if (!worktreePath || typeof worktreePath !== 'string') {
+      if (!worktreePath || typeof worktreePath !== "string") {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required and must be a string',
+          error: "worktreePath required and must be a string",
         });
         return;
       }
@@ -160,7 +162,7 @@ export function createOpenInExternalTerminalHandler() {
       if (!isAbsolute(worktreePath)) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath must be an absolute path',
+          error: "worktreePath must be an absolute path",
         });
         return;
       }
@@ -174,7 +176,7 @@ export function createOpenInExternalTerminalHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Open in external terminal failed');
+      logError(error, "Open in external terminal failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

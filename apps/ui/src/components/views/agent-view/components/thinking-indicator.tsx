@@ -1,5 +1,5 @@
-import { Bot } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
+import { Bot } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export function ThinkingIndicator() {
   return (

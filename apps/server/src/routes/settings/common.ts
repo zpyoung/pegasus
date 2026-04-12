@@ -5,11 +5,14 @@
  * Re-exports error handling helpers from the parent routes module.
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
 /** Logger instance for settings-related operations */
-export const logger = createLogger('Settings');
+export const logger = createLogger("Settings");
 
 /**
  * Extract user-friendly error message from error objects

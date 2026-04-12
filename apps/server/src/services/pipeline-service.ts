@@ -5,13 +5,17 @@
  * - Pipeline configuration ({projectPath}/.pegasus/pipeline.json)
  */
 
-import path from 'path';
-import { createLogger } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import { ensurePegasusDir } from '@pegasus/platform';
-import type { PipelineConfig, PipelineStep, FeatureStatusWithPipeline } from '@pegasus/types';
+import path from "path";
+import { createLogger } from "@pegasus/utils";
+import * as secureFs from "../lib/secure-fs.js";
+import { ensurePegasusDir } from "@pegasus/platform";
+import type {
+  PipelineConfig,
+  PipelineStep,
+  FeatureStatusWithPipeline,
+} from "@pegasus/types";
 
-const logger = createLogger('PipelineService');
+const logger = createLogger("PipelineService");
 
 // Default empty pipeline config
 const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
@@ -27,7 +31,7 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
   const content = JSON.stringify(data, null, 2);
 
   try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
+    await secureFs.writeFile(tempPath, content, "utf-8");
     await secureFs.rename(tempPath, filePath);
   } catch (error) {
     // Clean up temp file if it exists
@@ -45,10 +49,10 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
  */
 async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(filePath, "utf-8")) as string;
     return JSON.parse(content) as T;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return defaultValue;
     }
     logger.error(`Error reading ${filePath}:`, error);
@@ -67,7 +71,7 @@ function generateStepId(): string {
  * Get the pipeline config file path for a project
  */
 function getPipelineConfigPath(projectPath: string): string {
-  return path.join(projectPath, '.pegasus', 'pipeline.json');
+  return path.join(projectPath, ".pegasus", "pipeline.json");
 }
 
 /**
@@ -86,7 +90,10 @@ export class PipelineService {
    */
   async getPipelineConfig(projectPath: string): Promise<PipelineConfig> {
     const configPath = getPipelineConfigPath(projectPath);
-    const config = await readJsonFile<PipelineConfig>(configPath, DEFAULT_PIPELINE_CONFIG);
+    const config = await readJsonFile<PipelineConfig>(
+      configPath,
+      DEFAULT_PIPELINE_CONFIG,
+    );
 
     // Ensure version is set
     return {
@@ -101,7 +108,10 @@ export class PipelineService {
    * @param projectPath - Absolute path to the project
    * @param config - Complete PipelineConfig to save
    */
-  async savePipelineConfig(projectPath: string, config: PipelineConfig): Promise<void> {
+  async savePipelineConfig(
+    projectPath: string,
+    config: PipelineConfig,
+  ): Promise<void> {
     await ensurePegasusDir(projectPath);
     const configPath = getPipelineConfigPath(projectPath);
     await atomicWriteJson(configPath, config);
@@ -117,7 +127,7 @@ export class PipelineService {
    */
   async addStep(
     projectPath: string,
-    step: Omit<PipelineStep, 'id' | 'createdAt' | 'updatedAt'>
+    step: Omit<PipelineStep, "id" | "createdAt" | "updatedAt">,
   ): Promise<PipelineStep> {
     const config = await this.getPipelineConfig(projectPath);
     const now = new Date().toISOString();
@@ -153,7 +163,7 @@ export class PipelineService {
   async updateStep(
     projectPath: string,
     stepId: string,
-    updates: Partial<Omit<PipelineStep, 'id' | 'createdAt'>>
+    updates: Partial<Omit<PipelineStep, "id" | "createdAt">>,
   ): Promise<PipelineStep> {
     const config = await this.getPipelineConfig(projectPath);
     const stepIndex = config.steps.findIndex((s) => s.id === stepId);
@@ -246,7 +256,7 @@ export class PipelineService {
     currentStatus: FeatureStatusWithPipeline,
     config: PipelineConfig | null,
     skipTests: boolean,
-    excludedStepIds?: string[]
+    excludedStepIds?: string[],
   ): FeatureStatusWithPipeline {
     const steps = config?.steps || [];
     const exclusions = new Set(excludedStepIds || []);
@@ -259,31 +269,36 @@ export class PipelineService {
     // If no pipeline steps (or all excluded), use original logic
     if (sortedSteps.length === 0) {
       // If coming from in_progress or already in a pipeline step, go to final status
-      if (currentStatus === 'in_progress' || currentStatus.startsWith('pipeline_')) {
-        return skipTests ? 'waiting_approval' : 'verified';
+      if (
+        currentStatus === "in_progress" ||
+        currentStatus.startsWith("pipeline_")
+      ) {
+        return skipTests ? "waiting_approval" : "verified";
       }
       return currentStatus;
     }
 
     // Coming from in_progress -> go to first non-excluded pipeline step
-    if (currentStatus === 'in_progress') {
+    if (currentStatus === "in_progress") {
       return `pipeline_${sortedSteps[0].id}`;
     }
 
     // Coming from a pipeline step -> go to next non-excluded step or final status
-    if (currentStatus.startsWith('pipeline_')) {
-      const currentStepId = currentStatus.replace('pipeline_', '');
+    if (currentStatus.startsWith("pipeline_")) {
+      const currentStepId = currentStatus.replace("pipeline_", "");
       const currentIndex = sortedSteps.findIndex((s) => s.id === currentStepId);
 
       if (currentIndex === -1) {
         // Current step not found in filtered list (might be excluded or invalid)
         // Find next valid step after this one from the original sorted list
         const allSortedSteps = [...steps].sort((a, b) => a.order - b.order);
-        const originalIndex = allSortedSteps.findIndex((s) => s.id === currentStepId);
+        const originalIndex = allSortedSteps.findIndex(
+          (s) => s.id === currentStepId,
+        );
 
         if (originalIndex === -1) {
           // Step truly doesn't exist, go to final status
-          return skipTests ? 'waiting_approval' : 'verified';
+          return skipTests ? "waiting_approval" : "verified";
         }
 
         // Find the next non-excluded step after the current one
@@ -294,7 +309,7 @@ export class PipelineService {
         }
 
         // No more non-excluded steps, go to final status
-        return skipTests ? 'waiting_approval' : 'verified';
+        return skipTests ? "waiting_approval" : "verified";
       }
 
       if (currentIndex < sortedSteps.length - 1) {
@@ -303,7 +318,7 @@ export class PipelineService {
       }
 
       // Last non-excluded step completed, go to final status
-      return skipTests ? 'waiting_approval' : 'verified';
+      return skipTests ? "waiting_approval" : "verified";
     }
 
     // For other statuses, don't change
@@ -317,7 +332,10 @@ export class PipelineService {
    * @param stepId - ID of the step to retrieve
    * @returns The pipeline step or null if not found
    */
-  async getStep(projectPath: string, stepId: string): Promise<PipelineStep | null> {
+  async getStep(
+    projectPath: string,
+    stepId: string,
+  ): Promise<PipelineStep | null> {
     const config = await this.getPipelineConfig(projectPath);
     return config.steps.find((s) => s.id === stepId) || null;
   }
@@ -326,7 +344,7 @@ export class PipelineService {
    * Check if a status is a pipeline status
    */
   isPipelineStatus(status: FeatureStatusWithPipeline): boolean {
-    return status.startsWith('pipeline_');
+    return status.startsWith("pipeline_");
   }
 
   /**
@@ -336,7 +354,7 @@ export class PipelineService {
     if (!this.isPipelineStatus(status)) {
       return null;
     }
-    return status.replace('pipeline_', '');
+    return status.replace("pipeline_", "");
   }
 }
 

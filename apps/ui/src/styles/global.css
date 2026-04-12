@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 @source "../../../libs/chat-ui/src";
 
 /* Dark themes */
@@ -204,9 +204,12 @@
   /* Shadow tokens */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Transition tokens */
   --transition-fast: 150ms ease;
@@ -302,9 +305,12 @@
     /* Shadow tokens - darker for dark mode */
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-md:
+      0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg:
+      0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    --shadow-xl:
+      0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -438,19 +444,19 @@
 
   /* Ensure all clickable elements show pointer cursor */
   button:not(:disabled),
-  [role='button']:not([aria-disabled='true']),
+  [role="button"]:not([aria-disabled="true"]),
   a[href],
-  input[type='button']:not(:disabled),
-  input[type='submit']:not(:disabled),
-  input[type='reset']:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
   select:not(:disabled),
-  [tabindex]:not([tabindex='-1']):not(:disabled) {
+  [tabindex]:not([tabindex="-1"]):not(:disabled) {
     cursor: pointer;
   }
 
   /* Disabled elements should show not-allowed cursor */
   button:disabled,
-  [role='button'][aria-disabled='true'],
+  [role="button"][aria-disabled="true"],
   input:disabled,
   select:disabled,
   textarea:disabled {
@@ -577,12 +583,12 @@
      On mobile, shift the close button down by the safe-area-inset-top so it
      remains reachable and not hidden behind the notch or Dynamic Island.
      On sm+ (desktop), use standard top positioning. */
-  .dialog-fullscreen-mobile [data-slot='dialog-close'] {
+  .dialog-fullscreen-mobile [data-slot="dialog-close"] {
     top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
   }
 
   @media (min-width: 640px) {
-    .dialog-fullscreen-mobile [data-slot='dialog-close'] {
+    .dialog-fullscreen-mobile [data-slot="dialog-close"] {
       top: 0.75rem;
     }
   }
@@ -624,11 +630,19 @@
 
   /* Brand gradient utilities */
   .gradient-brand {
-    background: linear-gradient(135deg, oklch(0.55 0.25 265), oklch(0.5 0.28 270));
+    background: linear-gradient(
+      135deg,
+      oklch(0.55 0.25 265),
+      oklch(0.5 0.28 270)
+    );
   }
 
   .gradient-brand-subtle {
-    background: linear-gradient(135deg, oklch(0.55 0.25 265 / 0.1), oklch(0.5 0.28 270 / 0.1));
+    background: linear-gradient(
+      135deg,
+      oklch(0.55 0.25 265 / 0.1),
+      oklch(0.5 0.28 270 / 0.1)
+    );
   }
 
   /* Glass morphism background utilities */
@@ -705,13 +719,19 @@
   }
 
   .bg-running-indicator\/20 {
-    background-color: color-mix(in oklch, var(--running-indicator), transparent 80%);
+    background-color: color-mix(
+      in oklch,
+      var(--running-indicator),
+      transparent 80%
+    );
   }
 
   .shadow-running-indicator\/50 {
     box-shadow:
-      0 10px 15px -3px color-mix(in oklch, var(--running-indicator), transparent 50%),
-      0 4px 6px -4px color-mix(in oklch, var(--running-indicator), transparent 50%);
+      0 10px 15px -3px
+        color-mix(in oklch, var(--running-indicator), transparent 50%),
+      0 4px 6px -4px
+        color-mix(in oklch, var(--running-indicator), transparent 50%);
   }
 
   .text-running-indicator {
@@ -765,7 +785,12 @@
 /* Animated Outline Button Styles */
 .animated-outline-gradient {
   /* Default gradient - purple to blue */
-  background: conic-gradient(from 90deg at 50% 50%, #a855f7 0%, #3b82f6 50%, #a855f7 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #a855f7 0%,
+    #3b82f6 50%,
+    #a855f7 100%
+  );
 }
 
 /* Light mode - deeper purple to blue gradient for better visibility */

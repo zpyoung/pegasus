@@ -25,18 +25,20 @@ export type ClaudeUsage = {
 };
 
 // Response type for Claude usage API (can be success or error)
-export type ClaudeUsageResponse = ClaudeUsage | { error: string; message?: string };
+export type ClaudeUsageResponse =
+  | ClaudeUsage
+  | { error: string; message?: string };
 
 // Codex Usage types
 export type CodexPlanType =
-  | 'free'
-  | 'plus'
-  | 'pro'
-  | 'team'
-  | 'business'
-  | 'enterprise'
-  | 'edu'
-  | 'unknown';
+  | "free"
+  | "plus"
+  | "pro"
+  | "team"
+  | "business"
+  | "enterprise"
+  | "edu"
+  | "unknown";
 
 export interface CodexRateLimitWindow {
   limit: number;
@@ -57,13 +59,21 @@ export interface CodexUsage {
 }
 
 // Response type for Codex usage API (can be success or error)
-export type CodexUsageResponse = CodexUsage | { error: string; message?: string };
+export type CodexUsageResponse =
+  | CodexUsage
+  | { error: string; message?: string };
 
 // z.ai Usage types
-export type ZaiPlanType = 'free' | 'basic' | 'standard' | 'professional' | 'enterprise' | 'unknown';
+export type ZaiPlanType =
+  | "free"
+  | "basic"
+  | "standard"
+  | "professional"
+  | "enterprise"
+  | "unknown";
 
 export interface ZaiQuotaLimit {
-  limitType: 'TOKENS_LIMIT' | 'TIME_LIMIT' | string;
+  limitType: "TOKENS_LIMIT" | "TIME_LIMIT" | string;
   limit: number;
   used: number;
   remaining: number;
@@ -133,4 +143,6 @@ export interface GeminiUsage {
 }
 
 // Response type for Gemini usage API (can be success or error)
-export type GeminiUsageResponse = GeminiUsage | { error: string; message?: string };
+export type GeminiUsageResponse =
+  | GeminiUsage
+  | { error: string; message?: string };

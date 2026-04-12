@@ -1,10 +1,10 @@
-import { useMemo, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { useAppStore } from '@/store/app-store';
-import { useAvailableEditors as useAvailableEditorsQuery } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import type { EditorInfo } from '@pegasus/types';
+import { useMemo, useCallback } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { useAppStore } from "@/store/app-store";
+import { useAvailableEditors as useAvailableEditorsQuery } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import type { EditorInfo } from "@pegasus/types";
 
 // Re-export EditorInfo for convenience
 export type { EditorInfo };
@@ -27,11 +27,11 @@ export function useAvailableEditors() {
     mutationFn: async () => {
       const api = getElectronAPI();
       if (!api.worktree) {
-        throw new Error('Worktree API not available');
+        throw new Error("Worktree API not available");
       }
       const result = await api.worktree.refreshEditors();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to refresh editors');
+        throw new Error(result.error || "Failed to refresh editors");
       }
       return result.result?.editors ?? [];
     },
@@ -61,7 +61,9 @@ export function useAvailableEditors() {
  * Hook to get the effective default editor based on user settings
  * Falls back to: Cursor > VS Code > first available editor
  */
-export function useEffectiveDefaultEditor(editors: EditorInfo[]): EditorInfo | null {
+export function useEffectiveDefaultEditor(
+  editors: EditorInfo[],
+): EditorInfo | null {
   const defaultEditorCommand = useAppStore((s) => s.defaultEditorCommand);
 
   return useMemo(() => {
@@ -74,10 +76,10 @@ export function useEffectiveDefaultEditor(editors: EditorInfo[]): EditorInfo | n
     }
 
     // Auto-detect: prefer Cursor, then VS Code, then first available
-    const cursor = editors.find((e) => e.command === 'cursor');
+    const cursor = editors.find((e) => e.command === "cursor");
     if (cursor) return cursor;
 
-    const vscode = editors.find((e) => e.command === 'code');
+    const vscode = editors.find((e) => e.command === "code");
     if (vscode) return vscode;
 
     return editors[0];

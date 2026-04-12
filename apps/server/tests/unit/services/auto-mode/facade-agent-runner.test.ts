@@ -1,22 +1,22 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock dependencies (hoisted)
-vi.mock('../../../../src/services/agent-executor.js');
-vi.mock('../../../../src/lib/settings-helpers.js');
-vi.mock('../../../../src/providers/provider-factory.js');
-vi.mock('../../../../src/lib/sdk-options.js');
-vi.mock('@pegasus/model-resolver', () => ({
+vi.mock("../../../../src/services/agent-executor.js");
+vi.mock("../../../../src/lib/settings-helpers.js");
+vi.mock("../../../../src/providers/provider-factory.js");
+vi.mock("../../../../src/lib/sdk-options.js");
+vi.mock("@pegasus/model-resolver", () => ({
   resolveModelString: vi.fn((model, fallback) => model || fallback),
-  DEFAULT_MODELS: { claude: 'claude-3-5-sonnet' },
+  DEFAULT_MODELS: { claude: "claude-3-5-sonnet" },
 }));
 
-import { AutoModeServiceFacade } from '../../../../src/services/auto-mode/facade.js';
-import { AgentExecutor } from '../../../../src/services/agent-executor.js';
-import * as settingsHelpers from '../../../../src/lib/settings-helpers.js';
-import { ProviderFactory } from '../../../../src/providers/provider-factory.js';
-import * as sdkOptions from '../../../../src/lib/sdk-options.js';
+import { AutoModeServiceFacade } from "../../../../src/services/auto-mode/facade.js";
+import { AgentExecutor } from "../../../../src/services/agent-executor.js";
+import * as settingsHelpers from "../../../../src/lib/settings-helpers.js";
+import { ProviderFactory } from "../../../../src/providers/provider-factory.js";
+import * as sdkOptions from "../../../../src/lib/sdk-options.js";
 
-describe('AutoModeServiceFacade Agent Runner', () => {
+describe("AutoModeServiceFacade Agent Runner", () => {
   let mockAgentExecutor: MockAgentExecutor;
   let mockSettingsService: MockSettingsService;
   let facade: AutoModeServiceFacade;
@@ -39,14 +39,16 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     // the specific fields that are verified in tests (maxTurns, allowedTools, etc.)
     vi.mocked(sdkOptions.createAutoModeOptions).mockReturnValue({
       maxTurns: 123,
-      allowedTools: ['tool1'],
-      systemPrompt: 'system-prompt',
+      allowedTools: ["tool1"],
+      systemPrompt: "system-prompt",
     } as any);
 
     mockAgentExecutor = {
       execute: vi.fn().mockResolvedValue(undefined),
     };
-    (AgentExecutor as any).mockImplementation(function (this: MockAgentExecutor) {
+    (AgentExecutor as any).mockImplementation(function (
+      this: MockAgentExecutor,
+    ) {
       return mockAgentExecutor;
     });
 
@@ -57,12 +59,18 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     };
 
     // Helper to access the private createRunAgentFn via factory creation
-    facade = AutoModeServiceFacade.create('/project', {
-      events: { on: vi.fn(), emit: vi.fn(), subscribe: vi.fn().mockReturnValue(vi.fn()) } as any,
+    facade = AutoModeServiceFacade.create("/project", {
+      events: {
+        on: vi.fn(),
+        emit: vi.fn(),
+        subscribe: vi.fn().mockReturnValue(vi.fn()),
+      } as any,
       settingsService: mockSettingsService,
       sharedServices: {
         eventBus: { emitAutoModeEvent: vi.fn() } as any,
-        worktreeResolver: { getCurrentBranch: vi.fn().mockResolvedValue('main') } as any,
+        worktreeResolver: {
+          getCurrentBranch: vi.fn().mockResolvedValue("main"),
+        } as any,
         concurrencyManager: {
           isRunning: vi.fn().mockReturnValue(false),
           getRunningFeature: vi.fn().mockReturnValue(null),
@@ -71,13 +79,13 @@ describe('AutoModeServiceFacade Agent Runner', () => {
     });
   });
 
-  it('should resolve provider by providerId and pass to AgentExecutor', async () => {
+  it("should resolve provider by providerId and pass to AgentExecutor", async () => {
     // 1. Setup mocks
-    const mockProvider = { getName: () => 'mock-provider' };
+    const mockProvider = { getName: () => "mock-provider" };
     (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
 
-    const mockClaudeProvider = { id: 'zai-1', name: 'Zai' };
-    const mockCredentials = { apiKey: 'test-key' };
+    const mockClaudeProvider = { id: "zai-1", name: "Zai" };
+    const mockCredentials = { apiKey: "test-key" };
     (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
       provider: mockClaudeProvider,
       credentials: mockCredentials,
@@ -88,120 +96,120 @@ describe('AutoModeServiceFacade Agent Runner', () => {
 
     // 2. Execute
     await runAgentFn(
-      '/workdir',
-      'feature-1',
-      'prompt',
+      "/workdir",
+      "feature-1",
+      "prompt",
       new AbortController(),
-      '/project',
+      "/project",
       [],
-      'model-1',
+      "model-1",
       {
-        providerId: 'zai-1',
-      }
+        providerId: "zai-1",
+      },
     );
 
     // 3. Verify
     expect(settingsHelpers.resolveProviderContext).toHaveBeenCalledWith(
       mockSettingsService,
-      'model-1',
-      'zai-1',
-      '[AutoModeFacade]'
+      "model-1",
+      "zai-1",
+      "[AutoModeFacade]",
     );
 
     expect(mockAgentExecutor.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         claudeCompatibleProvider: mockClaudeProvider,
         credentials: mockCredentials,
-        model: 'model-1', // Original model ID
+        model: "model-1", // Original model ID
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
-  it('should fallback to model-based lookup if providerId is not provided', async () => {
-    const mockProvider = { getName: () => 'mock-provider' };
+  it("should fallback to model-based lookup if providerId is not provided", async () => {
+    const mockProvider = { getName: () => "mock-provider" };
     (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
 
-    const mockClaudeProvider = { id: 'zai-model', name: 'Zai Model' };
+    const mockClaudeProvider = { id: "zai-model", name: "Zai Model" };
     (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
       provider: mockClaudeProvider,
-      credentials: { apiKey: 'model-key' },
-      resolvedModel: 'resolved-model-1',
+      credentials: { apiKey: "model-key" },
+      resolvedModel: "resolved-model-1",
     });
 
     const runAgentFn = (facade as any).executionService.runAgentFn;
 
     await runAgentFn(
-      '/workdir',
-      'feature-1',
-      'prompt',
+      "/workdir",
+      "feature-1",
+      "prompt",
       new AbortController(),
-      '/project',
+      "/project",
       [],
-      'model-1',
+      "model-1",
       {
         // no providerId
-      }
+      },
     );
 
     expect(settingsHelpers.resolveProviderContext).toHaveBeenCalledWith(
       mockSettingsService,
-      'model-1',
+      "model-1",
       undefined,
-      '[AutoModeFacade]'
+      "[AutoModeFacade]",
     );
 
     expect(mockAgentExecutor.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         claudeCompatibleProvider: mockClaudeProvider,
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
-  it('should use resolvedModel from provider config for createAutoModeOptions if it maps to a Claude model', async () => {
-    const mockProvider = { getName: () => 'mock-provider' };
+  it("should use resolvedModel from provider config for createAutoModeOptions if it maps to a Claude model", async () => {
+    const mockProvider = { getName: () => "mock-provider" };
     (ProviderFactory.getProviderForModel as any).mockReturnValue(mockProvider);
 
     const mockClaudeProvider = {
-      id: 'zai-1',
-      name: 'Zai',
-      models: [{ id: 'custom-model-1', mapsToClaudeModel: 'claude-3-opus' }],
+      id: "zai-1",
+      name: "Zai",
+      models: [{ id: "custom-model-1", mapsToClaudeModel: "claude-3-opus" }],
     };
     (settingsHelpers.resolveProviderContext as any).mockResolvedValue({
       provider: mockClaudeProvider,
-      credentials: { apiKey: 'test-key' },
-      resolvedModel: 'claude-3-5-opus',
+      credentials: { apiKey: "test-key" },
+      resolvedModel: "claude-3-5-opus",
     });
 
     const runAgentFn = (facade as any).executionService.runAgentFn;
 
     await runAgentFn(
-      '/workdir',
-      'feature-1',
-      'prompt',
+      "/workdir",
+      "feature-1",
+      "prompt",
       new AbortController(),
-      '/project',
+      "/project",
       [],
-      'custom-model-1',
+      "custom-model-1",
       {
-        providerId: 'zai-1',
-      }
+        providerId: "zai-1",
+      },
     );
 
     // Verify createAutoModeOptions was called with the mapped model
     expect(sdkOptions.createAutoModeOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'claude-3-5-opus',
-      })
+        model: "claude-3-5-opus",
+      }),
     );
 
     // Verify AgentExecutor.execute still gets the original custom model ID
     expect(mockAgentExecutor.execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: 'custom-model-1',
+        model: "custom-model-1",
       }),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });

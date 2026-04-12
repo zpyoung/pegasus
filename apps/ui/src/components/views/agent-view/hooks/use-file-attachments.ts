@@ -1,8 +1,8 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import type { ImageAttachment, TextFileAttachment } from "@/store/app-store";
 
-const logger = createLogger('FileAttachments');
+const logger = createLogger("FileAttachments");
 import {
   fileToBase64,
   generateImageId,
@@ -15,7 +15,7 @@ import {
   getTextFileMimeType,
   DEFAULT_MAX_FILE_SIZE,
   DEFAULT_MAX_FILES,
-} from '@/lib/image-utils';
+} from "@/lib/image-utils";
 
 interface UseFileAttachmentsOptions {
   isProcessing: boolean;
@@ -39,7 +39,9 @@ interface UseFileAttachmentsResult {
   handlePaste: (e: React.ClipboardEvent) => Promise<void>;
   clearAllFiles: () => void;
   setSelectedImages: React.Dispatch<React.SetStateAction<ImageAttachment[]>>;
-  setSelectedTextFiles: React.Dispatch<React.SetStateAction<TextFileAttachment[]>>;
+  setSelectedTextFiles: React.Dispatch<
+    React.SetStateAction<TextFileAttachment[]>
+  >;
   setShowImageDropZone: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -48,7 +50,9 @@ export function useFileAttachments({
   isConnected,
 }: UseFileAttachmentsOptions): UseFileAttachmentsResult {
   const [selectedImages, setSelectedImages] = useState<ImageAttachment[]>([]);
-  const [selectedTextFiles, setSelectedTextFiles] = useState<TextFileAttachment[]>([]);
+  const [selectedTextFiles, setSelectedTextFiles] = useState<
+    TextFileAttachment[]
+  >([]);
   const [showImageDropZone, setShowImageDropZone] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -136,12 +140,14 @@ export function useFileAttachments({
             errors.push(`${file.name}: Failed to process image.`);
           }
         } else {
-          errors.push(`${file.name}: Unsupported file type. Use images, .txt, or .md files.`);
+          errors.push(
+            `${file.name}: Unsupported file type. Use images, .txt, or .md files.`,
+          );
         }
       }
 
       if (errors.length > 0) {
-        logger.warn('File upload errors:', errors);
+        logger.warn("File upload errors:", errors);
       }
 
       if (newImages.length > 0) {
@@ -152,7 +158,7 @@ export function useFileAttachments({
         setSelectedTextFiles((prev) => [...prev, ...newTextFiles]);
       }
     },
-    [isProcessing, selectedImages, selectedTextFiles]
+    [isProcessing, selectedImages, selectedTextFiles],
   );
 
   // Remove individual image
@@ -179,11 +185,11 @@ export function useFileAttachments({
       if (isProcessing || !isConnected) return;
 
       // Check if dragged items contain files
-      if (e.dataTransfer.types.includes('Files')) {
+      if (e.dataTransfer.types.includes("Files")) {
         setIsDragOver(true);
       }
     },
-    [isProcessing, isConnected]
+    [isProcessing, isConnected],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -225,7 +231,7 @@ export function useFileAttachments({
       if (items && items.length > 0) {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          if (item.kind === 'file') {
+          if (item.kind === "file") {
             const file = item.getAsFile();
             if (file) {
               const dataTransfer = new DataTransfer();
@@ -236,7 +242,7 @@ export function useFileAttachments({
         }
       }
     },
-    [isProcessing, isConnected, processDroppedFiles]
+    [isProcessing, isConnected, processDroppedFiles],
   );
 
   const handlePaste = useCallback(
@@ -249,9 +255,9 @@ export function useFileAttachments({
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
 
-          if (item.kind === 'file') {
+          if (item.kind === "file") {
             const file = item.getAsFile();
-            if (file && file.type.startsWith('image/')) {
+            if (file && file.type.startsWith("image/")) {
               e.preventDefault(); // Prevent default paste of file path
               files.push(file);
             }
@@ -265,7 +271,7 @@ export function useFileAttachments({
         }
       }
     },
-    [processDroppedFiles]
+    [processDroppedFiles],
   );
 
   return {

@@ -2,10 +2,13 @@
  * Common utilities for sessions routes
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
-const logger = createLogger('Sessions');
+const logger = createLogger("Sessions");
 
 // Re-export shared utilities
 export { getErrorMessageShared as getErrorMessage };

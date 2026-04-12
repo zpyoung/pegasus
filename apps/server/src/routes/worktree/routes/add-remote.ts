@@ -5,10 +5,10 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { getErrorMessage, logWorktreeError } from '../common.js';
+import type { Request, Response } from "express";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { getErrorMessage, logWorktreeError } from "../common.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -83,7 +83,7 @@ export function createAddRemoteHandler() {
         res.status(400).json({
           success: false,
           error:
-            'Invalid remote name. Must start with alphanumeric character and contain only letters, numbers, dashes, underscores, or periods.',
+            "Invalid remote name. Must start with alphanumeric character and contain only letters, numbers, dashes, underscores, or periods.",
         });
         return;
       }
@@ -92,25 +92,30 @@ export function createAddRemoteHandler() {
       if (!isValidRemoteUrl(remoteUrl)) {
         res.status(400).json({
           success: false,
-          error: 'Invalid remote URL. Must be a valid git URL (HTTPS, SSH, or git:// protocol).',
+          error:
+            "Invalid remote URL. Must be a valid git URL (HTTPS, SSH, or git:// protocol).",
         });
         return;
       }
 
       // Check if remote already exists
       try {
-        const { stdout: existingRemotes } = await execFileAsync('git', ['remote'], {
-          cwd: worktreePath,
-        });
+        const { stdout: existingRemotes } = await execFileAsync(
+          "git",
+          ["remote"],
+          {
+            cwd: worktreePath,
+          },
+        );
         const remoteNames = existingRemotes
           .trim()
-          .split('\n')
+          .split("\n")
           .filter((r) => r.trim());
         if (remoteNames.includes(remoteName)) {
           res.status(400).json({
             success: false,
             error: `Remote '${remoteName}' already exists`,
-            code: 'REMOTE_EXISTS',
+            code: "REMOTE_EXISTS",
           });
           return;
         }
@@ -118,20 +123,20 @@ export function createAddRemoteHandler() {
         // If git remote fails, continue with adding the remote. Log for debugging.
         logWorktreeError(
           error,
-          'Checking for existing remotes failed, proceeding to add.',
-          worktreePath
+          "Checking for existing remotes failed, proceeding to add.",
+          worktreePath,
         );
       }
 
       // Add the remote using execFile with array arguments to prevent command injection
-      await execFileAsync('git', ['remote', 'add', remoteName, remoteUrl], {
+      await execFileAsync("git", ["remote", "add", remoteName, remoteUrl], {
         cwd: worktreePath,
       });
 
       // Optionally fetch from the new remote to get its branches
       let fetchSucceeded = false;
       try {
-        await execFileAsync('git', ['fetch', remoteName, '--quiet'], {
+        await execFileAsync("git", ["fetch", remoteName, "--quiet"], {
           cwd: worktreePath,
           timeout: FETCH_TIMEOUT_MS,
         });
@@ -141,7 +146,7 @@ export function createAddRemoteHandler() {
         logWorktreeError(
           fetchError,
           `Fetch from new remote '${remoteName}' failed (remote added successfully)`,
-          worktreePath
+          worktreePath,
         );
         fetchSucceeded = false;
       }
@@ -159,7 +164,7 @@ export function createAddRemoteHandler() {
       });
     } catch (error) {
       const worktreePath = req.body?.worktreePath;
-      logWorktreeError(error, 'Add remote failed', worktreePath);
+      logWorktreeError(error, "Add remote failed", worktreePath);
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -20,6 +20,6 @@ export {
   buildUserPrompt,
   isValidEnhancementMode,
   getAvailableEnhancementModes,
-} from '@pegasus/prompts';
+} from "@pegasus/prompts";
 
-export type { EnhancementMode, EnhancementExample } from '@pegasus/prompts';
+export type { EnhancementMode, EnhancementExample } from "@pegasus/prompts";

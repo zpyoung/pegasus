@@ -1,13 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Cpu } from 'lucide-react';
-import { ArrayFieldEditor } from './array-field-editor';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Cpu } from "lucide-react";
+import { ArrayFieldEditor } from "./array-field-editor";
 
 interface TechStackSectionProps {
   technologies: string[];
   onChange: (technologies: string[]) => void;
 }
 
-export function TechStackSection({ technologies, onChange }: TechStackSectionProps) {
+export function TechStackSection({
+  technologies,
+  onChange,
+}: TechStackSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">

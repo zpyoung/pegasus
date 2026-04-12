@@ -2,14 +2,14 @@
  * POST /export endpoint - Export features to JSON or YAML format
  */
 
-import type { Request, Response } from 'express';
-import type { FeatureLoader } from '../../../services/feature-loader.js';
+import type { Request, Response } from "express";
+import type { FeatureLoader } from "../../../services/feature-loader.js";
 import {
   getFeatureExportService,
   type ExportFormat,
   type BulkExportOptions,
-} from '../../../services/feature-export-service.js';
-import { getErrorMessage, logError } from '../common.js';
+} from "../../../services/feature-export-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 interface ExportRequest {
   projectPath: string;
@@ -44,7 +44,7 @@ export function createExportHandler(_featureLoader: FeatureLoader) {
       const {
         projectPath,
         featureIds,
-        format = 'json',
+        format = "json",
         includeHistory = true,
         includePlanSpec = true,
         category,
@@ -54,12 +54,14 @@ export function createExportHandler(_featureLoader: FeatureLoader) {
       } = req.body as ExportRequest;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       // Validate format
-      if (format !== 'json' && format !== 'yaml') {
+      if (format !== "json" && format !== "yaml") {
         res.status(400).json({
           success: false,
           error: 'format must be "json" or "yaml"',
@@ -78,18 +80,22 @@ export function createExportHandler(_featureLoader: FeatureLoader) {
         metadata,
       };
 
-      const exportData = await exportService.exportFeatures(projectPath, options);
+      const exportData = await exportService.exportFeatures(
+        projectPath,
+        options,
+      );
 
       // Return the export data as a string in the response
       res.json({
         success: true,
         data: exportData,
         format,
-        contentType: format === 'json' ? 'application/json' : 'application/x-yaml',
-        filename: `features-export.${format === 'json' ? 'json' : 'yaml'}`,
+        contentType:
+          format === "json" ? "application/json" : "application/x-yaml",
+        filename: `features-export.${format === "json" ? "json" : "yaml"}`,
       });
     } catch (error) {
-      logError(error, 'Export features failed');
+      logError(error, "Export features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

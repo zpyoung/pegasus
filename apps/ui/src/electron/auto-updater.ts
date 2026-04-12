@@ -1,19 +1,20 @@
-import { app, dialog, shell } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import { createLogger } from '@pegasus/utils/logger';
+import { app, dialog, shell } from "electron";
+import { autoUpdater } from "electron-updater";
+import { createLogger } from "@pegasus/utils/logger";
 
-const logger = createLogger('AutoUpdater');
+const logger = createLogger("AutoUpdater");
 
-const GITHUB_RELEASES_URL = 'https://github.com/zpyoung/pegasus/releases/latest';
+const GITHUB_RELEASES_URL =
+  "https://github.com/zpyoung/pegasus/releases/latest";
 
 // macOS auto-install requires a valid Developer ID signature (Squirrel.Mac).
 // This app is not signed, so on macOS we fall back to a "1-click open the
 // download page in the browser" flow instead of trying to quitAndInstall.
-const UNSIGNED_MAC = process.platform === 'darwin';
+const UNSIGNED_MAC = process.platform === "darwin";
 
 export function initAutoUpdater(): void {
   if (!app.isPackaged) {
-    logger.info('Skipping auto-updater in development mode');
+    logger.info("Skipping auto-updater in development mode");
     return;
   }
 
@@ -28,18 +29,18 @@ export function initAutoUpdater(): void {
   autoUpdater.autoDownload = !UNSIGNED_MAC;
   autoUpdater.autoInstallOnAppQuit = !UNSIGNED_MAC;
 
-  autoUpdater.on('update-available', async (info) => {
+  autoUpdater.on("update-available", async (info) => {
     logger.info(`Update available: ${info.version}`);
     if (UNSIGNED_MAC) {
       const result = await dialog.showMessageBox({
-        type: 'info',
-        buttons: ['Open download page', 'Later'],
+        type: "info",
+        buttons: ["Open download page", "Later"],
         defaultId: 0,
         cancelId: 1,
-        title: 'Update available',
+        title: "Update available",
         message: `Pegasus ${info.version} is available.`,
         detail:
-          'Download the new DMG and drag it over your existing Pegasus.app to update. ' +
+          "Download the new DMG and drag it over your existing Pegasus.app to update. " +
           `You are currently on ${app.getVersion()}.`,
       });
       if (result.response === 0) {
@@ -48,25 +49,25 @@ export function initAutoUpdater(): void {
     }
   });
 
-  autoUpdater.on('update-not-available', () => {
-    logger.info('No update available');
+  autoUpdater.on("update-not-available", () => {
+    logger.info("No update available");
   });
 
-  autoUpdater.on('download-progress', (progress) => {
+  autoUpdater.on("download-progress", (progress) => {
     logger.info(`Download progress: ${Math.round(progress.percent)}%`);
   });
 
-  autoUpdater.on('update-downloaded', async (info) => {
+  autoUpdater.on("update-downloaded", async (info) => {
     if (UNSIGNED_MAC) return; // handled in update-available
     logger.info(`Update downloaded: ${info.version}`);
     const result = await dialog.showMessageBox({
-      type: 'info',
-      buttons: ['Restart now', 'Later'],
+      type: "info",
+      buttons: ["Restart now", "Later"],
       defaultId: 0,
       cancelId: 1,
-      title: 'Update ready',
+      title: "Update ready",
       message: `Pegasus ${info.version} has been downloaded.`,
-      detail: 'Restart the application to apply the update.',
+      detail: "Restart the application to apply the update.",
     });
 
     if (result.response === 0) {
@@ -74,7 +75,7 @@ export function initAutoUpdater(): void {
     }
   });
 
-  autoUpdater.on('error', (err) => {
+  autoUpdater.on("error", (err) => {
     logger.warn(`Auto-updater error: ${err.message}`);
   });
 

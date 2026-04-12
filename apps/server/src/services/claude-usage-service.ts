@@ -1,8 +1,8 @@
-import { spawn } from 'child_process';
-import * as os from 'os';
-import * as pty from 'node-pty';
-import { ClaudeUsage } from '../routes/claude/types.js';
-import { createLogger } from '@pegasus/utils';
+import { spawn } from "child_process";
+import * as os from "os";
+import * as pty from "node-pty";
+import { ClaudeUsage } from "../routes/claude/types.js";
+import { createLogger } from "@pegasus/utils";
 
 /**
  * Claude Usage Service
@@ -15,19 +15,20 @@ import { createLogger } from '@pegasus/utils';
  * - macOS: Uses 'expect' command for PTY
  * - Windows/Linux: Uses node-pty for PTY
  */
-const logger = createLogger('ClaudeUsage');
+const logger = createLogger("ClaudeUsage");
 
 export class ClaudeUsageService {
-  private claudeBinary = 'claude';
+  private claudeBinary = "claude";
   private timeout = 30000; // 30 second timeout
-  private isWindows = os.platform() === 'win32';
-  private isLinux = os.platform() === 'linux';
+  private isWindows = os.platform() === "win32";
+  private isLinux = os.platform() === "linux";
   // On Windows, ConPTY requires AttachConsole which fails in Electron/service mode
   // Detect Electron by checking for electron-specific env vars or process properties
   // When in Electron, always use winpty to avoid ConPTY's AttachConsole errors
   private isElectron =
-    !!(process.versions && (process.versions as Record<string, string>).electron) ||
-    !!process.env.ELECTRON_RUN_AS_NODE;
+    !!(
+      process.versions && (process.versions as Record<string, string>).electron
+    ) || !!process.env.ELECTRON_RUN_AS_NODE;
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
 
   /**
@@ -38,7 +39,10 @@ export class ClaudeUsageService {
    * @param ptyProcess - The PTY process to kill
    * @param signal - The signal to send on Unix-like systems (default: 'SIGTERM')
    */
-  private killPtyProcess(ptyProcess: pty.IPty, signal: string = 'SIGTERM'): void {
+  private killPtyProcess(
+    ptyProcess: pty.IPty,
+    signal: string = "SIGTERM",
+  ): void {
     if (this.isWindows) {
       ptyProcess.kill();
     } else {
@@ -51,12 +55,12 @@ export class ClaudeUsageService {
    */
   async isAvailable(): Promise<boolean> {
     return new Promise((resolve) => {
-      const checkCmd = this.isWindows ? 'where' : 'which';
+      const checkCmd = this.isWindows ? "where" : "which";
       const proc = spawn(checkCmd, [this.claudeBinary]);
-      proc.on('close', (code) => {
+      proc.on("close", (code) => {
         resolve(code === 0);
       });
-      proc.on('error', () => {
+      proc.on("error", () => {
         resolve(false);
       });
     });
@@ -84,8 +88,8 @@ export class ClaudeUsageService {
    */
   private executeClaudeUsageCommandMac(): Promise<string> {
     return new Promise((resolve, reject) => {
-      let stdout = '';
-      let stderr = '';
+      let stdout = "";
+      let stderr = "";
       let settled = false;
 
       // Use current working directory - likely already trusted by Claude CLI
@@ -123,11 +127,11 @@ export class ClaudeUsageService {
         expect eof
       `;
 
-      const proc = spawn('expect', ['-c', expectScript], {
+      const proc = spawn("expect", ["-c", expectScript], {
         cwd: workingDirectory,
         env: {
           ...process.env,
-          TERM: 'xterm-256color',
+          TERM: "xterm-256color",
         },
       });
 
@@ -135,31 +139,33 @@ export class ClaudeUsageService {
         if (!settled) {
           settled = true;
           proc.kill();
-          reject(new Error('Command timed out'));
+          reject(new Error("Command timed out"));
         }
       }, this.timeout);
 
-      proc.stdout.on('data', (data) => {
+      proc.stdout.on("data", (data) => {
         stdout += data.toString();
       });
 
-      proc.stderr.on('data', (data) => {
+      proc.stderr.on("data", (data) => {
         stderr += data.toString();
       });
 
-      proc.on('close', (code) => {
+      proc.on("close", (code) => {
         clearTimeout(timeoutId);
         if (settled) return;
         settled = true;
 
         // Check for authentication errors in output
         if (
-          stdout.includes('token_expired') ||
-          stdout.includes('authentication_error') ||
-          stderr.includes('token_expired') ||
-          stderr.includes('authentication_error')
+          stdout.includes("token_expired") ||
+          stdout.includes("authentication_error") ||
+          stderr.includes("token_expired") ||
+          stderr.includes("authentication_error")
         ) {
-          reject(new Error("Authentication required - please run 'claude login'"));
+          reject(
+            new Error("Authentication required - please run 'claude login'"),
+          );
           return;
         }
 
@@ -169,11 +175,11 @@ export class ClaudeUsageService {
         } else if (code !== 0) {
           reject(new Error(stderr || `Command exited with code ${code}`));
         } else {
-          reject(new Error('No output from claude command'));
+          reject(new Error("No output from claude command"));
         }
       });
 
-      proc.on('error', (err) => {
+      proc.on("error", (err) => {
         clearTimeout(timeoutId);
         if (!settled) {
           settled = true;
@@ -188,7 +194,7 @@ export class ClaudeUsageService {
    */
   private executeClaudeUsageCommandPty(): Promise<string> {
     return new Promise((resolve, reject) => {
-      let output = '';
+      let output = "";
       let settled = false;
       let hasSeenUsageData = false;
       let hasSeenTrustPrompt = false;
@@ -197,12 +203,12 @@ export class ClaudeUsageService {
       const workingDirectory = process.cwd();
 
       // Use platform-appropriate shell and command
-      const shell = this.isWindows ? 'cmd.exe' : '/bin/sh';
+      const shell = this.isWindows ? "cmd.exe" : "/bin/sh";
       // Use --add-dir to whitelist the current directory and bypass the trust prompt
       // We don't pass /usage here, we'll type it into the REPL
       const args = this.isWindows
-        ? ['/c', 'claude', '--add-dir', workingDirectory]
-        : ['-c', `claude --add-dir "${workingDirectory}"`];
+        ? ["/c", "claude", "--add-dir", workingDirectory]
+        : ["-c", `claude --add-dir "${workingDirectory}"`];
 
       // Using 'any' for ptyProcess because node-pty types don't include 'killed' property
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -210,13 +216,13 @@ export class ClaudeUsageService {
 
       // Build PTY spawn options
       const ptyOptions: pty.IPtyForkOptions = {
-        name: 'xterm-256color',
+        name: "xterm-256color",
         cols: 120,
         rows: 30,
         cwd: workingDirectory,
         env: {
           ...process.env,
-          TERM: 'xterm-256color',
+          TERM: "xterm-256color",
         } as Record<string, string>,
       };
 
@@ -229,21 +235,22 @@ export class ClaudeUsageService {
       if (this.isWindows) {
         (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
         logger.info(
-          '[executeClaudeUsageCommandPty] Using winpty on Windows (ConPTY disabled for compatibility)'
+          "[executeClaudeUsageCommandPty] Using winpty on Windows (ConPTY disabled for compatibility)",
         );
       }
 
       try {
         ptyProcess = pty.spawn(shell, args, ptyOptions);
       } catch (spawnError) {
-        const errorMessage = spawnError instanceof Error ? spawnError.message : String(spawnError);
+        const errorMessage =
+          spawnError instanceof Error ? spawnError.message : String(spawnError);
 
         // Check for Windows ConPTY-specific errors
-        if (this.isWindows && errorMessage.includes('AttachConsole failed')) {
+        if (this.isWindows && errorMessage.includes("AttachConsole failed")) {
           // ConPTY failed - try winpty fallback
           if (!this.useConptyFallback) {
             logger.warn(
-              '[executeClaudeUsageCommandPty] ConPTY AttachConsole failed, retrying with winpty fallback'
+              "[executeClaudeUsageCommandPty] ConPTY AttachConsole failed, retrying with winpty fallback",
             );
             this.useConptyFallback = true;
 
@@ -251,37 +258,45 @@ export class ClaudeUsageService {
               (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
               ptyProcess = pty.spawn(shell, args, ptyOptions);
               logger.info(
-                '[executeClaudeUsageCommandPty] Successfully spawned with winpty fallback'
+                "[executeClaudeUsageCommandPty] Successfully spawned with winpty fallback",
               );
             } catch (fallbackError) {
               const fallbackMessage =
-                fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+                fallbackError instanceof Error
+                  ? fallbackError.message
+                  : String(fallbackError);
               logger.error(
-                '[executeClaudeUsageCommandPty] Winpty fallback also failed:',
-                fallbackMessage
+                "[executeClaudeUsageCommandPty] Winpty fallback also failed:",
+                fallbackMessage,
               );
               reject(
                 new Error(
-                  `Windows PTY unavailable: Both ConPTY and winpty failed. This typically happens when running in Electron without a console. ConPTY error: ${errorMessage}. Winpty error: ${fallbackMessage}`
-                )
+                  `Windows PTY unavailable: Both ConPTY and winpty failed. This typically happens when running in Electron without a console. ConPTY error: ${errorMessage}. Winpty error: ${fallbackMessage}`,
+                ),
               );
               return;
             }
           } else {
-            logger.error('[executeClaudeUsageCommandPty] Winpty fallback failed:', errorMessage);
+            logger.error(
+              "[executeClaudeUsageCommandPty] Winpty fallback failed:",
+              errorMessage,
+            );
             reject(
               new Error(
-                `Windows PTY unavailable: ${errorMessage}. The application is running without console access (common in Electron). Try running from a terminal window.`
-              )
+                `Windows PTY unavailable: ${errorMessage}. The application is running without console access (common in Electron). Try running from a terminal window.`,
+              ),
             );
             return;
           }
         } else {
-          logger.error('[executeClaudeUsageCommandPty] Failed to spawn PTY:', errorMessage);
+          logger.error(
+            "[executeClaudeUsageCommandPty] Failed to spawn PTY:",
+            errorMessage,
+          );
           reject(
             new Error(
-              `Unable to access terminal: ${errorMessage}. Claude CLI may not be available or PTY support is limited in this environment.`
-            )
+              `Unable to access terminal: ${errorMessage}. Claude CLI may not be available or PTY support is limited in this environment.`,
+            ),
           );
           return;
         }
@@ -296,26 +311,28 @@ export class ClaudeUsageService {
           // Don't fail if we have data - return it instead
           // Check cleaned output since raw output has ANSI codes between words
           const cleanedForCheck = output
-            .replace(/\x1B\[(\d+)C/g, (_m: string, n: string) => ' '.repeat(parseInt(n, 10)))
-            .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, '');
+            .replace(/\x1B\[(\d+)C/g, (_m: string, n: string) =>
+              " ".repeat(parseInt(n, 10)),
+            )
+            .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, "");
           if (
-            cleanedForCheck.includes('Current session') ||
-            cleanedForCheck.includes('% used') ||
-            cleanedForCheck.includes('% left')
+            cleanedForCheck.includes("Current session") ||
+            cleanedForCheck.includes("% used") ||
+            cleanedForCheck.includes("% left")
           ) {
             resolve(output);
           } else if (hasSeenTrustPrompt) {
             // Trust prompt was shown but we couldn't auto-approve it
             reject(
               new Error(
-                'TRUST_PROMPT_PENDING: Claude CLI is waiting for folder permission. Please run "claude" in your terminal and approve access to continue.'
-              )
+                'TRUST_PROMPT_PENDING: Claude CLI is waiting for folder permission. Please run "claude" in your terminal and approve access to continue.',
+              ),
             );
           } else {
             reject(
               new Error(
-                'The Claude CLI took too long to respond. This can happen if the CLI is waiting for a trust prompt or is otherwise busy.'
-              )
+                "The Claude CLI took too long to respond. This can happen if the CLI is waiting for a trust prompt or is otherwise busy.",
+              ),
             );
           }
         }
@@ -332,21 +349,26 @@ export class ClaudeUsageService {
         // then strip remaining ANSI sequences. Without this, the Claude CLI TUI output
         // like "Current week (all models)" becomes "Currentweek(allmodels)".
         const cleanOutput = output
-          .replace(/\x1B\[(\d+)C/g, (_match: string, n: string) => ' '.repeat(parseInt(n, 10)))
-          .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, '');
+          .replace(/\x1B\[(\d+)C/g, (_match: string, n: string) =>
+            " ".repeat(parseInt(n, 10)),
+          )
+          .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, "");
 
         // Check for specific authentication/permission errors
         // Must be very specific to avoid false positives from garbled terminal encoding
         // Removed permission_error check as it was causing false positives with winpty encoding
         const authChecks = {
-          oauth: cleanOutput.includes('OAuth token does not meet scope requirement'),
-          tokenExpired: cleanOutput.includes('token_expired'),
+          oauth: cleanOutput.includes(
+            "OAuth token does not meet scope requirement",
+          ),
+          tokenExpired: cleanOutput.includes("token_expired"),
           // Only match if it looks like a JSON API error response
           authError:
             cleanOutput.includes('"type":"authentication_error"') ||
             cleanOutput.includes('"type": "authentication_error"'),
         };
-        const hasAuthError = authChecks.oauth || authChecks.tokenExpired || authChecks.authError;
+        const hasAuthError =
+          authChecks.oauth || authChecks.tokenExpired || authChecks.authError;
 
         if (hasAuthError) {
           if (!settled) {
@@ -356,8 +378,8 @@ export class ClaudeUsageService {
             }
             reject(
               new Error(
-                "Claude CLI authentication issue. Please run 'claude logout' and then 'claude login' in your terminal to refresh permissions."
-              )
+                "Claude CLI authentication issue. Please run 'claude logout' and then 'claude login' in your terminal to refresh permissions.",
+              ),
             );
           }
           return;
@@ -366,20 +388,20 @@ export class ClaudeUsageService {
         // Check if we've seen the usage data (look for "Current session" or the TUI Usage header)
         // Also check for percentage patterns that appear in usage output
         const hasUsageIndicators =
-          cleanOutput.includes('Current session') ||
-          (cleanOutput.includes('Usage') && cleanOutput.includes('% left')) ||
+          cleanOutput.includes("Current session") ||
+          (cleanOutput.includes("Usage") && cleanOutput.includes("% left")) ||
           // Look for percentage patterns - allow optional whitespace between % and left/used
           // since cursor movement codes may or may not create spaces after stripping
           /\d+%\s*(left|used|remaining)/i.test(cleanOutput) ||
-          cleanOutput.includes('Resets in') ||
-          cleanOutput.includes('Current week');
+          cleanOutput.includes("Resets in") ||
+          cleanOutput.includes("Current week");
 
         if (!hasSeenUsageData && hasUsageIndicators) {
           hasSeenUsageData = true;
           // Wait for full output, then send escape to exit
           setTimeout(() => {
             if (!settled && ptyProcess && !ptyProcess.killed) {
-              ptyProcess.write('\x1b'); // Send escape key
+              ptyProcess.write("\x1b"); // Send escape key
 
               // Fallback: if ESC doesn't exit (Linux), use SIGTERM after 2s
               // Windows doesn't support signals, so killPtyProcess handles platform differences
@@ -399,18 +421,18 @@ export class ClaudeUsageService {
         // Since we are running in cwd (project dir), it is safe to approve.
         if (
           !hasApprovedTrust &&
-          (cleanOutput.includes('Do you want to work in this folder?') ||
-            cleanOutput.includes('Ready to code here') ||
-            cleanOutput.includes('permission to work with your files') ||
-            cleanOutput.includes('trust this folder') ||
-            cleanOutput.includes('safety check'))
+          (cleanOutput.includes("Do you want to work in this folder?") ||
+            cleanOutput.includes("Ready to code here") ||
+            cleanOutput.includes("permission to work with your files") ||
+            cleanOutput.includes("trust this folder") ||
+            cleanOutput.includes("safety check"))
         ) {
           hasApprovedTrust = true;
           hasSeenTrustPrompt = true;
           // Wait a tiny bit to ensure prompt is ready, then send Enter
           setTimeout(() => {
             if (!settled && ptyProcess && !ptyProcess.killed) {
-              ptyProcess.write('\r');
+              ptyProcess.write("\r");
             }
           }, 1000);
         }
@@ -418,14 +440,18 @@ export class ClaudeUsageService {
         // Detect REPL prompt and send /usage command
         // On Windows with winpty, Unicode prompt char ❯ gets garbled, so also check for ASCII indicators
         const isReplReady =
-          cleanOutput.includes('❯') ||
-          cleanOutput.includes('? for shortcuts') ||
+          cleanOutput.includes("❯") ||
+          cleanOutput.includes("? for shortcuts") ||
           // Fallback for winpty garbled encoding - detect CLI welcome screen elements
-          (cleanOutput.includes('Welcome back') && cleanOutput.includes('Claude')) ||
-          (cleanOutput.includes('Tips for getting started') && cleanOutput.includes('Claude')) ||
+          (cleanOutput.includes("Welcome back") &&
+            cleanOutput.includes("Claude")) ||
+          (cleanOutput.includes("Tips for getting started") &&
+            cleanOutput.includes("Claude")) ||
           // Detect model indicator which appears when REPL is ready
-          (cleanOutput.includes('Opus') && cleanOutput.includes('Claude API')) ||
-          (cleanOutput.includes('Sonnet') && cleanOutput.includes('Claude API'));
+          (cleanOutput.includes("Opus") &&
+            cleanOutput.includes("Claude API")) ||
+          (cleanOutput.includes("Sonnet") &&
+            cleanOutput.includes("Claude API"));
 
         if (!hasSentCommand && isReplReady) {
           hasSentCommand = true;
@@ -433,12 +459,12 @@ export class ClaudeUsageService {
           setTimeout(() => {
             if (!settled && ptyProcess && !ptyProcess.killed) {
               // Send command with carriage return
-              ptyProcess.write('/usage\r');
+              ptyProcess.write("/usage\r");
 
               // Send another enter after 1 second to confirm selection if autocomplete menu appeared
               setTimeout(() => {
                 if (!settled && ptyProcess && !ptyProcess.killed) {
-                  ptyProcess.write('\r');
+                  ptyProcess.write("\r");
                 }
               }, 1200);
             }
@@ -448,12 +474,12 @@ export class ClaudeUsageService {
         // Fallback: if we see "Esc to cancel" but haven't seen usage data yet
         if (
           !hasSeenUsageData &&
-          cleanOutput.includes('Esc to cancel') &&
-          !cleanOutput.includes('Do you want to work in this folder?')
+          cleanOutput.includes("Esc to cancel") &&
+          !cleanOutput.includes("Do you want to work in this folder?")
         ) {
           setTimeout(() => {
             if (!settled && ptyProcess && !ptyProcess.killed) {
-              ptyProcess.write('\x1b'); // Send escape key
+              ptyProcess.write("\x1b"); // Send escape key
             }
           }, 5000);
         }
@@ -466,8 +492,13 @@ export class ClaudeUsageService {
 
         // Check for auth errors - must be specific to avoid false positives
         // Removed permission_error check as it was causing false positives with winpty encoding
-        if (output.includes('token_expired') || output.includes('"type":"authentication_error"')) {
-          reject(new Error("Authentication required - please run 'claude login'"));
+        if (
+          output.includes("token_expired") ||
+          output.includes('"type":"authentication_error"')
+        ) {
+          reject(
+            new Error("Authentication required - please run 'claude login'"),
+          );
           return;
         }
 
@@ -476,7 +507,7 @@ export class ClaudeUsageService {
         } else if (exitCode !== 0) {
           reject(new Error(`Command exited with code ${exitCode}`));
         } else {
-          reject(new Error('No output from claude command'));
+          reject(new Error("No output from claude command"));
         }
       });
     });
@@ -492,37 +523,37 @@ export class ClaudeUsageService {
     // Without this, "Current week (all models)" becomes "Currentweek(allmodels)" after stripping.
     let clean = text
       // Cursor forward (CSI n C): replace with n spaces to preserve word separation
-      .replace(/\x1B\[(\d+)C/g, (_match, n) => ' '.repeat(parseInt(n, 10)))
+      .replace(/\x1B\[(\d+)C/g, (_match, n) => " ".repeat(parseInt(n, 10)))
       // Cursor movement (up/down/back/position): replace with newline or nothing
-      .replace(/\x1B\[\d*[ABD]/g, '') // cursor up (A), down (B), back (D)
-      .replace(/\x1B\[\d+;\d+[Hf]/g, '\n') // cursor position (H/f)
+      .replace(/\x1B\[\d*[ABD]/g, "") // cursor up (A), down (B), back (D)
+      .replace(/\x1B\[\d+;\d+[Hf]/g, "\n") // cursor position (H/f)
       // Now strip remaining CSI sequences (colors, modes, etc.)
-      .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, '')
+      .replace(/\x1B\[[0-9;?]*[A-Za-z@]/g, "")
       // OSC sequences: ESC ] ... terminated by BEL, ST, or another ESC
-      .replace(/\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)?/g, '')
+      .replace(/\x1B\][^\x07\x1B]*(?:\x07|\x1B\\)?/g, "")
       // Other ESC sequences: ESC (letter)
-      .replace(/\x1B[A-Za-z]/g, '')
+      .replace(/\x1B[A-Za-z]/g, "")
       // Carriage returns: replace with newline to avoid concatenation
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n');
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n");
 
     // Handle backspaces (\x08) by applying them
     // If we encounter a backspace, remove the character before it
-    while (clean.includes('\x08')) {
-      clean = clean.replace(/[^\x08]\x08/, '');
-      clean = clean.replace(/^\x08+/, '');
+    while (clean.includes("\x08")) {
+      clean = clean.replace(/[^\x08]\x08/, "");
+      clean = clean.replace(/^\x08+/, "");
     }
 
     // Explicitly strip known "Synchronized Output" and "Window Title" garbage
     // even if ESC is missing (seen in some environments)
     clean = clean
-      .replace(/\[\?2026[hl]/g, '') // CSI ? 2026 h/l
-      .replace(/\]0;[^\x07]*\x07/g, '') // OSC 0; Title BEL
-      .replace(/\]0;.*?(\[\?|$)/g, ''); // OSC 0; Title ... (unterminated or hit next sequence)
+      .replace(/\[\?2026[hl]/g, "") // CSI ? 2026 h/l
+      .replace(/\]0;[^\x07]*\x07/g, "") // OSC 0; Title BEL
+      .replace(/\]0;.*?(\[\?|$)/g, ""); // OSC 0; Title ... (unterminated or hit next sequence)
 
     // Strip remaining non-printable control characters (except newline \n)
     // ASCII 0-8, 11-31, 127
-    clean = clean.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '');
+    clean = clean.replace(/[\x00-\x08\x0B-\x1F\x7F]/g, "");
 
     return clean;
   }
@@ -550,23 +581,31 @@ export class ClaudeUsageService {
   private parseUsageOutput(rawOutput: string): ClaudeUsage {
     const output = this.stripAnsiCodes(rawOutput);
     const lines = output
-      .split('\n')
+      .split("\n")
       .map((l) => l.trim())
       .filter((l) => l);
 
     // Parse session usage
-    const sessionData = this.parseSection(lines, 'Current session', 'session');
+    const sessionData = this.parseSection(lines, "Current session", "session");
 
     // Parse weekly usage (all models)
-    const weeklyData = this.parseSection(lines, 'Current week (all models)', 'weekly');
+    const weeklyData = this.parseSection(
+      lines,
+      "Current week (all models)",
+      "weekly",
+    );
 
     // Parse Sonnet/Opus usage - try different labels
-    let sonnetData = this.parseSection(lines, 'Current week (Sonnet only)', 'sonnet');
+    let sonnetData = this.parseSection(
+      lines,
+      "Current week (Sonnet only)",
+      "sonnet",
+    );
     if (sonnetData.percentage === 0) {
-      sonnetData = this.parseSection(lines, 'Current week (Sonnet)', 'sonnet');
+      sonnetData = this.parseSection(lines, "Current week (Sonnet)", "sonnet");
     }
     if (sonnetData.percentage === 0) {
-      sonnetData = this.parseSection(lines, 'Current week (Opus)', 'sonnet');
+      sonnetData = this.parseSection(lines, "Current week (Opus)", "sonnet");
     }
 
     return {
@@ -601,11 +640,11 @@ export class ClaudeUsageService {
   private parseSection(
     lines: string[],
     sectionLabel: string,
-    type: string
+    type: string,
   ): { percentage: number; resetTime: string; resetText: string } {
     let percentage: number | null = null;
     let resetTime = this.getDefaultResetTime(type);
-    let resetText = '';
+    let resetText = "";
 
     // Find the LAST occurrence of the section (terminal output has multiple screen refreshes)
     let sectionIndex = -1;
@@ -627,17 +666,19 @@ export class ClaudeUsageService {
       // Extract percentage - only take the first match (avoid picking up next section's data)
       // Use null to track "not found" since 0% is a valid percentage (100% left = 0% used)
       if (percentage === null) {
-        const percentMatch = line.match(/(\d{1,3})\s*%\s*(left|used|remaining)/i);
+        const percentMatch = line.match(
+          /(\d{1,3})\s*%\s*(left|used|remaining)/i,
+        );
         if (percentMatch) {
           const value = parseInt(percentMatch[1], 10);
-          const isUsed = percentMatch[2].toLowerCase() === 'used';
+          const isUsed = percentMatch[2].toLowerCase() === "used";
           // Convert "left" to "used" percentage (our UI shows % used)
           percentage = isUsed ? value : 100 - value;
         }
       }
 
       // Extract reset time - only take the first match
-      if (!resetText && line.toLowerCase().includes('reset')) {
+      if (!resetText && line.toLowerCase().includes("reset")) {
         // Only extract the part starting from "Resets" (or "Reset") to avoid garbage prefixes
         const match = line.match(/(Resets?.*)$/i);
         // If regex fails despite 'includes', likely a complex string issues - verify match before using line
@@ -652,14 +693,16 @@ export class ClaudeUsageService {
     if (resetText) {
       // Clean up resetText: remove percentage info if it was matched on the same line
       // e.g. "46%used Resets5:59pm" -> " Resets5:59pm"
-      resetText = resetText.replace(/(\d{1,3})\s*%\s*(left|used|remaining)/i, '').trim();
+      resetText = resetText
+        .replace(/(\d{1,3})\s*%\s*(left|used|remaining)/i, "")
+        .trim();
 
       // Ensure space after "Resets" if missing (e.g. "Resets5:59pm" -> "Resets 5:59pm")
-      resetText = resetText.replace(/(resets?)(\d)/i, '$1 $2');
+      resetText = resetText.replace(/(resets?)(\d)/i, "$1 $2");
 
       resetTime = this.parseResetTime(resetText, type);
       // Strip timezone like "(Asia/Dubai)" from the display text
-      resetText = resetText.replace(/\s*\([A-Za-z_/]+\)\s*$/, '').trim();
+      resetText = resetText.replace(/\s*\([A-Za-z_/]+\)\s*$/, "").trim();
     }
 
     return { percentage: percentage ?? 0, resetTime, resetText };
@@ -673,7 +716,7 @@ export class ClaudeUsageService {
 
     // Try to parse duration format: "Resets in 2h 15m" or "Resets in 30m"
     const durationMatch = text.match(
-      /(\d+)\s*h(?:ours?)?(?:\s+(\d+)\s*m(?:in)?)?|(\d+)\s*m(?:in)?/i
+      /(\d+)\s*h(?:ours?)?(?:\s+(\d+)\s*m(?:in)?)?|(\d+)\s*m(?:in)?/i,
     );
     if (durationMatch) {
       let hours = 0;
@@ -686,21 +729,25 @@ export class ClaudeUsageService {
         minutes = parseInt(durationMatch[3], 10);
       }
 
-      const resetDate = new Date(now.getTime() + (hours * 60 + minutes) * 60 * 1000);
+      const resetDate = new Date(
+        now.getTime() + (hours * 60 + minutes) * 60 * 1000,
+      );
       return resetDate.toISOString();
     }
 
     // Try to parse simple time-only format: "Resets 11am" or "Resets 3pm"
-    const simpleTimeMatch = text.match(/resets\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+    const simpleTimeMatch = text.match(
+      /resets\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i,
+    );
     if (simpleTimeMatch) {
       let hours = parseInt(simpleTimeMatch[1], 10);
       const minutes = simpleTimeMatch[2] ? parseInt(simpleTimeMatch[2], 10) : 0;
       const ampm = simpleTimeMatch[3].toLowerCase();
 
       // Convert 12-hour to 24-hour
-      if (ampm === 'pm' && hours !== 12) {
+      if (ampm === "pm" && hours !== 12) {
         hours += 12;
-      } else if (ampm === 'am' && hours === 12) {
+      } else if (ampm === "am" && hours === 12) {
         hours = 0;
       }
 
@@ -720,7 +767,7 @@ export class ClaudeUsageService {
     // matching words like "Resets" when there's no space separator.
     // Optional "resets\s*" prefix handles cases with or without space after "Resets"
     const dateMatch = text.match(
-      /(?:resets\s*)?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:\s+at\s+|\s*,?\s*)(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i
+      /(?:resets\s*)?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:\s+at\s+|\s*,?\s*)(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i,
     );
     if (dateMatch) {
       const monthName = dateMatch[1];
@@ -730,9 +777,9 @@ export class ClaudeUsageService {
       const ampm = dateMatch[5].toLowerCase();
 
       // Convert 12-hour to 24-hour
-      if (ampm === 'pm' && hours !== 12) {
+      if (ampm === "pm" && hours !== 12) {
         hours += 12;
-      } else if (ampm === 'am' && hours === 12) {
+      } else if (ampm === "am" && hours === 12) {
         hours = 0;
       }
 
@@ -774,7 +821,7 @@ export class ClaudeUsageService {
   private getDefaultResetTime(type: string): string {
     const now = new Date();
 
-    if (type === 'session') {
+    if (type === "session") {
       // Session resets in ~5 hours
       return new Date(now.getTime() + 5 * 60 * 60 * 1000).toISOString();
     } else {

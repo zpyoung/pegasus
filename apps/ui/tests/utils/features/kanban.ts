@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator } from "@playwright/test";
 
 /**
  * Perform a drag and drop operation that works with @dnd-kit
@@ -10,11 +10,11 @@ import { Page, Locator } from '@playwright/test';
 export async function dragAndDropWithDndKit(
   page: Page,
   sourceLocator: Locator,
-  targetLocator: Locator
+  targetLocator: Locator,
 ): Promise<void> {
   // Ensure elements are visible and stable before getting bounding boxes
-  await sourceLocator.waitFor({ state: 'visible', timeout: 5000 });
-  await targetLocator.waitFor({ state: 'visible', timeout: 5000 });
+  await sourceLocator.waitFor({ state: "visible", timeout: 5000 });
+  await targetLocator.waitFor({ state: "visible", timeout: 5000 });
 
   // Small delay to ensure layout is stable
   await page.waitForTimeout(100);
@@ -23,7 +23,7 @@ export async function dragAndDropWithDndKit(
   const targetBox = await targetLocator.boundingBox();
 
   if (!sourceBox || !targetBox) {
-    throw new Error('Could not find source or target element bounds');
+    throw new Error("Could not find source or target element bounds");
   }
 
   // Start drag from the center of the source element

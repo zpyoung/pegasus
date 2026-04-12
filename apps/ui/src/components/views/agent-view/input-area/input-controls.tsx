@@ -1,10 +1,10 @@
-import { useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Square, ListOrdered } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { AgentModelSelector } from '../shared/agent-model-selector';
-import type { PhaseModelEntry } from '@pegasus/types';
+import { useRef, useCallback, useEffect } from "react";
+import { Send, Paperclip, Square, ListOrdered } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { AgentModelSelector } from "../shared/agent-model-selector";
+import type { PhaseModelEntry } from "@pegasus/types";
 
 interface InputControlsProps {
   input: string;
@@ -55,7 +55,7 @@ export function InputControls({
   const inputRef = externalInputRef || internalInputRef;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
     }
@@ -64,7 +64,7 @@ export function InputControls({
   const adjustTextareaHeight = useCallback(() => {
     const textarea = inputRef.current;
     if (!textarea) return;
-    textarea.style.height = 'auto';
+    textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
   }, [inputRef]);
 
@@ -79,8 +79,8 @@ export function InputControls({
       {/* Text Input and Controls */}
       <div
         className={cn(
-          'flex flex-col gap-2 transition-all duration-200 rounded-xl p-1',
-          isDragOver && 'bg-primary/5 ring-2 ring-primary/30'
+          "flex flex-col gap-2 transition-all duration-200 rounded-xl p-1",
+          isDragOver && "bg-primary/5 ring-2 ring-primary/30",
         )}
         onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
@@ -93,10 +93,10 @@ export function InputControls({
             ref={inputRef}
             placeholder={
               isDragOver
-                ? 'Drop your files here...'
+                ? "Drop your files here..."
                 : isProcessing
-                  ? 'Type to queue another prompt...'
-                  : 'Describe what you want to build...'
+                  ? "Type to queue another prompt..."
+                  : "Describe what you want to build..."
             }
             value={input}
             onChange={(e) => onInputChange(e.target.value)}
@@ -106,10 +106,10 @@ export function InputControls({
             data-testid="agent-input"
             rows={1}
             className={cn(
-              'min-h-11 w-full bg-background border-border rounded-xl pl-4 pr-4 sm:pr-20 text-sm transition-all resize-none max-h-36 overflow-y-auto py-2.5',
-              'focus:ring-2 focus:ring-primary/20 focus:border-primary/50',
-              hasFiles && 'border-primary/30',
-              isDragOver && 'border-primary bg-primary/5'
+              "min-h-11 w-full bg-background border-border rounded-xl pl-4 pr-4 sm:pr-20 text-sm transition-all resize-none max-h-36 overflow-y-auto py-2.5",
+              "focus:ring-2 focus:ring-primary/20 focus:border-primary/50",
+              hasFiles && "border-primary/30",
+              isDragOver && "border-primary bg-primary/5",
             )}
           />
           {hasFiles && !isDragOver && (
@@ -141,9 +141,10 @@ export function InputControls({
             onClick={onToggleImageDropZone}
             disabled={!isConnected}
             className={cn(
-              'h-11 w-11 rounded-xl border-border shrink-0',
-              showImageDropZone && 'bg-primary/10 text-primary border-primary/30',
-              hasFiles && 'border-primary/30 text-primary'
+              "h-11 w-11 rounded-xl border-border shrink-0",
+              showImageDropZone &&
+                "bg-primary/10 text-primary border-primary/30",
+              hasFiles && "border-primary/30 text-primary",
             )}
             title="Attach files (images, .txt, .md)"
           >
@@ -172,20 +173,29 @@ export function InputControls({
             onClick={onSend}
             disabled={!canSend}
             className="h-11 px-4 rounded-xl shrink-0"
-            variant={isProcessing ? 'outline' : 'default'}
+            variant={isProcessing ? "outline" : "default"}
             data-testid="send-message"
-            title={isProcessing ? 'Add to queue' : 'Send message'}
+            title={isProcessing ? "Add to queue" : "Send message"}
           >
-            {isProcessing ? <ListOrdered className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+            {isProcessing ? (
+              <ListOrdered className="w-4 h-4" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>
 
       {/* Keyboard hint */}
       <p className="text-[11px] text-muted-foreground mt-2 text-center hidden sm:block">
-        Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Enter</kbd> to
-        send,{' '}
-        <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">Shift+Enter</kbd>{' '}
+        Press{" "}
+        <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
+          Enter
+        </kbd>{" "}
+        to send,{" "}
+        <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium">
+          Shift+Enter
+        </kbd>{" "}
         for new line
       </p>
     </>

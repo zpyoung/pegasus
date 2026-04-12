@@ -5,25 +5,33 @@
  * with the provider architecture.
  */
 
-import { query, type Options, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import { BaseProvider } from './base-provider.js';
-import { classifyError, getUserFriendlyErrorMessage, createLogger } from '@pegasus/utils';
-import { getClaudeAuthIndicators } from '@pegasus/platform';
+import {
+  query,
+  type Options,
+  type SDKUserMessage,
+} from "@anthropic-ai/claude-agent-sdk";
+import { BaseProvider } from "./base-provider.js";
+import {
+  classifyError,
+  getUserFriendlyErrorMessage,
+  createLogger,
+} from "@pegasus/utils";
+import { getClaudeAuthIndicators } from "@pegasus/platform";
 import {
   getThinkingTokenBudget,
   validateBareModelId,
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
-} from '@pegasus/types';
+} from "@pegasus/types";
 import type {
   ExecuteOptions,
   ProviderMessage,
   InstallationStatus,
   ModelDefinition,
-} from './types.js';
+} from "./types.js";
 
-const logger = createLogger('ClaudeProvider');
+const logger = createLogger("ClaudeProvider");
 
 /**
  * ProviderConfig - Union type for provider configuration
@@ -37,26 +45,28 @@ type ProviderConfig = ClaudeApiProfile | ClaudeCompatibleProvider;
 // Includes filesystem, locale, and temp directory vars that the Claude CLI
 // needs internally for config resolution and temp file creation.
 const SYSTEM_ENV_VARS = [
-  'PATH',
-  'HOME',
-  'SHELL',
-  'TERM',
-  'USER',
-  'LANG',
-  'LC_ALL',
-  'TMPDIR',
-  'XDG_CONFIG_HOME',
-  'XDG_DATA_HOME',
-  'XDG_CACHE_HOME',
-  'XDG_STATE_HOME',
+  "PATH",
+  "HOME",
+  "SHELL",
+  "TERM",
+  "USER",
+  "LANG",
+  "LC_ALL",
+  "TMPDIR",
+  "XDG_CONFIG_HOME",
+  "XDG_DATA_HOME",
+  "XDG_CACHE_HOME",
+  "XDG_STATE_HOME",
 ];
 
 /**
  * Check if the config is a ClaudeCompatibleProvider (new system)
  * by checking for the 'models' array property
  */
-function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCompatibleProvider {
-  return 'models' in config && Array.isArray(config.models);
+function isClaudeCompatibleProvider(
+  config: ProviderConfig,
+): config is ClaudeCompatibleProvider {
+  return "models" in config && Array.isArray(config.models);
 }
 
 /**
@@ -73,72 +83,81 @@ function isClaudeCompatibleProvider(config: ProviderConfig): config is ClaudeCom
  */
 function buildEnv(
   providerConfig?: ProviderConfig,
-  credentials?: Credentials
+  credentials?: Credentials,
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
 
   if (providerConfig) {
     // Use provider configuration (clean switch - don't inherit non-system vars from process.env)
-    logger.debug('[buildEnv] Using provider configuration:', {
+    logger.debug("[buildEnv] Using provider configuration:", {
       name: providerConfig.name,
       baseUrl: providerConfig.baseUrl,
-      apiKeySource: providerConfig.apiKeySource ?? 'inline',
+      apiKeySource: providerConfig.apiKeySource ?? "inline",
       isNewProvider: isClaudeCompatibleProvider(providerConfig),
     });
 
     // Resolve API key based on source strategy
     let apiKey: string | undefined;
-    const source = providerConfig.apiKeySource ?? 'inline'; // Default to inline for backwards compat
+    const source = providerConfig.apiKeySource ?? "inline"; // Default to inline for backwards compat
 
     switch (source) {
-      case 'inline':
+      case "inline":
         apiKey = providerConfig.apiKey;
         break;
-      case 'env':
+      case "env":
         apiKey = process.env.ANTHROPIC_API_KEY;
         break;
-      case 'credentials':
+      case "credentials":
         apiKey = credentials?.apiKeys?.anthropic;
         break;
     }
 
     // Warn if no API key found
     if (!apiKey) {
-      logger.warn(`No API key found for provider "${providerConfig.name}" with source "${source}"`);
+      logger.warn(
+        `No API key found for provider "${providerConfig.name}" with source "${source}"`,
+      );
     }
 
     // Authentication
     if (providerConfig.useAuthToken) {
-      env['ANTHROPIC_AUTH_TOKEN'] = apiKey;
+      env["ANTHROPIC_AUTH_TOKEN"] = apiKey;
     } else {
-      env['ANTHROPIC_API_KEY'] = apiKey;
+      env["ANTHROPIC_API_KEY"] = apiKey;
     }
 
     // Endpoint configuration
-    env['ANTHROPIC_BASE_URL'] = providerConfig.baseUrl;
-    logger.debug(`[buildEnv] Set ANTHROPIC_BASE_URL to: ${providerConfig.baseUrl}`);
+    env["ANTHROPIC_BASE_URL"] = providerConfig.baseUrl;
+    logger.debug(
+      `[buildEnv] Set ANTHROPIC_BASE_URL to: ${providerConfig.baseUrl}`,
+    );
 
     if (providerConfig.timeoutMs) {
-      env['API_TIMEOUT_MS'] = String(providerConfig.timeoutMs);
+      env["API_TIMEOUT_MS"] = String(providerConfig.timeoutMs);
     }
 
     // Model mappings - only for legacy ClaudeApiProfile
     // For ClaudeCompatibleProvider, the model is passed directly (no mapping needed)
-    if (!isClaudeCompatibleProvider(providerConfig) && providerConfig.modelMappings) {
+    if (
+      !isClaudeCompatibleProvider(providerConfig) &&
+      providerConfig.modelMappings
+    ) {
       if (providerConfig.modelMappings.haiku) {
-        env['ANTHROPIC_DEFAULT_HAIKU_MODEL'] = providerConfig.modelMappings.haiku;
+        env["ANTHROPIC_DEFAULT_HAIKU_MODEL"] =
+          providerConfig.modelMappings.haiku;
       }
       if (providerConfig.modelMappings.sonnet) {
-        env['ANTHROPIC_DEFAULT_SONNET_MODEL'] = providerConfig.modelMappings.sonnet;
+        env["ANTHROPIC_DEFAULT_SONNET_MODEL"] =
+          providerConfig.modelMappings.sonnet;
       }
       if (providerConfig.modelMappings.opus) {
-        env['ANTHROPIC_DEFAULT_OPUS_MODEL'] = providerConfig.modelMappings.opus;
+        env["ANTHROPIC_DEFAULT_OPUS_MODEL"] = providerConfig.modelMappings.opus;
       }
     }
 
     // Traffic control
     if (providerConfig.disableNonessentialTraffic) {
-      env['CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'] = '1';
+      env["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "1";
     }
   } else {
     // Use direct Anthropic API - pass through credentials or environment variables
@@ -151,19 +170,19 @@ function buildEnv(
     // Note: Only auth and endpoint vars are passed. Model mappings and traffic
     // control are NOT passed (those require a profile for explicit configuration).
     if (credentials?.apiKeys?.anthropic) {
-      env['ANTHROPIC_API_KEY'] = credentials.apiKeys.anthropic;
+      env["ANTHROPIC_API_KEY"] = credentials.apiKeys.anthropic;
     } else if (process.env.ANTHROPIC_API_KEY) {
-      env['ANTHROPIC_API_KEY'] = process.env.ANTHROPIC_API_KEY;
+      env["ANTHROPIC_API_KEY"] = process.env.ANTHROPIC_API_KEY;
     }
     // If using Claude Max plan via CLI auth, the SDK handles auth automatically
     // when no API key is provided. We don't set ANTHROPIC_AUTH_TOKEN here
     // unless it was explicitly set in process.env (rare edge case).
     if (process.env.ANTHROPIC_AUTH_TOKEN) {
-      env['ANTHROPIC_AUTH_TOKEN'] = process.env.ANTHROPIC_AUTH_TOKEN;
+      env["ANTHROPIC_AUTH_TOKEN"] = process.env.ANTHROPIC_AUTH_TOKEN;
     }
     // Pass through ANTHROPIC_BASE_URL if set in environment (backward compatibility)
     if (process.env.ANTHROPIC_BASE_URL) {
-      env['ANTHROPIC_BASE_URL'] = process.env.ANTHROPIC_BASE_URL;
+      env["ANTHROPIC_BASE_URL"] = process.env.ANTHROPIC_BASE_URL;
     }
   }
 
@@ -179,17 +198,19 @@ function buildEnv(
 
 export class ClaudeProvider extends BaseProvider {
   getName(): string {
-    return 'claude';
+    return "claude";
   }
 
   /**
    * Execute a query using Claude Agent SDK
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     // Validate that model doesn't have a provider prefix
     // AgentService should strip prefixes before passing to providers
     // Claude doesn't use a provider prefix, so we don't need to specify an expected provider
-    validateBareModelId(options.model, 'ClaudeProvider');
+    validateBareModelId(options.model, "ClaudeProvider");
 
     const {
       prompt,
@@ -215,7 +236,9 @@ export class ClaudeProvider extends BaseProvider {
     // Adaptive thinking (Opus 4.6): don't set maxThinkingTokens, model uses adaptive by default
     // Manual thinking (Haiku/Sonnet): use budget_tokens
     const maxThinkingTokens =
-      thinkingLevel === 'adaptive' ? undefined : getThinkingTokenBudget(thinkingLevel);
+      thinkingLevel === "adaptive"
+        ? undefined
+        : getThinkingTokenBudget(thinkingLevel);
 
     // Build Claude SDK options
     const sdkOptions: Options = {
@@ -232,7 +255,7 @@ export class ClaudeProvider extends BaseProvider {
       // Restrict available built-in tools if specified (tools: [] disables all tools)
       ...(options.tools && { tools: options.tools }),
       // AUTONOMOUS MODE: Always bypass permissions for fully autonomous operation
-      permissionMode: 'bypassPermissions',
+      permissionMode: "bypassPermissions",
       allowDangerouslySkipPermissions: true,
       abortController,
       // Resume existing SDK session if we have a session ID
@@ -258,10 +281,10 @@ export class ClaudeProvider extends BaseProvider {
       // Multi-part prompt (with images)
       promptPayload = (async function* () {
         const multiPartPrompt: SDKUserMessage = {
-          type: 'user' as const,
-          session_id: sdkSessionId || '',
+          type: "user" as const,
+          session_id: sdkSessionId || "",
           message: {
-            role: 'user' as const,
+            role: "user" as const,
             content: prompt,
           },
           parent_tool_use_id: null,
@@ -275,12 +298,12 @@ export class ClaudeProvider extends BaseProvider {
 
     // Log the environment being passed to the SDK for debugging
     const envForSdk = sdkOptions.env as Record<string, string | undefined>;
-    logger.debug('[ClaudeProvider] SDK Configuration:', {
+    logger.debug("[ClaudeProvider] SDK Configuration:", {
       model: sdkOptions.model,
-      baseUrl: envForSdk?.['ANTHROPIC_BASE_URL'] || '(default Anthropic API)',
-      hasApiKey: !!envForSdk?.['ANTHROPIC_API_KEY'],
-      hasAuthToken: !!envForSdk?.['ANTHROPIC_AUTH_TOKEN'],
-      providerName: providerConfig?.name || '(direct Anthropic)',
+      baseUrl: envForSdk?.["ANTHROPIC_BASE_URL"] || "(default Anthropic API)",
+      hasApiKey: !!envForSdk?.["ANTHROPIC_API_KEY"],
+      hasAuthToken: !!envForSdk?.["ANTHROPIC_AUTH_TOKEN"],
+      providerName: providerConfig?.name || "(direct Anthropic)",
       maxTurns: sdkOptions.maxTurns,
       maxThinkingTokens: sdkOptions.maxThinkingTokens,
     });
@@ -298,7 +321,7 @@ export class ClaudeProvider extends BaseProvider {
       const errorInfo = classifyError(error);
       const userMessage = getUserFriendlyErrorMessage(error);
 
-      logger.error('executeQuery() error during execution:', {
+      logger.error("executeQuery() error during execution:", {
         type: errorInfo.type,
         message: errorInfo.message,
         isRateLimit: errorInfo.isRateLimit,
@@ -356,11 +379,12 @@ export class ClaudeProvider extends BaseProvider {
     }
 
     const hasApiKey = hasEnvApiKey || hasCredentialsApiKey;
-    const authenticated = hasEnvApiKey || hasEnvAuthToken || hasCredentialsApiKey || hasCliOAuth;
+    const authenticated =
+      hasEnvApiKey || hasEnvAuthToken || hasCredentialsApiKey || hasCliOAuth;
 
     const status: InstallationStatus = {
       installed: true,
-      method: 'sdk',
+      method: "sdk",
       hasApiKey,
       authenticated,
     };
@@ -374,65 +398,65 @@ export class ClaudeProvider extends BaseProvider {
   getAvailableModels(): ModelDefinition[] {
     const models = [
       {
-        id: 'claude-opus-4-6',
-        name: 'Claude Opus 4.6',
-        modelString: 'claude-opus-4-6',
-        provider: 'anthropic',
-        description: 'Most capable Claude model with adaptive thinking',
+        id: "claude-opus-4-6",
+        name: "Claude Opus 4.6",
+        modelString: "claude-opus-4-6",
+        provider: "anthropic",
+        description: "Most capable Claude model with adaptive thinking",
         contextWindow: 200000,
         maxOutputTokens: 128000,
         supportsVision: true,
         supportsTools: true,
-        tier: 'premium' as const,
+        tier: "premium" as const,
         default: true,
       },
       {
-        id: 'claude-sonnet-4-6',
-        name: 'Claude Sonnet 4.6',
-        modelString: 'claude-sonnet-4-6',
-        provider: 'anthropic',
-        description: 'Balanced performance and cost with enhanced reasoning',
+        id: "claude-sonnet-4-6",
+        name: "Claude Sonnet 4.6",
+        modelString: "claude-sonnet-4-6",
+        provider: "anthropic",
+        description: "Balanced performance and cost with enhanced reasoning",
         contextWindow: 200000,
         maxOutputTokens: 64000,
         supportsVision: true,
         supportsTools: true,
-        tier: 'standard' as const,
+        tier: "standard" as const,
       },
       {
-        id: 'claude-sonnet-4-20250514',
-        name: 'Claude Sonnet 4',
-        modelString: 'claude-sonnet-4-20250514',
-        provider: 'anthropic',
-        description: 'Balanced performance and cost',
+        id: "claude-sonnet-4-20250514",
+        name: "Claude Sonnet 4",
+        modelString: "claude-sonnet-4-20250514",
+        provider: "anthropic",
+        description: "Balanced performance and cost",
         contextWindow: 200000,
         maxOutputTokens: 16000,
         supportsVision: true,
         supportsTools: true,
-        tier: 'standard' as const,
+        tier: "standard" as const,
       },
       {
-        id: 'claude-3-5-sonnet-20241022',
-        name: 'Claude 3.5 Sonnet',
-        modelString: 'claude-3-5-sonnet-20241022',
-        provider: 'anthropic',
-        description: 'Fast and capable',
+        id: "claude-3-5-sonnet-20241022",
+        name: "Claude 3.5 Sonnet",
+        modelString: "claude-3-5-sonnet-20241022",
+        provider: "anthropic",
+        description: "Fast and capable",
         contextWindow: 200000,
         maxOutputTokens: 8000,
         supportsVision: true,
         supportsTools: true,
-        tier: 'standard' as const,
+        tier: "standard" as const,
       },
       {
-        id: 'claude-haiku-4-5-20251001',
-        name: 'Claude Haiku 4.5',
-        modelString: 'claude-haiku-4-5-20251001',
-        provider: 'anthropic',
-        description: 'Fastest Claude model',
+        id: "claude-haiku-4-5-20251001",
+        name: "Claude Haiku 4.5",
+        modelString: "claude-haiku-4-5-20251001",
+        provider: "anthropic",
+        description: "Fastest Claude model",
         contextWindow: 200000,
         maxOutputTokens: 8000,
         supportsVision: true,
         supportsTools: true,
-        tier: 'basic' as const,
+        tier: "basic" as const,
       },
     ] satisfies ModelDefinition[];
     return models;
@@ -442,7 +466,7 @@ export class ClaudeProvider extends BaseProvider {
    * Check if the provider supports a specific feature
    */
   supportsFeature(feature: string): boolean {
-    const supportedFeatures = ['tools', 'text', 'vision', 'thinking'];
+    const supportedFeatures = ["tools", "text", "vision", "thinking"];
     return supportedFeatures.includes(feature);
   }
 }

@@ -5,7 +5,11 @@
     "priority": "critical",
     "status": "done",
     "depends_on": [],
-    "target_files": ["pyproject.toml", "src/pegasus/__init__.py", "src/pegasus/__main__.py"]
+    "target_files": [
+      "pyproject.toml",
+      "src/pegasus/__init__.py",
+      "src/pegasus/__main__.py"
+    ]
   },
   {
     "id": "02-pydantic-models",
@@ -45,7 +49,11 @@
     "priority": "critical",
     "status": "done",
     "depends_on": ["03-sqlite-schema"],
-    "target_files": ["src/pegasus/runner.py", "tests/test_runner.py", "tests/fakes.py"]
+    "target_files": [
+      "src/pegasus/runner.py",
+      "tests/test_runner.py",
+      "tests/fakes.py"
+    ]
   },
   {
     "id": "07-worktree-lifecycle",
@@ -60,7 +68,11 @@
     "description": "runner.py: Pipeline executor — read pipeline YAML, resolve config, iterate stages sequentially, call PegasusEngine per stage, write state transitions to SQLite, heartbeat every 5s, rate limit retry with exponential backoff, graceful shutdown (SIGTERM->SIGKILL), desktop notifications (osascript/notify-send). Integration tests with FakeAgentRunner.",
     "priority": "critical",
     "status": "done",
-    "depends_on": ["06-engine-abstraction", "07-worktree-lifecycle", "04-config-resolution"],
+    "depends_on": [
+      "06-engine-abstraction",
+      "07-worktree-lifecycle",
+      "04-config-resolution"
+    ],
     "target_files": ["src/pegasus/runner.py", "tests/test_runner.py"]
   },
   {

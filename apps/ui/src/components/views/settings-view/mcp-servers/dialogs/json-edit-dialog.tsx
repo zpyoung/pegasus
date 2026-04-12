@@ -1,6 +1,6 @@
-import { Code } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Code } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import type { MCPServerConfig } from '@pegasus/types';
+} from "@/components/ui/dialog";
+import type { MCPServerConfig } from "@pegasus/types";
 
 interface JsonEditDialogProps {
   open: boolean;
@@ -45,8 +45,8 @@ export function JsonEditDialog({
         <DialogHeader>
           <DialogTitle>Edit Server Configuration</DialogTitle>
           <DialogDescription>
-            Edit the raw JSON configuration for "{server?.name}". Changes will be validated before
-            saving.
+            Edit the raw JSON configuration for "{server?.name}". Changes will
+            be validated before saving.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">

@@ -1,6 +1,6 @@
-import { X, FileText } from 'lucide-react';
-import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
-import { formatFileSize } from '@/lib/image-utils';
+import { X, FileText } from "lucide-react";
+import type { ImageAttachment, TextFileAttachment } from "@/store/app-store";
+import { formatFileSize } from "@/lib/image-utils";
 
 interface FilePreviewProps {
   selectedImages: ImageAttachment[];
@@ -29,7 +29,7 @@ export function FilePreview({
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-foreground">
-          {totalFiles} file{totalFiles > 1 ? 's' : ''} attached
+          {totalFiles} file{totalFiles > 1 ? "s" : ""} attached
         </p>
         <button
           onClick={onClearAll}
@@ -47,7 +47,11 @@ export function FilePreview({
           >
             {/* Image thumbnail */}
             <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex-shrink-0">
-              <img src={image.data} alt={image.filename} className="w-full h-full object-cover" />
+              <img
+                src={image.data}
+                alt={image.filename}
+                className="w-full h-full object-cover"
+              />
             </div>
             {/* Image info */}
             <div className="min-w-0 flex-1">
@@ -55,7 +59,9 @@ export function FilePreview({
                 {image.filename}
               </p>
               {image.size !== undefined && (
-                <p className="text-[10px] text-muted-foreground">{formatFileSize(image.size)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {formatFileSize(image.size)}
+                </p>
               )}
             </div>
             {/* Remove button */}
@@ -85,7 +91,9 @@ export function FilePreview({
               <p className="text-xs font-medium text-foreground truncate max-w-24">
                 {file.filename}
               </p>
-              <p className="text-[10px] text-muted-foreground">{formatFileSize(file.size)}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {formatFileSize(file.size)}
+              </p>
             </div>
             {/* Remove button */}
             <button

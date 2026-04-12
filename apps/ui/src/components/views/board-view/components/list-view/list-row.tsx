@@ -1,12 +1,23 @@
 // @ts-nocheck - BaseFeature index signature causes property access type errors
-import { memo, useCallback, useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertCircle, Lock, Hand, Sparkles, FileText, FileCheck } from 'lucide-react';
-import type { Feature } from '@/store/app-store';
-import { RowActions, type RowActionHandlers } from './row-actions';
-import { getColumnWidth, getColumnAlign } from './list-header';
-import { TaskIdCopy } from '../task-id-copy';
+import { memo, useCallback, useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertCircle,
+  Lock,
+  Hand,
+  Sparkles,
+  FileText,
+  FileCheck,
+} from "lucide-react";
+import type { Feature } from "@/store/app-store";
+import { RowActions, type RowActionHandlers } from "./row-actions";
+import { getColumnWidth, getColumnAlign } from "./list-header";
+import { TaskIdCopy } from "../task-id-copy";
 
 export interface ListRowProps {
   /** The feature to display */
@@ -43,16 +54,22 @@ const IndicatorBadges = memo(function IndicatorBadges({
 }) {
   const hasError = feature.error && !isCurrentAutoTask;
   const isBlocked =
-    blockingDependencies.length > 0 && !feature.error && feature.status === 'backlog';
+    blockingDependencies.length > 0 &&
+    !feature.error &&
+    feature.status === "backlog";
   const showManualVerification =
-    feature.skipTests && !feature.error && feature.status === 'backlog';
+    feature.skipTests && !feature.error && feature.status === "backlog";
   const hasPlan = feature.planSpec?.content;
 
   // Check if just finished (within 2 minutes) - uses timer to auto-expire
   const [isJustFinished, setIsJustFinished] = useState(false);
 
   useEffect(() => {
-    if (!feature.justFinishedAt || feature.status !== 'waiting_approval' || feature.error) {
+    if (
+      !feature.justFinishedAt ||
+      feature.status !== "waiting_approval" ||
+      feature.error
+    ) {
       setIsJustFinished(false);
       return;
     }
@@ -90,66 +107,66 @@ const IndicatorBadges = memo(function IndicatorBadges({
 
   if (hasError) {
     badges.push({
-      key: 'error',
+      key: "error",
       icon: AlertCircle,
-      tooltip: feature.error || 'Error',
-      colorClass: 'text-[var(--status-error)]',
-      bgClass: 'bg-[var(--status-error)]/15',
-      borderClass: 'border-[var(--status-error)]/30',
+      tooltip: feature.error || "Error",
+      colorClass: "text-[var(--status-error)]",
+      bgClass: "bg-[var(--status-error)]/15",
+      borderClass: "border-[var(--status-error)]/30",
     });
   }
 
   if (isBlocked) {
     badges.push({
-      key: 'blocked',
+      key: "blocked",
       icon: Lock,
-      tooltip: `Blocked by ${blockingDependencies.length} incomplete ${blockingDependencies.length === 1 ? 'dependency' : 'dependencies'}`,
-      colorClass: 'text-orange-500',
-      bgClass: 'bg-orange-500/15',
-      borderClass: 'border-orange-500/30',
+      tooltip: `Blocked by ${blockingDependencies.length} incomplete ${blockingDependencies.length === 1 ? "dependency" : "dependencies"}`,
+      colorClass: "text-orange-500",
+      bgClass: "bg-orange-500/15",
+      borderClass: "border-orange-500/30",
     });
   }
 
   if (showManualVerification) {
     badges.push({
-      key: 'manual',
+      key: "manual",
       icon: Hand,
-      tooltip: 'Manual verification required',
-      colorClass: 'text-[var(--status-warning)]',
-      bgClass: 'bg-[var(--status-warning)]/15',
-      borderClass: 'border-[var(--status-warning)]/30',
+      tooltip: "Manual verification required",
+      colorClass: "text-[var(--status-warning)]",
+      bgClass: "bg-[var(--status-warning)]/15",
+      borderClass: "border-[var(--status-warning)]/30",
     });
   }
 
-  if (feature.planSpec?.status === 'generated') {
+  if (feature.planSpec?.status === "generated") {
     badges.push({
-      key: 'plan-approval',
+      key: "plan-approval",
       icon: FileCheck,
-      tooltip: 'Plan ready for review - tap to approve',
-      colorClass: 'text-purple-500',
-      bgClass: 'bg-purple-500/15',
-      borderClass: 'border-purple-500/30',
+      tooltip: "Plan ready for review - tap to approve",
+      colorClass: "text-purple-500",
+      bgClass: "bg-purple-500/15",
+      borderClass: "border-purple-500/30",
       animate: true,
     });
   } else if (hasPlan) {
     badges.push({
-      key: 'plan',
+      key: "plan",
       icon: FileText,
-      tooltip: 'Has implementation plan',
-      colorClass: 'text-[var(--status-info)]',
-      bgClass: 'bg-[var(--status-info)]/15',
-      borderClass: 'border-[var(--status-info)]/30',
+      tooltip: "Has implementation plan",
+      colorClass: "text-[var(--status-info)]",
+      bgClass: "bg-[var(--status-info)]/15",
+      borderClass: "border-[var(--status-info)]/30",
     });
   }
 
   if (isJustFinished) {
     badges.push({
-      key: 'just-finished',
+      key: "just-finished",
       icon: Sparkles,
-      tooltip: 'Agent just finished working on this feature',
-      colorClass: 'text-[var(--status-success)]',
-      bgClass: 'bg-[var(--status-success)]/15',
-      borderClass: 'border-[var(--status-success)]/30',
+      tooltip: "Agent just finished working on this feature",
+      colorClass: "text-[var(--status-success)]",
+      bgClass: "bg-[var(--status-success)]/15",
+      borderClass: "border-[var(--status-success)]/30",
       animate: true,
     });
   }
@@ -163,11 +180,11 @@ const IndicatorBadges = memo(function IndicatorBadges({
           <TooltipTrigger asChild>
             <div
               className={cn(
-                'inline-flex items-center justify-center w-5 h-5 rounded border',
+                "inline-flex items-center justify-center w-5 h-5 rounded border",
                 badge.colorClass,
                 badge.bgClass,
                 badge.borderClass,
-                badge.animate && 'animate-pulse'
+                badge.animate && "animate-pulse",
               )}
               data-testid={`list-row-badge-${badge.key}`}
             >
@@ -225,16 +242,17 @@ export const ListRow = memo(function ListRow({
   // is tracked as running but its status hasn't caught up yet (still 'backlog', 'ready',
   // or 'interrupted'). We handle this with isRunningWithStaleStatus.
   const isInExecutionState =
-    feature.status === 'in_progress' ||
-    (typeof feature.status === 'string' && feature.status.startsWith('pipeline_'));
+    feature.status === "in_progress" ||
+    (typeof feature.status === "string" &&
+      feature.status.startsWith("pipeline_"));
   const isActivelyRunning = isCurrentAutoTask && isInExecutionState;
   // Feature is tracked as running but status hasn't updated yet - show running UI
   const isRunningWithStaleStatus =
     isCurrentAutoTask &&
     !isInExecutionState &&
-    (feature.status === 'backlog' ||
-      feature.status === 'ready' ||
-      feature.status === 'interrupted');
+    (feature.status === "backlog" ||
+      feature.status === "ready" ||
+      feature.status === "interrupted");
   const showRunningVisuals = isActivelyRunning || isRunningWithStaleStatus;
 
   const handleRowClick = useCallback(
@@ -251,7 +269,7 @@ export const ListRow = memo(function ListRow({
       }
       onClick?.();
     },
-    [onClick]
+    [onClick],
   );
 
   const handleCheckboxChange = useCallback(() => {
@@ -260,12 +278,12 @@ export const ListRow = memo(function ListRow({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onClick?.();
       }
     },
-    [onClick]
+    [onClick],
   );
 
   const hasError = feature.error && !isCurrentAutoTask;
@@ -277,26 +295,30 @@ export const ListRow = memo(function ListRow({
       onClick={handleRowClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
       className={cn(
-        'group flex items-center w-full border-b border-border/50',
-        'transition-colors duration-200',
-        onClick && 'cursor-pointer',
-        'hover:bg-accent/50',
-        isSelected && 'bg-accent/70',
-        hasError && 'bg-[var(--status-error)]/5 hover:bg-[var(--status-error)]/10',
-        className
+        "group flex items-center w-full border-b border-border/50",
+        "transition-colors duration-200",
+        onClick && "cursor-pointer",
+        "hover:bg-accent/50",
+        isSelected && "bg-accent/70",
+        hasError &&
+          "bg-[var(--status-error)]/5 hover:bg-[var(--status-error)]/10",
+        className,
       )}
       data-testid={`list-row-${feature.id}`}
     >
       {/* Checkbox column */}
       {showCheckbox && (
-        <div role="cell" className="flex items-center justify-center w-10 px-2 py-2 shrink-0">
+        <div
+          role="cell"
+          className="flex items-center justify-center w-10 px-2 py-2 shrink-0"
+        >
           <input
             type="checkbox"
             checked={isSelected}
             onChange={handleCheckboxChange}
             className={cn(
-              'h-4 w-4 rounded border-border text-primary cursor-pointer',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1'
+              "h-4 w-4 rounded border-border text-primary cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
             )}
             aria-label={`Select ${feature.title || feature.description}`}
             data-testid={`list-row-checkbox-${feature.id}`}
@@ -308,17 +330,19 @@ export const ListRow = memo(function ListRow({
       <div
         role="cell"
         className={cn(
-          'flex items-center pl-3 pr-0 py-2 gap-0',
-          getColumnWidth('title'),
-          getColumnAlign('title')
+          "flex items-center pl-3 pr-0 py-2 gap-0",
+          getColumnWidth("title"),
+          getColumnAlign("title"),
         )}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center">
             <span
               className={cn(
-                'text-sm font-medium truncate',
-                feature.titleGenerating && !feature.title && 'animate-pulse text-muted-foreground'
+                "text-sm font-medium truncate",
+                feature.titleGenerating &&
+                  !feature.title &&
+                  "animate-pulse text-muted-foreground",
               )}
               title={feature.title || feature.description}
             >
@@ -347,32 +371,32 @@ export const ListRow = memo(function ListRow({
       <div
         role="cell"
         className={cn(
-          'flex items-center pl-0 pr-3 py-2 shrink-0',
-          getColumnWidth('priority'),
-          getColumnAlign('priority')
+          "flex items-center pl-0 pr-3 py-2 shrink-0",
+          getColumnWidth("priority"),
+          getColumnAlign("priority"),
         )}
         data-testid={`list-row-priority-${feature.id}`}
       >
         {feature.priority ? (
           <span
             className={cn(
-              'inline-flex items-center justify-center w-6 h-6 rounded-md border-[1.5px] font-bold text-xs',
+              "inline-flex items-center justify-center w-6 h-6 rounded-md border-[1.5px] font-bold text-xs",
               feature.priority === 1 &&
-                'bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]',
+                "bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]",
               feature.priority === 2 &&
-                'bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]',
+                "bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]",
               feature.priority === 3 &&
-                'bg-[var(--status-info-bg)] border-[var(--status-info)]/40 text-[var(--status-info)]'
+                "bg-[var(--status-info-bg)] border-[var(--status-info)]/40 text-[var(--status-info)]",
             )}
             title={
               feature.priority === 1
-                ? 'High Priority'
+                ? "High Priority"
                 : feature.priority === 2
-                  ? 'Medium Priority'
-                  : 'Low Priority'
+                  ? "Medium Priority"
+                  : "Low Priority"
             }
           >
-            {feature.priority === 1 ? 'H' : feature.priority === 2 ? 'M' : 'L'}
+            {feature.priority === 1 ? "H" : feature.priority === 2 ? "M" : "L"}
           </span>
         ) : (
           <span className="text-muted-foreground text-xs">-</span>
@@ -380,7 +404,10 @@ export const ListRow = memo(function ListRow({
       </div>
 
       {/* Actions column */}
-      <div role="cell" className="flex items-center justify-end px-3 py-2 w-[80px] shrink-0">
+      <div
+        role="cell"
+        className="flex items-center justify-end px-3 py-2 w-[80px] shrink-0"
+      >
         <RowActions
           feature={feature}
           handlers={handlers}
@@ -404,28 +431,34 @@ export const ListRow = memo(function ListRow({
  */
 export function getFeatureSortValue(
   feature: Feature,
-  column: 'title' | 'status' | 'category' | 'priority' | 'createdAt' | 'updatedAt'
+  column:
+    | "title"
+    | "status"
+    | "category"
+    | "priority"
+    | "createdAt"
+    | "updatedAt",
 ): string | number | Date {
   switch (column) {
-    case 'title':
+    case "title":
       return (feature.title || feature.description).toLowerCase();
-    case 'status':
+    case "status":
       return feature.status;
-    case 'category':
-      return (feature.category || '').toLowerCase();
-    case 'priority':
+    case "category":
+      return (feature.category || "").toLowerCase();
+    case "priority":
       return feature.priority || 999; // No priority sorts last
-    case 'createdAt': {
+    case "createdAt": {
       if (feature.createdAt) return new Date(feature.createdAt);
       // Fallback: extract timestamp from feature ID (e.g., "feature-1772299989679-185nwyp5kc7")
       const match = feature.id.match(/^feature-(\d+)-/);
       if (match) return new Date(parseInt(match[1], 10));
       return new Date(0);
     }
-    case 'updatedAt':
+    case "updatedAt":
       return feature.updatedAt ? new Date(feature.updatedAt) : new Date(0);
     default:
-      return '';
+      return "";
   }
 }
 
@@ -434,8 +467,14 @@ export function getFeatureSortValue(
  */
 export function sortFeatures(
   features: Feature[],
-  column: 'title' | 'status' | 'category' | 'priority' | 'createdAt' | 'updatedAt',
-  direction: 'asc' | 'desc'
+  column:
+    | "title"
+    | "status"
+    | "category"
+    | "priority"
+    | "createdAt"
+    | "updatedAt",
+  direction: "asc" | "desc",
 ): Feature[] {
   return [...features].sort((a, b) => {
     const aValue = getFeatureSortValue(a, column);
@@ -445,12 +484,12 @@ export function sortFeatures(
 
     if (aValue instanceof Date && bValue instanceof Date) {
       comparison = aValue.getTime() - bValue.getTime();
-    } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+    } else if (typeof aValue === "number" && typeof bValue === "number") {
       comparison = aValue - bValue;
     } else {
       comparison = String(aValue).localeCompare(String(bValue));
     }
 
-    return direction === 'asc' ? comparison : -comparison;
+    return direction === "asc" ? comparison : -comparison;
   });
 }

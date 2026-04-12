@@ -4,10 +4,10 @@
  * React Query hooks for workspace operations.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
+import { useQuery } from "@tanstack/react-query";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
 
 interface WorkspaceDirectory {
   name: string;
@@ -32,7 +32,7 @@ export function useWorkspaceDirectories(enabled = true) {
       const api = getHttpApiClient();
       const result = await api.workspace.getDirectories();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to load directories');
+        throw new Error(result.error || "Failed to load directories");
       }
       return result.directories ?? [];
     },

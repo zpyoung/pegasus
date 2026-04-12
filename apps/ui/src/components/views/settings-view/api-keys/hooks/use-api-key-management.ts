@@ -1,15 +1,15 @@
 // API key management state with validation and persistence
-import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore } from '@/store/app-store';
-import { useSetupStore, type ZaiAuthMethod } from '@/store/setup-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore } from "@/store/app-store";
+import { useSetupStore, type ZaiAuthMethod } from "@/store/setup-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { queryKeys } from "@/lib/query-keys";
 
-const logger = createLogger('ApiKeyManagement');
-import { getElectronAPI } from '@/lib/electron';
-import type { ProviderConfigParams } from '@/config/api-providers';
+const logger = createLogger("ApiKeyManagement");
+import { getElectronAPI } from "@/lib/electron";
+import type { ProviderConfigParams } from "@/config/api-providers";
 
 interface TestResult {
   success: boolean;
@@ -72,9 +72,13 @@ export function useApiKeyManagement() {
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testingGeminiConnection, setTestingGeminiConnection] = useState(false);
-  const [geminiTestResult, setGeminiTestResult] = useState<TestResult | null>(null);
+  const [geminiTestResult, setGeminiTestResult] = useState<TestResult | null>(
+    null,
+  );
   const [testingOpenaiConnection, setTestingOpenaiConnection] = useState(false);
-  const [openaiTestResult, setOpenaiTestResult] = useState<TestResult | null>(null);
+  const [openaiTestResult, setOpenaiTestResult] = useState<TestResult | null>(
+    null,
+  );
   const [testingZaiConnection, setTestingZaiConnection] = useState(false);
   const [zaiTestResult, setZaiTestResult] = useState<TestResult | null>(null);
 
@@ -108,7 +112,7 @@ export function useApiKeyManagement() {
             });
           }
         } catch (error) {
-          logger.error('Failed to check API key status:', error);
+          logger.error("Failed to check API key status:", error);
         }
       }
     };
@@ -121,7 +125,7 @@ export function useApiKeyManagement() {
     if (!anthropicKey || anthropicKey.trim().length === 0) {
       setTestResult({
         success: false,
-        message: 'Please enter an API key to test.',
+        message: "Please enter an API key to test.",
       });
       return;
     }
@@ -132,23 +136,23 @@ export function useApiKeyManagement() {
     try {
       const api = getHttpApiClient();
       // Pass the current input value to test unsaved keys
-      const data = await api.setup.verifyClaudeAuth('api_key', anthropicKey);
+      const data = await api.setup.verifyClaudeAuth("api_key", anthropicKey);
 
       if (data.success && data.authenticated) {
         setTestResult({
           success: true,
-          message: 'Connection successful! Claude responded.',
+          message: "Connection successful! Claude responded.",
         });
       } else {
         setTestResult({
           success: false,
-          message: data.error || 'Failed to connect to Claude API.',
+          message: data.error || "Failed to connect to Claude API.",
         });
       }
     } catch {
       setTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: "Network error. Please check your connection.",
       });
     } finally {
       setTestingConnection(false);
@@ -165,7 +169,7 @@ export function useApiKeyManagement() {
     if (!googleKey || googleKey.trim().length < 10) {
       setGeminiTestResult({
         success: false,
-        message: 'Please enter a valid API key.',
+        message: "Please enter a valid API key.",
       });
       setTestingGeminiConnection(false);
       return;
@@ -175,7 +179,7 @@ export function useApiKeyManagement() {
     // Full verification requires a backend endpoint
     setGeminiTestResult({
       success: true,
-      message: 'API key saved. Connection test not yet available.',
+      message: "API key saved. Connection test not yet available.",
     });
     setTestingGeminiConnection(false);
   };
@@ -187,23 +191,23 @@ export function useApiKeyManagement() {
 
     try {
       const api = getHttpApiClient();
-      const data = await api.setup.verifyCodexAuth('api_key', openaiKey);
+      const data = await api.setup.verifyCodexAuth("api_key", openaiKey);
 
       if (data.success && data.authenticated) {
         setOpenaiTestResult({
           success: true,
-          message: 'Connection successful! Codex responded.',
+          message: "Connection successful! Codex responded.",
         });
       } else {
         setOpenaiTestResult({
           success: false,
-          message: data.error || 'Failed to connect to OpenAI API.',
+          message: data.error || "Failed to connect to OpenAI API.",
         });
       }
     } catch {
       setOpenaiTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: "Network error. Please check your connection.",
       });
     } finally {
       setTestingOpenaiConnection(false);
@@ -219,7 +223,7 @@ export function useApiKeyManagement() {
     if (!zaiKey || zaiKey.trim().length === 0) {
       setZaiTestResult({
         success: false,
-        message: 'Please enter an API key to test.',
+        message: "Please enter an API key to test.",
       });
       setTestingZaiConnection(false);
       return;
@@ -228,23 +232,25 @@ export function useApiKeyManagement() {
     try {
       const api = getElectronAPI();
       // Use the verify endpoint to test the key without storing it
-      const response: VerifyResponse | undefined = await api.zai?.verify(zaiKey);
+      const response: VerifyResponse | undefined =
+        await api.zai?.verify(zaiKey);
 
       if (response?.success && response?.authenticated) {
         setZaiTestResult({
           success: true,
-          message: response.message || 'Connection successful! z.ai API responded.',
+          message:
+            response.message || "Connection successful! z.ai API responded.",
         });
       } else {
         setZaiTestResult({
           success: false,
-          message: response?.error || 'Failed to connect to z.ai API.',
+          message: response?.error || "Failed to connect to z.ai API.",
         });
       }
     } catch {
       setZaiTestResult({
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: "Network error. Please check your connection.",
       });
     } finally {
       setTestingZaiConnection(false);
@@ -257,7 +263,9 @@ export function useApiKeyManagement() {
     if (zaiKey && zaiKey.trim().length > 0) {
       try {
         const api = getHttpApiClient();
-        const result: ConfigureResponse = await api.zai.configure(zaiKey.trim());
+        const result: ConfigureResponse = await api.zai.configure(
+          zaiKey.trim(),
+        );
 
         if (result.success) {
           // Only persist to local store after server confirms success
@@ -274,16 +282,18 @@ export function useApiKeyManagement() {
           // Update z.ai auth status in the store
           setZaiAuthStatus({
             authenticated: true,
-            method: 'api_key' as ZaiAuthMethod,
+            method: "api_key" as ZaiAuthMethod,
             hasApiKey: true,
             hasEnvApiKey: currentHasEnvApiKey,
           });
           // Invalidate the z.ai usage query so it refetches with the new key
-          await queryClient.invalidateQueries({ queryKey: queryKeys.usage.zai() });
-          logger.info('z.ai API key configured successfully');
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.usage.zai(),
+          });
+          logger.info("z.ai API key configured successfully");
         } else {
           // Server config failed - still save other keys but log the issue
-          logger.error('z.ai API key configuration failed on server');
+          logger.error("z.ai API key configuration failed on server");
           setApiKeys({
             anthropic: anthropicKey,
             google: googleKey,
@@ -292,7 +302,7 @@ export function useApiKeyManagement() {
           });
         }
       } catch (error) {
-        logger.error('Failed to configure z.ai API key:', error);
+        logger.error("Failed to configure z.ai API key:", error);
         // Still save other keys even if z.ai config fails
         setApiKeys({
           anthropic: anthropicKey,
@@ -313,7 +323,7 @@ export function useApiKeyManagement() {
       // Clear z.ai auth status if key is removed
       setZaiAuthStatus({
         authenticated: false,
-        method: 'none' as ZaiAuthMethod,
+        method: "none" as ZaiAuthMethod,
         hasApiKey: false,
         hasEnvApiKey: zaiAuthStatus?.hasEnvApiKey ?? false,
       });

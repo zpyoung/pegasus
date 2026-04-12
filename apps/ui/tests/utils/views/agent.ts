@@ -1,5 +1,8 @@
-import { Page, Locator } from '@playwright/test';
-import { waitForElement, waitForSplashScreenToDisappear } from '../core/waiting';
+import { Page, Locator } from "@playwright/test";
+import {
+  waitForElement,
+  waitForSplashScreenToDisappear,
+} from "../core/waiting";
 
 /**
  * Get the session list element
@@ -23,7 +26,7 @@ export async function clickNewSessionButton(page: Page): Promise<void> {
   await waitForSplashScreenToDisappear(page, 3000);
   // Ensure session list (and thus SessionManager) is visible before clicking
   const sessionList = page.locator('[data-testid="session-list"]');
-  await sessionList.waitFor({ state: 'visible', timeout: 10000 });
+  await sessionList.waitFor({ state: "visible", timeout: 10000 });
   const button = await getNewSessionButton(page);
   await button.click();
 }
@@ -31,14 +34,20 @@ export async function clickNewSessionButton(page: Page): Promise<void> {
 /**
  * Get a session item by its ID
  */
-export async function getSessionItem(page: Page, sessionId: string): Promise<Locator> {
+export async function getSessionItem(
+  page: Page,
+  sessionId: string,
+): Promise<Locator> {
   return page.locator(`[data-testid="session-item-${sessionId}"]`);
 }
 
 /**
  * Click the archive button for a session
  */
-export async function clickArchiveSession(page: Page, sessionId: string): Promise<void> {
+export async function clickArchiveSession(
+  page: Page,
+  sessionId: string,
+): Promise<void> {
   const button = page.locator(`[data-testid="archive-session-${sessionId}"]`);
   await button.click();
 }
@@ -46,7 +55,9 @@ export async function clickArchiveSession(page: Page, sessionId: string): Promis
 /**
  * Check if the no session placeholder is visible
  */
-export async function isNoSessionPlaceholderVisible(page: Page): Promise<boolean> {
+export async function isNoSessionPlaceholderVisible(
+  page: Page,
+): Promise<boolean> {
   const placeholder = page.locator('[data-testid="no-session-placeholder"]');
   return await placeholder.isVisible();
 }
@@ -56,9 +67,9 @@ export async function isNoSessionPlaceholderVisible(page: Page): Promise<boolean
  */
 export async function waitForNoSessionPlaceholder(
   page: Page,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<Locator> {
-  return await waitForElement(page, 'no-session-placeholder', options);
+  return await waitForElement(page, "no-session-placeholder", options);
 }
 
 /**
@@ -73,7 +84,9 @@ export async function isMessageListVisible(page: Page): Promise<boolean> {
  * Count the number of session items in the session list
  */
 export async function countSessionItems(page: Page): Promise<number> {
-  const sessionList = page.locator('[data-testid="session-list"] [data-testid^="session-item-"]');
+  const sessionList = page.locator(
+    '[data-testid="session-list"] [data-testid^="session-item-"]',
+  );
   return await sessionList.count();
 }
 
@@ -81,14 +94,19 @@ export async function countSessionItems(page: Page): Promise<number> {
  * Wait for a new session to be created (by checking if a session item appears)
  * Scopes to session-list to match countSessionItems and avoid matching stale elements
  */
-export async function waitForNewSession(page: Page, options?: { timeout?: number }): Promise<void> {
+export async function waitForNewSession(
+  page: Page,
+  options?: { timeout?: number },
+): Promise<void> {
   const timeout = options?.timeout ?? 10000;
 
   // Ensure session list container is visible first (handles sidebar render delay)
   const sessionList = page.locator('[data-testid="session-list"]');
-  await sessionList.waitFor({ state: 'visible', timeout });
+  await sessionList.waitFor({ state: "visible", timeout });
 
   // Wait for a session item to appear within the session list
-  const sessionItem = sessionList.locator('[data-testid^="session-item-"]').first();
-  await sessionItem.waitFor({ state: 'visible', timeout });
+  const sessionItem = sessionList
+    .locator('[data-testid^="session-item-"]')
+    .first();
+  await sessionItem.waitFor({ state: "visible", timeout });
 }

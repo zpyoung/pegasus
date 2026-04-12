@@ -6,10 +6,10 @@
  * consistent behaviour across branch-related services.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { execGitCommand, execGitCommandWithLockRetry } from '../lib/git.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { execGitCommand, execGitCommandWithLockRetry } from "../lib/git.js";
 
-const logger = createLogger('BranchUtils');
+const logger = createLogger("BranchUtils");
 
 // ============================================================================
 // Types
@@ -42,7 +42,7 @@ export interface HasAnyChangesOptions {
  * are "real" local changes.
  */
 function isExcludedWorktreeLine(line: string): boolean {
-  return line.includes('.worktrees/') || line.endsWith('.worktrees');
+  return line.includes(".worktrees/") || line.endsWith(".worktrees");
 }
 
 // ============================================================================
@@ -61,22 +61,26 @@ function isExcludedWorktreeLine(line: string): boolean {
  *   stashChanges() call that does not pass --include-untracked.
  *   Defaults to true.
  */
-export async function hasAnyChanges(cwd: string, options?: HasAnyChangesOptions): Promise<boolean> {
+export async function hasAnyChanges(
+  cwd: string,
+  options?: HasAnyChangesOptions,
+): Promise<boolean> {
   try {
     const includeUntracked = options?.includeUntracked ?? true;
-    const stdout = await execGitCommand(['status', '--porcelain'], cwd);
+    const stdout = await execGitCommand(["status", "--porcelain"], cwd);
     const lines = stdout
       .trim()
-      .split('\n')
+      .split("\n")
       .filter((line) => {
         if (!line.trim()) return false;
-        if (options?.excludeWorktreePaths && isExcludedWorktreeLine(line)) return false;
-        if (!includeUntracked && line.startsWith('??')) return false;
+        if (options?.excludeWorktreePaths && isExcludedWorktreeLine(line))
+          return false;
+        if (!includeUntracked && line.startsWith("??")) return false;
         return true;
       });
     return lines.length > 0;
   } catch (err) {
-    logger.error('hasAnyChanges: execGitCommand failed — returning false', {
+    logger.error("hasAnyChanges: execGitCommand failed — returning false", {
       cwd,
       error: getErrorMessage(err),
     });
@@ -96,24 +100,24 @@ export async function hasAnyChanges(cwd: string, options?: HasAnyChangesOptions)
 export async function stashChanges(
   cwd: string,
   message: string,
-  includeUntracked: boolean = true
+  includeUntracked: boolean = true,
 ): Promise<boolean> {
   try {
-    const args = ['stash', 'push'];
+    const args = ["stash", "push"];
     if (includeUntracked) {
-      args.push('--include-untracked');
+      args.push("--include-untracked");
     }
-    args.push('-m', message);
+    args.push("-m", message);
 
     const stdout = await execGitCommandWithLockRetry(args, cwd);
 
     // git exits 0 but prints a benign message when there is nothing to stash
     const stdoutLower = stdout.toLowerCase();
     if (
-      stdoutLower.includes('no local changes to save') ||
-      stdoutLower.includes('nothing to stash')
+      stdoutLower.includes("no local changes to save") ||
+      stdoutLower.includes("nothing to stash")
     ) {
-      logger.debug('stashChanges: nothing to stash', { cwd, message, stdout });
+      logger.debug("stashChanges: nothing to stash", { cwd, message, stdout });
       return false;
     }
 
@@ -123,7 +127,7 @@ export async function stashChanges(
 
     // Unexpected error – log full details and re-throw so the caller aborts
     // rather than proceeding with an un-stashed working tree
-    logger.error('stashChanges: unexpected error during stash', {
+    logger.error("stashChanges: unexpected error during stash", {
       cwd,
       message,
       error: errorMsg,
@@ -139,15 +143,15 @@ export async function stashChanges(
  * @param cwd - Working directory of the git repository / worktree
  */
 export async function popStash(
-  cwd: string
+  cwd: string,
 ): Promise<{ success: boolean; hasConflicts: boolean; error?: string }> {
   try {
-    await execGitCommandWithLockRetry(['stash', 'pop'], cwd);
+    await execGitCommandWithLockRetry(["stash", "pop"], cwd);
     // If execGitCommandWithLockRetry succeeds (zero exit code), there are no conflicts
     return { success: true, hasConflicts: false };
   } catch (error) {
     const errorMsg = getErrorMessage(error);
-    if (errorMsg.includes('CONFLICT') || errorMsg.includes('Merge conflict')) {
+    if (errorMsg.includes("CONFLICT") || errorMsg.includes("Merge conflict")) {
       return { success: false, hasConflicts: true, error: errorMsg };
     }
     return { success: false, hasConflicts: false, error: errorMsg };
@@ -160,9 +164,15 @@ export async function popStash(
  * @param cwd - Working directory of the git repository / worktree
  * @param branchName - The branch name to look up (without refs/heads/ prefix)
  */
-export async function localBranchExists(cwd: string, branchName: string): Promise<boolean> {
+export async function localBranchExists(
+  cwd: string,
+  branchName: string,
+): Promise<boolean> {
   try {
-    await execGitCommand(['rev-parse', '--verify', `refs/heads/${branchName}`], cwd);
+    await execGitCommand(
+      ["rev-parse", "--verify", `refs/heads/${branchName}`],
+      cwd,
+    );
     return true;
   } catch {
     return false;

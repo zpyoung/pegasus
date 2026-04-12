@@ -8,13 +8,13 @@
  * Otherwise, auto-detection based on package manager (pnpm/yarn/npm/bun run dev) is used.
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getDevServerService } from '../../../services/dev-server-service.js';
-import { getErrorMessage, logError } from '../common.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getDevServerService } from "../../../services/dev-server-service.js";
+import { getErrorMessage, logError } from "../common.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('start-dev');
+const logger = createLogger("start-dev");
 
 export function createStartDevHandler(settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -27,7 +27,7 @@ export function createStartDevHandler(settingsService?: SettingsService) {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -35,7 +35,7 @@ export function createStartDevHandler(settingsService?: SettingsService) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -43,13 +43,18 @@ export function createStartDevHandler(settingsService?: SettingsService) {
       // Get custom dev command from project settings (if configured)
       let customCommand: string | undefined;
       if (settingsService) {
-        const projectSettings = await settingsService.getProjectSettings(projectPath);
+        const projectSettings =
+          await settingsService.getProjectSettings(projectPath);
         const devCommand = projectSettings?.devCommand?.trim();
         if (devCommand) {
           customCommand = devCommand;
-          logger.debug(`Using custom dev command from project settings: ${customCommand}`);
+          logger.debug(
+            `Using custom dev command from project settings: ${customCommand}`,
+          );
         } else {
-          logger.debug('No custom dev command configured, using auto-detection');
+          logger.debug(
+            "No custom dev command configured, using auto-detection",
+          );
         }
       }
 
@@ -57,7 +62,7 @@ export function createStartDevHandler(settingsService?: SettingsService) {
       const result = await devServerService.startDevServer(
         projectPath,
         worktreePath,
-        customCommand
+        customCommand,
       );
 
       if (result.success && result.result) {
@@ -73,11 +78,11 @@ export function createStartDevHandler(settingsService?: SettingsService) {
       } else {
         res.status(400).json({
           success: false,
-          error: result.error || 'Failed to start dev server',
+          error: result.error || "Failed to start dev server",
         });
       }
     } catch (error) {
-      logError(error, 'Start dev server failed');
+      logError(error, "Start dev server failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

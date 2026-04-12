@@ -2,9 +2,9 @@
  * GET /providers endpoint - Check provider status
  */
 
-import type { Request, Response } from 'express';
-import { ProviderFactory } from '../../../providers/provider-factory.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { ProviderFactory } from "../../../providers/provider-factory.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createProvidersHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
@@ -28,7 +28,7 @@ export function createProvidersHandler() {
 
       res.json({ success: true, providers });
     } catch (error) {
-      logError(error, 'Get providers failed');
+      logError(error, "Get providers failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

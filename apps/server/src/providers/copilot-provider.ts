@@ -10,40 +10,44 @@
  * Based on https://github.com/github/copilot-sdk
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { CliProvider, type CliSpawnConfig, type CliErrorInfo } from './cli-provider.js';
+import { execSync } from "child_process";
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as os from "os";
+import {
+  CliProvider,
+  type CliSpawnConfig,
+  type CliErrorInfo,
+} from "./cli-provider.js";
 import type {
   ProviderConfig,
   ExecuteOptions,
   ProviderMessage,
   InstallationStatus,
   ModelDefinition,
-} from './types.js';
+} from "./types.js";
 // Note: validateBareModelId is not used because Copilot's bare model IDs
 // legitimately contain prefixes like claude-, gemini-, gpt-
 import {
   COPILOT_MODEL_MAP,
   type CopilotAuthStatus,
   type CopilotRuntimeModel,
-} from '@pegasus/types';
-import { createLogger, isAbortError } from '@pegasus/utils';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { CopilotClient, type PermissionRequest } from '@github/copilot-sdk';
+} from "@pegasus/types";
+import { createLogger, isAbortError } from "@pegasus/utils";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { CopilotClient, type PermissionRequest } from "@github/copilot-sdk";
 import {
   normalizeTodos,
   normalizeFilePathInput,
   normalizeCommandInput,
   normalizePatternInput,
-} from './tool-normalization.js';
+} from "./tool-normalization.js";
 
 // Create logger for this module
-const logger = createLogger('CopilotProvider');
+const logger = createLogger("CopilotProvider");
 
 // Default bare model (without copilot- prefix) for SDK calls
-const DEFAULT_BARE_MODEL = 'claude-sonnet-4.6';
+const DEFAULT_BARE_MODEL = "claude-sonnet-4.6";
 
 // =============================================================================
 // SDK Event Types (from @github/copilot-sdk)
@@ -58,7 +62,7 @@ interface SdkEvent {
 }
 
 interface SdkMessageEvent extends SdkEvent {
-  type: 'assistant.message';
+  type: "assistant.message";
   data: {
     content: string;
   };
@@ -68,7 +72,7 @@ interface SdkMessageEvent extends SdkEvent {
 // The final assistant.message event contains the complete content
 
 interface SdkToolExecutionStartEvent extends SdkEvent {
-  type: 'tool.execution_start';
+  type: "tool.execution_start";
   data: {
     toolName: string;
     toolCallId: string;
@@ -77,7 +81,7 @@ interface SdkToolExecutionStartEvent extends SdkEvent {
 }
 
 interface SdkToolExecutionCompleteEvent extends SdkEvent {
-  type: 'tool.execution_complete';
+  type: "tool.execution_complete";
   data: {
     toolCallId: string;
     success: boolean;
@@ -92,7 +96,7 @@ interface SdkToolExecutionCompleteEvent extends SdkEvent {
 }
 
 interface SdkSessionErrorEvent extends SdkEvent {
-  type: 'session.error';
+  type: "session.error";
   data: {
     message: string;
     code?: string;
@@ -107,23 +111,23 @@ interface SdkSessionErrorEvent extends SdkEvent {
  * Prefix for error messages in tool results
  * Consistent with GeminiProvider's error formatting
  */
-const TOOL_ERROR_PREFIX = '[ERROR]' as const;
+const TOOL_ERROR_PREFIX = "[ERROR]" as const;
 
 // =============================================================================
 // Error Codes
 // =============================================================================
 
 export enum CopilotErrorCode {
-  NOT_INSTALLED = 'COPILOT_NOT_INSTALLED',
-  NOT_AUTHENTICATED = 'COPILOT_NOT_AUTHENTICATED',
-  RATE_LIMITED = 'COPILOT_RATE_LIMITED',
-  MODEL_UNAVAILABLE = 'COPILOT_MODEL_UNAVAILABLE',
-  NETWORK_ERROR = 'COPILOT_NETWORK_ERROR',
-  PROCESS_CRASHED = 'COPILOT_PROCESS_CRASHED',
-  TIMEOUT = 'COPILOT_TIMEOUT',
-  CLI_ERROR = 'COPILOT_CLI_ERROR',
-  SDK_ERROR = 'COPILOT_SDK_ERROR',
-  UNKNOWN = 'COPILOT_UNKNOWN_ERROR',
+  NOT_INSTALLED = "COPILOT_NOT_INSTALLED",
+  NOT_AUTHENTICATED = "COPILOT_NOT_AUTHENTICATED",
+  RATE_LIMITED = "COPILOT_RATE_LIMITED",
+  MODEL_UNAVAILABLE = "COPILOT_MODEL_UNAVAILABLE",
+  NETWORK_ERROR = "COPILOT_NETWORK_ERROR",
+  PROCESS_CRASHED = "COPILOT_PROCESS_CRASHED",
+  TIMEOUT = "COPILOT_TIMEOUT",
+  CLI_ERROR = "COPILOT_CLI_ERROR",
+  SDK_ERROR = "COPILOT_SDK_ERROR",
+  UNKNOWN = "COPILOT_UNKNOWN_ERROR",
 }
 
 export interface CopilotError extends Error {
@@ -132,10 +136,13 @@ export interface CopilotError extends Error {
   suggestion?: string;
 }
 
-type CopilotSession = Awaited<ReturnType<CopilotClient['createSession']>>;
-type CopilotSessionOptions = Parameters<CopilotClient['createSession']>[0];
+type CopilotSession = Awaited<ReturnType<CopilotClient["createSession"]>>;
+type CopilotSessionOptions = Parameters<CopilotClient["createSession"]>[0];
 type ResumableCopilotClient = CopilotClient & {
-  resumeSession?: (sessionId: string, options: CopilotSessionOptions) => Promise<CopilotSession>;
+  resumeSession?: (
+    sessionId: string,
+    options: CopilotSessionOptions,
+  ) => Promise<CopilotSession>;
 };
 
 // =============================================================================
@@ -150,47 +157,47 @@ type ResumableCopilotClient = CopilotClient & {
  */
 const COPILOT_TOOL_NAME_MAP: Record<string, string> = {
   // File operations
-  read_file: 'Read',
-  read: 'Read',
-  view: 'Read', // Copilot uses 'view' for reading files
-  read_many_files: 'Read',
-  write_file: 'Write',
-  write: 'Write',
-  create_file: 'Write',
-  edit_file: 'Edit',
-  edit: 'Edit',
-  replace: 'Edit',
-  patch: 'Edit',
+  read_file: "Read",
+  read: "Read",
+  view: "Read", // Copilot uses 'view' for reading files
+  read_many_files: "Read",
+  write_file: "Write",
+  write: "Write",
+  create_file: "Write",
+  edit_file: "Edit",
+  edit: "Edit",
+  replace: "Edit",
+  patch: "Edit",
   // Shell operations
-  run_shell: 'Bash',
-  run_shell_command: 'Bash',
-  shell: 'Bash',
-  bash: 'Bash',
-  execute: 'Bash',
-  terminal: 'Bash',
+  run_shell: "Bash",
+  run_shell_command: "Bash",
+  shell: "Bash",
+  bash: "Bash",
+  execute: "Bash",
+  terminal: "Bash",
   // Search operations
-  search: 'Grep',
-  grep: 'Grep',
-  search_file_content: 'Grep',
-  find_files: 'Glob',
-  glob: 'Glob',
-  list_dir: 'Ls',
-  list_directory: 'Ls',
-  ls: 'Ls',
+  search: "Grep",
+  grep: "Grep",
+  search_file_content: "Grep",
+  find_files: "Glob",
+  glob: "Glob",
+  list_dir: "Ls",
+  list_directory: "Ls",
+  ls: "Ls",
   // Web operations
-  web_fetch: 'WebFetch',
-  fetch: 'WebFetch',
-  web_search: 'WebSearch',
-  search_web: 'WebSearch',
-  google_web_search: 'WebSearch',
+  web_fetch: "WebFetch",
+  fetch: "WebFetch",
+  web_search: "WebSearch",
+  search_web: "WebSearch",
+  google_web_search: "WebSearch",
   // Todo operations
-  todo_write: 'TodoWrite',
-  write_todos: 'TodoWrite',
-  update_todos: 'TodoWrite',
+  todo_write: "TodoWrite",
+  write_todos: "TodoWrite",
+  update_todos: "TodoWrite",
   // Planning/intent operations (Copilot-specific)
-  report_intent: 'ReportIntent', // Keep as-is, it's a planning tool
-  think: 'Think',
-  plan: 'Plan',
+  report_intent: "ReportIntent", // Keep as-is, it's a planning tool
+  think: "Think",
+  plan: "Plan",
 };
 
 /**
@@ -209,27 +216,31 @@ function normalizeCopilotToolName(copilotToolName: string): string {
  */
 function normalizeCopilotToolInput(
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
 ): Record<string, unknown> {
   const normalizedName = normalizeCopilotToolName(toolName);
 
   // Normalize todo_write / write_todos: ensure proper format
-  if (normalizedName === 'TodoWrite' && Array.isArray(input.todos)) {
+  if (normalizedName === "TodoWrite" && Array.isArray(input.todos)) {
     return { todos: normalizeTodos(input.todos) };
   }
 
   // Normalize file path parameters for Read/Write/Edit tools
-  if (normalizedName === 'Read' || normalizedName === 'Write' || normalizedName === 'Edit') {
+  if (
+    normalizedName === "Read" ||
+    normalizedName === "Write" ||
+    normalizedName === "Edit"
+  ) {
     return normalizeFilePathInput(input);
   }
 
   // Normalize shell command parameters for Bash tool
-  if (normalizedName === 'Bash') {
+  if (normalizedName === "Bash") {
     return normalizeCommandInput(input);
   }
 
   // Normalize search parameters for Grep tool
-  if (normalizedName === 'Grep') {
+  if (normalizedName === "Grep") {
     return normalizePatternInput(input);
   }
 
@@ -260,32 +271,32 @@ export class CopilotProvider extends CliProvider {
   // ==========================================================================
 
   getName(): string {
-    return 'copilot';
+    return "copilot";
   }
 
   getCliName(): string {
-    return 'copilot';
+    return "copilot";
   }
 
   getSpawnConfig(): CliSpawnConfig {
     return {
-      windowsStrategy: 'npx', // Copilot CLI can be run via npx
-      npxPackage: '@github/copilot', // Official GitHub Copilot CLI package
+      windowsStrategy: "npx", // Copilot CLI can be run via npx
+      npxPackage: "@github/copilot", // Official GitHub Copilot CLI package
       commonPaths: {
         linux: [
-          path.join(os.homedir(), '.local/bin/copilot'),
-          '/usr/local/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(os.homedir(), ".local/bin/copilot"),
+          "/usr/local/bin/copilot",
+          path.join(os.homedir(), ".npm-global/bin/copilot"),
         ],
         darwin: [
-          path.join(os.homedir(), '.local/bin/copilot'),
-          '/usr/local/bin/copilot',
-          '/opt/homebrew/bin/copilot',
-          path.join(os.homedir(), '.npm-global/bin/copilot'),
+          path.join(os.homedir(), ".local/bin/copilot"),
+          "/usr/local/bin/copilot",
+          "/opt/homebrew/bin/copilot",
+          path.join(os.homedir(), ".npm-global/bin/copilot"),
         ],
         win32: [
-          path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'copilot.cmd'),
-          path.join(os.homedir(), '.npm-global', 'copilot.cmd'),
+          path.join(os.homedir(), "AppData", "Roaming", "npm", "copilot.cmd"),
+          path.join(os.homedir(), ".npm-global", "copilot.cmd"),
         ],
       },
     };
@@ -298,23 +309,23 @@ export class CopilotProvider extends CliProvider {
    * If non-text content is provided, an error is thrown.
    */
   private extractPromptText(options: ExecuteOptions): string {
-    if (typeof options.prompt === 'string') {
+    if (typeof options.prompt === "string") {
       return options.prompt;
     } else if (Array.isArray(options.prompt)) {
       // Check for non-text content (images, etc.) which we don't support yet
-      const hasNonText = options.prompt.some((p) => p.type !== 'text');
+      const hasNonText = options.prompt.some((p) => p.type !== "text");
       if (hasNonText) {
         throw new Error(
-          'CopilotProvider does not yet support non-text prompt parts (e.g., images). ' +
-            'Please use text-only prompts or switch to a provider that supports vision.'
+          "CopilotProvider does not yet support non-text prompt parts (e.g., images). " +
+            "Please use text-only prompts or switch to a provider that supports vision.",
         );
       }
       return options.prompt
-        .filter((p) => p.type === 'text' && p.text)
+        .filter((p) => p.type === "text" && p.text)
         .map((p) => p.text)
-        .join('\n');
+        .join("\n");
     } else {
-      throw new Error('Invalid prompt format');
+      throw new Error("Invalid prompt format");
     }
   }
 
@@ -332,37 +343,42 @@ export class CopilotProvider extends CliProvider {
     const sdkEvent = event as SdkEvent;
 
     switch (sdkEvent.type) {
-      case 'assistant.message': {
+      case "assistant.message": {
         const messageEvent = sdkEvent as SdkMessageEvent;
         return {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            role: 'assistant',
-            content: [{ type: 'text', text: messageEvent.data.content }],
+            role: "assistant",
+            content: [{ type: "text", text: messageEvent.data.content }],
           },
         };
       }
 
-      case 'assistant.message_delta': {
+      case "assistant.message_delta": {
         // Skip delta events - they create too much noise
         // The final assistant.message event has the complete content
         return null;
       }
 
-      case 'tool.execution_start': {
+      case "tool.execution_start": {
         const toolEvent = sdkEvent as SdkToolExecutionStartEvent;
-        const normalizedName = normalizeCopilotToolName(toolEvent.data.toolName);
+        const normalizedName = normalizeCopilotToolName(
+          toolEvent.data.toolName,
+        );
         const normalizedInput = toolEvent.data.input
-          ? normalizeCopilotToolInput(toolEvent.data.toolName, toolEvent.data.input)
+          ? normalizeCopilotToolInput(
+              toolEvent.data.toolName,
+              toolEvent.data.input,
+            )
           : {};
 
         return {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: [
               {
-                type: 'tool_use',
+                type: "tool_use",
                 name: normalizedName,
                 tool_use_id: toolEvent.data.toolCallId,
                 input: normalizedInput,
@@ -377,22 +393,22 @@ export class CopilotProvider extends CliProvider {
        * Handles both successful results and errors from tool executions
        * Error messages optionally include error codes for better debugging
        */
-      case 'tool.execution_complete': {
+      case "tool.execution_complete": {
         const toolResultEvent = sdkEvent as SdkToolExecutionCompleteEvent;
         const error = toolResultEvent.data.error;
 
         // Format error message with optional code for better debugging
         const content = error
-          ? `${TOOL_ERROR_PREFIX} ${error.message}${error.code ? ` (${error.code})` : ''}`
-          : toolResultEvent.data.result?.content || '';
+          ? `${TOOL_ERROR_PREFIX} ${error.message}${error.code ? ` (${error.code})` : ""}`
+          : toolResultEvent.data.result?.content || "";
 
         return {
-          type: 'assistant',
+          type: "assistant",
           message: {
-            role: 'assistant',
+            role: "assistant",
             content: [
               {
-                type: 'tool_result',
+                type: "tool_result",
                 tool_use_id: toolResultEvent.data.toolCallId,
                 content,
               },
@@ -401,23 +417,23 @@ export class CopilotProvider extends CliProvider {
         };
       }
 
-      case 'session.idle': {
-        logger.debug('Copilot session idle');
+      case "session.idle": {
+        logger.debug("Copilot session idle");
         return {
-          type: 'result',
-          subtype: 'success',
+          type: "result",
+          subtype: "success",
         };
       }
 
-      case 'session.error': {
+      case "session.error": {
         const errorEvent = sdkEvent as SdkSessionErrorEvent;
         const enrichedError =
           errorEvent.data.message ||
           (errorEvent.data.code
             ? `Copilot agent error (code: ${errorEvent.data.code})`
-            : 'Copilot agent error');
+            : "Copilot agent error");
         return {
-          type: 'error',
+          type: "error",
           error: enrichedError,
         };
       }
@@ -439,70 +455,76 @@ export class CopilotProvider extends CliProvider {
     const lower = stderr.toLowerCase();
 
     if (
-      lower.includes('not authenticated') ||
-      lower.includes('please log in') ||
-      lower.includes('unauthorized') ||
-      lower.includes('login required') ||
-      lower.includes('authentication required') ||
-      lower.includes('github login')
+      lower.includes("not authenticated") ||
+      lower.includes("please log in") ||
+      lower.includes("unauthorized") ||
+      lower.includes("login required") ||
+      lower.includes("authentication required") ||
+      lower.includes("github login")
     ) {
       return {
         code: CopilotErrorCode.NOT_AUTHENTICATED,
-        message: 'GitHub Copilot is not authenticated',
+        message: "GitHub Copilot is not authenticated",
         recoverable: true,
-        suggestion: 'Run "gh auth login" or "copilot auth login" to authenticate with GitHub',
+        suggestion:
+          'Run "gh auth login" or "copilot auth login" to authenticate with GitHub',
       };
     }
 
     if (
-      lower.includes('rate limit') ||
-      lower.includes('too many requests') ||
-      lower.includes('429') ||
-      lower.includes('quota exceeded')
+      lower.includes("rate limit") ||
+      lower.includes("too many requests") ||
+      lower.includes("429") ||
+      lower.includes("quota exceeded")
     ) {
       return {
         code: CopilotErrorCode.RATE_LIMITED,
-        message: 'Copilot API rate limit exceeded',
+        message: "Copilot API rate limit exceeded",
         recoverable: true,
-        suggestion: 'Wait a few minutes and try again',
+        suggestion: "Wait a few minutes and try again",
       };
     }
 
     if (
-      lower.includes('model not available') ||
-      lower.includes('invalid model') ||
-      lower.includes('unknown model') ||
-      lower.includes('model not found') ||
-      (lower.includes('not found') && lower.includes('404'))
+      lower.includes("model not available") ||
+      lower.includes("invalid model") ||
+      lower.includes("unknown model") ||
+      lower.includes("model not found") ||
+      (lower.includes("not found") && lower.includes("404"))
     ) {
       return {
         code: CopilotErrorCode.MODEL_UNAVAILABLE,
-        message: 'Requested model is not available',
+        message: "Requested model is not available",
         recoverable: true,
         suggestion: `Try using "${DEFAULT_BARE_MODEL}" or select a different model`,
       };
     }
 
     if (
-      lower.includes('network') ||
-      lower.includes('connection') ||
-      lower.includes('econnrefused') ||
-      lower.includes('timeout')
+      lower.includes("network") ||
+      lower.includes("connection") ||
+      lower.includes("econnrefused") ||
+      lower.includes("timeout")
     ) {
       return {
         code: CopilotErrorCode.NETWORK_ERROR,
-        message: 'Network connection error',
+        message: "Network connection error",
         recoverable: true,
-        suggestion: 'Check your internet connection and try again',
+        suggestion: "Check your internet connection and try again",
       };
     }
 
-    if (exitCode === 137 || lower.includes('killed') || lower.includes('sigterm')) {
+    if (
+      exitCode === 137 ||
+      lower.includes("killed") ||
+      lower.includes("sigterm")
+    ) {
       return {
         code: CopilotErrorCode.PROCESS_CRASHED,
-        message: 'Copilot CLI process was terminated',
+        message: "Copilot CLI process was terminated",
         recoverable: true,
-        suggestion: 'The process may have run out of memory. Try a simpler task.',
+        suggestion:
+          "The process may have run out of memory. Try a simpler task.",
       };
     }
 
@@ -517,7 +539,7 @@ export class CopilotProvider extends CliProvider {
    * Override install instructions for Copilot-specific guidance
    */
   protected getInstallInstructions(): string {
-    return 'Install with: pnpm add -g @github/copilot (or visit https://github.com/github/copilot)';
+    return "Install with: pnpm add -g @github/copilot (or visit https://github.com/github/copilot)";
   }
 
   /**
@@ -526,26 +548,28 @@ export class CopilotProvider extends CliProvider {
    * Creates a new CopilotClient for each execution with the correct working directory.
    * Streams tool execution events in real-time for UI display.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     this.ensureCliDetected();
 
     // Note: We don't use validateBareModelId here because Copilot's model IDs
     // legitimately contain prefixes like claude-, gemini-, gpt- which are the
     // actual model names from the Copilot CLI. We only need to ensure the
     // copilot- prefix has been stripped by the ProviderFactory.
-    if (options.model?.startsWith('copilot-')) {
+    if (options.model?.startsWith("copilot-")) {
       throw new Error(
         `[CopilotProvider] Model ID should not have 'copilot-' prefix. Got: '${options.model}'. ` +
-          `The ProviderFactory should strip this prefix before passing to the provider.`
+          `The ProviderFactory should strip this prefix before passing to the provider.`,
       );
     }
 
     if (!this.cliPath) {
       throw this.createError(
         CopilotErrorCode.NOT_INSTALLED,
-        'Copilot CLI is not installed',
+        "Copilot CLI is not installed",
         true,
-        this.getInstallInstructions()
+        this.getInstallInstructions(),
       );
     }
 
@@ -553,18 +577,20 @@ export class CopilotProvider extends CliProvider {
     // resolveModelString may return dash-separated canonical names (e.g. "claude-sonnet-4-6"),
     // but the Copilot SDK expects dot-separated version suffixes (e.g. "claude-sonnet-4.6").
     // Normalize by converting the last dash-separated numeric pair to dot notation.
-    const resolvedModel = resolveModelString(options.model || DEFAULT_BARE_MODEL);
-    const bareModel = resolvedModel.replace(/-(\d+)-(\d+)$/, '-$1.$2');
+    const resolvedModel = resolveModelString(
+      options.model || DEFAULT_BARE_MODEL,
+    );
+    const bareModel = resolvedModel.replace(/-(\d+)-(\d+)$/, "-$1.$2");
     const workingDirectory = options.cwd || process.cwd();
 
     logger.debug(
-      `CopilotProvider.executeQuery called with model: "${bareModel}", cwd: "${workingDirectory}"`
+      `CopilotProvider.executeQuery called with model: "${bareModel}", cwd: "${workingDirectory}"`,
     );
     logger.debug(`Prompt length: ${promptText.length} characters`);
 
     // Create a client for this execution with the correct working directory
     const client = new CopilotClient({
-      logLevel: 'warning',
+      logLevel: "warning",
       autoRestart: false,
       cwd: workingDirectory,
     });
@@ -607,24 +633,32 @@ export class CopilotProvider extends CliProvider {
         // Security boundary is provided by Docker containerization (see CLAUDE.md).
         // User is warned about this at app startup.
         onPermissionRequest: async (
-          request: PermissionRequest
-        ): Promise<{ kind: 'approved' } | { kind: 'denied-interactively-by-user' }> => {
+          request: PermissionRequest,
+        ): Promise<
+          { kind: "approved" } | { kind: "denied-interactively-by-user" }
+        > => {
           logger.debug(`Permission request: ${request.kind}`);
-          return { kind: 'approved' };
+          return { kind: "approved" };
         },
       };
 
       // Resume the previous Copilot session when possible; otherwise create a fresh one.
       const resumableClient = client as ResumableCopilotClient;
       let sessionResumed = false;
-      if (options.sdkSessionId && typeof resumableClient.resumeSession === 'function') {
+      if (
+        options.sdkSessionId &&
+        typeof resumableClient.resumeSession === "function"
+      ) {
         try {
-          session = await resumableClient.resumeSession(options.sdkSessionId, sessionOptions);
+          session = await resumableClient.resumeSession(
+            options.sdkSessionId,
+            sessionOptions,
+          );
           sessionResumed = true;
           logger.debug(`Resumed Copilot session: ${session.sessionId}`);
         } catch (resumeError) {
           logger.warn(
-            `Failed to resume Copilot session "${options.sdkSessionId}", creating a new session: ${resumeError}`
+            `Failed to resume Copilot session "${options.sdkSessionId}", creating a new session: ${resumeError}`,
           );
           session = await client.createSession(sessionOptions);
         }
@@ -635,16 +669,18 @@ export class CopilotProvider extends CliProvider {
       // session is always assigned by this point (both branches above assign it)
       const activeSession = session!;
       const sessionId = activeSession.sessionId;
-      logger.debug(`Session ${sessionResumed ? 'resumed' : 'created'}: ${sessionId}`);
+      logger.debug(
+        `Session ${sessionResumed ? "resumed" : "created"}: ${sessionId}`,
+      );
 
       // Set up event handler to push events to queue
       activeSession.on((event: SdkEvent) => {
         logger.debug(`SDK event: ${event.type}`);
 
-        if (event.type === 'session.idle') {
+        if (event.type === "session.idle") {
           sessionComplete = true;
           pushEvent(event);
-        } else if (event.type === 'session.error') {
+        } else if (event.type === "session.error") {
           const errorEvent = event as SdkSessionErrorEvent;
           sessionError = new Error(errorEvent.data.message);
           sessionComplete = true;
@@ -686,7 +722,7 @@ export class CopilotProvider extends CliProvider {
       // Cleanup
       await activeSession.destroy();
       await client.stop();
-      logger.debug('CopilotClient stopped successfully');
+      logger.debug("CopilotClient stopped successfully");
     } catch (error) {
       // Ensure session is destroyed and client is stopped on error to prevent leaks.
       // The session may have been created/resumed before the error occurred.
@@ -694,7 +730,9 @@ export class CopilotProvider extends CliProvider {
         try {
           await session.destroy();
         } catch (sessionCleanupError) {
-          logger.debug(`Failed to destroy session during cleanup: ${sessionCleanupError}`);
+          logger.debug(
+            `Failed to destroy session during cleanup: ${sessionCleanupError}`,
+          );
         }
       }
       try {
@@ -705,7 +743,7 @@ export class CopilotProvider extends CliProvider {
       }
 
       if (isAbortError(error)) {
-        logger.debug('Query aborted');
+        logger.debug("Query aborted");
         return;
       }
 
@@ -717,7 +755,7 @@ export class CopilotProvider extends CliProvider {
           errorInfo.code as CopilotErrorCode,
           errorInfo.message,
           errorInfo.recoverable,
-          errorInfo.suggestion
+          errorInfo.suggestion,
         );
       }
       throw error;
@@ -735,13 +773,13 @@ export class CopilotProvider extends CliProvider {
     code: CopilotErrorCode,
     message: string,
     recoverable: boolean = false,
-    suggestion?: string
+    suggestion?: string,
   ): CopilotError {
     const error = new Error(message) as CopilotError;
     error.code = code;
     error.recoverable = recoverable;
     error.suggestion = suggestion;
-    error.name = 'CopilotError';
+    error.name = "CopilotError";
     return error;
   }
 
@@ -754,9 +792,9 @@ export class CopilotProvider extends CliProvider {
 
     try {
       const result = execSync(`"${this.cliPath}" --version`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 5000,
-        stdio: 'pipe',
+        stdio: "pipe",
       }).trim();
       return result;
     } catch {
@@ -773,40 +811,44 @@ export class CopilotProvider extends CliProvider {
   async checkAuth(): Promise<CopilotAuthStatus> {
     this.ensureCliDetected();
     if (!this.cliPath) {
-      logger.debug('checkAuth: CLI not found');
-      return { authenticated: false, method: 'none' };
+      logger.debug("checkAuth: CLI not found");
+      return { authenticated: false, method: "none" };
     }
 
-    logger.debug('checkAuth: Starting credential check');
+    logger.debug("checkAuth: Starting credential check");
 
     // Try to check GitHub CLI authentication status first
     // The Copilot CLI uses gh auth for authentication
     try {
-      const ghStatus = execSync('gh auth status --hostname github.com', {
-        encoding: 'utf8',
+      const ghStatus = execSync("gh auth status --hostname github.com", {
+        encoding: "utf8",
         timeout: 10000,
-        stdio: 'pipe',
+        stdio: "pipe",
       });
 
-      logger.debug(`checkAuth: gh auth status output: ${ghStatus.substring(0, 200)}`);
+      logger.debug(
+        `checkAuth: gh auth status output: ${ghStatus.substring(0, 200)}`,
+      );
 
       // Parse gh auth status output
-      const loggedInMatch = ghStatus.match(/Logged in to github\.com account (\S+)/);
+      const loggedInMatch = ghStatus.match(
+        /Logged in to github\.com account (\S+)/,
+      );
       if (loggedInMatch) {
         return {
           authenticated: true,
-          method: 'oauth',
+          method: "oauth",
           login: loggedInMatch[1],
-          host: 'github.com',
+          host: "github.com",
         };
       }
 
       // Check for token auth
-      if (ghStatus.includes('Logged in') || ghStatus.includes('Token:')) {
+      if (ghStatus.includes("Logged in") || ghStatus.includes("Token:")) {
         return {
           authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
+          method: "oauth",
+          host: "github.com",
         };
       }
     } catch (ghError) {
@@ -816,17 +858,19 @@ export class CopilotProvider extends CliProvider {
     // Try Copilot-specific auth check if gh is not available
     try {
       const result = execSync(`"${this.cliPath}" auth status`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 10000,
-        stdio: 'pipe',
+        stdio: "pipe",
       });
 
-      logger.debug(`checkAuth: copilot auth status output: ${result.substring(0, 200)}`);
+      logger.debug(
+        `checkAuth: copilot auth status output: ${result.substring(0, 200)}`,
+      );
 
-      if (result.includes('authenticated') || result.includes('logged in')) {
+      if (result.includes("authenticated") || result.includes("logged in")) {
         return {
           authenticated: true,
-          method: 'cli',
+          method: "cli",
         };
       }
     } catch (copilotError) {
@@ -835,36 +879,36 @@ export class CopilotProvider extends CliProvider {
 
     // Check for GITHUB_TOKEN environment variable
     if (process.env.GITHUB_TOKEN) {
-      logger.debug('checkAuth: Found GITHUB_TOKEN environment variable');
+      logger.debug("checkAuth: Found GITHUB_TOKEN environment variable");
       return {
         authenticated: true,
-        method: 'oauth',
-        statusMessage: 'Using GITHUB_TOKEN environment variable',
+        method: "oauth",
+        statusMessage: "Using GITHUB_TOKEN environment variable",
       };
     }
 
     // Check for gh config file
-    const ghConfigPath = path.join(os.homedir(), '.config', 'gh', 'hosts.yml');
+    const ghConfigPath = path.join(os.homedir(), ".config", "gh", "hosts.yml");
     try {
       await fs.access(ghConfigPath);
-      const content = await fs.readFile(ghConfigPath, 'utf8');
-      if (content.includes('github.com') && content.includes('oauth_token')) {
-        logger.debug('checkAuth: Found gh config with oauth_token');
+      const content = await fs.readFile(ghConfigPath, "utf8");
+      if (content.includes("github.com") && content.includes("oauth_token")) {
+        logger.debug("checkAuth: Found gh config with oauth_token");
         return {
           authenticated: true,
-          method: 'oauth',
-          host: 'github.com',
+          method: "oauth",
+          host: "github.com",
         };
       }
     } catch {
-      logger.debug('checkAuth: No gh config found');
+      logger.debug("checkAuth: No gh config found");
     }
 
     // No credentials found
-    logger.debug('checkAuth: No valid credentials found');
+    logger.debug("checkAuth: No valid credentials found");
     return {
       authenticated: false,
-      method: 'none',
+      method: "none",
       error:
         'No authentication configured. Run "gh auth login" or install GitHub Copilot extension.',
     };
@@ -882,9 +926,9 @@ export class CopilotProvider extends CliProvider {
     try {
       // Try to list models using the CLI
       const result = execSync(`"${this.cliPath}" models list --format json`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 15000,
-        stdio: 'pipe',
+        stdio: "pipe",
       });
 
       const models = JSON.parse(result) as CopilotRuntimeModel[];
@@ -911,7 +955,7 @@ export class CopilotProvider extends CliProvider {
       installed,
       version: version || undefined,
       path: this.cliPath || undefined,
-      method: 'cli',
+      method: "cli",
       authenticated: auth.authenticated,
     };
   }
@@ -931,18 +975,18 @@ export class CopilotProvider extends CliProvider {
    */
   getAvailableModels(): ModelDefinition[] {
     // Start with static model definitions - explicitly typed to allow runtime models
-    const staticModels: ModelDefinition[] = Object.entries(COPILOT_MODEL_MAP).map(
-      ([id, config]) => ({
-        id, // Full model ID with copilot- prefix
-        name: config.label,
-        modelString: id.replace('copilot-', ''), // Bare model for CLI
-        provider: 'copilot',
-        description: config.description,
-        supportsTools: config.supportsTools,
-        supportsVision: config.supportsVision,
-        contextWindow: config.contextWindow,
-      })
-    );
+    const staticModels: ModelDefinition[] = Object.entries(
+      COPILOT_MODEL_MAP,
+    ).map(([id, config]) => ({
+      id, // Full model ID with copilot- prefix
+      name: config.label,
+      modelString: id.replace("copilot-", ""), // Bare model for CLI
+      provider: "copilot",
+      description: config.description,
+      supportsTools: config.supportsTools,
+      supportsVision: config.supportsVision,
+      contextWindow: config.contextWindow,
+    }));
 
     // Add runtime models if available (discovered via CLI)
     if (this.runtimeModels) {
@@ -957,7 +1001,7 @@ export class CopilotProvider extends CliProvider {
           id: staticId,
           name: runtimeModel.name || runtimeModel.id,
           modelString: runtimeModel.id,
-          provider: 'copilot',
+          provider: "copilot",
           description: `Dynamic model: ${runtimeModel.name || runtimeModel.id}`,
           supportsTools: true,
           supportsVision: runtimeModel.capabilities?.supportsVision ?? false,
@@ -976,7 +1020,7 @@ export class CopilotProvider extends CliProvider {
    * This may change in future versions of the Copilot SDK.
    */
   supportsFeature(feature: string): boolean {
-    const supported = ['tools', 'text', 'streaming'];
+    const supported = ["tools", "text", "streaming"];
     return supported.includes(feature);
   }
 
@@ -992,14 +1036,14 @@ export class CopilotProvider extends CliProvider {
    */
   clearModelCache(): void {
     this.runtimeModels = null;
-    logger.debug('Cleared Copilot model cache');
+    logger.debug("Cleared Copilot model cache");
   }
 
   /**
    * Refresh models from CLI and return all available models
    */
   async refreshModels(): Promise<ModelDefinition[]> {
-    logger.debug('Refreshing Copilot models from CLI');
+    logger.debug("Refreshing Copilot models from CLI");
     await this.fetchRuntimeModels();
     return this.getAvailableModels();
   }

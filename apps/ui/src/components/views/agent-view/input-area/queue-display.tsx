@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 
 interface QueueItem {
   id: string;
@@ -12,7 +12,11 @@ interface QueueDisplayProps {
   onClearQueue: () => void;
 }
 
-export function QueueDisplay({ serverQueue, onRemoveFromQueue, onClearQueue }: QueueDisplayProps) {
+export function QueueDisplay({
+  serverQueue,
+  onRemoveFromQueue,
+  onClearQueue,
+}: QueueDisplayProps) {
   if (serverQueue.length === 0) {
     return null;
   }
@@ -21,7 +25,7 @@ export function QueueDisplay({ serverQueue, onRemoveFromQueue, onClearQueue }: Q
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">
-          {serverQueue.length} prompt{serverQueue.length > 1 ? 's' : ''} queued
+          {serverQueue.length} prompt{serverQueue.length > 1 ? "s" : ""} queued
         </p>
         <button
           onClick={onClearQueue}
@@ -39,10 +43,13 @@ export function QueueDisplay({ serverQueue, onRemoveFromQueue, onClearQueue }: Q
             <span className="text-xs text-muted-foreground font-medium min-w-[1.5rem]">
               {index + 1}.
             </span>
-            <span className="flex-1 truncate text-foreground">{item.message}</span>
+            <span className="flex-1 truncate text-foreground">
+              {item.message}
+            </span>
             {item.imagePaths && item.imagePaths.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                +{item.imagePaths.length} file{item.imagePaths.length > 1 ? 's' : ''}
+                +{item.imagePaths.length} file
+                {item.imagePaths.length > 1 ? "s" : ""}
               </span>
             )}
             <button

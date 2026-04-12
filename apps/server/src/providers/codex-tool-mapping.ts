@@ -5,23 +5,23 @@ export type CodexToolResolution = {
 
 export type CodexTodoItem = {
   content: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
   activeForm?: string;
 };
 
-const TOOL_NAME_BASH = 'Bash';
-const TOOL_NAME_READ = 'Read';
-const TOOL_NAME_EDIT = 'Edit';
-const TOOL_NAME_WRITE = 'Write';
-const TOOL_NAME_GREP = 'Grep';
-const TOOL_NAME_GLOB = 'Glob';
-const TOOL_NAME_TODO = 'TodoWrite';
-const TOOL_NAME_DELETE = 'Delete';
-const TOOL_NAME_LS = 'Ls';
+const TOOL_NAME_BASH = "Bash";
+const TOOL_NAME_READ = "Read";
+const TOOL_NAME_EDIT = "Edit";
+const TOOL_NAME_WRITE = "Write";
+const TOOL_NAME_GREP = "Grep";
+const TOOL_NAME_GLOB = "Glob";
+const TOOL_NAME_TODO = "TodoWrite";
+const TOOL_NAME_DELETE = "Delete";
+const TOOL_NAME_LS = "Ls";
 
-const INPUT_KEY_COMMAND = 'command';
-const INPUT_KEY_FILE_PATH = 'file_path';
-const INPUT_KEY_PATTERN = 'pattern';
+const INPUT_KEY_COMMAND = "command";
+const INPUT_KEY_FILE_PATH = "file_path";
+const INPUT_KEY_PATTERN = "pattern";
 
 const SHELL_WRAPPER_PATTERNS = [
   /^\/bin\/bash\s+-lc\s+["']([\s\S]+)["']$/,
@@ -34,39 +34,49 @@ const SHELL_WRAPPER_PATTERNS = [
 ] as const;
 
 const COMMAND_SEPARATOR_PATTERN = /\s*(?:&&|\|\||;)\s*/;
-const SEGMENT_SKIP_PREFIXES = ['cd ', 'export ', 'set ', 'pushd '] as const;
-const WRAPPER_COMMANDS = new Set(['sudo', 'env', 'command']);
-const READ_COMMANDS = new Set(['cat', 'sed', 'head', 'tail', 'less', 'more', 'bat', 'stat', 'wc']);
-const SEARCH_COMMANDS = new Set(['rg', 'grep', 'ag', 'ack']);
-const GLOB_COMMANDS = new Set(['ls', 'find', 'fd', 'tree']);
-const DELETE_COMMANDS = new Set(['rm', 'del', 'erase', 'remove', 'unlink']);
-const LIST_COMMANDS = new Set(['ls', 'dir', 'll', 'la']);
-const WRITE_COMMANDS = new Set(['tee', 'touch', 'mkdir']);
-const APPLY_PATCH_COMMAND = 'apply_patch';
+const SEGMENT_SKIP_PREFIXES = ["cd ", "export ", "set ", "pushd "] as const;
+const WRAPPER_COMMANDS = new Set(["sudo", "env", "command"]);
+const READ_COMMANDS = new Set([
+  "cat",
+  "sed",
+  "head",
+  "tail",
+  "less",
+  "more",
+  "bat",
+  "stat",
+  "wc",
+]);
+const SEARCH_COMMANDS = new Set(["rg", "grep", "ag", "ack"]);
+const GLOB_COMMANDS = new Set(["ls", "find", "fd", "tree"]);
+const DELETE_COMMANDS = new Set(["rm", "del", "erase", "remove", "unlink"]);
+const LIST_COMMANDS = new Set(["ls", "dir", "ll", "la"]);
+const WRITE_COMMANDS = new Set(["tee", "touch", "mkdir"]);
+const APPLY_PATCH_COMMAND = "apply_patch";
 const APPLY_PATCH_PATTERN = /\bapply_patch\b/;
 const REDIRECTION_TARGET_PATTERN = /(?:>>|>)\s*([^\s]+)/;
-const SED_IN_PLACE_FLAGS = new Set(['-i', '--in-place']);
+const SED_IN_PLACE_FLAGS = new Set(["-i", "--in-place"]);
 const PERL_IN_PLACE_FLAG = /-.*i/;
-const SEARCH_PATTERN_FLAGS = new Set(['-e', '--regexp']);
+const SEARCH_PATTERN_FLAGS = new Set(["-e", "--regexp"]);
 const SEARCH_VALUE_FLAGS = new Set([
-  '-g',
-  '--glob',
-  '--iglob',
-  '--type',
-  '--type-add',
-  '--type-clear',
-  '--encoding',
+  "-g",
+  "--glob",
+  "--iglob",
+  "--type",
+  "--type-add",
+  "--type-clear",
+  "--encoding",
 ]);
-const SEARCH_FILE_LIST_FLAGS = new Set(['--files']);
+const SEARCH_FILE_LIST_FLAGS = new Set(["--files"]);
 const TODO_LINE_PATTERN = /^[-*]\s*(?:\[(?<status>[ x~])\]\s*)?(?<content>.+)$/;
-const TODO_STATUS_COMPLETED = 'completed';
-const TODO_STATUS_IN_PROGRESS = 'in_progress';
-const TODO_STATUS_PENDING = 'pending';
+const TODO_STATUS_COMPLETED = "completed";
+const TODO_STATUS_IN_PROGRESS = "in_progress";
+const TODO_STATUS_PENDING = "pending";
 const PATCH_FILE_MARKERS = [
-  '*** Update File: ',
-  '*** Add File: ',
-  '*** Delete File: ',
-  '*** Move to: ',
+  "*** Update File: ",
+  "*** Add File: ",
+  "*** Delete File: ",
+  "*** Move to: ",
 ] as const;
 
 function stripShellWrapper(command: string): string {
@@ -81,7 +91,7 @@ function stripShellWrapper(command: string): string {
 }
 
 function unescapeCommand(command: string): string {
-  return command.replace(/\\(["'])/g, '$1');
+  return command.replace(/\\(["'])/g, "$1");
 }
 
 function extractPrimarySegment(command: string): string {
@@ -91,7 +101,9 @@ function extractPrimarySegment(command: string): string {
     .filter(Boolean);
 
   for (const segment of segments) {
-    const shouldSkip = SEGMENT_SKIP_PREFIXES.some((prefix) => segment.startsWith(prefix));
+    const shouldSkip = SEGMENT_SKIP_PREFIXES.some((prefix) =>
+      segment.startsWith(prefix),
+    );
     if (!shouldSkip) {
       return segment;
     }
@@ -102,7 +114,7 @@ function extractPrimarySegment(command: string): string {
 
 function tokenizeCommand(command: string): string[] {
   const tokens: string[] = [];
-  let current = '';
+  let current = "";
   let inSingleQuote = false;
   let inDoubleQuote = false;
   let isEscaped = false;
@@ -114,7 +126,7 @@ function tokenizeCommand(command: string): string[] {
       continue;
     }
 
-    if (char === '\\') {
+    if (char === "\\") {
       isEscaped = true;
       continue;
     }
@@ -132,7 +144,7 @@ function tokenizeCommand(command: string): string[] {
     if (!inSingleQuote && !inDoubleQuote && /\s/.test(char)) {
       if (current) {
         tokens.push(current);
-        current = '';
+        current = "";
       }
       continue;
     }
@@ -149,14 +161,19 @@ function tokenizeCommand(command: string): string[] {
 
 function stripWrapperTokens(tokens: string[]): string[] {
   let index = 0;
-  while (index < tokens.length && WRAPPER_COMMANDS.has(tokens[index].toLowerCase())) {
+  while (
+    index < tokens.length &&
+    WRAPPER_COMMANDS.has(tokens[index].toLowerCase())
+  ) {
     index += 1;
   }
   return tokens.slice(index);
 }
 
 function extractFilePathFromTokens(tokens: string[]): string | null {
-  const candidates = tokens.slice(1).filter((token) => token && !token.startsWith('-'));
+  const candidates = tokens
+    .slice(1)
+    .filter((token) => token && !token.startsWith("-"));
   if (candidates.length === 0) return null;
   return candidates[candidates.length - 1];
 }
@@ -166,7 +183,7 @@ function extractSearchPattern(tokens: string[]): string | null {
 
   for (let index = 0; index < remaining.length; index += 1) {
     const token = remaining[index];
-    if (token === '--') {
+    if (token === "--") {
       return remaining[index + 1] ?? null;
     }
     if (SEARCH_PATTERN_FLAGS.has(token)) {
@@ -176,7 +193,7 @@ function extractSearchPattern(tokens: string[]): string | null {
       index += 1;
       continue;
     }
-    if (token.startsWith('-')) {
+    if (token.startsWith("-")) {
       continue;
     }
     return token;
@@ -186,10 +203,10 @@ function extractSearchPattern(tokens: string[]): string | null {
 }
 
 function extractTeeTarget(tokens: string[]): string | null {
-  const teeIndex = tokens.findIndex((token) => token === 'tee');
+  const teeIndex = tokens.findIndex((token) => token === "tee");
   if (teeIndex < 0) return null;
   const candidate = tokens[teeIndex + 1];
-  return candidate && !candidate.startsWith('-') ? candidate : null;
+  return candidate && !candidate.startsWith("-") ? candidate : null;
 }
 
 function extractRedirectionTarget(command: string): string | null {
@@ -202,7 +219,7 @@ function extractFilePathFromDeleteTokens(tokens: string[]): string | null {
   // Skip flags and get the first non-flag argument
   for (let i = 1; i < tokens.length; i++) {
     const token = tokens[i];
-    if (token && !token.startsWith('-')) {
+    if (token && !token.startsWith("-")) {
       return token;
     }
   }
@@ -210,7 +227,9 @@ function extractFilePathFromDeleteTokens(tokens: string[]): string | null {
 }
 
 function hasSedInPlaceFlag(tokens: string[]): boolean {
-  return tokens.some((token) => SED_IN_PLACE_FLAGS.has(token) || token.startsWith('-i'));
+  return tokens.some(
+    (token) => SED_IN_PLACE_FLAGS.has(token) || token.startsWith("-i"),
+  );
 }
 
 function hasPerlInPlaceFlag(tokens: string[]): boolean {
@@ -222,18 +241,24 @@ function extractPatchFilePath(command: string): string | null {
     const index = command.indexOf(marker);
     if (index < 0) continue;
     const start = index + marker.length;
-    const end = command.indexOf('\n', start);
-    const rawPath = (end === -1 ? command.slice(start) : command.slice(start, end)).trim();
+    const end = command.indexOf("\n", start);
+    const rawPath = (
+      end === -1 ? command.slice(start) : command.slice(start, end)
+    ).trim();
     if (rawPath) return rawPath;
   }
   return null;
 }
 
-function buildInputWithFilePath(filePath: string | null): Record<string, unknown> {
+function buildInputWithFilePath(
+  filePath: string | null,
+): Record<string, unknown> {
   return filePath ? { [INPUT_KEY_FILE_PATH]: filePath } : {};
 }
 
-function buildInputWithPattern(pattern: string | null): Record<string, unknown> {
+function buildInputWithPattern(
+  pattern: string | null,
+): Record<string, unknown> {
   return pattern ? { [INPUT_KEY_PATTERN]: pattern } : {};
 }
 
@@ -241,7 +266,7 @@ export function resolveCodexToolCall(command: string): CodexToolResolution {
   const normalized = stripShellWrapper(command);
   const primarySegment = extractPrimarySegment(normalized);
   const tokens = stripWrapperTokens(tokenizeCommand(primarySegment));
-  const commandToken = tokens[0]?.toLowerCase() ?? '';
+  const commandToken = tokens[0]?.toLowerCase() ?? "";
 
   const redirectionTarget = extractRedirectionTarget(primarySegment);
   if (redirectionTarget) {
@@ -251,21 +276,24 @@ export function resolveCodexToolCall(command: string): CodexToolResolution {
     };
   }
 
-  if (commandToken === APPLY_PATCH_COMMAND || APPLY_PATCH_PATTERN.test(primarySegment)) {
+  if (
+    commandToken === APPLY_PATCH_COMMAND ||
+    APPLY_PATCH_PATTERN.test(primarySegment)
+  ) {
     return {
       name: TOOL_NAME_EDIT,
       input: buildInputWithFilePath(extractPatchFilePath(primarySegment)),
     };
   }
 
-  if (commandToken === 'sed' && hasSedInPlaceFlag(tokens)) {
+  if (commandToken === "sed" && hasSedInPlaceFlag(tokens)) {
     return {
       name: TOOL_NAME_EDIT,
       input: buildInputWithFilePath(extractFilePathFromTokens(tokens)),
     };
   }
 
-  if (commandToken === 'perl' && hasPerlInPlaceFlag(tokens)) {
+  if (commandToken === "perl" && hasPerlInPlaceFlag(tokens)) {
     return {
       name: TOOL_NAME_EDIT,
       input: buildInputWithFilePath(extractFilePathFromTokens(tokens)),
@@ -274,7 +302,9 @@ export function resolveCodexToolCall(command: string): CodexToolResolution {
 
   if (WRITE_COMMANDS.has(commandToken)) {
     const filePath =
-      commandToken === 'tee' ? extractTeeTarget(tokens) : extractFilePathFromTokens(tokens);
+      commandToken === "tee"
+        ? extractTeeTarget(tokens)
+        : extractFilePathFromTokens(tokens);
     return {
       name: TOOL_NAME_WRITE,
       input: buildInputWithFilePath(filePath),
@@ -299,7 +329,13 @@ export function resolveCodexToolCall(command: string): CodexToolResolution {
   if (DELETE_COMMANDS.has(commandToken)) {
     // Skip if -r or -rf flags (recursive delete should go to Bash)
     if (
-      tokens.some((token) => token === '-r' || token === '-rf' || token === '-f' || token === '-rf')
+      tokens.some(
+        (token) =>
+          token === "-r" ||
+          token === "-rf" ||
+          token === "-f" ||
+          token === "-rf",
+      )
     ) {
       return {
         name: TOOL_NAME_BASH,
@@ -326,7 +362,7 @@ export function resolveCodexToolCall(command: string): CodexToolResolution {
     const filePath = extractFilePathFromTokens(tokens);
     return {
       name: TOOL_NAME_LS,
-      input: { path: filePath || '.' },
+      input: { path: filePath || "." },
     };
   }
 
@@ -359,9 +395,9 @@ function parseTodoLines(lines: string[]): CodexTodoItem[] {
 
     const statusToken = match.groups.status;
     const status =
-      statusToken === 'x'
+      statusToken === "x"
         ? TODO_STATUS_COMPLETED
-        : statusToken === '~'
+        : statusToken === "~"
           ? TODO_STATUS_IN_PROGRESS
           : TODO_STATUS_PENDING;
 
@@ -374,17 +410,17 @@ function parseTodoLines(lines: string[]): CodexTodoItem[] {
 function extractTodoFromArray(value: unknown[]): CodexTodoItem[] {
   return value
     .map((entry) => {
-      if (typeof entry === 'string') {
+      if (typeof entry === "string") {
         return { content: entry, status: TODO_STATUS_PENDING };
       }
-      if (entry && typeof entry === 'object') {
+      if (entry && typeof entry === "object") {
         const record = entry as Record<string, unknown>;
         const content =
-          typeof record.content === 'string'
+          typeof record.content === "string"
             ? record.content
-            : typeof record.text === 'string'
+            : typeof record.text === "string"
               ? record.text
-              : typeof record.title === 'string'
+              : typeof record.title === "string"
                 ? record.title
                 : null;
         if (!content) return null;
@@ -392,9 +428,10 @@ function extractTodoFromArray(value: unknown[]): CodexTodoItem[] {
           record.status === TODO_STATUS_COMPLETED ||
           record.status === TODO_STATUS_IN_PROGRESS ||
           record.status === TODO_STATUS_PENDING
-            ? (record.status as CodexTodoItem['status'])
+            ? (record.status as CodexTodoItem["status"])
             : TODO_STATUS_PENDING;
-        const activeForm = typeof record.activeForm === 'string' ? record.activeForm : undefined;
+        const activeForm =
+          typeof record.activeForm === "string" ? record.activeForm : undefined;
         return { content, status, activeForm };
       }
       return null;
@@ -402,7 +439,9 @@ function extractTodoFromArray(value: unknown[]): CodexTodoItem[] {
     .filter((item): item is CodexTodoItem => Boolean(item));
 }
 
-export function extractCodexTodoItems(item: Record<string, unknown>): CodexTodoItem[] | null {
+export function extractCodexTodoItems(
+  item: Record<string, unknown>,
+): CodexTodoItem[] | null {
   const todosValue = item.todos;
   if (Array.isArray(todosValue)) {
     const todos = extractTodoFromArray(todosValue);
@@ -416,15 +455,15 @@ export function extractCodexTodoItems(item: Record<string, unknown>): CodexTodoI
   }
 
   const textValue =
-    typeof item.text === 'string'
+    typeof item.text === "string"
       ? item.text
-      : typeof item.content === 'string'
+      : typeof item.content === "string"
         ? item.content
         : null;
   if (!textValue) return null;
 
   const lines = textValue
-    .split('\n')
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
   const todos = parseTodoLines(lines);

@@ -1,10 +1,10 @@
-import type { ImageAttachment } from '@/store/app-store';
-import { MessageBubble } from './message-bubble';
-import { ThinkingIndicator } from './thinking-indicator';
+import type { ImageAttachment } from "@/store/app-store";
+import { MessageBubble } from "./message-bubble";
+import { ThinkingIndicator } from "./thinking-indicator";
 
 interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
   images?: ImageAttachment[];

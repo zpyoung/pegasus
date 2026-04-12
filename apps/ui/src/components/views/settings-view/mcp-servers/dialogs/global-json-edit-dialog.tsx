@@ -1,6 +1,6 @@
-import { Code } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Code } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface GlobalJsonEditDialogProps {
   open: boolean;
@@ -38,12 +38,15 @@ export function GlobalJsonEditDialog({
         }
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh]" data-testid="mcp-global-json-edit-dialog">
+      <DialogContent
+        className="max-w-3xl max-h-[90vh]"
+        data-testid="mcp-global-json-edit-dialog"
+      >
         <DialogHeader>
           <DialogTitle>Edit All MCP Servers</DialogTitle>
           <DialogDescription>
-            Edit the full MCP servers configuration. Add, modify, or remove servers directly in
-            JSON. Servers removed from JSON will be deleted.
+            Edit the full MCP servers configuration. Add, modify, or remove
+            servers directly in JSON. Servers removed from JSON will be deleted.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">

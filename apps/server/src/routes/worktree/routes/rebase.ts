@@ -12,11 +12,16 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import { getErrorMessage, logError, isValidBranchName, isValidRemoteName } from '../common.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import { runRebase } from '../../../services/rebase-service.js';
+import type { Request, Response } from "express";
+import path from "path";
+import {
+  getErrorMessage,
+  logError,
+  isValidBranchName,
+  isValidRemoteName,
+} from "../common.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import { runRebase } from "../../../services/rebase-service.js";
 
 export function createRebaseHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -32,7 +37,7 @@ export function createRebaseHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -40,7 +45,7 @@ export function createRebaseHandler(events: EventEmitter) {
       if (!ontoBranch) {
         res.status(400).json({
           success: false,
-          error: 'ontoBranch is required',
+          error: "ontoBranch is required",
         });
         return;
       }
@@ -67,17 +72,19 @@ export function createRebaseHandler(events: EventEmitter) {
       }
 
       // Emit started event
-      events.emit('rebase:started', {
+      events.emit("rebase:started", {
         worktreePath: resolvedWorktreePath,
         ontoBranch,
       });
 
       // Execute the rebase via the service
-      const result = await runRebase(resolvedWorktreePath, ontoBranch, { remote });
+      const result = await runRebase(resolvedWorktreePath, ontoBranch, {
+        remote,
+      });
 
       if (result.success) {
         // Emit success event
-        events.emit('rebase:success', {
+        events.emit("rebase:success", {
           worktreePath: resolvedWorktreePath,
           branch: result.branch,
           ontoBranch: result.ontoBranch,
@@ -93,7 +100,7 @@ export function createRebaseHandler(events: EventEmitter) {
         });
       } else if (result.hasConflicts) {
         // Emit conflict event
-        events.emit('rebase:conflict', {
+        events.emit("rebase:conflict", {
           worktreePath: resolvedWorktreePath,
           ontoBranch,
           conflictFiles: result.conflictFiles,
@@ -109,7 +116,7 @@ export function createRebaseHandler(events: EventEmitter) {
         });
       } else {
         // Emit failure event for non-conflict failures
-        events.emit('rebase:failure', {
+        events.emit("rebase:failure", {
           worktreePath: resolvedWorktreePath,
           branch: result.branch,
           ontoBranch: result.ontoBranch,
@@ -118,17 +125,17 @@ export function createRebaseHandler(events: EventEmitter) {
 
         res.status(500).json({
           success: false,
-          error: result.error ?? 'Rebase failed',
+          error: result.error ?? "Rebase failed",
           hasConflicts: false,
         });
       }
     } catch (error) {
       // Emit failure event
-      events.emit('rebase:failure', {
+      events.emit("rebase:failure", {
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Rebase failed');
+      logError(error, "Rebase failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

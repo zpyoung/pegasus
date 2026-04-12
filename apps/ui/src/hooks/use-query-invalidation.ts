@@ -5,15 +5,19 @@
  * ensuring the UI stays in sync with server-side changes without manual refetching.
  */
 
-import { useEffect, useRef } from 'react';
-import { useQueryClient, QueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import type { AutoModeEvent, SpecRegenerationEvent, StreamEvent } from '@/types/electron';
-import type { IssueValidationEvent } from '@pegasus/types';
-import { debounce, type DebouncedFunction } from '@pegasus/utils/debounce';
-import { useEventRecencyStore } from './use-event-recency';
-import { isAnyFeatureTransitioning } from '@/lib/feature-transition-state';
+import { useEffect, useRef } from "react";
+import { useQueryClient, QueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import type {
+  AutoModeEvent,
+  SpecRegenerationEvent,
+  StreamEvent,
+} from "@/types/electron";
+import type { IssueValidationEvent } from "@pegasus/types";
+import { debounce, type DebouncedFunction } from "@pegasus/utils/debounce";
+import { useEventRecencyStore } from "./use-event-recency";
+import { isAnyFeatureTransitioning } from "@/lib/feature-transition-state";
 
 /**
  * Debounce configuration for auto_mode_progress invalidations
@@ -28,22 +32,22 @@ const PROGRESS_DEBOUNCE_MAX_WAIT = 2000;
  * Note: pipeline_step_started is included to ensure Kanban board immediately reflects
  * feature moving to custom pipeline columns (fixes GitHub issue #668)
  */
-const FEATURE_LIST_INVALIDATION_EVENTS: AutoModeEvent['type'][] = [
-  'auto_mode_feature_start',
-  'auto_mode_feature_complete',
-  'auto_mode_error',
+const FEATURE_LIST_INVALIDATION_EVENTS: AutoModeEvent["type"][] = [
+  "auto_mode_feature_start",
+  "auto_mode_feature_complete",
+  "auto_mode_error",
   // NOTE: auto_mode_started and auto_mode_stopped are intentionally excluded.
   // These events signal auto-loop state changes, NOT feature data changes.
   // Including them caused unnecessary refetches that raced with optimistic
   // updates during start/stop cycles, triggering React error #185 on mobile.
-  'plan_approval_required',
-  'plan_approved',
-  'plan_rejected',
-  'pipeline_step_started',
-  'pipeline_step_complete',
-  'feature_status_changed',
-  'features_reconciled',
-  'question_required',
+  "plan_approval_required",
+  "plan_approved",
+  "plan_rejected",
+  "pipeline_step_started",
+  "pipeline_step_complete",
+  "feature_status_changed",
+  "features_reconciled",
+  "question_required",
 ];
 
 /**
@@ -52,38 +56,40 @@ const FEATURE_LIST_INVALIDATION_EVENTS: AutoModeEvent['type'][] = [
  * because they already invalidate features.all() above, which also invalidates
  * child queries (features.single)
  */
-const SINGLE_FEATURE_INVALIDATION_EVENTS: AutoModeEvent['type'][] = [
-  'auto_mode_phase',
-  'auto_mode_phase_complete',
-  'auto_mode_task_status',
-  'auto_mode_task_started',
-  'auto_mode_task_complete',
-  'auto_mode_summary',
+const SINGLE_FEATURE_INVALIDATION_EVENTS: AutoModeEvent["type"][] = [
+  "auto_mode_phase",
+  "auto_mode_phase_complete",
+  "auto_mode_task_status",
+  "auto_mode_task_started",
+  "auto_mode_task_complete",
+  "auto_mode_summary",
 ];
 
 /**
  * Events that should invalidate running agents status
  */
-const RUNNING_AGENTS_INVALIDATION_EVENTS: AutoModeEvent['type'][] = [
-  'auto_mode_feature_start',
-  'auto_mode_feature_complete',
-  'auto_mode_error',
-  'auto_mode_resuming_features',
+const RUNNING_AGENTS_INVALIDATION_EVENTS: AutoModeEvent["type"][] = [
+  "auto_mode_feature_start",
+  "auto_mode_feature_complete",
+  "auto_mode_error",
+  "auto_mode_resuming_features",
 ];
 
 /**
  * Events that signal a feature is done and debounce cleanup should occur
  */
-const FEATURE_CLEANUP_EVENTS: AutoModeEvent['type'][] = [
-  'auto_mode_feature_complete',
-  'auto_mode_error',
+const FEATURE_CLEANUP_EVENTS: AutoModeEvent["type"][] = [
+  "auto_mode_feature_complete",
+  "auto_mode_error",
 ];
 
 /**
  * Type guard to check if an event has a featureId property
  */
-function hasFeatureId(event: AutoModeEvent): event is AutoModeEvent & { featureId: string } {
-  return 'featureId' in event && typeof event.featureId === 'string';
+function hasFeatureId(
+  event: AutoModeEvent,
+): event is AutoModeEvent & { featureId: string } {
+  return "featureId" in event && typeof event.featureId === "string";
 }
 
 /**
@@ -99,7 +105,7 @@ function getFeatureKey(projectPath: string, featureId: string): string {
 function createDebouncedInvalidation(
   queryClient: QueryClient,
   projectPath: string,
-  featureId: string
+  featureId: string,
 ): DebouncedFunction<() => void> {
   return debounce(
     () => {
@@ -108,7 +114,7 @@ function createDebouncedInvalidation(
       });
     },
     PROGRESS_DEBOUNCE_WAIT,
-    { maxWait: PROGRESS_DEBOUNCE_MAX_WAIT }
+    { maxWait: PROGRESS_DEBOUNCE_MAX_WAIT },
   );
 }
 
@@ -131,11 +137,15 @@ function createDebouncedInvalidation(
  */
 export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
   const queryClient = useQueryClient();
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   // Store per-feature debounced invalidation functions
   // Using a ref to persist across renders without causing re-subscriptions
-  const debouncedInvalidationsRef = useRef<Map<string, DebouncedFunction<() => void>>>(new Map());
+  const debouncedInvalidationsRef = useRef<
+    Map<string, DebouncedFunction<() => void>>
+  >(new Map());
 
   useEffect(() => {
     if (!projectPath) return;
@@ -147,12 +157,18 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
     /**
      * Get or create a debounced invalidation function for a specific feature
      */
-    function getDebouncedInvalidation(featureId: string): DebouncedFunction<() => void> {
+    function getDebouncedInvalidation(
+      featureId: string,
+    ): DebouncedFunction<() => void> {
       const key = getFeatureKey(currentProjectPath, featureId);
       let debouncedFn = debouncedInvalidations.get(key);
 
       if (!debouncedFn) {
-        debouncedFn = createDebouncedInvalidation(queryClient, currentProjectPath, featureId);
+        debouncedFn = createDebouncedInvalidation(
+          queryClient,
+          currentProjectPath,
+          featureId,
+        );
         debouncedInvalidations.set(key, debouncedFn);
       }
 
@@ -185,7 +201,10 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
       // because persistFeatureUpdate already handles the optimistic cache update.
       // Without this guard, auto_mode_error / auto_mode_stopped WS events race
       // with the optimistic update and cause re-render cascades on mobile (React #185).
-      if (FEATURE_LIST_INVALIDATION_EVENTS.includes(event.type) && !isAnyFeatureTransitioning()) {
+      if (
+        FEATURE_LIST_INVALIDATION_EVENTS.includes(event.type) &&
+        !isAnyFeatureTransitioning()
+      ) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.features.all(currentProjectPath),
         });
@@ -199,15 +218,21 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
       }
 
       // Invalidate specific feature for phase changes and task status updates
-      if (SINGLE_FEATURE_INVALIDATION_EVENTS.includes(event.type) && hasFeatureId(event)) {
+      if (
+        SINGLE_FEATURE_INVALIDATION_EVENTS.includes(event.type) &&
+        hasFeatureId(event)
+      ) {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.features.single(currentProjectPath, event.featureId),
+          queryKey: queryKeys.features.single(
+            currentProjectPath,
+            event.featureId,
+          ),
         });
       }
 
       // Invalidate agent output during progress updates (DEBOUNCED)
       // Uses per-feature debouncing to batch rapid progress events during streaming
-      if (event.type === 'auto_mode_progress' && hasFeatureId(event)) {
+      if (event.type === "auto_mode_progress" && hasFeatureId(event)) {
         const debouncedInvalidation = getDebouncedInvalidation(event.featureId);
         debouncedInvalidation();
       }
@@ -219,12 +244,15 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
       }
 
       // Invalidate worktree queries when feature completes (may have created worktree)
-      if (event.type === 'auto_mode_feature_complete' && hasFeatureId(event)) {
+      if (event.type === "auto_mode_feature_complete" && hasFeatureId(event)) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.worktrees.all(currentProjectPath),
         });
         queryClient.invalidateQueries({
-          queryKey: queryKeys.worktrees.single(currentProjectPath, event.featureId),
+          queryKey: queryKeys.worktrees.single(
+            currentProjectPath,
+            event.featureId,
+          ),
         });
       }
     });
@@ -247,34 +275,40 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
  *
  * @param projectPath - Current project path
  */
-export function useSpecRegenerationQueryInvalidation(projectPath: string | undefined) {
+export function useSpecRegenerationQueryInvalidation(
+  projectPath: string | undefined,
+) {
   const queryClient = useQueryClient();
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   useEffect(() => {
     if (!projectPath) return;
 
     const api = getElectronAPI();
     if (!api.specRegeneration) return;
-    const unsubscribe = api.specRegeneration.onEvent((event: SpecRegenerationEvent) => {
-      // Only handle events for the current project
-      if (event.projectPath !== projectPath) return;
+    const unsubscribe = api.specRegeneration.onEvent(
+      (event: SpecRegenerationEvent) => {
+        // Only handle events for the current project
+        if (event.projectPath !== projectPath) return;
 
-      // Record that we received a WebSocket event
-      recordGlobalEvent();
+        // Record that we received a WebSocket event
+        recordGlobalEvent();
 
-      if (event.type === 'spec_regeneration_complete') {
-        // Invalidate features as new ones may have been generated
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.features.all(projectPath),
-        });
+        if (event.type === "spec_regeneration_complete") {
+          // Invalidate features as new ones may have been generated
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.features.all(projectPath),
+          });
 
-        // Invalidate spec regeneration status
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.specRegeneration.status(projectPath),
-        });
-      }
-    });
+          // Invalidate spec regeneration status
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.specRegeneration.status(projectPath),
+          });
+        }
+      },
+    );
 
     return unsubscribe;
   }, [projectPath, queryClient, recordGlobalEvent]);
@@ -285,9 +319,13 @@ export function useSpecRegenerationQueryInvalidation(projectPath: string | undef
  *
  * @param projectPath - Current project path
  */
-export function useGitHubValidationQueryInvalidation(projectPath: string | undefined) {
+export function useGitHubValidationQueryInvalidation(
+  projectPath: string | undefined,
+) {
   const queryClient = useQueryClient();
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   useEffect(() => {
     if (!projectPath) return;
@@ -299,24 +337,32 @@ export function useGitHubValidationQueryInvalidation(projectPath: string | undef
       return;
     }
 
-    const unsubscribe = api.github.onValidationEvent((event: IssueValidationEvent) => {
-      // Record that we received a WebSocket event
-      recordGlobalEvent();
+    const unsubscribe = api.github.onValidationEvent(
+      (event: IssueValidationEvent) => {
+        // Record that we received a WebSocket event
+        recordGlobalEvent();
 
-      if (event.type === 'issue_validation_complete' || event.type === 'issue_validation_error') {
-        // Invalidate all validations for this project
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.github.validations(projectPath),
-        });
-
-        // Also invalidate specific issue validation if we have the issue number
-        if (event.issueNumber) {
+        if (
+          event.type === "issue_validation_complete" ||
+          event.type === "issue_validation_error"
+        ) {
+          // Invalidate all validations for this project
           queryClient.invalidateQueries({
-            queryKey: queryKeys.github.validation(projectPath, event.issueNumber),
+            queryKey: queryKeys.github.validations(projectPath),
           });
+
+          // Also invalidate specific issue validation if we have the issue number
+          if (event.issueNumber) {
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.github.validation(
+                projectPath,
+                event.issueNumber,
+              ),
+            });
+          }
         }
-      }
-    });
+      },
+    );
 
     return unsubscribe;
   }, [projectPath, queryClient, recordGlobalEvent]);
@@ -329,7 +375,9 @@ export function useGitHubValidationQueryInvalidation(projectPath: string | undef
  */
 export function useSessionQueryInvalidation(sessionId: string | undefined) {
   const queryClient = useQueryClient();
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   useEffect(() => {
     if (!sessionId) return;
@@ -339,20 +387,20 @@ export function useSessionQueryInvalidation(sessionId: string | undefined) {
     const unsubscribe = api.agent.onStream((data: unknown) => {
       const event = data as StreamEvent;
       // Only handle events for the current session
-      if ('sessionId' in event && event.sessionId !== sessionId) return;
+      if ("sessionId" in event && event.sessionId !== sessionId) return;
 
       // Record that we received a WebSocket event
       recordGlobalEvent();
 
       // Invalidate session history when a message is complete
-      if (event.type === 'complete' || event.type === 'message') {
+      if (event.type === "complete" || event.type === "message") {
         queryClient.invalidateQueries({
           queryKey: queryKeys.sessions.history(sessionId),
         });
       }
 
       // Invalidate sessions list when any session changes
-      if (event.type === 'complete') {
+      if (event.type === "complete") {
         queryClient.invalidateQueries({
           queryKey: queryKeys.sessions.all(),
         });
@@ -384,7 +432,7 @@ export function useSessionQueryInvalidation(sessionId: string | undefined) {
  */
 export function useQueryInvalidation(
   projectPath: string | undefined,
-  sessionId?: string | undefined
+  sessionId?: string | undefined,
 ) {
   useAutoModeQueryInvalidation(projectPath);
   useSpecRegenerationQueryInvalidation(projectPath);

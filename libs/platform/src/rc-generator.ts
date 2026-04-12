@@ -5,7 +5,7 @@
  * providing custom prompts with theme-matched colors while preserving user's existing RC files.
  */
 
-import type { ThemeMode } from '@pegasus/types';
+import type { ThemeMode } from "@pegasus/types";
 
 /**
  * Terminal configuration options
@@ -13,12 +13,12 @@ import type { ThemeMode } from '@pegasus/types';
 export interface TerminalConfig {
   enabled: boolean;
   customPrompt: boolean;
-  promptFormat: 'standard' | 'minimal' | 'powerline' | 'starship';
+  promptFormat: "standard" | "minimal" | "powerline" | "starship";
   showGitBranch: boolean;
   showGitStatus: boolean;
   showUserHost: boolean;
   showPath: boolean;
-  pathStyle: 'full' | 'short' | 'basename';
+  pathStyle: "full" | "short" | "basename";
   pathDepth: number;
   showTime: boolean;
   showExitStatus: boolean;
@@ -72,11 +72,11 @@ const STARTUP_COLOR_PRIMARY = 51;
 const STARTUP_COLOR_SECONDARY = 39;
 const STARTUP_COLOR_ACCENT = 33;
 const DEFAULT_PATH_DEPTH = 0;
-const DEFAULT_PATH_STYLE: TerminalConfig['pathStyle'] = 'full';
-const OMP_THEME_ENV_VAR = 'PEGASUS_OMP_THEME';
-const OMP_BINARY = 'oh-my-posh';
-const OMP_SHELL_BASH = 'bash';
-const OMP_SHELL_ZSH = 'zsh';
+const DEFAULT_PATH_STYLE: TerminalConfig["pathStyle"] = "full";
+const OMP_THEME_ENV_VAR = "PEGASUS_OMP_THEME";
+const OMP_BINARY = "oh-my-posh";
+const OMP_SHELL_BASH = "bash";
+const OMP_SHELL_ZSH = "zsh";
 
 /**
  * Convert hex color to RGB
@@ -98,9 +98,13 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
  */
 function colorDistance(
   c1: { r: number; g: number; b: number },
-  c2: { r: number; g: number; b: number }
+  c2: { r: number; g: number; b: number },
 ): number {
-  return Math.sqrt(Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2));
+  return Math.sqrt(
+    Math.pow(c1.r - c2.r, 2) +
+      Math.pow(c1.g - c2.g, 2) +
+      Math.pow(c1.b - c2.b, 2),
+  );
 }
 
 /**
@@ -155,7 +159,7 @@ export function getThemeANSIColors(theme: TerminalTheme): ANSIColors {
     gitBranch: `\\[\\e[38;5;${hexToXterm256(theme.magenta)}m\\]`,
     gitDirty: `\\[\\e[38;5;${hexToXterm256(theme.red)}m\\]`,
     prompt: `\\[\\e[38;5;${hexToXterm256(theme.green)}m\\]`,
-    reset: '\\[\\e[0m\\]',
+    reset: "\\[\\e[0m\\]",
   };
 }
 
@@ -163,7 +167,7 @@ export function getThemeANSIColors(theme: TerminalTheme): ANSIColors {
  * Escape shell special characters in user input
  */
 function shellEscape(str: string): string {
-  return str.replace(/([`$\\"])/g, '\\$1');
+  return str.replace(/([`$\\"])/g, "\\$1");
 }
 
 /**
@@ -174,13 +178,13 @@ function isValidEnvVarName(name: string): boolean {
 }
 
 function stripPromptEscapes(ansiColor: string): string {
-  return ansiColor.replace(/\\\[/g, '').replace(/\\\]/g, '');
+  return ansiColor.replace(/\\\[/g, "").replace(/\\\]/g, "");
 }
 
 function normalizePathStyle(
-  pathStyle: TerminalConfig['pathStyle'] | undefined
-): TerminalConfig['pathStyle'] {
-  if (pathStyle === 'short' || pathStyle === 'basename') {
+  pathStyle: TerminalConfig["pathStyle"] | undefined,
+): TerminalConfig["pathStyle"] {
+  if (pathStyle === "short" || pathStyle === "basename") {
     return pathStyle;
   }
   return DEFAULT_PATH_STYLE;
@@ -188,13 +192,15 @@ function normalizePathStyle(
 
 function normalizePathDepth(pathDepth: number | undefined): number {
   const depth =
-    typeof pathDepth === 'number' && Number.isFinite(pathDepth) ? pathDepth : DEFAULT_PATH_DEPTH;
+    typeof pathDepth === "number" && Number.isFinite(pathDepth)
+      ? pathDepth
+      : DEFAULT_PATH_DEPTH;
   return Math.max(DEFAULT_PATH_DEPTH, Math.floor(depth));
 }
 
 function generateOhMyPoshInit(
   shell: typeof OMP_SHELL_BASH | typeof OMP_SHELL_ZSH,
-  fallback: string
+  fallback: string,
 ) {
   const themeVar = `$${OMP_THEME_ENV_VAR}`;
   const initCommand = `${OMP_BINARY} init ${shell} --config`;
@@ -233,7 +239,7 @@ pegasus_git_prompt() {
       dirty="*"
     fi
     `
-        : ''
+        : ""
     }
 
     if [ -n "$branch" ]; then
@@ -263,10 +269,10 @@ PEGASUS_COLOR_PRIMARY="\\033[38;5;${STARTUP_COLOR_PRIMARY}m"
 PEGASUS_COLOR_SECONDARY="\\033[38;5;${STARTUP_COLOR_SECONDARY}m"
 PEGASUS_COLOR_ACCENT="\\033[38;5;${STARTUP_COLOR_ACCENT}m"
 PEGASUS_COLOR_RESET="\\033[0m"
-PEGASUS_SHOW_TIME="${config.showTime === true ? 'true' : 'false'}"
-PEGASUS_SHOW_EXIT_STATUS="${config.showExitStatus === true ? 'true' : 'false'}"
-PEGASUS_SHOW_USER_HOST="${config.showUserHost === false ? 'false' : 'true'}"
-PEGASUS_SHOW_PATH="${config.showPath === false ? 'false' : 'true'}"
+PEGASUS_SHOW_TIME="${config.showTime === true ? "true" : "false"}"
+PEGASUS_SHOW_EXIT_STATUS="${config.showExitStatus === true ? "true" : "false"}"
+PEGASUS_SHOW_USER_HOST="${config.showUserHost === false ? "false" : "true"}"
+PEGASUS_SHOW_PATH="${config.showPath === false ? "false" : "true"}"
 PEGASUS_PATH_STYLE="${normalizePathStyle(config.pathStyle)}"
 PEGASUS_PATH_DEPTH=${normalizePathDepth(config.pathDepth)}
 pegasus_default_themes_dir="\${XDG_DATA_HOME:-\$HOME/.local/share}/oh-my-posh/themes"
@@ -599,79 +605,85 @@ pegasus_show_banner_once() {
  * Generate prompt based on format
  */
 function generatePrompt(
-  format: TerminalConfig['promptFormat'],
+  format: TerminalConfig["promptFormat"],
   colors: ANSIColors,
-  config: TerminalConfig
+  config: TerminalConfig,
 ): string {
   const userHostSegment = config.showUserHost
     ? `${colors.user}\\u${colors.reset}@${colors.host}\\h${colors.reset}`
-    : '';
+    : "";
   const pathSegment = config.showPath
     ? `${colors.path}\\$(pegasus_prompt_path)${colors.reset}`
-    : '';
+    : "";
   const gitSegment = config.showGitBranch
     ? `${colors.gitBranch}\\$(pegasus_git_prompt)${colors.reset}`
-    : '';
+    : "";
   const timeSegment = config.showTime
     ? `${colors.gitBranch}[\\$(pegasus_prompt_time)]${colors.reset}`
-    : '';
+    : "";
   const statusSegment = config.showExitStatus
     ? `${colors.gitDirty}\\$(pegasus_prompt_status)${colors.reset}`
-    : '';
+    : "";
 
   switch (format) {
-    case 'minimal': {
-      const minimalSegments = [timeSegment, userHostSegment, pathSegment, gitSegment, statusSegment]
-        .filter((segment) => segment.length > 0)
-        .join(' ');
-      return `PS1="${minimalSegments ? `${minimalSegments} ` : ''}${colors.prompt}\\$${colors.reset} "`;
-    }
-
-    case 'powerline': {
-      const powerlineCoreSegments = [
-        userHostSegment ? `[${userHostSegment}]` : '',
-        pathSegment ? `[${pathSegment}]` : '',
-      ].filter((segment) => segment.length > 0);
-      const powerlineCore = powerlineCoreSegments.join('─');
-      const powerlineExtras = [gitSegment, timeSegment, statusSegment]
-        .filter((segment) => segment.length > 0)
-        .join(' ');
-      const powerlineLine = [powerlineCore, powerlineExtras]
-        .filter((segment) => segment.length > 0)
-        .join(' ');
-      return `PS1="┌─${powerlineLine}\\n└─${colors.prompt}\\$${colors.reset} "`;
-    }
-
-    case 'starship': {
-      let starshipLine = '';
-      if (userHostSegment && pathSegment) {
-        starshipLine = `${userHostSegment} in ${pathSegment}`;
-      } else {
-        starshipLine = [userHostSegment, pathSegment]
-          .filter((segment) => segment.length > 0)
-          .join(' ');
-      }
-      if (gitSegment) {
-        starshipLine = `${starshipLine}${starshipLine ? ' on ' : ''}${gitSegment}`;
-      }
-      const starshipSegments = [timeSegment, starshipLine, statusSegment]
-        .filter((segment) => segment.length > 0)
-        .join(' ');
-      return `PS1="${starshipSegments}\\n${colors.prompt}❯${colors.reset} "`;
-    }
-
-    case 'standard':
-    default: {
-      const standardSegments = [
+    case "minimal": {
+      const minimalSegments = [
         timeSegment,
-        userHostSegment ? `[${userHostSegment}]` : '',
+        userHostSegment,
         pathSegment,
         gitSegment,
         statusSegment,
       ]
         .filter((segment) => segment.length > 0)
-        .join(' ');
-      return `PS1="${standardSegments ? `${standardSegments} ` : ''}${colors.prompt}\\$${colors.reset} "`;
+        .join(" ");
+      return `PS1="${minimalSegments ? `${minimalSegments} ` : ""}${colors.prompt}\\$${colors.reset} "`;
+    }
+
+    case "powerline": {
+      const powerlineCoreSegments = [
+        userHostSegment ? `[${userHostSegment}]` : "",
+        pathSegment ? `[${pathSegment}]` : "",
+      ].filter((segment) => segment.length > 0);
+      const powerlineCore = powerlineCoreSegments.join("─");
+      const powerlineExtras = [gitSegment, timeSegment, statusSegment]
+        .filter((segment) => segment.length > 0)
+        .join(" ");
+      const powerlineLine = [powerlineCore, powerlineExtras]
+        .filter((segment) => segment.length > 0)
+        .join(" ");
+      return `PS1="┌─${powerlineLine}\\n└─${colors.prompt}\\$${colors.reset} "`;
+    }
+
+    case "starship": {
+      let starshipLine = "";
+      if (userHostSegment && pathSegment) {
+        starshipLine = `${userHostSegment} in ${pathSegment}`;
+      } else {
+        starshipLine = [userHostSegment, pathSegment]
+          .filter((segment) => segment.length > 0)
+          .join(" ");
+      }
+      if (gitSegment) {
+        starshipLine = `${starshipLine}${starshipLine ? " on " : ""}${gitSegment}`;
+      }
+      const starshipSegments = [timeSegment, starshipLine, statusSegment]
+        .filter((segment) => segment.length > 0)
+        .join(" ");
+      return `PS1="${starshipSegments}\\n${colors.prompt}❯${colors.reset} "`;
+    }
+
+    case "standard":
+    default: {
+      const standardSegments = [
+        timeSegment,
+        userHostSegment ? `[${userHostSegment}]` : "",
+        pathSegment,
+        gitSegment,
+        statusSegment,
+      ]
+        .filter((segment) => segment.length > 0)
+        .join(" ");
+      return `PS1="${standardSegments ? `${standardSegments} ` : ""}${colors.prompt}\\$${colors.reset} "`;
     }
   }
 }
@@ -680,116 +692,120 @@ function generatePrompt(
  * Generate Zsh prompt based on format
  */
 function generateZshPrompt(
-  format: TerminalConfig['promptFormat'],
+  format: TerminalConfig["promptFormat"],
   colors: ANSIColors,
-  config: TerminalConfig
+  config: TerminalConfig,
 ): string {
   // Convert bash-style \u, \h, \w to zsh-style %n, %m, %~
   // Remove bash-style escaping \[ \] (not needed in zsh)
   const zshColors = {
     user: colors.user
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     host: colors.host
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     path: colors.path
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     gitBranch: colors.gitBranch
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     gitDirty: colors.gitDirty
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     prompt: colors.prompt
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
     reset: colors.reset
-      .replace(/\\[\[\]\\e]/g, '')
-      .replace(/\\e/g, '%{')
-      .replace(/m\\]/g, 'm%}'),
+      .replace(/\\[\[\]\\e]/g, "")
+      .replace(/\\e/g, "%{")
+      .replace(/m\\]/g, "m%}"),
   };
 
   const userHostSegment = config.showUserHost
     ? `[${zshColors.user}%n${zshColors.reset}@${zshColors.host}%m${zshColors.reset}]`
-    : '';
+    : "";
   const pathSegment = config.showPath
     ? `${zshColors.path}$(pegasus_prompt_path)${zshColors.reset}`
-    : '';
+    : "";
   const gitSegment = config.showGitBranch
     ? `${zshColors.gitBranch}$(pegasus_git_prompt)${zshColors.reset}`
-    : '';
+    : "";
   const timeSegment = config.showTime
     ? `${zshColors.gitBranch}[$(pegasus_prompt_time)]${zshColors.reset}`
-    : '';
+    : "";
   const statusSegment = config.showExitStatus
     ? `${zshColors.gitDirty}$(pegasus_prompt_status)${zshColors.reset}`
-    : '';
-  const segments = [timeSegment, userHostSegment, pathSegment, gitSegment, statusSegment].filter(
-    (segment) => segment.length > 0
-  );
-  const inlineSegments = segments.join(' ');
-  const inlineWithSpace = inlineSegments ? `${inlineSegments} ` : '';
+    : "";
+  const segments = [
+    timeSegment,
+    userHostSegment,
+    pathSegment,
+    gitSegment,
+    statusSegment,
+  ].filter((segment) => segment.length > 0);
+  const inlineSegments = segments.join(" ");
+  const inlineWithSpace = inlineSegments ? `${inlineSegments} ` : "";
 
   switch (format) {
-    case 'minimal': {
+    case "minimal": {
       return `PROMPT="${inlineWithSpace}${zshColors.prompt}%#${zshColors.reset} "`;
     }
 
-    case 'powerline': {
+    case "powerline": {
       const powerlineCoreSegments = [
-        userHostSegment ? `[${userHostSegment}]` : '',
-        pathSegment ? `[${pathSegment}]` : '',
+        userHostSegment ? `[${userHostSegment}]` : "",
+        pathSegment ? `[${pathSegment}]` : "",
       ].filter((segment) => segment.length > 0);
-      const powerlineCore = powerlineCoreSegments.join('─');
+      const powerlineCore = powerlineCoreSegments.join("─");
       const powerlineExtras = [gitSegment, timeSegment, statusSegment]
         .filter((segment) => segment.length > 0)
-        .join(' ');
+        .join(" ");
       const powerlineLine = [powerlineCore, powerlineExtras]
         .filter((segment) => segment.length > 0)
-        .join(' ');
+        .join(" ");
       return `PROMPT="┌─${powerlineLine}
 └─${zshColors.prompt}%#${zshColors.reset} "`;
     }
 
-    case 'starship': {
-      let starshipLine = '';
+    case "starship": {
+      let starshipLine = "";
       if (userHostSegment && pathSegment) {
         starshipLine = `${userHostSegment} in ${pathSegment}`;
       } else {
         starshipLine = [userHostSegment, pathSegment]
           .filter((segment) => segment.length > 0)
-          .join(' ');
+          .join(" ");
       }
       if (gitSegment) {
-        starshipLine = `${starshipLine}${starshipLine ? ' on ' : ''}${gitSegment}`;
+        starshipLine = `${starshipLine}${starshipLine ? " on " : ""}${gitSegment}`;
       }
       const starshipSegments = [timeSegment, starshipLine, statusSegment]
         .filter((segment) => segment.length > 0)
-        .join(' ');
+        .join(" ");
       return `PROMPT="${starshipSegments}
 ${zshColors.prompt}❯${zshColors.reset} "`;
     }
 
-    case 'standard':
+    case "standard":
     default: {
       const standardSegments = [
         timeSegment,
-        userHostSegment ? `[${userHostSegment}]` : '',
+        userHostSegment ? `[${userHostSegment}]` : "",
         pathSegment,
         gitSegment,
         statusSegment,
       ]
         .filter((segment) => segment.length > 0)
-        .join(' ');
-      return `PROMPT="${standardSegments ? `${standardSegments} ` : ''}${zshColors.prompt}%#${zshColors.reset} "`;
+        .join(" ");
+      return `PROMPT="${standardSegments ? `${standardSegments} ` : ""}${zshColors.prompt}%#${zshColors.reset} "`;
     }
   }
 }
@@ -798,7 +814,7 @@ ${zshColors.prompt}❯${zshColors.reset} "`;
  * Generate custom aliases section
  */
 function generateAliases(config: TerminalConfig): string {
-  if (!config.customAliases) return '';
+  if (!config.customAliases) return "";
 
   // Escape and validate aliases
   const escapedAliases = shellEscape(config.customAliases);
@@ -813,26 +829,29 @@ ${escapedAliases}
  */
 function generateEnvVars(config: TerminalConfig): string {
   if (!config.customEnvVars || Object.keys(config.customEnvVars).length === 0) {
-    return '';
+    return "";
   }
 
   const validEnvVars = Object.entries(config.customEnvVars)
     .filter(([name]) => isValidEnvVarName(name))
     .map(([name, value]) => `export ${name}="${shellEscape(value)}"`)
-    .join('\n');
+    .join("\n");
 
   return validEnvVars
     ? `
 # Custom environment variables
 ${validEnvVars}
 `
-    : '';
+    : "";
 }
 
 /**
  * Generate bashrc configuration
  */
-export function generateBashrc(theme: TerminalTheme, config: TerminalConfig): string {
+export function generateBashrc(
+  theme: TerminalTheme,
+  config: TerminalConfig,
+): string {
   const colors = getThemeANSIColors(theme);
   const promptLine = generatePrompt(config.promptFormat, colors, config);
   const promptInitializer = generateOhMyPoshInit(OMP_SHELL_BASH, promptLine);
@@ -877,7 +896,10 @@ fi
 /**
  * Generate zshrc configuration
  */
-export function generateZshrc(theme: TerminalTheme, config: TerminalConfig): string {
+export function generateZshrc(
+  theme: TerminalTheme,
+  config: TerminalConfig,
+): string {
   const colors = getThemeANSIColors(theme);
   const promptLine = generateZshPrompt(config.promptFormat, colors, config);
   const promptInitializer = generateOhMyPoshInit(OMP_SHELL_ZSH, promptLine);
@@ -964,9 +986,9 @@ export COLOR_RESET_RAW="${rawColors.reset}"
 /**
  * Get shell name from file extension
  */
-export function getShellName(rcFile: string): 'bash' | 'zsh' | 'sh' | null {
-  if (rcFile.endsWith('.sh') && rcFile.includes('bashrc')) return 'bash';
-  if (rcFile.endsWith('.zsh') || rcFile.endsWith('.zshrc')) return 'zsh';
-  if (rcFile.endsWith('.sh')) return 'sh';
+export function getShellName(rcFile: string): "bash" | "zsh" | "sh" | null {
+  if (rcFile.endsWith(".sh") && rcFile.includes("bashrc")) return "bash";
+  if (rcFile.endsWith(".zsh") || rcFile.endsWith(".zshrc")) return "zsh";
+  if (rcFile.endsWith(".sh")) return "sh";
   return null;
 }

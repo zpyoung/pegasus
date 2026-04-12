@@ -7,14 +7,18 @@
  * This is a TEMPORARY shim - routes should be updated to use the new interface directly.
  */
 
-import type { Feature } from '@pegasus/types';
-import type { EventEmitter } from '../../lib/events.js';
-import { GlobalAutoModeService } from './global-service.js';
-import { AutoModeServiceFacade } from './facade.js';
-import type { SettingsService } from '../settings-service.js';
-import type { FeatureLoader } from '../feature-loader.js';
-import type { ClaudeUsageService } from '../claude-usage-service.js';
-import type { FacadeOptions, AutoModeStatus, RunningAgentInfo } from './types.js';
+import type { Feature } from "@pegasus/types";
+import type { EventEmitter } from "../../lib/events.js";
+import { GlobalAutoModeService } from "./global-service.js";
+import { AutoModeServiceFacade } from "./facade.js";
+import type { SettingsService } from "../settings-service.js";
+import type { FeatureLoader } from "../feature-loader.js";
+import type { ClaudeUsageService } from "../claude-usage-service.js";
+import type {
+  FacadeOptions,
+  AutoModeStatus,
+  RunningAgentInfo,
+} from "./types.js";
 
 /**
  * AutoModeServiceCompat wraps GlobalAutoModeService and facades to provide
@@ -29,9 +33,13 @@ export class AutoModeServiceCompat {
     events: EventEmitter,
     settingsService: SettingsService | null,
     featureLoader: FeatureLoader,
-    claudeUsageService?: ClaudeUsageService | null
+    claudeUsageService?: ClaudeUsageService | null,
   ) {
-    this.globalService = new GlobalAutoModeService(events, settingsService, featureLoader);
+    this.globalService = new GlobalAutoModeService(
+      events,
+      settingsService,
+      featureLoader,
+    );
     const sharedServices = this.globalService.getSharedServices();
 
     this.facadeOptions = {
@@ -76,7 +84,10 @@ export class AutoModeServiceCompat {
     return this.globalService.getActiveAutoLoopProjects();
   }
 
-  getActiveAutoLoopWorktrees(): Array<{ projectPath: string; branchName: string | null }> {
+  getActiveAutoLoopWorktrees(): Array<{
+    projectPath: string;
+    branchName: string | null;
+  }> {
     return this.globalService.getActiveAutoLoopWorktrees();
   }
 
@@ -98,7 +109,7 @@ export class AutoModeServiceCompat {
 
   async getStatusForProject(
     projectPath: string,
-    branchName: string | null = null
+    branchName: string | null = null,
   ): Promise<{
     isAutoLoopRunning: boolean;
     runningFeatures: string[];
@@ -110,7 +121,10 @@ export class AutoModeServiceCompat {
     return facade.getStatusForProject(branchName);
   }
 
-  isAutoLoopRunningForProject(projectPath: string, branchName: string | null = null): boolean {
+  isAutoLoopRunningForProject(
+    projectPath: string,
+    branchName: string | null = null,
+  ): boolean {
     const facade = this.createFacade(projectPath);
     return facade.isAutoLoopRunning(branchName);
   }
@@ -118,7 +132,7 @@ export class AutoModeServiceCompat {
   async startAutoLoopForProject(
     projectPath: string,
     branchName: string | null = null,
-    maxConcurrency?: number
+    maxConcurrency?: number,
   ): Promise<number> {
     const facade = this.createFacade(projectPath);
     return facade.startAutoLoop(branchName, maxConcurrency);
@@ -126,7 +140,7 @@ export class AutoModeServiceCompat {
 
   async stopAutoLoopForProject(
     projectPath: string,
-    branchName: string | null = null
+    branchName: string | null = null,
   ): Promise<number> {
     const facade = this.createFacade(projectPath);
     return facade.stopAutoLoop(branchName);
@@ -138,7 +152,7 @@ export class AutoModeServiceCompat {
     useWorktrees = false,
     isAutoMode = false,
     providedWorktreePath?: string,
-    options?: { continuationPrompt?: string; _calledInternally?: boolean }
+    options?: { continuationPrompt?: string; _calledInternally?: boolean },
   ): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.executeFeature(
@@ -146,7 +160,7 @@ export class AutoModeServiceCompat {
       useWorktrees,
       isAutoMode,
       providedWorktreePath,
-      options
+      options,
     );
   }
 
@@ -162,7 +176,11 @@ export class AutoModeServiceCompat {
     return false;
   }
 
-  async resumeFeature(projectPath: string, featureId: string, useWorktrees = false): Promise<void> {
+  async resumeFeature(
+    projectPath: string,
+    featureId: string,
+    useWorktrees = false,
+  ): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.resumeFeature(featureId, useWorktrees);
   }
@@ -172,13 +190,16 @@ export class AutoModeServiceCompat {
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    useWorktrees = true
+    useWorktrees = true,
   ): Promise<void> {
     const facade = this.createFacade(projectPath);
     return facade.followUpFeature(featureId, prompt, imagePaths, useWorktrees);
   }
 
-  async verifyFeature(projectPath: string, featureId: string): Promise<boolean> {
+  async verifyFeature(
+    projectPath: string,
+    featureId: string,
+  ): Promise<boolean> {
     const facade = this.createFacade(projectPath);
     return facade.verifyFeature(featureId);
   }
@@ -186,13 +207,16 @@ export class AutoModeServiceCompat {
   async commitFeature(
     projectPath: string,
     featureId: string,
-    providedWorktreePath?: string
+    providedWorktreePath?: string,
   ): Promise<string | null> {
     const facade = this.createFacade(projectPath);
     return facade.commitFeature(featureId, providedWorktreePath);
   }
 
-  async contextExists(projectPath: string, featureId: string): Promise<boolean> {
+  async contextExists(
+    projectPath: string,
+    featureId: string,
+  ): Promise<boolean> {
     const facade = this.createFacade(projectPath);
     return facade.contextExists(featureId);
   }
@@ -207,17 +231,22 @@ export class AutoModeServiceCompat {
     featureId: string,
     approved: boolean,
     editedPlan?: string,
-    feedback?: string
+    feedback?: string,
   ): Promise<{ success: boolean; error?: string }> {
     const facade = this.createFacade(projectPath);
-    return facade.resolvePlanApproval(featureId, approved, editedPlan, feedback);
+    return facade.resolvePlanApproval(
+      featureId,
+      approved,
+      editedPlan,
+      feedback,
+    );
   }
 
   async resolveQuestion(
     projectPath: string,
     featureId: string,
     questionId: string,
-    answer: string
+    answer: string,
   ): Promise<{ allAnswered: boolean }> {
     const facade = this.createFacade(projectPath);
     return facade.resolveQuestion(featureId, questionId, answer);
@@ -235,7 +264,7 @@ export class AutoModeServiceCompat {
 
   async checkWorktreeCapacity(
     projectPath: string,
-    featureId: string
+    featureId: string,
   ): Promise<{
     hasCapacity: boolean;
     currentAgents: number;
@@ -248,7 +277,7 @@ export class AutoModeServiceCompat {
 
   async detectOrphanedFeatures(
     projectPath: string,
-    preloadedFeatures?: Feature[]
+    preloadedFeatures?: Feature[],
   ): Promise<Array<{ feature: Feature; missingBranch: string }>> {
     const facade = this.createFacade(projectPath);
     return facade.detectOrphanedFeatures(preloadedFeatures);

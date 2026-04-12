@@ -1,1 +1,1 @@
-export { ValidationDialog } from './validation-dialog';
+export { ValidationDialog } from "./validation-dialog";

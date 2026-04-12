@@ -15,20 +15,24 @@
  * security check that applies to ALL AI model invocations, regardless of provider.
  */
 
-import type { Options } from '@anthropic-ai/claude-agent-sdk';
-import path from 'path';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { createLogger } from '@pegasus/utils';
+import type { Options } from "@anthropic-ai/claude-agent-sdk";
+import path from "path";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('SdkOptions');
+const logger = createLogger("SdkOptions");
 import {
   DEFAULT_MODELS,
   CLAUDE_MODEL_MAP,
   type McpServerConfig,
   type ThinkingLevel,
   getThinkingTokenBudget,
-} from '@pegasus/types';
-import { isPathAllowed, PathNotAllowedError, getAllowedRootDirectory } from '@pegasus/platform';
+} from "@pegasus/types";
+import {
+  isPathAllowed,
+  PathNotAllowedError,
+  getAllowedRootDirectory,
+} from "@pegasus/platform";
 
 /**
  * Result of sandbox compatibility check
@@ -50,7 +54,7 @@ export interface SandboxCompatibilityResult {
  */
 export function checkSandboxCompatibility(
   cwd: string,
-  sandboxRequested: boolean
+  sandboxRequested: boolean,
 ): SandboxCompatibilityResult {
   if (!sandboxRequested) {
     return { enabled: false };
@@ -113,7 +117,7 @@ export function validateWorkingDirectory(cwd: string): void {
       `Working directory "${cwd}" (resolved: ${resolvedCwd}) is not allowed. ` +
         (allowedRoot
           ? `Must be within ALLOWED_ROOT_DIRECTORY: ${allowedRoot}`
-          : 'ALLOWED_ROOT_DIRECTORY is configured but path is not within allowed directories.')
+          : "ALLOWED_ROOT_DIRECTORY is configured but path is not within allowed directories."),
     );
   }
 }
@@ -123,26 +127,26 @@ export function validateWorkingDirectory(cwd: string): void {
  */
 export const TOOL_PRESETS = {
   /** Read-only tools for analysis */
-  readOnly: ['Read', 'Glob', 'Grep'] as const,
+  readOnly: ["Read", "Glob", "Grep"] as const,
 
   /** Tools for spec generation that needs to read the codebase */
-  specGeneration: ['Read', 'Glob', 'Grep'] as const,
+  specGeneration: ["Read", "Glob", "Grep"] as const,
 
   /** Full tool access for feature implementation */
   fullAccess: [
-    'Read',
-    'Write',
-    'Edit',
-    'MultiEdit',
-    'Glob',
-    'Grep',
-    'LS',
-    'Bash',
-    'WebSearch',
-    'WebFetch',
-    'TodoWrite',
-    'Task',
-    'Skill',
+    "Read",
+    "Write",
+    "Edit",
+    "MultiEdit",
+    "Glob",
+    "Grep",
+    "LS",
+    "Bash",
+    "WebSearch",
+    "WebFetch",
+    "TodoWrite",
+    "Task",
+    "Skill",
     // AskUserQuestion lets the agent pause mid-execution and ask the user
     // structured questions. AgentExecutor intercepts this tool_use block in
     // the assistant stream (via extractAndPauseForAskUserQuestion), persists
@@ -151,26 +155,26 @@ export const TOOL_PRESETS = {
     // the tool out of the model's available-tools list and the agent can
     // never call it — execution then ends as a generic failure and the
     // feature falls back to `backlog`.
-    'AskUserQuestion',
+    "AskUserQuestion",
   ] as const,
 
   /** Tools for chat/interactive mode */
   chat: [
-    'Read',
-    'Write',
-    'Edit',
-    'MultiEdit',
-    'Glob',
-    'Grep',
-    'LS',
-    'Bash',
-    'WebSearch',
-    'WebFetch',
-    'TodoWrite',
-    'Task',
-    'Skill',
+    "Read",
+    "Write",
+    "Edit",
+    "MultiEdit",
+    "Glob",
+    "Grep",
+    "LS",
+    "Bash",
+    "WebSearch",
+    "WebFetch",
+    "TodoWrite",
+    "Task",
+    "Skill",
     // Kept in sync with fullAccess (enforced by sdk-options.test.ts).
-    'AskUserQuestion',
+    "AskUserQuestion",
   ] as const,
 } as const;
 
@@ -202,8 +206,8 @@ export const MAX_TURNS = {
  * - PEGASUS_MODEL_DEFAULT: Fallback model for all operations
  */
 export function getModelForUseCase(
-  useCase: 'spec' | 'features' | 'suggestions' | 'chat' | 'auto' | 'default',
-  explicitModel?: string
+  useCase: "spec" | "features" | "suggestions" | "chat" | "auto" | "default",
+  explicitModel?: string,
 ): string {
   // Explicit model takes precedence
   if (explicitModel) {
@@ -226,12 +230,12 @@ export function getModelForUseCase(
   }
 
   const defaultModels: Record<string, string> = {
-    spec: CLAUDE_MODEL_MAP['haiku'], // used to generate app specs
-    features: CLAUDE_MODEL_MAP['haiku'], // used to generate features from app specs
-    suggestions: CLAUDE_MODEL_MAP['haiku'], // used for suggestions
-    chat: CLAUDE_MODEL_MAP['haiku'], // used for chat
-    auto: CLAUDE_MODEL_MAP['opus'], // used to implement kanban cards
-    default: CLAUDE_MODEL_MAP['opus'],
+    spec: CLAUDE_MODEL_MAP["haiku"], // used to generate app specs
+    features: CLAUDE_MODEL_MAP["haiku"], // used to generate features from app specs
+    suggestions: CLAUDE_MODEL_MAP["haiku"], // used for suggestions
+    chat: CLAUDE_MODEL_MAP["haiku"], // used for chat
+    auto: CLAUDE_MODEL_MAP["opus"], // used to implement kanban cards
+    default: CLAUDE_MODEL_MAP["opus"],
   };
 
   return resolveModelString(defaultModels[useCase] || DEFAULT_MODELS.claude);
@@ -243,7 +247,7 @@ export function getModelForUseCase(
  */
 function getBaseOptions(): Partial<Options> {
   return {
-    permissionMode: 'bypassPermissions',
+    permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
   };
 }
@@ -265,7 +269,9 @@ interface McpOptions {
 function buildMcpOptions(config: CreateSdkOptionsConfig): McpOptions {
   return {
     // Include MCP servers if configured
-    mcpServerOptions: config.mcpServers ? { mcpServers: config.mcpServers } : {},
+    mcpServerOptions: config.mcpServers
+      ? { mcpServers: config.mcpServers }
+      : {},
   };
 }
 
@@ -279,15 +285,15 @@ function buildMcpOptions(config: CreateSdkOptionsConfig): McpOptions {
  * @returns Object with maxThinkingTokens if thinking is enabled with a budget
  */
 function buildThinkingOptions(thinkingLevel?: ThinkingLevel): Partial<Options> {
-  if (!thinkingLevel || thinkingLevel === 'none') {
+  if (!thinkingLevel || thinkingLevel === "none") {
     return {};
   }
 
   // Adaptive thinking (Opus 4.6): don't set maxThinkingTokens
   // The model will use adaptive thinking by default
-  if (thinkingLevel === 'adaptive') {
+  if (thinkingLevel === "adaptive") {
     logger.debug(
-      `buildThinkingOptions: thinkingLevel="adaptive" -> no maxThinkingTokens (model decides)`
+      `buildThinkingOptions: thinkingLevel="adaptive" -> no maxThinkingTokens (model decides)`,
     );
     return {};
   }
@@ -295,7 +301,7 @@ function buildThinkingOptions(thinkingLevel?: ThinkingLevel): Partial<Options> {
   // Manual budget-based thinking for Haiku/Sonnet
   const maxThinkingTokens = getThinkingTokenBudget(thinkingLevel);
   logger.debug(
-    `buildThinkingOptions: thinkingLevel="${thinkingLevel}" -> maxThinkingTokens=${maxThinkingTokens}`
+    `buildThinkingOptions: thinkingLevel="${thinkingLevel}" -> maxThinkingTokens=${maxThinkingTokens}`,
   );
   return maxThinkingTokens ? { maxThinkingTokens } : {};
 }
@@ -316,19 +322,19 @@ function buildThinkingOptions(thinkingLevel?: ThinkingLevel): Partial<Options> {
  */
 function buildClaudeMdOptions(config: CreateSdkOptionsConfig): {
   systemPrompt?: string | SystemPromptConfig;
-  settingSources?: Array<'user' | 'project' | 'local'>;
+  settingSources?: Array<"user" | "project" | "local">;
 } {
   const result: {
     systemPrompt?: string | SystemPromptConfig;
-    settingSources?: Array<'user' | 'project' | 'local'>;
+    settingSources?: Array<"user" | "project" | "local">;
   } = {};
 
   // Determine system prompt format based on useClaudeCodeSystemPrompt
   if (config.useClaudeCodeSystemPrompt) {
     // Use Claude Code's built-in system prompt as the base
     const presetConfig: SystemPromptConfig = {
-      type: 'preset',
-      preset: 'claude_code',
+      type: "preset",
+      preset: "claude_code",
     };
     // If there's a custom system prompt, append it to the preset
     if (config.systemPrompt) {
@@ -345,7 +351,7 @@ function buildClaudeMdOptions(config: CreateSdkOptionsConfig): {
   // Determine settingSources based on autoLoadClaudeMd
   if (config.autoLoadClaudeMd) {
     // Load both user (~/.claude/CLAUDE.md) and project (.claude/CLAUDE.md) settings
-    result.settingSources = ['user', 'project'];
+    result.settingSources = ["user", "project"];
   }
 
   return result;
@@ -359,9 +365,9 @@ function buildClaudeMdOptions(config: CreateSdkOptionsConfig): {
  */
 export interface SystemPromptConfig {
   /** Use preset mode to select the base system prompt */
-  type: 'preset';
+  type: "preset";
   /** The preset to use - 'claude_code' uses the Claude Code system prompt */
-  preset: 'claude_code';
+  preset: "claude_code";
   /** Optional additional prompt to append to the preset */
   append?: string;
 }
@@ -387,7 +393,7 @@ export interface CreateSdkOptionsConfig {
 
   /** Optional output format for structured outputs */
   outputFormat?: {
-    type: 'json_schema';
+    type: "json_schema";
     schema: Record<string, unknown>;
   };
 
@@ -415,7 +421,7 @@ export type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 /**
  * Create SDK options for spec generation
@@ -426,7 +432,9 @@ export type {
  * - Opus model by default (can be overridden)
  * - When autoLoadClaudeMd is true, uses preset mode and settingSources for CLAUDE.md loading
  */
-export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Options {
+export function createSpecGenerationOptions(
+  config: CreateSdkOptionsConfig,
+): Options {
   // Validate working directory before creating options
   validateWorkingDirectory(config.cwd);
 
@@ -441,8 +449,8 @@ export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Opt
     // Override permissionMode - spec generation only needs read-only tools
     // Using "acceptEdits" can cause Claude to write files to unexpected locations
     // See: https://github.com/zpyoung/pegasus/issues/149
-    permissionMode: 'default',
-    model: getModelForUseCase('spec', config.model),
+    permissionMode: "default",
+    model: getModelForUseCase("spec", config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.maximum,
     cwd: config.cwd,
     allowedTools: [...TOOL_PRESETS.specGeneration],
@@ -462,7 +470,9 @@ export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Opt
  * - Sonnet model by default for speed
  * - When autoLoadClaudeMd is true, uses preset mode and settingSources for CLAUDE.md loading
  */
-export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): Options {
+export function createFeatureGenerationOptions(
+  config: CreateSdkOptionsConfig,
+): Options {
   // Validate working directory before creating options
   validateWorkingDirectory(config.cwd);
 
@@ -475,8 +485,8 @@ export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): 
   return {
     ...getBaseOptions(),
     // Override permissionMode - feature generation only needs read-only tools
-    permissionMode: 'default',
-    model: getModelForUseCase('features', config.model),
+    permissionMode: "default",
+    model: getModelForUseCase("features", config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.quick,
     cwd: config.cwd,
     allowedTools: [...TOOL_PRESETS.readOnly],
@@ -495,7 +505,9 @@ export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): 
  * - Opus model by default for thorough analysis
  * - When autoLoadClaudeMd is true, uses preset mode and settingSources for CLAUDE.md loading
  */
-export function createSuggestionsOptions(config: CreateSdkOptionsConfig): Options {
+export function createSuggestionsOptions(
+  config: CreateSdkOptionsConfig,
+): Options {
   // Validate working directory before creating options
   validateWorkingDirectory(config.cwd);
 
@@ -507,7 +519,7 @@ export function createSuggestionsOptions(config: CreateSdkOptionsConfig): Option
 
   return {
     ...getBaseOptions(),
-    model: getModelForUseCase('suggestions', config.model),
+    model: getModelForUseCase("suggestions", config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.extended,
     cwd: config.cwd,
     allowedTools: [...TOOL_PRESETS.readOnly],
@@ -545,7 +557,7 @@ export function createChatOptions(config: CreateSdkOptionsConfig): Options {
 
   return {
     ...getBaseOptions(),
-    model: getModelForUseCase('chat', effectiveModel),
+    model: getModelForUseCase("chat", effectiveModel),
     maxTurns: config.maxTurns ?? MAX_TURNS.standard,
     cwd: config.cwd,
     allowedTools: [...TOOL_PRESETS.chat],
@@ -580,7 +592,7 @@ export function createAutoModeOptions(config: CreateSdkOptionsConfig): Options {
 
   return {
     ...getBaseOptions(),
-    model: getModelForUseCase('auto', config.model),
+    model: getModelForUseCase("auto", config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.maximum,
     cwd: config.cwd,
     allowedTools: [...TOOL_PRESETS.fullAccess],
@@ -601,7 +613,7 @@ export function createCustomOptions(
   config: CreateSdkOptionsConfig & {
     maxTurns?: number;
     allowedTools?: readonly string[];
-  }
+  },
 ): Options {
   // Validate working directory before creating options
   validateWorkingDirectory(config.cwd);
@@ -622,7 +634,7 @@ export function createCustomOptions(
 
   return {
     ...getBaseOptions(),
-    model: getModelForUseCase('default', config.model),
+    model: getModelForUseCase("default", config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.maximum,
     cwd: config.cwd,
     allowedTools: effectiveAllowedTools,

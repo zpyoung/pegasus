@@ -10,7 +10,9 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
         <div
           key={index}
           className={`h-2 rounded-full transition-all duration-300 ${
-            index <= currentStep ? 'w-8 bg-brand-500' : 'w-2 bg-muted-foreground/30'
+            index <= currentStep
+              ? "w-8 bg-brand-500"
+              : "w-2 bg-muted-foreground/30"
           }`}
         />
       ))}

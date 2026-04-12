@@ -5,24 +5,27 @@
  * Supports cross-platform shell detection including WSL.
  */
 
-import * as pty from 'node-pty';
-import { EventEmitter } from 'events';
-import * as os from 'os';
-import * as path from 'path';
+import * as pty from "node-pty";
+import { EventEmitter } from "events";
+import * as os from "os";
+import * as path from "path";
 // secureFs is used for user-controllable paths (working directory validation)
 // to enforce ALLOWED_ROOT_DIRECTORY security boundary
-import * as secureFs from '../lib/secure-fs.js';
-import { createLogger } from '@pegasus/utils';
-import type { SettingsService } from './settings-service.js';
-import { getTerminalThemeColors, getAllTerminalThemes } from '../lib/terminal-themes-data.js';
+import * as secureFs from "../lib/secure-fs.js";
+import { createLogger } from "@pegasus/utils";
+import type { SettingsService } from "./settings-service.js";
+import {
+  getTerminalThemeColors,
+  getAllTerminalThemes,
+} from "../lib/terminal-themes-data.js";
 import {
   getRcFilePath,
   getTerminalDir,
   ensureRcFilesUpToDate,
   type TerminalConfig,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 
-const logger = createLogger('Terminal');
+const logger = createLogger("Terminal");
 // System paths module handles shell binary checks and WSL detection
 // These are system paths outside ALLOWED_ROOT_DIRECTORY, centralized for security auditing
 import {
@@ -30,28 +33,28 @@ import {
   systemPathReadFileSync,
   getWslVersionPath,
   getShellPaths,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 
-const BASH_LOGIN_ARG = '--login';
-const BASH_RCFILE_ARG = '--rcfile';
-const SHELL_NAME_BASH = 'bash';
-const SHELL_NAME_ZSH = 'zsh';
-const SHELL_NAME_SH = 'sh';
+const BASH_LOGIN_ARG = "--login";
+const BASH_RCFILE_ARG = "--rcfile";
+const SHELL_NAME_BASH = "bash";
+const SHELL_NAME_ZSH = "zsh";
+const SHELL_NAME_SH = "sh";
 const DEFAULT_SHOW_USER_HOST = true;
 const DEFAULT_SHOW_PATH = true;
 const DEFAULT_SHOW_TIME = false;
 const DEFAULT_SHOW_EXIT_STATUS = false;
 const DEFAULT_PATH_DEPTH = 0;
-const DEFAULT_PATH_STYLE: TerminalConfig['pathStyle'] = 'full';
+const DEFAULT_PATH_STYLE: TerminalConfig["pathStyle"] = "full";
 const DEFAULT_CUSTOM_PROMPT = true;
-const DEFAULT_PROMPT_FORMAT: TerminalConfig['promptFormat'] = 'standard';
+const DEFAULT_PROMPT_FORMAT: TerminalConfig["promptFormat"] = "standard";
 const DEFAULT_SHOW_GIT_BRANCH = true;
 const DEFAULT_SHOW_GIT_STATUS = true;
-const DEFAULT_CUSTOM_ALIASES = '';
+const DEFAULT_CUSTOM_ALIASES = "";
 const DEFAULT_CUSTOM_ENV_VARS: Record<string, string> = {};
-const PROMPT_THEME_CUSTOM = 'custom';
-const PROMPT_THEME_PREFIX = 'omp-';
-const OMP_THEME_ENV_VAR = 'PEGASUS_OMP_THEME';
+const PROMPT_THEME_CUSTOM = "custom";
+const PROMPT_THEME_PREFIX = "omp-";
+const OMP_THEME_ENV_VAR = "PEGASUS_OMP_THEME";
 
 // Maximum scrollback buffer size (characters)
 const MAX_SCROLLBACK_SIZE = 50000; // ~50KB per terminal
@@ -63,7 +66,7 @@ export const MAX_MAX_SESSIONS = 1000;
 // Maximum number of concurrent terminal sessions
 // Can be overridden via TERMINAL_MAX_SESSIONS environment variable
 // Default set to 1000 - effectively unlimited for most use cases
-let maxSessions = parseInt(process.env.TERMINAL_MAX_SESSIONS || '1000', 10);
+let maxSessions = parseInt(process.env.TERMINAL_MAX_SESSIONS || "1000", 10);
 
 // Throttle output to prevent overwhelming WebSocket under heavy load
 // Using 4ms for responsive input feedback while still preventing flood
@@ -91,9 +94,9 @@ function applyBashRcFileArgs(args: string[], rcFilePath: string): string[] {
 }
 
 function normalizePathStyle(
-  pathStyle: TerminalConfig['pathStyle'] | undefined
-): TerminalConfig['pathStyle'] {
-  if (pathStyle === 'short' || pathStyle === 'basename') {
+  pathStyle: TerminalConfig["pathStyle"] | undefined,
+): TerminalConfig["pathStyle"] {
+  if (pathStyle === "short" || pathStyle === "basename") {
     return pathStyle;
   }
   return DEFAULT_PATH_STYLE;
@@ -101,18 +104,29 @@ function normalizePathStyle(
 
 function normalizePathDepth(pathDepth: number | undefined): number {
   const depth =
-    typeof pathDepth === 'number' && Number.isFinite(pathDepth) ? pathDepth : DEFAULT_PATH_DEPTH;
+    typeof pathDepth === "number" && Number.isFinite(pathDepth)
+      ? pathDepth
+      : DEFAULT_PATH_DEPTH;
   return Math.max(DEFAULT_PATH_DEPTH, Math.floor(depth));
 }
 
 function getShellBasename(shellPath: string): string {
-  const lastSep = Math.max(shellPath.lastIndexOf('/'), shellPath.lastIndexOf('\\'));
+  const lastSep = Math.max(
+    shellPath.lastIndexOf("/"),
+    shellPath.lastIndexOf("\\"),
+  );
   return lastSep >= 0 ? shellPath.slice(lastSep + 1) : shellPath;
 }
 
 function getShellArgsForPath(shellPath: string): string[] {
-  const shellName = getShellBasename(shellPath).toLowerCase().replace('.exe', '');
-  if (shellName === 'powershell' || shellName === 'pwsh' || shellName === 'cmd') {
+  const shellName = getShellBasename(shellPath)
+    .toLowerCase()
+    .replace(".exe", "");
+  if (
+    shellName === "powershell" ||
+    shellName === "pwsh" ||
+    shellName === "cmd"
+  ) {
     return [];
   }
   if (shellName === SHELL_NAME_SH) {
@@ -133,7 +147,7 @@ function resolveOmpThemeName(promptTheme: string | undefined): string | null {
 
 function buildEffectiveTerminalConfig(
   globalTerminalConfig: TerminalConfig | undefined,
-  projectTerminalConfig: Partial<TerminalConfig> | undefined
+  projectTerminalConfig: Partial<TerminalConfig> | undefined,
 ): TerminalConfig {
   const mergedEnvVars = {
     ...(globalTerminalConfig?.customEnvVars ?? DEFAULT_CUSTOM_ENV_VARS),
@@ -141,7 +155,8 @@ function buildEffectiveTerminalConfig(
   };
 
   return {
-    enabled: projectTerminalConfig?.enabled ?? globalTerminalConfig?.enabled ?? false,
+    enabled:
+      projectTerminalConfig?.enabled ?? globalTerminalConfig?.enabled ?? false,
     customPrompt: globalTerminalConfig?.customPrompt ?? DEFAULT_CUSTOM_PROMPT,
     promptFormat: globalTerminalConfig?.promptFormat ?? DEFAULT_PROMPT_FORMAT,
     showGitBranch:
@@ -157,15 +172,19 @@ function buildEffectiveTerminalConfig(
       globalTerminalConfig?.showUserHost ??
       DEFAULT_SHOW_USER_HOST,
     showPath:
-      projectTerminalConfig?.showPath ?? globalTerminalConfig?.showPath ?? DEFAULT_SHOW_PATH,
+      projectTerminalConfig?.showPath ??
+      globalTerminalConfig?.showPath ??
+      DEFAULT_SHOW_PATH,
     pathStyle: normalizePathStyle(
-      projectTerminalConfig?.pathStyle ?? globalTerminalConfig?.pathStyle
+      projectTerminalConfig?.pathStyle ?? globalTerminalConfig?.pathStyle,
     ),
     pathDepth: normalizePathDepth(
-      projectTerminalConfig?.pathDepth ?? globalTerminalConfig?.pathDepth
+      projectTerminalConfig?.pathDepth ?? globalTerminalConfig?.pathDepth,
     ),
     showTime:
-      projectTerminalConfig?.showTime ?? globalTerminalConfig?.showTime ?? DEFAULT_SHOW_TIME,
+      projectTerminalConfig?.showTime ??
+      globalTerminalConfig?.showTime ??
+      DEFAULT_SHOW_TIME,
     showExitStatus:
       projectTerminalConfig?.showExitStatus ??
       globalTerminalConfig?.showExitStatus ??
@@ -207,12 +226,13 @@ export class TerminalService extends EventEmitter {
   private sessions: Map<string, TerminalSession> = new Map();
   private dataCallbacks: Set<DataCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
-  private isWindows = os.platform() === 'win32';
+  private isWindows = os.platform() === "win32";
   // On Windows, ConPTY requires AttachConsole which fails in Electron/service mode
   // Detect Electron by checking for electron-specific env vars or process properties
   private isElectron =
-    !!(process.versions && (process.versions as Record<string, string>).electron) ||
-    !!process.env.ELECTRON_RUN_AS_NODE;
+    !!(
+      process.versions && (process.versions as Record<string, string>).electron
+    ) || !!process.env.ELECTRON_RUN_AS_NODE;
   private useConptyFallback = false; // Track if we need to use winpty fallback on Windows
   private settingsService: SettingsService | null = null;
 
@@ -229,7 +249,10 @@ export class TerminalService extends EventEmitter {
    * @param ptyProcess - The PTY process to kill
    * @param signal - The signal to send on Unix-like systems (default: 'SIGTERM')
    */
-  private killPtyProcess(ptyProcess: pty.IPty, signal: string = 'SIGTERM'): void {
+  private killPtyProcess(
+    ptyProcess: pty.IPty,
+    signal: string = "SIGTERM",
+  ): void {
     if (this.isWindows) {
       ptyProcess.kill();
     } else {
@@ -246,7 +269,7 @@ export class TerminalService extends EventEmitter {
     const shellPaths = getShellPaths();
 
     // Check if running in WSL - prefer user's shell or bash with --login
-    if (platform === 'linux' && this.isWSL()) {
+    if (platform === "linux" && this.isWSL()) {
       const userShell = process.env.SHELL;
       if (userShell) {
         // Try to find userShell in allowed paths
@@ -257,7 +280,10 @@ export class TerminalService extends EventEmitter {
           ) {
             try {
               if (systemPathExists(allowedShell)) {
-                return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
+                return {
+                  shell: allowedShell,
+                  args: getShellArgsForPath(allowedShell),
+                };
               }
             } catch {
               // Path not allowed, continue searching
@@ -275,12 +301,12 @@ export class TerminalService extends EventEmitter {
           // Path not allowed, continue
         }
       }
-      return { shell: '/bin/bash', args: ['--login'] };
+      return { shell: "/bin/bash", args: ["--login"] };
     }
 
     // For all platforms: first try user's shell if set
     const userShell = process.env.SHELL;
-    if (userShell && platform !== 'win32') {
+    if (userShell && platform !== "win32") {
       // Try to find userShell in allowed paths
       for (const allowedShell of shellPaths) {
         if (
@@ -289,7 +315,10 @@ export class TerminalService extends EventEmitter {
         ) {
           try {
             if (systemPathExists(allowedShell)) {
-              return { shell: allowedShell, args: getShellArgsForPath(allowedShell) };
+              return {
+                shell: allowedShell,
+                args: getShellArgsForPath(allowedShell),
+              };
             }
           } catch {
             // Path not allowed, continue searching
@@ -310,10 +339,10 @@ export class TerminalService extends EventEmitter {
     }
 
     // Ultimate fallbacks based on platform
-    if (platform === 'win32') {
-      return { shell: 'cmd.exe', args: [] };
+    if (platform === "win32") {
+      return { shell: "cmd.exe", args: [] };
     }
-    return { shell: '/bin/sh', args: [] };
+    return { shell: "/bin/sh", args: [] };
   }
 
   /**
@@ -324,8 +353,11 @@ export class TerminalService extends EventEmitter {
       // Check /proc/version for Microsoft/WSL indicators
       const wslVersionPath = getWslVersionPath();
       if (systemPathExists(wslVersionPath)) {
-        const version = systemPathReadFileSync(wslVersionPath, 'utf-8').toLowerCase();
-        return version.includes('microsoft') || version.includes('wsl');
+        const version = systemPathReadFileSync(
+          wslVersionPath,
+          "utf-8",
+        ).toLowerCase();
+        return version.includes("microsoft") || version.includes("wsl");
       }
       // Check for WSL environment variable
       if (process.env.WSL_DISTRO_NAME || process.env.WSLENV) {
@@ -360,7 +392,9 @@ export class TerminalService extends EventEmitter {
    * Includes basic sanitization against null bytes and path normalization
    * Uses secureFs to enforce ALLOWED_ROOT_DIRECTORY for user-provided paths
    */
-  private async resolveWorkingDirectory(requestedCwd?: string): Promise<string> {
+  private async resolveWorkingDirectory(
+    requestedCwd?: string,
+  ): Promise<string> {
     const homeDir = os.homedir();
 
     // If no cwd requested, use home
@@ -372,19 +406,21 @@ export class TerminalService extends EventEmitter {
     let cwd = requestedCwd.trim();
 
     // Reject paths with null bytes (could bypass path checks)
-    if (cwd.includes('\0')) {
-      logger.warn(`Rejecting path with null byte: ${cwd.replace(/\0/g, '\\0')}`);
+    if (cwd.includes("\0")) {
+      logger.warn(
+        `Rejecting path with null byte: ${cwd.replace(/\0/g, "\\0")}`,
+      );
       return homeDir;
     }
 
     // Fix double slashes at start (but not for Windows UNC paths)
-    if (cwd.startsWith('//') && !cwd.startsWith('//wsl')) {
+    if (cwd.startsWith("//") && !cwd.startsWith("//wsl")) {
       cwd = cwd.slice(1);
     }
 
     // Normalize the path to resolve . and .. segments
     // Skip normalization for WSL UNC paths as path.resolve would break them
-    if (!cwd.startsWith('//wsl')) {
+    if (!cwd.startsWith("//wsl")) {
       cwd = path.resolve(cwd);
     }
 
@@ -396,10 +432,14 @@ export class TerminalService extends EventEmitter {
       if (statResult.isDirectory()) {
         return cwd;
       }
-      logger.warn(`Path exists but is not a directory: ${cwd}, falling back to home`);
+      logger.warn(
+        `Path exists but is not a directory: ${cwd}, falling back to home`,
+      );
       return homeDir;
     } catch {
-      logger.warn(`Working directory does not exist or not allowed: ${cwd}, falling back to home`);
+      logger.warn(
+        `Working directory does not exist or not allowed: ${cwd}, falling back to home`,
+      );
       return homeDir;
     }
   }
@@ -432,18 +472,25 @@ export class TerminalService extends EventEmitter {
    * Create a new terminal session
    * Returns null if the maximum session limit has been reached
    */
-  async createSession(options: TerminalOptions = {}): Promise<TerminalSession | null> {
+  async createSession(
+    options: TerminalOptions = {},
+  ): Promise<TerminalSession | null> {
     // Check session limit
     if (this.sessions.size >= maxSessions) {
-      logger.error(`Max sessions (${maxSessions}) reached, refusing new session`);
+      logger.error(
+        `Max sessions (${maxSessions}) reached, refusing new session`,
+      );
       return null;
     }
 
     const id = `term-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-    const { shell: detectedShell, args: detectedShellArgs } = this.detectShell();
+    const { shell: detectedShell, args: detectedShellArgs } =
+      this.detectShell();
     const shell = options.shell || detectedShell;
-    let shellArgs = options.shell ? getShellArgsForPath(shell) : [...detectedShellArgs];
+    let shellArgs = options.shell
+      ? getShellArgsForPath(shell)
+      : [...detectedShellArgs];
 
     // Validate and resolve working directory
     // Uses secureFs internally to enforce ALLOWED_ROOT_DIRECTORY
@@ -453,7 +500,7 @@ export class TerminalService extends EventEmitter {
     // These settings ensure consistent terminal behavior across platforms
     // First, create a clean copy of process.env excluding Pegasus-specific variables
     // that could pollute user shells (e.g., PORT would affect Next.js/other dev servers)
-    const pegasusEnvVars = ['PORT', 'DATA_DIR', 'PEGASUS_API_KEY', 'NODE_PATH'];
+    const pegasusEnvVars = ["PORT", "DATA_DIR", "PEGASUS_API_KEY", "NODE_PATH"];
     const cleanEnv: Record<string, string> = {};
     for (const [key, value] of Object.entries(process.env)) {
       if (value !== undefined && !pegasusEnvVars.includes(key)) {
@@ -466,7 +513,7 @@ export class TerminalService extends EventEmitter {
     if (this.settingsService) {
       try {
         logger.info(
-          `[createSession] Checking terminal config for session ${id}, cwd: ${options.cwd || cwd}`
+          `[createSession] Checking terminal config for session ${id}, cwd: ${options.cwd || cwd}`,
         );
         const globalSettings = await this.settingsService.getGlobalSettings();
         const projectSettings = options.cwd
@@ -477,22 +524,23 @@ export class TerminalService extends EventEmitter {
         const projectTerminalConfig = projectSettings?.terminalConfig;
         const effectiveConfig = buildEffectiveTerminalConfig(
           globalTerminalConfig,
-          projectTerminalConfig
+          projectTerminalConfig,
         );
 
         logger.info(
-          `[createSession] Terminal config: global.enabled=${globalTerminalConfig?.enabled}, project.enabled=${projectTerminalConfig?.enabled}`
+          `[createSession] Terminal config: global.enabled=${globalTerminalConfig?.enabled}, project.enabled=${projectTerminalConfig?.enabled}`,
         );
         logger.info(
-          `[createSession] Terminal config effective enabled: ${effectiveConfig.enabled}`
+          `[createSession] Terminal config effective enabled: ${effectiveConfig.enabled}`,
         );
 
         if (effectiveConfig.enabled && globalTerminalConfig) {
-          const currentTheme = globalSettings?.theme || 'dark';
+          const currentTheme = globalSettings?.theme || "dark";
           const themeColors = getTerminalThemeColors(currentTheme);
           const allThemes = getAllTerminalThemes();
           const promptTheme =
-            projectTerminalConfig?.promptTheme ?? globalTerminalConfig.promptTheme;
+            projectTerminalConfig?.promptTheme ??
+            globalTerminalConfig.promptTheme;
           const ompThemeName = resolveOmpThemeName(promptTheme);
 
           // Ensure RC files are up to date
@@ -501,7 +549,7 @@ export class TerminalService extends EventEmitter {
             currentTheme,
             effectiveConfig,
             themeColors,
-            allThemes
+            allThemes,
           );
 
           // Set shell-specific env vars
@@ -511,24 +559,27 @@ export class TerminalService extends EventEmitter {
           }
 
           if (shellName.includes(SHELL_NAME_BASH)) {
-            const bashRcFilePath = getRcFilePath(options.cwd || cwd, SHELL_NAME_BASH);
+            const bashRcFilePath = getRcFilePath(
+              options.cwd || cwd,
+              SHELL_NAME_BASH,
+            );
             terminalConfigEnv.BASH_ENV = bashRcFilePath;
-            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT = effectiveConfig.customPrompt
-              ? 'true'
-              : 'false';
+            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT =
+              effectiveConfig.customPrompt ? "true" : "false";
             terminalConfigEnv.PEGASUS_THEME = currentTheme;
             shellArgs = applyBashRcFileArgs(shellArgs, bashRcFilePath);
           } else if (shellName.includes(SHELL_NAME_ZSH)) {
             terminalConfigEnv.ZDOTDIR = getTerminalDir(options.cwd || cwd);
-            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT = effectiveConfig.customPrompt
-              ? 'true'
-              : 'false';
+            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT =
+              effectiveConfig.customPrompt ? "true" : "false";
             terminalConfigEnv.PEGASUS_THEME = currentTheme;
           } else if (shellName === SHELL_NAME_SH) {
-            terminalConfigEnv.ENV = getRcFilePath(options.cwd || cwd, SHELL_NAME_SH);
-            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT = effectiveConfig.customPrompt
-              ? 'true'
-              : 'false';
+            terminalConfigEnv.ENV = getRcFilePath(
+              options.cwd || cwd,
+              SHELL_NAME_SH,
+            );
+            terminalConfigEnv.PEGASUS_CUSTOM_PROMPT =
+              effectiveConfig.customPrompt ? "true" : "false";
             terminalConfigEnv.PEGASUS_THEME = currentTheme;
           }
 
@@ -536,22 +587,24 @@ export class TerminalService extends EventEmitter {
           Object.assign(terminalConfigEnv, effectiveConfig.customEnvVars);
 
           logger.info(
-            `[createSession] Terminal config enabled for session ${id}, shell: ${shellName}`
+            `[createSession] Terminal config enabled for session ${id}, shell: ${shellName}`,
           );
         }
       } catch (error) {
-        logger.warn(`[createSession] Failed to apply terminal config: ${error}`);
+        logger.warn(
+          `[createSession] Failed to apply terminal config: ${error}`,
+        );
       }
     }
 
     const env: Record<string, string> = {
       ...cleanEnv,
-      TERM: 'xterm-256color',
-      COLORTERM: 'truecolor',
-      TERM_PROGRAM: 'pegasus-terminal',
+      TERM: "xterm-256color",
+      COLORTERM: "truecolor",
+      TERM_PROGRAM: "pegasus-terminal",
       // Ensure proper locale for character handling
-      LANG: process.env.LANG || 'en_US.UTF-8',
-      LC_ALL: process.env.LC_ALL || process.env.LANG || 'en_US.UTF-8',
+      LANG: process.env.LANG || "en_US.UTF-8",
+      LC_ALL: process.env.LC_ALL || process.env.LANG || "en_US.UTF-8",
       ...options.env,
       ...terminalConfigEnv, // Apply terminal config env vars last (highest priority)
     };
@@ -560,7 +613,7 @@ export class TerminalService extends EventEmitter {
 
     // Build PTY spawn options
     const ptyOptions: pty.IPtyForkOptions = {
-      name: 'xterm-256color',
+      name: "xterm-256color",
       cols: options.cols || 80,
       rows: options.rows || 24,
       cwd,
@@ -576,7 +629,7 @@ export class TerminalService extends EventEmitter {
     if (this.isWindows) {
       (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
       logger.info(
-        `[createSession] Using winpty for session ${id} (ConPTY disabled for compatibility)`
+        `[createSession] Using winpty for session ${id} (ConPTY disabled for compatibility)`,
       );
     }
 
@@ -584,27 +637,40 @@ export class TerminalService extends EventEmitter {
     try {
       ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
     } catch (spawnError) {
-      const errorMessage = spawnError instanceof Error ? spawnError.message : String(spawnError);
+      const errorMessage =
+        spawnError instanceof Error ? spawnError.message : String(spawnError);
 
       // Check for Windows ConPTY-specific errors
-      if (this.isWindows && errorMessage.includes('AttachConsole failed')) {
+      if (this.isWindows && errorMessage.includes("AttachConsole failed")) {
         // ConPTY failed - try winpty fallback
         if (!this.useConptyFallback) {
-          logger.warn(`[createSession] ConPTY AttachConsole failed, retrying with winpty fallback`);
+          logger.warn(
+            `[createSession] ConPTY AttachConsole failed, retrying with winpty fallback`,
+          );
           this.useConptyFallback = true;
 
           try {
             (ptyOptions as pty.IWindowsPtyForkOptions).useConpty = false;
             ptyProcess = pty.spawn(shell, shellArgs, ptyOptions);
-            logger.info(`[createSession] Successfully spawned session ${id} with winpty fallback`);
+            logger.info(
+              `[createSession] Successfully spawned session ${id} with winpty fallback`,
+            );
           } catch (fallbackError) {
             const fallbackMessage =
-              fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-            logger.error(`[createSession] Winpty fallback also failed:`, fallbackMessage);
+              fallbackError instanceof Error
+                ? fallbackError.message
+                : String(fallbackError);
+            logger.error(
+              `[createSession] Winpty fallback also failed:`,
+              fallbackMessage,
+            );
             return null;
           }
         } else {
-          logger.error(`[createSession] PTY spawn failed (winpty):`, errorMessage);
+          logger.error(
+            `[createSession] PTY spawn failed (winpty):`,
+            errorMessage,
+          );
           return null;
         }
       } else {
@@ -619,8 +685,8 @@ export class TerminalService extends EventEmitter {
       cwd,
       createdAt: new Date(),
       shell,
-      scrollbackBuffer: '',
-      outputBuffer: '',
+      scrollbackBuffer: "",
+      outputBuffer: "",
       flushTimeout: null,
       resizeInProgress: false,
       resizeDebounceTimeout: null,
@@ -640,12 +706,12 @@ export class TerminalService extends EventEmitter {
         // Schedule another flush for remaining data
         session.flushTimeout = setTimeout(flushOutput, OUTPUT_THROTTLE_MS);
       } else {
-        session.outputBuffer = '';
+        session.outputBuffer = "";
         session.flushTimeout = null;
       }
 
       this.dataCallbacks.forEach((cb) => cb(id, dataToSend));
-      this.emit('data', id, dataToSend);
+      this.emit("data", id, dataToSend);
     };
 
     // Forward data events with throttling
@@ -661,7 +727,8 @@ export class TerminalService extends EventEmitter {
       session.scrollbackBuffer += data;
       // Trim if too large (keep the most recent data)
       if (session.scrollbackBuffer.length > MAX_SCROLLBACK_SIZE) {
-        session.scrollbackBuffer = session.scrollbackBuffer.slice(-MAX_SCROLLBACK_SIZE);
+        session.scrollbackBuffer =
+          session.scrollbackBuffer.slice(-MAX_SCROLLBACK_SIZE);
       }
 
       // Buffer output for throttled live delivery
@@ -677,12 +744,12 @@ export class TerminalService extends EventEmitter {
     ptyProcess.onExit(({ exitCode }) => {
       const exitMessage =
         exitCode === undefined || exitCode === null
-          ? 'Session terminated'
+          ? "Session terminated"
           : `Session exited with code ${exitCode}`;
       logger.info(`${exitMessage} (${id})`);
       this.sessions.delete(id);
       this.exitCallbacks.forEach((cb) => cb(id, exitCode));
-      this.emit('exit', id, exitCode);
+      this.emit("exit", id, exitCode);
     });
 
     logger.info(`Session ${id} created successfully`);
@@ -707,7 +774,12 @@ export class TerminalService extends EventEmitter {
    * @param suppressOutput - If true, suppress output during resize to prevent duplicate prompts.
    *                         Should be false for the initial resize so the first prompt isn't dropped.
    */
-  resize(sessionId: string, cols: number, rows: number, suppressOutput: boolean = true): boolean {
+  resize(
+    sessionId: string,
+    cols: number,
+    rows: number,
+    suppressOutput: boolean = true,
+  ): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) {
       logger.warn(`Session ${sessionId} not found for resize`);
@@ -766,15 +838,17 @@ export class TerminalService extends EventEmitter {
       // First try graceful SIGTERM to allow process cleanup
       // On Windows, killPtyProcess calls kill() without signal since Windows doesn't support Unix signals
       logger.info(`Session ${sessionId} sending SIGTERM`);
-      this.killPtyProcess(session.pty, 'SIGTERM');
+      this.killPtyProcess(session.pty, "SIGTERM");
 
       // Schedule SIGKILL fallback if process doesn't exit gracefully
       // The onExit handler will remove session from map when it actually exits
       setTimeout(() => {
         if (this.sessions.has(sessionId)) {
-          logger.info(`Session ${sessionId} still alive after SIGTERM, sending SIGKILL`);
+          logger.info(
+            `Session ${sessionId} still alive after SIGTERM, sending SIGKILL`,
+          );
           try {
-            this.killPtyProcess(session.pty, 'SIGKILL');
+            this.killPtyProcess(session.pty, "SIGKILL");
           } catch {
             // Process may have already exited
           }
@@ -819,7 +893,7 @@ export class TerminalService extends EventEmitter {
 
     // Clear any pending output that hasn't been flushed yet
     // This data is already in scrollbackBuffer
-    session.outputBuffer = '';
+    session.outputBuffer = "";
     if (session.flushTimeout) {
       clearTimeout(session.flushTimeout);
       session.flushTimeout = null;
@@ -870,33 +944,39 @@ export class TerminalService extends EventEmitter {
    */
   async onThemeChange(projectPath: string, newTheme: string): Promise<void> {
     if (!this.settingsService) {
-      logger.warn('[onThemeChange] SettingsService not available');
+      logger.warn("[onThemeChange] SettingsService not available");
       return;
     }
 
     try {
       const globalSettings = await this.settingsService.getGlobalSettings();
       const terminalConfig = globalSettings?.terminalConfig;
-      const projectSettings = await this.settingsService.getProjectSettings(projectPath);
+      const projectSettings =
+        await this.settingsService.getProjectSettings(projectPath);
       const projectTerminalConfig = projectSettings?.terminalConfig;
-      const effectiveConfig = buildEffectiveTerminalConfig(terminalConfig, projectTerminalConfig);
+      const effectiveConfig = buildEffectiveTerminalConfig(
+        terminalConfig,
+        projectTerminalConfig,
+      );
 
       if (effectiveConfig.enabled && terminalConfig) {
         const themeColors = getTerminalThemeColors(
-          newTheme as import('@pegasus/types').ThemeMode
+          newTheme as import("@pegasus/types").ThemeMode,
         );
         const allThemes = getAllTerminalThemes();
 
         // Regenerate RC files with new theme
         await ensureRcFilesUpToDate(
           projectPath,
-          newTheme as import('@pegasus/types').ThemeMode,
+          newTheme as import("@pegasus/types").ThemeMode,
           effectiveConfig,
           themeColors,
-          allThemes
+          allThemes,
         );
 
-        logger.info(`[onThemeChange] Regenerated RC files for theme: ${newTheme}`);
+        logger.info(
+          `[onThemeChange] Regenerated RC files for theme: ${newTheme}`,
+        );
       }
     } catch (error) {
       logger.error(`[onThemeChange] Failed to regenerate RC files: ${error}`);
@@ -927,7 +1007,9 @@ export class TerminalService extends EventEmitter {
 // Singleton instance
 let terminalService: TerminalService | null = null;
 
-export function getTerminalService(settingsService?: SettingsService): TerminalService {
+export function getTerminalService(
+  settingsService?: SettingsService,
+): TerminalService {
   if (!terminalService) {
     terminalService = new TerminalService(settingsService);
   }

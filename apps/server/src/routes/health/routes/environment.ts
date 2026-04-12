@@ -5,7 +5,7 @@
  * before login to determine if sandbox risk warnings should be shown.
  */
 
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 
 export interface EnvironmentResponse {
   isContainerized: boolean;
@@ -15,8 +15,8 @@ export interface EnvironmentResponse {
 export function createEnvironmentHandler() {
   return (_req: Request, res: Response): void => {
     res.json({
-      isContainerized: process.env.IS_CONTAINERIZED === 'true',
-      skipSandboxWarning: process.env.PEGASUS_SKIP_SANDBOX_WARNING === 'true',
+      isContainerized: process.env.IS_CONTAINERIZED === "true",
+      skipSandboxWarning: process.env.PEGASUS_SKIP_SANDBOX_WARNING === "true",
     } satisfies EnvironmentResponse);
   };
 }

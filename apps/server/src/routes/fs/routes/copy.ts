@@ -2,17 +2,20 @@
  * POST /copy endpoint - Copy file or directory to a new location
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { mkdirSafe } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { mkdirSafe } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Recursively copy a directory and its contents
  */
-async function copyDirectoryRecursive(src: string, dest: string): Promise<void> {
+async function copyDirectoryRecursive(
+  src: string,
+  dest: string,
+): Promise<void> {
   await mkdirSafe(dest);
   const entries = await secureFs.readdir(src, { withFileTypes: true });
 
@@ -38,19 +41,24 @@ export function createCopyHandler() {
       };
 
       if (!sourcePath || !destinationPath) {
-        res
-          .status(400)
-          .json({ success: false, error: 'sourcePath and destinationPath are required' });
+        res.status(400).json({
+          success: false,
+          error: "sourcePath and destinationPath are required",
+        });
         return;
       }
 
       // Prevent copying a folder into itself or its own descendant (infinite recursion)
       const resolvedSrc = path.resolve(sourcePath);
       const resolvedDest = path.resolve(destinationPath);
-      if (resolvedDest === resolvedSrc || resolvedDest.startsWith(resolvedSrc + path.sep)) {
+      if (
+        resolvedDest === resolvedSrc ||
+        resolvedDest.startsWith(resolvedSrc + path.sep)
+      ) {
         res.status(400).json({
           success: false,
-          error: 'Cannot copy a folder into itself or one of its own descendants',
+          error:
+            "Cannot copy a folder into itself or one of its own descendants",
         });
         return;
       }
@@ -62,7 +70,7 @@ export function createCopyHandler() {
         if (!overwrite) {
           res.status(409).json({
             success: false,
-            error: 'Destination already exists',
+            error: "Destination already exists",
             exists: true,
           });
           return;
@@ -92,7 +100,7 @@ export function createCopyHandler() {
         return;
       }
 
-      logError(error, 'Copy file failed');
+      logError(error, "Copy file failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

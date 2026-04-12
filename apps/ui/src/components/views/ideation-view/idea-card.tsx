@@ -3,32 +3,35 @@
  * Co-located with IdeaEditModal (small enough to share file).
  */
 
-import React, { memo, useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { GripVertical, ArrowUpRight, Trash2, Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import React, { memo, useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { GripVertical, ArrowUpRight, Trash2, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
-import type { Idea, UpdateIdeaInput } from '@pegasus/types';
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import type { Idea, UpdateIdeaInput } from "@pegasus/types";
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
-function getCardBorderStyle(enabled: boolean, opacity: number): React.CSSProperties {
+function getCardBorderStyle(
+  enabled: boolean,
+  opacity: number,
+): React.CSSProperties {
   if (!enabled) {
-    return { borderWidth: '0px', borderColor: 'transparent' };
+    return { borderWidth: "0px", borderColor: "transparent" };
   }
   if (opacity !== 100) {
     return {
-      borderWidth: '1px',
+      borderWidth: "1px",
       borderColor: `color-mix(in oklch, var(--border) ${opacity}%, transparent)`,
     };
   }
@@ -47,23 +50,31 @@ interface IdeaEditModalProps {
   isSaving: boolean;
 }
 
-function IdeaEditModal({ idea, open, onOpenChange, onSave, isSaving }: IdeaEditModalProps) {
+function IdeaEditModal({
+  idea,
+  open,
+  onOpenChange,
+  onSave,
+  isSaving,
+}: IdeaEditModalProps) {
   const [title, setTitle] = useState(idea.title);
   const [description, setDescription] = useState(idea.description);
-  const [notes, setNotes] = useState(idea.notes ?? '');
-  const [userStories, setUserStories] = useState<string[]>(idea.userStories ?? []);
-  const [newStory, setNewStory] = useState('');
+  const [notes, setNotes] = useState(idea.notes ?? "");
+  const [userStories, setUserStories] = useState<string[]>(
+    idea.userStories ?? [],
+  );
+  const [newStory, setNewStory] = useState("");
 
   const isDirty =
     title !== idea.title ||
     description !== idea.description ||
-    notes !== (idea.notes ?? '') ||
+    notes !== (idea.notes ?? "") ||
     JSON.stringify(userStories) !== JSON.stringify(idea.userStories ?? []);
 
   const handleAddStory = () => {
     if (!newStory.trim()) return;
     setUserStories((prev) => [...prev, newStory.trim()]);
-    setNewStory('');
+    setNewStory("");
   };
 
   const handleRemoveStory = (index: number) => {
@@ -72,7 +83,12 @@ function IdeaEditModal({ idea, open, onOpenChange, onSave, isSaving }: IdeaEditM
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({ title: title.trim(), description, notes: notes || undefined, userStories });
+    onSave({
+      title: title.trim(),
+      description,
+      notes: notes || undefined,
+      userStories,
+    });
   };
 
   return (
@@ -120,7 +136,9 @@ function IdeaEditModal({ idea, open, onOpenChange, onSave, isSaving }: IdeaEditM
             <label className="text-sm font-medium">User Stories</label>
             {userStories.map((story, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="flex-1 text-sm text-muted-foreground">{story}</span>
+                <span className="flex-1 text-sm text-muted-foreground">
+                  {story}
+                </span>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -137,9 +155,14 @@ function IdeaEditModal({ idea, open, onOpenChange, onSave, isSaving }: IdeaEditM
                 value={newStory}
                 onChange={(e) => setNewStory(e.target.value)}
                 placeholder="As a user, I want..."
-                onKeyDown={(e) => e.key === 'Enter' && handleAddStory()}
+                onKeyDown={(e) => e.key === "Enter" && handleAddStory()}
               />
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleAddStory}>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleAddStory}
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -150,8 +173,11 @@ function IdeaEditModal({ idea, open, onOpenChange, onSave, isSaving }: IdeaEditM
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!isDirty || !title.trim() || isSaving}>
-            {isSaving ? 'Saving…' : 'Save'}
+          <Button
+            onClick={handleSave}
+            disabled={!isDirty || !title.trim() || isSaving}
+          >
+            {isSaving ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -176,10 +202,10 @@ interface IdeaCardProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  raw: 'bg-muted-foreground/20 text-muted-foreground',
-  refined: 'bg-blue-500/20 text-blue-400',
-  ready: 'bg-emerald-500/20 text-emerald-400',
-  archived: 'bg-muted',
+  raw: "bg-muted-foreground/20 text-muted-foreground",
+  refined: "bg-blue-500/20 text-blue-400",
+  ready: "bg-emerald-500/20 text-emerald-400",
+  archived: "bg-muted",
 };
 
 export const IdeaCard = memo(function IdeaCard({
@@ -203,7 +229,10 @@ export const IdeaCard = memo(function IdeaCard({
     opacity: isDragging ? 0.5 : undefined,
   };
 
-  const cardBorderStyle = getCardBorderStyle(cardBorderEnabled, cardBorderOpacity);
+  const cardBorderStyle = getCardBorderStyle(
+    cardBorderEnabled,
+    cardBorderOpacity,
+  );
 
   const handleSave = (updates: UpdateIdeaInput) => {
     onEdit(idea, updates);
@@ -216,11 +245,11 @@ export const IdeaCard = memo(function IdeaCard({
         <Card
           style={cardBorderStyle}
           className={cn(
-            'group relative rounded-xl text-sm cursor-pointer',
-            'transition-all duration-200 ease-out',
-            'hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10',
-            !cardBorderEnabled && 'border-transparent',
-            isDragging && 'shadow-lg'
+            "group relative rounded-xl text-sm cursor-pointer",
+            "transition-all duration-200 ease-out",
+            "hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/10",
+            !cardBorderEnabled && "border-transparent",
+            isDragging && "shadow-lg",
           )}
           onClick={() => setEditOpen(true)}
           data-testid={`idea-card-${idea.id}`}
@@ -228,8 +257,8 @@ export const IdeaCard = memo(function IdeaCard({
           {/* Background overlay with opacity */}
           <div
             className={cn(
-              'absolute inset-0 rounded-xl bg-card -z-10',
-              glassmorphism && 'backdrop-blur-sm'
+              "absolute inset-0 rounded-xl bg-card -z-10",
+              glassmorphism && "backdrop-blur-sm",
             )}
             style={{ opacity: opacity / 100 }}
           />
@@ -246,7 +275,7 @@ export const IdeaCard = memo(function IdeaCard({
 
           {/* Actions */}
           <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {idea.status === 'ready' && (
+            {idea.status === "ready" && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -278,7 +307,9 @@ export const IdeaCard = memo(function IdeaCard({
 
           {/* Content */}
           <div className="p-3 pl-8 pr-10">
-            <p className="font-medium text-foreground line-clamp-2 leading-snug">{idea.title}</p>
+            <p className="font-medium text-foreground line-clamp-2 leading-snug">
+              {idea.title}
+            </p>
             {idea.description && (
               <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-snug">
                 {idea.description}
@@ -289,13 +320,15 @@ export const IdeaCard = memo(function IdeaCard({
             <div className="mt-2 flex items-center gap-2">
               <span
                 className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium',
-                  STATUS_COLORS[idea.status] ?? STATUS_COLORS.raw
+                  "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+                  STATUS_COLORS[idea.status] ?? STATUS_COLORS.raw,
                 )}
               >
                 {idea.status}
               </span>
-              <span className="text-[10px] text-muted-foreground">{idea.category}</span>
+              <span className="text-[10px] text-muted-foreground">
+                {idea.category}
+              </span>
             </div>
           </div>
         </Card>

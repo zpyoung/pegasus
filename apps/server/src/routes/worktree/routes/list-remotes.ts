@@ -5,10 +5,10 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { getErrorMessage, logWorktreeError } from '../common.js';
+import type { Request, Response } from "express";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { getErrorMessage, logWorktreeError } from "../common.js";
 
 const execAsync = promisify(exec);
 
@@ -33,13 +33,13 @@ export function createListRemotesHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
       // Get list of remotes
-      const { stdout: remotesOutput } = await execAsync('git remote -v', {
+      const { stdout: remotesOutput } = await execAsync("git remote -v", {
         cwd: worktreePath,
       });
 
@@ -47,7 +47,7 @@ export function createListRemotesHandler() {
       const remotesSet = new Map<string, string>();
       remotesOutput
         .trim()
-        .split('\n')
+        .split("\n")
         .filter((line) => line.trim())
         .forEach((line) => {
           const match = line.match(/^(\S+)\s+(\S+)\s+\(fetch\)$/);
@@ -58,7 +58,7 @@ export function createListRemotesHandler() {
 
       // Fetch latest from all remotes (silently, don't fail if offline)
       try {
-        await execAsync('git fetch --all --quiet', {
+        await execAsync("git fetch --all --quiet", {
           cwd: worktreePath,
           timeout: 15000, // 15 second timeout
         });
@@ -69,7 +69,7 @@ export function createListRemotesHandler() {
       // Get all remote branches
       const { stdout: remoteBranchesOutput } = await execAsync(
         'git branch -r --format="%(refname:short)"',
-        { cwd: worktreePath }
+        { cwd: worktreePath },
       );
 
       // Group branches by remote
@@ -80,15 +80,15 @@ export function createListRemotesHandler() {
 
       remoteBranchesOutput
         .trim()
-        .split('\n')
+        .split("\n")
         .filter((line) => line.trim())
         .forEach((line) => {
-          const cleanLine = line.trim().replace(/^['"]|['"]$/g, '');
+          const cleanLine = line.trim().replace(/^['"]|['"]$/g, "");
           // Skip HEAD pointers like "origin/HEAD"
-          if (cleanLine.includes('/HEAD')) return;
+          if (cleanLine.includes("/HEAD")) return;
 
           // Parse remote name from branch ref (e.g., "origin/main" -> "origin")
-          const slashIndex = cleanLine.indexOf('/');
+          const slashIndex = cleanLine.indexOf("/");
           if (slashIndex === -1) return;
 
           const remoteName = cleanLine.substring(0, slashIndex);
@@ -120,7 +120,7 @@ export function createListRemotesHandler() {
       });
     } catch (error) {
       const worktreePath = req.body?.worktreePath;
-      logWorktreeError(error, 'List remotes failed', worktreePath);
+      logWorktreeError(error, "List remotes failed", worktreePath);
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

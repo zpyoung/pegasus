@@ -5,9 +5,14 @@
  * allowing the service to delegate to other services without circular dependencies.
  */
 
-import type { Feature, PlanningMode, ThinkingLevel, ReasoningEffort } from '@pegasus/types';
-import type { loadContextFiles } from '@pegasus/utils';
-import type { PipelineContext } from './pipeline-orchestrator.js';
+import type {
+  Feature,
+  PlanningMode,
+  ThinkingLevel,
+  ReasoningEffort,
+} from "@pegasus/types";
+import type { loadContextFiles } from "@pegasus/utils";
+import type { PipelineContext } from "./pipeline-orchestrator.js";
 
 // =============================================================================
 // ExecutionService Callback Types
@@ -36,7 +41,7 @@ export type RunAgentFn = (
     reasoningEffort?: ReasoningEffort;
     providerId?: string;
     branchName?: string | null;
-  }
+  },
 ) => Promise<void>;
 
 /**
@@ -50,13 +55,16 @@ export type ExecutePipelineFn = (context: PipelineContext) => Promise<void>;
 export type UpdateFeatureStatusFn = (
   projectPath: string,
   featureId: string,
-  status: string
+  status: string,
 ) => Promise<void>;
 
 /**
  * Function to load a feature by ID
  */
-export type LoadFeatureFn = (projectPath: string, featureId: string) => Promise<Feature | null>;
+export type LoadFeatureFn = (
+  projectPath: string,
+  featureId: string,
+) => Promise<Feature | null>;
 
 /**
  * Function to get the planning prompt prefix based on feature's planning mode
@@ -69,7 +77,7 @@ export type GetPlanningPromptPrefixFn = (feature: Feature) => Promise<string>;
 export type SaveFeatureSummaryFn = (
   projectPath: string,
   featureId: string,
-  summary: string
+  summary: string,
 ) => Promise<void>;
 
 /**
@@ -78,13 +86,16 @@ export type SaveFeatureSummaryFn = (
 export type RecordLearningsFn = (
   projectPath: string,
   feature: Feature,
-  agentOutput: string
+  agentOutput: string,
 ) => Promise<void>;
 
 /**
  * Function to check if context exists for a feature
  */
-export type ContextExistsFn = (projectPath: string, featureId: string) => Promise<boolean>;
+export type ContextExistsFn = (
+  projectPath: string,
+  featureId: string,
+) => Promise<boolean>;
 
 /**
  * Function to resume a feature (continues from saved context or starts fresh)
@@ -93,19 +104,25 @@ export type ResumeFeatureFn = (
   projectPath: string,
   featureId: string,
   useWorktrees: boolean,
-  _calledInternally: boolean
+  _calledInternally: boolean,
 ) => Promise<void>;
 
 /**
  * Function to track failure and check if pause threshold is reached
  * Returns true if auto-mode should pause
  */
-export type TrackFailureFn = (errorInfo: { type: string; message: string }) => boolean;
+export type TrackFailureFn = (errorInfo: {
+  type: string;
+  message: string;
+}) => boolean;
 
 /**
  * Function to signal that auto-mode should pause due to failures
  */
-export type SignalPauseFn = (errorInfo: { type: string; message: string }) => void;
+export type SignalPauseFn = (errorInfo: {
+  type: string;
+  message: string;
+}) => void;
 
 /**
  * Function to record a successful execution (resets failure tracking)
@@ -131,7 +148,10 @@ export type LoadContextFilesFn = typeof loadContextFiles;
  */
 export type BuildFeaturePromptFn = (
   feature: Feature,
-  prompts: { implementationInstructions: string; playwrightVerificationInstructions: string }
+  prompts: {
+    implementationInstructions: string;
+    playwrightVerificationInstructions: string;
+  },
 ) => string;
 
 /**
@@ -143,7 +163,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   isAutoMode: boolean,
   providedWorktreePath?: string,
-  options?: { continuationPrompt?: string; _calledInternally?: boolean }
+  options?: { continuationPrompt?: string; _calledInternally?: boolean },
 ) => Promise<void>;
 
 /**
@@ -157,7 +177,7 @@ export type PipelineRunAgentFn = (
   projectPath: string,
   imagePaths?: string[],
   model?: string,
-  options?: Record<string, unknown>
+  options?: Record<string, unknown>,
 ) => Promise<void>;
 
 // =============================================================================
@@ -171,7 +191,7 @@ export type AutoLoopExecuteFeatureFn = (
   projectPath: string,
   featureId: string,
   useWorktrees: boolean,
-  isAutoMode: boolean
+  isAutoMode: boolean,
 ) => Promise<void>;
 
 /**
@@ -179,7 +199,7 @@ export type AutoLoopExecuteFeatureFn = (
  */
 export type LoadPendingFeaturesFn = (
   projectPath: string,
-  branchName: string | null
+  branchName: string | null,
 ) => Promise<Feature[]>;
 
 /**
@@ -188,7 +208,7 @@ export type LoadPendingFeaturesFn = (
 export type AutoLoopSaveExecutionStateFn = (
   projectPath: string,
   branchName: string | null,
-  maxConcurrency: number
+  maxConcurrency: number,
 ) => Promise<void>;
 
 /**
@@ -196,7 +216,7 @@ export type AutoLoopSaveExecutionStateFn = (
  */
 export type ClearExecutionStateFn = (
   projectPath: string,
-  branchName: string | null
+  branchName: string | null,
 ) => Promise<void>;
 
 /**

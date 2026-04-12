@@ -1,16 +1,30 @@
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useAppStore } from '@/store/app-store';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Terminal, CheckCircle, XCircle, Play, File, Pencil, Wrench } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { getElectronAPI } from '@/lib/electron';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useAppStore } from "@/store/app-store";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Terminal,
+  CheckCircle,
+  XCircle,
+  Play,
+  File,
+  Pencil,
+  Wrench,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { getElectronAPI } from "@/lib/electron";
 
-const logger = createLogger('AgentToolsView');
+const logger = createLogger("AgentToolsView");
 
 interface ToolResult {
   success: boolean;
@@ -24,18 +38,20 @@ export function AgentToolsView() {
   const api = getElectronAPI();
 
   // Read File Tool State
-  const [readFilePath, setReadFilePath] = useState('');
+  const [readFilePath, setReadFilePath] = useState("");
   const [readFileResult, setReadFileResult] = useState<ToolResult | null>(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
 
   // Write File Tool State
-  const [writeFilePath, setWriteFilePath] = useState('');
-  const [writeFileContent, setWriteFileContent] = useState('');
-  const [writeFileResult, setWriteFileResult] = useState<ToolResult | null>(null);
+  const [writeFilePath, setWriteFilePath] = useState("");
+  const [writeFileContent, setWriteFileContent] = useState("");
+  const [writeFileResult, setWriteFileResult] = useState<ToolResult | null>(
+    null,
+  );
   const [isWritingFile, setIsWritingFile] = useState(false);
 
   // Terminal Tool State
-  const [terminalCommand, setTerminalCommand] = useState('ls');
+  const [terminalCommand, setTerminalCommand] = useState("ls");
   const [terminalResult, setTerminalResult] = useState<ToolResult | null>(null);
   const [isRunningCommand, setIsRunningCommand] = useState(false);
 
@@ -62,7 +78,7 @@ export function AgentToolsView() {
       } else {
         setReadFileResult({
           success: false,
-          error: result.error || 'Failed to read file',
+          error: result.error || "Failed to read file",
           timestamp: new Date(),
         });
         logger.info(`[Agent Tool] File read failed: ${result.error}`);
@@ -70,7 +86,7 @@ export function AgentToolsView() {
     } catch (error) {
       setReadFileResult({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date(),
       });
     } finally {
@@ -101,7 +117,7 @@ export function AgentToolsView() {
       } else {
         setWriteFileResult({
           success: false,
-          error: result.error || 'Failed to write file',
+          error: result.error || "Failed to write file",
           timestamp: new Date(),
         });
         logger.info(`[Agent Tool] File write failed: ${result.error}`);
@@ -109,7 +125,7 @@ export function AgentToolsView() {
     } catch (error) {
       setWriteFileResult({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date(),
       });
     } finally {
@@ -131,12 +147,13 @@ export function AgentToolsView() {
       // Simulated outputs for common commands (preview mode)
       // In production, the agent executes commands via Claude SDK
       const simulatedOutputs: Record<string, string> = {
-        ls: 'app_spec.txt\nfeatures\nnode_modules\npackage.json\nsrc\ntests\ntsconfig.json',
-        pwd: currentProject?.path || '/Users/demo/project',
-        'echo hello': 'hello',
-        whoami: 'pegasus-agent',
+        ls: "app_spec.txt\nfeatures\nnode_modules\npackage.json\nsrc\ntests\ntsconfig.json",
+        pwd: currentProject?.path || "/Users/demo/project",
+        "echo hello": "hello",
+        whoami: "pegasus-agent",
         date: new Date().toString(),
-        'cat package.json': '{\n  "name": "demo-project",\n  "version": "1.0.0"\n}',
+        "cat package.json":
+          '{\n  "name": "demo-project",\n  "version": "1.0.0"\n}',
       };
 
       // Simulate command execution delay
@@ -151,11 +168,13 @@ export function AgentToolsView() {
         output: output,
         timestamp: new Date(),
       });
-      logger.info(`[Agent Tool] Command executed successfully: ${terminalCommand}`);
+      logger.info(
+        `[Agent Tool] Command executed successfully: ${terminalCommand}`,
+      );
     } catch (error) {
       setTerminalResult({
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date(),
       });
     } finally {
@@ -165,18 +184,26 @@ export function AgentToolsView() {
 
   if (!currentProject) {
     return (
-      <div className="flex-1 flex items-center justify-center" data-testid="agent-tools-no-project">
+      <div
+        className="flex-1 flex items-center justify-center"
+        data-testid="agent-tools-no-project"
+      >
         <div className="text-center">
           <Wrench className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">No Project Selected</h2>
-          <p className="text-muted-foreground">Open or create a project to test agent tools.</p>
+          <p className="text-muted-foreground">
+            Open or create a project to test agent tools.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden content-bg" data-testid="agent-tools-view">
+    <div
+      className="flex-1 flex flex-col overflow-hidden content-bg"
+      data-testid="agent-tools-view"
+    >
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border bg-glass backdrop-blur-md">
         <Wrench className="w-5 h-5 text-primary" />
@@ -198,7 +225,9 @@ export function AgentToolsView() {
                 <File className="w-5 h-5 text-blue-500" />
                 <CardTitle className="text-lg">Read File</CardTitle>
               </div>
-              <CardDescription>Agent requests to read a file from the filesystem</CardDescription>
+              <CardDescription>
+                Agent requests to read a file from the filesystem
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -234,10 +263,10 @@ export function AgentToolsView() {
               {readFileResult && (
                 <div
                   className={cn(
-                    'p-3 rounded-md border',
+                    "p-3 rounded-md border",
                     readFileResult.success
-                      ? 'bg-green-500/10 border-green-500/20'
-                      : 'bg-red-500/10 border-red-500/20'
+                      ? "bg-green-500/10 border-green-500/20"
+                      : "bg-red-500/10 border-red-500/20",
                   )}
                   data-testid="read-file-result"
                 >
@@ -248,11 +277,13 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {readFileResult.success ? 'Success' : 'Failed'}
+                      {readFileResult.success ? "Success" : "Failed"}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap">
-                    {readFileResult.success ? readFileResult.output : readFileResult.error}
+                    {readFileResult.success
+                      ? readFileResult.output
+                      : readFileResult.error}
                   </pre>
                 </div>
               )}
@@ -266,7 +297,9 @@ export function AgentToolsView() {
                 <Pencil className="w-5 h-5 text-green-500" />
                 <CardTitle className="text-lg">Write File</CardTitle>
               </div>
-              <CardDescription>Agent requests to write content to a file</CardDescription>
+              <CardDescription>
+                Agent requests to write content to a file
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -292,7 +325,11 @@ export function AgentToolsView() {
               </div>
               <Button
                 onClick={handleWriteFile}
-                disabled={isWritingFile || !writeFilePath.trim() || !writeFileContent.trim()}
+                disabled={
+                  isWritingFile ||
+                  !writeFilePath.trim() ||
+                  !writeFileContent.trim()
+                }
                 className="w-full"
                 data-testid="write-file-button"
               >
@@ -313,10 +350,10 @@ export function AgentToolsView() {
               {writeFileResult && (
                 <div
                   className={cn(
-                    'p-3 rounded-md border',
+                    "p-3 rounded-md border",
                     writeFileResult.success
-                      ? 'bg-green-500/10 border-green-500/20'
-                      : 'bg-red-500/10 border-red-500/20'
+                      ? "bg-green-500/10 border-green-500/20"
+                      : "bg-red-500/10 border-red-500/20",
                   )}
                   data-testid="write-file-result"
                 >
@@ -327,11 +364,13 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {writeFileResult.success ? 'Success' : 'Failed'}
+                      {writeFileResult.success ? "Success" : "Failed"}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap">
-                    {writeFileResult.success ? writeFileResult.output : writeFileResult.error}
+                    {writeFileResult.success
+                      ? writeFileResult.output
+                      : writeFileResult.error}
                   </pre>
                 </div>
               )}
@@ -345,7 +384,9 @@ export function AgentToolsView() {
                 <Terminal className="w-5 h-5 text-purple-500" />
                 <CardTitle className="text-lg">Run Terminal</CardTitle>
               </div>
-              <CardDescription>Agent requests to execute a terminal command</CardDescription>
+              <CardDescription>
+                Agent requests to execute a terminal command
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -381,10 +422,10 @@ export function AgentToolsView() {
               {terminalResult && (
                 <div
                   className={cn(
-                    'p-3 rounded-md border',
+                    "p-3 rounded-md border",
                     terminalResult.success
-                      ? 'bg-green-500/10 border-green-500/20'
-                      : 'bg-red-500/10 border-red-500/20'
+                      ? "bg-green-500/10 border-green-500/20"
+                      : "bg-red-500/10 border-red-500/20",
                   )}
                   data-testid="terminal-result"
                 >
@@ -395,13 +436,15 @@ export function AgentToolsView() {
                       <XCircle className="w-4 h-4 text-red-500" />
                     )}
                     <span className="text-sm font-medium">
-                      {terminalResult.success ? 'Success' : 'Failed'}
+                      {terminalResult.success ? "Success" : "Failed"}
                     </span>
                   </div>
                   <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap font-mono bg-black/50 text-green-400 p-2 rounded">
                     $ {terminalCommand}
-                    {'\n'}
-                    {terminalResult.success ? terminalResult.output : terminalResult.error}
+                    {"\n"}
+                    {terminalResult.success
+                      ? terminalResult.output
+                      : terminalResult.error}
                   </pre>
                 </div>
               )}
@@ -413,12 +456,15 @@ export function AgentToolsView() {
         <Card className="mt-6" data-testid="tool-log">
           <CardHeader>
             <CardTitle className="text-lg">Tool Execution Log</CardTitle>
-            <CardDescription>View agent tool requests and responses</CardDescription>
+            <CardDescription>
+              View agent tool requests and responses
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
               <p className="text-muted-foreground">
-                Open your browser&apos;s developer console to see detailed agent tool logs.
+                Open your browser&apos;s developer console to see detailed agent
+                tool logs.
               </p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Read File - Agent requests file content from filesystem</li>

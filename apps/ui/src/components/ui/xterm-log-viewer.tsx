@@ -1,10 +1,20 @@
-import { useEffect, useRef, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { getTerminalTheme, getTerminalFontFamily } from '@/config/terminal-themes';
+import {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { useAppStore } from "@/store/app-store";
+import {
+  getTerminalTheme,
+  getTerminalFontFamily,
+} from "@/config/terminal-themes";
 
 // Types for dynamically imported xterm modules
-type XTerminal = InstanceType<typeof import('@xterm/xterm').Terminal>;
-type XFitAddon = InstanceType<typeof import('@xterm/addon-fit').FitAddon>;
+type XTerminal = InstanceType<typeof import("@xterm/xterm").Terminal>;
+type XFitAddon = InstanceType<typeof import("@xterm/addon-fit").FitAddon>;
 
 export interface XtermLogViewerRef {
   /** Append content to the log viewer */
@@ -38,7 +48,10 @@ export interface XtermLogViewerProps {
  * A read-only terminal log viewer using xterm.js for perfect ANSI color rendering.
  * Use this component when you need to display terminal output with ANSI escape codes.
  */
-export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>(
+export const XtermLogViewer = forwardRef<
+  XtermLogViewerRef,
+  XtermLogViewerProps
+>(
   (
     {
       initialContent,
@@ -49,7 +62,7 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
       onScrollAwayFromBottom,
       onScrollToBottom,
     },
-    ref
+    ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<XTerminal | null>(null);
@@ -61,29 +74,38 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
     // Get theme and font settings from store
     const getEffectiveTheme = useAppStore((state) => state.getEffectiveTheme);
     const effectiveTheme = getEffectiveTheme();
-    const terminalFontFamily = useAppStore((state) => state.terminalState.fontFamily);
-    const terminalFontSize = useAppStore((state) => state.terminalState.defaultFontSize);
+    const terminalFontFamily = useAppStore(
+      (state) => state.terminalState.fontFamily,
+    );
+    const terminalFontSize = useAppStore(
+      (state) => state.terminalState.defaultFontSize,
+    );
 
     // Use prop if provided, otherwise use store value, fallback to 13
     const effectiveFontSize = fontSize ?? terminalFontSize ?? 13;
 
     // Track system dark mode for "system" theme
     const [systemIsDark, setSystemIsDark] = useState(() => {
-      if (typeof window !== 'undefined') {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (typeof window !== "undefined") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches;
       }
       return true;
     });
 
     useEffect(() => {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = (e: MediaQueryListEvent) => setSystemIsDark(e.matches);
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = (e: MediaQueryListEvent) =>
+        setSystemIsDark(e.matches);
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }, []);
 
     const resolvedTheme =
-      effectiveTheme === 'system' ? (systemIsDark ? 'dark' : 'light') : effectiveTheme;
+      effectiveTheme === "system"
+        ? systemIsDark
+          ? "dark"
+          : "light"
+        : effectiveTheme;
 
     // Update autoScroll ref when prop changes
     useEffect(() => {
@@ -98,10 +120,10 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
 
       const initTerminal = async () => {
         const [{ Terminal }, { FitAddon }] = await Promise.all([
-          import('@xterm/xterm'),
-          import('@xterm/addon-fit'),
+          import("@xterm/xterm"),
+          import("@xterm/addon-fit"),
         ]);
-        await import('@xterm/xterm/css/xterm.css');
+        await import("@xterm/xterm/css/xterm.css");
 
         if (!mounted || !containerRef.current) return;
 
@@ -114,8 +136,8 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
 
         const terminal = new Terminal({
           cursorBlink: false,
-          cursorStyle: 'underline',
-          cursorInactiveStyle: 'none',
+          cursorStyle: "underline",
+          cursorInactiveStyle: "none",
           fontSize: initFontSize,
           fontFamily,
           lineHeight: 1.2,
@@ -132,7 +154,7 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
 
         // Try to load WebGL addon for better performance
         try {
-          const { WebglAddon } = await import('@xterm/addon-webgl');
+          const { WebglAddon } = await import("@xterm/addon-webgl");
           const webglAddon = new WebglAddon();
           webglAddon.onContextLoss(() => webglAddon.dispose());
           terminal.loadAddon(webglAddon);
@@ -162,7 +184,9 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
 
         // Write any pending content that was queued before terminal was ready
         if (pendingContentRef.current.length > 0) {
-          pendingContentRef.current.forEach((content) => terminal.write(content));
+          pendingContentRef.current.forEach((content) =>
+            terminal.write(content),
+          );
           pendingContentRef.current = [];
         }
       };
@@ -201,7 +225,8 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
     // Update font family when it changes
     useEffect(() => {
       if (xtermRef.current && isReady) {
-        xtermRef.current.options.fontFamily = getTerminalFontFamily(terminalFontFamily);
+        xtermRef.current.options.fontFamily =
+          getTerminalFontFamily(terminalFontFamily);
         fitAddonRef.current?.fit();
       }
     }, [terminalFontFamily, isReady]);
@@ -225,11 +250,11 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
 
       const resizeObserver = new ResizeObserver(handleResize);
       resizeObserver.observe(containerRef.current);
-      window.addEventListener('resize', handleResize);
+      window.addEventListener("resize", handleResize);
 
       return () => {
         resizeObserver.disconnect();
-        window.removeEventListener('resize', handleResize);
+        window.removeEventListener("resize", handleResize);
       };
     }, [isReady]);
 
@@ -237,7 +262,9 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
     useEffect(() => {
       if (!isReady || !containerRef.current) return;
 
-      const viewport = containerRef.current.querySelector('.xterm-viewport') as HTMLElement | null;
+      const viewport = containerRef.current.querySelector(
+        ".xterm-viewport",
+      ) as HTMLElement | null;
       if (!viewport) return;
 
       const checkScroll = () => {
@@ -253,8 +280,8 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
         }
       };
 
-      viewport.addEventListener('scroll', checkScroll, { passive: true });
-      return () => viewport.removeEventListener('scroll', checkScroll);
+      viewport.addEventListener("scroll", checkScroll, { passive: true });
+      return () => viewport.removeEventListener("scroll", checkScroll);
     }, [isReady, onScrollAwayFromBottom, onScrollToBottom]);
 
     // Expose methods via ref
@@ -314,7 +341,7 @@ export const XtermLogViewer = forwardRef<XtermLogViewerRef, XtermLogViewerProps>
         }}
       />
     );
-  }
+  },
 );
 
-XtermLogViewer.displayName = 'XtermLogViewer';
+XtermLogViewer.displayName = "XtermLogViewer";

@@ -1,10 +1,17 @@
-import { memo } from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
-import { formatShortcut } from '@/store/app-store';
-import { getEmptyStateConfig, type EmptyStateConfig } from '../constants';
-import { Lightbulb, Play, Clock, CheckCircle2, Sparkles, Wand2 } from 'lucide-react';
+import { memo } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
+import { formatShortcut } from "@/store/app-store";
+import { getEmptyStateConfig, type EmptyStateConfig } from "../constants";
+import {
+  Lightbulb,
+  Play,
+  Clock,
+  CheckCircle2,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 
 const ICON_MAP = {
   lightbulb: Lightbulb,
@@ -47,12 +54,13 @@ export const EmptyStateCard = memo(function EmptyStateCard({
 
   const IconComponent = ICON_MAP[config.icon];
   const showActions = !isReadOnly && !isFilteredEmpty;
-  const showShortcut = columnId === 'backlog' && addFeatureShortcut && showActions;
+  const showShortcut =
+    columnId === "backlog" && addFeatureShortcut && showActions;
 
   // Action button handler
   const handlePrimaryAction = () => {
     if (!config.primaryAction) return;
-    if (config.primaryAction.actionType === 'ai-suggest') {
+    if (config.primaryAction.actionType === "ai-suggest") {
       onAiSuggest?.();
     }
   };
@@ -60,12 +68,12 @@ export const EmptyStateCard = memo(function EmptyStateCard({
   return (
     <div
       className={cn(
-        'w-full h-full min-h-[200px] flex-1',
-        'flex flex-col items-center justify-center',
-        'text-center px-4',
-        'transition-all duration-300 ease-out',
-        'animate-in fade-in duration-300',
-        'group'
+        "w-full h-full min-h-[200px] flex-1",
+        "flex flex-col items-center justify-center",
+        "text-center px-4",
+        "transition-all duration-300 ease-out",
+        "animate-in fade-in duration-300",
+        "group",
       )}
       data-testid={`empty-state-card-${columnId}`}
     >
@@ -76,12 +84,14 @@ export const EmptyStateCard = memo(function EmptyStateCard({
 
       {/* Title */}
       <h4 className="font-medium text-sm text-muted-foreground/50 mb-1">
-        {isFilteredEmpty ? 'No Matching Items' : config.title}
+        {isFilteredEmpty ? "No Matching Items" : config.title}
       </h4>
 
       {/* Description */}
       <p className="text-xs text-muted-foreground/40 leading-relaxed max-w-[180px]">
-        {isFilteredEmpty ? 'No features match your current filters.' : config.description}
+        {isFilteredEmpty
+          ? "No features match your current filters."
+          : config.description}
       </p>
 
       {/* Keyboard shortcut hint for backlog */}
@@ -96,18 +106,20 @@ export const EmptyStateCard = memo(function EmptyStateCard({
       )}
 
       {/* AI Suggest action for backlog */}
-      {showActions && config.primaryAction && config.primaryAction.actionType === 'ai-suggest' && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-4 h-7 text-xs text-muted-foreground/50 hover:text-muted-foreground/70"
-          onClick={handlePrimaryAction}
-          data-testid={`empty-state-primary-action-${columnId}`}
-        >
-          <Wand2 className="w-3 h-3 mr-1.5" />
-          {config.primaryAction.label}
-        </Button>
-      )}
+      {showActions &&
+        config.primaryAction &&
+        config.primaryAction.actionType === "ai-suggest" && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-4 h-7 text-xs text-muted-foreground/50 hover:text-muted-foreground/70"
+            onClick={handlePrimaryAction}
+            data-testid={`empty-state-primary-action-${columnId}`}
+          >
+            <Wand2 className="w-3 h-3 mr-1.5" />
+            {config.primaryAction.label}
+          </Button>
+        )}
 
       {/* Filtered empty state hint */}
       {isFilteredEmpty && (

@@ -11,13 +11,13 @@
  * causing a runtime error when opening the Ntfy endpoint dialog.
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from "@playwright/test";
 import {
   authenticateForTests,
   navigateToSettings,
   waitForSuccessToast,
   setupProjectWithFixture,
-} from '../utils';
+} from "../utils";
 
 // Timeout constants for maintainability
 const TIMEOUTS = {
@@ -31,10 +31,10 @@ const TIMEOUTS = {
 const SELECTORS = {
   eventHooksButton: 'button:has-text("Event Hooks")',
   endpointsTab: 'button[role="tab"]:has-text("Endpoints")',
-  sectionText: 'text=Run custom commands or send notifications',
+  sectionText: "text=Run custom commands or send notifications",
   addEndpointButton: 'button:has-text("Add Endpoint")',
   dialog: '[role="dialog"]',
-  dialogTitle: 'text=Add Ntfy Endpoint',
+  dialogTitle: "text=Add Ntfy Endpoint",
 } as const;
 
 /**
@@ -56,13 +56,15 @@ async function navigateToEndpointsTab(page: Page): Promise<void> {
   await page.locator(SELECTORS.endpointsTab).click();
 }
 
-test.describe('Event Hooks Settings', () => {
+test.describe("Event Hooks Settings", () => {
   test.beforeEach(async ({ page }) => {
     await setupProjectWithFixture(page);
     await authenticateForTests(page);
   });
 
-  test('should load event hooks settings section without errors', async ({ page }) => {
+  test("should load event hooks settings section without errors", async ({
+    page,
+  }) => {
     await navigateToSettings(page);
 
     // Click on the Event Hooks section in the navigation
@@ -74,12 +76,16 @@ test.describe('Event Hooks Settings', () => {
     });
 
     // Verify the tabs are present
-    await expect(page.locator('button[role="tab"]:has-text("Hooks")')).toBeVisible();
+    await expect(
+      page.locator('button[role="tab"]:has-text("Hooks")'),
+    ).toBeVisible();
     await expect(page.locator(SELECTORS.endpointsTab)).toBeVisible();
-    await expect(page.locator('button[role="tab"]:has-text("History")')).toBeVisible();
+    await expect(
+      page.locator('button[role="tab"]:has-text("History")'),
+    ).toBeVisible();
   });
 
-  test('should open add ntfy endpoint dialog and verify useEffect resets form', async ({
+  test("should open add ntfy endpoint dialog and verify useEffect resets form", async ({
     page,
   }) => {
     // This test specifically validates that the useEffect hook in NtfyEndpointDialog
@@ -99,28 +105,30 @@ test.describe('Event Hooks Settings', () => {
     // Form should have default values (useEffect reset)
     // This is the critical test - if useEffect was not imported or not working,
     // these assertions would fail because the form state would not be reset
-    const nameInput = dialog.locator('input#endpoint-name');
-    const serverUrlInput = dialog.locator('input#endpoint-server');
-    const topicInput = dialog.locator('input#endpoint-topic');
+    const nameInput = dialog.locator("input#endpoint-name");
+    const serverUrlInput = dialog.locator("input#endpoint-server");
+    const topicInput = dialog.locator("input#endpoint-topic");
 
     // Name should be empty (reset by useEffect)
-    await expect(nameInput).toHaveValue('');
+    await expect(nameInput).toHaveValue("");
     // Server URL should have default value (reset by useEffect)
-    await expect(serverUrlInput).toHaveValue('https://ntfy.sh');
+    await expect(serverUrlInput).toHaveValue("https://ntfy.sh");
     // Topic should be empty (reset by useEffect)
-    await expect(topicInput).toHaveValue('');
+    await expect(topicInput).toHaveValue("");
 
     // Close the dialog
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden({ timeout: TIMEOUTS.dialogHidden });
   });
 
-  test('should open and close endpoint dialog without JavaScript errors', async ({ page }) => {
+  test("should open and close endpoint dialog without JavaScript errors", async ({
+    page,
+  }) => {
     // This test verifies the dialog opens without throwing a "useEffect is not defined" error
     // Listen for console errors
     const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
         consoleErrors.push(msg.text());
       }
     });
@@ -132,7 +140,7 @@ test.describe('Event Hooks Settings', () => {
       await page.locator(SELECTORS.addEndpointButton).click();
       const dialog = page.locator(SELECTORS.dialog);
       await expect(dialog).toBeVisible({ timeout: TIMEOUTS.dialogVisible });
-      await page.keyboard.press('Escape');
+      await page.keyboard.press("Escape");
       await expect(dialog).toBeHidden({ timeout: TIMEOUTS.dialogHidden });
     }
 
@@ -140,15 +148,17 @@ test.describe('Event Hooks Settings', () => {
     // This catches "useEffect is not defined", "useState is not defined", etc.
     const reactHookError = consoleErrors.find(
       (error) =>
-        (error.includes('useEffect') ||
-          error.includes('useState') ||
-          error.includes('useCallback')) &&
-        error.includes('is not defined')
+        (error.includes("useEffect") ||
+          error.includes("useState") ||
+          error.includes("useCallback")) &&
+        error.includes("is not defined"),
     );
     expect(reactHookError).toBeUndefined();
   });
 
-  test('should have enabled toggle working in endpoint dialog', async ({ page }) => {
+  test("should have enabled toggle working in endpoint dialog", async ({
+    page,
+  }) => {
     await navigateToEndpointsTab(page);
 
     // Click Add Endpoint button
@@ -158,7 +168,7 @@ test.describe('Event Hooks Settings', () => {
     await expect(dialog).toBeVisible({ timeout: TIMEOUTS.dialogVisible });
 
     // Verify the enabled switch exists and is checked by default (useEffect sets enabled=true)
-    const enabledSwitch = dialog.locator('#endpoint-enabled');
+    const enabledSwitch = dialog.locator("#endpoint-enabled");
     await expect(enabledSwitch).toBeChecked();
 
     // Click the switch to toggle it off
@@ -170,10 +180,12 @@ test.describe('Event Hooks Settings', () => {
     await expect(enabledSwitch).toBeChecked();
 
     // Close the dialog
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
   });
 
-  test('should have Add Endpoint button disabled when form is invalid', async ({ page }) => {
+  test("should have Add Endpoint button disabled when form is invalid", async ({
+    page,
+  }) => {
     await navigateToEndpointsTab(page);
 
     // Click Add Endpoint button
@@ -187,28 +199,30 @@ test.describe('Event Hooks Settings', () => {
     await expect(addButton).toBeDisabled();
 
     // Fill in name but not topic
-    await dialog.locator('input#endpoint-name').fill('Test Name');
+    await dialog.locator("input#endpoint-name").fill("Test Name");
 
     // Button should still be disabled (topic is required)
     await expect(addButton).toBeDisabled();
 
     // Fill in topic with invalid value (contains space)
-    await dialog.locator('input#endpoint-topic').fill('invalid topic');
+    await dialog.locator("input#endpoint-topic").fill("invalid topic");
 
     // Button should still be disabled (topic has space which is invalid)
     await expect(addButton).toBeDisabled();
 
     // Fix the topic
-    await dialog.locator('input#endpoint-topic').fill('valid-topic');
+    await dialog.locator("input#endpoint-topic").fill("valid-topic");
 
     // Now button should be enabled
     await expect(addButton).toBeEnabled();
 
     // Close the dialog
-    await page.keyboard.press('Escape');
+    await page.keyboard.press("Escape");
   });
 
-  test('should persist ntfy endpoint after adding and page reload', async ({ context }) => {
+  test("should persist ntfy endpoint after adding and page reload", async ({
+    context,
+  }) => {
     // This test verifies that ntfy endpoints are correctly saved to the server
     // and restored when the page is reloaded - the core bug fix being tested.
     //
@@ -227,22 +241,28 @@ test.describe('Event Hooks Settings', () => {
 
     // Fill in the endpoint form
     const uniqueSuffix = Date.now();
-    await dialog.locator('input#endpoint-name').fill(`Test Endpoint ${uniqueSuffix}`);
-    await dialog.locator('input#endpoint-server').fill('https://ntfy.sh');
-    await dialog.locator('input#endpoint-topic').fill(`test-topic-${uniqueSuffix}`);
+    await dialog
+      .locator("input#endpoint-name")
+      .fill(`Test Endpoint ${uniqueSuffix}`);
+    await dialog.locator("input#endpoint-server").fill("https://ntfy.sh");
+    await dialog
+      .locator("input#endpoint-topic")
+      .fill(`test-topic-${uniqueSuffix}`);
 
     // Save the endpoint
     const addButton = dialog.locator('button:has-text("Add Endpoint")').last();
     await addButton.click();
 
     // Wait for the success toast to confirm the save completed (including API call)
-    await waitForSuccessToast(page, 'Endpoint added', { timeout: 10000 });
+    await waitForSuccessToast(page, "Endpoint added", { timeout: 10000 });
 
     // Dialog should close
     await expect(dialog).toBeHidden({ timeout: TIMEOUTS.dialogHidden });
 
     // Wait for the endpoint to appear in the list
-    await expect(page.locator(`text=Test Endpoint ${uniqueSuffix}`)).toBeVisible({
+    await expect(
+      page.locator(`text=Test Endpoint ${uniqueSuffix}`),
+    ).toBeVisible({
       timeout: TIMEOUTS.endpointVisible,
     });
 
@@ -259,12 +279,16 @@ test.describe('Event Hooks Settings', () => {
     // After reload, the init script resets the settings cache (which lacks ntfyEndpoints),
     // so the app must fetch fresh settings from the server. Use a longer timeout to allow
     // the server sync to complete and the UI to re-render with the persisted endpoint.
-    await expect(page.locator(`text=Test Endpoint ${uniqueSuffix}`)).toBeVisible({
+    await expect(
+      page.locator(`text=Test Endpoint ${uniqueSuffix}`),
+    ).toBeVisible({
       timeout: 15000,
     });
   });
 
-  test('should display existing endpoints on initial load', async ({ page }) => {
+  test("should display existing endpoints on initial load", async ({
+    page,
+  }) => {
     // This test verifies that any existing endpoints are displayed when the page first loads
     // Navigate to the page and check if we can see the endpoints section
 
@@ -274,7 +298,7 @@ test.describe('Event Hooks Settings', () => {
     // The key is that it should NOT show "empty" if there are endpoints on the server
 
     // Either we see "No ntfy endpoints configured" OR we see endpoint cards
-    const emptyState = page.locator('text=No ntfy endpoints configured');
+    const emptyState = page.locator("text=No ntfy endpoints configured");
     const endpointCard = page.locator('[data-testid="endpoint-card"]').first();
 
     // One of these should be visible (use Playwright's .or() to match either locator)

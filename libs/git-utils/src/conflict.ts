@@ -2,8 +2,8 @@
  * Git conflict detection utilities
  */
 
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
@@ -17,7 +17,7 @@ const execAsync = promisify(exec);
  */
 async function execGitCommand(args: string[], cwd: string): Promise<string> {
   // Shell-escape each argument to prevent injection
-  const escaped = args.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(' ');
+  const escaped = args.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
   const { stdout } = await execAsync(`git ${escaped}`, { cwd });
   return stdout;
 }
@@ -28,15 +28,17 @@ async function execGitCommand(args: string[], cwd: string): Promise<string> {
  * @param worktreePath - Path to the git worktree
  * @returns Array of file paths with conflicts
  */
-export async function getConflictFiles(worktreePath: string): Promise<string[]> {
+export async function getConflictFiles(
+  worktreePath: string,
+): Promise<string[]> {
   try {
     const diffOutput = await execGitCommand(
-      ['diff', '--name-only', '--diff-filter=U'],
-      worktreePath
+      ["diff", "--name-only", "--diff-filter=U"],
+      worktreePath,
     );
     return diffOutput
       .trim()
-      .split('\n')
+      .split("\n")
       .filter((f) => f.trim().length > 0);
   } catch {
     return [];

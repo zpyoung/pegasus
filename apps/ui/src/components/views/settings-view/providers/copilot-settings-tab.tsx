@@ -1,20 +1,27 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import { CopilotCliStatus, CopilotCliStatusSkeleton } from '../cli-status/copilot-cli-status';
-import { CopilotModelConfiguration } from './copilot-model-configuration';
-import { ProviderToggle } from './provider-toggle';
-import { useCopilotCliStatus } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import type { CliStatus as SharedCliStatus } from '../shared/types';
-import type { CopilotAuthStatus } from '../cli-status/copilot-cli-status';
-import type { CopilotModelId } from '@pegasus/types';
+import { useState, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import {
+  CopilotCliStatus,
+  CopilotCliStatusSkeleton,
+} from "../cli-status/copilot-cli-status";
+import { CopilotModelConfiguration } from "./copilot-model-configuration";
+import { ProviderToggle } from "./provider-toggle";
+import { useCopilotCliStatus } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import type { CliStatus as SharedCliStatus } from "../shared/types";
+import type { CopilotAuthStatus } from "../cli-status/copilot-cli-status";
+import type { CopilotModelId } from "@pegasus/types";
 
 export function CopilotSettingsTab() {
   const queryClient = useQueryClient();
-  const { enabledCopilotModels, copilotDefaultModel, setCopilotDefaultModel, toggleCopilotModel } =
-    useAppStore();
+  const {
+    enabledCopilotModels,
+    copilotDefaultModel,
+    setCopilotDefaultModel,
+    toggleCopilotModel,
+  } = useAppStore();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -32,7 +39,7 @@ export function CopilotSettingsTab() {
     if (!cliStatusData) return null;
     return {
       success: cliStatusData.success ?? false,
-      status: cliStatusData.installed ? 'installed' : 'not_installed',
+      status: cliStatusData.installed ? "installed" : "not_installed",
       method: cliStatusData.auth?.method,
       version: cliStatusData.version,
       path: cliStatusData.path,
@@ -49,7 +56,8 @@ export function CopilotSettingsTab() {
     if (!cliStatusData?.auth) return null;
     return {
       authenticated: cliStatusData.auth.authenticated,
-      method: (cliStatusData.auth.method as CopilotAuthStatus['method']) || 'none',
+      method:
+        (cliStatusData.auth.method as CopilotAuthStatus["method"]) || "none",
       login: cliStatusData.auth.login,
       host: cliStatusData.auth.host,
       error: cliStatusData.auth.error,
@@ -60,7 +68,7 @@ export function CopilotSettingsTab() {
   const handleRefreshCopilotCli = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.cli.copilot() });
     await refetchCliStatus();
-    toast.success('Copilot CLI refreshed');
+    toast.success("Copilot CLI refreshed");
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -68,14 +76,14 @@ export function CopilotSettingsTab() {
       setIsSaving(true);
       try {
         setCopilotDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success("Default model updated");
       } catch {
-        toast.error('Failed to update default model');
+        toast.error("Failed to update default model");
       } finally {
         setIsSaving(false);
       }
     },
-    [setCopilotDefaultModel]
+    [setCopilotDefaultModel],
   );
 
   const handleModelToggle = useCallback(
@@ -84,12 +92,12 @@ export function CopilotSettingsTab() {
       try {
         toggleCopilotModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error("Failed to update models");
       } finally {
         setIsSaving(false);
       }
     },
-    [toggleCopilotModel]
+    [toggleCopilotModel],
   );
 
   // Show skeleton only while checking CLI status initially

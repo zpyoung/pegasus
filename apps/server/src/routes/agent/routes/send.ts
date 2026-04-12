@@ -2,27 +2,33 @@
  * POST /send endpoint - Send a message
  */
 
-import type { Request, Response } from 'express';
-import type { ThinkingLevel } from '@pegasus/types';
-import { AgentService } from '../../../services/agent-service.js';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
-const logger = createLogger('Agent');
+import type { Request, Response } from "express";
+import type { ThinkingLevel } from "@pegasus/types";
+import { AgentService } from "../../../services/agent-service.js";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
+const logger = createLogger("Agent");
 
 export function createSendHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { sessionId, message, workingDirectory, imagePaths, model, thinkingLevel } =
-        req.body as {
-          sessionId: string;
-          message: string;
-          workingDirectory?: string;
-          imagePaths?: string[];
-          model?: string;
-          thinkingLevel?: ThinkingLevel;
-        };
+      const {
+        sessionId,
+        message,
+        workingDirectory,
+        imagePaths,
+        model,
+        thinkingLevel,
+      } = req.body as {
+        sessionId: string;
+        message: string;
+        workingDirectory?: string;
+        imagePaths?: string[];
+        model?: string;
+        thinkingLevel?: ThinkingLevel;
+      };
 
-      logger.debug('Received request:', {
+      logger.debug("Received request:", {
         sessionId,
         messageLength: message?.length,
         workingDirectory,
@@ -32,15 +38,15 @@ export function createSendHandler(agentService: AgentService) {
       });
 
       if (!sessionId || !message) {
-        logger.warn('Validation failed - missing sessionId or message');
+        logger.warn("Validation failed - missing sessionId or message");
         res.status(400).json({
           success: false,
-          error: 'sessionId and message are required',
+          error: "sessionId and message are required",
         });
         return;
       }
 
-      logger.debug('Validation passed, calling agentService.sendMessage()');
+      logger.debug("Validation passed, calling agentService.sendMessage()");
 
       // Start the message processing (don't await - it streams via WebSocket)
       agentService
@@ -53,8 +59,11 @@ export function createSendHandler(agentService: AgentService) {
           thinkingLevel,
         })
         .catch((error) => {
-          const errorMsg = (error as Error).message || 'Unknown error';
-          logger.error(`Background error in sendMessage() for session ${sessionId}:`, errorMsg);
+          const errorMsg = (error as Error).message || "Unknown error";
+          logger.error(
+            `Background error in sendMessage() for session ${sessionId}:`,
+            errorMsg,
+          );
 
           // Emit error via WebSocket so the UI is notified even though
           // the HTTP response already returned 200. This is critical for
@@ -62,16 +71,16 @@ export function createSendHandler(agentService: AgentService) {
           // can emit its own error event (no in-memory session to emit from).
           agentService.emitSessionError(sessionId, errorMsg);
 
-          logError(error, 'Send message failed (background)');
+          logError(error, "Send message failed (background)");
         });
 
-      logger.debug('Returning immediate response to client');
+      logger.debug("Returning immediate response to client");
 
       // Return immediately - responses come via WebSocket
-      res.json({ success: true, message: 'Message sent' });
+      res.json({ success: true, message: "Message sent" });
     } catch (error) {
-      logger.error('Synchronous error:', error);
-      logError(error, 'Send message failed');
+      logger.error("Synchronous error:", error);
+      logError(error, "Send message failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

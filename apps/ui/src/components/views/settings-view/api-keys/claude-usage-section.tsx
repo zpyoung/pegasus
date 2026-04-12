@@ -1,26 +1,26 @@
-import { useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { useSetupStore } from '@/store/setup-store';
-import { useClaudeUsage } from '@/hooks/queries';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { useSetupStore } from "@/store/setup-store";
+import { useClaudeUsage } from "@/hooks/queries";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { RefreshCw, AlertCircle } from "lucide-react";
 
-const CLAUDE_USAGE_TITLE = 'Claude Usage';
-const CLAUDE_USAGE_SUBTITLE = 'Shows usage limits reported by the Claude CLI.';
-const CLAUDE_AUTH_WARNING = 'Authenticate Claude CLI to view usage limits.';
-const CLAUDE_LOGIN_COMMAND = 'claude login';
+const CLAUDE_USAGE_TITLE = "Claude Usage";
+const CLAUDE_USAGE_SUBTITLE = "Shows usage limits reported by the Claude CLI.";
+const CLAUDE_AUTH_WARNING = "Authenticate Claude CLI to view usage limits.";
+const CLAUDE_LOGIN_COMMAND = "claude login";
 const CLAUDE_NO_USAGE_MESSAGE =
-  'Usage limits are not available yet. Try refreshing if this persists.';
-const UPDATED_LABEL = 'Updated';
-const CLAUDE_REFRESH_LABEL = 'Refresh Claude usage';
+  "Usage limits are not available yet. Try refreshing if this persists.";
+const UPDATED_LABEL = "Updated";
+const CLAUDE_REFRESH_LABEL = "Refresh Claude usage";
 const WARNING_THRESHOLD = 75;
 const CAUTION_THRESHOLD = 50;
 const MAX_PERCENTAGE = 100;
 // Using purple/indigo for Claude branding
-const USAGE_COLOR_CRITICAL = 'bg-red-500';
-const USAGE_COLOR_WARNING = 'bg-amber-500';
-const USAGE_COLOR_OK = 'bg-indigo-500';
+const USAGE_COLOR_CRITICAL = "bg-red-500";
+const USAGE_COLOR_WARNING = "bg-amber-500";
+const USAGE_COLOR_OK = "bg-indigo-500";
 
 /**
  * Get the appropriate color class for a usage percentage
@@ -58,18 +58,22 @@ function UsageCard({
           <p className="text-sm font-semibold text-foreground">{title}</p>
           <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
-        <span className="text-sm font-semibold text-foreground">{Math.round(safePercentage)}%</span>
+        <span className="text-sm font-semibold text-foreground">
+          {Math.round(safePercentage)}%
+        </span>
       </div>
       <div className="mt-3 h-2 w-full rounded-full bg-secondary/60">
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-300',
-            getUsageColor(safePercentage)
+            "h-full rounded-full transition-all duration-300",
+            getUsageColor(safePercentage),
           )}
           style={{ width: `${safePercentage}%` }}
         />
       </div>
-      {resetText && <p className="mt-2 text-xs text-muted-foreground">{resetText}</p>}
+      {resetText && (
+        <p className="mt-2 text-xs text-muted-foreground">{resetText}</p>
+      )}
     </div>
   );
 }
@@ -96,19 +100,20 @@ export function ClaudeUsageSection() {
     return dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleString() : null;
   }, [dataUpdatedAt]);
 
-  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+  const errorMessage =
+    error instanceof Error ? error.message : error ? String(error) : null;
 
   const showAuthWarning =
     (!canFetchUsage && !hasUsage && !isLoading) ||
-    (errorMessage && errorMessage.includes('Authentication required'));
+    (errorMessage && errorMessage.includes("Authentication required"));
 
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -128,10 +133,16 @@ export function ClaudeUsageSection() {
             data-testid="refresh-claude-usage"
             title={CLAUDE_REFRESH_LABEL}
           >
-            {isFetching ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+            {isFetching ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">{CLAUDE_USAGE_SUBTITLE}</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          {CLAUDE_USAGE_SUBTITLE}
+        </p>
       </div>
 
       <div className="p-6 space-y-4">
@@ -139,7 +150,8 @@ export function ClaudeUsageSection() {
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
             <div className="text-sm text-amber-400">
-              {CLAUDE_AUTH_WARNING} Run <span className="font-mono">{CLAUDE_LOGIN_COMMAND}</span>.
+              {CLAUDE_AUTH_WARNING} Run{" "}
+              <span className="font-mono">{CLAUDE_LOGIN_COMMAND}</span>.
             </div>
           </div>
         )}

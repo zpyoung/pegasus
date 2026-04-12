@@ -3,15 +3,15 @@
  * For folders, creates a zip archive on the fly
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
-import { createReadStream } from 'fs';
-import { execFile } from 'child_process';
-import { promisify } from 'util';
-import { tmpdir } from 'os';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
+import { createReadStream } from "fs";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { tmpdir } from "os";
 
 const execFileAsync = promisify(execFile);
 
@@ -41,7 +41,7 @@ export function createDownloadHandler() {
       const { filePath } = req.body as { filePath: string };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: 'filePath is required' });
+        res.status(400).json({ success: false, error: "filePath is required" });
         return;
       }
 
@@ -64,27 +64,33 @@ export function createDownloadHandler() {
 
         // Create a temporary zip file
         const zipFileName = `${fileName}.zip`;
-        const tmpZipPath = path.join(tmpdir(), `pegasus-download-${Date.now()}-${zipFileName}`);
+        const tmpZipPath = path.join(
+          tmpdir(),
+          `pegasus-download-${Date.now()}-${zipFileName}`,
+        );
 
         try {
           // Use system zip command (available on macOS and Linux)
           // Use execFile to avoid shell injection via user-provided paths
-          await execFileAsync('zip', ['-r', tmpZipPath, fileName], {
+          await execFileAsync("zip", ["-r", tmpZipPath, fileName], {
             cwd: path.dirname(filePath),
             maxBuffer: 50 * 1024 * 1024,
           });
 
           const zipStats = await secureFs.stat(tmpZipPath);
 
-          res.setHeader('Content-Type', 'application/zip');
-          res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
-          res.setHeader('Content-Length', zipStats.size.toString());
-          res.setHeader('X-Directory-Size', dirSize.toString());
+          res.setHeader("Content-Type", "application/zip");
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${zipFileName}"`,
+          );
+          res.setHeader("Content-Length", zipStats.size.toString());
+          res.setHeader("X-Directory-Size", dirSize.toString());
 
           const stream = createReadStream(tmpZipPath);
           stream.pipe(res);
 
-          stream.on('end', async () => {
+          stream.on("end", async () => {
             // Cleanup temp file
             try {
               await secureFs.rm(tmpZipPath);
@@ -93,15 +99,18 @@ export function createDownloadHandler() {
             }
           });
 
-          stream.on('error', async (err) => {
-            logError(err, 'Download stream error');
+          stream.on("error", async (err) => {
+            logError(err, "Download stream error");
             try {
               await secureFs.rm(tmpZipPath);
             } catch {
               // Ignore cleanup errors
             }
             if (!res.headersSent) {
-              res.status(500).json({ success: false, error: 'Stream error during download' });
+              res.status(500).json({
+                success: false,
+                error: "Stream error during download",
+              });
             }
           });
         } catch (zipError) {
@@ -115,17 +124,22 @@ export function createDownloadHandler() {
         }
       } else {
         // For individual files, stream directly
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-        res.setHeader('Content-Length', stats.size.toString());
+        res.setHeader("Content-Type", "application/octet-stream");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${fileName}"`,
+        );
+        res.setHeader("Content-Length", stats.size.toString());
 
         const stream = createReadStream(filePath);
         stream.pipe(res);
 
-        stream.on('error', (err) => {
-          logError(err, 'Download stream error');
+        stream.on("error", (err) => {
+          logError(err, "Download stream error");
           if (!res.headersSent) {
-            res.status(500).json({ success: false, error: 'Stream error during download' });
+            res
+              .status(500)
+              .json({ success: false, error: "Stream error during download" });
           }
         });
       }
@@ -135,7 +149,7 @@ export function createDownloadHandler() {
         return;
       }
 
-      logError(error, 'Download failed');
+      logError(error, "Download failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,4 +1,4 @@
-import type { ClaudeUsage } from '../types/usage-types';
+import type { ClaudeUsage } from "../types/usage-types";
 
 /**
  * Calculate the expected weekly usage percentage based on how far through the week we are.
@@ -10,7 +10,7 @@ import type { ClaudeUsage } from '../types/usage-types';
  * @returns The expected usage percentage (0-100), or null if the reset time is invalid
  */
 export function getExpectedWeeklyPacePercentage(
-  weeklyResetTime: string | undefined
+  weeklyResetTime: string | undefined,
 ): number | null {
   if (!weeklyResetTime) return null;
 
@@ -46,13 +46,13 @@ export function getExpectedWeeklyPacePercentage(
  */
 export function getPaceStatusLabel(
   actualPercentage: number,
-  expectedPercentage: number | null
+  expectedPercentage: number | null,
 ): string | null {
   if (expectedPercentage === null) return null;
 
   const diff = Math.round(actualPercentage - expectedPercentage);
 
-  if (diff === 0) return 'On pace';
+  if (diff === 0) return "On pace";
   // Using more than expected = behind pace (bad)
   if (diff > 0) return `${Math.abs(diff)}% behind pace`;
   // Using less than expected = ahead of pace (good)
@@ -73,10 +73,11 @@ export function getPaceStatusLabel(
  */
 export function getExpectedCodexPacePercentage(
   resetsAt: number | undefined | null,
-  windowDurationMins: number | undefined | null
+  windowDurationMins: number | undefined | null,
 ): number | null {
   // Only show pace for windows >= 1 day (1440 minutes)
-  if (!resetsAt || !windowDurationMins || windowDurationMins < 1440) return null;
+  if (!resetsAt || !windowDurationMins || windowDurationMins < 1440)
+    return null;
 
   try {
     const resetDate = new Date(resetsAt * 1000);

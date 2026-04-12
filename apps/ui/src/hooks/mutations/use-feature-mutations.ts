@@ -5,11 +5,11 @@
  * Includes optimistic updates for better UX.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { Feature } from '@/store/app-store';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type { Feature } from "@/store/app-store";
 
 /**
  * Create a new feature
@@ -31,7 +31,7 @@ export function useCreateFeature(projectPath: string) {
       const api = getElectronAPI();
       const result = await api.features?.create(projectPath, feature);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to create feature');
+        throw new Error(result?.error || "Failed to create feature");
       }
       return result.feature;
     },
@@ -39,10 +39,10 @@ export function useCreateFeature(projectPath: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.features.all(projectPath),
       });
-      toast.success('Feature created');
+      toast.success("Feature created");
     },
     onError: (error: Error) => {
-      toast.error('Failed to create feature', {
+      toast.error("Failed to create feature", {
         description: error.message,
       });
     },
@@ -68,8 +68,13 @@ export function useUpdateFeature(projectPath: string) {
     }: {
       featureId: string;
       updates: Partial<Feature>;
-      descriptionHistorySource?: 'enhance' | 'edit';
-      enhancementMode?: 'improve' | 'technical' | 'simplify' | 'acceptance' | 'ux-reviewer';
+      descriptionHistorySource?: "enhance" | "edit";
+      enhancementMode?:
+        | "improve"
+        | "technical"
+        | "simplify"
+        | "acceptance"
+        | "ux-reviewer";
       preEnhancementDescription?: string;
     }) => {
       const api = getElectronAPI();
@@ -79,10 +84,10 @@ export function useUpdateFeature(projectPath: string) {
         updates,
         descriptionHistorySource,
         enhancementMode,
-        preEnhancementDescription
+        preEnhancementDescription,
       );
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to update feature');
+        throw new Error(result?.error || "Failed to update feature");
       }
       return result.feature;
     },
@@ -95,14 +100,16 @@ export function useUpdateFeature(projectPath: string) {
 
       // Snapshot the previous value
       const previousFeatures = queryClient.getQueryData<Feature[]>(
-        queryKeys.features.all(projectPath)
+        queryKeys.features.all(projectPath),
       );
 
       // Optimistically update the cache
       if (previousFeatures) {
         queryClient.setQueryData<Feature[]>(
           queryKeys.features.all(projectPath),
-          previousFeatures.map((f) => (f.id === featureId ? { ...f, ...updates } : f))
+          previousFeatures.map((f) =>
+            f.id === featureId ? { ...f, ...updates } : f,
+          ),
         );
       }
 
@@ -111,9 +118,12 @@ export function useUpdateFeature(projectPath: string) {
     onError: (error: Error, _, context) => {
       // Rollback on error
       if (context?.previousFeatures) {
-        queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
+        queryClient.setQueryData(
+          queryKeys.features.all(projectPath),
+          context.previousFeatures,
+        );
       }
-      toast.error('Failed to update feature', {
+      toast.error("Failed to update feature", {
         description: error.message,
       });
     },
@@ -140,7 +150,7 @@ export function useDeleteFeature(projectPath: string) {
       const api = getElectronAPI();
       const result = await api.features?.delete(projectPath, featureId);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to delete feature');
+        throw new Error(result?.error || "Failed to delete feature");
       }
     },
     // Optimistic delete
@@ -150,13 +160,13 @@ export function useDeleteFeature(projectPath: string) {
       });
 
       const previousFeatures = queryClient.getQueryData<Feature[]>(
-        queryKeys.features.all(projectPath)
+        queryKeys.features.all(projectPath),
       );
 
       if (previousFeatures) {
         queryClient.setQueryData<Feature[]>(
           queryKeys.features.all(projectPath),
-          previousFeatures.filter((f) => f.id !== featureId)
+          previousFeatures.filter((f) => f.id !== featureId),
         );
       }
 
@@ -164,14 +174,17 @@ export function useDeleteFeature(projectPath: string) {
     },
     onError: (error: Error, _, context) => {
       if (context?.previousFeatures) {
-        queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
+        queryClient.setQueryData(
+          queryKeys.features.all(projectPath),
+          context.previousFeatures,
+        );
       }
-      toast.error('Failed to delete feature', {
+      toast.error("Failed to delete feature", {
         description: error.message,
       });
     },
     onSuccess: () => {
-      toast.success('Feature deleted');
+      toast.success("Feature deleted");
     },
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -192,12 +205,12 @@ export function useGenerateTitle() {
       const api = getElectronAPI();
       const result = await api.features?.generateTitle(description);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to generate title');
+        throw new Error(result?.error || "Failed to generate title");
       }
-      return result.title ?? '';
+      return result.title ?? "";
     },
     onError: (error: Error) => {
-      toast.error('Failed to generate title', {
+      toast.error("Failed to generate title", {
         description: error.message,
       });
     },
@@ -214,12 +227,14 @@ export function useBatchUpdateFeatures(projectPath: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (updates: Array<{ featureId: string; updates: Partial<Feature> }>) => {
+    mutationFn: async (
+      updates: Array<{ featureId: string; updates: Partial<Feature> }>,
+    ) => {
       const api = getElectronAPI();
       const results = await Promise.all(
         updates.map(({ featureId, updates: featureUpdates }) =>
-          api.features?.update(projectPath, featureId, featureUpdates)
-        )
+          api.features?.update(projectPath, featureId, featureUpdates),
+        ),
       );
 
       const failed = results.filter((r) => !r?.success);
@@ -234,17 +249,19 @@ export function useBatchUpdateFeatures(projectPath: string) {
       });
 
       const previousFeatures = queryClient.getQueryData<Feature[]>(
-        queryKeys.features.all(projectPath)
+        queryKeys.features.all(projectPath),
       );
 
       if (previousFeatures) {
-        const updatesMap = new Map(updates.map((u) => [u.featureId, u.updates]));
+        const updatesMap = new Map(
+          updates.map((u) => [u.featureId, u.updates]),
+        );
         queryClient.setQueryData<Feature[]>(
           queryKeys.features.all(projectPath),
           previousFeatures.map((f) => {
             const featureUpdates = updatesMap.get(f.id);
             return featureUpdates ? { ...f, ...featureUpdates } : f;
-          })
+          }),
         );
       }
 
@@ -252,9 +269,12 @@ export function useBatchUpdateFeatures(projectPath: string) {
     },
     onError: (error: Error, _, context) => {
       if (context?.previousFeatures) {
-        queryClient.setQueryData(queryKeys.features.all(projectPath), context.previousFeatures);
+        queryClient.setQueryData(
+          queryKeys.features.all(projectPath),
+          context.previousFeatures,
+        );
       }
-      toast.error('Failed to update features', {
+      toast.error("Failed to update features", {
         description: error.message,
       });
     },

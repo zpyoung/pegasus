@@ -29,7 +29,7 @@ export type ClaudeUsage = {
 
 export type ClaudeStatus = {
   indicator: {
-    color: 'green' | 'yellow' | 'orange' | 'red' | 'gray';
+    color: "green" | "yellow" | "orange" | "red" | "gray";
   };
   description: string;
 };

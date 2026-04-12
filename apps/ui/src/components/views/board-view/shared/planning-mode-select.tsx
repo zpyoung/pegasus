@@ -1,15 +1,15 @@
-import { Zap, ClipboardList, FileText, ScrollText } from 'lucide-react';
+import { Zap, ClipboardList, FileText, ScrollText } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { PlanningMode } from '@pegasus/types';
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import type { PlanningMode } from "@pegasus/types";
 
 interface PlanningModeSelectProps {
   mode: PlanningMode;
@@ -25,32 +25,32 @@ interface PlanningModeSelectProps {
 
 const modes = [
   {
-    value: 'skip' as const,
-    label: 'Skip',
-    description: 'Direct implementation, no upfront planning',
+    value: "skip" as const,
+    label: "Skip",
+    description: "Direct implementation, no upfront planning",
     icon: Zap,
-    color: 'text-emerald-500',
+    color: "text-emerald-500",
   },
   {
-    value: 'lite' as const,
-    label: 'Lite',
-    description: 'Think through approach, create task list',
+    value: "lite" as const,
+    label: "Lite",
+    description: "Think through approach, create task list",
     icon: ClipboardList,
-    color: 'text-blue-500',
+    color: "text-blue-500",
   },
   {
-    value: 'spec' as const,
-    label: 'Spec',
-    description: 'Generate spec with acceptance criteria',
+    value: "spec" as const,
+    label: "Spec",
+    description: "Generate spec with acceptance criteria",
     icon: FileText,
-    color: 'text-purple-500',
+    color: "text-purple-500",
   },
   {
-    value: 'full' as const,
-    label: 'Full',
-    description: 'Comprehensive spec with phased plan',
+    value: "full" as const,
+    label: "Full",
+    description: "Comprehensive spec with phased plan",
     icon: ScrollText,
-    color: 'text-amber-500',
+    color: "text-amber-500",
   },
 ];
 
@@ -80,7 +80,7 @@ export function PlanningModeSelect({
   onModeChange,
   requireApproval,
   onRequireApprovalChange,
-  testIdPrefix = 'planning-mode',
+  testIdPrefix = "planning-mode",
   className,
   disabled = false,
   compact = false,
@@ -88,7 +88,7 @@ export function PlanningModeSelect({
   const selectedMode = modes.find((m) => m.value === mode);
 
   // Disable approval checkbox for skip mode (lite supports approval)
-  const isApprovalDisabled = disabled || mode === 'skip';
+  const isApprovalDisabled = disabled || mode === "skip";
 
   const selectDropdown = (
     <Select
@@ -96,11 +96,16 @@ export function PlanningModeSelect({
       onValueChange={(value: string) => onModeChange(value as PlanningMode)}
       disabled={disabled}
     >
-      <SelectTrigger className="h-9" data-testid={`${testIdPrefix}-select-trigger`}>
+      <SelectTrigger
+        className="h-9"
+        data-testid={`${testIdPrefix}-select-trigger`}
+      >
         <SelectValue>
           {selectedMode && (
             <div className="flex items-center gap-2">
-              <selectedMode.icon className={cn('h-4 w-4', selectedMode.color)} />
+              <selectedMode.icon
+                className={cn("h-4 w-4", selectedMode.color)}
+              />
               <span>{selectedMode.label}</span>
             </div>
           )}
@@ -116,7 +121,7 @@ export function PlanningModeSelect({
               data-testid={`${testIdPrefix}-option-${m.value}`}
             >
               <div className="flex items-center gap-2">
-                <Icon className={cn('h-3.5 w-3.5', m.color)} />
+                <Icon className={cn("h-3.5 w-3.5", m.color)} />
                 <span>{m.label}</span>
               </div>
             </SelectItem>
@@ -133,9 +138,13 @@ export function PlanningModeSelect({
 
   // Full mode with description and optional checkbox
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn("space-y-2", className)}>
       {selectDropdown}
-      {selectedMode && <p className="text-xs text-muted-foreground">{selectedMode.description}</p>}
+      {selectedMode && (
+        <p className="text-xs text-muted-foreground">
+          {selectedMode.description}
+        </p>
+      )}
       {onRequireApprovalChange && (
         <div className="flex items-center gap-2 pt-1">
           <Checkbox
@@ -148,8 +157,10 @@ export function PlanningModeSelect({
           <Label
             htmlFor={`${testIdPrefix}-require-approval`}
             className={cn(
-              'text-sm font-normal',
-              isApprovalDisabled ? 'cursor-not-allowed text-muted-foreground' : 'cursor-pointer'
+              "text-sm font-normal",
+              isApprovalDisabled
+                ? "cursor-not-allowed text-muted-foreground"
+                : "cursor-pointer",
             )}
           >
             Require plan approval before execution

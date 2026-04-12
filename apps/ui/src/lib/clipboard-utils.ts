@@ -13,11 +13,11 @@
  */
 function isClipboardApiAvailable(): boolean {
   return (
-    typeof navigator !== 'undefined' &&
+    typeof navigator !== "undefined" &&
     !!navigator.clipboard &&
-    typeof navigator.clipboard.writeText === 'function' &&
-    typeof navigator.clipboard.readText === 'function' &&
-    typeof window !== 'undefined' &&
+    typeof navigator.clipboard.writeText === "function" &&
+    typeof navigator.clipboard.readText === "function" &&
+    typeof window !== "undefined" &&
     window.isSecureContext !== false
   );
 }
@@ -65,7 +65,7 @@ export async function readFromClipboard(): Promise<string> {
       // Check if this is a permission-related error
       if (err instanceof Error) {
         // Re-throw permission errors so they propagate to the caller
-        if (err.name === 'NotAllowedError' || err.name === 'NotReadableError') {
+        if (err.name === "NotAllowedError" || err.name === "NotReadableError") {
           throw err;
         }
       }
@@ -82,21 +82,21 @@ export async function readFromClipboard(): Promise<string> {
  * This works in both secure and insecure contexts in most browsers.
  */
 function writeToClipboardLegacy(text: string): boolean {
-  const textarea = document.createElement('textarea');
+  const textarea = document.createElement("textarea");
   textarea.value = text;
 
   // Prevent scrolling and make invisible
-  textarea.style.position = 'fixed';
-  textarea.style.left = '-9999px';
-  textarea.style.top = '-9999px';
-  textarea.style.opacity = '0';
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "-9999px";
+  textarea.style.opacity = "0";
 
   document.body.appendChild(textarea);
 
   try {
     textarea.select();
     textarea.setSelectionRange(0, text.length);
-    const success = document.execCommand('copy');
+    const success = document.execCommand("copy");
     return success;
   } catch {
     return false;
@@ -111,33 +111,36 @@ function writeToClipboardLegacy(text: string): boolean {
  * When it fails, we throw an error to let the caller handle it gracefully.
  */
 function readFromClipboardLegacy(): string {
-  const textarea = document.createElement('textarea');
+  const textarea = document.createElement("textarea");
 
   // Prevent scrolling and make invisible
-  textarea.style.position = 'fixed';
-  textarea.style.left = '-9999px';
-  textarea.style.top = '-9999px';
-  textarea.style.opacity = '0';
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "-9999px";
+  textarea.style.opacity = "0";
 
   document.body.appendChild(textarea);
   textarea.focus();
 
   try {
-    const success = document.execCommand('paste');
+    const success = document.execCommand("paste");
     if (success && textarea.value) {
       return textarea.value;
     }
     throw new Error(
-      'Clipboard paste is not supported in this browser on non-HTTPS sites. ' +
-        'Please use HTTPS or paste manually with keyboard shortcuts.'
+      "Clipboard paste is not supported in this browser on non-HTTPS sites. " +
+        "Please use HTTPS or paste manually with keyboard shortcuts.",
     );
   } catch (err) {
-    if (err instanceof Error && err.message.includes('Clipboard paste is not supported')) {
+    if (
+      err instanceof Error &&
+      err.message.includes("Clipboard paste is not supported")
+    ) {
       throw err;
     }
     throw new Error(
-      'Clipboard paste is not supported in this browser on non-HTTPS sites. ' +
-        'Please use HTTPS or paste manually with keyboard shortcuts.'
+      "Clipboard paste is not supported in this browser on non-HTTPS sites. " +
+        "Please use HTTPS or paste manually with keyboard shortcuts.",
     );
   } finally {
     document.body.removeChild(textarea);

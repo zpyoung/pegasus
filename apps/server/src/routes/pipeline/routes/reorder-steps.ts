@@ -7,9 +7,9 @@
  * Response: { success: true }
  */
 
-import type { Request, Response } from 'express';
-import type { PipelineService } from '../../../services/pipeline-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { PipelineService } from "../../../services/pipeline-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createReorderStepsHandler(pipelineService: PipelineService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,12 +20,16 @@ export function createReorderStepsHandler(pipelineService: PipelineService) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!stepIds || !Array.isArray(stepIds)) {
-        res.status(400).json({ success: false, error: 'stepIds array is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "stepIds array is required" });
         return;
       }
 
@@ -35,7 +39,7 @@ export function createReorderStepsHandler(pipelineService: PipelineService) {
         success: true,
       });
     } catch (error) {
-      logError(error, 'Reorder pipeline steps failed');
+      logError(error, "Reorder pipeline steps failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

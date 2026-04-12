@@ -2,20 +2,20 @@
  * POST /list-prs endpoint - List GitHub pull requests for a project
  */
 
-import type { Request, Response } from 'express';
-import { execAsync, execEnv, getErrorMessage, logError } from './common.js';
-import { checkGitHubRemote } from './check-github-remote.js';
+import type { Request, Response } from "express";
+import { execAsync, execEnv, getErrorMessage, logError } from "./common.js";
+import { checkGitHubRemote } from "./check-github-remote.js";
 
 const OPEN_PRS_LIMIT = 100;
 const MERGED_PRS_LIMIT = 50;
 const PR_LIST_FIELDS =
-  'number,title,state,author,createdAt,labels,url,isDraft,headRefName,reviewDecision,mergeable,body';
-const PR_STATE_OPEN = 'open';
-const PR_STATE_MERGED = 'merged';
-const GH_PR_LIST_COMMAND = 'gh pr list';
-const GH_STATE_FLAG = '--state';
-const GH_JSON_FLAG = '--json';
-const GH_LIMIT_FLAG = '--limit';
+  "number,title,state,author,createdAt,labels,url,isDraft,headRefName,reviewDecision,mergeable,body";
+const PR_STATE_OPEN = "open";
+const PR_STATE_MERGED = "merged";
+const GH_PR_LIST_COMMAND = "gh pr list";
+const GH_STATE_FLAG = "--state";
+const GH_JSON_FLAG = "--json";
+const GH_LIMIT_FLAG = "--limit";
 
 export interface GitHubLabel {
   name: string;
@@ -54,7 +54,9 @@ export function createListPRsHandler() {
       const { projectPath } = req.body;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -63,14 +65,16 @@ export function createListPRsHandler() {
       if (!remoteStatus.hasGitHubRemote) {
         res.status(400).json({
           success: false,
-          error: 'Project does not have a GitHub remote',
+          error: "Project does not have a GitHub remote",
         });
         return;
       }
 
       const repoQualifier =
-        remoteStatus.owner && remoteStatus.repo ? `${remoteStatus.owner}/${remoteStatus.repo}` : '';
-      const repoFlag = repoQualifier ? `-R ${repoQualifier}` : '';
+        remoteStatus.owner && remoteStatus.repo
+          ? `${remoteStatus.owner}/${remoteStatus.repo}`
+          : "";
+      const repoFlag = repoQualifier ? `-R ${repoQualifier}` : "";
 
       const [openResult, mergedResult] = await Promise.all([
         execAsync(
@@ -82,11 +86,11 @@ export function createListPRsHandler() {
             `${GH_LIMIT_FLAG} ${OPEN_PRS_LIMIT}`,
           ]
             .filter(Boolean)
-            .join(' '),
+            .join(" "),
           {
             cwd: projectPath,
             env: execEnv,
-          }
+          },
         ),
         execAsync(
           [
@@ -97,18 +101,18 @@ export function createListPRsHandler() {
             `${GH_LIMIT_FLAG} ${MERGED_PRS_LIMIT}`,
           ]
             .filter(Boolean)
-            .join(' '),
+            .join(" "),
           {
             cwd: projectPath,
             env: execEnv,
-          }
+          },
         ),
       ]);
       const { stdout: openStdout } = openResult;
       const { stdout: mergedStdout } = mergedResult;
 
-      const openPRs: GitHubPR[] = JSON.parse(openStdout || '[]');
-      const mergedPRs: GitHubPR[] = JSON.parse(mergedStdout || '[]');
+      const openPRs: GitHubPR[] = JSON.parse(openStdout || "[]");
+      const mergedPRs: GitHubPR[] = JSON.parse(mergedStdout || "[]");
 
       res.json({
         success: true,
@@ -116,7 +120,7 @@ export function createListPRsHandler() {
         mergedPRs,
       });
     } catch (error) {
-      logError(error, 'List GitHub PRs failed');
+      logError(error, "List GitHub PRs failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

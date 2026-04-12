@@ -2,23 +2,23 @@
 // NOTE: CACHE_NAME is injected with a build hash at build time by the swCacheBuster
 // Vite plugin (see vite.config.mts). In development it stays as-is; in production
 // builds it becomes e.g. 'pegasus-v5-a1b2c3d4' for automatic cache invalidation.
-const CACHE_NAME = 'pegasus-v5'; // replaced at build time → 'pegasus-v5-<hash>'
+const CACHE_NAME = "pegasus-v5"; // replaced at build time → 'pegasus-v5-<hash>'
 
 // Separate cache for immutable hashed assets (long-lived)
-const IMMUTABLE_CACHE = 'pegasus-immutable-v2';
+const IMMUTABLE_CACHE = "pegasus-immutable-v2";
 
 // Separate cache for API responses (short-lived, stale-while-revalidate on mobile)
-const API_CACHE = 'pegasus-api-v1';
+const API_CACHE = "pegasus-api-v1";
 
 // Assets to cache on install (app shell for instant loading)
 const SHELL_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/logo.png',
-  '/logo_larger.png',
-  '/pegasus.svg',
-  '/favicon.ico',
+  "/",
+  "/index.html",
+  "/manifest.json",
+  "/logo.png",
+  "/logo_larger.png",
+  "/pegasus.svg",
+  "/favicon.ico",
 ];
 
 // Critical JS/CSS assets extracted from index.html at build time by the swCacheBuster
@@ -30,8 +30,8 @@ const CRITICAL_ASSETS = [];
 // Whether mobile caching is enabled (set via message from main thread).
 // Persisted to Cache Storage so it survives aggressive SW termination on mobile.
 let mobileMode = false;
-const MOBILE_MODE_CACHE_KEY = 'pegasus-sw-config';
-const MOBILE_MODE_URL = '/sw-config/mobile-mode';
+const MOBILE_MODE_CACHE_KEY = "pegasus-sw-config";
+const MOBILE_MODE_URL = "/sw-config/mobile-mode";
 
 /**
  * Persist mobileMode to Cache Storage so it survives SW restarts.
@@ -42,7 +42,7 @@ async function persistMobileMode(enabled) {
   try {
     const cache = await caches.open(MOBILE_MODE_CACHE_KEY);
     const response = new Response(JSON.stringify({ mobileMode: enabled }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
     await cache.put(MOBILE_MODE_URL, response);
   } catch (_e) {
@@ -76,18 +76,18 @@ const mobileModeRestorePromise = restoreMobileMode();
 // These are GET-only, read-heavy endpoints where showing slightly stale data
 // is far better than a blank screen or reload on flaky mobile connections.
 const CACHEABLE_API_PATTERNS = [
-  '/api/features',
-  '/api/settings',
-  '/api/models',
-  '/api/usage',
-  '/api/worktrees',
-  '/api/github',
-  '/api/cli',
-  '/api/sessions',
-  '/api/running-agents',
-  '/api/pipeline',
-  '/api/workspace',
-  '/api/spec',
+  "/api/features",
+  "/api/settings",
+  "/api/models",
+  "/api/usage",
+  "/api/worktrees",
+  "/api/github",
+  "/api/cli",
+  "/api/sessions",
+  "/api/running-agents",
+  "/api/pipeline",
+  "/api/workspace",
+  "/api/spec",
 ];
 
 // Max age for API cache entries (5 minutes).
@@ -102,7 +102,7 @@ const API_CACHE_MAX_ENTRIES = 100;
  */
 function isCacheableApiRequest(url) {
   const path = url.pathname;
-  if (!path.startsWith('/api/')) return false;
+  if (!path.startsWith("/api/")) return false;
   return CACHEABLE_API_PATTERNS.some((pattern) => path.startsWith(pattern));
 }
 
@@ -110,7 +110,7 @@ function isCacheableApiRequest(url) {
  * Check if a cached API response is still fresh enough to use
  */
 function isApiCacheFresh(response) {
-  const cachedAt = response.headers.get('x-sw-cached-at');
+  const cachedAt = response.headers.get("x-sw-cached-at");
   if (!cachedAt) return false;
   return Date.now() - parseInt(cachedAt, 10) < API_CACHE_MAX_AGE;
 }
@@ -121,7 +121,7 @@ function isApiCacheFresh(response) {
  */
 async function addCacheTimestamp(response) {
   const headers = new Headers(response.headers);
-  headers.set('x-sw-cached-at', String(Date.now()));
+  headers.set("x-sw-cached-at", String(Date.now()));
   const body = await response.clone().arrayBuffer();
   return new Response(body, {
     status: response.status,
@@ -130,7 +130,7 @@ async function addCacheTimestamp(response) {
   });
 }
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   // Cache the app shell AND critical JS/CSS assets so the PWA loads instantly.
   // SHELL_ASSETS go into CACHE_NAME (general cache), CRITICAL_ASSETS go into
   // IMMUTABLE_CACHE (long-lived, content-hashed assets). This ensures that even
@@ -163,9 +163,9 @@ self.addEventListener('install', (event) => {
               .catch(() => {
                 // Individual asset fetch failure is non-fatal — the SW still activates
                 // and the next navigation will populate the cache via Strategy 3.
-              })
-          )
-        )
+              }),
+          ),
+        ),
       ),
       // Cache critical JS/CSS bundles (injected at build time by swCacheBuster).
       // Uses individual fetch+put instead of cache.addAll() so a single asset
@@ -180,36 +180,44 @@ self.addEventListener('install', (event) => {
         ? caches.open(IMMUTABLE_CACHE).then((cache) =>
             Promise.all(
               CRITICAL_ASSETS.map((url) =>
-                fetch(url, { mode: 'cors' })
+                fetch(url, { mode: "cors" })
                   .then((response) => {
                     if (response.ok) return cache.put(url, response);
                   })
                   .catch(() => {
                     // Individual asset fetch failure is non-fatal
-                  })
-              )
-            )
+                  }),
+              ),
+            ),
           )
         : Promise.resolve(),
-    ])
+    ]),
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   // Remove old caches (both regular and immutable)
-  const validCaches = new Set([CACHE_NAME, IMMUTABLE_CACHE, API_CACHE, MOBILE_MODE_CACHE_KEY]);
+  const validCaches = new Set([
+    CACHE_NAME,
+    IMMUTABLE_CACHE,
+    API_CACHE,
+    MOBILE_MODE_CACHE_KEY,
+  ]);
   event.waitUntil(
     Promise.all([
       // Clean old caches
       caches.keys().then((cacheNames) => {
         return Promise.all(
-          cacheNames.filter((name) => !validCaches.has(name)).map((name) => caches.delete(name))
+          cacheNames
+            .filter((name) => !validCaches.has(name))
+            .map((name) => caches.delete(name)),
         );
       }),
       // Enable Navigation Preload for faster navigation responses on mobile.
       // When enabled, the browser fires the navigation fetch in parallel with
       // service worker boot, eliminating the SW startup delay (~50-200ms on mobile).
-      self.registration.navigationPreload && self.registration.navigationPreload.enable(),
+      self.registration.navigationPreload &&
+        self.registration.navigationPreload.enable(),
       // Claim clients so this SW immediately controls all open pages.
       //
       // This is safe in all activation scenarios:
@@ -225,7 +233,7 @@ self.addEventListener('activate', (event) => {
       // requests until the next full navigation — meaning the first visit after
       // install would not benefit from the cache-first asset strategy.
       self.clients.claim(),
-    ])
+    ]),
   );
 });
 
@@ -243,7 +251,7 @@ function isImmutableAsset(url) {
   // under /assets/ (which are Vite-processed, content-hashed, and actively used).
   // There are 639+ font files (~20MB total) across all font families; caching them
   // all would push iOS toward its ~50MB PWA quota and trigger eviction of everything.
-  if (path.startsWith('/assets/') && /-[A-Za-z0-9_-]{6,}\.\w+$/.test(path)) {
+  if (path.startsWith("/assets/") && /-[A-Za-z0-9_-]{6,}\.\w+$/.test(path)) {
     return true;
   }
   return false;
@@ -261,7 +269,7 @@ function isCodeAsset(url) {
   const path = url.pathname;
   const isScriptOrStyle = /\.(m?js|css|tsx?)$/.test(path);
   if (!isScriptOrStyle) return false;
-  return path.startsWith('/assets/') || path.startsWith('/src/');
+  return path.startsWith("/assets/") || path.startsWith("/src/");
 }
 
 /**
@@ -277,14 +285,15 @@ function isStaticAsset(url) {
  */
 function isNavigationRequest(request) {
   return (
-    request.mode === 'navigate' ||
-    (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'))
+    request.mode === "navigate" ||
+    (request.method === "GET" &&
+      request.headers.get("accept")?.includes("text/html"))
   );
 }
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   // Only handle GET requests
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
@@ -297,7 +306,7 @@ self.addEventListener('fetch', (event) => {
   // the UI always has data to render, even on slow or interrupted connections.
   // The main thread's React Query layer handles the eventual fresh data via its
   // own refetching mechanism, so the user sees updates within seconds.
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       (async () => {
         // On mobile, service workers are frequently terminated and restarted.
@@ -325,7 +334,8 @@ self.addEventListener('fetch', (event) => {
             .then(async (networkResponse) => {
               if (networkResponse.ok) {
                 // Store with timestamp for freshness checking
-                const timestampedResponse = await addCacheTimestamp(networkResponse);
+                const timestampedResponse =
+                  await addCacheTimestamp(networkResponse);
                 cache.put(event.request, timestampedResponse);
                 return networkResponse;
               }
@@ -369,7 +379,7 @@ self.addEventListener('fetch', (event) => {
 
         // No cache at all - must wait for network
         return fetchPromise;
-      })()
+      })(),
     );
     return;
   }
@@ -386,18 +396,20 @@ self.addEventListener('fetch', (event) => {
   if (isImmutableAsset(url)) {
     event.respondWith(
       caches.open(IMMUTABLE_CACHE).then((cache) => {
-        return cache.match(event.request, { ignoreVary: true }).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return fetch(event.request).then((networkResponse) => {
-            if (networkResponse.ok) {
-              cache.put(event.request, networkResponse.clone());
+        return cache
+          .match(event.request, { ignoreVary: true })
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
             }
-            return networkResponse;
+            return fetch(event.request).then((networkResponse) => {
+              if (networkResponse.ok) {
+                cache.put(event.request, networkResponse.clone());
+              }
+              return networkResponse;
+            });
           });
-        });
-      })
+      }),
     );
     return;
   }
@@ -422,24 +434,28 @@ self.addEventListener('fetch', (event) => {
               // can parse it without errors, instead of a plain-text 503.
               const dest = event.request.destination;
               const urlPath = url.pathname;
-              if (dest === 'script' || urlPath.endsWith('.js') || urlPath.endsWith('.mjs')) {
-                return new Response('// offline', {
+              if (
+                dest === "script" ||
+                urlPath.endsWith(".js") ||
+                urlPath.endsWith(".mjs")
+              ) {
+                return new Response("// offline", {
                   status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: { 'Content-Type': 'application/javascript' },
+                  statusText: "Service Unavailable",
+                  headers: { "Content-Type": "application/javascript" },
                 });
               }
-              if (dest === 'style' || urlPath.endsWith('.css')) {
-                return new Response('/* offline */', {
+              if (dest === "style" || urlPath.endsWith(".css")) {
+                return new Response("/* offline */", {
                   status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: { 'Content-Type': 'text/css' },
+                  statusText: "Service Unavailable",
+                  headers: { "Content-Type": "text/css" },
                 });
               }
-              return new Response('Service Unavailable', {
+              return new Response("Service Unavailable", {
                 status: 503,
-                statusText: 'Service Unavailable',
-                headers: { 'Content-Type': 'text/plain' },
+                statusText: "Service Unavailable",
+                headers: { "Content-Type": "text/plain" },
               });
             });
 
@@ -449,8 +465,8 @@ self.addEventListener('fetch', (event) => {
           }
 
           return fetchPromise;
-        })
-      )
+        }),
+      ),
     );
     return;
   }
@@ -463,7 +479,7 @@ self.addEventListener('fetch', (event) => {
         return cache.match(event.request).then((cachedResponse) => {
           const fetchPromise = fetch(event.request)
             .then((networkResponse) => {
-              if (networkResponse.ok && networkResponse.type === 'basic') {
+              if (networkResponse.ok && networkResponse.type === "basic") {
                 cache.put(event.request, networkResponse.clone());
               }
               return networkResponse;
@@ -473,7 +489,7 @@ self.addEventListener('fetch', (event) => {
           // Return cached version immediately, or wait for network
           return cachedResponse || fetchPromise;
         });
-      })
+      }),
     );
     return;
   }
@@ -492,15 +508,18 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_NAME);
-        const cachedResponse = (await cache.match(event.request)) || (await cache.match('/'));
+        const cachedResponse =
+          (await cache.match(event.request)) || (await cache.match("/"));
 
         // Start a background fetch to update the cache for next time.
         // Uses Navigation Preload if available (already in-flight, no extra cost).
         const updateCache = async () => {
           try {
-            const preloadResponse = event.preloadResponse && (await event.preloadResponse);
-            const freshResponse = preloadResponse || (await fetch(event.request));
-            if (freshResponse.ok && freshResponse.type === 'basic') {
+            const preloadResponse =
+              event.preloadResponse && (await event.preloadResponse);
+            const freshResponse =
+              preloadResponse || (await fetch(event.request));
+            if (freshResponse.ok && freshResponse.type === "basic") {
               await cache.put(event.request, freshResponse.clone());
             }
           } catch (_e) {
@@ -517,18 +536,19 @@ self.addEventListener('fetch', (event) => {
 
         // No cache yet (first visit) — must go to network
         try {
-          const preloadResponse = event.preloadResponse && (await event.preloadResponse);
+          const preloadResponse =
+            event.preloadResponse && (await event.preloadResponse);
           const response = preloadResponse || (await fetch(event.request));
-          if (response.ok && response.type === 'basic') {
+          if (response.ok && response.type === "basic") {
             // Use event.waitUntil to ensure the cache write completes before
             // the service worker is terminated (mirrors the cached-path pattern).
             event.waitUntil(cache.put(event.request, response.clone()));
           }
           return response;
         } catch (_e) {
-          return new Response('Offline', { status: 503 });
+          return new Response("Offline", { status: 503 });
         }
-      })()
+      })(),
     );
     return;
   }
@@ -537,7 +557,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        if (response.ok && response.type === 'basic') {
+        if (response.ok && response.type === "basic") {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
@@ -547,14 +567,14 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         return caches.match(event.request);
-      })
+      }),
   );
 });
 
 // Periodic cleanup of the immutable cache to prevent unbounded growth
 // Remove entries older than 30 days when cache exceeds 200 entries
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'CACHE_CLEANUP') {
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CACHE_CLEANUP") {
     const MAX_ENTRIES = 200;
     caches.open(IMMUTABLE_CACHE).then((cache) => {
       cache.keys().then((keys) => {
@@ -580,7 +600,7 @@ self.addEventListener('message', (event) => {
   // Allow the main thread to explicitly activate a waiting service worker.
   // This is used when the user acknowledges an "Update available" prompt,
   // or during fresh page loads where it's safe to swap the SW.
-  if (event.data?.type === 'SKIP_WAITING') {
+  if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 
@@ -588,7 +608,7 @@ self.addEventListener('message', (event) => {
   // Sent from main thread after detecting the device is mobile.
   // This allows the SW to apply mobile-specific caching strategies.
   // Persisted to Cache Storage so it survives SW restarts on mobile.
-  if (event.data?.type === 'SET_MOBILE_MODE') {
+  if (event.data?.type === "SET_MOBILE_MODE") {
     mobileMode = !!event.data.enabled;
     persistMobileMode(mobileMode);
   }
@@ -596,7 +616,10 @@ self.addEventListener('message', (event) => {
   // Warm the immutable cache with critical assets the app will need.
   // Called from the main thread after the initial render is complete,
   // so we don't compete with critical resource loading on mobile.
-  if (event.data?.type === 'PRECACHE_ASSETS' && Array.isArray(event.data.urls)) {
+  if (
+    event.data?.type === "PRECACHE_ASSETS" &&
+    Array.isArray(event.data.urls)
+  ) {
     event.waitUntil(
       caches.open(IMMUTABLE_CACHE).then((cache) => {
         return Promise.all(
@@ -607,7 +630,7 @@ self.addEventListener('message', (event) => {
               if (!existing) {
                 // Fetch with cors mode to match how <script crossorigin> and
                 // <link rel="modulepreload" crossorigin> request these assets.
-                return fetch(url, { mode: 'cors', priority: 'low' })
+                return fetch(url, { mode: "cors", priority: "low" })
                   .then((response) => {
                     if (response.ok) {
                       return cache.put(url, response);
@@ -618,9 +641,9 @@ self.addEventListener('message', (event) => {
                   });
               }
             });
-          })
+          }),
         );
-      })
+      }),
     );
   }
 });

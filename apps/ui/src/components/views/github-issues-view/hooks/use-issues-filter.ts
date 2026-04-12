@@ -1,30 +1,37 @@
-import { useMemo } from 'react';
-import type { GitHubIssue, StoredValidation } from '@/lib/electron';
-import type { IssuesFilterState, IssuesFilterResult, IssuesValidationStatus } from '../types';
-import { isValidationStale } from '../utils';
+import { useMemo } from "react";
+import type { GitHubIssue, StoredValidation } from "@/lib/electron";
+import type {
+  IssuesFilterState,
+  IssuesFilterResult,
+  IssuesValidationStatus,
+} from "../types";
+import { isValidationStale } from "../utils";
 
 /**
  * Determines the validation status of an issue based on its cached validation.
  */
 function getValidationStatus(
   issueNumber: number,
-  cachedValidations: Map<number, StoredValidation>
+  cachedValidations: Map<number, StoredValidation>,
 ): IssuesValidationStatus | null {
   const validation = cachedValidations.get(issueNumber);
   if (!validation) {
-    return 'not_validated';
+    return "not_validated";
   }
   if (isValidationStale(validation.validatedAt)) {
-    return 'stale';
+    return "stale";
   }
-  return 'validated';
+  return "validated";
 }
 
 /**
  * Checks if a search query matches an issue's searchable content.
  * Searches through title and body (case-insensitive).
  */
-function matchesSearchQuery(issue: GitHubIssue, normalizedQuery: string): boolean {
+function matchesSearchQuery(
+  issue: GitHubIssue,
+  normalizedQuery: string,
+): boolean {
   if (!normalizedQuery) return true;
 
   const titleMatch = issue.title?.toLowerCase().includes(normalizedQuery);
@@ -39,9 +46,9 @@ function matchesSearchQuery(issue: GitHubIssue, normalizedQuery: string): boolea
  */
 function matchesStateFilter(
   issue: GitHubIssue,
-  stateFilter: IssuesFilterState['stateFilter']
+  stateFilter: IssuesFilterState["stateFilter"],
 ): boolean {
-  if (stateFilter === 'all') return true;
+  if (stateFilter === "all") return true;
   return issue.state.toLowerCase() === stateFilter;
 }
 
@@ -60,11 +67,16 @@ function matchesLabels(issue: GitHubIssue, selectedLabels: string[]): boolean {
  * Checks if an issue matches any of the selected assignees.
  * Returns true if no assignees are selected (no filter) or if any selected assignee matches.
  */
-function matchesAssignees(issue: GitHubIssue, selectedAssignees: string[]): boolean {
+function matchesAssignees(
+  issue: GitHubIssue,
+  selectedAssignees: string[],
+): boolean {
   if (selectedAssignees.length === 0) return true;
 
   const issueAssignees = issue.assignees?.map((a) => a.login) ?? [];
-  return selectedAssignees.some((assignee) => issueAssignees.includes(assignee));
+  return selectedAssignees.some((assignee) =>
+    issueAssignees.includes(assignee),
+  );
 }
 
 /**
@@ -72,7 +84,10 @@ function matchesAssignees(issue: GitHubIssue, selectedAssignees: string[]): bool
  * Returns true if no milestones are selected (no filter) or if any selected milestone matches.
  * Note: GitHub issues may not have milestone data in the current schema, this is a placeholder.
  */
-function matchesMilestones(issue: GitHubIssue, selectedMilestones: string[]): boolean {
+function matchesMilestones(
+  issue: GitHubIssue,
+  selectedMilestones: string[],
+): boolean {
   if (selectedMilestones.length === 0) return true;
 
   // GitHub issues in the current schema don't have milestone field
@@ -87,7 +102,7 @@ function matchesMilestones(issue: GitHubIssue, selectedMilestones: string[]): bo
 function matchesValidationStatus(
   issue: GitHubIssue,
   validationStatusFilter: IssuesValidationStatus | null,
-  cachedValidations: Map<number, StoredValidation>
+  cachedValidations: Map<number, StoredValidation>,
 ): boolean {
   if (!validationStatusFilter) return true;
 
@@ -146,7 +161,7 @@ function hasActiveFilterCheck(filterState: IssuesFilterState): boolean {
 
   // Note: stateFilter 'open' is the default, so we consider it "not active" for UI purposes
   // Only 'closed' or 'all' are considered active filters
-  const hasStateFilter = stateFilter !== 'open';
+  const hasStateFilter = stateFilter !== "open";
   const hasSearchQuery = searchQuery.trim().length > 0;
   const hasLabelFilter = selectedLabels.length > 0;
   const hasAssigneeFilter = selectedAssignees.length > 0;
@@ -177,7 +192,7 @@ function hasActiveFilterCheck(filterState: IssuesFilterState): boolean {
 export function useIssuesFilter(
   issues: GitHubIssue[],
   filterState: IssuesFilterState,
-  cachedValidations: Map<number, StoredValidation> = new Map()
+  cachedValidations: Map<number, StoredValidation> = new Map(),
 ): IssuesFilterResult {
   const {
     searchQuery,
@@ -212,7 +227,11 @@ export function useIssuesFilter(
         matchesLabels(issue, selectedLabels) &&
         matchesAssignees(issue, selectedAssignees) &&
         matchesMilestones(issue, selectedMilestones) &&
-        matchesValidationStatus(issue, validationStatusFilter, cachedValidations);
+        matchesValidationStatus(
+          issue,
+          validationStatusFilter,
+          cachedValidations,
+        );
 
       if (matchesAllFilters) {
         matchedIssues.push(issue);

@@ -6,23 +6,26 @@
  * Also resets the server's settings.json to a known state for test isolation
  */
 
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Resolve workspace root (apps/ui/scripts -> workspace root)
-const WORKSPACE_ROOT = path.resolve(__dirname, '../../..');
-const FIXTURE_PATH = path.join(WORKSPACE_ROOT, 'test/fixtures/projectA');
-const SPEC_FILE_PATH = path.join(FIXTURE_PATH, '.pegasus/app_spec.txt');
-const CONTEXT_DIR = path.join(FIXTURE_PATH, '.pegasus/context');
-const CONTEXT_METADATA_PATH = path.join(CONTEXT_DIR, 'context-metadata.json');
-const SERVER_SETTINGS_PATH = path.join(WORKSPACE_ROOT, 'apps/server/data/settings.json');
+const WORKSPACE_ROOT = path.resolve(__dirname, "../../..");
+const FIXTURE_PATH = path.join(WORKSPACE_ROOT, "test/fixtures/projectA");
+const SPEC_FILE_PATH = path.join(FIXTURE_PATH, ".pegasus/app_spec.txt");
+const CONTEXT_DIR = path.join(FIXTURE_PATH, ".pegasus/context");
+const CONTEXT_METADATA_PATH = path.join(CONTEXT_DIR, "context-metadata.json");
+const SERVER_SETTINGS_PATH = path.join(
+  WORKSPACE_ROOT,
+  "apps/server/data/settings.json",
+);
 // Create a shared test workspace directory that will be used as default for project creation
-const TEST_WORKSPACE_DIR = path.join(os.tmpdir(), 'pegasus-e2e-workspace');
+const TEST_WORKSPACE_DIR = path.join(os.tmpdir(), "pegasus-e2e-workspace");
 
 const SPEC_CONTENT = `<app_spec>
   <name>Test Project A</name>
@@ -40,7 +43,7 @@ const E2E_SETTINGS = {
   setupComplete: true,
   isFirstRun: false,
   skipClaudeSetup: false,
-  theme: 'dark',
+  theme: "dark",
   sidebarOpen: true,
   chatHistoryOpen: false,
   maxConcurrency: 3,
@@ -48,60 +51,60 @@ const E2E_SETTINGS = {
   enableDependencyBlocking: true,
   skipVerificationInAutoMode: false,
   useWorktrees: true,
-  defaultPlanningMode: 'skip',
+  defaultPlanningMode: "skip",
   defaultRequirePlanApproval: false,
   muteDoneSound: false,
   phaseModels: {
-    enhancementModel: { model: 'sonnet' },
-    fileDescriptionModel: { model: 'haiku' },
-    imageDescriptionModel: { model: 'haiku' },
-    validationModel: { model: 'sonnet' },
-    specGenerationModel: { model: 'opus' },
-    featureGenerationModel: { model: 'sonnet' },
-    backlogPlanningModel: { model: 'sonnet' },
-    projectAnalysisModel: { model: 'sonnet' },
-    ideationModel: { model: 'sonnet' },
+    enhancementModel: { model: "sonnet" },
+    fileDescriptionModel: { model: "haiku" },
+    imageDescriptionModel: { model: "haiku" },
+    validationModel: { model: "sonnet" },
+    specGenerationModel: { model: "opus" },
+    featureGenerationModel: { model: "sonnet" },
+    backlogPlanningModel: { model: "sonnet" },
+    projectAnalysisModel: { model: "sonnet" },
+    ideationModel: { model: "sonnet" },
   },
-  enhancementModel: 'sonnet',
-  validationModel: 'opus',
-  enabledCursorModels: ['auto', 'composer-1'],
-  cursorDefaultModel: 'auto',
+  enhancementModel: "sonnet",
+  validationModel: "opus",
+  enabledCursorModels: ["auto", "composer-1"],
+  cursorDefaultModel: "auto",
   keyboardShortcuts: {
-    board: 'K',
-    agent: 'A',
-    spec: 'D',
-    context: 'C',
-    settings: 'S',
-    terminal: 'T',
-    toggleSidebar: '`',
-    addFeature: 'N',
-    addContextFile: 'N',
-    startNext: 'G',
-    newSession: 'N',
-    openProject: 'O',
-    projectPicker: 'P',
-    cyclePrevProject: 'Q',
-    cycleNextProject: 'E',
-    splitTerminalRight: 'Alt+D',
-    splitTerminalDown: 'Alt+S',
-    closeTerminal: 'Alt+W',
-    tools: 'T',
-    ideation: 'I',
-    githubIssues: 'G',
-    githubPrs: 'R',
-    newTerminalTab: 'Alt+T',
+    board: "K",
+    agent: "A",
+    spec: "D",
+    context: "C",
+    settings: "S",
+    terminal: "T",
+    toggleSidebar: "`",
+    addFeature: "N",
+    addContextFile: "N",
+    startNext: "G",
+    newSession: "N",
+    openProject: "O",
+    projectPicker: "P",
+    cyclePrevProject: "Q",
+    cycleNextProject: "E",
+    splitTerminalRight: "Alt+D",
+    splitTerminalDown: "Alt+S",
+    closeTerminal: "Alt+W",
+    tools: "T",
+    ideation: "I",
+    githubIssues: "G",
+    githubPrs: "R",
+    newTerminalTab: "Alt+T",
   },
   // Default test project using the fixture path - tests can override via route mocking if needed
   projects: [
     {
-      id: 'e2e-default-project',
-      name: 'E2E Test Project',
+      id: "e2e-default-project",
+      name: "E2E Test Project",
       path: FIXTURE_PATH,
       lastOpened: new Date().toISOString(),
     },
   ],
   trashedProjects: [],
-  currentProjectId: 'e2e-default-project',
+  currentProjectId: "e2e-default-project",
   projectHistory: [],
   projectHistoryIndex: 0,
   lastProjectDir: TEST_WORKSPACE_DIR,
@@ -111,8 +114,8 @@ const E2E_SETTINGS = {
   autoLoadClaudeMd: false,
   skipSandboxWarning: true,
   codexAutoLoadAgents: false,
-  codexSandboxMode: 'workspace-write',
-  codexApprovalPolicy: 'on-request',
+  codexSandboxMode: "workspace-write",
+  codexApprovalPolicy: "on-request",
   codexEnableWebSearch: false,
   codexEnableImages: true,
   codexAdditionalDirs: [],
@@ -125,7 +128,7 @@ const E2E_SETTINGS = {
 };
 
 function setupFixtures() {
-  console.log('Setting up E2E test fixtures...');
+  console.log("Setting up E2E test fixtures...");
   console.log(`Workspace root: ${WORKSPACE_ROOT}`);
   console.log(`Fixture path: ${FIXTURE_PATH}`);
   console.log(`Test workspace dir: ${TEST_WORKSPACE_DIR}`);
@@ -152,7 +155,10 @@ function setupFixtures() {
     fs.mkdirSync(CONTEXT_DIR, { recursive: true });
     console.log(`Created directory: ${CONTEXT_DIR}`);
   }
-  fs.writeFileSync(CONTEXT_METADATA_PATH, JSON.stringify({ files: {} }, null, 2));
+  fs.writeFileSync(
+    CONTEXT_METADATA_PATH,
+    JSON.stringify({ files: {} }, null, 2),
+  );
   console.log(`Created fixture file: ${CONTEXT_METADATA_PATH}`);
 
   // Reset server settings.json to a clean state for E2E tests
@@ -164,7 +170,7 @@ function setupFixtures() {
   fs.writeFileSync(SERVER_SETTINGS_PATH, JSON.stringify(E2E_SETTINGS, null, 2));
   console.log(`Reset server settings: ${SERVER_SETTINGS_PATH}`);
 
-  console.log('E2E test fixtures setup complete!');
+  console.log("E2E test fixtures setup complete!");
 }
 
 setupFixtures();

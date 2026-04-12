@@ -3,7 +3,7 @@
  * This file exists for backward compatibility with existing imports
  */
 
-import { secureFs } from '@pegasus/platform';
+import { secureFs } from "@pegasus/platform";
 
 export const {
   // Async methods

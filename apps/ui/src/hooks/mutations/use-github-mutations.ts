@@ -4,12 +4,17 @@
  * React Query mutations for GitHub operations like validating issues.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI, GitHubIssue, GitHubComment } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { LinkedPRInfo, ModelId, ThinkingLevel, ReasoningEffort } from '@pegasus/types';
-import { resolveModelString } from '@pegasus/model-resolver';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI, GitHubIssue, GitHubComment } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type {
+  LinkedPRInfo,
+  ModelId,
+  ThinkingLevel,
+  ReasoningEffort,
+} from "@pegasus/types";
+import { resolveModelString } from "@pegasus/model-resolver";
 
 /**
  * Input for validating a GitHub issue
@@ -48,18 +53,25 @@ interface ValidateIssueInput {
 export function useValidateIssue(projectPath: string) {
   return useMutation({
     mutationFn: async (input: ValidateIssueInput) => {
-      const { issue, model, thinkingLevel, reasoningEffort, providerId, comments, linkedPRs } =
-        input;
+      const {
+        issue,
+        model,
+        thinkingLevel,
+        reasoningEffort,
+        providerId,
+        comments,
+        linkedPRs,
+      } = input;
 
       const api = getElectronAPI();
       if (!api.github?.validateIssue) {
-        throw new Error('Validation API not available');
+        throw new Error("Validation API not available");
       }
 
       const validationInput = {
         issueNumber: issue.number,
         issueTitle: issue.title,
-        issueBody: issue.body || '',
+        issueBody: issue.body || "",
         issueLabels: issue.labels.map((l) => l.name),
         comments,
         linkedPRs,
@@ -74,23 +86,23 @@ export function useValidateIssue(projectPath: string) {
         resolvedModel,
         thinkingLevel,
         reasoningEffort,
-        providerId
+        providerId,
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start validation');
+        throw new Error(result.error || "Failed to start validation");
       }
 
       return { issueNumber: issue.number };
     },
     onSuccess: (_, variables) => {
       toast.info(`Starting validation for issue #${variables.issue.number}`, {
-        description: 'You will be notified when the analysis is complete',
+        description: "You will be notified when the analysis is complete",
       });
     },
     onError: (error) => {
-      toast.error('Failed to validate issue', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to validate issue", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     },
     // Note: We don't invalidate queries here because the actual result
@@ -117,13 +129,16 @@ export function useMarkValidationViewed(projectPath: string) {
     mutationFn: async (issueNumber: number) => {
       const api = getElectronAPI();
       if (!api.github?.markValidationViewed) {
-        throw new Error('Mark viewed API not available');
+        throw new Error("Mark viewed API not available");
       }
 
-      const result = await api.github.markValidationViewed(projectPath, issueNumber);
+      const result = await api.github.markValidationViewed(
+        projectPath,
+        issueNumber,
+      );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to mark as viewed');
+        throw new Error(result.error || "Failed to mark as viewed");
       }
 
       return { issueNumber };
@@ -155,22 +170,32 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ threadId, resolve }: { threadId: string; resolve: boolean }) => {
+    mutationFn: async ({
+      threadId,
+      resolve,
+    }: {
+      threadId: string;
+      resolve: boolean;
+    }) => {
       const api = getElectronAPI();
       if (!api.github?.resolveReviewThread) {
-        throw new Error('Resolve review thread API not available');
+        throw new Error("Resolve review thread API not available");
       }
 
-      const result = await api.github.resolveReviewThread(projectPath, threadId, resolve);
+      const result = await api.github.resolveReviewThread(
+        projectPath,
+        threadId,
+        resolve,
+      );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to resolve review thread');
+        throw new Error(result.error || "Failed to resolve review thread");
       }
 
       return { isResolved: result.isResolved ?? resolve };
     },
     onSuccess: (_, variables) => {
-      const action = variables.resolve ? 'resolved' : 'unresolved';
+      const action = variables.resolve ? "resolved" : "unresolved";
       toast.success(`Comment ${action}`, {
         description: `The review thread has been ${action} on GitHub`,
       });
@@ -180,8 +205,8 @@ export function useResolveReviewThread(projectPath: string, prNumber: number) {
       });
     },
     onError: (error) => {
-      toast.error('Failed to update comment', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to update comment", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     },
   });
@@ -198,13 +223,13 @@ export function useGetValidationStatus(projectPath: string) {
     mutationFn: async () => {
       const api = getElectronAPI();
       if (!api.github?.getValidationStatus) {
-        throw new Error('Validation status API not available');
+        throw new Error("Validation status API not available");
       }
 
       const result = await api.github.getValidationStatus(projectPath);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to get validation status');
+        throw new Error(result.error || "Failed to get validation status");
       }
 
       return result.runningIssues ?? [];

@@ -5,13 +5,13 @@
  * Prompts them to either restart the app in a container or reload to try again.
  */
 
-import { ShieldX, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ShieldX, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function SandboxRejectionScreen() {
   const handleReload = () => {
     // Clear the rejection state and reload
-    sessionStorage.removeItem('pegasus-sandbox-denied');
+    sessionStorage.removeItem("pegasus-sandbox-denied");
     window.location.reload();
   };
 
@@ -27,13 +27,14 @@ export function SandboxRejectionScreen() {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">Access Denied</h1>
           <p className="text-muted-foreground">
-            You declined to accept the risks of running Pegasus outside a sandbox environment.
+            You declined to accept the risks of running Pegasus outside a
+            sandbox environment.
           </p>
         </div>
 
         <p className="text-sm text-muted-foreground">
-          For safer operation, consider running Pegasus in Docker. See the README for
-          instructions.
+          For safer operation, consider running Pegasus in Docker. See the
+          README for instructions.
         </p>
 
         <div className="pt-2">

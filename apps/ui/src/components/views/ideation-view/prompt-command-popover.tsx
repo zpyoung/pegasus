@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Sparkles,
   Lightbulb,
@@ -10,11 +10,15 @@ import {
   Zap,
   Eye,
   BarChart3,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { IdeaCategory } from '@pegasus/types';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { IdeaCategory } from "@pegasus/types";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -22,15 +26,15 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
-import { useGuidedPrompts } from '@/hooks/use-guided-prompts';
-import { useGenerateIdeationSuggestions } from '@/hooks/mutations/use-ideation-mutations';
-import { useIdeationStore } from '@/store/ideation-store';
-import { useAppStore } from '@/store/app-store';
+} from "@/components/ui/command";
+import { useGuidedPrompts } from "@/hooks/use-guided-prompts";
+import { useGenerateIdeationSuggestions } from "@/hooks/mutations/use-ideation-mutations";
+import { useIdeationStore } from "@/store/ideation-store";
+import { useAppStore } from "@/store/app-store";
 
 const CATEGORY_ICONS: Record<IdeaCategory, LucideIcon> = {
   feature: Lightbulb,
-  'ux-ui': Palette,
+  "ux-ui": Palette,
   dx: Code2,
   growth: TrendingUp,
   technical: Wrench,
@@ -42,9 +46,9 @@ const CATEGORY_ICONS: Record<IdeaCategory, LucideIcon> = {
 
 export function PromptCommandPopover() {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
-  const projectPath = useAppStore((s) => s.currentProject?.path ?? '');
+  const projectPath = useAppStore((s) => s.currentProject?.path ?? "");
   const addGenerationJob = useIdeationStore((s) => s.addGenerationJob);
   const { categories, prompts, isLoading } = useGuidedPrompts();
   const generateMutation = useGenerateIdeationSuggestions(projectPath);
@@ -57,9 +61,9 @@ export function PromptCommandPopover() {
       prompts: prompts.filter(
         (p) =>
           p.category === cat.id &&
-          (query === '' ||
+          (query === "" ||
             p.title.toLowerCase().includes(query) ||
-            p.description.toLowerCase().includes(query))
+            p.description.toLowerCase().includes(query)),
       ),
     }))
     .filter((cat) => cat.prompts.length > 0);
@@ -76,7 +80,7 @@ export function PromptCommandPopover() {
       promptTitle: prompt.title,
     });
     setOpen(false);
-    setSearch('');
+    setSearch("");
   }
 
   return (
@@ -95,7 +99,9 @@ export function PromptCommandPopover() {
             onValueChange={setSearch}
           />
           <CommandList>
-            <CommandEmpty>{isLoading ? 'Loading prompts…' : 'No prompts found.'}</CommandEmpty>
+            <CommandEmpty>
+              {isLoading ? "Loading prompts…" : "No prompts found."}
+            </CommandEmpty>
             {filteredCategories.map((cat) => {
               const Icon = CATEGORY_ICONS[cat.id] ?? Lightbulb;
               return (
@@ -109,7 +115,11 @@ export function PromptCommandPopover() {
                   }
                 >
                   {cat.prompts.map((prompt) => (
-                    <CommandItem key={prompt.id} value={prompt.id} onSelect={handleSelect}>
+                    <CommandItem
+                      key={prompt.id}
+                      value={prompt.id}
+                      onSelect={handleSelect}
+                    >
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="truncate">{prompt.title}</span>
                         <span className="text-xs text-muted-foreground truncate">

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { useState, useEffect, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   Dialog,
   DialogContent,
@@ -7,9 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,9 +18,9 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
+} from "@/components/ui/select";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
 import {
   GitMerge,
   RefreshCw,
@@ -29,13 +29,13 @@ import {
   Wrench,
   Sparkles,
   XCircle,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import type { WorktreeInfo, MergeConflictInfo } from '../worktree-panel/types';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import type { WorktreeInfo, MergeConflictInfo } from "../worktree-panel/types";
 
-export type PullStrategy = 'merge' | 'rebase';
+export type PullStrategy = "merge" | "rebase";
 
-type DialogStep = 'select' | 'executing' | 'conflict' | 'success';
+type DialogStep = "select" | "executing" | "conflict" | "success";
 
 interface ConflictState {
   conflictFiles: string[];
@@ -54,7 +54,7 @@ interface RemoteInfo {
   branches: RemoteBranch[];
 }
 
-const logger = createLogger('MergeRebaseDialog');
+const logger = createLogger("MergeRebaseDialog");
 
 interface MergeRebaseDialogProps {
   open: boolean;
@@ -70,14 +70,17 @@ export function MergeRebaseDialog({
   onCreateConflictResolutionFeature,
 }: MergeRebaseDialogProps) {
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
-  const [selectedRemote, setSelectedRemote] = useState<string>('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('');
-  const [selectedStrategy, setSelectedStrategy] = useState<PullStrategy>('merge');
+  const [selectedRemote, setSelectedRemote] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedStrategy, setSelectedStrategy] =
+    useState<PullStrategy>("merge");
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<DialogStep>('select');
-  const [conflictState, setConflictState] = useState<ConflictState | null>(null);
+  const [step, setStep] = useState<DialogStep>("select");
+  const [conflictState, setConflictState] = useState<ConflictState | null>(
+    null,
+  );
 
   // Fetch remotes when dialog opens
   useEffect(() => {
@@ -89,11 +92,11 @@ export function MergeRebaseDialog({
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setSelectedRemote('');
-      setSelectedBranch('');
-      setSelectedStrategy('merge');
+      setSelectedRemote("");
+      setSelectedBranch("");
+      setSelectedStrategy("merge");
       setError(null);
-      setStep('select');
+      setStep("select");
       setConflictState(null);
     }
   }, [open]);
@@ -102,16 +105,20 @@ export function MergeRebaseDialog({
   useEffect(() => {
     if (remotes.length > 0 && !selectedRemote) {
       // Default to 'origin' if available, otherwise first remote
-      const defaultRemote = remotes.find((r) => r.name === 'origin') || remotes[0];
+      const defaultRemote =
+        remotes.find((r) => r.name === "origin") || remotes[0];
       setSelectedRemote(defaultRemote.name);
 
       // Try to select a matching branch name or default to main/master
       if (defaultRemote.branches.length > 0 && worktree) {
-        const matchingBranch = defaultRemote.branches.find((b) => b.name === worktree.branch);
-        const mainBranch = defaultRemote.branches.find(
-          (b) => b.name === 'main' || b.name === 'master'
+        const matchingBranch = defaultRemote.branches.find(
+          (b) => b.name === worktree.branch,
         );
-        const defaultBranch = matchingBranch || mainBranch || defaultRemote.branches[0];
+        const mainBranch = defaultRemote.branches.find(
+          (b) => b.name === "main" || b.name === "master",
+        );
+        const defaultBranch =
+          matchingBranch || mainBranch || defaultRemote.branches[0];
         setSelectedBranch(defaultBranch.fullRef);
       }
     }
@@ -123,12 +130,17 @@ export function MergeRebaseDialog({
       const remote = remotes.find((r) => r.name === selectedRemote);
       if (remote && remote.branches.length > 0) {
         // Try to select a matching branch name or default to main/master
-        const matchingBranch = remote.branches.find((b) => b.name === worktree.branch);
-        const mainBranch = remote.branches.find((b) => b.name === 'main' || b.name === 'master');
-        const defaultBranch = matchingBranch || mainBranch || remote.branches[0];
+        const matchingBranch = remote.branches.find(
+          (b) => b.name === worktree.branch,
+        );
+        const mainBranch = remote.branches.find(
+          (b) => b.name === "main" || b.name === "master",
+        );
+        const defaultBranch =
+          matchingBranch || mainBranch || remote.branches[0];
         setSelectedBranch(defaultBranch.fullRef);
       } else {
-        setSelectedBranch('');
+        setSelectedBranch("");
       }
     }
   }, [selectedRemote, remotes, worktree]);
@@ -146,14 +158,14 @@ export function MergeRebaseDialog({
       if (result.success && result.result) {
         setRemotes(result.result.remotes);
         if (result.result.remotes.length === 0) {
-          setError('No remotes found in this repository');
+          setError("No remotes found in this repository");
         }
       } else {
-        setError(result.error || 'Failed to fetch remotes');
+        setError(result.error || "Failed to fetch remotes");
       }
     } catch (err) {
-      logger.error('Failed to fetch remotes:', err);
-      setError('Failed to fetch remotes');
+      logger.error("Failed to fetch remotes:", err);
+      setError("Failed to fetch remotes");
     } finally {
       setIsLoading(false);
     }
@@ -171,13 +183,13 @@ export function MergeRebaseDialog({
 
       if (result.success && result.result) {
         setRemotes(result.result.remotes);
-        toast.success('Remotes refreshed');
+        toast.success("Remotes refreshed");
       } else {
-        toast.error(result.error || 'Failed to refresh remotes');
+        toast.error(result.error || "Failed to refresh remotes");
       }
     } catch (err) {
-      logger.error('Failed to refresh remotes:', err);
-      toast.error('Failed to refresh remotes');
+      logger.error("Failed to refresh remotes:", err);
+      toast.error("Failed to refresh remotes");
     } finally {
       setIsRefreshing(false);
     }
@@ -186,35 +198,40 @@ export function MergeRebaseDialog({
   const handleExecuteOperation = useCallback(async () => {
     if (!worktree || !selectedBranch) return;
 
-    setStep('executing');
+    setStep("executing");
 
     try {
       const api = getHttpApiClient();
 
-      if (selectedStrategy === 'rebase') {
+      if (selectedStrategy === "rebase") {
         // Attempt the rebase operation - the rebase service fetches from the remote
         // before rebasing to ensure we have up-to-date refs
-        const result = await api.worktree.rebase(worktree.path, selectedBranch, selectedRemote);
+        const result = await api.worktree.rebase(
+          worktree.path,
+          selectedBranch,
+          selectedRemote,
+        );
 
         if (result.success) {
           toast.success(`Rebased onto ${selectedBranch}`, {
-            description: result.result?.message || 'Rebase completed successfully',
+            description:
+              result.result?.message || "Rebase completed successfully",
           });
-          setStep('success');
+          setStep("success");
           onOpenChange(false);
         } else if (result.hasConflicts) {
           // Rebase had conflicts - show conflict resolution UI
           setConflictState({
             conflictFiles: result.conflictFiles || [],
             remoteBranch: selectedBranch,
-            strategy: 'rebase',
+            strategy: "rebase",
           });
-          setStep('conflict');
+          setStep("conflict");
         } else {
-          toast.error('Rebase failed', {
-            description: result.error || 'Unknown error',
+          toast.error("Rebase failed", {
+            description: result.error || "Unknown error",
           });
-          setStep('select');
+          setStep("select");
         }
       } else {
         // Merge strategy - merge the selected remote branch into the current branch.
@@ -225,17 +242,19 @@ export function MergeRebaseDialog({
         if (selectedBranch.startsWith(remotePrefix)) {
           remoteBranchShortName = selectedBranch.slice(remotePrefix.length);
         } else if (selectedBranch.startsWith(`${selectedRemote}/`)) {
-          remoteBranchShortName = selectedBranch.slice(selectedRemote.length + 1);
-        } else if (selectedBranch.startsWith('refs/heads/')) {
-          remoteBranchShortName = selectedBranch.slice('refs/heads/'.length);
-        } else if (selectedBranch.startsWith('refs/')) {
-          remoteBranchShortName = selectedBranch.slice('refs/'.length);
+          remoteBranchShortName = selectedBranch.slice(
+            selectedRemote.length + 1,
+          );
+        } else if (selectedBranch.startsWith("refs/heads/")) {
+          remoteBranchShortName = selectedBranch.slice("refs/heads/".length);
+        } else if (selectedBranch.startsWith("refs/")) {
+          remoteBranchShortName = selectedBranch.slice("refs/".length);
         }
         const result = await api.worktree.pull(
           worktree.path,
           selectedRemote,
           true,
-          remoteBranchShortName
+          remoteBranchShortName,
         );
 
         if (result.success && result.result) {
@@ -244,43 +263,45 @@ export function MergeRebaseDialog({
             setConflictState({
               conflictFiles: result.result.conflictFiles || [],
               remoteBranch: selectedBranch,
-              strategy: 'merge',
+              strategy: "merge",
             });
-            setStep('conflict');
+            setStep("conflict");
           } else {
             toast.success(`Merged ${selectedBranch}`, {
-              description: result.result.message || 'Merge completed successfully',
+              description:
+                result.result.message || "Merge completed successfully",
             });
-            setStep('success');
+            setStep("success");
             onOpenChange(false);
           }
         } else {
           // Check for conflict indicators in error
-          const errorMessage = result.error || '';
+          const errorMessage = result.error || "";
           const hasConflicts =
-            errorMessage.toLowerCase().includes('conflict') || errorMessage.includes('CONFLICT');
+            errorMessage.toLowerCase().includes("conflict") ||
+            errorMessage.includes("CONFLICT");
 
           if (hasConflicts) {
             setConflictState({
               conflictFiles: [],
               remoteBranch: selectedBranch,
-              strategy: 'merge',
+              strategy: "merge",
             });
-            setStep('conflict');
+            setStep("conflict");
           } else {
             // Non-conflict failure - show conflict resolution UI so user can choose
             // how to handle it (resolve manually or with AI) rather than auto-creating a task
             setConflictState({
               conflictFiles: [],
               remoteBranch: selectedBranch,
-              strategy: 'merge',
+              strategy: "merge",
             });
-            setStep('conflict');
+            setStep("conflict");
           }
         }
       }
     } catch (err) {
-      logger.error('Failed to execute operation:', err);
+      logger.error("Failed to execute operation:", err);
 
       // Show conflict resolution UI so user can choose how to handle it
       setConflictState({
@@ -288,9 +309,15 @@ export function MergeRebaseDialog({
         remoteBranch: selectedBranch,
         strategy: selectedStrategy,
       });
-      setStep('conflict');
+      setStep("conflict");
     }
-  }, [worktree, selectedBranch, selectedStrategy, selectedRemote, onOpenChange]);
+  }, [
+    worktree,
+    selectedBranch,
+    selectedStrategy,
+    selectedRemote,
+    onOpenChange,
+  ]);
 
   const handleResolveWithAI = useCallback(() => {
     if (!worktree || !conflictState) return;
@@ -308,11 +335,16 @@ export function MergeRebaseDialog({
     }
 
     onOpenChange(false);
-  }, [worktree, conflictState, onCreateConflictResolutionFeature, onOpenChange]);
+  }, [
+    worktree,
+    conflictState,
+    onCreateConflictResolutionFeature,
+    onOpenChange,
+  ]);
 
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info("Conflict markers left in place", {
+      description: "Edit the conflicting files to resolve conflicts manually.",
       duration: 6000,
     });
     onOpenChange(false);
@@ -324,24 +356,26 @@ export function MergeRebaseDialog({
   if (!worktree) return null;
 
   // Conflict resolution UI
-  if (step === 'conflict' && conflictState) {
-    const isRebase = conflictState.strategy === 'rebase';
+  if (step === "conflict" && conflictState) {
+    const isRebase = conflictState.strategy === "rebase";
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
-              {isRebase ? 'Rebase' : 'Merge'} Conflicts Detected
+              {isRebase ? "Rebase" : "Merge"} Conflicts Detected
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
                   {isRebase ? (
                     <>
-                      Conflicts detected when rebasing{' '}
-                      <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>{' '}
-                      onto{' '}
+                      Conflicts detected when rebasing{" "}
+                      <code className="font-mono bg-muted px-1 rounded">
+                        {worktree.branch}
+                      </code>{" "}
+                      onto{" "}
                       <code className="font-mono bg-muted px-1 rounded">
                         {conflictState.remoteBranch}
                       </code>
@@ -349,12 +383,15 @@ export function MergeRebaseDialog({
                     </>
                   ) : (
                     <>
-                      Conflicts detected when merging{' '}
+                      Conflicts detected when merging{" "}
                       <code className="font-mono bg-muted px-1 rounded">
                         {conflictState.remoteBranch}
-                      </code>{' '}
-                      into{' '}
-                      <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>.
+                      </code>{" "}
+                      into{" "}
+                      <code className="font-mono bg-muted px-1 rounded">
+                        {worktree.branch}
+                      </code>
+                      .
                     </>
                   )}
                 </span>
@@ -384,14 +421,15 @@ export function MergeRebaseDialog({
                   </p>
                   <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                     <li>
-                      <strong>Resolve with AI</strong> &mdash; Creates a task to{' '}
-                      {isRebase ? 'rebase and ' : ''}resolve conflicts automatically
+                      <strong>Resolve with AI</strong> &mdash; Creates a task to{" "}
+                      {isRebase ? "rebase and " : ""}resolve conflicts
+                      automatically
                     </li>
                     <li>
-                      <strong>Resolve Manually</strong> &mdash;{' '}
+                      <strong>Resolve Manually</strong> &mdash;{" "}
                       {isRebase
-                        ? 'Leaves the branch unchanged for you to rebase manually'
-                        : 'Leaves conflict markers in place for you to edit directly'}
+                        ? "Leaves the branch unchanged for you to rebase manually"
+                        : "Leaves conflict markers in place for you to edit directly"}
                     </li>
                   </ul>
                 </div>
@@ -403,7 +441,7 @@ export function MergeRebaseDialog({
             <Button
               variant="ghost"
               onClick={() => {
-                setStep('select');
+                setStep("select");
                 setConflictState(null);
               }}
             >
@@ -427,28 +465,30 @@ export function MergeRebaseDialog({
   }
 
   // Executing phase
-  if (step === 'executing') {
+  if (step === "executing") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {selectedStrategy === 'rebase' ? (
+              {selectedStrategy === "rebase" ? (
                 <GitBranch className="w-5 h-5 text-blue-500 animate-pulse" />
               ) : (
                 <GitMerge className="w-5 h-5 text-purple-500 animate-pulse" />
               )}
-              {selectedStrategy === 'rebase' ? 'Rebasing...' : 'Merging...'}
+              {selectedStrategy === "rebase" ? "Rebasing..." : "Merging..."}
             </DialogTitle>
             <DialogDescription>
-              {selectedStrategy === 'rebase'
+              {selectedStrategy === "rebase"
                 ? `Rebasing ${worktree.branch} onto ${selectedBranch}...`
                 : `Merging ${selectedBranch} into ${worktree.branch}...`}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <Spinner size="md" />
-            <span className="ml-3 text-sm text-muted-foreground">This may take a moment...</span>
+            <span className="ml-3 text-sm text-muted-foreground">
+              This may take a moment...
+            </span>
           </div>
         </DialogContent>
       </Dialog>
@@ -465,9 +505,9 @@ export function MergeRebaseDialog({
             Merge & Rebase
           </DialogTitle>
           <DialogDescription>
-            Select a remote branch to merge or rebase with{' '}
+            Select a remote branch to merge or rebase with{" "}
             <span className="font-mono text-foreground">
-              {worktree?.branch || 'current branch'}
+              {worktree?.branch || "current branch"}
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -551,7 +591,9 @@ export function MergeRebaseDialog({
                 </SelectContent>
               </Select>
               {selectedRemote && branches.length === 0 && (
-                <p className="text-sm text-muted-foreground">No branches found for this remote</p>
+                <p className="text-sm text-muted-foreground">
+                  No branches found for this remote
+                </p>
               )}
             </div>
 
@@ -559,7 +601,9 @@ export function MergeRebaseDialog({
               <Label htmlFor="strategy-select">Strategy</Label>
               <Select
                 value={selectedStrategy}
-                onValueChange={(value) => setSelectedStrategy(value as PullStrategy)}
+                onValueChange={(value) =>
+                  setSelectedStrategy(value as PullStrategy)
+                }
               >
                 <SelectTrigger id="strategy-select">
                   <SelectValue placeholder="Select a strategy" />
@@ -598,19 +642,32 @@ export function MergeRebaseDialog({
             {selectedBranch && (
               <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  This will attempt to{' '}
-                  {selectedStrategy === 'rebase' ? (
+                  This will attempt to{" "}
+                  {selectedStrategy === "rebase" ? (
                     <>
-                      rebase <span className="font-mono text-foreground">{worktree?.branch}</span>{' '}
-                      onto <span className="font-mono text-foreground">{selectedBranch}</span>
+                      rebase{" "}
+                      <span className="font-mono text-foreground">
+                        {worktree?.branch}
+                      </span>{" "}
+                      onto{" "}
+                      <span className="font-mono text-foreground">
+                        {selectedBranch}
+                      </span>
                     </>
                   ) : (
                     <>
-                      merge <span className="font-mono text-foreground">{selectedBranch}</span> into{' '}
-                      <span className="font-mono text-foreground">{worktree?.branch}</span>
+                      merge{" "}
+                      <span className="font-mono text-foreground">
+                        {selectedBranch}
+                      </span>{" "}
+                      into{" "}
+                      <span className="font-mono text-foreground">
+                        {worktree?.branch}
+                      </span>
                     </>
                   )}
-                  . If conflicts arise, you can choose to resolve them manually or with AI.
+                  . If conflicts arise, you can choose to resolve them manually
+                  or with AI.
                 </p>
               </div>
             )}
@@ -626,7 +683,7 @@ export function MergeRebaseDialog({
             disabled={!selectedBranch || isLoading}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
-            {selectedStrategy === 'rebase' ? (
+            {selectedStrategy === "rebase" ? (
               <>
                 <GitBranch className="w-4 h-4 mr-2" />
                 Rebase

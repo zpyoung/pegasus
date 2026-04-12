@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   GitCommit,
   User,
@@ -15,11 +15,11 @@ import {
   ChevronDown,
   ChevronRight,
   FileText,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface WorktreeInfo {
   path: string;
@@ -47,9 +47,9 @@ interface ViewCommitsDialogProps {
 }
 
 function formatRelativeDate(dateStr: string): string {
-  if (!dateStr) return 'unknown date';
+  if (!dateStr) return "unknown date";
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'unknown date';
+  if (isNaN(date.getTime())) return "unknown date";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -59,7 +59,7 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
+  if (diffSecs < 60) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -78,7 +78,7 @@ function CopyHashButton({ hash }: { hash: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy hash');
+      toast.error("Failed to copy hash");
     }
   };
 
@@ -112,15 +112,20 @@ function CommitEntryItem({
 
   return (
     <div
-      className={cn('group relative rounded-md transition-colors', index === 0 && 'bg-muted/30')}
+      className={cn(
+        "group relative rounded-md transition-colors",
+        index === 0 && "bg-muted/30",
+      )}
     >
       <div className="flex gap-3 py-2.5 px-3 hover:bg-muted/50 transition-colors rounded-md">
         {/* Timeline dot and line */}
         <div className="flex flex-col items-center pt-1.5 shrink-0">
           <div
             className={cn(
-              'w-2 h-2 rounded-full border-2',
-              index === 0 ? 'border-primary bg-primary' : 'border-muted-foreground/40 bg-background'
+              "w-2 h-2 rounded-full border-2",
+              index === 0
+                ? "border-primary bg-primary"
+                : "border-muted-foreground/40 bg-background",
             )}
           />
           {!isLast && <div className="w-px flex-1 bg-border mt-1" />}
@@ -129,7 +134,9 @@ function CommitEntryItem({
         {/* Commit content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium leading-snug break-words">{commit.subject}</p>
+            <p className="text-sm font-medium leading-snug break-words">
+              {commit.subject}
+            </p>
             <CopyHashButton hash={commit.hash} />
           </div>
           {commit.body && (
@@ -144,7 +151,10 @@ function CommitEntryItem({
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              <time dateTime={commit.date} title={new Date(commit.date).toLocaleString()}>
+              <time
+                dateTime={commit.date}
+                title={new Date(commit.date).toLocaleString()}
+              >
                 {formatRelativeDate(commit.date)}
               </time>
             </span>
@@ -159,7 +169,7 @@ function CommitEntryItem({
                   <ChevronRight className="w-3 h-3" />
                 )}
                 <FileText className="w-3 h-3" />
-                {commit.files.length} file{commit.files.length !== 1 ? 's' : ''}
+                {commit.files.length} file{commit.files.length !== 1 ? "s" : ""}
               </button>
             )}
           </div>
@@ -190,7 +200,11 @@ const INITIAL_COMMIT_LIMIT = 30;
 const LOAD_MORE_INCREMENT = 30;
 const MAX_COMMIT_LIMIT = 100;
 
-export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsDialogProps) {
+export function ViewCommitsDialog({
+  open,
+  onOpenChange,
+  worktree,
+}: ViewCommitsDialogProps) {
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -210,7 +224,10 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
 
       try {
         const api = getHttpApiClient();
-        const result = await api.worktree.getCommitLog(worktree!.path, fetchLimit);
+        const result = await api.worktree.getCommitLog(
+          worktree!.path,
+          fetchLimit,
+        );
 
         if (result.success && result.result) {
           // Ensure each commit has a files array (backwards compat if server hasn't been rebuilt)
@@ -220,18 +237,21 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
           }));
           setCommits(fetchedCommits);
           // If we got back exactly as many commits as we requested, there may be more
-          setHasMore(fetchedCommits.length === fetchLimit && fetchLimit < MAX_COMMIT_LIMIT);
+          setHasMore(
+            fetchedCommits.length === fetchLimit &&
+              fetchLimit < MAX_COMMIT_LIMIT,
+          );
         } else {
-          setError(result.error || 'Failed to load commits');
+          setError(result.error || "Failed to load commits");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load commits');
+        setError(err instanceof Error ? err.message : "Failed to load commits");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
       }
     },
-    [worktree]
+    [worktree],
   );
 
   useEffect(() => {
@@ -258,8 +278,10 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
             Commit History
           </DialogTitle>
           <DialogDescription>
-            Recent commits on{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+            Recent commits on{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>
           </DialogDescription>
         </DialogHeader>
 
@@ -268,7 +290,9 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Spinner size="md" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading commits...</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Loading commits...
+                </span>
               </div>
             )}
 
@@ -280,7 +304,9 @@ export function ViewCommitsDialog({ open, onOpenChange, worktree }: ViewCommitsD
 
             {!isLoading && !error && commits.length === 0 && (
               <div className="flex items-center justify-center py-12">
-                <p className="text-sm text-muted-foreground">No commits found</p>
+                <p className="text-sm text-muted-foreground">
+                  No commits found
+                </p>
               </div>
             )}
 

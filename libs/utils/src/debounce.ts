@@ -85,7 +85,7 @@ export interface DebouncedFunction<T extends (...args: unknown[]) => unknown> {
 export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   wait: number,
-  options: DebounceOptions = {}
+  options: DebounceOptions = {},
 ): DebouncedFunction<T> {
   const { leading = false, trailing = true, maxWait } = options;
 
@@ -97,7 +97,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 
   // Validate options
   if (maxWait !== undefined && maxWait < wait) {
-    throw new Error('maxWait must be greater than or equal to wait');
+    throw new Error("maxWait must be greater than or equal to wait");
   }
 
   function invokeFunc(): void {
@@ -137,7 +137,9 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     const timeWaiting = wait - timeSinceLastCall;
 
     const remainingWait =
-      maxWait !== undefined ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke) : timeWaiting;
+      maxWait !== undefined
+        ? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
+        : timeWaiting;
 
     timeoutId = setTimeout(timerExpired, remainingWait);
   }
@@ -268,7 +270,7 @@ export interface ThrottleOptions {
 export function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
   wait: number,
-  options: ThrottleOptions = {}
+  options: ThrottleOptions = {},
 ): DebouncedFunction<T> {
   const { leading = true, trailing = true } = options;
 

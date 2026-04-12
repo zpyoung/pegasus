@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
-import { Feature } from '@/store/app-store';
+import { useState, useCallback } from "react";
+import { Feature } from "@/store/app-store";
 import {
   FeatureImagePath as DescriptionImagePath,
   ImagePreviewMap,
-} from '@/components/ui/description-image-dropzone';
-import type { FollowUpHistoryEntry } from '../dialogs/follow-up-dialog';
+} from "@/components/ui/description-image-dropzone";
+import type { FollowUpHistoryEntry } from "../dialogs/follow-up-dialog";
 
 /**
  * Custom hook for managing follow-up dialog state including prompt history
@@ -12,15 +12,21 @@ import type { FollowUpHistoryEntry } from '../dialogs/follow-up-dialog';
 export function useFollowUpState() {
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [followUpFeature, setFollowUpFeature] = useState<Feature | null>(null);
-  const [followUpPrompt, setFollowUpPrompt] = useState('');
-  const [followUpImagePaths, setFollowUpImagePaths] = useState<DescriptionImagePath[]>([]);
-  const [followUpPreviewMap, setFollowUpPreviewMap] = useState<ImagePreviewMap>(() => new Map());
-  const [followUpPromptHistory, setFollowUpPromptHistory] = useState<FollowUpHistoryEntry[]>([]);
+  const [followUpPrompt, setFollowUpPrompt] = useState("");
+  const [followUpImagePaths, setFollowUpImagePaths] = useState<
+    DescriptionImagePath[]
+  >([]);
+  const [followUpPreviewMap, setFollowUpPreviewMap] = useState<ImagePreviewMap>(
+    () => new Map(),
+  );
+  const [followUpPromptHistory, setFollowUpPromptHistory] = useState<
+    FollowUpHistoryEntry[]
+  >([]);
 
   const resetFollowUpState = useCallback(() => {
     setShowFollowUpDialog(false);
     setFollowUpFeature(null);
-    setFollowUpPrompt('');
+    setFollowUpPrompt("");
     setFollowUpImagePaths([]);
     setFollowUpPreviewMap(new Map());
     setFollowUpPromptHistory([]);
@@ -34,7 +40,7 @@ export function useFollowUpState() {
         setShowFollowUpDialog(open);
       }
     },
-    [resetFollowUpState]
+    [resetFollowUpState],
   );
 
   /**

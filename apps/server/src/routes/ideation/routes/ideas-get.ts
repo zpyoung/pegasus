@@ -2,9 +2,9 @@
  * POST /ideas/get - Get a single idea
  */
 
-import type { Request, Response } from 'express';
-import type { IdeationService } from '../../../services/ideation-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { IdeationService } from "../../../services/ideation-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createIdeasGetHandler(ideationService: IdeationService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -15,24 +15,26 @@ export function createIdeasGetHandler(ideationService: IdeationService) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!ideaId) {
-        res.status(400).json({ success: false, error: 'ideaId is required' });
+        res.status(400).json({ success: false, error: "ideaId is required" });
         return;
       }
 
       const idea = await ideationService.getIdea(projectPath, ideaId);
       if (!idea) {
-        res.status(404).json({ success: false, error: 'Idea not found' });
+        res.status(404).json({ success: false, error: "Idea not found" });
         return;
       }
 
       res.json({ success: true, idea });
     } catch (error) {
-      logError(error, 'Get idea failed');
+      logError(error, "Get idea failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

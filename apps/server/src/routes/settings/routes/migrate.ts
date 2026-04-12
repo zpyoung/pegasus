@@ -30,9 +30,9 @@
  * ```
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getErrorMessage, logError, logger } from '../common.js';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getErrorMessage, logError, logger } from "../common.js";
 
 /**
  * Create handler factory for POST /api/settings/migrate
@@ -45,30 +45,34 @@ export function createMigrateHandler(settingsService: SettingsService) {
     try {
       const { data } = req.body as {
         data?: {
-          'pegasus-storage'?: string;
-          'pegasus-setup'?: string;
-          'worktree-panel-collapsed'?: string;
-          'file-browser-recent-folders'?: string;
-          'pegasus:lastProjectDir'?: string;
+          "pegasus-storage"?: string;
+          "pegasus-setup"?: string;
+          "worktree-panel-collapsed"?: string;
+          "file-browser-recent-folders"?: string;
+          "pegasus:lastProjectDir"?: string;
         };
       };
 
-      if (!data || typeof data !== 'object') {
+      if (!data || typeof data !== "object") {
         res.status(400).json({
           success: false,
-          error: 'data object is required containing localStorage data',
+          error: "data object is required containing localStorage data",
         });
         return;
       }
 
-      logger.info('Starting settings migration from localStorage');
+      logger.info("Starting settings migration from localStorage");
 
       const result = await settingsService.migrateFromLocalStorage(data);
 
       if (result.success) {
-        logger.info(`Migration successful: ${result.migratedProjectCount} projects migrated`);
+        logger.info(
+          `Migration successful: ${result.migratedProjectCount} projects migrated`,
+        );
       } else {
-        logger.warn(`Migration completed with errors: ${result.errors.join(', ')}`);
+        logger.warn(
+          `Migration completed with errors: ${result.errors.join(", ")}`,
+        );
       }
 
       res.json({
@@ -79,7 +83,7 @@ export function createMigrateHandler(settingsService: SettingsService) {
         errors: result.errors,
       });
     } catch (error) {
-      logError(error, 'Migration failed');
+      logError(error, "Migration failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

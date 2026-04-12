@@ -5,11 +5,11 @@
  * This data is invalidated by WebSocket events when agents start/stop.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI, type RunningAgent } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import { createSmartPollingInterval } from '@/hooks/use-event-recency';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI, type RunningAgent } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import { createSmartPollingInterval } from "@/hooks/use-event-recency";
 
 const RUNNING_AGENTS_REFETCH_ON_FOCUS = false;
 const RUNNING_AGENTS_REFETCH_ON_RECONNECT = false;
@@ -37,11 +37,11 @@ export function useRunningAgents() {
     queryFn: async (): Promise<RunningAgentsResult> => {
       const api = getElectronAPI();
       if (!api.runningAgents) {
-        throw new Error('Running agents API not available');
+        throw new Error("Running agents API not available");
       }
       const result = await api.runningAgents.getAll();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch running agents');
+        throw new Error(result.error || "Failed to fetch running agents");
       }
       return {
         agents: result.runningAgents ?? [],
@@ -49,7 +49,9 @@ export function useRunningAgents() {
       };
     },
     staleTime: STALE_TIMES.RUNNING_AGENTS,
-    refetchInterval: createSmartPollingInterval(RUNNING_AGENTS_POLLING_INTERVAL),
+    refetchInterval: createSmartPollingInterval(
+      RUNNING_AGENTS_POLLING_INTERVAL,
+    ),
     refetchOnWindowFocus: RUNNING_AGENTS_REFETCH_ON_FOCUS,
     refetchOnReconnect: RUNNING_AGENTS_REFETCH_ON_RECONNECT,
   });

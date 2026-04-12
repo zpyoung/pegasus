@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect } from 'react';
-import type { NavigateOptions } from '@tanstack/react-router';
+import { useMemo, useState, useEffect } from "react";
+import type { NavigateOptions } from "@tanstack/react-router";
 import {
   FileText,
   Folder,
@@ -15,11 +15,11 @@ import {
   Bell,
   Settings,
   Home,
-} from 'lucide-react';
-import type { NavSection, NavItem } from '../types';
-import type { KeyboardShortcut } from '@/hooks/use-keyboard-shortcuts';
-import type { Project } from '@/lib/electron';
-import { getElectronAPI } from '@/lib/electron';
+} from "lucide-react";
+import type { NavSection, NavItem } from "../types";
+import type { KeyboardShortcut } from "@/hooks/use-keyboard-shortcuts";
+import type { Project } from "@/lib/electron";
+import { getElectronAPI } from "@/lib/electron";
 
 interface UseNavigationProps {
   shortcuts: {
@@ -107,27 +107,27 @@ export function useNavigation({
   const navSections: NavSection[] = useMemo(() => {
     const allToolsItems: NavItem[] = [
       {
-        id: 'ideation',
-        label: 'Ideation',
+        id: "ideation",
+        label: "Ideation",
         icon: Lightbulb,
         shortcut: shortcuts.ideation,
       },
       {
-        id: 'spec',
-        label: 'Spec Editor',
+        id: "spec",
+        label: "Spec Editor",
         icon: FileText,
         shortcut: shortcuts.spec,
         isLoading: isSpecGenerating,
       },
       {
-        id: 'context',
-        label: 'Context',
+        id: "context",
+        label: "Context",
         icon: BookOpen,
         shortcut: shortcuts.context,
       },
       {
-        id: 'memory',
-        label: 'Memory',
+        id: "memory",
+        label: "Memory",
         icon: Brain,
         shortcut: shortcuts.memory,
       },
@@ -135,10 +135,10 @@ export function useNavigation({
 
     // Filter out hidden items
     const visibleToolsItems = allToolsItems.filter((item) => {
-      if (item.id === 'spec' && hideSpecEditor) {
+      if (item.id === "spec" && hideSpecEditor) {
         return false;
       }
-      if (item.id === 'context' && hideContext) {
+      if (item.id === "context" && hideContext) {
         return false;
       }
       return true;
@@ -147,25 +147,25 @@ export function useNavigation({
     // Build project items - Terminal and File Editor are conditionally included
     const projectItems: NavItem[] = [
       {
-        id: 'board',
-        label: 'Kanban Board',
+        id: "board",
+        label: "Kanban Board",
         icon: LayoutGrid,
         shortcut: shortcuts.board,
       },
       {
-        id: 'graph',
-        label: 'Graph View',
+        id: "graph",
+        label: "Graph View",
         icon: Network,
         shortcut: shortcuts.graph,
       },
       {
-        id: 'file-editor',
-        label: 'File Editor',
+        id: "file-editor",
+        label: "File Editor",
         icon: Folder,
       },
       {
-        id: 'agent',
-        label: 'Agent Runner',
+        id: "agent",
+        label: "Agent Runner",
         icon: Bot,
         shortcut: shortcuts.agent,
       },
@@ -174,8 +174,8 @@ export function useNavigation({
     // Add Terminal to Project section if not hidden
     if (!hideTerminal) {
       projectItems.push({
-        id: 'terminal',
-        label: 'Terminal',
+        id: "terminal",
+        label: "Terminal",
         icon: Terminal,
         shortcut: shortcuts.terminal,
       });
@@ -184,25 +184,25 @@ export function useNavigation({
     const sections: NavSection[] = [
       // Dashboard - standalone at top (links to projects overview)
       {
-        label: '',
+        label: "",
         items: [
           {
-            id: 'overview',
-            label: 'Dashboard',
+            id: "overview",
+            label: "Dashboard",
             icon: Home,
           },
         ],
       },
       // Project section - expanded by default
       {
-        label: 'Project',
+        label: "Project",
         items: projectItems,
         collapsible: true,
         defaultCollapsed: false,
       },
       // Tools section - collapsed by default
       {
-        label: 'Tools',
+        label: "Tools",
         items: visibleToolsItems,
         collapsible: true,
         defaultCollapsed: true,
@@ -212,18 +212,18 @@ export function useNavigation({
     // Add GitHub section if project has a GitHub remote
     if (hasGitHubRemote) {
       sections.push({
-        label: 'GitHub',
+        label: "GitHub",
         items: [
           {
-            id: 'github-issues',
-            label: 'Issues',
+            id: "github-issues",
+            label: "Issues",
             icon: CircleDot,
             shortcut: shortcuts.githubIssues,
             count: unviewedValidationsCount,
           },
           {
-            id: 'github-prs',
-            label: 'Pull Requests',
+            id: "github-prs",
+            label: "Pull Requests",
             icon: GitPullRequest,
             shortcut: shortcuts.githubPrs,
           },
@@ -235,18 +235,18 @@ export function useNavigation({
 
     // Add Notifications and Project Settings as a standalone section (no label for visual separation)
     sections.push({
-      label: '',
+      label: "",
       items: [
         {
-          id: 'notifications',
-          label: 'Notifications',
+          id: "notifications",
+          label: "Notifications",
           icon: Bell,
           shortcut: shortcuts.notifications,
           count: unreadNotificationsCount,
         },
         {
-          id: 'project-settings',
-          label: 'Project Settings',
+          id: "project-settings",
+          label: "Project Settings",
           icon: Settings,
           shortcut: shortcuts.projectSettings,
         },
@@ -273,14 +273,14 @@ export function useNavigation({
     shortcutsList.push({
       key: shortcuts.toggleSidebar,
       action: () => toggleSidebar(),
-      description: 'Toggle sidebar',
+      description: "Toggle sidebar",
     });
 
     // Open project shortcut - opens the folder selection dialog directly
     shortcutsList.push({
       key: shortcuts.openProject,
       action: () => handleOpenFolder(),
-      description: 'Open folder selection dialog',
+      description: "Open folder selection dialog",
     });
 
     // Project cycling shortcuts - only when we have project history
@@ -288,12 +288,12 @@ export function useNavigation({
       shortcutsList.push({
         key: shortcuts.cyclePrevProject,
         action: () => cyclePrevProject(),
-        description: 'Cycle to previous project (MRU)',
+        description: "Cycle to previous project (MRU)",
       });
       shortcutsList.push({
         key: shortcuts.cycleNextProject,
         action: () => cycleNextProject(),
-        description: 'Cycle to next project (LRU)',
+        description: "Cycle to next project (LRU)",
       });
     }
 
@@ -305,7 +305,7 @@ export function useNavigation({
             shortcutsList.push({
               key: item.shortcut,
               // Cast to router path type; ids are constrained to known routes
-              action: () => navigate({ to: `/${item.id}` as unknown as '/' }),
+              action: () => navigate({ to: `/${item.id}` as unknown as "/" }),
               description: `Navigate to ${item.label}`,
             });
           }
@@ -315,8 +315,8 @@ export function useNavigation({
       // Add global settings shortcut
       shortcutsList.push({
         key: shortcuts.settings,
-        action: () => navigate({ to: '/settings' }),
-        description: 'Navigate to Global Settings',
+        action: () => navigate({ to: "/settings" }),
+        description: "Navigate to Global Settings",
       });
 
       // Quick add idea — navigate to ideation and focus the input
@@ -324,11 +324,11 @@ export function useNavigation({
         shortcutsList.push({
           key: shortcuts.quickAddIdea,
           action: () => {
-            navigate({ to: '/ideation' as unknown as '/' });
+            navigate({ to: "/ideation" as unknown as "/" });
             // Focus the quick-add input after navigation renders
             requestAnimationFrame(() => {
               const input = document.querySelector<HTMLInputElement>(
-                '[data-testid="quick-add-input"]'
+                '[data-testid="quick-add-input"]',
               );
               if (input) {
                 input.focus();
@@ -336,7 +336,7 @@ export function useNavigation({
               }
             });
           },
-          description: 'Quick add idea',
+          description: "Quick add idea",
         });
       }
     }

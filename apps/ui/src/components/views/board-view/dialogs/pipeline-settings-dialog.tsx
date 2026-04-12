@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,13 +6,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Plus, Trash2, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
-import type { PipelineConfig, PipelineStep } from '@pegasus/types';
-import { cn } from '@/lib/utils';
-import { AddEditPipelineStepDialog } from './add-edit-pipeline-step-dialog';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2, ChevronUp, ChevronDown, Pencil } from "lucide-react";
+import { toast } from "sonner";
+import type { PipelineConfig, PipelineStep } from "@pegasus/types";
+import { cn } from "@/lib/utils";
+import { AddEditPipelineStepDialog } from "./add-edit-pipeline-step-dialog";
 
 interface PipelineSettingsDialogProps {
   open: boolean;
@@ -35,13 +35,15 @@ export function PipelineSettingsDialog({
     return steps.filter(
       (step): step is PipelineStep =>
         step != null &&
-        typeof step.id === 'string' &&
-        typeof step.name === 'string' &&
-        typeof step.instructions === 'string'
+        typeof step.id === "string" &&
+        typeof step.name === "string" &&
+        typeof step.instructions === "string",
     );
   };
 
-  const [steps, setSteps] = useState<PipelineStep[]>(() => validateSteps(pipelineConfig?.steps));
+  const [steps, setSteps] = useState<PipelineStep[]>(() =>
+    validateSteps(pipelineConfig?.steps),
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sub-dialog state
@@ -55,7 +57,9 @@ export function PipelineSettingsDialog({
     }
   }, [open, pipelineConfig]);
 
-  const sortedSteps = [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sortedSteps = [...steps].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
 
   const handleAddStep = () => {
     setEditingStep(null);
@@ -76,17 +80,17 @@ export function PipelineSettingsDialog({
     setSteps(newSteps);
   };
 
-  const handleMoveStep = (stepId: string, direction: 'up' | 'down') => {
+  const handleMoveStep = (stepId: string, direction: "up" | "down") => {
     const stepIndex = sortedSteps.findIndex((s) => s.id === stepId);
     if (
-      (direction === 'up' && stepIndex === 0) ||
-      (direction === 'down' && stepIndex === sortedSteps.length - 1)
+      (direction === "up" && stepIndex === 0) ||
+      (direction === "down" && stepIndex === sortedSteps.length - 1)
     ) {
       return;
     }
 
     const newSteps = [...sortedSteps];
-    const targetIndex = direction === 'up' ? stepIndex - 1 : stepIndex + 1;
+    const targetIndex = direction === "up" ? stepIndex - 1 : stepIndex + 1;
 
     // Swap orders
     const temp = newSteps[stepIndex].order;
@@ -97,7 +101,9 @@ export function PipelineSettingsDialog({
   };
 
   const handleSaveStep = (
-    stepData: Omit<PipelineStep, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+    stepData: Omit<PipelineStep, "id" | "createdAt" | "updatedAt"> & {
+      id?: string;
+    },
   ) => {
     const now = new Date().toISOString();
 
@@ -113,8 +119,8 @@ export function PipelineSettingsDialog({
                 colorClass: stepData.colorClass,
                 updatedAt: now,
               }
-            : s
-        )
+            : s,
+        ),
       );
     } else {
       // Add new step
@@ -134,16 +140,18 @@ export function PipelineSettingsDialog({
   const handleSaveConfig = async () => {
     setIsSubmitting(true);
     try {
-      const sortedEffectiveSteps = [...steps].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const sortedEffectiveSteps = [...steps].sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      );
       const config: PipelineConfig = {
         version: 1,
         steps: sortedEffectiveSteps.map((s, index) => ({ ...s, order: index })),
       };
       await onSave(config);
-      toast.success('Pipeline configuration saved');
+      toast.success("Pipeline configuration saved");
       onClose();
     } catch {
-      toast.error('Failed to save pipeline configuration');
+      toast.error("Failed to save pipeline configuration");
     } finally {
       setIsSubmitting(false);
     }
@@ -156,8 +164,9 @@ export function PipelineSettingsDialog({
           <DialogHeader>
             <DialogTitle>Pipeline Settings</DialogTitle>
             <DialogDescription>
-              Configure custom pipeline steps that run after a feature completes "In Progress". Each
-              step will automatically prompt the agent with its instructions.
+              Configure custom pipeline steps that run after a feature completes
+              "In Progress". Each step will automatically prompt the agent with
+              its instructions.
             </DialogDescription>
           </DialogHeader>
 
@@ -175,7 +184,7 @@ export function PipelineSettingsDialog({
                         variant="ghost"
                         size="icon"
                         className="h-5 w-5"
-                        onClick={() => handleMoveStep(step.id, 'up')}
+                        onClick={() => handleMoveStep(step.id, "up")}
                         disabled={index === 0}
                       >
                         <ChevronUp className="h-3 w-3" />
@@ -184,7 +193,7 @@ export function PipelineSettingsDialog({
                         variant="ghost"
                         size="icon"
                         className="h-5 w-5"
-                        onClick={() => handleMoveStep(step.id, 'down')}
+                        onClick={() => handleMoveStep(step.id, "down")}
                         disabled={index === sortedSteps.length - 1}
                       >
                         <ChevronDown className="h-3 w-3" />
@@ -193,16 +202,21 @@ export function PipelineSettingsDialog({
 
                     <div
                       className={cn(
-                        'w-3 h-8 rounded',
-                        (step.colorClass || 'bg-blue-500/20').replace('/20', '')
+                        "w-3 h-8 rounded",
+                        (step.colorClass || "bg-blue-500/20").replace(
+                          "/20",
+                          "",
+                        ),
                       )}
                     />
 
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{step.name || 'Unnamed Step'}</div>
+                      <div className="font-medium truncate">
+                        {step.name || "Unnamed Step"}
+                      </div>
                       <div className="text-xs text-muted-foreground truncate">
-                        {(step.instructions || '').substring(0, 100)}
-                        {(step.instructions || '').length > 100 ? '...' : ''}
+                        {(step.instructions || "").substring(0, 100)}
+                        {(step.instructions || "").length > 100 ? "..." : ""}
                       </div>
                     </div>
 
@@ -237,7 +251,11 @@ export function PipelineSettingsDialog({
             )}
 
             {/* Add Step Button */}
-            <Button variant="outline" className="w-full" onClick={handleAddStep}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={handleAddStep}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Pipeline Step
             </Button>
@@ -248,7 +266,7 @@ export function PipelineSettingsDialog({
               Cancel
             </Button>
             <Button onClick={handleSaveConfig} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Pipeline'}
+              {isSubmitting ? "Saving..." : "Save Pipeline"}
             </Button>
           </DialogFooter>
         </DialogContent>

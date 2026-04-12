@@ -34,15 +34,19 @@ import {
   windowsToWslPath,
   type SubprocessOptions,
   type WslCliResult,
-} from '@pegasus/platform';
-import { calculateReasoningTimeout } from '@pegasus/types';
-import { createLogger, isAbortError } from '@pegasus/utils';
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { BaseProvider } from './base-provider.js';
-import type { ExecuteOptions, ProviderConfig, ProviderMessage } from './types.js';
+} from "@pegasus/platform";
+import { calculateReasoningTimeout } from "@pegasus/types";
+import { createLogger, isAbortError } from "@pegasus/utils";
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { BaseProvider } from "./base-provider.js";
+import type {
+  ExecuteOptions,
+  ProviderConfig,
+  ProviderMessage,
+} from "./types.js";
 
 /**
  * Spawn strategy for CLI tools on Windows
@@ -53,7 +57,7 @@ import type { ExecuteOptions, ProviderConfig, ProviderMessage } from './types.js
  * - 'direct': Native Windows binary, can spawn directly
  * - 'cmd': Windows batch file (.cmd/.bat), needs cmd.exe shell
  */
-export type SpawnStrategy = 'wsl' | 'npx' | 'direct' | 'cmd';
+export type SpawnStrategy = "wsl" | "npx" | "direct" | "cmd";
 
 /**
  * Configuration for CLI tool spawning
@@ -102,11 +106,11 @@ export interface CliDetectionResult {
   /** WSL distribution if using WSL */
   wslDistribution?: string;
   /** Detected strategy used */
-  strategy: SpawnStrategy | 'native';
+  strategy: SpawnStrategy | "native";
 }
 
 // Create logger for CLI operations
-const cliLogger = createLogger('CliProvider');
+const cliLogger = createLogger("CliProvider");
 
 /**
  * Base timeout for CLI operations in milliseconds.
@@ -132,7 +136,7 @@ export abstract class CliProvider extends BaseProvider {
   protected useWsl: boolean = false;
   protected wslCliPath: string | null = null;
   protected wslDistribution: string | undefined = undefined;
-  protected detectedStrategy: SpawnStrategy | 'native' = 'native';
+  protected detectedStrategy: SpawnStrategy | "native" = "native";
 
   // NPX args (used when strategy is 'npx')
   protected npxArgs: string[] = [];
@@ -183,12 +187,12 @@ export abstract class CliProvider extends BaseProvider {
 
     // Common authentication errors
     if (
-      lower.includes('not authenticated') ||
-      lower.includes('please log in') ||
-      lower.includes('unauthorized')
+      lower.includes("not authenticated") ||
+      lower.includes("please log in") ||
+      lower.includes("unauthorized")
     ) {
       return {
-        code: 'NOT_AUTHENTICATED',
+        code: "NOT_AUTHENTICATED",
         message: `${this.getCliName()} is not authenticated`,
         recoverable: true,
         suggestion: `Run "${this.getCliName()} login" to authenticate`,
@@ -197,46 +201,51 @@ export abstract class CliProvider extends BaseProvider {
 
     // Rate limiting
     if (
-      lower.includes('rate limit') ||
-      lower.includes('too many requests') ||
-      lower.includes('429')
+      lower.includes("rate limit") ||
+      lower.includes("too many requests") ||
+      lower.includes("429")
     ) {
       return {
-        code: 'RATE_LIMITED',
-        message: 'API rate limit exceeded',
+        code: "RATE_LIMITED",
+        message: "API rate limit exceeded",
         recoverable: true,
-        suggestion: 'Wait a few minutes and try again',
+        suggestion: "Wait a few minutes and try again",
       };
     }
 
     // Network errors
     if (
-      lower.includes('network') ||
-      lower.includes('connection') ||
-      lower.includes('econnrefused') ||
-      lower.includes('timeout')
+      lower.includes("network") ||
+      lower.includes("connection") ||
+      lower.includes("econnrefused") ||
+      lower.includes("timeout")
     ) {
       return {
-        code: 'NETWORK_ERROR',
-        message: 'Network connection error',
+        code: "NETWORK_ERROR",
+        message: "Network connection error",
         recoverable: true,
-        suggestion: 'Check your internet connection and try again',
+        suggestion: "Check your internet connection and try again",
       };
     }
 
     // Process killed
-    if (exitCode === 137 || lower.includes('killed') || lower.includes('sigterm')) {
+    if (
+      exitCode === 137 ||
+      lower.includes("killed") ||
+      lower.includes("sigterm")
+    ) {
       return {
-        code: 'PROCESS_CRASHED',
-        message: 'Process was terminated',
+        code: "PROCESS_CRASHED",
+        message: "Process was terminated",
         recoverable: true,
-        suggestion: 'The process may have run out of memory. Try a simpler task.',
+        suggestion:
+          "The process may have run out of memory. Try a simpler task.",
       };
     }
 
     // Generic error
     return {
-      code: 'UNKNOWN_ERROR',
+      code: "UNKNOWN_ERROR",
       message: stderr || `Process exited with code ${exitCode}`,
       recoverable: false,
     };
@@ -250,14 +259,14 @@ export abstract class CliProvider extends BaseProvider {
     const cliName = this.getCliName();
     const config = this.getSpawnConfig();
 
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       switch (config.windowsStrategy) {
-        case 'wsl':
+        case "wsl":
           return `${cliName} requires WSL on Windows. Install WSL, then run inside WSL to install.`;
-        case 'npx':
+        case "npx":
           return `Install with: pnpm add -g ${config.npxPackage || cliName}`;
-        case 'cmd':
-        case 'direct':
+        case "cmd":
+        case "direct":
           return `${cliName} is not installed. Check the documentation for installation instructions.`;
       }
     }
@@ -273,7 +282,7 @@ export abstract class CliProvider extends BaseProvider {
    * Expand ~ to home directory in path
    */
   private expandPath(p: string): string {
-    if (p.startsWith('~')) {
+    if (p.startsWith("~")) {
       return path.join(os.homedir(), p.slice(1));
     }
     return p;
@@ -286,15 +295,15 @@ export abstract class CliProvider extends BaseProvider {
     const cliName = this.getCliName();
 
     try {
-      const command = process.platform === 'win32' ? 'where' : 'which';
+      const command = process.platform === "win32" ? "where" : "which";
       const result = execSync(`${command} ${cliName}`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       })
         .trim()
-        .split('\n')[0];
+        .split("\n")[0];
 
       if (result && fs.existsSync(result)) {
         cliLogger.debug(`Found ${cliName} in PATH: ${result}`);
@@ -313,7 +322,7 @@ export abstract class CliProvider extends BaseProvider {
   private findCliInCommonPaths(): string | null {
     const config = this.getSpawnConfig();
     const cliName = this.getCliName();
-    const platform = process.platform as 'linux' | 'darwin' | 'win32';
+    const platform = process.platform as "linux" | "darwin" | "win32";
     const paths = config.commonPaths[platform] || [];
 
     for (const p of paths) {
@@ -336,9 +345,9 @@ export abstract class CliProvider extends BaseProvider {
     const wslLogger = (msg: string) => cliLogger.debug(msg);
 
     // Windows - use configured strategy
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       switch (config.windowsStrategy) {
-        case 'wsl': {
+        case "wsl": {
           // Check WSL for CLI
           if (isWslAvailable({ logger: wslLogger })) {
             const wslResult: WslCliResult | null = findCliInWsl(cliName, {
@@ -347,46 +356,62 @@ export abstract class CliProvider extends BaseProvider {
             });
             if (wslResult) {
               cliLogger.debug(
-                `Using ${cliName} via WSL (${wslResult.distribution || 'default'}): ${wslResult.wslPath}`
+                `Using ${cliName} via WSL (${wslResult.distribution || "default"}): ${wslResult.wslPath}`,
               );
               return {
-                cliPath: 'wsl.exe',
+                cliPath: "wsl.exe",
                 useWsl: true,
                 wslCliPath: wslResult.wslPath,
                 wslDistribution: wslResult.distribution,
-                strategy: 'wsl',
+                strategy: "wsl",
               };
             }
           }
-          cliLogger.debug(`${cliName} not found (WSL not available or CLI not installed in WSL)`);
-          return { cliPath: null, useWsl: false, strategy: 'wsl' };
+          cliLogger.debug(
+            `${cliName} not found (WSL not available or CLI not installed in WSL)`,
+          );
+          return { cliPath: null, useWsl: false, strategy: "wsl" };
         }
 
-        case 'npx': {
+        case "npx": {
           // For npx, we don't need to find the CLI, just return npx
-          cliLogger.debug(`Using ${cliName} via npx (package: ${config.npxPackage})`);
+          cliLogger.debug(
+            `Using ${cliName} via npx (package: ${config.npxPackage})`,
+          );
           return {
-            cliPath: 'npx',
+            cliPath: "npx",
             useWsl: false,
-            strategy: 'npx',
+            strategy: "npx",
           };
         }
 
-        case 'direct':
-        case 'cmd': {
+        case "direct":
+        case "cmd": {
           // Native Windows - check PATH and common paths
           const pathResult = this.findCliInPath();
           if (pathResult) {
-            return { cliPath: pathResult, useWsl: false, strategy: config.windowsStrategy };
+            return {
+              cliPath: pathResult,
+              useWsl: false,
+              strategy: config.windowsStrategy,
+            };
           }
 
           const commonResult = this.findCliInCommonPaths();
           if (commonResult) {
-            return { cliPath: commonResult, useWsl: false, strategy: config.windowsStrategy };
+            return {
+              cliPath: commonResult,
+              useWsl: false,
+              strategy: config.windowsStrategy,
+            };
           }
 
           cliLogger.debug(`${cliName} not found on Windows`);
-          return { cliPath: null, useWsl: false, strategy: config.windowsStrategy };
+          return {
+            cliPath: null,
+            useWsl: false,
+            strategy: config.windowsStrategy,
+          };
         }
       }
     }
@@ -394,23 +419,23 @@ export abstract class CliProvider extends BaseProvider {
     // Linux/macOS - native execution
     const pathResult = this.findCliInPath();
     if (pathResult) {
-      return { cliPath: pathResult, useWsl: false, strategy: 'native' };
+      return { cliPath: pathResult, useWsl: false, strategy: "native" };
     }
 
     const commonResult = this.findCliInCommonPaths();
     if (commonResult) {
-      return { cliPath: commonResult, useWsl: false, strategy: 'native' };
+      return { cliPath: commonResult, useWsl: false, strategy: "native" };
     }
 
     cliLogger.debug(`${cliName} not found`);
-    return { cliPath: null, useWsl: false, strategy: 'native' };
+    return { cliPath: null, useWsl: false, strategy: "native" };
   }
 
   /**
    * Ensure CLI is detected (lazy initialization)
    */
   protected ensureCliDetected(): void {
-    if (this.cliPath !== null || this.detectedStrategy !== 'native') {
+    if (this.cliPath !== null || this.detectedStrategy !== "native") {
       return; // Already detected
     }
 
@@ -423,7 +448,7 @@ export abstract class CliProvider extends BaseProvider {
 
     // Set up npx args if using npx strategy
     const config = this.getSpawnConfig();
-    if (result.strategy === 'npx' && config.npxPackage) {
+    if (result.strategy === "npx" && config.npxPackage) {
       this.npxArgs = [config.npxPackage];
     }
   }
@@ -443,11 +468,16 @@ export abstract class CliProvider extends BaseProvider {
   /**
    * Build subprocess options based on detected strategy
    */
-  protected buildSubprocessOptions(options: ExecuteOptions, cliArgs: string[]): SubprocessOptions {
+  protected buildSubprocessOptions(
+    options: ExecuteOptions,
+    cliArgs: string[],
+  ): SubprocessOptions {
     this.ensureCliDetected();
 
     if (!this.cliPath) {
-      throw new Error(`${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`);
+      throw new Error(
+        `${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`,
+      );
     }
 
     const cwd = options.cwd || process.cwd();
@@ -462,7 +492,10 @@ export abstract class CliProvider extends BaseProvider {
 
     // Calculate dynamic timeout based on reasoning effort.
     // This addresses GitHub issue #530 where reasoning models with 'xhigh' effort would timeout.
-    const timeout = calculateReasoningTimeout(options.reasoningEffort, CLI_BASE_TIMEOUT_MS);
+    const timeout = calculateReasoningTimeout(
+      options.reasoningEffort,
+      CLI_BASE_TIMEOUT_MS,
+    );
 
     // WSL strategy
     if (this.useWsl && this.wslCliPath) {
@@ -474,12 +507,21 @@ export abstract class CliProvider extends BaseProvider {
       // Add --cd flag to change directory inside WSL
       let args: string[];
       if (this.wslDistribution) {
-        args = ['-d', this.wslDistribution, '--cd', wslCwd, this.wslCliPath, ...cliArgs];
+        args = [
+          "-d",
+          this.wslDistribution,
+          "--cd",
+          wslCwd,
+          this.wslCliPath,
+          ...cliArgs,
+        ];
       } else {
-        args = ['--cd', wslCwd, this.wslCliPath, ...cliArgs];
+        args = ["--cd", wslCwd, this.wslCliPath, ...cliArgs];
       }
 
-      cliLogger.debug(`WSL spawn: ${wslCmd.command} ${args.slice(0, 6).join(' ')}...`);
+      cliLogger.debug(
+        `WSL spawn: ${wslCmd.command} ${args.slice(0, 6).join(" ")}...`,
+      );
 
       return {
         command: wslCmd.command,
@@ -492,12 +534,12 @@ export abstract class CliProvider extends BaseProvider {
     }
 
     // NPX strategy
-    if (this.detectedStrategy === 'npx') {
+    if (this.detectedStrategy === "npx") {
       const allArgs = [...this.npxArgs, ...cliArgs];
-      cliLogger.debug(`NPX spawn: npx ${allArgs.slice(0, 6).join(' ')}...`);
+      cliLogger.debug(`NPX spawn: npx ${allArgs.slice(0, 6).join(" ")}...`);
 
       return {
-        command: 'npx',
+        command: "npx",
         args: allArgs,
         cwd,
         env: filteredEnv,
@@ -507,7 +549,9 @@ export abstract class CliProvider extends BaseProvider {
     }
 
     // Direct strategy (native Unix or Windows direct/cmd)
-    cliLogger.debug(`Direct spawn: ${this.cliPath} ${cliArgs.slice(0, 6).join(' ')}...`);
+    cliLogger.debug(
+      `Direct spawn: ${this.cliPath} ${cliArgs.slice(0, 6).join(" ")}...`,
+    );
 
     return {
       command: this.cliPath,
@@ -529,11 +573,15 @@ export abstract class CliProvider extends BaseProvider {
    *
    * Subclasses can override for custom behavior.
    */
-  async *executeQuery(options: ExecuteOptions): AsyncGenerator<ProviderMessage> {
+  async *executeQuery(
+    options: ExecuteOptions,
+  ): AsyncGenerator<ProviderMessage> {
     this.ensureCliDetected();
 
     if (!this.cliPath) {
-      throw new Error(`${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`);
+      throw new Error(
+        `${this.getCliName()} CLI not found. ${this.getInstallInstructions()}`,
+      );
     }
 
     // Many CLI-based providers do not support a separate "system" message.
@@ -542,7 +590,10 @@ export abstract class CliProvider extends BaseProvider {
     const effectiveOptions = this.embedSystemPromptIntoPrompt(options);
 
     const cliArgs = this.buildCliArgs(effectiveOptions);
-    const subprocessOptions = this.buildSubprocessOptions(effectiveOptions, cliArgs);
+    const subprocessOptions = this.buildSubprocessOptions(
+      effectiveOptions,
+      cliArgs,
+    );
 
     try {
       for await (const rawEvent of spawnJSONLProcess(subprocessOptions)) {
@@ -553,15 +604,15 @@ export abstract class CliProvider extends BaseProvider {
       }
     } catch (error) {
       if (isAbortError(error)) {
-        cliLogger.debug('Query aborted');
+        cliLogger.debug("Query aborted");
         return;
       }
 
       // Map CLI errors
-      if (error instanceof Error && 'stderr' in error) {
+      if (error instanceof Error && "stderr" in error) {
         const errorInfo = this.mapError(
           (error as { stderr?: string }).stderr || error.message,
-          (error as { exitCode?: number | null }).exitCode ?? null
+          (error as { exitCode?: number | null }).exitCode ?? null,
         );
 
         const cliError = new Error(errorInfo.message) as Error & CliErrorInfo;
@@ -583,7 +634,9 @@ export abstract class CliProvider extends BaseProvider {
    * content and clear `systemPrompt` to avoid any accidental double-injection by
    * subclasses.
    */
-  protected embedSystemPromptIntoPrompt(options: ExecuteOptions): ExecuteOptions {
+  protected embedSystemPromptIntoPrompt(
+    options: ExecuteOptions,
+  ): ExecuteOptions {
     if (!options.systemPrompt) {
       return options;
     }
@@ -592,18 +645,18 @@ export abstract class CliProvider extends BaseProvider {
     // Presets are provider-specific (e.g., Claude SDK) and cannot be represented
     // universally. If a preset is provided, we only embed its optional `append`.
     const systemText =
-      typeof options.systemPrompt === 'string'
+      typeof options.systemPrompt === "string"
         ? options.systemPrompt
         : options.systemPrompt.append
           ? options.systemPrompt.append
-          : '';
+          : "";
 
     if (!systemText) {
       return { ...options, systemPrompt: undefined };
     }
 
     // Preserve original prompt structure.
-    if (typeof options.prompt === 'string') {
+    if (typeof options.prompt === "string") {
       return {
         ...options,
         prompt: `${systemText}\n\n---\n\n${options.prompt}`,
@@ -614,7 +667,7 @@ export abstract class CliProvider extends BaseProvider {
     if (Array.isArray(options.prompt)) {
       return {
         ...options,
-        prompt: [{ type: 'text', text: systemText }, ...options.prompt],
+        prompt: [{ type: "text", text: systemText }, ...options.prompt],
         systemPrompt: undefined,
       };
     }

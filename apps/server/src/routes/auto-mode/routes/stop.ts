@@ -2,12 +2,12 @@
  * POST /stop endpoint - Stop auto mode loop for a project
  */
 
-import type { Request, Response } from 'express';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
-const logger = createLogger('AutoMode');
+const logger = createLogger("AutoMode");
 
 export function createStopHandler(autoModeService: AutoModeServiceCompat) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +20,7 @@ export function createStopHandler(autoModeService: AutoModeServiceCompat) {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -29,10 +29,15 @@ export function createStopHandler(autoModeService: AutoModeServiceCompat) {
       const normalizedBranchName = branchName ?? null;
       const worktreeDesc = normalizedBranchName
         ? `worktree ${normalizedBranchName}`
-        : 'main worktree';
+        : "main worktree";
 
       // Check if running
-      if (!autoModeService.isAutoLoopRunningForProject(projectPath, normalizedBranchName)) {
+      if (
+        !autoModeService.isAutoLoopRunningForProject(
+          projectPath,
+          normalizedBranchName,
+        )
+      ) {
         res.json({
           success: true,
           message: `Auto mode is not running for ${worktreeDesc}`,
@@ -45,21 +50,21 @@ export function createStopHandler(autoModeService: AutoModeServiceCompat) {
       // Stop the auto loop for this project/worktree
       const runningCount = await autoModeService.stopAutoLoopForProject(
         projectPath,
-        normalizedBranchName
+        normalizedBranchName,
       );
 
       logger.info(
-        `Stopped auto loop for ${worktreeDesc} in project: ${projectPath}, ${runningCount} features still running`
+        `Stopped auto loop for ${worktreeDesc} in project: ${projectPath}, ${runningCount} features still running`,
       );
 
       res.json({
         success: true,
-        message: 'Auto mode stopped',
+        message: "Auto mode stopped",
         runningFeaturesCount: runningCount,
         branchName: normalizedBranchName,
       });
     } catch (error) {
-      logError(error, 'Stop auto mode failed');
+      logError(error, "Stop auto mode failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

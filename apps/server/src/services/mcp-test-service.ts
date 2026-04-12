@@ -5,18 +5,18 @@
  * Supports stdio, SSE, and HTTP transport types.
  */
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import type { MCPServerConfig, MCPToolInfo } from '@pegasus/types';
-import type { SettingsService } from './settings-service.js';
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { exec } from "child_process";
+import { promisify } from "util";
+import type { MCPServerConfig, MCPToolInfo } from "@pegasus/types";
+import type { SettingsService } from "./settings-service.js";
 
 const execAsync = promisify(exec);
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
-const IS_WINDOWS = process.platform === 'win32';
+const IS_WINDOWS = process.platform === "win32";
 
 export interface MCPTestResult {
   success: boolean;
@@ -53,8 +53,8 @@ export class MCPTestService {
 
     try {
       client = new Client({
-        name: 'pegasus-mcp-test',
-        version: '1.0.0',
+        name: "pegasus-mcp-test",
+        version: "1.0.0",
       });
 
       // Create transport based on server type
@@ -63,7 +63,7 @@ export class MCPTestService {
       // Connect with timeout
       await Promise.race([
         client.connect(transport),
-        this.timeout(DEFAULT_TIMEOUT, 'Connection timeout'),
+        this.timeout(DEFAULT_TIMEOUT, "Connection timeout"),
       ]);
 
       // List tools with timeout
@@ -75,19 +75,23 @@ export class MCPTestService {
             description?: string;
             inputSchema?: Record<string, unknown>;
           }>;
-        }>(DEFAULT_TIMEOUT, 'List tools timeout'),
+        }>(DEFAULT_TIMEOUT, "List tools timeout"),
       ]);
 
       const connectionTime = Date.now() - startTime;
 
       // Convert tools to MCPToolInfo format
       const tools: MCPToolInfo[] = (toolsResult.tools || []).map(
-        (tool: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
+        (tool: {
+          name: string;
+          description?: string;
+          inputSchema?: Record<string, unknown>;
+        }) => ({
           name: tool.name,
           description: tool.description,
           inputSchema: tool.inputSchema,
           enabled: true,
-        })
+        }),
       );
 
       return {
@@ -126,10 +130,15 @@ export class MCPTestService {
    */
   private async cleanupConnection(
     client: Client | null,
-    transport: StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport | null
+    transport:
+      | StdioClientTransport
+      | SSEClientTransport
+      | StreamableHTTPClientTransport
+      | null,
   ): Promise<void> {
     // Get the PID before any cleanup (only available for stdio transports)
-    const pid = transport instanceof StdioClientTransport ? transport.pid : null;
+    const pid =
+      transport instanceof StdioClientTransport ? transport.pid : null;
 
     // On Windows with stdio transport, kill the entire process tree FIRST
     // This must happen before client.close() which would orphan child processes
@@ -158,7 +167,9 @@ export class MCPTestService {
   async testServerById(serverId: string): Promise<MCPTestResult> {
     try {
       const globalSettings = await this.settingsService.getGlobalSettings();
-      const serverConfig = globalSettings.mcpServers?.find((s) => s.id === serverId);
+      const serverConfig = globalSettings.mcpServers?.find(
+        (s) => s.id === serverId,
+      );
 
       if (!serverConfig) {
         return {
@@ -180,11 +191,13 @@ export class MCPTestService {
    * Create appropriate transport based on server type
    */
   private async createTransport(
-    config: MCPServerConfig
-  ): Promise<StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport> {
-    if (config.type === 'sse') {
+    config: MCPServerConfig,
+  ): Promise<
+    StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport
+  > {
+    if (config.type === "sse") {
       if (!config.url) {
-        throw new Error('URL is required for SSE transport');
+        throw new Error("URL is required for SSE transport");
       }
       // Use eventSourceInit workaround for SSE headers (SDK bug workaround)
       // See: https://github.com/modelcontextprotocol/typescript-sdk/issues/436
@@ -205,9 +218,9 @@ export class MCPTestService {
       });
     }
 
-    if (config.type === 'http') {
+    if (config.type === "http") {
       if (!config.url) {
-        throw new Error('URL is required for HTTP transport');
+        throw new Error("URL is required for HTTP transport");
       }
       return new StreamableHTTPClientTransport(new URL(config.url), {
         requestInit: config.headers
@@ -220,7 +233,7 @@ export class MCPTestService {
 
     // Default to stdio
     if (!config.command) {
-      throw new Error('Command is required for stdio transport');
+      throw new Error("Command is required for stdio transport");
     }
 
     return new StdioClientTransport({

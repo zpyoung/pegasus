@@ -134,7 +134,8 @@
 .retro .content-bg {
   background:
     linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px), var(--background);
+    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+    var(--background);
   background-size: 20px 20px;
 }
 
@@ -152,7 +153,7 @@
     retro-glow 1s ease-in-out infinite alternate;
 }
 
-.retro [data-slot='button'][class*='animated-outline'] {
+.retro [data-slot="button"][class*="animated-outline"] {
   border-radius: 0 !important;
 }
 
@@ -166,7 +167,9 @@
   letter-spacing: 0.1em;
 }
 
-.retro [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.retro
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.1 0.1 145) !important;
   color: #00ff41 !important;
   box-shadow:

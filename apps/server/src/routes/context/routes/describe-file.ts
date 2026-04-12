@@ -10,21 +10,21 @@
  * arbitrary file reads and prompt injection attacks.
  */
 
-import type { Request, Response } from 'express';
-import { createLogger } from '@pegasus/utils';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { resolvePhaseModel } from '@pegasus/model-resolver';
-import { simpleQuery } from '../../../providers/simple-query-service.js';
-import * as secureFs from '../../../lib/secure-fs.js';
-import * as path from 'path';
-import type { SettingsService } from '../../../services/settings-service.js';
+import type { Request, Response } from "express";
+import { createLogger } from "@pegasus/utils";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { resolvePhaseModel } from "@pegasus/model-resolver";
+import { simpleQuery } from "../../../providers/simple-query-service.js";
+import * as secureFs from "../../../lib/secure-fs.js";
+import * as path from "path";
+import type { SettingsService } from "../../../services/settings-service.js";
 import {
   getAutoLoadClaudeMdSetting,
   getPromptCustomization,
   getPhaseModelWithOverrides,
-} from '../../../lib/settings-helpers.js';
+} from "../../../lib/settings-helpers.js";
 
-const logger = createLogger('DescribeFile');
+const logger = createLogger("DescribeFile");
 
 /**
  * Request body for the describe-file endpoint
@@ -57,17 +57,17 @@ interface DescribeFileErrorResponse {
  * @returns Express request handler for file description
  */
 export function createDescribeFileHandler(
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { filePath } = req.body as DescribeFileRequestBody;
 
       // Validate required fields
-      if (!filePath || typeof filePath !== 'string') {
+      if (!filePath || typeof filePath !== "string") {
         const response: DescribeFileErrorResponse = {
           success: false,
-          error: 'filePath is required and must be a string',
+          error: "filePath is required and must be a string",
         };
         res.status(400).json(response);
         return;
@@ -83,15 +83,16 @@ export function createDescribeFileHandler(
       // and prompt injection attacks where malicious filePath values could inject instructions
       let fileContent: string;
       try {
-        const content = await secureFs.readFile(resolvedPath, 'utf-8');
-        fileContent = typeof content === 'string' ? content : content.toString('utf-8');
+        const content = await secureFs.readFile(resolvedPath, "utf-8");
+        fileContent =
+          typeof content === "string" ? content : content.toString("utf-8");
       } catch (readError) {
         // Path not allowed - return 403 Forbidden
         if (readError instanceof PathNotAllowedError) {
           logger.warn(`Path not allowed: ${filePath}`);
           const response: DescribeFileErrorResponse = {
             success: false,
-            error: 'File path is not within the allowed directory',
+            error: "File path is not within the allowed directory",
           };
           res.status(403).json(response);
           return;
@@ -100,9 +101,9 @@ export function createDescribeFileHandler(
         // File not found
         if (
           readError !== null &&
-          typeof readError === 'object' &&
-          'code' in readError &&
-          readError.code === 'ENOENT'
+          typeof readError === "object" &&
+          "code" in readError &&
+          readError.code === "ENOENT"
         ) {
           logger.warn(`File not found: ${resolvedPath}`);
           const response: DescribeFileErrorResponse = {
@@ -113,7 +114,8 @@ export function createDescribeFileHandler(
           return;
         }
 
-        const errorMessage = readError instanceof Error ? readError.message : 'Unknown error';
+        const errorMessage =
+          readError instanceof Error ? readError.message : "Unknown error";
         logger.error(`Failed to read file: ${errorMessage}`);
         const response: DescribeFileErrorResponse = {
           success: false,
@@ -134,13 +136,16 @@ export function createDescribeFileHandler(
       const fileName = path.basename(resolvedPath);
 
       // Get customized prompts from settings
-      const prompts = await getPromptCustomization(settingsService, '[DescribeFile]');
+      const prompts = await getPromptCustomization(
+        settingsService,
+        "[DescribeFile]",
+      );
 
       // Build prompt with file content passed as structured data
       // The file content is included directly, not via tool invocation
       const prompt = `${prompts.contextDescription.describeFilePrompt}
 
-File: ${fileName}${truncated ? ' (truncated)' : ''}
+File: ${fileName}${truncated ? " (truncated)" : ""}
 
 --- FILE CONTENT ---
 ${contentToAnalyze}`;
@@ -152,7 +157,7 @@ ${contentToAnalyze}`;
       const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
         cwd,
         settingsService,
-        '[DescribeFile]'
+        "[DescribeFile]",
       );
 
       // Get model from phase settings with provider info
@@ -161,16 +166,16 @@ ${contentToAnalyze}`;
         provider,
         credentials,
       } = await getPhaseModelWithOverrides(
-        'fileDescriptionModel',
+        "fileDescriptionModel",
         settingsService,
         cwd,
-        '[DescribeFile]'
+        "[DescribeFile]",
       );
       const { model, thinkingLevel } = resolvePhaseModel(phaseModelEntry);
 
       logger.info(
         `Resolved model: ${model}, thinkingLevel: ${thinkingLevel}`,
-        provider ? `via provider: ${provider.name}` : 'direct API'
+        provider ? `via provider: ${provider.name}` : "direct API",
       );
 
       // Use simpleQuery - provider abstraction handles routing to correct provider
@@ -182,7 +187,9 @@ ${contentToAnalyze}`;
         allowedTools: [],
         thinkingLevel,
         readOnly: true, // File description only reads, doesn't write
-        settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+        settingSources: autoLoadClaudeMd
+          ? ["user", "project", "local"]
+          : undefined,
         claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       });
@@ -190,10 +197,10 @@ ${contentToAnalyze}`;
       const description = result.text;
 
       if (!description || description.trim().length === 0) {
-        logger.warn('Received empty response from Claude');
+        logger.warn("Received empty response from Claude");
         const response: DescribeFileErrorResponse = {
           success: false,
-          error: 'Failed to generate description - empty response',
+          error: "Failed to generate description - empty response",
         };
         res.status(500).json(response);
         return;
@@ -207,8 +214,9 @@ ${contentToAnalyze}`;
       };
       res.json(response);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      logger.error('File description failed:', errorMessage);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      logger.error("File description failed:", errorMessage);
 
       const response: DescribeFileErrorResponse = {
         success: false,

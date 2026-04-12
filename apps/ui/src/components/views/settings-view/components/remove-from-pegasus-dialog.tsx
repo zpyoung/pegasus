@@ -1,6 +1,6 @@
-import { Folder, LogOut } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import type { Project } from '@/lib/electron';
+import { Folder, LogOut } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { Project } from "@/lib/electron";
 
 interface RemoveFromPegasusDialogProps {
   open: boolean;
@@ -39,8 +39,12 @@ export function RemoveFromPegasusDialog({
             <Folder className="w-5 h-5 text-brand-500" />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-foreground truncate">{project.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{project.path}</p>
+            <p className="font-medium text-foreground truncate">
+              {project.name}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {project.path}
+            </p>
           </div>
         </div>
       )}

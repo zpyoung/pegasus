@@ -20,10 +20,10 @@ export class PauseExecutionError extends Error {
 
   constructor(
     public readonly featureId: string,
-    public readonly reason: 'question' | 'approval',
-    message?: string
+    public readonly reason: "question" | "approval",
+    message?: string,
   ) {
     super(message ?? `Execution paused: ${reason}`);
-    this.name = 'PauseExecutionError';
+    this.name = "PauseExecutionError";
   }
 }

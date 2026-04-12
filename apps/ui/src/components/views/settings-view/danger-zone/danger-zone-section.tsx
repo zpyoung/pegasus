@@ -1,7 +1,7 @@
-import { Button } from '@/components/ui/button';
-import { Trash2, Folder, AlertTriangle, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Project } from '../shared/types';
+import { Button } from "@/components/ui/button";
+import { Trash2, Folder, AlertTriangle, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Project } from "../shared/types";
 
 interface DangerZoneSectionProps {
   project: Project | null;
@@ -17,10 +17,10 @@ export function DangerZoneSection({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-destructive/30',
-        'bg-gradient-to-br from-destructive/5 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-destructive/5'
+        "rounded-2xl overflow-hidden",
+        "border border-destructive/30",
+        "bg-gradient-to-br from-destructive/5 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-destructive/5",
       )}
     >
       <div className="p-6 border-b border-destructive/20 bg-gradient-to-r from-destructive/5 via-transparent to-transparent">
@@ -28,9 +28,13 @@ export function DangerZoneSection({
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center border border-destructive/20">
             <AlertTriangle className="w-5 h-5 text-destructive" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground tracking-tight">Danger Zone</h2>
+          <h2 className="text-lg font-semibold text-foreground tracking-tight">
+            Danger Zone
+          </h2>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">Destructive project actions.</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          Destructive project actions.
+        </p>
       </div>
       <div className="p-6 space-y-4">
         {project ? (
@@ -39,10 +43,12 @@ export function DangerZoneSection({
             {onRemoveFromPegasusClick && (
               <div className="flex items-start justify-between gap-4 p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground">Remove from Pegasus</p>
+                  <p className="font-medium text-foreground">
+                    Remove from Pegasus
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Remove this project from Pegasus without deleting any files from disk. You can
-                    re-add it later by opening the folder.
+                    Remove this project from Pegasus without deleting any files
+                    from disk. You can re-add it later by opening the folder.
                   </p>
                 </div>
                 <Button
@@ -64,8 +70,12 @@ export function DangerZoneSection({
                   <Folder className="w-5 h-5 text-brand-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-foreground truncate">{project.name}</p>
-                  <p className="text-xs text-muted-foreground/70 truncate mt-0.5">{project.path}</p>
+                  <p className="font-medium text-foreground truncate">
+                    {project.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 truncate mt-0.5">
+                    {project.path}
+                  </p>
                 </div>
               </div>
               <Button
@@ -73,10 +83,10 @@ export function DangerZoneSection({
                 onClick={onDeleteClick}
                 data-testid="delete-project-button"
                 className={cn(
-                  'shrink-0',
-                  'shadow-md shadow-destructive/20 hover:shadow-lg hover:shadow-destructive/25',
-                  'transition-all duration-200 ease-out',
-                  'hover:scale-[1.02] active:scale-[0.98]'
+                  "shrink-0",
+                  "shadow-md shadow-destructive/20 hover:shadow-lg hover:shadow-destructive/25",
+                  "transition-all duration-200 ease-out",
+                  "hover:scale-[1.02] active:scale-[0.98]",
                 )}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -85,7 +95,9 @@ export function DangerZoneSection({
             </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground/60 text-center py-4">No project selected.</p>
+          <p className="text-sm text-muted-foreground/60 text-center py-4">
+            No project selected.
+          </p>
         )}
       </div>
     </div>

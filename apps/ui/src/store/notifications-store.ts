@@ -2,8 +2,8 @@
  * Notifications Store - State management for project-level notifications
  */
 
-import { create } from 'zustand';
-import type { Notification } from '@pegasus/types';
+import { create } from "zustand";
+import type { Notification } from "@pegasus/types";
 
 // ============================================================================
 // State Interface
@@ -61,69 +61,79 @@ const initialState: NotificationsState = {
 // Store
 // ============================================================================
 
-export const useNotificationsStore = create<NotificationsState & NotificationsActions>(
-  (set, _get) => ({
-    ...initialState,
+export const useNotificationsStore = create<
+  NotificationsState & NotificationsActions
+>((set, _get) => ({
+  ...initialState,
 
-    // Data management
-    setNotifications: (notifications) =>
-      set({
-        notifications,
-        unreadCount: notifications.filter((n) => !n.read).length,
-      }),
+  // Data management
+  setNotifications: (notifications) =>
+    set({
+      notifications,
+      unreadCount: notifications.filter((n) => !n.read).length,
+    }),
 
-    setUnreadCount: (count) => set({ unreadCount: count }),
+  setUnreadCount: (count) => set({ unreadCount: count }),
 
-    addNotification: (notification) =>
-      set((state) => ({
-        notifications: [notification, ...state.notifications],
-        unreadCount: notification.read ? state.unreadCount : state.unreadCount + 1,
-      })),
+  addNotification: (notification) =>
+    set((state) => ({
+      notifications: [notification, ...state.notifications],
+      unreadCount: notification.read
+        ? state.unreadCount
+        : state.unreadCount + 1,
+    })),
 
-    markAsRead: (notificationId) =>
-      set((state) => {
-        const notification = state.notifications.find((n) => n.id === notificationId);
-        if (!notification || notification.read) return state;
+  markAsRead: (notificationId) =>
+    set((state) => {
+      const notification = state.notifications.find(
+        (n) => n.id === notificationId,
+      );
+      if (!notification || notification.read) return state;
 
-        return {
-          notifications: state.notifications.map((n) =>
-            n.id === notificationId ? { ...n, read: true } : n
-          ),
-          unreadCount: Math.max(0, state.unreadCount - 1),
-        };
-      }),
+      return {
+        notifications: state.notifications.map((n) =>
+          n.id === notificationId ? { ...n, read: true } : n,
+        ),
+        unreadCount: Math.max(0, state.unreadCount - 1),
+      };
+    }),
 
-    markAllAsRead: () =>
-      set((state) => ({
-        notifications: state.notifications.map((n) => ({ ...n, read: true })),
-        unreadCount: 0,
-      })),
+  markAllAsRead: () =>
+    set((state) => ({
+      notifications: state.notifications.map((n) => ({ ...n, read: true })),
+      unreadCount: 0,
+    })),
 
-    dismissNotification: (notificationId) =>
-      set((state) => {
-        const notification = state.notifications.find((n) => n.id === notificationId);
-        if (!notification) return state;
+  dismissNotification: (notificationId) =>
+    set((state) => {
+      const notification = state.notifications.find(
+        (n) => n.id === notificationId,
+      );
+      if (!notification) return state;
 
-        return {
-          notifications: state.notifications.filter((n) => n.id !== notificationId),
-          unreadCount: notification.read ? state.unreadCount : Math.max(0, state.unreadCount - 1),
-        };
-      }),
+      return {
+        notifications: state.notifications.filter(
+          (n) => n.id !== notificationId,
+        ),
+        unreadCount: notification.read
+          ? state.unreadCount
+          : Math.max(0, state.unreadCount - 1),
+      };
+    }),
 
-    dismissAll: () =>
-      set({
-        notifications: [],
-        unreadCount: 0,
-      }),
+  dismissAll: () =>
+    set({
+      notifications: [],
+      unreadCount: 0,
+    }),
 
-    // Loading state
-    setLoading: (loading) => set({ isLoading: loading }),
-    setError: (error) => set({ error }),
+  // Loading state
+  setLoading: (loading) => set({ isLoading: loading }),
+  setError: (error) => set({ error }),
 
-    // Popover state
-    setPopoverOpen: (open) => set({ isPopoverOpen: open }),
+  // Popover state
+  setPopoverOpen: (open) => set({ isPopoverOpen: open }),
 
-    // Reset
-    reset: () => set(initialState),
-  })
-);
+  // Reset
+  reset: () => set(initialState),
+}));

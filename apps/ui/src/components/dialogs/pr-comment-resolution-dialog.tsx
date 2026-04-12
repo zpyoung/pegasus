@@ -6,7 +6,7 @@
  * or as a group.
  */
 
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   MessageSquare,
   FileCode,
@@ -22,7 +22,7 @@ import {
   Check,
   Undo2,
   RefreshCw,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,31 +30,31 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import { Markdown } from '@/components/ui/markdown';
-import { cn, generateUUID, normalizeModelEntry } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { useGitHubPRReviewComments } from '@/hooks/queries';
-import { useCreateFeature, useResolveReviewThread } from '@/hooks/mutations';
-import { toast } from 'sonner';
-import type { PRReviewComment } from '@/lib/electron';
-import type { Feature } from '@/store/app-store';
-import type { PhaseModelEntry } from '@pegasus/types';
-import { normalizeThinkingLevelForModel } from '@pegasus/types';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { Markdown } from "@/components/ui/markdown";
+import { cn, generateUUID, normalizeModelEntry } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { useGitHubPRReviewComments } from "@/hooks/queries";
+import { useCreateFeature, useResolveReviewThread } from "@/hooks/mutations";
+import { toast } from "sonner";
+import type { PRReviewComment } from "@/lib/electron";
+import type { Feature } from "@/store/app-store";
+import type { PhaseModelEntry } from "@pegasus/types";
+import { normalizeThinkingLevelForModel } from "@pegasus/types";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { PhaseModelSelector } from "@/components/views/settings-view/model-defaults";
 
 // ============================================
 // Types
 // ============================================
 
-type AddressMode = 'together' | 'individually';
-type SortOrder = 'newest' | 'oldest';
+type AddressMode = "together" | "individually";
+type SortOrder = "newest" | "oldest";
 
 /** Minimal PR info needed by the dialog - works with both GitHubPR and WorktreePRInfo */
 export interface PRCommentResolutionPRInfo {
@@ -84,19 +84,19 @@ function generateFeatureId(): string {
 /** Format a date string for display */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
 /** Format a time string for display */
 function formatTime(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
     hour12: true,
   });
 }
@@ -115,27 +115,30 @@ function formatFileLocation(comment: PRReviewComment): string | null {
 /** Generate a feature title for a single comment */
 function generateSingleCommentTitle(
   pr: PRCommentResolutionPRInfo,
-  comment: PRReviewComment
+  comment: PRReviewComment,
 ): string {
   const location = comment.path
-    ? ` on ${comment.path}${comment.line ? `:${comment.line}` : ''}`
-    : '';
+    ? ` on ${comment.path}${comment.line ? `:${comment.line}` : ""}`
+    : "";
   return `Address PR #${pr.number} comment by @${comment.author}${location}`;
 }
 
 /** Generate a feature title for multiple comments addressed together */
-function generateGroupTitle(pr: PRCommentResolutionPRInfo, comments: PRReviewComment[]): string {
-  return `Address ${comments.length} review comment${comments.length > 1 ? 's' : ''} on PR #${pr.number}`;
+function generateGroupTitle(
+  pr: PRCommentResolutionPRInfo,
+  comments: PRReviewComment[],
+): string {
+  return `Address ${comments.length} review comment${comments.length > 1 ? "s" : ""} on PR #${pr.number}`;
 }
 
 /** Generate a feature description for a single comment */
 function generateSingleCommentDescription(
   pr: PRCommentResolutionPRInfo,
-  comment: PRReviewComment
+  comment: PRReviewComment,
 ): string {
   const fileContext = comment.path
-    ? `**File:** \`${comment.path}\`${comment.line ? ` (line ${comment.line})` : ''}\n`
-    : '';
+    ? `**File:** \`${comment.path}\`${comment.line ? ` (line ${comment.line})` : ""}\n`
+    : "";
 
   return `## PR Review Comment Resolution
 
@@ -144,11 +147,11 @@ function generateSingleCommentDescription(
 ${fileContext}
 ### Review Comment
 
-> ${comment.body.split('\n').join('\n> ')}
+> ${comment.body.split("\n").join("\n> ")}
 
 ### Instructions
 
-Please address the review comment above. The comment was left ${comment.isReviewComment ? 'as an inline code review' : 'as a general PR'} comment${comment.path ? ` on file \`${comment.path}\`` : ''}${comment.line ? ` at line ${comment.line}` : ''}.
+Please address the review comment above. The comment was left ${comment.isReviewComment ? "as an inline code review" : "as a general PR"} comment${comment.path ? ` on file \`${comment.path}\`` : ""}${comment.line ? ` at line ${comment.line}` : ""}.
 
 Review the code in context and make the necessary changes to resolve this feedback. Ensure the changes:
 1. Directly address the reviewer's concern
@@ -160,20 +163,20 @@ Review the code in context and make the necessary changes to resolve this feedba
 /** Generate a feature description for multiple comments addressed together */
 function generateGroupDescription(
   pr: PRCommentResolutionPRInfo,
-  comments: PRReviewComment[]
+  comments: PRReviewComment[],
 ): string {
   const commentSections = comments
     .map((comment, index) => {
       const fileContext = comment.path
-        ? `**File:** \`${comment.path}\`${comment.line ? ` (line ${comment.line})` : ''}\n`
-        : '';
+        ? `**File:** \`${comment.path}\`${comment.line ? ` (line ${comment.line})` : ""}\n`
+        : "";
 
       return `### Comment ${index + 1} - by @${comment.author}
 ${fileContext}
-> ${comment.body.split('\n').join('\n> ')}
+> ${comment.body.split("\n").join("\n> ")}
 `;
     })
-    .join('\n---\n\n');
+    .join("\n---\n\n");
 
   return `## PR Review Comments Resolution
 
@@ -222,7 +225,8 @@ function CommentRow({
 
   // Determine if the comment body is long enough to need expansion
   const PREVIEW_CHAR_LIMIT = 200;
-  const needsExpansion = comment.body.length > PREVIEW_CHAR_LIMIT || comment.body.includes('\n');
+  const needsExpansion =
+    comment.body.length > PREVIEW_CHAR_LIMIT || comment.body.includes("\n");
 
   const handleExpandToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -234,7 +238,7 @@ function CommentRow({
       e.stopPropagation();
       onExpandDetail();
     },
-    [onExpandDetail]
+    [onExpandDetail],
   );
 
   const handleResolveClick = useCallback(
@@ -244,17 +248,19 @@ function CommentRow({
         onResolve(comment, !comment.isResolved);
       }
     },
-    [comment, onResolve]
+    [comment, onResolve],
   );
 
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-3 rounded-lg border border-border transition-colors',
-        needsExpansion ? 'cursor-pointer' : 'cursor-default',
-        isSelected ? 'bg-accent/50 border-primary/30' : 'hover:bg-accent/30'
+        "flex items-start gap-3 p-3 rounded-lg border border-border transition-colors",
+        needsExpansion ? "cursor-pointer" : "cursor-default",
+        isSelected ? "bg-accent/50 border-primary/30" : "hover:bg-accent/30",
       )}
-      onClick={needsExpansion ? () => setIsExpanded((prev) => !prev) : undefined}
+      onClick={
+        needsExpansion ? () => setIsExpanded((prev) => !prev) : undefined
+      }
     >
       <Checkbox
         checked={isSelected}
@@ -320,13 +326,17 @@ function CommentRow({
                 onClick={handleResolveClick}
                 disabled={isResolvingThread}
                 className={cn(
-                  'shrink-0 transition-colors p-0.5 rounded flex items-center gap-1 text-[10px] font-medium',
+                  "shrink-0 transition-colors p-0.5 rounded flex items-center gap-1 text-[10px] font-medium",
                   comment.isResolved
-                    ? 'text-green-600 dark:text-green-500 hover:text-muted-foreground hover:bg-muted'
-                    : 'text-muted-foreground hover:text-green-600 dark:hover:text-green-500 hover:bg-muted',
-                  isResolvingThread && 'opacity-50 cursor-not-allowed'
+                    ? "text-green-600 dark:text-green-500 hover:text-muted-foreground hover:bg-muted"
+                    : "text-muted-foreground hover:text-green-600 dark:hover:text-green-500 hover:bg-muted",
+                  isResolvingThread && "opacity-50 cursor-not-allowed",
                 )}
-                title={comment.isResolved ? 'Unresolve this thread' : 'Resolve this thread'}
+                title={
+                  comment.isResolved
+                    ? "Unresolve this thread"
+                    : "Resolve this thread"
+                }
               >
                 {isResolvingThread ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -345,7 +355,7 @@ function CommentRow({
                   type="button"
                   onClick={handleExpandToggle}
                   className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-muted"
-                  title={isExpanded ? 'Collapse comment' : 'Expand comment'}
+                  title={isExpanded ? "Collapse comment" : "Expand comment"}
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-3.5 w-3.5" />
@@ -388,8 +398,12 @@ function CommentRow({
         {/* Date row */}
         <div className="flex items-center mt-1">
           <div className="flex flex-col">
-            <div className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</div>
-            <div className="text-xs text-muted-foreground/70">{formatTime(comment.createdAt)}</div>
+            <div className="text-xs text-muted-foreground">
+              {formatDate(comment.createdAt)}
+            </div>
+            <div className="text-xs text-muted-foreground/70">
+              {formatTime(comment.createdAt)}
+            </div>
           </div>
         </div>
       </div>
@@ -407,7 +421,11 @@ interface CommentDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialogProps) {
+function CommentDetailDialog({
+  comment,
+  open,
+  onOpenChange,
+}: CommentDetailDialogProps) {
   if (!comment) return null;
 
   const fileLocation = formatFileLocation(comment);
@@ -442,9 +460,12 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
                   </div>
                 )}
                 <div>
-                  <span className="text-sm font-semibold">@{comment.author}</span>
+                  <span className="text-sm font-semibold">
+                    @{comment.author}
+                  </span>
                   <div className="text-xs text-muted-foreground">
-                    {formatDate(comment.createdAt)} at {formatTime(comment.createdAt)}
+                    {formatDate(comment.createdAt)} at{" "}
+                    {formatTime(comment.createdAt)}
                   </div>
                 </div>
               </div>
@@ -478,7 +499,9 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
             {fileLocation && (
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 border border-border">
                 <FileCode className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-mono text-muted-foreground">{fileLocation}</span>
+                <span className="text-sm font-mono text-muted-foreground">
+                  {fileLocation}
+                </span>
               </div>
             )}
 
@@ -486,7 +509,9 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
             {comment.diffHunk && (
               <div className="rounded-lg border border-border overflow-hidden">
                 <div className="px-3 py-1.5 bg-muted/50 border-b border-border">
-                  <span className="text-xs font-medium text-muted-foreground">Code Context</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Code Context
+                  </span>
                 </div>
                 <pre className="p-3 text-xs font-mono overflow-x-auto bg-card text-foreground-secondary leading-relaxed">
                   {comment.diffHunk}
@@ -502,11 +527,14 @@ function CommentDetailDialog({ comment, open, onOpenChange }: CommentDetailDialo
             {/* Additional metadata */}
             {(comment.updatedAt || comment.commitId || comment.side) && (
               <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
-                  <span>Updated: {formatDate(comment.updatedAt)}</span>
-                )}
+                {comment.updatedAt &&
+                  comment.updatedAt !== comment.createdAt && (
+                    <span>Updated: {formatDate(comment.updatedAt)}</span>
+                  )}
                 {comment.commitId && (
-                  <span className="font-mono">Commit: {comment.commitId.slice(0, 7)}</span>
+                  <span className="font-mono">
+                    Commit: {comment.commitId.slice(0, 7)}
+                  </span>
                 )}
                 {comment.side && <span>Side: {comment.side}</span>}
               </div>
@@ -539,14 +567,15 @@ function CreationErrorState({ errors, onDismiss }: CreationErrorStateProps) {
       <div className="flex items-center gap-2 mb-2">
         <AlertCircle className="h-4 w-4 text-destructive" />
         <span className="text-sm font-medium text-destructive">
-          Failed to create {errors.length} feature{errors.length > 1 ? 's' : ''}
+          Failed to create {errors.length} feature{errors.length > 1 ? "s" : ""}
         </span>
       </div>
       <ul className="text-xs text-muted-foreground space-y-1 ml-6">
         {errors.map((err, i) => (
           <li key={i}>
             <span className="font-medium">@{err.comment.author}</span>
-            {err.comment.path && <span> on {err.comment.path}</span>}: {err.error}
+            {err.comment.path && <span> on {err.comment.path}</span>}:{" "}
+            {err.error}
           </li>
         ))}
       </ul>
@@ -569,31 +598,41 @@ export function PRCommentResolutionDialog({
   const { currentProject, defaultFeatureModel } = useAppStore();
 
   // Use project-level default feature model if set, otherwise fall back to global
-  const effectiveDefaultFeatureModel = currentProject?.defaultFeatureModel ?? defaultFeatureModel;
+  const effectiveDefaultFeatureModel =
+    currentProject?.defaultFeatureModel ?? defaultFeatureModel;
 
   // State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [addressMode, setAddressMode] = useState<AddressMode>('together');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+  const [addressMode, setAddressMode] = useState<AddressMode>("together");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [showResolved, setShowResolved] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [creationErrors, setCreationErrors] = useState<
     Array<{ comment: PRReviewComment; error: string }>
   >([]);
-  const [detailComment, setDetailComment] = useState<PRReviewComment | null>(null);
+  const [detailComment, setDetailComment] = useState<PRReviewComment | null>(
+    null,
+  );
 
   // Per-thread resolving state - tracks which threads are currently being resolved/unresolved
-  const [resolvingThreads, setResolvingThreads] = useState<Set<string>>(new Set());
+  const [resolvingThreads, setResolvingThreads] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Model selection state
-  const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({ model: 'claude-sonnet' });
+  const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({
+    model: "claude-sonnet",
+  });
 
   // Track previous open state to detect when dialog opens
   const wasOpenRef = useRef(false);
 
   const handleModelChange = useCallback((entry: PhaseModelEntry) => {
-    const modelId = typeof entry.model === 'string' ? entry.model : '';
-    const normalizedThinkingLevel = normalizeThinkingLevelForModel(modelId, entry.thinkingLevel);
+    const modelId = typeof entry.model === "string" ? entry.model : "";
+    const normalizedThinkingLevel = normalizeThinkingLevelForModel(
+      modelId,
+      entry.thinkingLevel,
+    );
 
     setModelEntry({ ...entry, thinkingLevel: normalizedThinkingLevel });
   }, []);
@@ -605,7 +644,10 @@ export function PRCommentResolutionDialog({
     isFetching: refreshing,
     error,
     refetch,
-  } = useGitHubPRReviewComments(currentProject?.path, open ? pr.number : undefined);
+  } = useGitHubPRReviewComments(
+    currentProject?.path,
+    open ? pr.number : undefined,
+  );
 
   // Sync model defaults and refresh comments when dialog opens (transitions from closed to open)
   useEffect(() => {
@@ -625,14 +667,14 @@ export function PRCommentResolutionDialog({
     return [...raw].sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
   }, [data, sortOrder]);
 
   // Count resolved and unresolved comments for filter display
   const resolvedCount = useMemo(
     () => allComments.filter((c) => c.isResolved).length,
-    [allComments]
+    [allComments],
   );
   const hasResolvedComments = resolvedCount > 0;
 
@@ -642,13 +684,17 @@ export function PRCommentResolutionDialog({
   }, [allComments, showResolved]);
 
   // Feature creation mutation
-  const createFeature = useCreateFeature(currentProject?.path ?? '');
+  const createFeature = useCreateFeature(currentProject?.path ?? "");
 
   // Resolve/unresolve thread mutation
-  const resolveThread = useResolveReviewThread(currentProject?.path ?? '', pr.number);
+  const resolveThread = useResolveReviewThread(
+    currentProject?.path ?? "",
+    pr.number,
+  );
 
   // Derived state
-  const allSelected = comments.length > 0 && comments.every((c) => selectedIds.has(c.id));
+  const allSelected =
+    comments.length > 0 && comments.every((c) => selectedIds.has(c.id));
   const someSelected = selectedIds.size > 0 && !allSelected;
   const noneSelected = selectedIds.size === 0;
 
@@ -687,10 +733,10 @@ export function PRCommentResolutionDialog({
               return next;
             });
           },
-        }
+        },
       );
     },
-    [resolveThread]
+    [resolveThread],
   );
 
   const handleSelectAll = useCallback(() => {
@@ -702,11 +748,11 @@ export function PRCommentResolutionDialog({
   }, [allSelected, comments]);
 
   const handleModeChange = useCallback((checked: boolean) => {
-    setAddressMode(checked ? 'individually' : 'together');
+    setAddressMode(checked ? "individually" : "together");
   }, []);
 
   const handleSortToggle = useCallback(() => {
-    setSortOrder((prev) => (prev === 'newest' ? 'oldest' : 'newest'));
+    setSortOrder((prev) => (prev === "newest" ? "oldest" : "newest"));
   }, []);
 
   const handleShowResolvedToggle = useCallback(() => {
@@ -715,7 +761,9 @@ export function PRCommentResolutionDialog({
       // When hiding resolved comments, remove any selected resolved comment IDs
       if (!nextShowResolved) {
         setSelectedIds((prevIds) => {
-          const resolvedIds = new Set(allComments.filter((c) => c.isResolved).map((c) => c.id));
+          const resolvedIds = new Set(
+            allComments.filter((c) => c.isResolved).map((c) => c.id),
+          );
           const next = new Set(prevIds);
           for (const id of resolvedIds) {
             next.delete(id);
@@ -740,20 +788,20 @@ export function PRCommentResolutionDialog({
     setCreationErrors([]);
 
     try {
-      if (addressMode === 'together') {
+      if (addressMode === "together") {
         // Create a single feature for all selected comments
         const feature: Feature = {
           id: generateFeatureId(),
           title: generateGroupTitle(pr, selectedComments),
-          category: 'bug-fix',
+          category: "bug-fix",
           description: generateGroupDescription(pr, selectedComments),
           steps: [],
-          status: 'backlog',
+          status: "backlog",
           model: selectedModel,
           thinkingLevel: normalizedEntry.thinkingLevel,
           reasoningEffort: normalizedEntry.reasoningEffort,
           providerId: normalizedEntry.providerId,
-          planningMode: 'skip',
+          planningMode: "skip",
           requirePlanApproval: false,
           dependencies: [],
           ...(pr.url ? { prUrl: pr.url } : {}),
@@ -762,8 +810,8 @@ export function PRCommentResolutionDialog({
         };
 
         await createFeature.mutateAsync(feature);
-        toast.success('Feature created', {
-          description: `Created feature to address ${selectedComments.length} PR comment${selectedComments.length > 1 ? 's' : ''}`,
+        toast.success("Feature created", {
+          description: `Created feature to address ${selectedComments.length} PR comment${selectedComments.length > 1 ? "s" : ""}`,
         });
         onOpenChange(false);
       } else {
@@ -776,15 +824,15 @@ export function PRCommentResolutionDialog({
             const feature: Feature = {
               id: generateFeatureId(),
               title: generateSingleCommentTitle(pr, comment),
-              category: 'bug-fix',
+              category: "bug-fix",
               description: generateSingleCommentDescription(pr, comment),
               steps: [],
-              status: 'backlog',
+              status: "backlog",
               model: selectedModel,
               thinkingLevel: normalizedEntry.thinkingLevel,
               reasoningEffort: normalizedEntry.reasoningEffort,
               providerId: normalizedEntry.providerId,
-              planningMode: 'skip',
+              planningMode: "skip",
               requirePlanApproval: false,
               dependencies: [],
               ...(pr.url ? { prUrl: pr.url } : {}),
@@ -797,7 +845,7 @@ export function PRCommentResolutionDialog({
           } catch (err) {
             errors.push({
               comment,
-              error: err instanceof Error ? err.message : 'Unknown error',
+              error: err instanceof Error ? err.message : "Unknown error",
             });
           }
         }
@@ -805,20 +853,26 @@ export function PRCommentResolutionDialog({
         if (errors.length > 0) {
           setCreationErrors(errors);
           if (successCount > 0) {
-            toast.warning(`Created ${successCount} feature${successCount > 1 ? 's' : ''}`, {
-              description: `${errors.length} failed to create`,
-            });
+            toast.warning(
+              `Created ${successCount} feature${successCount > 1 ? "s" : ""}`,
+              {
+                description: `${errors.length} failed to create`,
+              },
+            );
           }
         } else {
-          toast.success(`Created ${successCount} feature${successCount > 1 ? 's' : ''}`, {
-            description: `Each PR comment will be addressed individually`,
-          });
+          toast.success(
+            `Created ${successCount} feature${successCount > 1 ? "s" : ""}`,
+            {
+              description: `Each PR comment will be addressed individually`,
+            },
+          );
           onOpenChange(false);
         }
       }
     } catch (err) {
-      toast.error('Failed to create feature', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error("Failed to create feature", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setIsCreating(false);
@@ -840,8 +894,8 @@ export function PRCommentResolutionDialog({
       if (!newOpen) {
         // Reset state when closing
         setSelectedIds(new Set());
-        setAddressMode('together');
-        setSortOrder('newest');
+        setAddressMode("together");
+        setSortOrder("newest");
         setShowResolved(false);
         setCreationErrors([]);
         setDetailComment(null);
@@ -850,7 +904,7 @@ export function PRCommentResolutionDialog({
       }
       onOpenChange(newOpen);
     },
-    [onOpenChange, effectiveDefaultFeatureModel]
+    [onOpenChange, effectiveDefaultFeatureModel],
   );
 
   // ============================================
@@ -874,11 +928,14 @@ export function PRCommentResolutionDialog({
               disabled={refreshing}
               title="Refresh comments"
             >
-              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+              <RefreshCw
+                className={cn("h-4 w-4", refreshing && "animate-spin")}
+              />
             </Button>
           </div>
           <DialogDescription>
-            Select comments from PR #{pr.number} to create feature tasks that address them.
+            Select comments from PR #{pr.number} to create feature tasks that
+            address them.
           </DialogDescription>
         </DialogHeader>
 
@@ -897,9 +954,11 @@ export function PRCommentResolutionDialog({
               <div className="p-3 rounded-full bg-destructive/10 mb-3">
                 <AlertCircle className="h-8 w-8 text-destructive" />
               </div>
-              <h3 className="text-sm font-medium mb-1">Failed to Load Comments</h3>
+              <h3 className="text-sm font-medium mb-1">
+                Failed to Load Comments
+              </h3>
               <p className="text-xs text-muted-foreground mb-3">
-                {error instanceof Error ? error.message : 'Unknown error'}
+                {error instanceof Error ? error.message : "Unknown error"}
               </p>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 Try Again
@@ -915,20 +974,28 @@ export function PRCommentResolutionDialog({
                 {/* Select All - only interactive when there are visible comments */}
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                    checked={
+                      allSelected
+                        ? true
+                        : someSelected
+                          ? "indeterminate"
+                          : false
+                    }
                     onCheckedChange={handleSelectAll}
                     disabled={comments.length === 0}
                   />
                   <Label
                     className={cn(
-                      'text-sm',
-                      comments.length > 0 ? 'cursor-pointer' : 'text-muted-foreground'
+                      "text-sm",
+                      comments.length > 0
+                        ? "cursor-pointer"
+                        : "text-muted-foreground",
                     )}
                     onClick={comments.length > 0 ? handleSelectAll : undefined}
                   >
                     {allSelected
-                      ? 'Deselect all'
-                      : `Select all (${comments.length}${!showResolved && hasResolvedComments ? ` of ${allComments.length}` : ''})`}
+                      ? "Deselect all"
+                      : `Select all (${comments.length}${!showResolved && hasResolvedComments ? ` of ${allComments.length}` : ""})`}
                   </Label>
                 </div>
 
@@ -938,15 +1005,15 @@ export function PRCommentResolutionDialog({
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      'h-7 px-2 text-xs gap-1',
-                      showResolved && 'text-foreground',
-                      !hasResolvedComments && 'opacity-50'
+                      "h-7 px-2 text-xs gap-1",
+                      showResolved && "text-foreground",
+                      !hasResolvedComments && "opacity-50",
                     )}
                     onClick={handleShowResolvedToggle}
                     disabled={!hasResolvedComments}
                     title={
                       !hasResolvedComments
-                        ? 'No resolved comments'
+                        ? "No resolved comments"
                         : showResolved
                           ? `Showing all comments — click to hide ${resolvedCount} resolved`
                           : `Hiding ${resolvedCount} resolved — click to show all`
@@ -977,33 +1044,37 @@ export function PRCommentResolutionDialog({
                     className="h-7 px-2 text-xs gap-1"
                     onClick={handleSortToggle}
                     title={
-                      sortOrder === 'newest'
-                        ? 'Showing newest first — click for oldest first'
-                        : 'Showing oldest first — click for newest first'
+                      sortOrder === "newest"
+                        ? "Showing newest first — click for oldest first"
+                        : "Showing oldest first — click for newest first"
                     }
                   >
                     <ArrowUpDown className="h-3 w-3" />
-                    {sortOrder === 'newest' ? 'Newest first' : 'Oldest first'}
+                    {sortOrder === "newest" ? "Newest first" : "Oldest first"}
                   </Button>
 
                   {/* Mode Toggle */}
                   <div className="flex items-center gap-2 shrink-0">
                     <Label
                       className={cn(
-                        'text-xs cursor-pointer',
-                        addressMode === 'together' ? 'text-foreground' : 'text-muted-foreground'
+                        "text-xs cursor-pointer",
+                        addressMode === "together"
+                          ? "text-foreground"
+                          : "text-muted-foreground",
                       )}
                     >
                       Together
                     </Label>
                     <Switch
-                      checked={addressMode === 'individually'}
+                      checked={addressMode === "individually"}
                       onCheckedChange={handleModeChange}
                     />
                     <Label
                       className={cn(
-                        'text-xs cursor-pointer',
-                        addressMode === 'individually' ? 'text-foreground' : 'text-muted-foreground'
+                        "text-xs cursor-pointer",
+                        addressMode === "individually"
+                          ? "text-foreground"
+                          : "text-muted-foreground",
                       )}
                     >
                       Individually
@@ -1018,10 +1089,13 @@ export function PRCommentResolutionDialog({
                   <div className="p-3 rounded-full bg-muted/50 mb-3">
                     <CheckCircle2 className="h-8 w-8 text-green-500" />
                   </div>
-                  <h3 className="text-sm font-medium mb-1">All Comments Resolved</h3>
+                  <h3 className="text-sm font-medium mb-1">
+                    All Comments Resolved
+                  </h3>
                   <p className="text-xs text-muted-foreground mb-3">
-                    All {resolvedCount} comment{resolvedCount !== 1 ? 's' : ''} on this pull request{' '}
-                    {resolvedCount !== 1 ? 'have' : 'has'} been resolved.
+                    All {resolvedCount} comment{resolvedCount !== 1 ? "s" : ""}{" "}
+                    on this pull request {resolvedCount !== 1 ? "have" : "has"}{" "}
+                    been resolved.
                   </p>
                   <Button
                     variant="outline"
@@ -1038,10 +1112,11 @@ export function PRCommentResolutionDialog({
               {/* Selection Info */}
               {!noneSelected && comments.length > 0 && (
                 <div className="text-xs text-muted-foreground px-1">
-                  {selectedIds.size} comment{selectedIds.size > 1 ? 's' : ''} selected
-                  {addressMode === 'together'
-                    ? ' - will create 1 feature'
-                    : ` - will create ${selectedIds.size} feature${selectedIds.size > 1 ? 's' : ''}`}
+                  {selectedIds.size} comment{selectedIds.size > 1 ? "s" : ""}{" "}
+                  selected
+                  {addressMode === "together"
+                    ? " - will create 1 feature"
+                    : ` - will create ${selectedIds.size} feature${selectedIds.size > 1 ? "s" : ""}`}
                 </div>
               )}
 
@@ -1057,7 +1132,8 @@ export function PRCommentResolutionDialog({
                       onExpandDetail={() => setDetailComment(comment)}
                       onResolve={handleResolveComment}
                       isResolvingThread={
-                        !!comment.threadId && resolvingThreads.has(comment.threadId)
+                        !!comment.threadId &&
+                        resolvingThreads.has(comment.threadId)
                       }
                     />
                   ))}
@@ -1092,7 +1168,11 @@ export function PRCommentResolutionDialog({
         <DialogFooter className="mt-4">
           <div className="flex items-center justify-between gap-2 w-full flex-wrap">
             {/* Cancel button - left side */}
-            <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={isCreating}>
+            <Button
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isCreating}
+            >
               Cancel
             </Button>
 
@@ -1108,7 +1188,9 @@ export function PRCommentResolutionDialog({
               )}
               <Button
                 onClick={handleSubmit}
-                disabled={noneSelected || isCreating || loading || comments.length === 0}
+                disabled={
+                  noneSelected || isCreating || loading || comments.length === 0
+                }
               >
                 {isCreating ? (
                   <>
@@ -1118,10 +1200,12 @@ export function PRCommentResolutionDialog({
                 ) : (
                   <>
                     Create Feature
-                    {addressMode === 'individually' && selectedIds.size > 1 ? 's' : ''}
+                    {addressMode === "individually" && selectedIds.size > 1
+                      ? "s"
+                      : ""}
                     {!noneSelected && (
                       <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-primary-foreground/20 rounded">
-                        {addressMode === 'together' ? '1' : selectedIds.size}
+                        {addressMode === "together" ? "1" : selectedIds.size}
                       </span>
                     )}
                   </>

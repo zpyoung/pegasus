@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { createLogger } from '@pegasus/utils/logger';
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   X,
   SplitSquareHorizontal,
@@ -23,44 +23,59 @@ import {
   Minimize2,
   ArrowDown,
   GitBranch,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { useAppStore, DEFAULT_KEYBOARD_SHORTCUTS, type KeyboardShortcuts } from '@/store/app-store';
-import { useShallow } from 'zustand/react/shallow';
-import { matchesShortcutWithCode } from '@/hooks/use-keyboard-shortcuts';
+} from "@/components/ui/select";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  useAppStore,
+  DEFAULT_KEYBOARD_SHORTCUTS,
+  type KeyboardShortcuts,
+} from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
+import { matchesShortcutWithCode } from "@/hooks/use-keyboard-shortcuts";
 import {
   getTerminalTheme,
   TERMINAL_FONT_OPTIONS,
   getTerminalFontFamily,
-} from '@/config/terminal-themes';
-import { DEFAULT_FONT_VALUE } from '@/config/ui-font-options';
-import { toast } from 'sonner';
-import { getElectronAPI } from '@/lib/electron';
-import { getApiKey, getSessionToken, getServerUrlSync } from '@/lib/http-api-client';
-import { writeToClipboard, readFromClipboard } from '@/lib/clipboard-utils';
-import { useIsMobile, useIsTablet } from '@/hooks/use-media-query';
-import { useVirtualKeyboardResize } from '@/hooks/use-virtual-keyboard-resize';
-import { MobileTerminalShortcuts } from './mobile-terminal-shortcuts';
-import { applyStickyModifier, type StickyModifier } from './sticky-modifier-keys';
-import { TerminalScriptsDropdown } from './terminal-scripts-dropdown';
+} from "@/config/terminal-themes";
+import { DEFAULT_FONT_VALUE } from "@/config/ui-font-options";
+import { toast } from "sonner";
+import { getElectronAPI } from "@/lib/electron";
+import {
+  getApiKey,
+  getSessionToken,
+  getServerUrlSync,
+} from "@/lib/http-api-client";
+import { writeToClipboard, readFromClipboard } from "@/lib/clipboard-utils";
+import { useIsMobile, useIsTablet } from "@/hooks/use-media-query";
+import { useVirtualKeyboardResize } from "@/hooks/use-virtual-keyboard-resize";
+import { MobileTerminalShortcuts } from "./mobile-terminal-shortcuts";
+import {
+  applyStickyModifier,
+  type StickyModifier,
+} from "./sticky-modifier-keys";
+import { TerminalScriptsDropdown } from "./terminal-scripts-dropdown";
 
-const logger = createLogger('Terminal');
-const NO_STORE_CACHE_MODE: RequestCache = 'no-store';
+const logger = createLogger("Terminal");
+const NO_STORE_CACHE_MODE: RequestCache = "no-store";
 
 // Font size constraints
 const MIN_FONT_SIZE = 8;
@@ -71,7 +86,13 @@ const DEFAULT_FONT_SIZE = 14;
 const RESIZE_DEBOUNCE_MS = 100; // Short debounce for responsive feel
 
 // Image drag-drop constants
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Large paste handling constants
@@ -109,9 +130,11 @@ interface TerminalPanelProps {
 }
 
 // Type for xterm Terminal - we'll use any since we're dynamically importing
-type XTerminal = InstanceType<typeof import('@xterm/xterm').Terminal>;
-type XFitAddon = InstanceType<typeof import('@xterm/addon-fit').FitAddon>;
-type XSearchAddon = InstanceType<typeof import('@xterm/addon-search').SearchAddon>;
+type XTerminal = InstanceType<typeof import("@xterm/xterm").Terminal>;
+type XFitAddon = InstanceType<typeof import("@xterm/addon-fit").FitAddon>;
+type XSearchAddon = InstanceType<
+  typeof import("@xterm/addon-search").SearchAddon
+>;
 
 export function TerminalPanel({
   sessionId,
@@ -151,8 +174,11 @@ export function TerminalPanel({
   const focusHandlerRef = useRef<{ dispose: () => void } | null>(null);
   const linkProviderRef = useRef<{ dispose: () => void } | null>(null);
   const [isTerminalReady, setIsTerminalReady] = useState(false);
-  const [shellName, setShellName] = useState('shell');
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [shellName, setShellName] = useState("shell");
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [isMac, setIsMac] = useState(false);
   const isMacRef = useRef(false);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -174,7 +200,7 @@ export function TerminalPanel({
   const searchAddonRef = useRef<XSearchAddon | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const showSearchRef = useRef(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
@@ -183,15 +209,15 @@ export function TerminalPanel({
 
   // Mobile text selection mode - renders terminal buffer as selectable DOM text
   const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectModeText, setSelectModeText] = useState('');
+  const [selectModeText, setSelectModeText] = useState("");
 
   // Sticky modifier key state (Ctrl or Alt) for the terminal toolbar
   const [stickyModifier, setStickyModifier] = useState<StickyModifier>(null);
   const stickyModifierRef = useRef<StickyModifier>(null);
 
   const [connectionStatus, setConnectionStatus] = useState<
-    'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'auth_failed'
-  >('connecting');
+    "connecting" | "connected" | "reconnecting" | "disconnected" | "auth_failed"
+  >("connecting");
   const reconnectAttemptsRef = useRef(0);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const INITIAL_RECONNECT_DELAY = 1000;
@@ -226,24 +252,36 @@ export function TerminalPanel({
       lineHeight: state.terminalState.lineHeight,
       customBackgroundColor: state.terminalState.customBackgroundColor,
       customForegroundColor: state.terminalState.customForegroundColor,
-    }))
+    })),
   );
 
   // Action setters are stable references, can use individual selectors
-  const setTerminalDefaultRunScript = useAppStore((state) => state.setTerminalDefaultRunScript);
-  const setTerminalScreenReaderMode = useAppStore((state) => state.setTerminalScreenReaderMode);
-  const setTerminalFontFamily = useAppStore((state) => state.setTerminalFontFamily);
-  const setTerminalScrollbackLines = useAppStore((state) => state.setTerminalScrollbackLines);
-  const setTerminalLineHeight = useAppStore((state) => state.setTerminalLineHeight);
+  const setTerminalDefaultRunScript = useAppStore(
+    (state) => state.setTerminalDefaultRunScript,
+  );
+  const setTerminalScreenReaderMode = useAppStore(
+    (state) => state.setTerminalScreenReaderMode,
+  );
+  const setTerminalFontFamily = useAppStore(
+    (state) => state.setTerminalFontFamily,
+  );
+  const setTerminalScrollbackLines = useAppStore(
+    (state) => state.setTerminalScrollbackLines,
+  );
+  const setTerminalLineHeight = useAppStore(
+    (state) => state.setTerminalLineHeight,
+  );
 
   // Detect platform on mount
   useEffect(() => {
     // Use modern userAgentData API with fallback to navigator.platform
-    const nav = navigator as Navigator & { userAgentData?: { platform: string } };
+    const nav = navigator as Navigator & {
+      userAgentData?: { platform: string };
+    };
     let detected = false;
     if (nav.userAgentData?.platform) {
-      detected = nav.userAgentData.platform.toLowerCase().includes('mac');
-    } else if (typeof navigator !== 'undefined') {
+      detected = nav.userAgentData.platform.toLowerCase().includes("mac");
+    } else if (typeof navigator !== "undefined") {
       // Fallback for browsers without userAgentData (intentionally using deprecated API)
       detected = /mac/i.test(navigator.platform);
     }
@@ -266,26 +304,30 @@ export function TerminalPanel({
 
   // Track system dark mode preference for "system" theme
   const [systemIsDark, setSystemIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
     return false;
   });
 
   // Listen for system theme changes
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemIsDark(e.matches);
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   // Resolve "system" theme to actual light/dark
   const resolvedTheme =
-    effectiveTheme === 'system' ? (systemIsDark ? 'dark' : 'light') : effectiveTheme;
+    effectiveTheme === "system"
+      ? systemIsDark
+        ? "dark"
+        : "light"
+      : effectiveTheme;
 
   // Use refs for callbacks and values to avoid effect re-runs
   const onFocusRef = useRef(onFocus);
@@ -312,8 +354,12 @@ export function TerminalPanel({
   fontSizeRef.current = fontSize;
   const themeRef = useRef(resolvedTheme);
   themeRef.current = resolvedTheme;
-  const copySelectionRef = useRef<() => Promise<boolean>>(() => Promise.resolve(false));
-  const pasteFromClipboardRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const copySelectionRef = useRef<() => Promise<boolean>>(() =>
+    Promise.resolve(false),
+  );
+  const pasteFromClipboardRef = useRef<() => Promise<void>>(() =>
+    Promise.resolve(),
+  );
 
   // Zoom functions - use the prop callback
   const zoomIn = useCallback(() => {
@@ -337,7 +383,7 @@ export function TerminalPanel({
     return text.replace(
       // eslint-disable-next-line no-control-regex
       /\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[()][AB012]|\x1b[>=<]|\x1b[78HM]|\x1b#[0-9]|\x1b./g,
-      ''
+      "",
     );
   };
 
@@ -348,8 +394,8 @@ export function TerminalPanel({
 
     const selection = terminal.getSelection();
     if (!selection) {
-      toast.error('Nothing to copy', {
-        description: 'Select some text first',
+      toast.error("Nothing to copy", {
+        description: "Select some text first",
       });
       return false;
     }
@@ -359,21 +405,21 @@ export function TerminalPanel({
       const cleanText = stripAnsi(selection);
       const success = await writeToClipboard(cleanText);
       if (success) {
-        toast.success('Copied to clipboard');
+        toast.success("Copied to clipboard");
         return true;
       } else {
-        toast.error('Copy failed', {
-          description: 'Could not access clipboard',
+        toast.error("Copy failed", {
+          description: "Could not access clipboard",
         });
         return false;
       }
     } catch (err) {
-      logger.error('Copy failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('Copy failed', {
-        description: errorMessage.includes('permission')
-          ? 'Clipboard permission denied'
-          : 'Could not access clipboard',
+      logger.error("Copy failed:", err);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Copy failed", {
+        description: errorMessage.includes("permission")
+          ? "Clipboard permission denied"
+          : "Could not access clipboard",
       });
       return false;
     }
@@ -387,7 +433,7 @@ export function TerminalPanel({
 
     // For small pastes, send all at once
     if (text.length <= PASTE_CHUNK_SIZE) {
-      ws.send(JSON.stringify({ type: 'input', data: text }));
+      ws.send(JSON.stringify({ type: "input", data: text }));
       return;
     }
 
@@ -395,10 +441,12 @@ export function TerminalPanel({
     for (let i = 0; i < text.length; i += PASTE_CHUNK_SIZE) {
       if (ws.readyState !== WebSocket.OPEN) break;
       const chunk = text.slice(i, i + PASTE_CHUNK_SIZE);
-      ws.send(JSON.stringify({ type: 'input', data: chunk }));
+      ws.send(JSON.stringify({ type: "input", data: chunk }));
       // Small delay between chunks to prevent overwhelming the WebSocket
       if (i + PASTE_CHUNK_SIZE < text.length) {
-        await new Promise((resolve) => setTimeout(resolve, PASTE_CHUNK_DELAY_MS));
+        await new Promise((resolve) =>
+          setTimeout(resolve, PASTE_CHUNK_DELAY_MS),
+        );
       }
     }
   }, []);
@@ -412,7 +460,7 @@ export function TerminalPanel({
   // Send raw input to terminal via WebSocket (used by mobile shortcuts bar)
   const sendTerminalInput = useCallback((data: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'input', data }));
+      wsRef.current.send(JSON.stringify({ type: "input", data }));
     }
   }, []);
 
@@ -422,8 +470,10 @@ export function TerminalPanel({
   // isWindowsShellRef is set in ws.onmessage when the 'connected' message arrives.
   const sendCommand = useCallback((command: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      const lineEnding = isWindowsShellRef.current ? '\r\n' : '\n';
-      wsRef.current.send(JSON.stringify({ type: 'input', data: command + lineEnding }));
+      const lineEnding = isWindowsShellRef.current ? "\r\n" : "\n";
+      wsRef.current.send(
+        JSON.stringify({ type: "input", data: command + lineEnding }),
+      );
     }
   }, []);
 
@@ -435,14 +485,14 @@ export function TerminalPanel({
     try {
       const text = await readFromClipboard();
       if (!text) {
-        toast.error('Nothing to paste', {
-          description: 'Clipboard is empty',
+        toast.error("Nothing to paste", {
+          description: "Clipboard is empty",
         });
         return;
       }
 
       if (wsRef.current.readyState !== WebSocket.OPEN) {
-        toast.error('Terminal not connected');
+        toast.error("Terminal not connected");
         return;
       }
 
@@ -450,21 +500,21 @@ export function TerminalPanel({
       if (text.length >= LARGE_PASTE_WARNING_THRESHOLD) {
         const sizeMB = (text.length / (1024 * 1024)).toFixed(1);
         toast.warning(`Large paste (${sizeMB}MB)`, {
-          description: 'Sending in chunks, this may take a moment...',
+          description: "Sending in chunks, this may take a moment...",
           duration: 3000,
         });
       }
 
       await sendTextInChunks(text);
     } catch (err) {
-      logger.error('Paste failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      toast.error('Paste failed', {
-        description: errorMessage.includes('permission')
-          ? 'Clipboard permission denied'
-          : errorMessage.includes('not supported')
+      logger.error("Paste failed:", err);
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      toast.error("Paste failed", {
+        description: errorMessage.includes("permission")
+          ? "Clipboard permission denied"
+          : errorMessage.includes("not supported")
             ? errorMessage
-            : 'Could not read from clipboard',
+            : "Could not read from clipboard",
       });
     }
   }, [sendTextInChunks]);
@@ -478,7 +528,7 @@ export function TerminalPanel({
   // Extract terminal buffer text for mobile selection mode overlay
   const getTerminalBufferText = useCallback((): string => {
     const terminal = xtermRef.current;
-    if (!terminal) return '';
+    if (!terminal) return "";
 
     const buffer = terminal.buffer.active;
     const lines: string[] = [];
@@ -493,18 +543,18 @@ export function TerminalPanel({
     }
 
     // Trim trailing empty lines but keep internal structure
-    while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+    while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
       lines.pop();
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }, []);
 
   // Toggle mobile text selection mode
   const toggleSelectMode = useCallback(() => {
     if (isSelectMode) {
       setIsSelectMode(false);
-      setSelectModeText('');
+      setSelectModeText("");
     } else {
       const text = getTerminalBufferText();
       // Strip ANSI escape codes for clean display
@@ -534,7 +584,7 @@ export function TerminalPanel({
         activeMatchColorOverviewRuler: terminalTheme.searchActiveMatchBorder,
       },
     }),
-    [terminalTheme]
+    [terminalTheme],
   );
 
   // Search functions
@@ -553,7 +603,7 @@ export function TerminalPanel({
   const closeSearch = useCallback(() => {
     setShowSearch(false);
     showSearchRef.current = false;
-    setSearchQuery('');
+    setSearchQuery("");
     searchAddonRef.current?.clearDecorations();
     xtermRef.current?.focus();
   }, []);
@@ -565,26 +615,26 @@ export function TerminalPanel({
       // Ctrl+Alt+Arrow / Cmd+Alt+Arrow - Navigate between panes directionally
       if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey) {
         const code = event.nativeEvent.code;
-        if (code === 'ArrowRight') {
+        if (code === "ArrowRight") {
           event.preventDefault();
           event.stopPropagation();
           onNavigateRight?.();
-        } else if (code === 'ArrowLeft') {
+        } else if (code === "ArrowLeft") {
           event.preventDefault();
           event.stopPropagation();
           onNavigateLeft?.();
-        } else if (code === 'ArrowDown') {
+        } else if (code === "ArrowDown") {
           event.preventDefault();
           event.stopPropagation();
           onNavigateDown?.();
-        } else if (code === 'ArrowUp') {
+        } else if (code === "ArrowUp") {
           event.preventDefault();
           event.stopPropagation();
           onNavigateUp?.();
         }
       }
     },
-    [onNavigateUp, onNavigateDown, onNavigateLeft, onNavigateRight]
+    [onNavigateUp, onNavigateDown, onNavigateLeft, onNavigateRight],
   );
 
   // Scroll to bottom of terminal
@@ -602,50 +652,56 @@ export function TerminalPanel({
 
   // Handle context menu action
   const handleContextMenuAction = useCallback(
-    async (action: 'copy' | 'paste' | 'selectAll' | 'clear') => {
+    async (action: "copy" | "paste" | "selectAll" | "clear") => {
       closeContextMenu();
       switch (action) {
-        case 'copy':
+        case "copy":
           await copySelection();
           break;
-        case 'paste':
+        case "paste":
           await pasteFromClipboard();
           break;
-        case 'selectAll':
+        case "selectAll":
           selectAll();
           break;
-        case 'clear':
+        case "clear":
           clearTerminal();
           break;
       }
       xtermRef.current?.focus();
     },
-    [closeContextMenu, copySelection, pasteFromClipboard, selectAll, clearTerminal]
+    [
+      closeContextMenu,
+      copySelection,
+      pasteFromClipboard,
+      selectAll,
+      clearTerminal,
+    ],
   );
 
   const serverUrl = import.meta.env.VITE_SERVER_URL || getServerUrlSync();
-  const wsUrl = serverUrl.replace(/^http/, 'ws');
+  const wsUrl = serverUrl.replace(/^http/, "ws");
 
   // Fetch a short-lived WebSocket token for secure authentication
   const fetchWsToken = useCallback(async (): Promise<string | null> => {
     try {
       const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
       const sessionToken = getSessionToken();
       if (sessionToken) {
-        headers['X-Session-Token'] = sessionToken;
+        headers["X-Session-Token"] = sessionToken;
       }
 
       const response = await fetch(`${serverUrl}/api/auth/token`, {
         headers,
-        credentials: 'include',
+        credentials: "include",
         cache: NO_STORE_CACHE_MODE,
       });
 
       if (!response.ok) {
-        logger.warn('Failed to fetch wsToken:', response.status);
+        logger.warn("Failed to fetch wsToken:", response.status);
         return null;
       }
 
@@ -656,7 +712,7 @@ export function TerminalPanel({
 
       return null;
     } catch (error) {
-      logger.error('Error fetching wsToken:', error);
+      logger.error("Error fetching wsToken:", error);
       return null;
     }
   }, [serverUrl]);
@@ -683,17 +739,22 @@ export function TerminalPanel({
 
     const initTerminal = async () => {
       // Dynamically import xterm modules
-      const [{ Terminal }, { FitAddon }, { WebglAddon }, { SearchAddon }, { WebLinksAddon }] =
-        await Promise.all([
-          import('@xterm/xterm'),
-          import('@xterm/addon-fit'),
-          import('@xterm/addon-webgl'),
-          import('@xterm/addon-search'),
-          import('@xterm/addon-web-links'),
-        ]);
+      const [
+        { Terminal },
+        { FitAddon },
+        { WebglAddon },
+        { SearchAddon },
+        { WebLinksAddon },
+      ] = await Promise.all([
+        import("@xterm/xterm"),
+        import("@xterm/addon-fit"),
+        import("@xterm/addon-webgl"),
+        import("@xterm/addon-search"),
+        import("@xterm/addon-web-links"),
+      ]);
 
       // Also import CSS
-      await import('@xterm/xterm/css/xterm.css');
+      await import("@xterm/xterm/css/xterm.css");
 
       if (!mounted || !terminalRef.current) return;
 
@@ -703,7 +764,9 @@ export function TerminalPanel({
       // Get settings from store (read at initialization time)
       const terminalSettings = useAppStore.getState().terminalState;
       const screenReaderEnabled = terminalSettings.screenReaderMode;
-      const terminalFontFamily = getTerminalFontFamily(terminalSettings.fontFamily);
+      const terminalFontFamily = getTerminalFontFamily(
+        terminalSettings.fontFamily,
+      );
       const terminalScrollback = terminalSettings.scrollbackLines || 5000;
       const terminalLineHeight = terminalSettings.lineHeight || 1.0;
       const customBgColor = terminalSettings.customBackgroundColor;
@@ -722,7 +785,7 @@ export function TerminalPanel({
       // Create terminal instance with the current global font size and theme
       const terminal = new Terminal({
         cursorBlink: true,
-        cursorStyle: 'block',
+        cursorStyle: "block",
         fontSize: fontSizeRef.current,
         fontFamily: terminalFontFamily,
         lineHeight: terminalLineHeight,
@@ -743,20 +806,22 @@ export function TerminalPanel({
       searchAddonRef.current = searchAddon;
 
       // Create web links addon for clickable URLs with custom handler for Electron
-      const webLinksAddon = new WebLinksAddon((_event: MouseEvent, uri: string) => {
-        // Use Electron API to open external links in system browser
-        const api = getElectronAPI();
-        if (api?.openExternalLink) {
-          api.openExternalLink(uri).catch((error) => {
-            logger.error('Failed to open URL:', error);
-            // Fallback to window.open if Electron API fails
-            window.open(uri, '_blank', 'noopener,noreferrer');
-          });
-        } else {
-          // Web fallback
-          window.open(uri, '_blank', 'noopener,noreferrer');
-        }
-      });
+      const webLinksAddon = new WebLinksAddon(
+        (_event: MouseEvent, uri: string) => {
+          // Use Electron API to open external links in system browser
+          const api = getElectronAPI();
+          if (api?.openExternalLink) {
+            api.openExternalLink(uri).catch((error) => {
+              logger.error("Failed to open URL:", error);
+              // Fallback to window.open if Electron API fails
+              window.open(uri, "_blank", "noopener,noreferrer");
+            });
+          } else {
+            // Web fallback
+            window.open(uri, "_blank", "noopener,noreferrer");
+          }
+        },
+      );
       terminal.loadAddon(webLinksAddon);
 
       // Open terminal
@@ -770,12 +835,15 @@ export function TerminalPanel({
           callback: (
             links:
               | {
-                  range: { start: { x: number; y: number }; end: { x: number; y: number } };
+                  range: {
+                    start: { x: number; y: number };
+                    end: { x: number; y: number };
+                  };
                   text: string;
                   activate: (event: MouseEvent, text: string) => void;
                 }[]
-              | undefined
-          ) => void
+              | undefined,
+          ) => void,
         ) => {
           const line = terminal.buffer.active.getLine(lineNumber - 1);
           if (!line) {
@@ -785,7 +853,10 @@ export function TerminalPanel({
 
           const lineText = line.translateToString(true);
           const links: {
-            range: { start: { x: number; y: number }; end: { x: number; y: number } };
+            range: {
+              start: { x: number; y: number };
+              end: { x: number; y: number };
+            };
             text: string;
             activate: (event: MouseEvent, text: string) => void;
           }[] = [];
@@ -809,15 +880,16 @@ export function TerminalPanel({
 
             // Skip common false positives (URLs, etc.)
             if (
-              filePath.startsWith('http://') ||
-              filePath.startsWith('https://') ||
-              filePath.startsWith('ws://')
+              filePath.startsWith("http://") ||
+              filePath.startsWith("https://") ||
+              filePath.startsWith("ws://")
             ) {
               continue;
             }
 
             // Calculate the start position (1-indexed for xterm)
-            const startX = match.index + (match[0].length - match[1].length) + 1;
+            const startX =
+              match.index + (match[0].length - match[1].length) + 1;
             const endX = startX + fullMatch.length;
 
             links.push({
@@ -828,37 +900,50 @@ export function TerminalPanel({
               text: fullMatch,
               activate: async (event: MouseEvent, text: string) => {
                 // Parse the path and line/column from the matched text
-                const pathMatch = text.match(/^([^\s:()]+)(?:[:(\s](\d+)(?:[:,)](\d+))?)?/);
+                const pathMatch = text.match(
+                  /^([^\s:()]+)(?:[:(\s](\d+)(?:[:,)](\d+))?)?/,
+                );
                 if (!pathMatch) return;
 
                 const clickedPath = pathMatch[1];
-                const clickedLine = pathMatch[2] ? parseInt(pathMatch[2], 10) : undefined;
-                const clickedCol = pathMatch[3] ? parseInt(pathMatch[3], 10) : undefined;
+                const clickedLine = pathMatch[2]
+                  ? parseInt(pathMatch[2], 10)
+                  : undefined;
+                const clickedCol = pathMatch[3]
+                  ? parseInt(pathMatch[3], 10)
+                  : undefined;
 
                 // Resolve paths to absolute paths
                 let absolutePath = clickedPath;
                 const api = getElectronAPI();
 
-                if (clickedPath.startsWith('~/')) {
+                if (clickedPath.startsWith("~/")) {
                   // Home directory path - expand ~ to user's home directory
                   try {
-                    const homePath = await api.getPath?.('home');
+                    const homePath = await api.getPath?.("home");
                     if (homePath) {
                       absolutePath = homePath + clickedPath.slice(1); // Replace ~ with home path
                     }
                   } catch {
                     // If we can't get home path, just use the path as-is
-                    logger.warn('Could not resolve home directory path');
+                    logger.warn("Could not resolve home directory path");
                   }
-                } else if (!clickedPath.startsWith('/') && !clickedPath.match(/^[a-zA-Z]:\\/)) {
+                } else if (
+                  !clickedPath.startsWith("/") &&
+                  !clickedPath.match(/^[a-zA-Z]:\\/)
+                ) {
                   // Relative path - resolve against project path
-                  const projectPath = useAppStore.getState().currentProject?.path;
+                  const projectPath =
+                    useAppStore.getState().currentProject?.path;
                   if (projectPath) {
-                    absolutePath = `${projectPath}/${clickedPath}`.replace(/\/+/g, '/');
+                    absolutePath = `${projectPath}/${clickedPath}`.replace(
+                      /\/+/g,
+                      "/",
+                    );
                   } else {
-                    toast.warning('Cannot open relative path', {
+                    toast.warning("Cannot open relative path", {
                       description:
-                        'No project selected. Open a project to click relative file paths.',
+                        "No project selected. Open a project to click relative file paths.",
                     });
                     return;
                   }
@@ -867,14 +952,21 @@ export function TerminalPanel({
                 // Open in editor using VS Code URL scheme
                 // Works in both web (via anchor click) and Electron (via shell.openExternal)
                 try {
-                  const result = await api.openInEditor?.(absolutePath, clickedLine, clickedCol);
+                  const result = await api.openInEditor?.(
+                    absolutePath,
+                    clickedLine,
+                    clickedCol,
+                  );
                   if (result && !result.success) {
-                    toast.error('Failed to open in editor', { description: result.error });
+                    toast.error("Failed to open in editor", {
+                      description: result.error,
+                    });
                   }
                 } catch (error) {
-                  logger.error('Failed to open file:', error);
-                  toast.error('Failed to open file', {
-                    description: error instanceof Error ? error.message : 'Unknown error',
+                  logger.error("Failed to open file:", error);
+                  toast.error("Failed to open file", {
+                    description:
+                      error instanceof Error ? error.message : "Unknown error",
                   });
                 }
               },
@@ -885,7 +977,8 @@ export function TerminalPanel({
         },
       };
 
-      linkProviderRef.current = terminal.registerLinkProvider(filePathLinkProvider);
+      linkProviderRef.current =
+        terminal.registerLinkProvider(filePathLinkProvider);
 
       // Try to load WebGL addon for better performance
       try {
@@ -895,7 +988,7 @@ export function TerminalPanel({
         });
         terminal.loadAddon(webglAddon);
       } catch {
-        logger.warn('WebGL addon not available, falling back to canvas');
+        logger.warn("WebGL addon not available, falling back to canvas");
       }
 
       // Fit terminal to container - wait for stable dimensions
@@ -906,7 +999,12 @@ export function TerminalPanel({
       let lastHeight = 0;
 
       const attemptFit = () => {
-        if (!fitAddon || !terminalRef.current || fitAttempts >= MAX_FIT_ATTEMPTS) return;
+        if (
+          !fitAddon ||
+          !terminalRef.current ||
+          fitAttempts >= MAX_FIT_ATTEMPTS
+        )
+          return;
 
         const rect = terminalRef.current.getBoundingClientRect();
         fitAttempts++;
@@ -921,7 +1019,7 @@ export function TerminalPanel({
           try {
             fitAddon.fit();
           } catch (err) {
-            logger.error('Initial fit error:', err);
+            logger.error("Initial fit error:", err);
           }
           return;
         }
@@ -951,7 +1049,7 @@ export function TerminalPanel({
 
       terminal.attachCustomKeyEventHandler((event) => {
         // Only intercept keydown events
-        if (event.type !== 'keydown') return true;
+        if (event.type !== "keydown") return true;
 
         // Use event.code for keyboard-layout-independent key detection
         const code = event.code;
@@ -959,23 +1057,27 @@ export function TerminalPanel({
         // Ctrl+Alt+Arrow / Cmd+Alt+Arrow - Navigate between panes directionally
         // Handle this FIRST before any other checks to prevent xterm from capturing it
         // Use explicit check for both Ctrl and Meta to work on all platforms
-        if ((event.ctrlKey || event.metaKey) && event.altKey && !event.shiftKey) {
-          if (code === 'ArrowRight') {
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          event.altKey &&
+          !event.shiftKey
+        ) {
+          if (code === "ArrowRight") {
             event.preventDefault();
             event.stopPropagation();
             onNavigateRightRef.current?.();
             return false;
-          } else if (code === 'ArrowLeft') {
+          } else if (code === "ArrowLeft") {
             event.preventDefault();
             event.stopPropagation();
             onNavigateLeftRef.current?.();
             return false;
-          } else if (code === 'ArrowDown') {
+          } else if (code === "ArrowDown") {
             event.preventDefault();
             event.stopPropagation();
             onNavigateDownRef.current?.();
             return false;
-          } else if (code === 'ArrowUp') {
+          } else if (code === "ArrowUp") {
             event.preventDefault();
             event.stopPropagation();
             onNavigateUpRef.current?.();
@@ -985,7 +1087,8 @@ export function TerminalPanel({
 
         // Check cooldown to prevent rapid terminal creation
         const now = Date.now();
-        const canTrigger = now - lastShortcutTimeRef.current > SHORTCUT_COOLDOWN_MS;
+        const canTrigger =
+          now - lastShortcutTimeRef.current > SHORTCUT_COOLDOWN_MS;
 
         // Get current shortcuts from ref (allows customization)
         const shortcuts = shortcutsRef.current;
@@ -1035,14 +1138,26 @@ export function TerminalPanel({
 
         // Ctrl+Shift+C / Cmd+Shift+C - Always copy (Linux terminal convention)
         // Don't preventDefault() — allow the native browser copy to work alongside our custom copy
-        if (modKey && !otherModKey && event.shiftKey && !event.altKey && code === 'KeyC') {
+        if (
+          modKey &&
+          !otherModKey &&
+          event.shiftKey &&
+          !event.altKey &&
+          code === "KeyC"
+        ) {
           copySelectionRef.current();
           return false;
         }
 
         // Ctrl+C / Cmd+C - Copy if text is selected, otherwise send SIGINT
         // Don't preventDefault() when copying — allow the native browser copy to work alongside our custom copy
-        if (modKey && !otherModKey && !event.shiftKey && !event.altKey && code === 'KeyC') {
+        if (
+          modKey &&
+          !otherModKey &&
+          !event.shiftKey &&
+          !event.altKey &&
+          code === "KeyC"
+        ) {
           const hasSelection = terminal.hasSelection();
           if (hasSelection) {
             copySelectionRef.current();
@@ -1058,19 +1173,31 @@ export function TerminalPanel({
         // Return false to prevent xterm from sending \x16 (literal next),
         // but the browser's native paste event will still fire and xterm will
         // receive the pasted text through its onData handler.
-        if (modKey && !otherModKey && !event.altKey && code === 'KeyV') {
+        if (modKey && !otherModKey && !event.altKey && code === "KeyV") {
           return false;
         }
 
         // Ctrl+A / Cmd+A - Select all
-        if (modKey && !otherModKey && !event.shiftKey && !event.altKey && code === 'KeyA') {
+        if (
+          modKey &&
+          !otherModKey &&
+          !event.shiftKey &&
+          !event.altKey &&
+          code === "KeyA"
+        ) {
           event.preventDefault();
           terminal.selectAll();
           return false;
         }
 
         // Ctrl+Shift+F / Cmd+Shift+F - Toggle search
-        if (modKey && !otherModKey && event.shiftKey && !event.altKey && code === 'KeyF') {
+        if (
+          modKey &&
+          !otherModKey &&
+          event.shiftKey &&
+          !event.altKey &&
+          code === "KeyF"
+        ) {
           event.preventDefault();
           showSearchRef.current = !showSearchRef.current;
           setShowSearch(showSearchRef.current);
@@ -1161,7 +1288,7 @@ export function TerminalPanel({
       ws.onopen = () => {
         logger.info(`WebSocket connected for session ${sessionId}`);
 
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
         reconnectAttemptsRef.current = 0;
 
         // Start heartbeat to keep connection alive (prevents proxy/load balancer timeouts)
@@ -1170,7 +1297,7 @@ export function TerminalPanel({
         }
         heartbeatIntervalRef.current = setInterval(() => {
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'ping' }));
+            ws.send(JSON.stringify({ type: "ping" }));
           }
         }, 30000); // Ping every 30 seconds
       };
@@ -1179,10 +1306,10 @@ export function TerminalPanel({
         try {
           const msg = JSON.parse(event.data);
           switch (msg.type) {
-            case 'data':
+            case "data":
               terminal.write(msg.data);
               break;
-            case 'scrollback':
+            case "scrollback":
               // Only process scrollback if there's actual data
               // Don't clear if empty - prevents blank terminal issue
               if (msg.data && msg.data.length > 0) {
@@ -1195,20 +1322,21 @@ export function TerminalPanel({
                 hasRunInitialCommandRef.current = true;
               }
               break;
-            case 'connected': {
+            case "connected": {
               logger.info(`Session connected: ${msg.shell} in ${msg.cwd}`);
               // Detect shell type from path
-              const shellPath = (msg.shell || '').toLowerCase();
+              const shellPath = (msg.shell || "").toLowerCase();
               // Windows shells use backslash paths and include powershell/pwsh/cmd
               const isWindowsShell =
-                shellPath.includes('\\') ||
-                shellPath.includes('powershell') ||
-                shellPath.includes('pwsh') ||
-                shellPath.includes('cmd.exe');
+                shellPath.includes("\\") ||
+                shellPath.includes("powershell") ||
+                shellPath.includes("pwsh") ||
+                shellPath.includes("cmd.exe");
               // Keep the component-level ref in sync so sendCommand and
               // runCommandOnConnect both use the correct line ending ('\r\n' vs '\n').
               isWindowsShellRef.current = isWindowsShell;
-              const isPowerShell = shellPath.includes('powershell') || shellPath.includes('pwsh');
+              const isPowerShell =
+                shellPath.includes("powershell") || shellPath.includes("pwsh");
 
               if (msg.shell) {
                 // Extract shell name from path (e.g., "/bin/bash" -> "bash", "C:\...\powershell.exe" -> "powershell.exe")
@@ -1226,35 +1354,44 @@ export function TerminalPanel({
                 hasRunInitialCommandRef.current = true;
                 // Use appropriate line ending for the shell type
                 // Windows shells (PowerShell, cmd) expect \r\n, Unix shells expect \n
-                const lineEnding = isWindowsShell ? '\r\n' : '\n';
+                const lineEnding = isWindowsShell ? "\r\n" : "\n";
                 // PowerShell takes longer to initialize (profile loading, etc.)
                 // Use 500ms for PowerShell, 100ms for other shells
                 const delay = isPowerShell ? 500 : 100;
 
                 setTimeout(() => {
                   if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'input', data: initialCommand + lineEnding }));
+                    ws.send(
+                      JSON.stringify({
+                        type: "input",
+                        data: initialCommand + lineEnding,
+                      }),
+                    );
                     onCommandRanRef.current?.();
                   }
                 }, delay);
               }
               break;
             }
-            case 'exit':
-              terminal.write(`\r\n\x1b[33m[Process exited with code ${msg.exitCode}]\x1b[0m\r\n`);
+            case "exit":
+              terminal.write(
+                `\r\n\x1b[33m[Process exited with code ${msg.exitCode}]\x1b[0m\r\n`,
+              );
               setProcessExitCode(msg.exitCode);
               break;
-            case 'pong':
+            case "pong":
               // Heartbeat response
               break;
           }
         } catch (err) {
-          logger.error('Message parse error:', err);
+          logger.error("Message parse error:", err);
         }
       };
 
       ws.onclose = (event) => {
-        logger.info(`WebSocket closed for session ${sessionId}: ${event.code} ${event.reason}`);
+        logger.info(
+          `WebSocket closed for session ${sessionId}: ${event.code} ${event.reason}`,
+        );
         wsRef.current = null;
 
         // Clear heartbeat interval
@@ -1264,9 +1401,9 @@ export function TerminalPanel({
         }
 
         if (event.code === 4001) {
-          setConnectionStatus('auth_failed');
-          toast.error('Terminal authentication expired', {
-            description: 'Please unlock the terminal again to reconnect.',
+          setConnectionStatus("auth_failed");
+          toast.error("Terminal authentication expired", {
+            description: "Please unlock the terminal again to reconnect.",
             duration: 5000,
           });
           return;
@@ -1274,24 +1411,25 @@ export function TerminalPanel({
 
         // Don't reconnect if closed normally
         if (event.code === 1000 || event.code === 4003) {
-          setConnectionStatus('disconnected');
+          setConnectionStatus("disconnected");
           return;
         }
 
         if (event.code === 4004) {
-          setConnectionStatus('disconnected');
+          setConnectionStatus("disconnected");
           // Notify parent that this session is no longer valid on the server
           // This allows automatic cleanup of stale sessions (e.g., after server restart)
           if (onSessionInvalidRef.current) {
             onSessionInvalidRef.current();
-            toast.info('Terminal session expired', {
+            toast.info("Terminal session expired", {
               description:
-                'The session was automatically removed. Create a new terminal to continue.',
+                "The session was automatically removed. Create a new terminal to continue.",
               duration: 5000,
             });
           } else {
-            toast.error('Terminal session not found', {
-              description: 'The session may have expired. Please create a new terminal.',
+            toast.error("Terminal session not found", {
+              description:
+                "The session may have expired. Please create a new terminal.",
               duration: 5000,
             });
           }
@@ -1301,14 +1439,15 @@ export function TerminalPanel({
         reconnectAttemptsRef.current++;
 
         if (reconnectAttemptsRef.current > MAX_RECONNECT_ATTEMPTS) {
-          setConnectionStatus('disconnected');
-          toast.error('Terminal disconnected', {
-            description: 'Maximum reconnection attempts reached. Click to retry.',
+          setConnectionStatus("disconnected");
+          toast.error("Terminal disconnected", {
+            description:
+              "Maximum reconnection attempts reached. Click to retry.",
             action: {
-              label: 'Retry',
+              label: "Retry",
               onClick: () => {
                 reconnectAttemptsRef.current = 0;
-                setConnectionStatus('reconnecting');
+                setConnectionStatus("reconnecting");
                 connect();
               },
             },
@@ -1318,14 +1457,16 @@ export function TerminalPanel({
         }
 
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-        const delay = INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current - 1);
-        setConnectionStatus('reconnecting');
+        const delay =
+          INITIAL_RECONNECT_DELAY *
+          Math.pow(2, reconnectAttemptsRef.current - 1);
+        setConnectionStatus("reconnecting");
 
         // Attempt reconnect after exponential delay
         reconnectTimeoutRef.current = setTimeout(() => {
           if (xtermRef.current) {
             logger.info(
-              `Attempting reconnect for session ${sessionId} (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`
+              `Attempting reconnect for session ${sessionId} (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`,
             );
             connect();
           }
@@ -1346,16 +1487,18 @@ export function TerminalPanel({
         if (modifier) {
           const modified = applyStickyModifier(data, modifier);
           if (modified !== null) {
-            wsRef.current.send(JSON.stringify({ type: 'input', data: modified }));
+            wsRef.current.send(
+              JSON.stringify({ type: "input", data: modified }),
+            );
           } else {
             // Could not apply modifier (e.g. non-ASCII input), send as-is
-            wsRef.current.send(JSON.stringify({ type: 'input', data }));
+            wsRef.current.send(JSON.stringify({ type: "input", data }));
           }
           // Clear sticky modifier after one key press (one-shot behavior)
           stickyModifierRef.current = null;
           setStickyModifier(null);
         } else {
-          wsRef.current.send(JSON.stringify({ type: 'input', data }));
+          wsRef.current.send(JSON.stringify({ type: "input", data }));
         }
       }
     });
@@ -1386,7 +1529,8 @@ export function TerminalPanel({
 
     // Debounce resize operations to prevent race conditions
     resizeDebounceRef.current = setTimeout(() => {
-      if (!fitAddonRef.current || !xtermRef.current || !terminalRef.current) return;
+      if (!fitAddonRef.current || !xtermRef.current || !terminalRef.current)
+        return;
 
       const container = terminalRef.current;
       const rect = container.getBoundingClientRect();
@@ -1402,10 +1546,10 @@ export function TerminalPanel({
 
         // Send resize to server
         if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+          wsRef.current.send(JSON.stringify({ type: "resize", cols, rows }));
         }
       } catch (err) {
-        logger.error('Resize error:', err);
+        logger.error("Resize error:", err);
       }
     }, RESIZE_DEBOUNCE_MS);
   }, []);
@@ -1422,11 +1566,11 @@ export function TerminalPanel({
     resizeObserver.observe(container);
 
     // Also handle window resize
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [handleResize]);
 
@@ -1471,7 +1615,9 @@ export function TerminalPanel({
     if (!isTerminalReady || !terminalRef.current) return;
 
     // xterm creates a viewport element with class .xterm-viewport
-    const viewport = terminalRef.current.querySelector('.xterm-viewport') as HTMLElement | null;
+    const viewport = terminalRef.current.querySelector(
+      ".xterm-viewport",
+    ) as HTMLElement | null;
     if (!viewport) return;
 
     const checkScrollPosition = () => {
@@ -1487,10 +1633,10 @@ export function TerminalPanel({
     checkScrollPosition();
 
     // Listen for scroll events
-    viewport.addEventListener('scroll', checkScrollPosition, { passive: true });
+    viewport.addEventListener("scroll", checkScrollPosition, { passive: true });
 
     return () => {
-      viewport.removeEventListener('scroll', checkScrollPosition);
+      viewport.removeEventListener("scroll", checkScrollPosition);
     };
   }, [isTerminalReady]);
 
@@ -1507,7 +1653,7 @@ export function TerminalPanel({
           // Notify server of new dimensions
           const { cols, rows } = xtermRef.current;
           if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+            wsRef.current.send(JSON.stringify({ type: "resize", cols, rows }));
           }
         }
       }
@@ -1545,7 +1691,12 @@ export function TerminalPanel({
     }
     // Note: customBackgroundColor and customForegroundColor are in dependencies to trigger
     // re-renders when colors change, but we read from getState() inside for actual values
-  }, [resolvedTheme, customBackgroundColor, customForegroundColor, isTerminalReady]);
+  }, [
+    resolvedTheme,
+    customBackgroundColor,
+    customForegroundColor,
+    isTerminalReady,
+  ]);
 
   // Handle keyboard shortcuts for zoom (Ctrl+Plus, Ctrl+Minus, Ctrl+0)
   useEffect(() => {
@@ -1557,7 +1708,7 @@ export function TerminalPanel({
       if (!e.ctrlKey && !e.metaKey) return;
 
       // Ctrl/Cmd + Plus (Equal key or NumpadAdd for international keyboard support)
-      if (e.code === 'Equal' || e.code === 'NumpadAdd') {
+      if (e.code === "Equal" || e.code === "NumpadAdd") {
         e.preventDefault();
         e.stopPropagation();
         zoomIn();
@@ -1565,7 +1716,7 @@ export function TerminalPanel({
       }
 
       // Ctrl/Cmd + Minus (Minus key or NumpadSubtract)
-      if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
+      if (e.code === "Minus" || e.code === "NumpadSubtract") {
         e.preventDefault();
         e.stopPropagation();
         zoomOut();
@@ -1573,7 +1724,7 @@ export function TerminalPanel({
       }
 
       // Ctrl/Cmd + 0 to reset (Digit0 or Numpad0)
-      if (e.code === 'Digit0' || e.code === 'Numpad0') {
+      if (e.code === "Digit0" || e.code === "Numpad0") {
         e.preventDefault();
         e.stopPropagation();
         resetZoom();
@@ -1581,8 +1732,8 @@ export function TerminalPanel({
       }
     };
 
-    container.addEventListener('keydown', handleKeyDown);
-    return () => container.removeEventListener('keydown', handleKeyDown);
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
   }, [zoomIn, zoomOut, resetZoom]);
 
   // Handle mouse wheel zoom (Ctrl+Wheel)
@@ -1607,12 +1758,15 @@ export function TerminalPanel({
     };
 
     // Use passive: false to allow preventDefault
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [zoomIn, zoomOut]);
 
   // Context menu actions for keyboard navigation
-  const menuActions = useMemo(() => ['copy', 'paste', 'selectAll', 'clear'] as const, []);
+  const menuActions = useMemo(
+    () => ["copy", "paste", "selectAll", "clear"] as const,
+    [],
+  );
 
   // Keep ref in sync with state for use in event handlers
   useEffect(() => {
@@ -1628,7 +1782,9 @@ export function TerminalPanel({
     focusedMenuIndexRef.current = 0;
     requestAnimationFrame(() => {
       const firstButton =
-        contextMenuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+        contextMenuRef.current?.querySelector<HTMLButtonElement>(
+          '[role="menuitem"]',
+        );
       firstButton?.focus();
     });
 
@@ -1641,31 +1797,34 @@ export function TerminalPanel({
       };
 
       switch (e.key) {
-        case 'Escape':
+        case "Escape":
           e.preventDefault();
           e.stopPropagation();
           closeContextMenu();
           xtermRef.current?.focus();
           break;
-        case 'ArrowDown':
-          e.preventDefault();
-          e.stopPropagation();
-          updateFocusIndex((focusedMenuIndexRef.current + 1) % menuActions.length);
-          break;
-        case 'ArrowUp':
+        case "ArrowDown":
           e.preventDefault();
           e.stopPropagation();
           updateFocusIndex(
-            (focusedMenuIndexRef.current - 1 + menuActions.length) % menuActions.length
+            (focusedMenuIndexRef.current + 1) % menuActions.length,
           );
           break;
-        case 'Enter':
-        case ' ':
+        case "ArrowUp":
+          e.preventDefault();
+          e.stopPropagation();
+          updateFocusIndex(
+            (focusedMenuIndexRef.current - 1 + menuActions.length) %
+              menuActions.length,
+          );
+          break;
+        case "Enter":
+        case " ":
           e.preventDefault();
           e.stopPropagation();
           handleContextMenuAction(menuActions[focusedMenuIndexRef.current]);
           break;
-        case 'Tab':
+        case "Tab":
           e.preventDefault();
           e.stopPropagation();
           closeContextMenu();
@@ -1673,21 +1832,24 @@ export function TerminalPanel({
       }
     };
 
-    document.addEventListener('click', handleClick);
-    document.addEventListener('scroll', handleScroll, true);
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("click", handleClick);
+    document.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener('click', handleClick);
-      document.removeEventListener('scroll', handleScroll, true);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [contextMenu, closeContextMenu, handleContextMenuAction, menuActions]);
 
   // Focus the correct menu item when navigation changes
   useEffect(() => {
     if (!contextMenu || !contextMenuRef.current) return;
-    const buttons = contextMenuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+    const buttons =
+      contextMenuRef.current.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]',
+      );
     buttons[focusedMenuIndex]?.focus();
   }, [focusedMenuIndex, contextMenu]);
 
@@ -1698,7 +1860,7 @@ export function TerminalPanel({
   useEffect(() => {
     if (!showShortcutsBar && isSelectMode) {
       setIsSelectMode(false);
-      setSelectModeText('');
+      setSelectModeText("");
     }
   }, [showShortcutsBar, isSelectMode]);
 
@@ -1778,7 +1940,7 @@ export function TerminalPanel({
         longPressTouchStartRef.current = null;
       }, LONG_PRESS_DURATION);
     },
-    [isMobile]
+    [isMobile],
   );
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -1809,41 +1971,50 @@ export function TerminalPanel({
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        if (typeof reader.result === 'string') {
+        if (typeof reader.result === "string") {
           resolve(reader.result);
         } else {
-          reject(new Error('Failed to read file as base64'));
+          reject(new Error("Failed to read file as base64"));
         }
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsDataURL(file);
     });
   }, []);
 
   // Save image to temp folder via Electron API
   const saveImageToTemp = useCallback(
-    async (base64Data: string, filename: string, mimeType: string): Promise<string | null> => {
+    async (
+      base64Data: string,
+      filename: string,
+      mimeType: string,
+    ): Promise<string | null> => {
       try {
         const api = getElectronAPI();
         if (!api.saveImageToTemp) {
           // Fallback path when Electron API is not available (browser mode)
-          logger.warn('saveImageToTemp not available, returning fallback path');
+          logger.warn("saveImageToTemp not available, returning fallback path");
           return `.pegasus/images/${Date.now()}_${filename}`;
         }
 
         const projectPath = currentProject?.path;
-        const result = await api.saveImageToTemp(base64Data, filename, mimeType, projectPath);
+        const result = await api.saveImageToTemp(
+          base64Data,
+          filename,
+          mimeType,
+          projectPath,
+        );
         if (result.success && result.path) {
           return result.path;
         }
-        logger.error('Failed to save image:', result.error);
+        logger.error("Failed to save image:", result.error);
         return null;
       } catch (error) {
-        logger.error('Error saving image:', error);
+        logger.error("Error saving image:", error);
         return null;
       }
     },
-    [currentProject?.path]
+    [currentProject?.path],
   );
 
   // Check if drag event contains image files
@@ -1852,12 +2023,12 @@ export function TerminalPanel({
     const items = e.dataTransfer.items;
 
     // Check if Files type is present
-    if (!types.includes('Files')) return false;
+    if (!types.includes("Files")) return false;
 
     // Check if any item is an image
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.kind === 'file' && ACCEPTED_IMAGE_TYPES.includes(item.type)) {
+      if (item.kind === "file" && ACCEPTED_IMAGE_TYPES.includes(item.type)) {
         return true;
       }
     }
@@ -1874,7 +2045,7 @@ export function TerminalPanel({
       e.stopPropagation();
       setIsImageDragOver(true);
     },
-    [hasImageFiles]
+    [hasImageFiles],
   );
 
   // Handle image drag leave
@@ -1910,7 +2081,7 @@ export function TerminalPanel({
         if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
           if (file.size > MAX_IMAGE_SIZE) {
             toast.error(`Image too large: ${file.name}`, {
-              description: 'Maximum size is 10MB',
+              description: "Maximum size is 10MB",
             });
             continue;
           }
@@ -1919,8 +2090,8 @@ export function TerminalPanel({
       }
 
       if (imageFiles.length === 0) {
-        toast.error('No valid images found', {
-          description: 'Drop PNG, JPG, GIF, or WebP images',
+        toast.error("No valid images found", {
+          description: "Drop PNG, JPG, GIF, or WebP images",
         });
         return;
       }
@@ -1938,7 +2109,7 @@ export function TerminalPanel({
             toast.error(`Failed to save: ${file.name}`);
           }
         } catch (error) {
-          logger.error('Error processing image:', error);
+          logger.error("Error processing image:", error);
           toast.error(`Error processing: ${file.name}`);
         }
       }
@@ -1949,21 +2120,25 @@ export function TerminalPanel({
 
       // Send image paths to terminal as input
       // Format: space-separated paths, each wrapped in quotes if containing spaces
-      const formattedPaths = savedPaths.map((p) => (p.includes(' ') ? `"${p}"` : p)).join(' ');
+      const formattedPaths = savedPaths
+        .map((p) => (p.includes(" ") ? `"${p}"` : p))
+        .join(" ");
 
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'input', data: formattedPaths }));
+        wsRef.current.send(
+          JSON.stringify({ type: "input", data: formattedPaths }),
+        );
         toast.success(
           savedPaths.length === 1
-            ? 'Image path inserted'
+            ? "Image path inserted"
             : `${savedPaths.length} image paths inserted`,
-          { description: 'Press Enter to send' }
+          { description: "Press Enter to send" },
         );
       } else {
-        toast.error('Terminal not connected');
+        toast.error("Terminal not connected");
       }
     },
-    [isProcessingImage, fileToBase64, saveImageToTemp]
+    [isProcessingImage, fileToBase64, saveImageToTemp],
   );
 
   // Combine refs for the container
@@ -1972,29 +2147,33 @@ export function TerminalPanel({
       containerRef.current = node;
       setDropRef(node);
     },
-    [setDropRef]
+    [setDropRef],
   );
 
   // Get current terminal theme for xterm styling (resolved for system preference)
   const currentTerminalTheme = getTerminalTheme(resolvedTheme);
 
   // Apply custom background/foreground colors if set, otherwise use theme defaults
-  const terminalBackgroundColor = customBackgroundColor ?? currentTerminalTheme.background;
-  const terminalForegroundColor = customForegroundColor ?? currentTerminalTheme.foreground;
+  const terminalBackgroundColor =
+    customBackgroundColor ?? currentTerminalTheme.background;
+  const terminalForegroundColor =
+    customForegroundColor ?? currentTerminalTheme.foreground;
 
   return (
     <div
       ref={setRefs}
       className={cn(
-        'flex flex-col h-full relative',
-        isActive && 'ring-1 ring-brand-500 ring-inset',
+        "flex flex-col h-full relative",
+        isActive && "ring-1 ring-brand-500 ring-inset",
         // Visual feedback when dragging this terminal
-        isDragging && 'opacity-50',
+        isDragging && "opacity-50",
         // Visual feedback when hovering over as drop target
-        isOver && isDropTarget && 'ring-2 ring-green-500 ring-inset'
+        isOver && isDropTarget && "ring-2 ring-green-500 ring-inset",
       )}
       style={
-        isMobile && isKeyboardOpen ? { height: `calc(100% - ${keyboardHeight}px)` } : undefined
+        isMobile && isKeyboardOpen
+          ? { height: `calc(100% - ${keyboardHeight}px)` }
+          : undefined
       }
       onClick={onFocus}
       onKeyDownCapture={handleContainerKeyDownCapture}
@@ -2022,7 +2201,9 @@ export function TerminalPanel({
             ) : (
               <>
                 <ImageIcon className="h-6 w-6" />
-                <span className="text-sm font-medium">Drop image for Claude Code</span>
+                <span className="text-sm font-medium">
+                  Drop image for Claude Code
+                </span>
               </>
             )}
           </div>
@@ -2037,8 +2218,8 @@ export function TerminalPanel({
           {...dragAttributes}
           {...dragListeners}
           className={cn(
-            'p-1 rounded cursor-grab active:cursor-grabbing mr-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-accent',
-            isDragging && 'cursor-grabbing'
+            "p-1 rounded cursor-grab active:cursor-grabbing mr-1 transition-colors text-muted-foreground hover:text-foreground hover:bg-accent",
+            isDragging && "cursor-grabbing",
           )}
           title="Drag to swap terminals"
         >
@@ -2069,18 +2250,18 @@ export function TerminalPanel({
               {fontSize}px
             </button>
           )}
-          {connectionStatus === 'reconnecting' && (
+          {connectionStatus === "reconnecting" && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-500 flex items-center gap-1">
               <Spinner size="xs" />
               Reconnecting...
             </span>
           )}
-          {connectionStatus === 'disconnected' && (
+          {connectionStatus === "disconnected" && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
               Disconnected
             </span>
           )}
-          {connectionStatus === 'auth_failed' && (
+          {connectionStatus === "auth_failed" && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
               Auth Failed
             </span>
@@ -2088,10 +2269,10 @@ export function TerminalPanel({
           {processExitCode !== null && (
             <span
               className={cn(
-                'text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1',
+                "text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1",
                 processExitCode === 0
-                  ? 'bg-green-500/20 text-green-500'
-                  : 'bg-yellow-500/20 text-yellow-500'
+                  ? "bg-green-500/20 text-green-500"
+                  : "bg-yellow-500/20 text-yellow-500",
               )}
             >
               Exited ({processExitCode})
@@ -2133,9 +2314,12 @@ export function TerminalPanel({
           <TerminalScriptsDropdown
             onRunCommand={sendCommand}
             onRunCommandInNewTab={onRunCommandInNewTab}
-            isConnected={connectionStatus === 'connected'}
+            isConnected={connectionStatus === "connected"}
             onOpenSettings={() =>
-              navigate({ to: '/project-settings', search: { section: 'commands-scripts' } })
+              navigate({
+                to: "/project-settings",
+                search: { section: "commands-scripts" },
+              })
             }
           />
 
@@ -2162,7 +2346,9 @@ export function TerminalPanel({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Font Size</Label>
-                    <span className="text-xs text-muted-foreground">{fontSize}px</span>
+                    <span className="text-xs text-muted-foreground">
+                      {fontSize}px
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Slider
@@ -2187,10 +2373,14 @@ export function TerminalPanel({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium">Run on New Terminal</Label>
+                  <Label className="text-xs font-medium">
+                    Run on New Terminal
+                  </Label>
                   <Input
                     value={defaultRunScript}
-                    onChange={(e) => setTerminalDefaultRunScript(e.target.value)}
+                    onChange={(e) =>
+                      setTerminalDefaultRunScript(e.target.value)
+                    }
                     placeholder="e.g., claude"
                     className="h-7 text-xs"
                   />
@@ -2205,8 +2395,9 @@ export function TerminalPanel({
                     value={fontFamily || DEFAULT_FONT_VALUE}
                     onValueChange={(value) => {
                       setTerminalFontFamily(value);
-                      toast.info('Font family changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info("Font family changed", {
+                        description:
+                          "Restart terminal for changes to take effect",
                       });
                     }}
                   >
@@ -2219,7 +2410,9 @@ export function TerminalPanel({
                           <span
                             style={{
                               fontFamily:
-                                option.value === DEFAULT_FONT_VALUE ? undefined : option.value,
+                                option.value === DEFAULT_FONT_VALUE
+                                  ? undefined
+                                  : option.value,
                             }}
                           >
                             {option.label}
@@ -2246,8 +2439,9 @@ export function TerminalPanel({
                       setTerminalScrollbackLines(value);
                     }}
                     onValueCommit={() => {
-                      toast.info('Scrollback changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info("Scrollback changed", {
+                        description:
+                          "Restart terminal for changes to take effect",
                       });
                     }}
                     className="flex-1"
@@ -2257,7 +2451,9 @@ export function TerminalPanel({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Line Height</Label>
-                    <span className="text-xs text-muted-foreground">{lineHeight.toFixed(1)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {lineHeight.toFixed(1)}
+                    </span>
                   </div>
                   <Slider
                     value={[lineHeight]}
@@ -2268,8 +2464,9 @@ export function TerminalPanel({
                       setTerminalLineHeight(value);
                     }}
                     onValueCommit={() => {
-                      toast.info('Line height changed', {
-                        description: 'Restart terminal for changes to take effect',
+                      toast.info("Line height changed", {
+                        description:
+                          "Restart terminal for changes to take effect",
                       });
                     }}
                     className="flex-1"
@@ -2279,15 +2476,23 @@ export function TerminalPanel({
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-xs font-medium">Screen Reader</Label>
-                    <p className="text-[10px] text-muted-foreground">Enable accessibility mode</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Enable accessibility mode
+                    </p>
                   </div>
                   <Switch
                     checked={screenReaderMode}
                     onCheckedChange={(checked) => {
                       setTerminalScreenReaderMode(checked);
-                      toast.info(checked ? 'Screen reader enabled' : 'Screen reader disabled', {
-                        description: 'Restart terminal for changes to take effect',
-                      });
+                      toast.info(
+                        checked
+                          ? "Screen reader enabled"
+                          : "Screen reader disabled",
+                        {
+                          description:
+                            "Restart terminal for changes to take effect",
+                        },
+                      );
                     }}
                   />
                 </div>
@@ -2336,9 +2541,13 @@ export function TerminalPanel({
                 e.stopPropagation();
                 onToggleMaximize();
               }}
-              title={isMaximized ? 'Restore' : 'Maximize'}
+              title={isMaximized ? "Restore" : "Maximize"}
             >
-              {isMaximized ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+              {isMaximized ? (
+                <Minimize2 className="h-3 w-3" />
+              ) : (
+                <Maximize2 className="h-3 w-3" />
+              )}
             </Button>
           )}
           <Button
@@ -2375,14 +2584,14 @@ export function TerminalPanel({
             }}
             onKeyDown={(e) => {
               e.stopPropagation();
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 e.preventDefault();
                 if (e.shiftKey) {
                   searchPrevious();
                 } else {
                   searchNext();
                 }
-              } else if (e.key === 'Escape') {
+              } else if (e.key === "Escape") {
                 e.preventDefault();
                 closeSearch();
               }
@@ -2426,7 +2635,7 @@ export function TerminalPanel({
       {showShortcutsBar && (
         <MobileTerminalShortcuts
           onSendInput={sendTerminalInput}
-          isConnected={connectionStatus === 'connected'}
+          isConnected={connectionStatus === "connected"}
           activeModifier={stickyModifier}
           onModifierChange={handleStickyModifierChange}
           onSelectAll={selectAll}
@@ -2471,7 +2680,9 @@ export function TerminalPanel({
           <div className="absolute inset-0 z-30 flex flex-col">
             {/* Header bar with copy/done actions */}
             <div className="flex items-center justify-between px-3 py-2 bg-brand-500/95 backdrop-blur-sm text-white shrink-0">
-              <span className="text-xs font-medium">Touch &amp; hold to select text</span>
+              <span className="text-xs font-medium">
+                Touch &amp; hold to select text
+              </span>
               <div className="flex items-center gap-2">
                 <button
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 active:scale-95 transition-all touch-manipulation"
@@ -2481,16 +2692,16 @@ export function TerminalPanel({
                     if (selectedText) {
                       const success = await writeToClipboard(selectedText);
                       if (success) {
-                        toast.success('Copied to clipboard');
+                        toast.success("Copied to clipboard");
                       } else {
-                        toast.error('Copy failed');
+                        toast.error("Copy failed");
                       }
                     } else {
                       const success = await writeToClipboard(selectModeText);
                       if (success) {
-                        toast.success('Copied all text to clipboard');
+                        toast.success("Copied all text to clipboard");
                       } else {
-                        toast.error('Copy failed');
+                        toast.error("Copy failed");
                       }
                     }
                   }}
@@ -2501,7 +2712,7 @@ export function TerminalPanel({
                   className="px-3 py-1.5 text-xs font-medium rounded-md bg-white/20 hover:bg-white/30 active:scale-95 transition-all touch-manipulation"
                   onClick={() => {
                     setIsSelectMode(false);
-                    setSelectModeText('');
+                    setSelectModeText("");
                   }}
                 >
                   Done
@@ -2518,16 +2729,16 @@ export function TerminalPanel({
                   fontFamily: getTerminalFontFamily(fontFamily),
                   fontSize: `${fontSize}px`,
                   lineHeight: `${lineHeight || 1.0}`,
-                  padding: '12px 16px',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-all',
-                  userSelect: 'text',
-                  WebkitUserSelect: 'text',
-                  touchAction: 'auto',
+                  padding: "12px 16px",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                  userSelect: "text",
+                  WebkitUserSelect: "text",
+                  touchAction: "auto",
                 } as React.CSSProperties
               }
             >
-              {selectModeText || 'No terminal content to select.'}
+              {selectModeText || "No terminal content to select."}
             </div>
           </div>
         )}
@@ -2564,58 +2775,64 @@ export function TerminalPanel({
             role="menuitem"
             tabIndex={focusedMenuIndex === 0 ? 0 : -1}
             className={cn(
-              'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none',
+              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none",
               focusedMenuIndex === 0
-                ? 'bg-accent text-accent-foreground'
-                : 'hover:bg-accent hover:text-accent-foreground'
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground",
             )}
-            onClick={() => handleContextMenuAction('copy')}
+            onClick={() => handleContextMenuAction("copy")}
           >
             <Copy className="h-4 w-4" />
             <span className="flex-1 text-left">Copy</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘C' : 'Ctrl+C'}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? "⌘C" : "Ctrl+C"}
+            </span>
           </button>
           <button
             role="menuitem"
             tabIndex={focusedMenuIndex === 1 ? 0 : -1}
             className={cn(
-              'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none',
+              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none",
               focusedMenuIndex === 1
-                ? 'bg-accent text-accent-foreground'
-                : 'hover:bg-accent hover:text-accent-foreground'
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground",
             )}
-            onClick={() => handleContextMenuAction('paste')}
+            onClick={() => handleContextMenuAction("paste")}
           >
             <ClipboardPaste className="h-4 w-4" />
             <span className="flex-1 text-left">Paste</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘V' : 'Ctrl+V'}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? "⌘V" : "Ctrl+V"}
+            </span>
           </button>
           <div role="separator" className="my-1 h-px bg-border" />
           <button
             role="menuitem"
             tabIndex={focusedMenuIndex === 2 ? 0 : -1}
             className={cn(
-              'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none',
+              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none",
               focusedMenuIndex === 2
-                ? 'bg-accent text-accent-foreground'
-                : 'hover:bg-accent hover:text-accent-foreground'
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground",
             )}
-            onClick={() => handleContextMenuAction('selectAll')}
+            onClick={() => handleContextMenuAction("selectAll")}
           >
             <CheckSquare className="h-4 w-4" />
             <span className="flex-1 text-left">Select All</span>
-            <span className="text-xs text-muted-foreground">{isMac ? '⌘A' : 'Ctrl+A'}</span>
+            <span className="text-xs text-muted-foreground">
+              {isMac ? "⌘A" : "Ctrl+A"}
+            </span>
           </button>
           <button
             role="menuitem"
             tabIndex={focusedMenuIndex === 3 ? 0 : -1}
             className={cn(
-              'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none',
+              "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground cursor-default outline-none",
               focusedMenuIndex === 3
-                ? 'bg-accent text-accent-foreground'
-                : 'hover:bg-accent hover:text-accent-foreground'
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-accent hover:text-accent-foreground",
             )}
-            onClick={() => handleContextMenuAction('clear')}
+            onClick={() => handleContextMenuAction("clear")}
           >
             <Trash2 className="h-4 w-4" />
             <span className="flex-1 text-left">Clear</span>

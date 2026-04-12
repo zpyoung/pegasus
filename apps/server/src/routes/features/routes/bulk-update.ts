@@ -2,10 +2,10 @@
  * POST /bulk-update endpoint - Update multiple features at once
  */
 
-import type { Request, Response } from 'express';
-import { FeatureLoader } from '../../../services/feature-loader.js';
-import type { Feature } from '@pegasus/types';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { FeatureLoader } from "../../../services/feature-loader.js";
+import type { Feature } from "@pegasus/types";
+import { getErrorMessage, logError } from "../common.js";
 
 interface BulkUpdateRequest {
   projectPath: string;
@@ -22,12 +22,18 @@ interface BulkUpdateResult {
 export function createBulkUpdateHandler(featureLoader: FeatureLoader) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, featureIds, updates } = req.body as BulkUpdateRequest;
+      const { projectPath, featureIds, updates } =
+        req.body as BulkUpdateRequest;
 
-      if (!projectPath || !featureIds || !Array.isArray(featureIds) || featureIds.length === 0) {
+      if (
+        !projectPath ||
+        !featureIds ||
+        !Array.isArray(featureIds) ||
+        featureIds.length === 0
+      ) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and featureIds (non-empty array) are required',
+          error: "projectPath and featureIds (non-empty array) are required",
         });
         return;
       }
@@ -35,7 +41,7 @@ export function createBulkUpdateHandler(featureLoader: FeatureLoader) {
       if (!updates || Object.keys(updates).length === 0) {
         res.status(400).json({
           success: false,
-          error: 'updates object with at least one field is required',
+          error: "updates object with at least one field is required",
         });
         return;
       }
@@ -50,7 +56,11 @@ export function createBulkUpdateHandler(featureLoader: FeatureLoader) {
         const batchResults = await Promise.all(
           batch.map(async (featureId) => {
             try {
-              const updated = await featureLoader.update(projectPath, featureId, updates);
+              const updated = await featureLoader.update(
+                projectPath,
+                featureId,
+                updates,
+              );
               return { featureId, success: true as const, feature: updated };
             } catch (error) {
               return {
@@ -59,7 +69,7 @@ export function createBulkUpdateHandler(featureLoader: FeatureLoader) {
                 error: getErrorMessage(error),
               };
             }
-          })
+          }),
         );
 
         for (const result of batchResults) {
@@ -87,7 +97,7 @@ export function createBulkUpdateHandler(featureLoader: FeatureLoader) {
         features: updatedFeatures,
       });
     } catch (error) {
-      logError(error, 'Bulk update features failed');
+      logError(error, "Bulk update features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { HotkeyButton } from '@/components/ui/hotkey-button';
-import type { ReactNode } from 'react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { HotkeyButton } from "@/components/ui/hotkey-button";
+import type { ReactNode } from "react";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
@@ -34,9 +34,9 @@ export function DeleteConfirmDialog({
   title,
   description,
   children,
-  confirmText = 'Delete',
-  testId = 'delete-confirm-dialog',
-  confirmTestId = 'confirm-delete-button',
+  confirmText = "Delete",
+  testId = "delete-confirm-dialog",
+  confirmTestId = "confirm-delete-button",
 }: DeleteConfirmDialogProps) {
   const handleConfirm = () => {
     onConfirm();
@@ -45,13 +45,18 @@ export function DeleteConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-popover border-border max-w-md" data-testid={testId}>
+      <DialogContent
+        className="bg-popover border-border max-w-md"
+        data-testid={testId}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trash2 className="w-5 h-5 text-destructive" />
             {title}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">{description}</DialogDescription>
+          <DialogDescription className="text-muted-foreground">
+            {description}
+          </DialogDescription>
         </DialogHeader>
 
         {children}
@@ -69,7 +74,7 @@ export function DeleteConfirmDialog({
             variant="destructive"
             onClick={handleConfirm}
             data-testid={confirmTestId}
-            hotkey={{ key: 'Enter', cmdCtrl: true }}
+            hotkey={{ key: "Enter", cmdCtrl: true }}
             hotkeyActive={open}
             className="px-4"
           >

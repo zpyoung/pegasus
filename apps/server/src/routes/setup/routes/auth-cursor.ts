@@ -2,17 +2,21 @@
  * POST /auth-cursor endpoint - Authenticate Cursor CLI
  */
 
-import type { Request, Response } from 'express';
-import { logError, getErrorMessage } from '../common.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import os from 'os';
+import type { Request, Response } from "express";
+import { logError, getErrorMessage } from "../common.js";
+import * as fs from "fs";
+import * as path from "path";
+import os from "os";
 
 export function createAuthCursorHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
       // Remove the disconnected marker file to reconnect the app to the CLI
-      const markerPath = path.join(process.cwd(), '.pegasus', '.cursor-disconnected');
+      const markerPath = path.join(
+        process.cwd(),
+        ".pegasus",
+        ".cursor-disconnected",
+      );
       if (fs.existsSync(markerPath)) {
         fs.unlinkSync(markerPath);
       }
@@ -26,14 +30,14 @@ export function createAuthCursorHandler() {
 
         // Check for credentials files
         const credentialPaths = [
-          path.join(os.homedir(), '.cursor', 'credentials.json'),
-          path.join(os.homedir(), '.config', 'cursor', 'credentials.json'),
+          path.join(os.homedir(), ".cursor", "credentials.json"),
+          path.join(os.homedir(), ".config", "cursor", "credentials.json"),
         ];
 
         for (const credPath of credentialPaths) {
           if (fs.existsSync(credPath)) {
             try {
-              const content = fs.readFileSync(credPath, 'utf8');
+              const content = fs.readFileSync(credPath, "utf8");
               const creds = JSON.parse(content);
               if (creds.accessToken || creds.token) {
                 return true;
@@ -50,7 +54,7 @@ export function createAuthCursorHandler() {
       if (isAlreadyAuthenticated()) {
         res.json({
           success: true,
-          message: 'Cursor CLI is now linked with the app',
+          message: "Cursor CLI is now linked with the app",
           wasAlreadyAuthenticated: true,
         });
       } else {
@@ -62,11 +66,11 @@ export function createAuthCursorHandler() {
         });
       }
     } catch (error) {
-      logError(error, 'Auth Cursor failed');
+      logError(error, "Auth Cursor failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
-        message: 'Failed to link Cursor CLI with the app',
+        message: "Failed to link Cursor CLI with the app",
       });
     }
   };

@@ -1,9 +1,9 @@
-import { Component, type ReactNode, type ErrorInfo } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Component, type ReactNode, type ErrorInfo } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const logger = createLogger('BoardErrorBoundary');
+const logger = createLogger("BoardErrorBoundary");
 
 interface Props {
   children: ReactNode;
@@ -35,7 +35,7 @@ export class BoardErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('Board content crashed:', {
+    logger.error("Board content crashed:", {
       error: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -55,13 +55,20 @@ export class BoardErrorBoundary extends Component<Props, State> {
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-foreground">Board crashed</h3>
+            <h3 className="text-lg font-semibold text-foreground">
+              Board crashed
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm">
-              A rendering error occurred, possibly during a worktree switch. Click recover to reset
-              to the main branch and retry.
+              A rendering error occurred, possibly during a worktree switch.
+              Click recover to reset to the main branch and retry.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={this.handleRecover} className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={this.handleRecover}
+            className="gap-2"
+          >
             <RefreshCw className="w-4 h-4" />
             Recover
           </Button>

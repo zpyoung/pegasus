@@ -1,12 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Archive,
   ChevronDown,
@@ -16,13 +16,13 @@ import {
   GitBranch,
   Play,
   Trash2,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { StashApplyConflictDialog } from './stash-apply-conflict-dialog';
-import type { StashApplyConflictInfo } from '../worktree-panel/types';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { StashApplyConflictDialog } from "./stash-apply-conflict-dialog";
+import type { StashApplyConflictInfo } from "../worktree-panel/types";
 
 interface WorktreeInfo {
   path: string;
@@ -50,7 +50,7 @@ interface ViewStashesDialogProps {
 
 function formatRelativeDate(dateStr: string): string {
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return 'Unknown date';
+  if (isNaN(date.getTime())) return "Unknown date";
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
@@ -60,7 +60,7 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
+  if (diffSecs < 60) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -90,13 +90,14 @@ function StashEntryItem({
 
   // Clean up the stash message for display
   const displayMessage =
-    stash.message.replace(/^(WIP on|On) [^:]+:\s*[a-f0-9]+\s*/, '').trim() || stash.message;
+    stash.message.replace(/^(WIP on|On) [^:]+:\s*[a-f0-9]+\s*/, "").trim() ||
+    stash.message;
 
   return (
     <div
       className={cn(
-        'group relative rounded-md border bg-card transition-colors',
-        'hover:border-primary/30'
+        "group relative rounded-md border bg-card transition-colors",
+        "hover:border-primary/30",
       )}
     >
       {/* Header */}
@@ -110,10 +111,12 @@ function StashEntryItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-sm font-medium leading-snug break-words">{displayMessage}</p>
+              <p className="text-sm font-medium leading-snug break-words">
+                {displayMessage}
+              </p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1 font-mono bg-muted px-1.5 py-0.5 rounded text-[10px]">
-                  stash@{'{' + stash.index + '}'}
+                  stash@{"{" + stash.index + "}"}
                 </span>
                 {stash.branch && (
                   <span className="inline-flex items-center gap-1">
@@ -139,7 +142,7 @@ function StashEntryItem({
                     onClick={() => setExpanded(!expanded)}
                     className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
                     aria-expanded={expanded}
-                    aria-label={`${expanded ? 'Collapse' : 'Expand'} file list, ${stash.files.length} file${stash.files.length !== 1 ? 's' : ''}`}
+                    aria-label={`${expanded ? "Collapse" : "Expand"} file list, ${stash.files.length} file${stash.files.length !== 1 ? "s" : ""}`}
                   >
                     {expanded ? (
                       <ChevronDown className="w-3 h-3" />
@@ -147,7 +150,8 @@ function StashEntryItem({
                       <ChevronRight className="w-3 h-3" />
                     )}
                     <FileText className="w-3 h-3" />
-                    {stash.files.length} file{stash.files.length !== 1 ? 's' : ''}
+                    {stash.files.length} file
+                    {stash.files.length !== 1 ? "s" : ""}
                   </button>
                 )}
               </div>
@@ -163,7 +167,11 @@ function StashEntryItem({
                 disabled={isBusy}
                 title="Apply stash (keep in stash list)"
               >
-                {isApplying ? <Spinner size="xs" /> : <Play className="w-3 h-3 mr-1" />}
+                {isApplying ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <Play className="w-3 h-3 mr-1" />
+                )}
                 Apply
               </Button>
               <Button
@@ -174,7 +182,7 @@ function StashEntryItem({
                 disabled={isBusy}
                 title="Pop stash (apply and remove from stash list)"
               >
-                {isApplying ? <Spinner size="xs" /> : 'Pop'}
+                {isApplying ? <Spinner size="xs" /> : "Pop"}
               </Button>
               <Button
                 size="sm"
@@ -184,7 +192,11 @@ function StashEntryItem({
                 disabled={isBusy}
                 title="Delete this stash"
               >
-                {isDropping ? <Spinner size="xs" /> : <Trash2 className="w-3 h-3" />}
+                {isDropping ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
               </Button>
             </div>
           </div>
@@ -224,7 +236,8 @@ export function ViewStashesDialog({
   const [applyingIndex, setApplyingIndex] = useState<number | null>(null);
   const [droppingIndex, setDroppingIndex] = useState<number | null>(null);
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
-  const [conflictInfo, setConflictInfo] = useState<StashApplyConflictInfo | null>(null);
+  const [conflictInfo, setConflictInfo] =
+    useState<StashApplyConflictInfo | null>(null);
 
   const fetchStashes = useCallback(async () => {
     if (!worktree) return;
@@ -239,10 +252,10 @@ export function ViewStashesDialog({
       if (result.success && result.result) {
         setStashes(result.result.stashes);
       } else {
-        setError(result.error || 'Failed to load stashes');
+        setError(result.error || "Failed to load stashes");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stashes');
+      setError(err instanceof Error ? err.message : "Failed to load stashes");
     } finally {
       setIsLoading(false);
     }
@@ -264,7 +277,11 @@ export function ViewStashesDialog({
     setApplyingIndex(stashIndex);
     try {
       const api = getHttpApiClient();
-      const result = await api.worktree.stashApply(worktree.path, stashIndex, false);
+      const result = await api.worktree.stashApply(
+        worktree.path,
+        stashIndex,
+        false,
+      );
 
       if (result.success && result.result) {
         if (result.result.hasConflicts) {
@@ -272,24 +289,24 @@ export function ViewStashesDialog({
             worktreePath: worktree.path,
             branchName: worktree.branch,
             stashRef: `stash@{${stashIndex}}`,
-            operation: 'apply',
+            operation: "apply",
             conflictFiles: result.result.conflictFiles || [],
           };
           setConflictInfo(info);
           setConflictDialogOpen(true);
           onStashApplied?.();
         } else {
-          toast.success('Stash applied');
+          toast.success("Stash applied");
           onStashApplied?.();
         }
       } else {
-        toast.error('Failed to apply stash', {
-          description: result.error || 'Unknown error',
+        toast.error("Failed to apply stash", {
+          description: result.error || "Unknown error",
         });
       }
     } catch (err) {
-      toast.error('Failed to apply stash', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error("Failed to apply stash", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setApplyingIndex(null);
@@ -302,7 +319,11 @@ export function ViewStashesDialog({
     setApplyingIndex(stashIndex);
     try {
       const api = getHttpApiClient();
-      const result = await api.worktree.stashApply(worktree.path, stashIndex, true);
+      const result = await api.worktree.stashApply(
+        worktree.path,
+        stashIndex,
+        true,
+      );
 
       if (result.success && result.result) {
         if (result.result.hasConflicts) {
@@ -310,27 +331,27 @@ export function ViewStashesDialog({
             worktreePath: worktree.path,
             branchName: worktree.branch,
             stashRef: `stash@{${stashIndex}}`,
-            operation: 'pop',
+            operation: "pop",
             conflictFiles: result.result.conflictFiles || [],
           };
           setConflictInfo(info);
           setConflictDialogOpen(true);
         } else {
-          toast.success('Stash popped', {
-            description: 'Changes applied and stash removed.',
+          toast.success("Stash popped", {
+            description: "Changes applied and stash removed.",
           });
         }
         // Refresh the stash list since the stash was removed
         await fetchStashes();
         onStashApplied?.();
       } else {
-        toast.error('Failed to pop stash', {
-          description: result.error || 'Unknown error',
+        toast.error("Failed to pop stash", {
+          description: result.error || "Unknown error",
         });
       }
     } catch (err) {
-      toast.error('Failed to pop stash', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error("Failed to pop stash", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setApplyingIndex(null);
@@ -346,17 +367,17 @@ export function ViewStashesDialog({
       const result = await api.worktree.stashDrop(worktree.path, stashIndex);
 
       if (result.success) {
-        toast.success('Stash deleted');
+        toast.success("Stash deleted");
         // Refresh the stash list
         await fetchStashes();
       } else {
-        toast.error('Failed to delete stash', {
-          description: result.error || 'Unknown error',
+        toast.error("Failed to delete stash", {
+          description: result.error || "Unknown error",
         });
       }
     } catch (err) {
-      toast.error('Failed to delete stash', {
-        description: err instanceof Error ? err.message : 'Unknown error',
+      toast.error("Failed to delete stash", {
+        description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
       setDroppingIndex(null);
@@ -374,8 +395,10 @@ export function ViewStashesDialog({
             Stashes
           </DialogTitle>
           <DialogDescription>
-            Stashed changes in{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+            Stashed changes in{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>
           </DialogDescription>
         </DialogHeader>
 
@@ -384,7 +407,9 @@ export function ViewStashesDialog({
             {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Spinner size="md" />
-                <span className="ml-2 text-sm text-muted-foreground">Loading stashes...</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Loading stashes...
+                </span>
               </div>
             )}
 
@@ -397,7 +422,9 @@ export function ViewStashesDialog({
             {!isLoading && !error && stashes.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <Archive className="w-8 h-8 text-muted-foreground/50" />
-                <p className="text-sm text-muted-foreground">No stashes found</p>
+                <p className="text-sm text-muted-foreground">
+                  No stashes found
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Use &quot;Stash Changes&quot; to save your uncommitted changes
                 </p>

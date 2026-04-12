@@ -1,17 +1,21 @@
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Info, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { PromptCustomization, CustomPrompt } from '@pegasus/types';
-import type { BannerConfig, PromptFieldConfig, PromptFieldProps } from './types';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Info, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { PromptCustomization, CustomPrompt } from "@pegasus/types";
+import type {
+  BannerConfig,
+  PromptFieldConfig,
+  PromptFieldProps,
+} from "./types";
 
 /**
  * Calculate dynamic minimum height based on content length.
  * Ensures long prompts have adequate space.
  */
 export function calculateMinHeight(text: string): string {
-  const lines = text.split('\n').length;
+  const lines = text.split("\n").length;
   const estimatedLines = Math.max(lines, Math.ceil(text.length / 80));
   const minHeight = Math.min(Math.max(120, estimatedLines * 20), 600);
   return `${minHeight}px`;
@@ -21,24 +25,29 @@ export function calculateMinHeight(text: string): string {
  * Renders an info or warning banner.
  */
 export function Banner({ config }: { config: BannerConfig }) {
-  const isWarning = config.type === 'warning';
+  const isWarning = config.type === "warning";
   const Icon = isWarning ? AlertTriangle : Info;
 
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-4 rounded-xl',
+        "flex items-start gap-3 p-4 rounded-xl",
         isWarning
-          ? 'bg-amber-500/10 border border-amber-500/20'
-          : 'bg-blue-500/10 border border-blue-500/20'
+          ? "bg-amber-500/10 border border-amber-500/20"
+          : "bg-blue-500/10 border border-blue-500/20",
       )}
     >
       <Icon
-        className={cn('w-5 h-5 mt-0.5 shrink-0', isWarning ? 'text-amber-500' : 'text-blue-500')}
+        className={cn(
+          "w-5 h-5 mt-0.5 shrink-0",
+          isWarning ? "text-amber-500" : "text-blue-500",
+        )}
       />
       <div className="space-y-1">
         <p className="text-sm text-foreground font-medium">{config.title}</p>
-        <p className="text-xs text-muted-foreground/80 leading-relaxed">{config.description}</p>
+        <p className="text-xs text-muted-foreground/80 leading-relaxed">
+          {config.description}
+        </p>
       </div>
     </div>
   );
@@ -62,7 +71,9 @@ export function PromptField({
   critical = false,
 }: PromptFieldProps) {
   const isEnabled = customValue?.enabled ?? false;
-  const displayValue = isEnabled ? (customValue?.value ?? defaultValue) : defaultValue;
+  const displayValue = isEnabled
+    ? (customValue?.value ?? defaultValue)
+    : defaultValue;
   const minHeight = calculateMinHeight(displayValue);
 
   const handleToggle = (enabled: boolean) => {
@@ -82,10 +93,13 @@ export function PromptField({
         <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-xs font-medium text-amber-500">Critical Prompt</p>
+            <p className="text-xs font-medium text-amber-500">
+              Critical Prompt
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
-              This prompt requires a specific output format. Changing it incorrectly may break
-              functionality. Only modify if you understand the expected structure.
+              This prompt requires a specific output format. Changing it
+              incorrectly may break functionality. Only modify if you understand
+              the expected structure.
             </p>
           </div>
         </div>
@@ -95,7 +109,9 @@ export function PromptField({
           {label}
         </Label>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{isEnabled ? 'Custom' : 'Default'}</span>
+          <span className="text-xs text-muted-foreground">
+            {isEnabled ? "Custom" : "Default"}
+          </span>
           <Switch
             checked={isEnabled}
             onCheckedChange={handleToggle}
@@ -110,8 +126,8 @@ export function PromptField({
         readOnly={!isEnabled}
         style={{ minHeight }}
         className={cn(
-          'font-mono text-xs resize-y',
-          !isEnabled && 'cursor-not-allowed bg-muted/50 text-muted-foreground'
+          "font-mono text-xs resize-y",
+          !isEnabled && "cursor-not-allowed bg-muted/50 text-muted-foreground",
         )}
       />
       <p className="text-xs text-muted-foreground">{description}</p>
@@ -134,7 +150,7 @@ export function PromptFieldList({
   updatePrompt: (
     category: keyof PromptCustomization,
     field: string,
-    value: CustomPrompt | undefined
+    value: CustomPrompt | undefined,
   ) => void;
 }) {
   return (
@@ -146,11 +162,15 @@ export function PromptFieldList({
           description={field.description}
           defaultValue={field.defaultValue}
           customValue={
-            (promptCustomization?.[category] as Record<string, CustomPrompt> | undefined)?.[
-              field.key
-            ]
+            (
+              promptCustomization?.[category] as
+                | Record<string, CustomPrompt>
+                | undefined
+            )?.[field.key]
           }
-          onCustomValueChange={(value) => updatePrompt(category, field.key, value)}
+          onCustomValueChange={(value) =>
+            updatePrompt(category, field.key, value)
+          }
           critical={field.critical}
         />
       ))}

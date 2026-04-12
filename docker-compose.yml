@@ -18,7 +18,7 @@ services:
     container_name: pegasus-ui
     restart: unless-stopped
     ports:
-      - '3007:80'
+      - "3007:80"
     depends_on:
       - server
 
@@ -36,7 +36,7 @@ services:
     container_name: pegasus-server
     restart: unless-stopped
     ports:
-      - '3008:3008'
+      - "3008:3008"
     environment:
       # Optional - Anthropic API key
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}

@@ -18,10 +18,10 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError, isValidBranchName } from '../common.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import { performSwitchBranch } from '../../../services/worktree-branch-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError, isValidBranchName } from "../common.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import { performSwitchBranch } from "../../../services/worktree-branch-service.js";
 
 export function createSwitchBranchHandler(events?: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -34,7 +34,7 @@ export function createSwitchBranchHandler(events?: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -42,7 +42,7 @@ export function createSwitchBranchHandler(events?: EventEmitter) {
       if (!branchName) {
         res.status(400).json({
           success: false,
-          error: 'branchName required',
+          error: "branchName required",
         });
         return;
       }
@@ -51,13 +51,17 @@ export function createSwitchBranchHandler(events?: EventEmitter) {
       if (!isValidBranchName(branchName)) {
         res.status(400).json({
           success: false,
-          error: 'Invalid branch name',
+          error: "Invalid branch name",
         });
         return;
       }
 
       // Execute the branch switch via the service
-      const result = await performSwitchBranch(worktreePath, branchName, events);
+      const result = await performSwitchBranch(
+        worktreePath,
+        branchName,
+        events,
+      );
 
       // Map service result to HTTP response
       if (!result.success) {
@@ -81,11 +85,11 @@ export function createSwitchBranchHandler(events?: EventEmitter) {
         result: result.result,
       });
     } catch (error) {
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Switch branch failed');
+      logError(error, "Switch branch failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -100,5 +104,8 @@ export function createSwitchBranchHandler(events?: EventEmitter) {
  */
 function isBranchNotFoundError(error?: string): boolean {
   if (!error) return false;
-  return error.includes('does not exist') || error.includes('Failed to parse remote branch name');
+  return (
+    error.includes("does not exist") ||
+    error.includes("Failed to parse remote branch name")
+  );
 }

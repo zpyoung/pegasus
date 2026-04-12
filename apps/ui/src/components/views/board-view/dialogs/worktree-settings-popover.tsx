@@ -1,7 +1,11 @@
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { GitBranch, Settings2 } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { GitBranch, Settings2 } from "lucide-react";
 
 interface WorktreeSettingsPopoverProps {
   addFeatureUseSelectedWorktreeBranch: boolean;
@@ -51,8 +55,8 @@ export function WorktreeSettingsPopover({
           </div>
 
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            New features will automatically use isolated worktrees, keeping changes separate from
-            your main branch until you're ready to merge.
+            New features will automatically use isolated worktrees, keeping
+            changes separate from your main branch until you're ready to merge.
           </p>
         </div>
       </PopoverContent>

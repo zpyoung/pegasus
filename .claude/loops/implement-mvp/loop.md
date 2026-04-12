@@ -99,11 +99,13 @@ You are implementing one feature of the Pegasus MVP. Pegasus is a Python CLI/TUI
 #### Step 6: Return — minimal summary to orchestrator
 
 Return exactly this format:
+
 ```
 IMPLEMENTED: <feature-id> | STATUS: done | TESTS: pass|fail | FILES: <count modified>
 ```
 
 Or if blocked:
+
 ```
 BLOCKED: <feature-id> | REASON: <why> | NEEDS: <what dependency is missing>
 ```
@@ -116,6 +118,7 @@ Features are cumulative — each iteration builds on code written by previous it
 ### Loop Termination
 
 The loop terminates when ALL of these are true:
+
 - `PENDING=0` for critical priority items in backlog.json
 - `TESTS=PASS` from check-progress.sh
 

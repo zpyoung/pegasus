@@ -1,17 +1,20 @@
-import { useState } from 'react';
-import type { ToolGroupProps } from '../types.js';
-import { getToolDescription } from '../utils/tool-descriptions.js';
+import { useState } from "react";
+import type { ToolGroupProps } from "../types.js";
+import { getToolDescription } from "../utils/tool-descriptions.js";
 
 export function ToolGroup({ messages }: ToolGroupProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const allComplete = messages.every((m) => m.toolStatus === 'completed');
-  const hasRunning = messages.some((m) => m.toolStatus === 'running');
+  const allComplete = messages.every((m) => m.toolStatus === "completed");
+  const hasRunning = messages.some((m) => m.toolStatus === "running");
   const count = messages.length;
 
   const summary =
     count === 1
-      ? getToolDescription(messages[0]?.toolName ?? 'Tool', messages[0]?.toolInput)
+      ? getToolDescription(
+          messages[0]?.toolName ?? "Tool",
+          messages[0]?.toolInput,
+        )
       : `Used ${count} tools`;
 
   return (
@@ -22,7 +25,7 @@ export function ToolGroup({ messages }: ToolGroupProps) {
       >
         <span
           className="inline-block transition-transform duration-150"
-          style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)" }}
         >
           ▶
         </span>
@@ -41,17 +44,21 @@ export function ToolGroup({ messages }: ToolGroupProps) {
             <div key={msg.id} className="flex items-start gap-1.5">
               <span
                 className={
-                  msg.toolStatus === 'running'
-                    ? 'text-amber-500'
-                    : msg.toolStatus === 'error'
-                      ? 'text-destructive'
-                      : 'text-green-500'
+                  msg.toolStatus === "running"
+                    ? "text-amber-500"
+                    : msg.toolStatus === "error"
+                      ? "text-destructive"
+                      : "text-green-500"
                 }
               >
-                {msg.toolStatus === 'running' ? '⋯' : msg.toolStatus === 'error' ? '✗' : '✓'}
+                {msg.toolStatus === "running"
+                  ? "⋯"
+                  : msg.toolStatus === "error"
+                    ? "✗"
+                    : "✓"}
               </span>
               <span className="text-foreground/80 font-mono">
-                {getToolDescription(msg.toolName ?? 'Tool', msg.toolInput)}
+                {getToolDescription(msg.toolName ?? "Tool", msg.toolInput)}
               </span>
             </div>
           ))}

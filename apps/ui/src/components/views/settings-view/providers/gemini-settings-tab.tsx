@@ -1,20 +1,27 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import { GeminiCliStatus, GeminiCliStatusSkeleton } from '../cli-status/gemini-cli-status';
-import { GeminiModelConfiguration } from './gemini-model-configuration';
-import { ProviderToggle } from './provider-toggle';
-import { useGeminiCliStatus } from '@/hooks/queries';
-import { queryKeys } from '@/lib/query-keys';
-import type { CliStatus as SharedCliStatus } from '../shared/types';
-import type { GeminiAuthStatus } from '../cli-status/gemini-cli-status';
-import type { GeminiModelId } from '@pegasus/types';
+import { useState, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import {
+  GeminiCliStatus,
+  GeminiCliStatusSkeleton,
+} from "../cli-status/gemini-cli-status";
+import { GeminiModelConfiguration } from "./gemini-model-configuration";
+import { ProviderToggle } from "./provider-toggle";
+import { useGeminiCliStatus } from "@/hooks/queries";
+import { queryKeys } from "@/lib/query-keys";
+import type { CliStatus as SharedCliStatus } from "../shared/types";
+import type { GeminiAuthStatus } from "../cli-status/gemini-cli-status";
+import type { GeminiModelId } from "@pegasus/types";
 
 export function GeminiSettingsTab() {
   const queryClient = useQueryClient();
-  const { enabledGeminiModels, geminiDefaultModel, setGeminiDefaultModel, toggleGeminiModel } =
-    useAppStore();
+  const {
+    enabledGeminiModels,
+    geminiDefaultModel,
+    setGeminiDefaultModel,
+    toggleGeminiModel,
+  } = useAppStore();
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -32,7 +39,7 @@ export function GeminiSettingsTab() {
     if (!cliStatusData) return null;
     return {
       success: cliStatusData.success ?? false,
-      status: cliStatusData.installed ? 'installed' : 'not_installed',
+      status: cliStatusData.installed ? "installed" : "not_installed",
       method: cliStatusData.auth?.method,
       version: cliStatusData.version,
       path: cliStatusData.path,
@@ -49,7 +56,8 @@ export function GeminiSettingsTab() {
     if (!cliStatusData?.auth) return null;
     return {
       authenticated: cliStatusData.auth.authenticated,
-      method: (cliStatusData.auth.method as GeminiAuthStatus['method']) || 'none',
+      method:
+        (cliStatusData.auth.method as GeminiAuthStatus["method"]) || "none",
       hasApiKey: cliStatusData.auth.hasApiKey,
       hasEnvApiKey: cliStatusData.auth.hasEnvApiKey,
       error: cliStatusData.auth.error,
@@ -60,7 +68,7 @@ export function GeminiSettingsTab() {
   const handleRefreshGeminiCli = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.cli.gemini() });
     await refetchCliStatus();
-    toast.success('Gemini CLI refreshed');
+    toast.success("Gemini CLI refreshed");
   }, [queryClient, refetchCliStatus]);
 
   const handleDefaultModelChange = useCallback(
@@ -68,14 +76,14 @@ export function GeminiSettingsTab() {
       setIsSaving(true);
       try {
         setGeminiDefaultModel(model);
-        toast.success('Default model updated');
+        toast.success("Default model updated");
       } catch {
-        toast.error('Failed to update default model');
+        toast.error("Failed to update default model");
       } finally {
         setIsSaving(false);
       }
     },
-    [setGeminiDefaultModel]
+    [setGeminiDefaultModel],
   );
 
   const handleModelToggle = useCallback(
@@ -84,12 +92,12 @@ export function GeminiSettingsTab() {
       try {
         toggleGeminiModel(model, enabled);
       } catch {
-        toast.error('Failed to update models');
+        toast.error("Failed to update models");
       } finally {
         setIsSaving(false);
       }
     },
-    [toggleGeminiModel]
+    [toggleGeminiModel],
   );
 
   // Show skeleton only while checking CLI status initially

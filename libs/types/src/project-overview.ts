@@ -20,7 +20,12 @@
  * - error: One or more features have failed
  * - completed: All features have been completed successfully
  */
-export type ProjectHealthStatus = 'idle' | 'active' | 'waiting' | 'error' | 'completed';
+export type ProjectHealthStatus =
+  | "idle"
+  | "active"
+  | "waiting"
+  | "error"
+  | "completed";
 
 /**
  * FeatureStatusCounts - Breakdown of features by status
@@ -142,24 +147,24 @@ export interface AggregateStatus {
  * Maps to significant events that users would want to see in an overview.
  */
 export type ActivityType =
-  | 'feature_created'
-  | 'feature_started'
-  | 'feature_completed'
-  | 'feature_failed'
-  | 'feature_verified'
-  | 'auto_mode_started'
-  | 'auto_mode_stopped'
-  | 'ideation_session_started'
-  | 'ideation_session_ended'
-  | 'idea_created'
-  | 'idea_converted'
-  | 'notification_created'
-  | 'project_opened';
+  | "feature_created"
+  | "feature_started"
+  | "feature_completed"
+  | "feature_failed"
+  | "feature_verified"
+  | "auto_mode_started"
+  | "auto_mode_stopped"
+  | "ideation_session_started"
+  | "ideation_session_ended"
+  | "idea_created"
+  | "idea_converted"
+  | "notification_created"
+  | "project_opened";
 
 /**
  * ActivitySeverity - Visual importance level for activity items
  */
-export type ActivitySeverity = 'info' | 'success' | 'warning' | 'error';
+export type ActivitySeverity = "info" | "success" | "warning" | "error";
 
 /**
  * RecentActivity - A single activity entry for the activity feed
@@ -236,7 +241,7 @@ export interface MultiProjectOverview {
  */
 export interface ProjectOverviewError {
   /** Error code for programmatic handling */
-  code: 'PROJECTS_NOT_FOUND' | 'PERMISSION_DENIED' | 'INTERNAL_ERROR';
+  code: "PROJECTS_NOT_FOUND" | "PERMISSION_DENIED" | "INTERNAL_ERROR";
   /** Human-readable error message */
   message: string;
   /** Project IDs that failed to load, if applicable */

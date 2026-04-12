@@ -76,7 +76,12 @@
 /* Theme-specific overrides */
 
 .monokai .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #f92672 0%, #e6db74 50%, #f92672 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #f92672 0%,
+    #e6db74 50%,
+    #f92672 100%
+  );
 }
 
 .monokai .animated-outline-inner {
@@ -84,7 +89,9 @@
   color: #f92672 !important;
 }
 
-.monokai [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.monokai
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.22 0.02 90) !important;
   color: #e6db74 !important;
 }

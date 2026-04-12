@@ -1,5 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import type { ChatMessage, ChatStatus, ChatStreamEvent, ChatTransport } from '../types.js';
+import { useState, useRef, useEffect, useCallback } from "react";
+import type {
+  ChatMessage,
+  ChatStatus,
+  ChatStreamEvent,
+  ChatTransport,
+} from "../types.js";
 
 export interface UseChatStreamResult {
   messages: ChatMessage[];
@@ -21,13 +26,13 @@ export interface UseChatStreamResult {
  */
 export function useChatStream(
   transport: ChatTransport,
-  initial: ChatMessage[]
+  initial: ChatMessage[],
 ): UseChatStreamResult {
   const [messages, setMessages] = useState<ChatMessage[]>(initial);
-  const [status, setStatus] = useState<ChatStatus>('idle');
+  const [status, setStatus] = useState<ChatStatus>("idle");
 
   // Refs for RAF-batched text streaming
-  const textBufferRef = useRef('');
+  const textBufferRef = useRef("");
   const rafHandleRef = useRef<number | null>(null);
   const streamingMsgIdRef = useRef<string | null>(null);
 
@@ -41,11 +46,13 @@ export function useChatStream(
       rafHandleRef.current = null;
     }
     const text = textBufferRef.current;
-    textBufferRef.current = '';
+    textBufferRef.current = "";
     if (text && streamingMsgIdRef.current) {
       const msgId = streamingMsgIdRef.current;
       setMessages((prev) =>
-        prev.map((m) => (m.id === msgId ? { ...m, content: m.content + text } : m))
+        prev.map((m) =>
+          m.id === msgId ? { ...m, content: m.content + text } : m,
+        ),
       );
     }
   }, []);
@@ -54,84 +61,88 @@ export function useChatStream(
   useEffect(() => {
     const unsubscribe = transport.subscribeStream((event: ChatStreamEvent) => {
       switch (event.type) {
-        case 'started': {
+        case "started": {
           const assistantId = crypto.randomUUID();
           streamingMsgIdRef.current = assistantId;
-          textBufferRef.current = '';
-          setStatus('streaming');
+          textBufferRef.current = "";
+          setStatus("streaming");
           setMessages((prev) => [
             ...prev,
             {
               id: assistantId,
-              role: 'assistant',
-              content: '',
+              role: "assistant",
+              content: "",
               timestamp: Date.now(),
             },
           ]);
           break;
         }
 
-        case 'text_chunk': {
+        case "text_chunk": {
           textBufferRef.current += event.text;
           if (rafHandleRef.current === null) {
             const msgId = streamingMsgIdRef.current;
             rafHandleRef.current = requestAnimationFrame(() => {
               rafHandleRef.current = null;
               const text = textBufferRef.current;
-              textBufferRef.current = '';
+              textBufferRef.current = "";
               if (!text || !msgId) return;
               setMessages((prev) =>
-                prev.map((m) => (m.id === msgId ? { ...m, content: m.content + text } : m))
+                prev.map((m) =>
+                  m.id === msgId ? { ...m, content: m.content + text } : m,
+                ),
               );
             });
           }
           break;
         }
 
-        case 'tool_call': {
+        case "tool_call": {
           flushTextBuffer();
           const toolMsgId = `tool-${event.toolId}`;
           setMessages((prev) => [
             ...prev,
             {
               id: toolMsgId,
-              role: 'tool',
-              content: '',
+              role: "tool",
+              content: "",
               toolName: event.toolName,
               toolInput: event.input,
               toolId: event.toolId,
-              toolStatus: 'running',
+              toolStatus: "running",
               timestamp: Date.now(),
             },
           ]);
           break;
         }
 
-        case 'tool_complete': {
+        case "tool_complete": {
           setMessages((prev) =>
             prev.map((m) =>
-              m.toolId === event.toolId ? { ...m, toolStatus: 'completed' as const } : m
-            )
+              m.toolId === event.toolId
+                ? { ...m, toolStatus: "completed" as const }
+                : m,
+            ),
           );
           break;
         }
 
-        case 'message_complete': {
+        case "message_complete": {
           flushTextBuffer();
           streamingMsgIdRef.current = null;
-          setStatus('idle');
+          setStatus("idle");
           break;
         }
 
-        case 'error': {
+        case "error": {
           flushTextBuffer();
           streamingMsgIdRef.current = null;
-          setStatus('error');
+          setStatus("error");
           setMessages((prev) => [
             ...prev,
             {
               id: crypto.randomUUID(),
-              role: 'system',
+              role: "system",
               content: `Error: ${event.message}`,
               timestamp: Date.now(),
             },
@@ -153,26 +164,26 @@ export function useChatStream(
 
   const send = useCallback(
     async (text: string) => {
-      if (status === 'streaming') return;
+      if (status === "streaming") return;
       lastSentTextRef.current = text;
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
-          role: 'user',
+          role: "user",
           content: text,
           timestamp: Date.now(),
         },
       ]);
       await transport.sendMessage(text);
     },
-    [transport, status]
+    [transport, status],
   );
 
   const retry = useCallback(() => {
     const lastText = lastSentTextRef.current;
     if (lastText) {
-      setStatus('idle');
+      setStatus("idle");
       void send(lastText);
     }
   }, [send]);

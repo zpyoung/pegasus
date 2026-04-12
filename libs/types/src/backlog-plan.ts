@@ -2,13 +2,13 @@
  * Backlog Plan types for AI-assisted backlog modification
  */
 
-import type { Feature } from './feature.js';
+import type { Feature } from "./feature.js";
 
 /**
  * A single proposed change to the backlog
  */
 export interface BacklogChange {
-  type: 'add' | 'update' | 'delete';
+  type: "add" | "update" | "delete";
   featureId?: string; // For update/delete operations
   feature?: Partial<Feature>; // For add/update (includes title, description, category, dependencies, priority)
   reason: string; // AI explanation of why this change is proposed
@@ -37,10 +37,10 @@ export interface BacklogPlanResult {
  */
 export interface BacklogPlanEvent {
   type:
-    | 'backlog_plan_progress'
-    | 'backlog_plan_tool'
-    | 'backlog_plan_complete'
-    | 'backlog_plan_error';
+    | "backlog_plan_progress"
+    | "backlog_plan_tool"
+    | "backlog_plan_complete"
+    | "backlog_plan_error";
   content?: string;
   tool?: string;
   input?: unknown;

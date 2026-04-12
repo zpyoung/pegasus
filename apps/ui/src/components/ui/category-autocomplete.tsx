@@ -1,5 +1,5 @@
-import { Tag } from 'lucide-react';
-import { Autocomplete } from '@/components/ui/autocomplete';
+import { Tag } from "lucide-react";
+import { Autocomplete } from "@/components/ui/autocomplete";
 
 interface CategoryAutocompleteProps {
   value: string;
@@ -9,18 +9,18 @@ interface CategoryAutocompleteProps {
   className?: string;
   disabled?: boolean;
   error?: boolean;
-  'data-testid'?: string;
+  "data-testid"?: string;
 }
 
 export function CategoryAutocomplete({
   value,
   onChange,
   suggestions,
-  placeholder = 'Select or type a category...',
+  placeholder = "Select or type a category...",
   className,
   disabled = false,
   error = false,
-  'data-testid': testId,
+  "data-testid": testId,
 }: CategoryAutocompleteProps) {
   return (
     <Autocomplete

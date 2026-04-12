@@ -2,7 +2,7 @@
  * Pipeline Types - Type definitions for PipelineOrchestrator
  */
 
-import type { Feature, PipelineStep, PipelineConfig } from '@pegasus/types';
+import type { Feature, PipelineStep, PipelineConfig } from "@pegasus/types";
 
 export interface PipelineContext {
   projectPath: string;
@@ -44,12 +44,15 @@ export interface MergeResult {
 export type UpdateFeatureStatusFn = (
   projectPath: string,
   featureId: string,
-  status: string
+  status: string,
 ) => Promise<void>;
 
 export type BuildFeaturePromptFn = (
   feature: Feature,
-  prompts: { implementationInstructions: string; playwrightVerificationInstructions: string }
+  prompts: {
+    implementationInstructions: string;
+    playwrightVerificationInstructions: string;
+  },
 ) => string;
 
 export type ExecuteFeatureFn = (
@@ -58,7 +61,7 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   useScreenshots: boolean,
   model?: string,
-  options?: { _calledInternally?: boolean }
+  options?: { _calledInternally?: boolean },
 ) => Promise<void>;
 
 export type RunAgentFn = (
@@ -69,5 +72,5 @@ export type RunAgentFn = (
   projectPath: string,
   imagePaths?: string[],
   model?: string,
-  options?: Record<string, unknown>
+  options?: Record<string, unknown>,
 ) => Promise<void>;

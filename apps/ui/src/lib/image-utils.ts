@@ -4,24 +4,36 @@
 
 // Accepted image MIME types
 export const ACCEPTED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
 ];
 
 // Accepted text file MIME types
-export const ACCEPTED_TEXT_TYPES = ['text/plain', 'text/markdown', 'text/x-markdown'];
+export const ACCEPTED_TEXT_TYPES = [
+  "text/plain",
+  "text/markdown",
+  "text/x-markdown",
+];
 
 // File extensions for text files (used for validation when MIME type is unreliable)
-export const ACCEPTED_TEXT_EXTENSIONS = ['.txt', '.md'];
+export const ACCEPTED_TEXT_EXTENSIONS = [".txt", ".md"];
 
 // File extensions for markdown files
-export const MARKDOWN_EXTENSIONS = ['.md', '.markdown'];
+export const MARKDOWN_EXTENSIONS = [".md", ".markdown"];
 
 // File extensions for image files (used for display filtering)
-export const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'];
+export const IMAGE_EXTENSIONS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".svg",
+  ".bmp",
+];
 
 // Default max file size (10MB)
 export const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -43,17 +55,17 @@ export const DEFAULT_MAX_FILES = 5;
  * @returns A sanitized filename safe for file system operations
  */
 export function sanitizeFilename(filename: string): string {
-  const lastDot = filename.lastIndexOf('.');
+  const lastDot = filename.lastIndexOf(".");
   const name = lastDot > 0 ? filename.substring(0, lastDot) : filename;
-  const ext = lastDot > 0 ? filename.substring(lastDot) : '';
+  const ext = lastDot > 0 ? filename.substring(lastDot) : "";
 
   const sanitized = name
-    .replace(/[\s\u00A0\u202F\u2009\u200A]+/g, '_') // Various space characters (regular, non-breaking, narrow no-break, thin, hair)
-    .replace(/[^a-zA-Z0-9_-]/g, '_') // Non-alphanumeric chars
-    .replace(/_+/g, '_') // Collapse multiple underscores
-    .replace(/^_|_$/g, ''); // Trim leading/trailing underscores
+    .replace(/[\s\u00A0\u202F\u2009\u200A]+/g, "_") // Various space characters (regular, non-breaking, narrow no-break, thin, hair)
+    .replace(/[^a-zA-Z0-9_-]/g, "_") // Non-alphanumeric chars
+    .replace(/_+/g, "_") // Collapse multiple underscores
+    .replace(/^_|_$/g, ""); // Trim leading/trailing underscores
 
-  return `${sanitized || 'image'}${ext}`;
+  return `${sanitized || "image"}${ext}`;
 }
 
 /**
@@ -66,13 +78,13 @@ export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error('Failed to read file as base64'));
+        reject(new Error("Failed to read file as base64"));
       }
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
 }
@@ -84,7 +96,7 @@ export function fileToBase64(file: File): Promise<string> {
  * @returns The base64 data without the prefix
  */
 export function extractBase64Data(dataUrl: string): string {
-  return dataUrl.split(',')[1] || dataUrl;
+  return dataUrl.split(",")[1] || dataUrl;
 }
 
 /**
@@ -94,11 +106,11 @@ export function extractBase64Data(dataUrl: string): string {
  * @returns Formatted string (e.g., "1.5 MB")
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
 /**
@@ -110,7 +122,7 @@ export function formatFileSize(bytes: number): string {
  */
 export function validateImageFile(
   file: File,
-  maxFileSize: number = DEFAULT_MAX_FILE_SIZE
+  maxFileSize: number = DEFAULT_MAX_FILE_SIZE,
 ): { isValid: boolean; error?: string } {
   // Validate file type
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -157,7 +169,7 @@ export function generateFileId(): string {
  * @returns True if the file is a text file
  */
 export function isTextFile(file: File): boolean {
-  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
   const isTextExtension = ACCEPTED_TEXT_EXTENSIONS.includes(extension);
   const isTextMime = ACCEPTED_TEXT_TYPES.includes(file.type);
   return isTextExtension || isTextMime;
@@ -182,9 +194,9 @@ export function isImageFile(file: File): boolean {
  */
 export function validateTextFile(
   file: File,
-  maxFileSize: number = DEFAULT_MAX_TEXT_FILE_SIZE
+  maxFileSize: number = DEFAULT_MAX_TEXT_FILE_SIZE,
 ): { isValid: boolean; error?: string } {
-  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
 
   // Validate file type by extension (MIME types for text files are often unreliable)
   if (!ACCEPTED_TEXT_EXTENSIONS.includes(extension)) {
@@ -216,13 +228,13 @@ export function fileToText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
-        reject(new Error('Failed to read file as text'));
+        reject(new Error("Failed to read file as text"));
       }
     };
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsText(file);
   });
 }
@@ -234,11 +246,11 @@ export function fileToText(file: File): Promise<string> {
  * @returns The MIME type for the file
  */
 export function getTextFileMimeType(filename: string): string {
-  const extension = filename.toLowerCase().slice(filename.lastIndexOf('.'));
-  if (extension === '.md') {
-    return 'text/markdown';
+  const extension = filename.toLowerCase().slice(filename.lastIndexOf("."));
+  if (extension === ".md") {
+    return "text/markdown";
   }
-  return 'text/plain';
+  return "text/plain";
 }
 
 /**
@@ -248,7 +260,7 @@ export function getTextFileMimeType(filename: string): string {
  * @returns True if the filename has a .md or .markdown extension
  */
 export function isMarkdownFilename(filename: string): boolean {
-  const dotIndex = filename.lastIndexOf('.');
+  const dotIndex = filename.lastIndexOf(".");
   if (dotIndex < 0) return false;
   const ext = filename.toLowerCase().substring(dotIndex);
   return MARKDOWN_EXTENSIONS.includes(ext);
@@ -261,7 +273,7 @@ export function isMarkdownFilename(filename: string): boolean {
  * @returns True if the filename has an image extension
  */
 export function isImageFilename(filename: string): boolean {
-  const dotIndex = filename.lastIndexOf('.');
+  const dotIndex = filename.lastIndexOf(".");
   if (dotIndex < 0) return false;
   const ext = filename.toLowerCase().substring(dotIndex);
   return IMAGE_EXTENSIONS.includes(ext);

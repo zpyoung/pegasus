@@ -1,34 +1,34 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EventEmitter } from 'events';
-import path from 'path';
-import os from 'os';
-import fs from 'fs/promises';
-import { spawn } from 'child_process';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { EventEmitter } from "events";
+import path from "path";
+import os from "os";
+import fs from "fs/promises";
+import { spawn } from "child_process";
 
 // Mock child_process
-vi.mock('child_process', () => ({
+vi.mock("child_process", () => ({
   spawn: vi.fn(),
   execSync: vi.fn(),
   execFile: vi.fn(),
 }));
 
 // Mock secure-fs
-vi.mock('@/lib/secure-fs.js', () => ({
+vi.mock("@/lib/secure-fs.js", () => ({
   access: vi.fn(),
 }));
 
 // Mock net
-vi.mock('net', () => ({
+vi.mock("net", () => ({
   default: {
     createServer: vi.fn(),
   },
   createServer: vi.fn(),
 }));
 
-import * as secureFs from '@/lib/secure-fs.js';
-import net from 'net';
+import * as secureFs from "@/lib/secure-fs.js";
+import net from "net";
 
-describe('DevServerService Event Types', () => {
+describe("DevServerService Event Types", () => {
   let testDataDir: string;
   let worktreeDir: string;
   let mockEmitter: EventEmitter;
@@ -37,8 +37,14 @@ describe('DevServerService Event Types', () => {
     vi.clearAllMocks();
     vi.resetModules();
 
-    testDataDir = path.join(os.tmpdir(), `dev-server-events-test-${Date.now()}`);
-    worktreeDir = path.join(os.tmpdir(), `dev-server-worktree-events-test-${Date.now()}`);
+    testDataDir = path.join(
+      os.tmpdir(),
+      `dev-server-events-test-${Date.now()}`,
+    );
+    worktreeDir = path.join(
+      os.tmpdir(),
+      `dev-server-worktree-events-test-${Date.now()}`,
+    );
     await fs.mkdir(testDataDir, { recursive: true });
     await fs.mkdir(worktreeDir, { recursive: true });
 
@@ -47,9 +53,11 @@ describe('DevServerService Event Types', () => {
     vi.mocked(secureFs.access).mockResolvedValue(undefined);
 
     const mockServer = new EventEmitter() as any;
-    mockServer.listen = vi.fn().mockImplementation((port: number, host: string) => {
-      process.nextTick(() => mockServer.emit('listening'));
-    });
+    mockServer.listen = vi
+      .fn()
+      .mockImplementation((port: number, host: string) => {
+        process.nextTick(() => mockServer.emit("listening"));
+      });
     mockServer.close = vi.fn();
     vi.mocked(net.createServer).mockReturnValue(mockServer);
   });
@@ -63,8 +71,9 @@ describe('DevServerService Event Types', () => {
     }
   });
 
-  it('should emit all required event types during dev server lifecycle', async () => {
-    const { getDevServerService } = await import('@/services/dev-server-service.js');
+  it("should emit all required event types during dev server lifecycle", async () => {
+    const { getDevServerService } =
+      await import("@/services/dev-server-service.js");
     const service = getDevServerService();
     await service.initialize(testDataDir, mockEmitter as any);
 
@@ -72,11 +81,11 @@ describe('DevServerService Event Types', () => {
     vi.mocked(spawn).mockReturnValue(mockProcess as any);
 
     const emittedEvents: Record<string, any[]> = {
-      'dev-server:starting': [],
-      'dev-server:started': [],
-      'dev-server:url-detected': [],
-      'dev-server:output': [],
-      'dev-server:stopped': [],
+      "dev-server:starting": [],
+      "dev-server:started": [],
+      "dev-server:url-detected": [],
+      "dev-server:output": [],
+      "dev-server:stopped": [],
     };
 
     Object.keys(emittedEvents).forEach((type) => {
@@ -85,20 +94,25 @@ describe('DevServerService Event Types', () => {
 
     // 1. Starting & Started
     await service.startDevServer(worktreeDir, worktreeDir);
-    expect(emittedEvents['dev-server:starting'].length).toBe(1);
-    expect(emittedEvents['dev-server:started'].length).toBe(1);
+    expect(emittedEvents["dev-server:starting"].length).toBe(1);
+    expect(emittedEvents["dev-server:started"].length).toBe(1);
 
     // 2. Output & URL Detected
-    mockProcess.stdout.emit('data', Buffer.from('Local: http://localhost:5173/\n'));
+    mockProcess.stdout.emit(
+      "data",
+      Buffer.from("Local: http://localhost:5173/\n"),
+    );
     // Throttled output needs a bit of time (OUTPUT_THROTTLE_MS is 100ms)
     await new Promise((resolve) => setTimeout(resolve, 250));
-    expect(emittedEvents['dev-server:output'].length).toBeGreaterThanOrEqual(1);
-    expect(emittedEvents['dev-server:url-detected'].length).toBe(1);
-    expect(emittedEvents['dev-server:url-detected'][0].url).toBe('http://localhost:5173/');
+    expect(emittedEvents["dev-server:output"].length).toBeGreaterThanOrEqual(1);
+    expect(emittedEvents["dev-server:url-detected"].length).toBe(1);
+    expect(emittedEvents["dev-server:url-detected"][0].url).toBe(
+      "http://localhost:5173/",
+    );
 
     // 3. Stopped
     await service.stopDevServer(worktreeDir);
-    expect(emittedEvents['dev-server:stopped'].length).toBe(1);
+    expect(emittedEvents["dev-server:stopped"].length).toBe(1);
   });
 });
 

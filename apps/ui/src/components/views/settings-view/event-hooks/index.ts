@@ -1,1 +1,1 @@
-export { EventHooksSection } from './event-hooks-section';
+export { EventHooksSection } from "./event-hooks-section";

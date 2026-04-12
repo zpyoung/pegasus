@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Feature } from '@/store/app-store';
+import { useMemo } from "react";
+import { Feature } from "@/store/app-store";
 
 export interface GraphFilterState {
   searchQuery: string;
@@ -10,11 +10,11 @@ export interface GraphFilterState {
 
 // Available status filter values
 export const STATUS_FILTER_OPTIONS = [
-  'running',
-  'paused',
-  'backlog',
-  'waiting_approval',
-  'verified',
+  "running",
+  "paused",
+  "backlog",
+  "waiting_approval",
+  "verified",
 ] as const;
 
 export type StatusFilterValue = (typeof STATUS_FILTER_OPTIONS)[number];
@@ -33,7 +33,7 @@ export interface GraphFilterResult {
 function getAncestors(
   featureId: string,
   featureMap: Map<string, Feature>,
-  visited: Set<string>
+  visited: Set<string>,
 ): void {
   if (visited.has(featureId)) return;
   visited.add(featureId);
@@ -57,7 +57,7 @@ function getAncestors(
 function getDescendants(
   featureId: string,
   dependentsMap: Map<string, string[]>,
-  visited: Set<string>
+  visited: Set<string>,
 ): void {
   if (visited.has(featureId)) return;
   visited.add(featureId);
@@ -93,7 +93,10 @@ function buildDependentsMap(features: Feature[]): Map<string, string[]> {
 /**
  * Gets all edges in the highlighted path
  */
-function getHighlightedEdges(highlightedNodeIds: Set<string>, features: Feature[]): Set<string> {
+function getHighlightedEdges(
+  highlightedNodeIds: Set<string>,
+  features: Feature[],
+): Set<string> {
   const edges = new Set<string>();
 
   for (const feature of features) {
@@ -115,13 +118,16 @@ function getHighlightedEdges(highlightedNodeIds: Set<string>, features: Feature[
  * Gets the effective status of a feature (accounting for running state)
  * Treats completed (archived) as verified
  */
-function getEffectiveStatus(feature: Feature, runningTaskIds: Set<string>): StatusFilterValue {
-  if (feature.status === 'in_progress') {
-    return runningTaskIds.has(feature.id) ? 'running' : 'paused';
+function getEffectiveStatus(
+  feature: Feature,
+  runningTaskIds: Set<string>,
+): StatusFilterValue {
+  if (feature.status === "in_progress") {
+    return runningTaskIds.has(feature.id) ? "running" : "paused";
   }
   // Treat completed (archived) as verified
-  if (feature.status === 'completed') {
-    return 'verified';
+  if (feature.status === "completed") {
+    return "verified";
   }
   return feature.status as StatusFilterValue;
 }
@@ -132,14 +138,19 @@ function getEffectiveStatus(feature: Feature, runningTaskIds: Set<string>): Stat
 export function useGraphFilter(
   features: Feature[],
   filterState: GraphFilterState,
-  runningAutoTasks: string[] = []
+  runningAutoTasks: string[] = [],
 ): GraphFilterResult {
-  const { searchQuery, selectedCategories, selectedStatuses, isNegativeFilter } = filterState;
+  const {
+    searchQuery,
+    selectedCategories,
+    selectedStatuses,
+    isNegativeFilter,
+  } = filterState;
 
   return useMemo(() => {
     // Extract all unique categories
     const availableCategories = Array.from(
-      new Set(features.map((f) => f.category).filter(Boolean))
+      new Set(features.map((f) => f.category).filter(Boolean)),
     ).sort();
 
     const normalizedQuery = searchQuery.toLowerCase().trim();
@@ -148,7 +159,10 @@ export function useGraphFilter(
     const hasCategoryFilter = selectedCategories.length > 0;
     const hasStatusFilter = selectedStatuses.length > 0;
     const hasActiveFilter =
-      hasSearchQuery || hasCategoryFilter || hasStatusFilter || isNegativeFilter;
+      hasSearchQuery ||
+      hasCategoryFilter ||
+      hasStatusFilter ||
+      isNegativeFilter;
 
     // If no filters active, return empty sets (show all nodes normally)
     if (!hasActiveFilter) {
@@ -173,8 +187,12 @@ export function useGraphFilter(
 
       // Check search query match (title or description)
       if (hasSearchQuery) {
-        const titleMatch = feature.title?.toLowerCase().includes(normalizedQuery);
-        const descMatch = feature.description?.toLowerCase().includes(normalizedQuery);
+        const titleMatch = feature.title
+          ?.toLowerCase()
+          .includes(normalizedQuery);
+        const descMatch = feature.description
+          ?.toLowerCase()
+          .includes(normalizedQuery);
         matchesSearch = titleMatch || descMatch;
       }
 
@@ -199,7 +217,7 @@ export function useGraphFilter(
     let effectiveMatchedIds: Set<string>;
     if (isNegativeFilter) {
       effectiveMatchedIds = new Set(
-        features.filter((f) => !matchedNodeIds.has(f.id)).map((f) => f.id)
+        features.filter((f) => !matchedNodeIds.has(f.id)).map((f) => f.id),
       );
     } else {
       effectiveMatchedIds = matchedNodeIds;
@@ -220,7 +238,10 @@ export function useGraphFilter(
     }
 
     // Get edges in the highlighted path
-    const highlightedEdgeIds = getHighlightedEdges(highlightedNodeIds, features);
+    const highlightedEdgeIds = getHighlightedEdges(
+      highlightedNodeIds,
+      features,
+    );
 
     return {
       matchedNodeIds: effectiveMatchedIds,

@@ -64,11 +64,11 @@ usageStats:
 The `loadContextFiles` function from `@pegasus/utils` provides a unified way to load context files and memory files:
 
 ```typescript
-import { loadContextFiles } from '@pegasus/utils';
+import { loadContextFiles } from "@pegasus/utils";
 
 // Load context and memory files from a project
 const { formattedPrompt, files, memoryFiles } = await loadContextFiles({
-  projectPath: '/path/to/project',
+  projectPath: "/path/to/project",
 });
 
 // formattedPrompt contains the combined formatted system prompt
@@ -101,22 +101,22 @@ interface LoadContextFilesOptions {
 
 ```typescript
 interface ContextFilesResult {
-  files: ContextFileInfo[];       // Individual context file info
-  memoryFiles: MemoryFileInfo[];  // Individual memory file info
-  formattedPrompt: string;        // Combined formatted prompt ready to use
+  files: ContextFileInfo[]; // Individual context file info
+  memoryFiles: MemoryFileInfo[]; // Individual memory file info
+  formattedPrompt: string; // Combined formatted prompt ready to use
 }
 
 interface ContextFileInfo {
-  name: string;         // File name (e.g., "CLAUDE.md")
-  path: string;         // Full path to file
-  content: string;      // File contents
+  name: string; // File name (e.g., "CLAUDE.md")
+  path: string; // Full path to file
+  content: string; // File contents
   description?: string; // From metadata (explains when/why to use)
 }
 
 interface MemoryFileInfo {
-  name: string;     // File name (e.g., "gotchas.md")
-  path: string;     // Full path to file
-  content: string;  // File body (front matter stripped)
+  name: string; // File name (e.g., "gotchas.md")
+  path: string; // Full path to file
+  content: string; // File body (front matter stripped)
   category: string; // Derived from filename without extension
 }
 ```
@@ -128,33 +128,42 @@ interface MemoryFileInfo {
 The auto-mode service is implemented in `apps/server/src/services/auto-mode/facade.ts` and `apps/server/src/services/execution-service.ts`:
 
 ```typescript
-import { loadContextFiles } from '@pegasus/utils';
-import { secureFs } from '@pegasus/platform';
+import { loadContextFiles } from "@pegasus/utils";
+import { secureFs } from "@pegasus/platform";
 
 // In executeFeature() or followUpFeature()
 const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
   projectPath,
-  fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-  taskContext: { title: feature.title ?? '', description: feature.description },
+  fsModule: secureFs as Parameters<typeof loadContextFiles>[0]["fsModule"],
+  taskContext: { title: feature.title ?? "", description: feature.description },
 });
 
 // Pass as system prompt
-await this.runAgent(workDir, featureId, prompt, abortController, projectPath, imagePaths, model, {
+await this.runAgent(
+  workDir,
+  featureId,
+  prompt,
+  abortController,
   projectPath,
-  systemPrompt: contextFilesPrompt || undefined,
-});
+  imagePaths,
+  model,
+  {
+    projectPath,
+    systemPrompt: contextFilesPrompt || undefined,
+  },
+);
 ```
 
 ### Agent Service (Chat Sessions)
 
 ```typescript
-import { loadContextFiles } from '@pegasus/utils';
-import { secureFs } from '@pegasus/platform';
+import { loadContextFiles } from "@pegasus/utils";
+import { secureFs } from "@pegasus/platform";
 
 // In sendMessage()
 const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
   projectPath: effectiveWorkDir,
-  fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+  fsModule: secureFs as Parameters<typeof loadContextFiles>[0]["fsModule"],
 });
 
 // Combine with base system prompt

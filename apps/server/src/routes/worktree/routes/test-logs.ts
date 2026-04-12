@@ -10,9 +10,9 @@
  * - sessionId: Specific test session ID (optional, uses active session if not provided)
  */
 
-import type { Request, Response } from 'express';
-import { getTestRunnerService } from '../../../services/test-runner-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { getTestRunnerService } from "../../../services/test-runner-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 interface SessionInfo {
   sessionId: string;
@@ -72,13 +72,13 @@ export function createGetTestLogsHandler() {
                 testFile: session?.testFile,
                 exitCode: session?.exitCode,
               },
-              result.result
-            )
+              result.result,
+            ),
           );
         } else {
           res.status(404).json({
             success: false,
-            error: result.error || 'Failed to get test logs',
+            error: result.error || "Failed to get test logs",
           });
         }
         return;
@@ -101,13 +101,13 @@ export function createGetTestLogsHandler() {
                   testFile: activeSession.testFile,
                   exitCode: activeSession.exitCode,
                 },
-                result.result
-              )
+                result.result,
+              ),
             );
           } else {
             res.status(404).json({
               success: false,
-              error: result.error || 'Failed to get test logs',
+              error: result.error || "Failed to get test logs",
             });
           }
         } else {
@@ -115,13 +115,17 @@ export function createGetTestLogsHandler() {
           const sessions = testRunnerService.listSessions(worktreePath);
           if (sessions.result.sessions.length > 0) {
             // Get the most recent session (list is not sorted, so find it)
-            const mostRecent = sessions.result.sessions.reduce((latest, current) => {
-              const latestTime = new Date(latest.startedAt).getTime();
-              const currentTime = new Date(current.startedAt).getTime();
-              return currentTime > latestTime ? current : latest;
-            });
+            const mostRecent = sessions.result.sessions.reduce(
+              (latest, current) => {
+                const latestTime = new Date(latest.startedAt).getTime();
+                const currentTime = new Date(current.startedAt).getTime();
+                return currentTime > latestTime ? current : latest;
+              },
+            );
 
-            const result = testRunnerService.getSessionOutput(mostRecent.sessionId);
+            const result = testRunnerService.getSessionOutput(
+              mostRecent.sessionId,
+            );
             if (result.success && result.result) {
               res.json(
                 buildLogsResponse(
@@ -132,8 +136,8 @@ export function createGetTestLogsHandler() {
                     testFile: mostRecent.testFile,
                     exitCode: mostRecent.exitCode,
                   },
-                  result.result
-                )
+                  result.result,
+                ),
               );
               return;
             }
@@ -141,7 +145,7 @@ export function createGetTestLogsHandler() {
 
           res.status(404).json({
             success: false,
-            error: 'No test sessions found for this worktree',
+            error: "No test sessions found for this worktree",
           });
         }
         return;
@@ -150,10 +154,10 @@ export function createGetTestLogsHandler() {
       // Neither sessionId nor worktreePath provided
       res.status(400).json({
         success: false,
-        error: 'Either worktreePath or sessionId query parameter is required',
+        error: "Either worktreePath or sessionId query parameter is required",
       });
     } catch (error) {
-      logError(error, 'Get test logs failed');
+      logError(error, "Get test logs failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

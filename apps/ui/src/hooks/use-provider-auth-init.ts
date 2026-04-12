@@ -1,15 +1,15 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from "react";
 import {
   useSetupStore,
   type ClaudeAuthMethod,
   type CodexAuthMethod,
   type ZaiAuthMethod,
-} from '@/store/setup-store';
-import type { GeminiAuthStatus } from '@pegasus/types';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { createLogger } from '@pegasus/utils/logger';
+} from "@/store/setup-store";
+import type { GeminiAuthStatus } from "@pegasus/types";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { createLogger } from "@pegasus/utils/logger";
 
-const logger = createLogger('ProviderAuthInit');
+const logger = createLogger("ProviderAuthInit");
 
 /**
  * Hook to initialize Claude, Codex, z.ai, and Gemini authentication statuses on app startup.
@@ -43,18 +43,18 @@ export function useProviderAuthInit() {
         };
 
         const validMethods: ClaudeAuthMethod[] = [
-          'oauth_token_env',
-          'oauth_token',
-          'api_key',
-          'api_key_env',
-          'credentials_file',
-          'cli_authenticated',
-          'none',
+          "oauth_token_env",
+          "oauth_token",
+          "api_key",
+          "api_key_env",
+          "credentials_file",
+          "cli_authenticated",
+          "none",
         ];
 
         const method = validMethods.includes(auth.method as ClaudeAuthMethod)
           ? (auth.method as ClaudeAuthMethod)
-          : ((auth.authenticated ? 'api_key' : 'none') as ClaudeAuthMethod);
+          : ((auth.authenticated ? "api_key" : "none") as ClaudeAuthMethod);
 
         setClaudeAuthStatus({
           authenticated: auth.authenticated,
@@ -65,13 +65,17 @@ export function useProviderAuthInit() {
             auth.hasStoredOAuthToken ||
             auth.hasEnvOAuthToken
           ),
-          apiKeyValid: !!(auth.apiKeyValid || auth.hasStoredApiKey || auth.hasEnvApiKey),
+          apiKeyValid: !!(
+            auth.apiKeyValid ||
+            auth.hasStoredApiKey ||
+            auth.hasEnvApiKey
+          ),
           hasEnvOAuthToken: !!auth.hasEnvOAuthToken,
           hasEnvApiKey: !!auth.hasEnvApiKey,
         });
       }
     } catch (error) {
-      logger.error('Failed to init Claude auth status:', error);
+      logger.error("Failed to init Claude auth status:", error);
     }
 
     // 2. Codex Auth Status
@@ -81,15 +85,15 @@ export function useProviderAuthInit() {
         const auth = result.auth;
 
         const validMethods: CodexAuthMethod[] = [
-          'api_key_env',
-          'api_key',
-          'cli_authenticated',
-          'none',
+          "api_key_env",
+          "api_key",
+          "cli_authenticated",
+          "none",
         ];
 
         const method = validMethods.includes(auth.method as CodexAuthMethod)
           ? (auth.method as CodexAuthMethod)
-          : ((auth.authenticated ? 'api_key' : 'none') as CodexAuthMethod);
+          : ((auth.authenticated ? "api_key" : "none") as CodexAuthMethod);
 
         setCodexAuthStatus({
           authenticated: auth.authenticated,
@@ -100,7 +104,7 @@ export function useProviderAuthInit() {
         });
       }
     } catch (error) {
-      logger.error('Failed to init Codex auth status:', error);
+      logger.error("Failed to init Codex auth status:", error);
     }
 
     // 3. z.ai Auth Status
@@ -111,11 +115,11 @@ export function useProviderAuthInit() {
         const hasApiKey = !!(result.hasApiKey ?? result.available);
         const hasEnvApiKey = !!(result.hasEnvApiKey ?? false);
 
-        let method: ZaiAuthMethod = 'none';
+        let method: ZaiAuthMethod = "none";
         if (hasEnvApiKey) {
-          method = 'api_key_env';
+          method = "api_key_env";
         } else if (hasApiKey || available) {
-          method = 'api_key';
+          method = "api_key";
         }
 
         setZaiAuthStatus({
@@ -128,17 +132,17 @@ export function useProviderAuthInit() {
         // Non-success path - set default unauthenticated status
         setZaiAuthStatus({
           authenticated: false,
-          method: 'none',
+          method: "none",
           hasApiKey: false,
           hasEnvApiKey: false,
         });
       }
     } catch (error) {
-      logger.error('Failed to init z.ai auth status:', error);
+      logger.error("Failed to init z.ai auth status:", error);
       // Set default status on error to prevent stale state
       setZaiAuthStatus({
         authenticated: false,
-        method: 'none',
+        method: "none",
         hasApiKey: false,
         hasEnvApiKey: false,
       });
@@ -164,16 +168,20 @@ export function useProviderAuthInit() {
       // Always set auth status regardless of result.success
       if (result.success && result.auth) {
         const auth = result.auth;
-        const validMethods: GeminiAuthStatus['method'][] = [
-          'google_login',
-          'api_key',
-          'vertex_ai',
-          'none',
+        const validMethods: GeminiAuthStatus["method"][] = [
+          "google_login",
+          "api_key",
+          "vertex_ai",
+          "none",
         ];
 
-        const method = validMethods.includes(auth.method as GeminiAuthStatus['method'])
-          ? (auth.method as GeminiAuthStatus['method'])
-          : ((auth.authenticated ? 'google_login' : 'none') as GeminiAuthStatus['method']);
+        const method = validMethods.includes(
+          auth.method as GeminiAuthStatus["method"],
+        )
+          ? (auth.method as GeminiAuthStatus["method"])
+          : ((auth.authenticated
+              ? "google_login"
+              : "none") as GeminiAuthStatus["method"]);
 
         setGeminiAuthStatus({
           authenticated: auth.authenticated,
@@ -185,17 +193,17 @@ export function useProviderAuthInit() {
         // result.success is false or result.auth is missing — set default unauthenticated status
         setGeminiAuthStatus({
           authenticated: false,
-          method: 'none',
+          method: "none",
           hasApiKey: false,
           hasEnvApiKey: false,
         });
       }
     } catch (error) {
-      logger.error('Failed to init Gemini auth status:', error);
+      logger.error("Failed to init Gemini auth status:", error);
       // Set default status on error to prevent infinite retries
       setGeminiAuthStatus({
         authenticated: false,
-        method: 'none',
+        method: "none",
         hasApiKey: false,
         hasEnvApiKey: false,
       });

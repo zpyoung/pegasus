@@ -5,18 +5,26 @@
  * Uses React Query for data fetching with automatic polling.
  */
 
-import { useState, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { Bot, Folder, RefreshCw, Square, Activity, FileText, Cpu } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI, type RunningAgent } from '@/lib/electron';
-import { useAppStore } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from '@tanstack/react-router';
-import { AgentOutputModal } from './board-view/dialogs/agent-output-modal';
-import { useRunningAgents } from '@/hooks/queries';
-import { useStopFeature } from '@/hooks/mutations';
-import { getModelDisplayName } from '@/lib/utils';
+import { useState, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import {
+  Bot,
+  Folder,
+  RefreshCw,
+  Square,
+  Activity,
+  FileText,
+  Cpu,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI, type RunningAgent } from "@/lib/electron";
+import { useAppStore } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
+import { AgentOutputModal } from "./board-view/dialogs/agent-output-modal";
+import { useRunningAgents } from "@/hooks/queries";
+import { useStopFeature } from "@/hooks/mutations";
+import { getModelDisplayName } from "@/lib/utils";
 
 function formatFeatureId(featureId: string): string {
   // Strip 'feature-' prefix and timestamp for readability
@@ -32,7 +40,7 @@ export function RunningAgentsView() {
   const { setCurrentProject, projects } = useAppStore();
   const navigate = useNavigate();
 
-  const logger = createLogger('RunningAgentsView');
+  const logger = createLogger("RunningAgentsView");
 
   // Use React Query for running agents with auto-refresh
   const { data, isLoading, isFetching, refetch } = useRunningAgents();
@@ -50,48 +58,56 @@ export function RunningAgentsView() {
     async (agent: RunningAgent) => {
       const api = getElectronAPI();
       // Handle backlog plans separately - they use a different API
-      const isBacklogPlan = agent.featureId.startsWith('backlog-plan:');
+      const isBacklogPlan = agent.featureId.startsWith("backlog-plan:");
       if (isBacklogPlan && api.backlogPlan) {
-        logger.debug('Stopping backlog plan agent', { featureId: agent.featureId });
+        logger.debug("Stopping backlog plan agent", {
+          featureId: agent.featureId,
+        });
         try {
           await api.backlogPlan.stop();
         } catch (error) {
-          logger.error('Failed to stop backlog plan', { featureId: agent.featureId, error });
+          logger.error("Failed to stop backlog plan", {
+            featureId: agent.featureId,
+            error,
+          });
         } finally {
           refetch();
         }
         return;
       }
       // Use mutation for regular features
-      stopFeature.mutate({ featureId: agent.featureId, projectPath: agent.projectPath });
+      stopFeature.mutate({
+        featureId: agent.featureId,
+        projectPath: agent.projectPath,
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- logger is stable
-    [stopFeature, refetch]
+    [stopFeature, refetch],
   );
 
   const handleNavigateToProject = useCallback(
     (agent: RunningAgent) => {
       const project = projects.find((p) => p.path === agent.projectPath);
       if (project) {
-        logger.debug('Navigating to running agent project', {
+        logger.debug("Navigating to running agent project", {
           projectPath: agent.projectPath,
           featureId: agent.featureId,
         });
         setCurrentProject(project);
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       } else {
-        logger.debug('Project not found for running agent', {
+        logger.debug("Project not found for running agent", {
           projectPath: agent.projectPath,
           featureId: agent.featureId,
         });
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- logger is stable
-    [projects, setCurrentProject, navigate]
+    [projects, setCurrentProject, navigate],
   );
 
   const handleViewLogs = useCallback((agent: RunningAgent) => {
-    logger.debug('Opening running agent logs', {
+    logger.debug("Opening running agent logs", {
       featureId: agent.featureId,
       projectPath: agent.projectPath,
     });
@@ -119,12 +135,17 @@ export function RunningAgentsView() {
             <h1 className="text-2xl font-bold">Running Agents</h1>
             <p className="text-sm text-muted-foreground">
               {runningAgents.length === 0
-                ? 'No agents currently running'
-                : `${runningAgents.length} agent${runningAgents.length === 1 ? '' : 's'} running across all projects`}
+                ? "No agents currently running"
+                : `${runningAgents.length} agent${runningAgents.length === 1 ? "" : "s"} running across all projects`}
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isFetching}
+        >
           {isFetching ? (
             <Spinner size="sm" className="mr-2" />
           ) : (
@@ -142,8 +163,9 @@ export function RunningAgentsView() {
           </div>
           <h2 className="text-lg font-medium mb-2">No Running Agents</h2>
           <p className="text-muted-foreground max-w-md">
-            Agents will appear here when they are actively working on features. Start an agent from
-            the Kanban board by dragging a feature to "In Progress".
+            Agents will appear here when they are actively working on features.
+            Start an agent from the Kanban board by dragging a feature to "In
+            Progress".
           </p>
         </div>
       ) : (
@@ -167,7 +189,10 @@ export function RunningAgentsView() {
                   {/* Agent info */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium truncate" title={agent.title || agent.featureId}>
+                      <span
+                        className="font-medium truncate"
+                        title={agent.title || agent.featureId}
+                      >
                         {agent.title || formatFeatureId(agent.featureId)}
                       </span>
                       {agent.isAutoMode && (
@@ -242,7 +267,9 @@ export function RunningAgentsView() {
           onClose={() => setSelectedAgent(null)}
           projectPath={selectedAgent.projectPath}
           featureDescription={
-            selectedAgent.description || selectedAgent.title || selectedAgent.featureId
+            selectedAgent.description ||
+            selectedAgent.title ||
+            selectedAgent.featureId
           }
           featureId={selectedAgent.featureId}
           featureStatus="running"

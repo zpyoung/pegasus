@@ -8,7 +8,7 @@
  * - Delete button is visible in toolbar (not hidden like on mobile)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 import {
   resetContextDirectory,
   setupProjectWithFixture,
@@ -22,18 +22,20 @@ import {
   waitForNetworkIdle,
   authenticateForTests,
   waitForElementHidden,
-} from '../utils';
+} from "../utils";
 
 // Use desktop viewport for desktop tests
 test.use({ viewport: { width: 1280, height: 720 } });
 
-test.describe('Desktop Context View', () => {
+test.describe("Desktop Context View", () => {
   test.beforeEach(() => {
     resetContextDirectory();
   });
 
-  test('should show file list and editor side-by-side on desktop', async ({ page }) => {
-    const fileName = 'desktop-test.md';
+  test("should show file list and editor side-by-side on desktop", async ({
+    page,
+  }) => {
+    const fileName = "desktop-test.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -41,20 +43,24 @@ test.describe('Desktop Context View', () => {
     await navigateToContext(page);
 
     // Create a test file
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
+    await fillInput(page, "new-markdown-name", fileName);
     await fillInput(
       page,
-      'new-markdown-content',
-      '# Desktop Test\n\nThis tests desktop view behavior'
+      "new-markdown-content",
+      "# Desktop Test\n\nThis tests desktop view behavior",
     );
 
-    await expect(page.locator('[data-testid="confirm-create-markdown"]')).toBeEnabled();
-    await clickElement(page, 'confirm-create-markdown');
+    await expect(
+      page.locator('[data-testid="confirm-create-markdown"]'),
+    ).toBeEnabled();
+    await clickElement(page, "confirm-create-markdown");
 
-    await waitForElementHidden(page, 'create-markdown-dialog');
+    await waitForElementHidden(page, "create-markdown-dialog");
 
     await waitForNetworkIdle(page);
     await waitForContextFile(page, fileName);
@@ -68,12 +74,16 @@ test.describe('Desktop Context View', () => {
     await expect(fileList).toBeVisible();
 
     // Editor panel should also be visible
-    const editor = page.locator('[data-testid="context-editor"], [data-testid="markdown-preview"]');
+    const editor = page.locator(
+      '[data-testid="context-editor"], [data-testid="markdown-preview"]',
+    );
     await expect(editor).toBeVisible();
   });
 
-  test('should NOT show back button in editor toolbar on desktop', async ({ page }) => {
-    const fileName = 'no-back-button-test.md';
+  test("should NOT show back button in editor toolbar on desktop", async ({
+    page,
+  }) => {
+    const fileName = "no-back-button-test.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -81,19 +91,21 @@ test.describe('Desktop Context View', () => {
     await navigateToContext(page);
 
     // Create a test file
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
-    await fillInput(page, 'new-markdown-content', '# No Back Button Test');
+    await fillInput(page, "new-markdown-name", fileName);
+    await fillInput(page, "new-markdown-content", "# No Back Button Test");
 
     // Wait for confirm button to be enabled (React state after fill) before clicking
     const confirmBtn = page.locator('[data-testid="confirm-create-markdown"]');
     await expect(confirmBtn).toBeEnabled();
 
-    await clickElement(page, 'confirm-create-markdown');
+    await clickElement(page, "confirm-create-markdown");
 
-    await waitForElementHidden(page, 'create-markdown-dialog');
+    await waitForElementHidden(page, "create-markdown-dialog");
 
     await waitForNetworkIdle(page);
     await waitForContextFile(page, fileName);
@@ -107,8 +119,8 @@ test.describe('Desktop Context View', () => {
     await expect(backButton).not.toBeVisible();
   });
 
-  test('should show buttons with text labels on desktop', async ({ page }) => {
-    const fileName = 'text-labels-test.md';
+  test("should show buttons with text labels on desktop", async ({ page }) => {
+    const fileName = "text-labels-test.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -116,20 +128,24 @@ test.describe('Desktop Context View', () => {
     await navigateToContext(page);
 
     // Create a test file
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
+    await fillInput(page, "new-markdown-name", fileName);
     await fillInput(
       page,
-      'new-markdown-content',
-      '# Text Labels Test\n\nTesting button text labels on desktop'
+      "new-markdown-content",
+      "# Text Labels Test\n\nTesting button text labels on desktop",
     );
 
-    await expect(page.locator('[data-testid="confirm-create-markdown"]')).toBeEnabled();
-    await clickElement(page, 'confirm-create-markdown');
+    await expect(
+      page.locator('[data-testid="confirm-create-markdown"]'),
+    ).toBeEnabled();
+    await clickElement(page, "confirm-create-markdown");
 
-    await waitForElementHidden(page, 'create-markdown-dialog');
+    await waitForElementHidden(page, "create-markdown-dialog");
 
     await waitForNetworkIdle(page);
     await waitForContextFile(page, fileName);
@@ -145,12 +161,12 @@ test.describe('Desktop Context View', () => {
     // Button should have text label on desktop
     const buttonText = await toggleButton.textContent();
     // On desktop, button should have visible text (Edit or Preview)
-    expect(buttonText?.trim()).not.toBe('');
+    expect(buttonText?.trim()).not.toBe("");
     expect(buttonText?.toLowerCase()).toMatch(/(edit|preview)/);
   });
 
-  test('should show delete button in toolbar on desktop', async ({ page }) => {
-    const fileName = 'delete-button-desktop-test.md';
+  test("should show delete button in toolbar on desktop", async ({ page }) => {
+    const fileName = "delete-button-desktop-test.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -158,27 +174,37 @@ test.describe('Desktop Context View', () => {
     await navigateToContext(page);
 
     // Create a test file
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
-    await fillInput(page, 'new-markdown-content', '# Delete Button Desktop Test');
+    await fillInput(page, "new-markdown-name", fileName);
+    await fillInput(
+      page,
+      "new-markdown-content",
+      "# Delete Button Desktop Test",
+    );
 
-    await expect(page.locator('[data-testid="confirm-create-markdown"]')).toBeEnabled();
-    await clickElement(page, 'confirm-create-markdown');
+    await expect(
+      page.locator('[data-testid="confirm-create-markdown"]'),
+    ).toBeEnabled();
+    await clickElement(page, "confirm-create-markdown");
 
     // Wait for create to complete: file appears in list (dialog may close after)
     await page
       .locator(`[data-testid="context-file-${fileName}"]`)
-      .waitFor({ state: 'attached', timeout: 20000 });
+      .waitFor({ state: "attached", timeout: 20000 });
     // Then ensure dialog is closed (auto-close or fallback Cancel if still open)
-    await waitForElementHidden(page, 'create-markdown-dialog', { timeout: 5000 }).catch(
-      async () => {
-        const cancelBtn = page.getByRole('button', { name: /cancel/i });
-        if (await cancelBtn.isVisible()) await cancelBtn.click();
-        await waitForElementHidden(page, 'create-markdown-dialog', { timeout: 3000 });
-      }
-    );
+    await waitForElementHidden(page, "create-markdown-dialog", {
+      timeout: 5000,
+    }).catch(async () => {
+      const cancelBtn = page.getByRole("button", { name: /cancel/i });
+      if (await cancelBtn.isVisible()) await cancelBtn.click();
+      await waitForElementHidden(page, "create-markdown-dialog", {
+        timeout: 3000,
+      });
+    });
 
     await waitForNetworkIdle(page);
     await waitForContextFile(page, fileName);
@@ -192,10 +218,10 @@ test.describe('Desktop Context View', () => {
     await expect(deleteButton).toBeVisible();
   });
 
-  test('should show file list at fixed width on desktop when file is selected', async ({
+  test("should show file list at fixed width on desktop when file is selected", async ({
     page,
   }) => {
-    const fileName = 'fixed-width-test.md';
+    const fileName = "fixed-width-test.md";
 
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
@@ -203,17 +229,21 @@ test.describe('Desktop Context View', () => {
     await navigateToContext(page);
 
     // Create a test file
-    await clickElement(page, 'create-markdown-button');
-    await page.waitForSelector('[data-testid="create-markdown-dialog"]', { timeout: 5000 });
+    await clickElement(page, "create-markdown-button");
+    await page.waitForSelector('[data-testid="create-markdown-dialog"]', {
+      timeout: 5000,
+    });
 
-    await fillInput(page, 'new-markdown-name', fileName);
-    await fillInput(page, 'new-markdown-content', '# Fixed Width Test');
+    await fillInput(page, "new-markdown-name", fileName);
+    await fillInput(page, "new-markdown-content", "# Fixed Width Test");
 
     // Wait for form state to update so the Create button becomes enabled
-    await expect(page.locator('[data-testid="confirm-create-markdown"]')).toBeEnabled();
-    await clickElement(page, 'confirm-create-markdown');
+    await expect(
+      page.locator('[data-testid="confirm-create-markdown"]'),
+    ).toBeEnabled();
+    await clickElement(page, "confirm-create-markdown");
 
-    await waitForElementHidden(page, 'create-markdown-dialog');
+    await waitForElementHidden(page, "create-markdown-dialog");
 
     await waitForNetworkIdle(page);
     await waitForContextFile(page, fileName);
@@ -237,7 +267,9 @@ test.describe('Desktop Context View', () => {
     }
   });
 
-  test('should show action buttons inline in header on desktop', async ({ page }) => {
+  test("should show action buttons inline in header on desktop", async ({
+    page,
+  }) => {
     await setupProjectWithFixture(page, getFixturePath());
     await authenticateForTests(page);
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   GitBranch,
   GitCommit,
@@ -10,9 +10,9 @@ import {
   ChevronDown,
   ChevronUp,
   FileEdit,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { GitFileDetailsInfo } from '../use-file-editor-store';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { GitFileDetailsInfo } from "../use-file-editor-store";
 
 interface GitDetailPanelProps {
   details: GitFileDetailsInfo;
@@ -20,7 +20,11 @@ interface GitDetailPanelProps {
   onOpenFile?: (path: string) => void;
 }
 
-export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanelProps) {
+export function GitDetailPanel({
+  details,
+  filePath,
+  onOpenFile,
+}: GitDetailPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Don't show anything if there's no meaningful data
@@ -29,8 +33,12 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
   }
 
   const hasChanges = details.linesAdded > 0 || details.linesRemoved > 0;
-  const commitHashShort = details.lastCommitHash ? details.lastCommitHash.substring(0, 7) : '';
-  const timeAgo = details.lastCommitTimestamp ? formatTimeAgo(details.lastCommitTimestamp) : '';
+  const commitHashShort = details.lastCommitHash
+    ? details.lastCommitHash.substring(0, 7)
+    : "";
+  const timeAgo = details.lastCommitTimestamp
+    ? formatTimeAgo(details.lastCommitTimestamp)
+    : "";
 
   return (
     <div className="border-t border-border bg-muted/20">
@@ -51,19 +59,31 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
           {/* Status label with visual treatment */}
           {details.statusLabel && (
             <span
-              className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium uppercase', {
-                'bg-yellow-500/15 text-yellow-600': details.statusLabel === 'Modified',
-                'bg-green-500/15 text-green-600':
-                  details.statusLabel === 'Added' || details.statusLabel === 'Staged',
-                'bg-red-500/15 text-red-600': details.statusLabel === 'Deleted',
-                'bg-purple-500/15 text-purple-600': details.statusLabel === 'Renamed',
-                'bg-gray-500/15 text-gray-500': details.statusLabel === 'Untracked',
-                'bg-orange-500/15 text-orange-600':
-                  details.statusLabel === 'Conflicted' || details.isConflicted,
-                'bg-blue-500/15 text-blue-600': details.statusLabel === 'Staged + Modified',
-              })}
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[10px] font-medium uppercase",
+                {
+                  "bg-yellow-500/15 text-yellow-600":
+                    details.statusLabel === "Modified",
+                  "bg-green-500/15 text-green-600":
+                    details.statusLabel === "Added" ||
+                    details.statusLabel === "Staged",
+                  "bg-red-500/15 text-red-600":
+                    details.statusLabel === "Deleted",
+                  "bg-purple-500/15 text-purple-600":
+                    details.statusLabel === "Renamed",
+                  "bg-gray-500/15 text-gray-500":
+                    details.statusLabel === "Untracked",
+                  "bg-orange-500/15 text-orange-600":
+                    details.statusLabel === "Conflicted" ||
+                    details.isConflicted,
+                  "bg-blue-500/15 text-blue-600":
+                    details.statusLabel === "Staged + Modified",
+                },
+              )}
             >
-              {details.isConflicted && <AlertTriangle className="w-3 h-3 inline mr-0.5" />}
+              {details.isConflicted && (
+                <AlertTriangle className="w-3 h-3 inline mr-0.5" />
+              )}
               {details.statusLabel}
             </span>
           )}
@@ -71,8 +91,14 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
           {/* Staged/unstaged two-tone badge */}
           {details.isStaged && details.isUnstaged && (
             <span className="flex items-center gap-0">
-              <span className="w-2 h-2 rounded-l bg-green-500" title="Staged changes" />
-              <span className="w-2 h-2 rounded-r bg-yellow-500" title="Unstaged changes" />
+              <span
+                className="w-2 h-2 rounded-l bg-green-500"
+                title="Staged changes"
+              />
+              <span
+                className="w-2 h-2 rounded-r bg-yellow-500"
+                title="Unstaged changes"
+              />
             </span>
           )}
           {details.isStaged && !details.isUnstaged && (
@@ -104,7 +130,11 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
               {commitHashShort}
             </span>
           )}
-          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {isExpanded ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )}
         </div>
       </button>
 
@@ -117,7 +147,9 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
               <div className="flex items-start gap-2">
                 <GitCommit className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <div className="font-mono text-foreground/80">{commitHashShort}</div>
+                  <div className="font-mono text-foreground/80">
+                    {commitHashShort}
+                  </div>
                   {details.lastCommitMessage && (
                     <div className="text-muted-foreground truncate">
                       {details.lastCommitMessage}
@@ -146,7 +178,9 @@ export function GitDetailPanel({ details, filePath, onOpenFile }: GitDetailPanel
           {details.isConflicted && (
             <div className="flex items-center gap-2 p-2 rounded bg-orange-500/10 border border-orange-500/20 text-orange-600">
               <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span className="flex-1 font-medium">This file has merge conflicts</span>
+              <span className="flex-1 font-medium">
+                This file has merge conflicts
+              </span>
               {onOpenFile && (
                 <button
                   onClick={() => onOpenFile(filePath)}
@@ -175,13 +209,14 @@ function formatTimeAgo(isoTimestamp: string): string {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffSecs < 60) return 'just now';
-    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffSecs < 60) return "just now";
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
 
     return date.toLocaleDateString();
   } catch {
-    return '';
+    return "";
   }
 }

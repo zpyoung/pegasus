@@ -5,9 +5,9 @@
  * freeing up the ports for reuse.
  */
 
-import type { Request, Response } from 'express';
-import { getDevServerService } from '../../../services/dev-server-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { getDevServerService } from "../../../services/dev-server-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createStopDevHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -19,7 +19,7 @@ export function createStopDevHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -38,11 +38,11 @@ export function createStopDevHandler() {
       } else {
         res.status(400).json({
           success: false,
-          error: result.error || 'Failed to stop dev server',
+          error: result.error || "Failed to stop dev server",
         });
       }
     } catch (error) {
-      logError(error, 'Stop dev server failed');
+      logError(error, "Stop dev server failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

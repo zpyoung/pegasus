@@ -90,9 +90,9 @@ const {
   clearHistory, // Clear conversation
   error, // Error state
 } = useElectronAgent({
-  sessionId: 'project_xyz',
-  workingDirectory: '/path/to/project',
-  onToolUse: (tool) => console.log('Using:', tool),
+  sessionId: "project_xyz",
+  workingDirectory: "/path/to/project",
+  onToolUse: (tool) => console.log("Using:", tool),
 });
 ```
 
@@ -160,7 +160,7 @@ Each session file contains:
 Session IDs are generated from project paths:
 
 ```typescript
-const sessionId = `project_${projectPath.replace(/[^a-zA-Z0-9]/g, '_')}`;
+const sessionId = `project_${projectPath.replace(/[^a-zA-Z0-9]/g, "_")}`;
 ```
 
 This ensures:

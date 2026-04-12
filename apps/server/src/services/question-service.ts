@@ -14,25 +14,30 @@
  * - StageRunner's existing pipeline-state.json checkpoint logic skips completed stages.
  */
 
-import path from 'path';
-import { createLogger, atomicWriteJson, readJsonWithRecovery, DEFAULT_BACKUP_COUNT } from '@pegasus/utils';
-import { getFeatureDir } from '@pegasus/platform';
+import path from "path";
+import {
+  createLogger,
+  atomicWriteJson,
+  readJsonWithRecovery,
+  DEFAULT_BACKUP_COUNT,
+} from "@pegasus/utils";
+import { getFeatureDir } from "@pegasus/platform";
 import type {
   Feature,
   AgentQuestion,
   FeatureQuestionState,
   QuestionType,
-} from '@pegasus/types';
-import { PauseExecutionError } from './pause-execution-error.js';
-import type { TypedEventBus } from './typed-event-bus.js';
+} from "@pegasus/types";
+import { PauseExecutionError } from "./pause-execution-error.js";
+import type { TypedEventBus } from "./typed-event-bus.js";
 
-const logger = createLogger('QuestionService');
+const logger = createLogger("QuestionService");
 
 /**
  * Tool name used by the Claude Agent SDK's built-in interactive question tool.
  * The SDK emits this as a `tool_use` block in the assistant message stream.
  */
-export const ASK_USER_QUESTION_TOOL_NAME = 'AskUserQuestion';
+export const ASK_USER_QUESTION_TOOL_NAME = "AskUserQuestion";
 
 /**
  * Structural type for the SDK's `AskUserQuestionInput` shape. The SDK does not
@@ -85,8 +90,14 @@ export async function extractAndPauseForAskUserQuestion(params: {
   abortController: AbortController;
   featureStatus?: string;
 }): Promise<void> {
-  const { questionService, block, featureId, projectPath, abortController, featureStatus } =
-    params;
+  const {
+    questionService,
+    block,
+    featureId,
+    projectPath,
+    abortController,
+    featureStatus,
+  } = params;
 
   if (block.name !== ASK_USER_QUESTION_TOOL_NAME) return;
 
@@ -94,51 +105,60 @@ export async function extractAndPauseForAskUserQuestion(params: {
     logger.warn(
       `[AskUserQuestion] Feature ${featureId} agent invoked AskUserQuestion but no ` +
         `QuestionService was provided — execution will continue without pausing ` +
-        `and the agent will not receive a real answer.`
+        `and the agent will not receive a real answer.`,
     );
     return;
   }
 
-  const input = block.input as { questions?: SdkAskUserQuestionEntry[] } | undefined;
+  const input = block.input as
+    | { questions?: SdkAskUserQuestionEntry[] }
+    | undefined;
 
-  if (!input || !Array.isArray(input.questions) || input.questions.length === 0) {
+  if (
+    !input ||
+    !Array.isArray(input.questions) ||
+    input.questions.length === 0
+  ) {
     logger.warn(
       `[AskUserQuestion] Feature ${featureId} AskUserQuestion called with invalid ` +
-        `input (expected { questions: [...] }). Skipping pause.`
+        `input (expected { questions: [...] }). Skipping pause.`,
     );
     return;
   }
 
-  const stageId = featureStatus?.startsWith('pipeline_')
-    ? featureStatus.slice('pipeline_'.length)
-    : 'agent';
+  const stageId = featureStatus?.startsWith("pipeline_")
+    ? featureStatus.slice("pipeline_".length)
+    : "agent";
 
   const askedAt = new Date().toISOString();
   const agentQuestions: AgentQuestion[] = input.questions.map((q) => {
     const hasOptions = Array.isArray(q.options) && q.options.length > 0;
     const type: QuestionType = hasOptions
       ? q.multiSelect
-        ? 'multi-select'
-        : 'single-select'
-      : 'free-text';
+        ? "multi-select"
+        : "single-select"
+      : "free-text";
     return {
       id: crypto.randomUUID(),
       stageId,
       question: q.question,
       type,
       options: hasOptions
-        ? q.options!.map((opt) => ({ label: opt.label, description: opt.description }))
+        ? q.options!.map((opt) => ({
+            label: opt.label,
+            description: opt.description,
+          }))
         : undefined,
       header: q.header,
-      status: 'pending',
+      status: "pending",
       askedAt,
-      source: 'agent',
+      source: "agent",
     };
   });
 
   logger.info(
     `[AskUserQuestion] Feature ${featureId} agent asked ${agentQuestions.length} ` +
-      `question(s) (stageId="${stageId}"). Pausing execution.`
+      `question(s) (stageId="${stageId}"). Pausing execution.`,
   );
 
   await questionService.askQuestion(projectPath, featureId, agentQuestions);
@@ -164,7 +184,7 @@ export async function extractAndPauseForAskUserQuestion(params: {
 
   void abortController;
 
-  throw new PauseExecutionError(featureId, 'question');
+  throw new PauseExecutionError(featureId, "question");
 }
 
 /**
@@ -180,28 +200,29 @@ export async function extractAndPauseForAskUserQuestion(params: {
  * so callers can append unconditionally without an extra null check.
  */
 export function formatAnsweredAgentQuestions(
-  questionState: FeatureQuestionState | undefined
+  questionState: FeatureQuestionState | undefined,
 ): string {
-  if (!questionState) return '';
+  if (!questionState) return "";
   const answered = questionState.questions.filter(
-    (q) => q.source === 'agent' && q.status === 'answered' && q.answer !== undefined
+    (q) =>
+      q.source === "agent" && q.status === "answered" && q.answer !== undefined,
   );
-  if (answered.length === 0) return '';
+  if (answered.length === 0) return "";
 
   const lines: string[] = [];
-  lines.push('## Previous User Q&A');
-  lines.push('');
+  lines.push("## Previous User Q&A");
+  lines.push("");
   lines.push(
-    'You previously asked the user the following question(s) via AskUserQuestion ' +
-      'and they responded. Continue your work taking these answer(s) into account.'
+    "You previously asked the user the following question(s) via AskUserQuestion " +
+      "and they responded. Continue your work taking these answer(s) into account.",
   );
-  lines.push('');
+  lines.push("");
   for (const q of answered) {
     lines.push(`**Q:** ${q.question}`);
     lines.push(`**A:** ${q.answer}`);
-    lines.push('');
+    lines.push("");
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 export class QuestionService {
@@ -220,22 +241,22 @@ export class QuestionService {
   async askQuestion(
     projectPath: string,
     featureId: string,
-    questions: AgentQuestion[]
+    questions: AgentQuestion[],
   ): Promise<void> {
     logger.info(
-      `Persisting ${questions.length} question(s) for feature ${featureId}`
+      `Persisting ${questions.length} question(s) for feature ${featureId}`,
     );
 
     const questionState: FeatureQuestionState = {
       questions,
-      status: 'pending',
+      status: "pending",
     };
 
     await this.writeQuestionState(projectPath, featureId, questionState);
 
     // Emit event so UI can react immediately (within NFR-001: 500ms)
     const feature = await this.loadFeature(projectPath, featureId);
-    this.eventBus.emitAutoModeEvent('question_required', {
+    this.eventBus.emitAutoModeEvent("question_required", {
       featureId,
       projectPath,
       branchName: feature?.branchName ?? undefined,
@@ -261,9 +282,11 @@ export class QuestionService {
     projectPath: string,
     featureId: string,
     questionId: string,
-    answer: string
+    answer: string,
   ): Promise<{ allAnswered: boolean }> {
-    logger.info(`Resolving answer for question ${questionId} on feature ${featureId}`);
+    logger.info(
+      `Resolving answer for question ${questionId} on feature ${featureId}`,
+    );
 
     const feature = await this.loadFeature(projectPath, featureId);
     if (!feature) {
@@ -278,25 +301,29 @@ export class QuestionService {
     // Find and update the question
     const question = questionState.questions.find((q) => q.id === questionId);
     if (!question) {
-      throw new Error(`Question ${questionId} not found for feature ${featureId}`);
+      throw new Error(
+        `Question ${questionId} not found for feature ${featureId}`,
+      );
     }
 
     question.answer = answer;
-    question.status = 'answered';
+    question.status = "answered";
     question.answeredAt = new Date().toISOString();
 
     // Check if all questions are answered
-    const allAnswered = questionState.questions.every((q) => q.status === 'answered');
+    const allAnswered = questionState.questions.every(
+      (q) => q.status === "answered",
+    );
 
     if (allAnswered) {
-      questionState.status = 'answered';
+      questionState.status = "answered";
     }
 
     // Persist updated question state
     await this.writeQuestionState(projectPath, featureId, questionState);
 
     // Emit answer event for observability
-    this.eventBus.emitAutoModeEvent('question_answered', {
+    this.eventBus.emitAutoModeEvent("question_answered", {
       featureId,
       projectPath,
       questionId,
@@ -308,7 +335,9 @@ export class QuestionService {
       // We update the feature JSON directly to ensure the status change is
       // persisted before emitting the status event.
       await this.setFeatureStatusToReady(projectPath, featureId, feature);
-      logger.info(`All questions answered for feature ${featureId} — set to ready`);
+      logger.info(
+        `All questions answered for feature ${featureId} — set to ready`,
+      );
     }
 
     return { allAnswered };
@@ -332,7 +361,7 @@ export class QuestionService {
 
     const cancelledState: FeatureQuestionState = {
       ...feature.questionState,
-      status: 'cancelled',
+      status: "cancelled",
     };
 
     await this.writeQuestionState(projectPath, featureId, cancelledState);
@@ -348,29 +377,39 @@ export class QuestionService {
    */
   async getPendingQuestions(
     projectPath: string,
-    featureId: string
+    featureId: string,
   ): Promise<AgentQuestion[] | null> {
     const feature = await this.loadFeature(projectPath, featureId);
     const state = feature?.questionState;
 
-    if (!state || state.status !== 'pending') {
+    if (!state || state.status !== "pending") {
       return null;
     }
 
-    return state.questions.filter((q) => q.status === 'pending');
+    return state.questions.filter((q) => q.status === "pending");
   }
 
   // ============================================================================
   // Private helpers
   // ============================================================================
 
-  private async loadFeature(projectPath: string, featureId: string): Promise<Feature | null> {
-    const featurePath = path.join(getFeatureDir(projectPath, featureId), 'feature.json');
+  private async loadFeature(
+    projectPath: string,
+    featureId: string,
+  ): Promise<Feature | null> {
+    const featurePath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "feature.json",
+    );
     try {
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
       return result.data;
     } catch {
       return null;
@@ -380,44 +419,60 @@ export class QuestionService {
   private async writeQuestionState(
     projectPath: string,
     featureId: string,
-    questionState: FeatureQuestionState
+    questionState: FeatureQuestionState,
   ): Promise<void> {
-    const featurePath = path.join(getFeatureDir(projectPath, featureId), 'feature.json');
+    const featurePath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "feature.json",
+    );
 
-    const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-      maxBackups: DEFAULT_BACKUP_COUNT,
-      autoRestore: true,
-    });
+    const result = await readJsonWithRecovery<Feature | null>(
+      featurePath,
+      null,
+      {
+        maxBackups: DEFAULT_BACKUP_COUNT,
+        autoRestore: true,
+      },
+    );
 
     const feature = result.data;
     if (!feature) {
-      logger.warn(`Could not load feature ${featureId} for question state update`);
+      logger.warn(
+        `Could not load feature ${featureId} for question state update`,
+      );
       return;
     }
 
     feature.questionState = questionState;
     feature.updatedAt = new Date().toISOString();
 
-    await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+    await atomicWriteJson(featurePath, feature, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
   }
 
   private async setFeatureStatusToReady(
     projectPath: string,
     featureId: string,
-    feature: Feature
+    feature: Feature,
   ): Promise<void> {
-    const featurePath = path.join(getFeatureDir(projectPath, featureId), 'feature.json');
+    const featurePath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "feature.json",
+    );
 
-    feature.status = 'ready';
+    feature.status = "ready";
     feature.updatedAt = new Date().toISOString();
 
-    await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+    await atomicWriteJson(featurePath, feature, {
+      backupCount: DEFAULT_BACKUP_COUNT,
+    });
 
     // Emit status changed event so the UI updates immediately
-    this.eventBus.emitAutoModeEvent('feature_status_changed', {
+    this.eventBus.emitAutoModeEvent("feature_status_changed", {
       featureId,
       projectPath,
-      status: 'ready',
+      status: "ready",
     });
   }
 }

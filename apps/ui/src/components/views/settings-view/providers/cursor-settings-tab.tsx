@@ -1,18 +1,18 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useAppStore } from '@/store/app-store';
-import type { CursorModelId } from '@pegasus/types';
+import { useState } from "react";
+import { toast } from "sonner";
+import { useAppStore } from "@/store/app-store";
+import type { CursorModelId } from "@pegasus/types";
 import {
   CursorCliStatus,
   CursorCliStatusSkeleton,
   CursorPermissionsSkeleton,
   ModelConfigSkeleton,
-} from '../cli-status/cursor-cli-status';
-import { useCursorStatus } from '../hooks/use-cursor-status';
-import { useCursorPermissions } from '../hooks/use-cursor-permissions';
-import { CursorPermissionsSection } from './cursor-permissions-section';
-import { CursorModelConfiguration } from './cursor-model-configuration';
-import { ProviderToggle } from './provider-toggle';
+} from "../cli-status/cursor-cli-status";
+import { useCursorStatus } from "../hooks/use-cursor-status";
+import { useCursorPermissions } from "../hooks/use-cursor-permissions";
+import { CursorPermissionsSection } from "./cursor-permissions-section";
+import { CursorModelConfiguration } from "./cursor-model-configuration";
+import { ProviderToggle } from "./provider-toggle";
 
 export function CursorSettingsTab() {
   // Global settings from store
@@ -43,9 +43,9 @@ export function CursorSettingsTab() {
     setIsSaving(true);
     try {
       setCursorDefaultModel(model);
-      toast.success('Default model updated');
+      toast.success("Default model updated");
     } catch {
-      toast.error('Failed to update default model');
+      toast.error("Failed to update default model");
     } finally {
       setIsSaving(false);
     }
@@ -56,7 +56,7 @@ export function CursorSettingsTab() {
     try {
       toggleCursorModel(model, enabled);
     } catch {
-      toast.error('Failed to update models');
+      toast.error("Failed to update models");
     } finally {
       setIsSaving(false);
     }
@@ -78,7 +78,11 @@ export function CursorSettingsTab() {
       <ProviderToggle provider="cursor" providerLabel="Cursor" />
 
       {/* CLI Status */}
-      <CursorCliStatus status={status} isChecking={isLoading} onRefresh={loadData} />
+      <CursorCliStatus
+        status={status}
+        isChecking={isLoading}
+        onRefresh={loadData}
+      />
 
       {/* CLI Permissions Section */}
       <CursorPermissionsSection

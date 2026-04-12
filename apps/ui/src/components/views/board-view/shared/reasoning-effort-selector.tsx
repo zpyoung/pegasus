@@ -1,8 +1,11 @@
-import { Label } from '@/components/ui/label';
-import { Brain } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { ReasoningEffort } from '@pegasus/types';
-import { REASONING_EFFORT_LEVELS, REASONING_EFFORT_LABELS } from './model-constants';
+import { Label } from "@/components/ui/label";
+import { Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ReasoningEffort } from "@pegasus/types";
+import {
+  REASONING_EFFORT_LEVELS,
+  REASONING_EFFORT_LABELS,
+} from "./model-constants";
 
 interface ReasoningEffortSelectorProps {
   selectedEffort: ReasoningEffort;
@@ -13,7 +16,7 @@ interface ReasoningEffortSelectorProps {
 export function ReasoningEffortSelector({
   selectedEffort,
   onEffortSelect,
-  testIdPrefix = 'reasoning-effort',
+  testIdPrefix = "reasoning-effort",
 }: ReasoningEffortSelectorProps) {
   return (
     <div className="space-y-2 pt-2 border-t border-border">
@@ -28,10 +31,10 @@ export function ReasoningEffortSelector({
             type="button"
             onClick={() => onEffortSelect(effort)}
             className={cn(
-              'flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors min-w-[60px]',
+              "flex-1 px-3 py-2 rounded-md border text-sm font-medium transition-colors min-w-[60px]",
               selectedEffort === effort
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background hover:bg-accent border-input'
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background hover:bg-accent border-input",
             )}
             data-testid={`${testIdPrefix}-${effort}`}
           >

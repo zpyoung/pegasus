@@ -83,7 +83,12 @@
 }
 
 .gruvboxlight .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #d79921 0%, #b57614 50%, #d79921 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #d79921 0%,
+    #b57614 50%,
+    #d79921 100%
+  );
 }
 
 .gruvboxlight .animated-outline-inner {

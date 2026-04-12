@@ -10,9 +10,12 @@
  * network usage while maintaining data freshness through WebSocket.
  */
 
-import { useCallback } from 'react';
-import { create } from 'zustand';
-import { isMobileDevice, getMobilePollingMultiplier } from '@/lib/mobile-detect';
+import { useCallback } from "react";
+import { create } from "zustand";
+import {
+  isMobileDevice,
+  getMobilePollingMultiplier,
+} from "@/lib/mobile-detect";
 
 /**
  * Time threshold (ms) to consider events as "recent"
@@ -97,7 +100,9 @@ export const useEventRecencyStore = create<EventRecencyState>((set, get) => ({
  */
 export function useEventRecorder() {
   const recordEvent = useEventRecencyStore((state) => state.recordEvent);
-  const recordGlobalEvent = useEventRecencyStore((state) => state.recordGlobalEvent);
+  const recordGlobalEvent = useEventRecencyStore(
+    (state) => state.recordGlobalEvent,
+  );
 
   return { recordEvent, recordGlobalEvent };
 }
@@ -118,9 +123,15 @@ export function useEventRecorder() {
  * ```
  */
 export function useEventRecency(queryKey?: string) {
-  const areEventsRecent = useEventRecencyStore((state) => state.areEventsRecent);
-  const areGlobalEventsRecent = useEventRecencyStore((state) => state.areGlobalEventsRecent);
-  const lastGlobalEventTimestamp = useEventRecencyStore((state) => state.lastGlobalEventTimestamp);
+  const areEventsRecent = useEventRecencyStore(
+    (state) => state.areEventsRecent,
+  );
+  const areGlobalEventsRecent = useEventRecencyStore(
+    (state) => state.areGlobalEventsRecent,
+  );
+  const lastGlobalEventTimestamp = useEventRecencyStore(
+    (state) => state.lastGlobalEventTimestamp,
+  );
 
   const checkRecency = useCallback(
     (key?: string) => {
@@ -129,11 +140,13 @@ export function useEventRecency(queryKey?: string) {
       }
       return areGlobalEventsRecent();
     },
-    [areEventsRecent, areGlobalEventsRecent]
+    [areEventsRecent, areGlobalEventsRecent],
   );
 
   return {
-    areEventsRecent: queryKey ? () => areEventsRecent(queryKey) : areEventsRecent,
+    areEventsRecent: queryKey
+      ? () => areEventsRecent(queryKey)
+      : areEventsRecent,
     areGlobalEventsRecent,
     checkRecency,
     lastGlobalEventTimestamp,

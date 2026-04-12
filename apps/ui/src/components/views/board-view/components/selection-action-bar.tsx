@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Pencil, X, CheckSquare, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Pencil,
+  X,
+  CheckSquare,
+  Trash2,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +16,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
-export type SelectionActionMode = 'backlog' | 'waiting_approval';
+export type SelectionActionMode = "backlog" | "waiting_approval";
 
 interface SelectionActionBarProps {
   selectedCount: number;
@@ -32,7 +39,7 @@ export function SelectionActionBar({
   onVerify,
   onClear,
   onSelectAll,
-  mode = 'backlog',
+  mode = "backlog",
 }: SelectionActionBarProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
@@ -72,25 +79,25 @@ export function SelectionActionBar({
     <>
       <div
         className={cn(
-          'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
-          'flex items-center gap-3 px-4 py-3 rounded-xl',
-          'bg-background/95 backdrop-blur-sm border border-border shadow-lg',
-          'animate-in slide-in-from-bottom-4 fade-in duration-200'
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
+          "flex items-center gap-3 px-4 py-3 rounded-xl",
+          "bg-background/95 backdrop-blur-sm border border-border shadow-lg",
+          "animate-in slide-in-from-bottom-4 fade-in duration-200",
         )}
         data-testid="selection-action-bar"
       >
         <span className="text-sm font-medium text-foreground">
           {selectedCount === 0
-            ? mode === 'waiting_approval'
-              ? 'Select features to verify'
-              : 'Select features to edit'
-            : `${selectedCount} feature${selectedCount !== 1 ? 's' : ''} selected`}
+            ? mode === "waiting_approval"
+              ? "Select features to verify"
+              : "Select features to edit"
+            : `${selectedCount} feature${selectedCount !== 1 ? "s" : ""} selected`}
         </span>
 
         <div className="h-4 w-px bg-border" />
 
         <div className="flex items-center gap-2">
-          {mode === 'backlog' && (
+          {mode === "backlog" && (
             <>
               <Button
                 variant="default"
@@ -118,7 +125,7 @@ export function SelectionActionBar({
             </>
           )}
 
-          {mode === 'waiting_approval' && (
+          {mode === "waiting_approval" && (
             <Button
               variant="default"
               size="sm"
@@ -167,8 +174,9 @@ export function SelectionActionBar({
               Delete Selected Features?
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete {selectedCount} feature
-              {selectedCount !== 1 ? 's' : ''}?
+              Are you sure you want to permanently delete {selectedCount}{" "}
+              feature
+              {selectedCount !== 1 ? "s" : ""}?
               <span className="block mt-2 text-destructive font-medium">
                 This action cannot be undone.
               </span>
@@ -209,7 +217,7 @@ export function SelectionActionBar({
             </DialogTitle>
             <DialogDescription>
               Are you sure you want to mark {selectedCount} feature
-              {selectedCount !== 1 ? 's' : ''} as verified?
+              {selectedCount !== 1 ? "s" : ""} as verified?
               <span className="block mt-2 text-muted-foreground">
                 This will move them to the Verified column.
               </span>
@@ -235,7 +243,7 @@ export function SelectionActionBar({
               ) : (
                 <CheckCircle2 className="w-4 h-4 mr-2" />
               )}
-              {isVerifying ? 'Verifying...' : 'Verify'}
+              {isVerifying ? "Verifying..." : "Verify"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,8 +1,12 @@
 // @ts-nocheck - badge component prop variations with conditional rendering
-import { memo, useEffect, useMemo, useState } from 'react';
-import { Feature, useAppStore } from '@/store/app-store';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { memo, useEffect, useMemo, useState } from "react";
+import { Feature, useAppStore } from "@/store/app-store";
+import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertCircle,
   AlertTriangle,
@@ -11,15 +15,15 @@ import {
   Sparkles,
   SkipForward,
   FileCheck,
-} from 'lucide-react';
-import { getBlockingDependencies } from '@pegasus/dependency-resolver';
-import { useShallow } from 'zustand/react/shallow';
-import { usePipelineConfig } from '@/hooks/queries/use-pipeline';
-import { TaskIdCopy } from '../task-id-copy';
+} from "lucide-react";
+import { getBlockingDependencies } from "@pegasus/dependency-resolver";
+import { useShallow } from "zustand/react/shallow";
+import { usePipelineConfig } from "@/hooks/queries/use-pipeline";
+import { TaskIdCopy } from "../task-id-copy";
 
 /** Uniform badge style for all card badges */
 const uniformBadgeClass =
-  'inline-flex items-center justify-center w-6 h-6 rounded-md border-[1.5px]';
+  "inline-flex items-center justify-center w-6 h-6 rounded-md border-[1.5px]";
 
 interface CardBadgesProps {
   feature: Feature;
@@ -29,9 +33,11 @@ interface CardBadgesProps {
  * CardBadges - Shows error badges below the card header
  * Note: Merge conflict badge is aligned with the top badge row for visual consistency
  */
-export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps) {
-  const showMergeConflict = feature.status === 'merge_conflict';
-  const mergeConflictOffsetClass = feature.priority ? 'left-9' : 'left-2';
+export const CardBadges = memo(function CardBadges({
+  feature,
+}: CardBadgesProps) {
+  const showMergeConflict = feature.status === "merge_conflict";
+  const mergeConflictOffsetClass = feature.priority ? "left-9" : "left-2";
   if (!feature.error && !showMergeConflict) {
     return null;
   }
@@ -40,13 +46,13 @@ export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps)
     <>
       {/* Merge conflict badge */}
       {showMergeConflict && (
-        <div className={cn('absolute top-2 z-10', mergeConflictOffsetClass)}>
+        <div className={cn("absolute top-2 z-10", mergeConflictOffsetClass)}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div
                 className={cn(
                   uniformBadgeClass,
-                  'bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]'
+                  "bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]",
                 )}
                 data-testid={`merge-conflict-badge-${feature.id}`}
               >
@@ -54,7 +60,10 @@ export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps)
               </div>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-xs max-w-[250px]">
-              <p>Merge Conflict: automatic merge failed and requires manual resolution</p>
+              <p>
+                Merge Conflict: automatic merge failed and requires manual
+                resolution
+              </p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -68,7 +77,7 @@ export const CardBadges = memo(function CardBadges({ feature }: CardBadgesProps)
               <div
                 className={cn(
                   uniformBadgeClass,
-                  'bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]'
+                  "bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]",
                 )}
                 data-testid={`error-badge-${feature.id}`}
               >
@@ -98,7 +107,7 @@ export const PriorityBadges = memo(function PriorityBadges({
     useShallow((state) => ({
       enableDependencyBlocking: state.enableDependencyBlocking,
       features: state.features,
-    }))
+    })),
   );
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
@@ -107,14 +116,18 @@ export const PriorityBadges = memo(function PriorityBadges({
 
   // Calculate blocking dependencies (if feature is in backlog and has incomplete dependencies)
   const blockingDependencies = useMemo(() => {
-    if (!enableDependencyBlocking || feature.status !== 'backlog') {
+    if (!enableDependencyBlocking || feature.status !== "backlog") {
       return [];
     }
     return getBlockingDependencies(feature, features);
   }, [enableDependencyBlocking, feature, features]);
 
   const isJustFinished = useMemo(() => {
-    if (!feature.justFinishedAt || feature.status !== 'waiting_approval' || feature.error) {
+    if (
+      !feature.justFinishedAt ||
+      feature.status !== "waiting_approval" ||
+      feature.error
+    ) {
       return false;
     }
     const finishedTime = new Date(feature.justFinishedAt).getTime();
@@ -123,7 +136,7 @@ export const PriorityBadges = memo(function PriorityBadges({
   }, [feature.justFinishedAt, feature.status, feature.error, currentTime]);
 
   useEffect(() => {
-    if (!feature.justFinishedAt || feature.status !== 'waiting_approval') {
+    if (!feature.justFinishedAt || feature.status !== "waiting_approval") {
       return;
     }
 
@@ -145,18 +158,23 @@ export const PriorityBadges = memo(function PriorityBadges({
   }, [feature.justFinishedAt, feature.status, currentTime]);
 
   const isBlocked =
-    blockingDependencies.length > 0 && !feature.error && feature.status === 'backlog';
+    blockingDependencies.length > 0 &&
+    !feature.error &&
+    feature.status === "backlog";
   const showManualVerification =
-    feature.skipTests && !feature.error && feature.status === 'backlog';
+    feature.skipTests && !feature.error && feature.status === "backlog";
 
   // Check if feature has excluded pipeline steps
   const excludedStepCount = feature.excludedPipelineSteps?.length || 0;
   const totalPipelineSteps = pipelineConfig?.steps?.length || 0;
   const hasPipelineExclusions =
-    excludedStepCount > 0 && totalPipelineSteps > 0 && feature.status === 'backlog';
-  const allPipelinesExcluded = hasPipelineExclusions && excludedStepCount >= totalPipelineSteps;
+    excludedStepCount > 0 &&
+    totalPipelineSteps > 0 &&
+    feature.status === "backlog";
+  const allPipelinesExcluded =
+    hasPipelineExclusions && excludedStepCount >= totalPipelineSteps;
 
-  const showPlanApproval = feature.planSpec?.status === 'generated';
+  const showPlanApproval = feature.planSpec?.status === "generated";
 
   return (
     <div className="absolute top-2 left-2 flex items-center gap-1">
@@ -168,26 +186,30 @@ export const PriorityBadges = memo(function PriorityBadges({
               className={cn(
                 uniformBadgeClass,
                 feature.priority === 1 &&
-                  'bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]',
+                  "bg-[var(--status-error-bg)] border-[var(--status-error)]/40 text-[var(--status-error)]",
                 feature.priority === 2 &&
-                  'bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]',
+                  "bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]",
                 feature.priority === 3 &&
-                  'bg-[var(--status-info-bg)] border-[var(--status-info)]/40 text-[var(--status-info)]'
+                  "bg-[var(--status-info-bg)] border-[var(--status-info)]/40 text-[var(--status-info)]",
               )}
               data-testid={`priority-badge-${feature.id}`}
             >
               <span className="font-bold text-xs">
-                {feature.priority === 1 ? 'H' : feature.priority === 2 ? 'M' : 'L'}
+                {feature.priority === 1
+                  ? "H"
+                  : feature.priority === 2
+                    ? "M"
+                    : "L"}
               </span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
             <p>
               {feature.priority === 1
-                ? 'High Priority'
+                ? "High Priority"
                 : feature.priority === 2
-                  ? 'Medium Priority'
-                  : 'Low Priority'}
+                  ? "Medium Priority"
+                  : "Low Priority"}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -203,7 +225,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             <div
               className={cn(
                 uniformBadgeClass,
-                'bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]'
+                "bg-[var(--status-warning-bg)] border-[var(--status-warning)]/40 text-[var(--status-warning)]",
               )}
               data-testid={`skip-tests-badge-${feature.id}`}
             >
@@ -223,7 +245,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             <div
               className={cn(
                 uniformBadgeClass,
-                'bg-orange-500/20 border-orange-500/50 text-orange-500'
+                "bg-orange-500/20 border-orange-500/50 text-orange-500",
               )}
               data-testid={`blocked-badge-${feature.id}`}
             >
@@ -232,8 +254,10 @@ export const PriorityBadges = memo(function PriorityBadges({
           </TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs max-w-[250px]">
             <p className="font-medium mb-1">
-              Blocked by {blockingDependencies.length} incomplete{' '}
-              {blockingDependencies.length === 1 ? 'dependency' : 'dependencies'}
+              Blocked by {blockingDependencies.length} incomplete{" "}
+              {blockingDependencies.length === 1
+                ? "dependency"
+                : "dependencies"}
             </p>
             <p className="text-muted-foreground">
               {blockingDependencies
@@ -241,7 +265,7 @@ export const PriorityBadges = memo(function PriorityBadges({
                   const dep = features.find((f) => f.id === depId);
                   return dep?.description || depId;
                 })
-                .join(', ')}
+                .join(", ")}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -254,7 +278,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             <div
               className={cn(
                 uniformBadgeClass,
-                'bg-[var(--status-success-bg)] border-[var(--status-success)]/40 text-[var(--status-success)] animate-pulse'
+                "bg-[var(--status-success-bg)] border-[var(--status-success)]/40 text-[var(--status-success)] animate-pulse",
               )}
               data-testid={`just-finished-badge-${feature.id}`}
             >
@@ -274,7 +298,7 @@ export const PriorityBadges = memo(function PriorityBadges({
             <div
               className={cn(
                 uniformBadgeClass,
-                'bg-purple-500/20 border-purple-500/50 text-purple-500 animate-pulse'
+                "bg-purple-500/20 border-purple-500/50 text-purple-500 animate-pulse",
               )}
               data-testid={`plan-approval-badge-${feature.id}`}
             >
@@ -295,8 +319,8 @@ export const PriorityBadges = memo(function PriorityBadges({
               className={cn(
                 uniformBadgeClass,
                 allPipelinesExcluded
-                  ? 'bg-violet-500/20 border-violet-500/50 text-violet-500'
-                  : 'bg-violet-500/10 border-violet-500/30 text-violet-400'
+                  ? "bg-violet-500/20 border-violet-500/50 text-violet-500"
+                  : "bg-violet-500/10 border-violet-500/30 text-violet-400",
               )}
               data-testid={`pipeline-exclusion-badge-${feature.id}`}
             >
@@ -306,13 +330,13 @@ export const PriorityBadges = memo(function PriorityBadges({
           <TooltipContent side="bottom" className="text-xs max-w-[250px]">
             <p className="font-medium mb-1">
               {allPipelinesExcluded
-                ? 'All pipelines skipped'
-                : `${excludedStepCount} of ${totalPipelineSteps} pipeline${totalPipelineSteps !== 1 ? 's' : ''} skipped`}
+                ? "All pipelines skipped"
+                : `${excludedStepCount} of ${totalPipelineSteps} pipeline${totalPipelineSteps !== 1 ? "s" : ""} skipped`}
             </p>
             <p className="text-muted-foreground">
               {allPipelinesExcluded
-                ? 'This feature will skip all custom pipeline steps'
-                : 'Some custom pipeline steps will be skipped for this feature'}
+                ? "This feature will skip all custom pipeline steps"
+                : "Some custom pipeline steps will be skipped for this feature"}
             </p>
           </TooltipContent>
         </Tooltip>

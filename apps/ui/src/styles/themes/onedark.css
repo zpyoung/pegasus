@@ -76,7 +76,12 @@
 /* Theme-specific overrides */
 
 .onedark .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #61afef 0%, #c678dd 50%, #61afef 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #61afef 0%,
+    #c678dd 50%,
+    #61afef 100%
+  );
 }
 
 .onedark .animated-outline-inner {
@@ -84,7 +89,9 @@
   color: #61afef !important;
 }
 
-.onedark [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.onedark
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.25 0.02 250) !important;
   color: #c678dd !important;
 }

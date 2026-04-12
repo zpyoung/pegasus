@@ -5,9 +5,9 @@
  * Response: { success: true, notifications: Notification[] }
  */
 
-import type { Request, Response } from 'express';
-import type { NotificationService } from '../../../services/notification-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { NotificationService } from "../../../services/notification-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler for POST /api/notifications/list
@@ -20,19 +20,22 @@ export function createListHandler(notificationService: NotificationService) {
     try {
       const { projectPath } = req.body;
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      const notifications = await notificationService.getNotifications(projectPath);
+      const notifications =
+        await notificationService.getNotifications(projectPath);
 
       res.json({
         success: true,
         notifications,
       });
     } catch (error) {
-      logError(error, 'List notifications failed');
+      logError(error, "List notifications failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -7,25 +7,25 @@ import type {
   ReasoningEffort,
   FeatureStatusWithPipeline,
   PlanSpec,
-} from '@pegasus/types';
-import type { FeatureImage } from './chat-types';
+} from "@pegasus/types";
+import type { FeatureImage } from "./chat-types";
 
 // Available models for feature execution
-export type ClaudeModel = 'opus' | 'sonnet' | 'haiku';
+export type ClaudeModel = "opus" | "sonnet" | "haiku";
 
 export interface Feature extends Omit<
   BaseFeature,
-  | 'steps'
-  | 'imagePaths'
-  | 'textFilePaths'
-  | 'status'
-  | 'planSpec'
-  | 'dependencies'
-  | 'model'
-  | 'branchName'
-  | 'thinkingLevel'
-  | 'reasoningEffort'
-  | 'summary'
+  | "steps"
+  | "imagePaths"
+  | "textFilePaths"
+  | "status"
+  | "planSpec"
+  | "dependencies"
+  | "model"
+  | "branchName"
+  | "thinkingLevel"
+  | "reasoningEffort"
+  | "summary"
 > {
   id: string;
   title?: string;

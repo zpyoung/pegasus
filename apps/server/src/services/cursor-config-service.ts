@@ -8,22 +8,22 @@
  * Based on: https://cursor.com/docs/cli/reference/configuration
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { createLogger } from '@pegasus/utils';
+import * as fs from "fs/promises";
+import * as path from "path";
+import * as os from "os";
+import { createLogger } from "@pegasus/utils";
 import type {
   CursorCliConfigFile,
   CursorCliPermissions,
   CursorPermissionProfile,
-} from '@pegasus/types';
+} from "@pegasus/types";
 import {
   CURSOR_STRICT_PROFILE,
   CURSOR_DEVELOPMENT_PROFILE,
   CURSOR_PERMISSION_PROFILES,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
-const logger = createLogger('CursorConfigService');
+const logger = createLogger("CursorConfigService");
 
 /**
  * Get the path to the global Cursor CLI config
@@ -36,21 +36,21 @@ export function getGlobalConfigPath(): string {
   const cursorConfigDir = process.env.CURSOR_CONFIG_DIR;
 
   if (cursorConfigDir) {
-    return path.join(cursorConfigDir, 'cli-config.json');
+    return path.join(cursorConfigDir, "cli-config.json");
   }
 
-  if (process.platform === 'linux' && xdgConfig) {
-    return path.join(xdgConfig, 'cursor', 'cli-config.json');
+  if (process.platform === "linux" && xdgConfig) {
+    return path.join(xdgConfig, "cursor", "cli-config.json");
   }
 
-  return path.join(os.homedir(), '.cursor', 'cli-config.json');
+  return path.join(os.homedir(), ".cursor", "cli-config.json");
 }
 
 /**
  * Get the path to a project's Cursor CLI config
  */
 export function getProjectConfigPath(projectPath: string): string {
-  return path.join(projectPath, '.cursor', 'cli.json');
+  return path.join(projectPath, ".cursor", "cli.json");
 }
 
 /**
@@ -60,16 +60,16 @@ export async function readGlobalConfig(): Promise<CursorCliConfigFile | null> {
   const configPath = getGlobalConfigPath();
 
   try {
-    const content = await fs.readFile(configPath, 'utf-8');
+    const content = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(content) as CursorCliConfigFile;
-    logger.debug('Read global Cursor config from:', configPath);
+    logger.debug("Read global Cursor config from:", configPath);
     return config;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      logger.debug('Global Cursor config not found at:', configPath);
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      logger.debug("Global Cursor config not found at:", configPath);
       return null;
     }
-    logger.error('Failed to read global Cursor config:', error);
+    logger.error("Failed to read global Cursor config:", error);
     throw error;
   }
 }
@@ -77,7 +77,9 @@ export async function readGlobalConfig(): Promise<CursorCliConfigFile | null> {
 /**
  * Write the global Cursor CLI config
  */
-export async function writeGlobalConfig(config: CursorCliConfigFile): Promise<void> {
+export async function writeGlobalConfig(
+  config: CursorCliConfigFile,
+): Promise<void> {
   const configPath = getGlobalConfigPath();
   const configDir = path.dirname(configPath);
 
@@ -86,26 +88,28 @@ export async function writeGlobalConfig(config: CursorCliConfigFile): Promise<vo
 
   // Write config
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-  logger.info('Wrote global Cursor config to:', configPath);
+  logger.info("Wrote global Cursor config to:", configPath);
 }
 
 /**
  * Read a project's Cursor CLI config
  */
-export async function readProjectConfig(projectPath: string): Promise<CursorCliConfigFile | null> {
+export async function readProjectConfig(
+  projectPath: string,
+): Promise<CursorCliConfigFile | null> {
   const configPath = getProjectConfigPath(projectPath);
 
   try {
-    const content = await fs.readFile(configPath, 'utf-8');
+    const content = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(content) as CursorCliConfigFile;
-    logger.debug('Read project Cursor config from:', configPath);
+    logger.debug("Read project Cursor config from:", configPath);
     return config;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      logger.debug('Project Cursor config not found at:', configPath);
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      logger.debug("Project Cursor config not found at:", configPath);
       return null;
     }
-    logger.error('Failed to read project Cursor config:', error);
+    logger.error("Failed to read project Cursor config:", error);
     throw error;
   }
 }
@@ -119,7 +123,7 @@ export async function readProjectConfig(projectPath: string): Promise<CursorCliC
  */
 export async function writeProjectConfig(
   projectPath: string,
-  config: CursorCliConfigFile
+  config: CursorCliConfigFile,
 ): Promise<void> {
   const configPath = getProjectConfigPath(projectPath);
   const configDir = path.dirname(configPath);
@@ -133,7 +137,7 @@ export async function writeProjectConfig(
   };
 
   await fs.writeFile(configPath, JSON.stringify(projectConfig, null, 2));
-  logger.info('Wrote project Cursor config to:', configPath);
+  logger.info("Wrote project Cursor config to:", configPath);
 }
 
 /**
@@ -144,9 +148,9 @@ export async function deleteProjectConfig(projectPath: string): Promise<void> {
 
   try {
     await fs.unlink(configPath);
-    logger.info('Deleted project Cursor config:', configPath);
+    logger.info("Deleted project Cursor config:", configPath);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
       throw error;
     }
   }
@@ -157,7 +161,7 @@ export async function deleteProjectConfig(projectPath: string): Promise<void> {
  * Project config takes precedence over global config
  */
 export async function getEffectivePermissions(
-  projectPath?: string
+  projectPath?: string,
 ): Promise<CursorCliPermissions | null> {
   // Try project config first
   if (projectPath) {
@@ -177,7 +181,7 @@ export async function getEffectivePermissions(
  */
 export async function applyProfileToProject(
   projectPath: string,
-  profileId: CursorPermissionProfile
+  profileId: CursorPermissionProfile,
 ): Promise<void> {
   const profile = CURSOR_PERMISSION_PROFILES.find((p) => p.id === profileId);
 
@@ -196,7 +200,9 @@ export async function applyProfileToProject(
 /**
  * Apply a predefined permission profile globally
  */
-export async function applyProfileGlobally(profileId: CursorPermissionProfile): Promise<void> {
+export async function applyProfileGlobally(
+  profileId: CursorPermissionProfile,
+): Promise<void> {
   const profile = CURSOR_PERMISSION_PROFILES.find((p) => p.id === profileId);
 
   if (!profile) {
@@ -219,7 +225,7 @@ export async function applyProfileGlobally(profileId: CursorPermissionProfile): 
  * Detect which profile matches the current permissions
  */
 export function detectProfile(
-  permissions: CursorCliPermissions | null
+  permissions: CursorCliPermissions | null,
 ): CursorPermissionProfile | null {
   if (!permissions) {
     return null;
@@ -228,24 +234,29 @@ export function detectProfile(
   // Check if permissions match a predefined profile
   for (const profile of CURSOR_PERMISSION_PROFILES) {
     const allowMatch =
-      JSON.stringify(profile.permissions.allow.sort()) === JSON.stringify(permissions.allow.sort());
+      JSON.stringify(profile.permissions.allow.sort()) ===
+      JSON.stringify(permissions.allow.sort());
     const denyMatch =
-      JSON.stringify(profile.permissions.deny.sort()) === JSON.stringify(permissions.deny.sort());
+      JSON.stringify(profile.permissions.deny.sort()) ===
+      JSON.stringify(permissions.deny.sort());
 
     if (allowMatch && denyMatch) {
       return profile.id;
     }
   }
 
-  return 'custom';
+  return "custom";
 }
 
 /**
  * Generate example config file content
  */
-export function generateExampleConfig(profileId: CursorPermissionProfile = 'development'): string {
+export function generateExampleConfig(
+  profileId: CursorPermissionProfile = "development",
+): string {
   const profile =
-    CURSOR_PERMISSION_PROFILES.find((p) => p.id === profileId) || CURSOR_DEVELOPMENT_PROFILE;
+    CURSOR_PERMISSION_PROFILES.find((p) => p.id === profileId) ||
+    CURSOR_DEVELOPMENT_PROFILE;
 
   const config: CursorCliConfigFile = {
     version: 1,

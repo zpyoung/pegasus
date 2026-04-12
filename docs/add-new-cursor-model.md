@@ -45,13 +45,13 @@ const CURSOR_MODELS: ModelEntry[] = [
   // ... existing models ...
 
   {
-    id: 'cursor-my-new-model',          // Must use cursor- prefix
-    name: 'My New Model',               // Human-readable name
-    provider: 'cursor',
-    supportsVision: true,               // true for most Claude and Gemini models
-    supportsThinking: false,            // true if model has extended thinking
+    id: "cursor-my-new-model", // Must use cursor- prefix
+    name: "My New Model", // Human-readable name
+    provider: "cursor",
+    supportsVision: true, // true for most Claude and Gemini models
+    supportsThinking: false, // true if model has extended thinking
     reasoningCapable: false,
-    stabilityTier: 'ga',               // 'ga' | 'preview' | 'beta'
+    stabilityTier: "ga", // 'ga' | 'preview' | 'beta'
     pricing: { inputPerMToken: 3, outputPerMToken: 15 },
   },
 ];
@@ -77,10 +77,10 @@ The generated registry provides the raw model ID. Open `libs/types/src/cursor-mo
 export const CURSOR_MODEL_MAP: Record<CursorModelId, CursorModelConfig> = {
   // ... existing entries ...
 
-  'cursor-my-new-model': {
-    id: 'cursor-my-new-model',
-    label: 'My New Model',
-    description: 'Short description shown under the model name in the UI',
+  "cursor-my-new-model": {
+    id: "cursor-my-new-model",
+    label: "My New Model",
+    description: "Short description shown under the model name in the UI",
     hasThinking: false,
     supportsVision: true,
   },
@@ -100,13 +100,22 @@ export const CURSOR_MODEL_GROUPS: GroupedModel[] = [
   // ... existing groups ...
 
   {
-    baseId: 'cursor-my-new-model-group',
-    label: 'My New Model',
-    description: 'Description of the model family',
-    variantType: 'compute',   // 'compute' | 'thinking' | 'capacity'
+    baseId: "cursor-my-new-model-group",
+    label: "My New Model",
+    description: "Description of the model family",
+    variantType: "compute", // 'compute' | 'thinking' | 'capacity'
     variants: [
-      { id: 'cursor-my-new-model', label: 'Standard', description: 'Default speed' },
-      { id: 'cursor-my-new-model-fast', label: 'Fast', description: 'Faster output', badge: 'Fast' },
+      {
+        id: "cursor-my-new-model",
+        label: "Standard",
+        description: "Default speed",
+      },
+      {
+        id: "cursor-my-new-model-fast",
+        label: "Fast",
+        description: "Faster output",
+        badge: "Fast",
+      },
     ],
   },
 ];
@@ -117,7 +126,7 @@ If the model is standalone (not part of a family), add its ID to `STANDALONE_CUR
 ```typescript
 export const STANDALONE_CURSOR_MODELS: CursorModelId[] = [
   // ... existing entries ...
-  'cursor-my-new-model',
+  "cursor-my-new-model",
 ];
 ```
 
@@ -159,26 +168,26 @@ The file header documents all available override fields. Run `pnpm sync-models` 
 
 ### `CURSOR_MODEL_MAP` entry (`CursorModelConfig`)
 
-| Field            | Type      | Description                                                                 |
-| ---------------- | --------- | --------------------------------------------------------------------------- |
-| `id`             | `CursorModelId` | Must match the generated registry ID (with `cursor-` prefix)          |
-| `label`          | `string`  | Human-readable name shown in the UI                                         |
-| `description`    | `string`  | Tooltip/subtext explaining the model                                        |
-| `hasThinking`    | `boolean` | `true` if the model supports extended thinking/reasoning output             |
-| `supportsVision` | `boolean` | `true` if the model accepts image inputs (most Claude and Gemini models do) |
+| Field            | Type            | Description                                                                 |
+| ---------------- | --------------- | --------------------------------------------------------------------------- |
+| `id`             | `CursorModelId` | Must match the generated registry ID (with `cursor-` prefix)                |
+| `label`          | `string`        | Human-readable name shown in the UI                                         |
+| `description`    | `string`        | Tooltip/subtext explaining the model                                        |
+| `hasThinking`    | `boolean`       | `true` if the model supports extended thinking/reasoning output             |
+| `supportsVision` | `boolean`       | `true` if the model accepts image inputs (most Claude and Gemini models do) |
 
 ### `CURSOR_MODELS` adapter entry (`ModelEntry`)
 
-| Field              | Type      | Description                                          |
-| ------------------ | --------- | ---------------------------------------------------- |
-| `id`               | `string`  | `cursor-`-prefixed model ID                          |
+| Field              | Type      | Description                                                |
+| ------------------ | --------- | ---------------------------------------------------------- |
+| `id`               | `string`  | `cursor-`-prefixed model ID                                |
 | `name`             | `string`  | Canonical name (may be overridden by model-overrides.json) |
-| `provider`         | `string`  | Always `'cursor'` for this adapter                   |
-| `supportsVision`   | `boolean` | Whether the model accepts image inputs               |
-| `supportsThinking` | `boolean` | Whether the model has extended thinking              |
-| `reasoningCapable` | `boolean` | Whether the model performs multi-step reasoning      |
-| `stabilityTier`    | `string`  | `'ga'` \| `'preview'` \| `'beta'`                   |
-| `pricing`          | `object`  | `{ inputPerMToken, outputPerMToken }` in USD         |
+| `provider`         | `string`  | Always `'cursor'` for this adapter                         |
+| `supportsVision`   | `boolean` | Whether the model accepts image inputs                     |
+| `supportsThinking` | `boolean` | Whether the model has extended thinking                    |
+| `reasoningCapable` | `boolean` | Whether the model performs multi-step reasoning            |
+| `stabilityTier`    | `string`  | `'ga'` \| `'preview'` \| `'beta'`                          |
+| `pricing`          | `object`  | `{ inputPerMToken, outputPerMToken }` in USD               |
 
 ---
 

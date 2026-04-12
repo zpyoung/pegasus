@@ -83,7 +83,12 @@
 }
 
 .sky .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #0ea5e9 0%, #38bdf8 50%, #0ea5e9 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #0ea5e9 0%,
+    #38bdf8 50%,
+    #0ea5e9 100%
+  );
 }
 
 .sky .animated-outline-inner {

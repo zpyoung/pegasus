@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 /**
  * Hook that detects when the mobile virtual keyboard is open and returns
@@ -48,15 +48,15 @@ export function useVirtualKeyboardResize() {
     const vv = window.visualViewport;
     if (!vv) return;
 
-    vv.addEventListener('resize', handleViewportResize);
-    vv.addEventListener('scroll', handleViewportResize);
+    vv.addEventListener("resize", handleViewportResize);
+    vv.addEventListener("scroll", handleViewportResize);
 
     // Initial check
     handleViewportResize();
 
     return () => {
-      vv.removeEventListener('resize', handleViewportResize);
-      vv.removeEventListener('scroll', handleViewportResize);
+      vv.removeEventListener("resize", handleViewportResize);
+      vv.removeEventListener("scroll", handleViewportResize);
     };
   }, [handleViewportResize]);
 

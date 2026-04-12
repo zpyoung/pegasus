@@ -2,15 +2,19 @@
  * POST /read endpoint - Read file
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import * as secureFs from '../../../lib/secure-fs.js';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import path from "path";
+import * as secureFs from "../../../lib/secure-fs.js";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 // Optional files that are expected to not exist in new projects
 // Don't log ENOENT errors for these to reduce noise
-const OPTIONAL_FILES = ['categories.json', 'app_spec.txt', 'context-metadata.json'];
+const OPTIONAL_FILES = [
+  "categories.json",
+  "app_spec.txt",
+  "context-metadata.json",
+];
 
 function isOptionalFile(filePath: string): boolean {
   const basename = path.basename(filePath);
@@ -18,10 +22,17 @@ function isOptionalFile(filePath: string): boolean {
     return true;
   }
   // Context and memory files may not exist yet during create/delete or test races
-  if (filePath.includes('.pegasus/context/') || filePath.includes('.pegasus/memory/')) {
+  if (
+    filePath.includes(".pegasus/context/") ||
+    filePath.includes(".pegasus/memory/")
+  ) {
     const name = path.basename(filePath);
     const lower = name.toLowerCase();
-    if (lower.endsWith('.md') || lower.endsWith('.txt') || lower.endsWith('.markdown')) {
+    if (
+      lower.endsWith(".md") ||
+      lower.endsWith(".txt") ||
+      lower.endsWith(".markdown")
+    ) {
       return true;
     }
   }
@@ -29,7 +40,12 @@ function isOptionalFile(filePath: string): boolean {
 }
 
 function isENOENT(error: unknown): boolean {
-  return error !== null && typeof error === 'object' && 'code' in error && error.code === 'ENOENT';
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
 }
 
 export function createReadHandler() {
@@ -38,11 +54,11 @@ export function createReadHandler() {
       const { filePath } = req.body as { filePath: string };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: 'filePath is required' });
+        res.status(400).json({ success: false, error: "filePath is required" });
         return;
       }
 
-      const content = await secureFs.readFile(filePath, 'utf-8');
+      const content = await secureFs.readFile(filePath, "utf-8");
 
       res.json({ success: true, content });
     } catch (error) {
@@ -52,14 +68,16 @@ export function createReadHandler() {
         return;
       }
 
-      const filePath = req.body?.filePath || '';
+      const filePath = req.body?.filePath || "";
       const optionalMissing = isENOENT(error) && isOptionalFile(filePath);
       if (!optionalMissing) {
-        logError(error, 'Read file failed');
+        logError(error, "Read file failed");
       }
       // Return 404 for missing optional files so clients can handle "not found"
       const status = optionalMissing ? 404 : 500;
-      res.status(status).json({ success: false, error: getErrorMessage(error) });
+      res
+        .status(status)
+        .json({ success: false, error: getErrorMessage(error) });
     }
   };
 }

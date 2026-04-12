@@ -9,15 +9,19 @@
  * - Long-running operations complete (spec generation)
  */
 
-import { createLogger } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
-import { getNotificationsPath, ensurePegasusDir } from '@pegasus/platform';
-import type { Notification, NotificationsFile, NotificationType } from '@pegasus/types';
-import { DEFAULT_NOTIFICATIONS_FILE } from '@pegasus/types';
-import type { EventEmitter } from '../lib/events.js';
-import { randomUUID } from 'crypto';
+import { createLogger } from "@pegasus/utils";
+import * as secureFs from "../lib/secure-fs.js";
+import { getNotificationsPath, ensurePegasusDir } from "@pegasus/platform";
+import type {
+  Notification,
+  NotificationsFile,
+  NotificationType,
+} from "@pegasus/types";
+import { DEFAULT_NOTIFICATIONS_FILE } from "@pegasus/types";
+import type { EventEmitter } from "../lib/events.js";
+import { randomUUID } from "crypto";
 
-const logger = createLogger('NotificationService');
+const logger = createLogger("NotificationService");
 
 /**
  * Atomic file write - write to temp file then rename
@@ -27,7 +31,7 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
   const content = JSON.stringify(data, null, 2);
 
   try {
-    await secureFs.writeFile(tempPath, content, 'utf-8');
+    await secureFs.writeFile(tempPath, content, "utf-8");
     await secureFs.rename(tempPath, filePath);
   } catch (error) {
     // Clean up temp file if it exists
@@ -45,10 +49,10 @@ async function atomicWriteJson(filePath: string, data: unknown): Promise<void> {
  */
 async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
   try {
-    const content = (await secureFs.readFile(filePath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(filePath, "utf-8")) as string;
     return JSON.parse(content) as T;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return defaultValue;
     }
     logger.error(`Error reading ${filePath}:`, error);
@@ -93,12 +97,15 @@ export class NotificationService {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
     // Filter out dismissed notifications and sort by date (newest first)
     return file.notifications
       .filter((n) => !n.dismissed)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }
 
   /**
@@ -118,7 +125,9 @@ export class NotificationService {
    * @param input - Notification creation input
    * @returns Promise resolving to the created notification
    */
-  async createNotification(input: CreateNotificationInput): Promise<Notification> {
+  async createNotification(
+    input: CreateNotificationInput,
+  ): Promise<Notification> {
     const { projectPath, type, title, message, featureId } = input;
 
     // Ensure pegasus directory exists
@@ -127,7 +136,7 @@ export class NotificationService {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
 
     const notification: Notification = {
@@ -149,7 +158,7 @@ export class NotificationService {
 
     // Emit event for real-time updates
     if (this.events) {
-      this.events.emit('notification:created', notification);
+      this.events.emit("notification:created", notification);
     }
 
     return notification;
@@ -162,14 +171,19 @@ export class NotificationService {
    * @param notificationId - ID of the notification to mark as read
    * @returns Promise resolving to the updated notification or null if not found
    */
-  async markAsRead(projectPath: string, notificationId: string): Promise<Notification | null> {
+  async markAsRead(
+    projectPath: string,
+    notificationId: string,
+  ): Promise<Notification | null> {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
 
-    const notification = file.notifications.find((n) => n.id === notificationId);
+    const notification = file.notifications.find(
+      (n) => n.id === notificationId,
+    );
     if (!notification) {
       return null;
     }
@@ -191,7 +205,7 @@ export class NotificationService {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
 
     let count = 0;
@@ -217,14 +231,19 @@ export class NotificationService {
    * @param notificationId - ID of the notification to dismiss
    * @returns Promise resolving to true if notification was dismissed
    */
-  async dismissNotification(projectPath: string, notificationId: string): Promise<boolean> {
+  async dismissNotification(
+    projectPath: string,
+    notificationId: string,
+  ): Promise<boolean> {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
 
-    const notification = file.notifications.find((n) => n.id === notificationId);
+    const notification = file.notifications.find(
+      (n) => n.id === notificationId,
+    );
     if (!notification) {
       return false;
     }
@@ -246,7 +265,7 @@ export class NotificationService {
     const notificationsPath = getNotificationsPath(projectPath);
     const file = await readJsonFile<NotificationsFile>(
       notificationsPath,
-      DEFAULT_NOTIFICATIONS_FILE
+      DEFAULT_NOTIFICATIONS_FILE,
     );
 
     let count = 0;

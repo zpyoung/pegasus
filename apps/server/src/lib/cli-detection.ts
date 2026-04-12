@@ -4,10 +4,10 @@
  * Provides consistent CLI detection and management across all providers
  */
 
-import { spawn, execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+import { spawn, execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 
 export interface CliInfo {
   name: string;
@@ -16,7 +16,7 @@ export interface CliInfo {
   path?: string;
   installed: boolean;
   authenticated: boolean;
-  authMethod: 'cli' | 'api_key' | 'none';
+  authMethod: "cli" | "api_key" | "none";
   platform?: string;
   architectures?: string[];
 }
@@ -44,33 +44,33 @@ export interface UnifiedCliDetection {
  */
 const CLI_CONFIGS = {
   claude: {
-    name: 'Claude CLI',
-    commands: ['claude'],
-    versionArgs: ['--version'],
+    name: "Claude CLI",
+    commands: ["claude"],
+    versionArgs: ["--version"],
     installCommands: {
-      darwin: 'brew install anthropics/claude/claude',
-      linux: 'curl -fsSL https://claude.ai/install.sh | sh',
-      win32: 'iwr https://claude.ai/install.ps1 -UseBasicParsing | iex',
+      darwin: "brew install anthropics/claude/claude",
+      linux: "curl -fsSL https://claude.ai/install.sh | sh",
+      win32: "iwr https://claude.ai/install.ps1 -UseBasicParsing | iex",
     },
   },
   codex: {
-    name: 'Codex CLI',
-    commands: ['codex', 'openai'],
-    versionArgs: ['--version'],
+    name: "Codex CLI",
+    commands: ["codex", "openai"],
+    versionArgs: ["--version"],
     installCommands: {
-      darwin: 'pnpm add -g @openai/codex-cli',
-      linux: 'pnpm add -g @openai/codex-cli',
-      win32: 'pnpm add -g @openai/codex-cli',
+      darwin: "pnpm add -g @openai/codex-cli",
+      linux: "pnpm add -g @openai/codex-cli",
+      win32: "pnpm add -g @openai/codex-cli",
     },
   },
   cursor: {
-    name: 'Cursor CLI',
-    commands: ['cursor-agent', 'cursor'],
-    versionArgs: ['--version'],
+    name: "Cursor CLI",
+    commands: ["cursor-agent", "cursor"],
+    versionArgs: ["--version"],
     installCommands: {
-      darwin: 'brew install cursor/cursor/cursor-agent',
-      linux: 'curl -fsSL https://cursor.sh/install.sh | sh',
-      win32: 'iwr https://cursor.sh/install.ps1 -UseBasicParsing | iex',
+      darwin: "brew install cursor/cursor/cursor-agent",
+      linux: "curl -fsSL https://cursor.sh/install.sh | sh",
+      win32: "iwr https://cursor.sh/install.ps1 -UseBasicParsing | iex",
     },
   },
 } as const;
@@ -80,7 +80,7 @@ const CLI_CONFIGS = {
  */
 export async function detectCli(
   provider: keyof typeof CLI_CONFIGS,
-  options: CliDetectionOptions = {}
+  options: CliDetectionOptions = {},
 ): Promise<CliDetectionResult> {
   const config = CLI_CONFIGS[provider];
   const { timeout = 5000 } = options;
@@ -88,10 +88,10 @@ export async function detectCli(
 
   const cliInfo: CliInfo = {
     name: config.name,
-    command: '',
+    command: "",
     installed: false,
     authenticated: false,
-    authMethod: 'none',
+    authMethod: "none",
   };
 
   try {
@@ -111,14 +111,18 @@ export async function detectCli(
 
     // Get version
     try {
-      cliInfo.version = await getCliVersion(cliInfo.command, [...config.versionArgs], timeout);
+      cliInfo.version = await getCliVersion(
+        cliInfo.command,
+        [...config.versionArgs],
+        timeout,
+      );
     } catch (error) {
       issues.push(`Failed to get ${config.name} version: ${error}`);
     }
 
     // Check authentication
     cliInfo.authMethod = await checkCliAuth(provider, cliInfo.command);
-    cliInfo.authenticated = cliInfo.authMethod !== 'none';
+    cliInfo.authenticated = cliInfo.authMethod !== "none";
 
     return { cli: cliInfo, detected: true, issues };
   } catch (error) {
@@ -131,7 +135,7 @@ export async function detectCli(
  * Detect all CLIs in the system
  */
 export async function detectAllCLis(
-  options: CliDetectionOptions = {}
+  options: CliDetectionOptions = {},
 ): Promise<UnifiedCliDetection> {
   const results: UnifiedCliDetection = {};
 
@@ -157,14 +161,14 @@ export async function detectAllCLis(
 export async function findCommand(commands: string[]): Promise<string | null> {
   for (const command of commands) {
     try {
-      const whichCommand = process.platform === 'win32' ? 'where' : 'which';
+      const whichCommand = process.platform === "win32" ? "where" : "which";
       const result = execSync(`${whichCommand} ${command}`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout: 2000,
       }).trim();
 
       if (result) {
-        return result.split('\n')[0]; // Take first result on Windows
+        return result.split("\n")[0]; // Take first result on Windows
       }
     } catch {
       // Command not found, try next
@@ -179,26 +183,26 @@ export async function findCommand(commands: string[]): Promise<string | null> {
 export async function getCliVersion(
   command: string,
   args: string[],
-  timeout: number = 5000
+  timeout: number = 5000,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
-      stdio: 'pipe',
+      stdio: "pipe",
       timeout,
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    child.stdout?.on('data', (data) => {
+    child.stdout?.on("data", (data) => {
       stdout += data.toString();
     });
 
-    child.stderr?.on('data', (data) => {
+    child.stderr?.on("data", (data) => {
       stderr += data.toString();
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       if (code === 0 && stdout) {
         resolve(stdout.trim());
       } else if (stderr) {
@@ -208,7 +212,7 @@ export async function getCliVersion(
       }
     });
 
-    child.on('error', reject);
+    child.on("error", reject);
   });
 }
 
@@ -217,38 +221,40 @@ export async function getCliVersion(
  */
 export async function checkCliAuth(
   provider: keyof typeof CLI_CONFIGS,
-  command: string
-): Promise<'cli' | 'api_key' | 'none'> {
+  command: string,
+): Promise<"cli" | "api_key" | "none"> {
   try {
     switch (provider) {
-      case 'claude':
+      case "claude":
         return await checkClaudeAuth(command);
-      case 'codex':
+      case "codex":
         return await checkCodexAuth(command);
-      case 'cursor':
+      case "cursor":
         return await checkCursorAuth(command);
       default:
-        return 'none';
+        return "none";
     }
   } catch {
-    return 'none';
+    return "none";
   }
 }
 
 /**
  * Check Claude CLI authentication
  */
-async function checkClaudeAuth(command: string): Promise<'cli' | 'api_key' | 'none'> {
+async function checkClaudeAuth(
+  command: string,
+): Promise<"cli" | "api_key" | "none"> {
   try {
     // Check for environment variable
     if (process.env.ANTHROPIC_API_KEY) {
-      return 'api_key';
+      return "api_key";
     }
 
     // Try running a simple command to check CLI auth
-    const result = await getCliVersion(command, ['--version'], 3000);
+    const result = await getCliVersion(command, ["--version"], 3000);
     if (result) {
-      return 'cli'; // If version works, assume CLI is authenticated
+      return "cli"; // If version works, assume CLI is authenticated
     }
   } catch {
     // Version command might work even without auth, so we need a better check
@@ -256,32 +262,32 @@ async function checkClaudeAuth(command: string): Promise<'cli' | 'api_key' | 'no
 
   // Try a more specific auth check
   return new Promise((resolve) => {
-    const child = spawn(command, ['whoami'], {
-      stdio: 'pipe',
+    const child = spawn(command, ["whoami"], {
+      stdio: "pipe",
       timeout: 3000,
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    child.stdout?.on('data', (data) => {
+    child.stdout?.on("data", (data) => {
       stdout += data.toString();
     });
 
-    child.stderr?.on('data', (data) => {
+    child.stderr?.on("data", (data) => {
       stderr += data.toString();
     });
 
-    child.on('close', (code) => {
-      if (code === 0 && stdout && !stderr.includes('not authenticated')) {
-        resolve('cli');
+    child.on("close", (code) => {
+      if (code === 0 && stdout && !stderr.includes("not authenticated")) {
+        resolve("cli");
       } else {
-        resolve('none');
+        resolve("none");
       }
     });
 
-    child.on('error', () => {
-      resolve('none');
+    child.on("error", () => {
+      resolve("none");
     });
   });
 }
@@ -289,49 +295,53 @@ async function checkClaudeAuth(command: string): Promise<'cli' | 'api_key' | 'no
 /**
  * Check Codex CLI authentication
  */
-async function checkCodexAuth(command: string): Promise<'cli' | 'api_key' | 'none'> {
+async function checkCodexAuth(
+  command: string,
+): Promise<"cli" | "api_key" | "none"> {
   // Check for environment variable
   if (process.env.OPENAI_API_KEY) {
-    return 'api_key';
+    return "api_key";
   }
 
   try {
     // Try a simple auth check
-    const result = await getCliVersion(command, ['--version'], 3000);
+    const result = await getCliVersion(command, ["--version"], 3000);
     if (result) {
-      return 'cli';
+      return "cli";
     }
   } catch {
     // Version check failed
   }
 
-  return 'none';
+  return "none";
 }
 
 /**
  * Check Cursor CLI authentication
  */
-async function checkCursorAuth(command: string): Promise<'cli' | 'api_key' | 'none'> {
+async function checkCursorAuth(
+  command: string,
+): Promise<"cli" | "api_key" | "none"> {
   // Check for environment variable
   if (process.env.CURSOR_API_KEY) {
-    return 'api_key';
+    return "api_key";
   }
 
   // Check for credentials files
   const credentialPaths = [
-    path.join(os.homedir(), '.cursor', 'credentials.json'),
-    path.join(os.homedir(), '.config', 'cursor', 'credentials.json'),
-    path.join(os.homedir(), '.cursor', 'auth.json'),
-    path.join(os.homedir(), '.config', 'cursor', 'auth.json'),
+    path.join(os.homedir(), ".cursor", "credentials.json"),
+    path.join(os.homedir(), ".config", "cursor", "credentials.json"),
+    path.join(os.homedir(), ".cursor", "auth.json"),
+    path.join(os.homedir(), ".config", "cursor", "auth.json"),
   ];
 
   for (const credPath of credentialPaths) {
     try {
       if (fs.existsSync(credPath)) {
-        const content = fs.readFileSync(credPath, 'utf8');
+        const content = fs.readFileSync(credPath, "utf8");
         const creds = JSON.parse(content);
         if (creds.accessToken || creds.token || creds.apiKey) {
-          return 'cli';
+          return "cli";
         }
       }
     } catch {
@@ -341,15 +351,15 @@ async function checkCursorAuth(command: string): Promise<'cli' | 'api_key' | 'no
 
   // Try a simple command
   try {
-    const result = await getCliVersion(command, ['--version'], 3000);
+    const result = await getCliVersion(command, ["--version"], 3000);
     if (result) {
-      return 'cli';
+      return "cli";
     }
   } catch {
     // Version check failed
   }
 
-  return 'none';
+  return "none";
 }
 
 /**
@@ -357,10 +367,11 @@ async function checkCursorAuth(command: string): Promise<'cli' | 'api_key' | 'no
  */
 export function getInstallInstructions(
   provider: keyof typeof CLI_CONFIGS,
-  platform: NodeJS.Platform = process.platform
+  platform: NodeJS.Platform = process.platform,
 ): string {
   const config = CLI_CONFIGS[provider];
-  const command = config.installCommands[platform as keyof typeof config.installCommands];
+  const command =
+    config.installCommands[platform as keyof typeof config.installCommands];
 
   if (!command) {
     return `No installation instructions available for ${provider} on ${platform}`;
@@ -372,42 +383,48 @@ export function getInstallInstructions(
 /**
  * Get platform-specific CLI paths and versions
  */
-export function getPlatformCliPaths(provider: keyof typeof CLI_CONFIGS): string[] {
+export function getPlatformCliPaths(
+  provider: keyof typeof CLI_CONFIGS,
+): string[] {
   const config = CLI_CONFIGS[provider];
   const platform = process.platform;
 
   switch (platform) {
-    case 'darwin':
+    case "darwin":
       return [
         `/usr/local/bin/${config.commands[0]}`,
         `/opt/homebrew/bin/${config.commands[0]}`,
-        path.join(os.homedir(), '.local', 'bin', config.commands[0]),
+        path.join(os.homedir(), ".local", "bin", config.commands[0]),
       ];
 
-    case 'linux':
+    case "linux":
       return [
         `/usr/bin/${config.commands[0]}`,
         `/usr/local/bin/${config.commands[0]}`,
-        path.join(os.homedir(), '.local', 'bin', config.commands[0]),
-        path.join(os.homedir(), '.npm', 'global', 'bin', config.commands[0]),
+        path.join(os.homedir(), ".local", "bin", config.commands[0]),
+        path.join(os.homedir(), ".npm", "global", "bin", config.commands[0]),
       ];
 
-    case 'win32':
+    case "win32":
       return [
         path.join(
           os.homedir(),
-          'AppData',
-          'Local',
-          'Programs',
+          "AppData",
+          "Local",
+          "Programs",
           config.commands[0],
-          `${config.commands[0]}.exe`
+          `${config.commands[0]}.exe`,
         ),
-        path.join(process.env.ProgramFiles || '', config.commands[0], `${config.commands[0]}.exe`),
         path.join(
-          process.env.ProgramFiles || '',
+          process.env.ProgramFiles || "",
           config.commands[0],
-          'bin',
-          `${config.commands[0]}.exe`
+          `${config.commands[0]}.exe`,
+        ),
+        path.join(
+          process.env.ProgramFiles || "",
+          config.commands[0],
+          "bin",
+          `${config.commands[0]}.exe`,
         ),
       ];
 
@@ -426,15 +443,15 @@ export function validateCliInstallation(cliInfo: CliInfo): {
   const issues: string[] = [];
 
   if (!cliInfo.installed) {
-    issues.push('CLI is not installed');
+    issues.push("CLI is not installed");
   }
 
   if (cliInfo.installed && !cliInfo.version) {
-    issues.push('Could not determine CLI version');
+    issues.push("Could not determine CLI version");
   }
 
-  if (cliInfo.installed && cliInfo.authMethod === 'none') {
-    issues.push('CLI is not authenticated');
+  if (cliInfo.installed && cliInfo.authMethod === "none") {
+    issues.push("CLI is not authenticated");
   }
 
   return {

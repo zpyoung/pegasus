@@ -13,7 +13,7 @@
  */
 export const API_BASE_URL = process.env.TEST_SERVER_PORT
   ? `http://127.0.0.1:${process.env.TEST_SERVER_PORT}`
-  : 'http://127.0.0.1:3108';
+  : "http://127.0.0.1:3108";
 
 /**
  * Base URL for the frontend web server
@@ -21,7 +21,7 @@ export const API_BASE_URL = process.env.TEST_SERVER_PORT
  */
 export const WEB_BASE_URL = process.env.TEST_PORT
   ? `http://127.0.0.1:${process.env.TEST_PORT}`
-  : 'http://127.0.0.1:3107';
+  : "http://127.0.0.1:3107";
 
 /**
  * API endpoints for worktree operations
@@ -85,42 +85,42 @@ export const TIMEOUTS = {
  */
 export const TEST_IDS = {
   // Sidebar & Navigation
-  sidebar: 'sidebar',
-  navBoard: 'nav-board',
-  navSpec: 'nav-spec',
-  navContext: 'nav-context',
-  navAgent: 'nav-agent',
-  settingsButton: 'settings-button',
-  openProjectButton: 'open-project-button',
+  sidebar: "sidebar",
+  navBoard: "nav-board",
+  navSpec: "nav-spec",
+  navContext: "nav-context",
+  navAgent: "nav-agent",
+  settingsButton: "settings-button",
+  openProjectButton: "open-project-button",
 
   // Views
-  boardView: 'board-view',
-  specView: 'spec-view',
-  contextView: 'context-view',
-  agentView: 'agent-view',
-  settingsView: 'settings-view',
-  welcomeView: 'welcome-view',
-  dashboardView: 'dashboard-view',
-  setupView: 'setup-view',
+  boardView: "board-view",
+  specView: "spec-view",
+  contextView: "context-view",
+  agentView: "agent-view",
+  settingsView: "settings-view",
+  welcomeView: "welcome-view",
+  dashboardView: "dashboard-view",
+  setupView: "setup-view",
 
   // Board View Components
-  addFeatureButton: 'add-feature-button',
-  addFeatureDialog: 'add-feature-dialog',
-  confirmAddFeature: 'confirm-add-feature',
-  featureBranchInput: 'feature-input',
-  featureCategoryInput: 'feature-category-input',
-  worktreeSelector: 'worktree-selector',
+  addFeatureButton: "add-feature-button",
+  addFeatureDialog: "add-feature-dialog",
+  confirmAddFeature: "confirm-add-feature",
+  featureBranchInput: "feature-input",
+  featureCategoryInput: "feature-category-input",
+  worktreeSelector: "worktree-selector",
 
   // Spec Editor
-  specEditor: 'spec-editor',
+  specEditor: "spec-editor",
 
   // File Browser Dialog
-  pathInput: 'path-input',
-  goToPathButton: 'go-to-path-button',
+  pathInput: "path-input",
+  goToPathButton: "go-to-path-button",
 
   // Context View
-  contextFileList: 'context-file-list',
-  addContextButton: 'add-context-button',
+  contextFileList: "context-file-list",
+  addContextButton: "add-context-button",
 } as const;
 
 // ============================================================================
@@ -132,17 +132,17 @@ export const TEST_IDS = {
  */
 export const CSS_SELECTORS = {
   /** CodeMirror editor content area */
-  codeMirrorContent: '.cm-content',
+  codeMirrorContent: ".cm-content",
   /** Dialog elements */
   dialog: '[role="dialog"]',
   /** Sonner toast notifications */
-  toast: '[data-sonner-toast]',
+  toast: "[data-sonner-toast]",
   toastError: '[data-sonner-toast][data-type="error"]',
   toastSuccess: '[data-sonner-toast][data-type="success"]',
   /** Command/combobox input (shadcn-ui cmdk) */
-  commandInput: '[cmdk-input]',
+  commandInput: "[cmdk-input]",
   /** Radix dialog overlay */
-  dialogOverlay: '[data-radix-dialog-overlay]',
+  dialogOverlay: "[data-radix-dialog-overlay]",
 } as const;
 
 // ============================================================================
@@ -153,8 +153,8 @@ export const CSS_SELECTORS = {
  * localStorage keys used by the application
  */
 export const STORAGE_KEYS = {
-  appStorage: 'pegasus-storage',
-  setupStorage: 'pegasus-setup',
+  appStorage: "pegasus-storage",
+  setupStorage: "pegasus-setup",
 } as const;
 
 // ============================================================================
@@ -167,7 +167,7 @@ export const STORAGE_KEYS = {
  * @returns Sanitized name suitable for directory paths
  */
 export function sanitizeBranchName(branchName: string): string {
-  return branchName.replace(/[^a-zA-Z0-9_-]/g, '-');
+  return branchName.replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
 // ============================================================================
@@ -178,8 +178,8 @@ export function sanitizeBranchName(branchName: string): string {
  * Default values used in test setup
  */
 export const DEFAULTS = {
-  projectName: 'Test Project',
-  projectPath: '/mock/test-project',
-  theme: 'dark' as const,
+  projectName: "Test Project",
+  projectPath: "/mock/test-project",
+  theme: "dark" as const,
   maxConcurrency: 3,
 } as const;

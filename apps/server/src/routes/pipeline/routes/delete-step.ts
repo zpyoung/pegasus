@@ -7,9 +7,9 @@
  * Response: { success: true }
  */
 
-import type { Request, Response } from 'express';
-import type { PipelineService } from '../../../services/pipeline-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { PipelineService } from "../../../services/pipeline-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createDeleteStepHandler(pipelineService: PipelineService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -20,12 +20,14 @@ export function createDeleteStepHandler(pipelineService: PipelineService) {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!stepId) {
-        res.status(400).json({ success: false, error: 'stepId is required' });
+        res.status(400).json({ success: false, error: "stepId is required" });
         return;
       }
 
@@ -35,7 +37,7 @@ export function createDeleteStepHandler(pipelineService: PipelineService) {
         success: true,
       });
     } catch (error) {
-      logError(error, 'Delete pipeline step failed');
+      logError(error, "Delete pipeline step failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

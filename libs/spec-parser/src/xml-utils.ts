@@ -9,14 +9,14 @@
  */
 export function escapeXml(str: string | undefined | null): string {
   if (str == null) {
-    return '';
+    return "";
   }
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 /**
@@ -26,16 +26,16 @@ export function unescapeXml(str: string): string {
   return str
     .replace(/&apos;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&gt;/g, '>')
-    .replace(/&lt;/g, '<')
-    .replace(/&amp;/g, '&');
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
 }
 
 /**
  * Escape special RegExp characters in a string.
  */
 function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -48,9 +48,12 @@ function escapeRegExp(value: string): string {
  * @param tagName - The tag name to extract (e.g., 'implemented_features')
  * @returns The content between the tags, or null if not found
  */
-export function extractXmlSection(xmlContent: string, tagName: string): string | null {
+export function extractXmlSection(
+  xmlContent: string,
+  tagName: string,
+): string | null {
   const safeTag = escapeRegExp(tagName);
-  const regex = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, 'i');
+  const regex = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, "i");
   const match = xmlContent.match(regex);
   return match ? match[1] : null;
 }
@@ -65,10 +68,13 @@ export function extractXmlSection(xmlContent: string, tagName: string): string |
  * @param tagName - The tag name to extract values from
  * @returns Array of extracted values (unescaped and trimmed)
  */
-export function extractXmlElements(xmlContent: string, tagName: string): string[] {
+export function extractXmlElements(
+  xmlContent: string,
+  tagName: string,
+): string[] {
   const values: string[] = [];
   const safeTag = escapeRegExp(tagName);
-  const regex = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, 'g');
+  const regex = new RegExp(`<${safeTag}>([\\s\\S]*?)<\\/${safeTag}>`, "g");
   const matches = xmlContent.matchAll(regex);
 
   for (const match of matches) {

@@ -1,11 +1,11 @@
 /**
  * Test setup file for UI unit tests
  */
-import '@testing-library/jest-dom/vitest';
-import { beforeEach, vi } from 'vitest';
+import "@testing-library/jest-dom/vitest";
+import { beforeEach, vi } from "vitest";
 
 // Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
@@ -49,12 +49,14 @@ const localStorageMock = {
   clear: vi.fn(() => {
     localStorageState.clear();
   }),
-  key: vi.fn((index: number) => Array.from(localStorageState.keys())[index] ?? null),
+  key: vi.fn(
+    (index: number) => Array.from(localStorageState.keys())[index] ?? null,
+  ),
   get length() {
     return localStorageState.size;
   },
 };
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   writable: true,
   value: localStorageMock,
 });

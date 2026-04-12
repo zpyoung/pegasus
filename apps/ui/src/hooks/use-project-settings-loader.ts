@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useProjectSettings } from '@/hooks/queries';
+import { useEffect, useRef } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useProjectSettings } from "@/hooks/queries";
 
 /**
  * Hook that loads project settings from the server when the current project changes.
@@ -14,28 +14,57 @@ export function useProjectSettingsLoader() {
   const setBoardBackground = useAppStore((state) => state.setBoardBackground);
   const setCardOpacity = useAppStore((state) => state.setCardOpacity);
   const setColumnOpacity = useAppStore((state) => state.setColumnOpacity);
-  const setColumnBorderEnabled = useAppStore((state) => state.setColumnBorderEnabled);
-  const setCardGlassmorphism = useAppStore((state) => state.setCardGlassmorphism);
-  const setCardBorderEnabled = useAppStore((state) => state.setCardBorderEnabled);
-  const setCardBorderOpacity = useAppStore((state) => state.setCardBorderOpacity);
-  const setHideScrollbar = useAppStore((state) => state.setHideScrollbar);
-  const setWorktreePanelVisible = useAppStore((state) => state.setWorktreePanelVisible);
-  const setShowInitScriptIndicator = useAppStore((state) => state.setShowInitScriptIndicator);
-  const setDefaultDeleteBranch = useAppStore((state) => state.setDefaultDeleteBranch);
-  const setAutoDismissInitScriptIndicator = useAppStore(
-    (state) => state.setAutoDismissInitScriptIndicator
+  const setColumnBorderEnabled = useAppStore(
+    (state) => state.setColumnBorderEnabled,
   );
-  const setWorktreeCopyFiles = useAppStore((state) => state.setWorktreeCopyFiles);
-  const setProjectUseWorktrees = useAppStore((state) => state.setProjectUseWorktrees);
-  const setPinnedWorktreesCount = useAppStore((state) => state.setPinnedWorktreesCount);
-  const setWorktreeDropdownThreshold = useAppStore((state) => state.setWorktreeDropdownThreshold);
-  const setAlwaysUseWorktreeDropdown = useAppStore((state) => state.setAlwaysUseWorktreeDropdown);
+  const setCardGlassmorphism = useAppStore(
+    (state) => state.setCardGlassmorphism,
+  );
+  const setCardBorderEnabled = useAppStore(
+    (state) => state.setCardBorderEnabled,
+  );
+  const setCardBorderOpacity = useAppStore(
+    (state) => state.setCardBorderOpacity,
+  );
+  const setHideScrollbar = useAppStore((state) => state.setHideScrollbar);
+  const setWorktreePanelVisible = useAppStore(
+    (state) => state.setWorktreePanelVisible,
+  );
+  const setShowInitScriptIndicator = useAppStore(
+    (state) => state.setShowInitScriptIndicator,
+  );
+  const setDefaultDeleteBranch = useAppStore(
+    (state) => state.setDefaultDeleteBranch,
+  );
+  const setAutoDismissInitScriptIndicator = useAppStore(
+    (state) => state.setAutoDismissInitScriptIndicator,
+  );
+  const setWorktreeCopyFiles = useAppStore(
+    (state) => state.setWorktreeCopyFiles,
+  );
+  const setProjectUseWorktrees = useAppStore(
+    (state) => state.setProjectUseWorktrees,
+  );
+  const setPinnedWorktreesCount = useAppStore(
+    (state) => state.setPinnedWorktreesCount,
+  );
+  const setWorktreeDropdownThreshold = useAppStore(
+    (state) => state.setWorktreeDropdownThreshold,
+  );
+  const setAlwaysUseWorktreeDropdown = useAppStore(
+    (state) => state.setAlwaysUseWorktreeDropdown,
+  );
   const setShowAllWorktrees = useAppStore((state) => state.setShowAllWorktrees);
 
-  const appliedProjectRef = useRef<{ path: string; dataUpdatedAt: number } | null>(null);
+  const appliedProjectRef = useRef<{
+    path: string;
+    dataUpdatedAt: number;
+  } | null>(null);
 
   // Fetch project settings with React Query
-  const { data: settings, dataUpdatedAt } = useProjectSettings(currentProject?.path);
+  const { data: settings, dataUpdatedAt } = useProjectSettings(
+    currentProject?.path,
+  );
 
   // Apply settings when data changes
   useEffect(() => {
@@ -76,7 +105,10 @@ export function useProjectSettingsLoader() {
     for (const [key, setter] of Object.entries(settingsMap)) {
       const value = bg?.[key as keyof typeof bg];
       if (value !== undefined) {
-        (setter as (path: string, val: typeof value) => void)(projectPath, value);
+        (setter as (path: string, val: typeof value) => void)(
+          projectPath,
+          value,
+        );
       }
     }
 
@@ -92,12 +124,18 @@ export function useProjectSettingsLoader() {
 
     // Apply defaultDeleteBranchWithWorktree if present
     if (settings.defaultDeleteBranchWithWorktree !== undefined) {
-      setDefaultDeleteBranch(projectPath, settings.defaultDeleteBranchWithWorktree);
+      setDefaultDeleteBranch(
+        projectPath,
+        settings.defaultDeleteBranchWithWorktree,
+      );
     }
 
     // Apply autoDismissInitScriptIndicator if present
     if (settings.autoDismissInitScriptIndicator !== undefined) {
-      setAutoDismissInitScriptIndicator(projectPath, settings.autoDismissInitScriptIndicator);
+      setAutoDismissInitScriptIndicator(
+        projectPath,
+        settings.autoDismissInitScriptIndicator,
+      );
     }
 
     // Apply worktreeCopyFiles if present
@@ -116,11 +154,17 @@ export function useProjectSettingsLoader() {
     }
 
     if (settings.worktreeDropdownThreshold !== undefined) {
-      setWorktreeDropdownThreshold(projectPath, settings.worktreeDropdownThreshold);
+      setWorktreeDropdownThreshold(
+        projectPath,
+        settings.worktreeDropdownThreshold,
+      );
     }
 
     if (settings.alwaysUseWorktreeDropdown !== undefined) {
-      setAlwaysUseWorktreeDropdown(projectPath, settings.alwaysUseWorktreeDropdown);
+      setAlwaysUseWorktreeDropdown(
+        projectPath,
+        settings.alwaysUseWorktreeDropdown,
+      );
     }
 
     if (settings.showAllWorktrees !== undefined) {
@@ -132,12 +176,10 @@ export function useProjectSettingsLoader() {
     // currentProject AND the projects array to keep them in sync
     // Type assertion needed because API returns Record<string, unknown>
     const settingsWithExtras = settings as unknown as Record<string, unknown>;
-    const activeClaudeApiProfileId = settingsWithExtras.activeClaudeApiProfileId as
-      | string
-      | null
-      | undefined;
+    const activeClaudeApiProfileId =
+      settingsWithExtras.activeClaudeApiProfileId as string | null | undefined;
     const phaseModelOverrides = settingsWithExtras.phaseModelOverrides as
-      | import('@pegasus/types').PhaseModelConfig
+      | import("@pegasus/types").PhaseModelConfig
       | undefined;
 
     // Check if we need to update the project
@@ -148,7 +190,8 @@ export function useProjectSettingsLoader() {
     if (snapshotProject && snapshotProject.path === projectPath) {
       const needsUpdate =
         (activeClaudeApiProfileId !== undefined &&
-          snapshotProject.activeClaudeApiProfileId !== activeClaudeApiProfileId) ||
+          snapshotProject.activeClaudeApiProfileId !==
+            activeClaudeApiProfileId) ||
         (phaseModelOverrides !== undefined &&
           JSON.stringify(snapshotProject.phaseModelOverrides) !==
             JSON.stringify(phaseModelOverrides));
@@ -156,7 +199,9 @@ export function useProjectSettingsLoader() {
       if (needsUpdate) {
         const updatedProjectData = {
           ...snapshotProject,
-          ...(activeClaudeApiProfileId !== undefined && { activeClaudeApiProfileId }),
+          ...(activeClaudeApiProfileId !== undefined && {
+            activeClaudeApiProfileId,
+          }),
           ...(phaseModelOverrides !== undefined && { phaseModelOverrides }),
         };
 
@@ -164,7 +209,7 @@ export function useProjectSettingsLoader() {
         // to avoid two separate re-renders that can cascade during initialization
         // and contribute to React error #185 (maximum update depth exceeded).
         const updatedProjects = storeState.projects.map((p) =>
-          p.id === snapshotProject.id ? updatedProjectData : p
+          p.id === snapshotProject.id ? updatedProjectData : p,
         );
         // NOTE: Intentionally bypasses setCurrentProject() to avoid a second
         // render cycle that can trigger React error #185 (maximum update depth

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   File,
   Folder,
@@ -22,21 +22,21 @@ import {
   Minus,
   AlertTriangle,
   GripVertical,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   useFileEditorStore,
   type FileTreeNode,
   type EnhancedGitFileStatus,
-} from '../use-file-editor-store';
-import { useFileBrowser } from '@/contexts/file-browser-context';
+} from "../use-file-editor-store";
+import { useFileBrowser } from "@/contexts/file-browser-context";
 
 interface FileTreeProps {
   onFileSelect: (path: string) => void;
@@ -51,59 +51,62 @@ interface FileTreeProps {
   onCopyItem?: (sourcePath: string, destinationPath: string) => Promise<void>;
   onMoveItem?: (sourcePath: string, destinationPath: string) => Promise<void>;
   onDownloadItem?: (filePath: string) => Promise<void>;
-  onDragDropMove?: (sourcePaths: string[], targetFolderPath: string) => Promise<void>;
+  onDragDropMove?: (
+    sourcePaths: string[],
+    targetFolderPath: string,
+  ) => Promise<void>;
   effectivePath?: string;
 }
 
 /** Get a color class for git status */
 function getGitStatusColor(status: string | undefined): string {
-  if (!status) return '';
+  if (!status) return "";
   switch (status) {
-    case 'M':
-      return 'text-yellow-500'; // modified
-    case 'A':
-      return 'text-green-500'; // added/staged
-    case 'D':
-      return 'text-red-500'; // deleted
-    case '?':
-      return 'text-gray-400'; // untracked
-    case '!':
-      return 'text-gray-600'; // ignored
-    case 'S':
-      return 'text-blue-500'; // staged
-    case 'R':
-      return 'text-purple-500'; // renamed
-    case 'C':
-      return 'text-cyan-500'; // copied
-    case 'U':
-      return 'text-orange-500'; // conflicted
+    case "M":
+      return "text-yellow-500"; // modified
+    case "A":
+      return "text-green-500"; // added/staged
+    case "D":
+      return "text-red-500"; // deleted
+    case "?":
+      return "text-gray-400"; // untracked
+    case "!":
+      return "text-gray-600"; // ignored
+    case "S":
+      return "text-blue-500"; // staged
+    case "R":
+      return "text-purple-500"; // renamed
+    case "C":
+      return "text-cyan-500"; // copied
+    case "U":
+      return "text-orange-500"; // conflicted
     default:
-      return 'text-muted-foreground';
+      return "text-muted-foreground";
   }
 }
 
 /** Get a status label for git status */
 function getGitStatusLabel(status: string | undefined): string {
-  if (!status) return '';
+  if (!status) return "";
   switch (status) {
-    case 'M':
-      return 'Modified';
-    case 'A':
-      return 'Added';
-    case 'D':
-      return 'Deleted';
-    case '?':
-      return 'Untracked';
-    case '!':
-      return 'Ignored';
-    case 'S':
-      return 'Staged';
-    case 'R':
-      return 'Renamed';
-    case 'C':
-      return 'Copied';
-    case 'U':
-      return 'Conflicted';
+    case "M":
+      return "Modified";
+    case "A":
+      return "Added";
+    case "D":
+      return "Deleted";
+    case "?":
+      return "Untracked";
+    case "!":
+      return "Ignored";
+    case "S":
+      return "Staged";
+    case "R":
+      return "Renamed";
+    case "C":
+      return "Copied";
+    case "U":
+      return "Conflicted";
     default:
       return status;
   }
@@ -118,17 +121,22 @@ const STATUS_PRIORITY: Record<string, number> = {
   R: 2, // Renamed
   C: 2, // Copied
   S: 1, // Staged
-  '?': 0, // Untracked
-  '!': -1, // Ignored - lowest priority
+  "?": 0, // Untracked
+  "!": -1, // Ignored - lowest priority
 };
 
 /** Compute aggregated git status info for a folder from the status maps */
 function computeFolderGitRollup(
   folderPath: string,
   gitStatusMap: Map<string, string>,
-  enhancedGitStatusMap: Map<string, EnhancedGitFileStatus>
-): { count: number; dominantStatus: string | null; totalAdded: number; totalRemoved: number } {
-  const prefix = folderPath + '/';
+  enhancedGitStatusMap: Map<string, EnhancedGitFileStatus>,
+): {
+  count: number;
+  dominantStatus: string | null;
+  totalAdded: number;
+  totalRemoved: number;
+} {
+  const prefix = folderPath + "/";
   let count = 0;
   let dominantStatus: string | null = null;
   let dominantPriority = -2;
@@ -161,9 +169,9 @@ function computeFolderGitRollup(
  */
 function isValidFileName(name: string): boolean {
   // Reject names containing path separators
-  if (name.includes('/') || name.includes('\\')) return false;
+  if (name.includes("/") || name.includes("\\")) return false;
   // Reject current/parent directory references
-  if (name === '.' || name === '..') return false;
+  if (name === "." || name === "..") return false;
   // Reject empty or whitespace-only names
   if (!name.trim()) return false;
   return true;
@@ -181,7 +189,7 @@ function InlineInput({
   onCancel: () => void;
   placeholder?: string;
 }) {
-  const [value, setValue] = useState(defaultValue || '');
+  const [value, setValue] = useState(defaultValue || "");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Guard against double-submission: pressing Enter triggers onKeyDown AND may
@@ -194,7 +202,7 @@ function InlineInput({
       // Select name without extension for rename.
       // For dotfiles (e.g. ".gitignore"), lastIndexOf('.') returns 0,
       // so we fall through to select() which selects the entire name.
-      const dotIndex = defaultValue.lastIndexOf('.');
+      const dotIndex = defaultValue.lastIndexOf(".");
       if (dotIndex > 0) {
         inputRef.current?.setSelectionRange(0, dotIndex);
       } else {
@@ -231,9 +239,9 @@ function InlineInput({
           if (errorMessage) setErrorMessage(null);
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
+          if (e.key === "Enter") {
             handleSubmit();
-          } else if (e.key === 'Escape') {
+          } else if (e.key === "Escape") {
             onCancel();
           }
         }}
@@ -254,11 +262,13 @@ function InlineInput({
         }}
         placeholder={placeholder}
         className={cn(
-          'text-sm bg-muted border rounded px-1 py-0.5 w-full outline-none focus:border-primary',
-          errorMessage ? 'border-red-500' : 'border-border'
+          "text-sm bg-muted border rounded px-1 py-0.5 w-full outline-none focus:border-primary",
+          errorMessage ? "border-red-500" : "border-border",
         )}
       />
-      {errorMessage && <span className="text-[10px] text-red-500 px-0.5">{errorMessage}</span>}
+      {errorMessage && (
+        <span className="text-[10px] text-red-500 px-0.5">{errorMessage}</span>
+      )}
     </div>
   );
 }
@@ -298,7 +308,10 @@ function TreeNode({
   onCopyItem?: (sourcePath: string, destinationPath: string) => Promise<void>;
   onMoveItem?: (sourcePath: string, destinationPath: string) => Promise<void>;
   onDownloadItem?: (filePath: string) => Promise<void>;
-  onDragDropMove?: (sourcePaths: string[], targetFolderPath: string) => Promise<void>;
+  onDragDropMove?: (
+    sourcePaths: string[],
+    targetFolderPath: string,
+  ) => Promise<void>;
   effectivePath?: string;
 }) {
   const {
@@ -323,7 +336,7 @@ function TreeNode({
 
   // Enhanced git status info
   const enhancedStatus = enhancedGitStatusMap.get(node.path);
-  const isConflicted = enhancedStatus?.isConflicted || gitStatus === 'U';
+  const isConflicted = enhancedStatus?.isConflicted || gitStatus === "U";
   const isStaged = enhancedStatus?.isStaged || false;
   const isUnstaged = enhancedStatus?.isUnstaged || false;
   const linesAdded = enhancedStatus?.linesAdded || 0;
@@ -333,12 +346,17 @@ function TreeNode({
   // Folder-level git status rollup
   const folderRollup = useMemo(() => {
     if (!node.isDirectory) return null;
-    return computeFolderGitRollup(node.path, gitStatusMap, enhancedGitStatusMap);
+    return computeFolderGitRollup(
+      node.path,
+      gitStatusMap,
+      enhancedGitStatusMap,
+    );
   }, [node.isDirectory, node.path, gitStatusMap, enhancedGitStatusMap]);
 
   // Drag state
   const isDragging = dragState.draggedPaths.includes(node.path);
-  const isDropTarget = dragState.dropTargetPath === node.path && node.isDirectory;
+  const isDropTarget =
+    dragState.dropTargetPath === node.path && node.isDirectory;
   const isSelected = selectedPaths.has(node.path);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -362,9 +380,9 @@ function TreeNode({
   };
 
   const handleDelete = async () => {
-    const itemType = node.isDirectory ? 'folder' : 'file';
+    const itemType = node.isDirectory ? "folder" : "file";
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${node.name}"? This ${itemType} will be moved to trash.`
+      `Are you sure you want to delete "${node.name}"? This ${itemType} will be moved to trash.`,
     );
     if (confirmed) {
       await onDeleteItem(node.path, node.isDirectory);
@@ -382,10 +400,13 @@ function TreeNode({
   // Drag handlers
   const handleDragStart = (e: React.DragEvent) => {
     e.stopPropagation();
-    const paths = isSelected && selectedPaths.size > 1 ? Array.from(selectedPaths) : [node.path];
+    const paths =
+      isSelected && selectedPaths.size > 1
+        ? Array.from(selectedPaths)
+        : [node.path];
     setDragState({ draggedPaths: paths, dropTargetPath: null });
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', JSON.stringify(paths));
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", JSON.stringify(paths));
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -395,13 +416,15 @@ function TreeNode({
 
     // Prevent dropping into self or descendant
     const dragged = dragState.draggedPaths;
-    const isDescendant = dragged.some((p) => node.path === p || node.path.startsWith(p + '/'));
+    const isDescendant = dragged.some(
+      (p) => node.path === p || node.path.startsWith(p + "/"),
+    );
     if (isDescendant) {
-      e.dataTransfer.dropEffect = 'none';
+      e.dataTransfer.dropEffect = "none";
       return;
     }
 
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
     setDragState({ ...dragState, dropTargetPath: node.path });
   };
 
@@ -421,11 +444,13 @@ function TreeNode({
     if (!node.isDirectory || !onDragDropMove) return;
 
     try {
-      const data = e.dataTransfer.getData('text/plain');
+      const data = e.dataTransfer.getData("text/plain");
       const paths: string[] = JSON.parse(data);
 
       // Validate: don't drop into self or descendant
-      const isDescendant = paths.some((p) => node.path === p || node.path.startsWith(p + '/'));
+      const isDescendant = paths.some(
+        (p) => node.path === p || node.path.startsWith(p + "/"),
+      );
       if (isDescendant) return;
 
       await onDragDropMove(paths, node.path);
@@ -441,7 +466,7 @@ function TreeNode({
   // Build tooltip with enhanced info
   let tooltip = node.name;
   if (node.isDirectory && folderRollup && folderRollup.count > 0) {
-    tooltip += ` (${folderRollup.count} changed file${folderRollup.count !== 1 ? 's' : ''})`;
+    tooltip += ` (${folderRollup.count} changed file${folderRollup.count !== 1 ? "s" : ""})`;
     if (folderRollup.totalAdded > 0 || folderRollup.totalRemoved > 0) {
       tooltip += ` +${folderRollup.totalAdded} -${folderRollup.totalRemoved}`;
     }
@@ -455,7 +480,10 @@ function TreeNode({
   return (
     <div key={node.path}>
       {isRenaming ? (
-        <div style={{ paddingLeft: `${depth * 16 + 8}px` }} className="py-0.5 px-2">
+        <div
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          className="py-0.5 px-2"
+        >
           <InlineInput
             defaultValue={node.name}
             onSubmit={async (newName) => {
@@ -468,13 +496,13 @@ function TreeNode({
       ) : (
         <div
           className={cn(
-            'group flex items-center gap-1.5 py-0.5 px-2 rounded cursor-pointer text-sm hover:bg-muted/50 relative transition-colors',
-            isActive && 'bg-primary/15 text-primary',
+            "group flex items-center gap-1.5 py-0.5 px-2 rounded cursor-pointer text-sm hover:bg-muted/50 relative transition-colors",
+            isActive && "bg-primary/15 text-primary",
             statusColor && !isActive && statusColor,
-            isConflicted && 'border-l-2 border-orange-500',
-            isDragging && 'opacity-40',
-            isDropTarget && 'bg-primary/20 ring-1 ring-primary/50',
-            isSelected && !isActive && 'bg-muted/70'
+            isConflicted && "border-l-2 border-orange-500",
+            isDragging && "opacity-40",
+            isDropTarget && "bg-primary/20 ring-1 ring-primary/50",
+            isSelected && !isActive && "bg-muted/70",
           )}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={handleClick}
@@ -523,23 +551,24 @@ function TreeNode({
             <>
               <span
                 className="text-[10px] font-medium shrink-0 px-1 py-0 rounded-full bg-muted text-muted-foreground"
-                title={`${folderRollup.count} changed file${folderRollup.count !== 1 ? 's' : ''}`}
+                title={`${folderRollup.count} changed file${folderRollup.count !== 1 ? "s" : ""}`}
               >
                 {folderRollup.count}
               </span>
               <span
-                className={cn('w-1.5 h-1.5 rounded-full shrink-0', {
-                  'bg-yellow-500': folderRollup.dominantStatus === 'M',
-                  'bg-green-500':
-                    folderRollup.dominantStatus === 'A' || folderRollup.dominantStatus === 'S',
-                  'bg-red-500': folderRollup.dominantStatus === 'D',
-                  'bg-gray-400': folderRollup.dominantStatus === '?',
-                  'bg-gray-600': folderRollup.dominantStatus === '!',
-                  'bg-purple-500': folderRollup.dominantStatus === 'R',
-                  'bg-cyan-500': folderRollup.dominantStatus === 'C',
-                  'bg-orange-500': folderRollup.dominantStatus === 'U',
+                className={cn("w-1.5 h-1.5 rounded-full shrink-0", {
+                  "bg-yellow-500": folderRollup.dominantStatus === "M",
+                  "bg-green-500":
+                    folderRollup.dominantStatus === "A" ||
+                    folderRollup.dominantStatus === "S",
+                  "bg-red-500": folderRollup.dominantStatus === "D",
+                  "bg-gray-400": folderRollup.dominantStatus === "?",
+                  "bg-gray-600": folderRollup.dominantStatus === "!",
+                  "bg-purple-500": folderRollup.dominantStatus === "R",
+                  "bg-cyan-500": folderRollup.dominantStatus === "C",
+                  "bg-orange-500": folderRollup.dominantStatus === "U",
                 })}
-                title={`${folderRollup.dominantStatus ? getGitStatusLabel(folderRollup.dominantStatus) : 'Changed'} (${folderRollup.count})`}
+                title={`${folderRollup.dominantStatus ? getGitStatusLabel(folderRollup.dominantStatus) : "Changed"} (${folderRollup.count})`}
               />
             </>
           )}
@@ -584,15 +613,15 @@ function TreeNode({
                 />
               ) : (
                 <span
-                  className={cn('w-1.5 h-1.5 rounded-full shrink-0', {
-                    'bg-yellow-500': gitStatus === 'M',
-                    'bg-green-500': gitStatus === 'A' || gitStatus === 'S',
-                    'bg-red-500': gitStatus === 'D',
-                    'bg-gray-400': gitStatus === '?',
-                    'bg-gray-600': gitStatus === '!',
-                    'bg-purple-500': gitStatus === 'R',
-                    'bg-cyan-500': gitStatus === 'C',
-                    'bg-orange-500': gitStatus === 'U',
+                  className={cn("w-1.5 h-1.5 rounded-full shrink-0", {
+                    "bg-yellow-500": gitStatus === "M",
+                    "bg-green-500": gitStatus === "A" || gitStatus === "S",
+                    "bg-red-500": gitStatus === "D",
+                    "bg-gray-400": gitStatus === "?",
+                    "bg-gray-600": gitStatus === "!",
+                    "bg-purple-500": gitStatus === "R",
+                    "bg-cyan-500": gitStatus === "C",
+                    "bg-orange-500": gitStatus === "U",
                   })}
                   title={enhancedLabel || statusLabel}
                 />
@@ -608,11 +637,11 @@ function TreeNode({
                   e.stopPropagation();
                 }}
                 className={cn(
-                  'p-0.5 rounded shrink-0 hover:bg-accent transition-opacity',
+                  "p-0.5 rounded shrink-0 hover:bg-accent transition-opacity",
                   // On mobile (max-md): always visible for touch access
                   // On desktop (md+): show on hover, focus, or when menu is open
-                  'max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100',
-                  menuOpen && 'opacity-100'
+                  "max-md:opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100",
+                  menuOpen && "opacity-100",
                 )}
                 data-testid={`file-tree-menu-${node.name}`}
                 aria-label={`Actions for ${node.name}`}
@@ -680,17 +709,20 @@ function TreeNode({
                   onClick={async (e) => {
                     e.stopPropagation();
                     try {
-                      const parentPath = node.path.substring(0, node.path.lastIndexOf('/')) || '/';
+                      const parentPath =
+                        node.path.substring(0, node.path.lastIndexOf("/")) ||
+                        "/";
                       const destPath = await openFileBrowser({
                         title: `Copy "${node.name}" To...`,
-                        description: 'Select the destination folder for the copy operation',
+                        description:
+                          "Select the destination folder for the copy operation",
                         initialPath: parentPath,
                       });
                       if (destPath) {
                         await onCopyItem(node.path, destPath);
                       }
                     } catch (err) {
-                      console.error('Copy operation failed:', err);
+                      console.error("Copy operation failed:", err);
                     }
                   }}
                   className="gap-2"
@@ -706,17 +738,20 @@ function TreeNode({
                   onClick={async (e) => {
                     e.stopPropagation();
                     try {
-                      const parentPath = node.path.substring(0, node.path.lastIndexOf('/')) || '/';
+                      const parentPath =
+                        node.path.substring(0, node.path.lastIndexOf("/")) ||
+                        "/";
                       const destPath = await openFileBrowser({
                         title: `Move "${node.name}" To...`,
-                        description: 'Select the destination folder for the move operation',
+                        description:
+                          "Select the destination folder for the move operation",
                         initialPath: parentPath,
                       });
                       if (destPath) {
                         await onMoveItem(node.path, destPath);
                       }
                     } catch (err) {
-                      console.error('Move operation failed:', err);
+                      console.error("Move operation failed:", err);
                     }
                   }}
                   className="gap-2"
@@ -736,7 +771,7 @@ function TreeNode({
                   className="gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download{node.isDirectory ? ' as ZIP' : ''}</span>
+                  <span>Download{node.isDirectory ? " as ZIP" : ""}</span>
                 </DropdownMenuItem>
               )}
 
@@ -775,7 +810,10 @@ function TreeNode({
         <div>
           {/* Inline create file input */}
           {isCreatingFile && (
-            <div style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }} className="py-0.5 px-2">
+            <div
+              style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+              className="py-0.5 px-2"
+            >
               <InlineInput
                 placeholder="filename.ext"
                 onSubmit={async (name) => {
@@ -788,7 +826,10 @@ function TreeNode({
           )}
           {/* Inline create folder input */}
           {isCreatingFolder && (
-            <div style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }} className="py-0.5 px-2">
+            <div
+              style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+              className="py-0.5 px-2"
+            >
               <InlineInput
                 placeholder="folder-name"
                 onSubmit={async (name) => {
@@ -801,7 +842,7 @@ function TreeNode({
           )}
           {(showHiddenFiles
             ? node.children
-            : node.children.filter((child) => !child.name.startsWith('.'))
+            : node.children.filter((child) => !child.name.startsWith("."))
           ).map((child) => (
             <TreeNode
               key={child.path}
@@ -861,21 +902,21 @@ export function FileTree({
   // Filter hidden files if needed
   const filteredTree = showHiddenFiles
     ? fileTree
-    : fileTree.filter((node) => !node.name.startsWith('.'));
+    : fileTree.filter((node) => !node.name.startsWith("."));
 
   // Handle drop on root area
   const handleRootDragOver = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       if (effectivePath) {
-        e.dataTransfer.dropEffect = 'move';
+        e.dataTransfer.dropEffect = "move";
         // Skip redundant state update if already targeting the same path
         if (dragState.dropTargetPath !== effectivePath) {
           setDragState({ ...dragState, dropTargetPath: effectivePath });
         }
       }
     },
-    [effectivePath, dragState, setDragState]
+    [effectivePath, dragState, setDragState],
   );
 
   const handleRootDrop = useCallback(
@@ -886,14 +927,14 @@ export function FileTree({
       if (!effectivePath || !onDragDropMove) return;
 
       try {
-        const data = e.dataTransfer.getData('text/plain');
+        const data = e.dataTransfer.getData("text/plain");
         const paths: string[] = JSON.parse(data);
         await onDragDropMove(paths, effectivePath);
       } catch {
         // Invalid drag data
       }
     },
-    [effectivePath, onDragDropMove, setDragState]
+    [effectivePath, onDragDropMove, setDragState],
   );
 
   return (
@@ -924,7 +965,7 @@ export function FileTree({
             <button
               onClick={() => setShowHiddenFiles(!showHiddenFiles)}
               className="p-1 hover:bg-accent rounded"
-              title={showHiddenFiles ? 'Hide dotfiles' : 'Show dotfiles'}
+              title={showHiddenFiles ? "Hide dotfiles" : "Show dotfiles"}
             >
               {showHiddenFiles ? (
                 <Eye className="w-3.5 h-3.5 text-muted-foreground" />
@@ -932,7 +973,11 @@ export function FileTree({
                 <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
               )}
             </button>
-            <button onClick={onRefresh} className="p-1 hover:bg-accent rounded" title="Refresh">
+            <button
+              onClick={onRefresh}
+              className="p-1 hover:bg-accent rounded"
+              title="Refresh"
+            >
               <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           </div>
@@ -957,11 +1002,11 @@ export function FileTree({
       >
         {/* Root-level inline creators */}
         {isCreatingFile && (
-          <div className="py-0.5 px-2" style={{ paddingLeft: '8px' }}>
+          <div className="py-0.5 px-2" style={{ paddingLeft: "8px" }}>
             <InlineInput
               placeholder="filename.ext"
               onSubmit={async (name) => {
-                await onCreateFile('', name);
+                await onCreateFile("", name);
                 setIsCreatingFile(false);
               }}
               onCancel={() => setIsCreatingFile(false)}
@@ -969,11 +1014,11 @@ export function FileTree({
           </div>
         )}
         {isCreatingFolder && (
-          <div className="py-0.5 px-2" style={{ paddingLeft: '8px' }}>
+          <div className="py-0.5 px-2" style={{ paddingLeft: "8px" }}>
             <InlineInput
               placeholder="folder-name"
               onSubmit={async (name) => {
-                await onCreateFolder('', name);
+                await onCreateFolder("", name);
                 setIsCreatingFolder(false);
               }}
               onCancel={() => setIsCreatingFolder(false)}

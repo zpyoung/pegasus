@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback, type KeyboardEvent } from 'react';
-import type { InputBarProps } from '../types.js';
+import { useState, useRef, useCallback, type KeyboardEvent } from "react";
+import type { InputBarProps } from "../types.js";
 
 const MIN_ROWS = 2;
 const MAX_ROWS = 6;
@@ -14,19 +14,23 @@ function heightForRows(rows: number): number {
   return rows * LINE_HEIGHT_PX + VERTICAL_PADDING_PX;
 }
 
-export function InputBar({ onSend, disabled = false, placeholder }: InputBarProps) {
-  const [text, setText] = useState('');
+export function InputBar({
+  onSend,
+  disabled = false,
+  placeholder,
+}: InputBarProps) {
+  const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     // scrollHeight includes padding, so subtract it before computing rows.
     const contentHeight = Math.max(0, el.scrollHeight - VERTICAL_PADDING_PX);
     const rows = Math.min(
       MAX_ROWS,
-      Math.max(MIN_ROWS, Math.ceil(contentHeight / LINE_HEIGHT_PX))
+      Math.max(MIN_ROWS, Math.ceil(contentHeight / LINE_HEIGHT_PX)),
     );
     el.style.height = `${heightForRows(rows)}px`;
   }, []);
@@ -37,7 +41,7 @@ export function InputBar({ onSend, disabled = false, placeholder }: InputBarProp
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -47,7 +51,7 @@ export function InputBar({ onSend, disabled = false, placeholder }: InputBarProp
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
-    setText('');
+    setText("");
     if (textareaRef.current) {
       textareaRef.current.style.height = `${heightForRows(MIN_ROWS)}px`;
     }
@@ -60,11 +64,14 @@ export function InputBar({ onSend, disabled = false, placeholder }: InputBarProp
         value={text}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? 'Ask a question…'}
+        placeholder={placeholder ?? "Ask a question…"}
         disabled={disabled}
         rows={MIN_ROWS}
         className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50 overflow-hidden"
-        style={{ lineHeight: `${LINE_HEIGHT_PX}px`, height: `${heightForRows(MIN_ROWS)}px` }}
+        style={{
+          lineHeight: `${LINE_HEIGHT_PX}px`,
+          height: `${heightForRows(MIN_ROWS)}px`,
+        }}
       />
       <button
         onClick={handleSend}

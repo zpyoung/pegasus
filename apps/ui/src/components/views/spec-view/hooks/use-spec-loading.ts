@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useSpecFile, useSpecRegenerationStatus } from '@/hooks/queries';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/query-keys';
+import { useEffect, useState, useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useSpecFile, useSpecRegenerationStatus } from "@/hooks/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useSpecLoading() {
   const { currentProject, setAppSpec } = useAppStore();

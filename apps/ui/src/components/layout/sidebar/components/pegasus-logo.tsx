@@ -1,6 +1,6 @@
-import type { NavigateOptions } from '@tanstack/react-router';
-import { cn } from '@/lib/utils';
-import { useOSDetection } from '@/hooks/use-os-detection';
+import type { NavigateOptions } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+import { useOSDetection } from "@/hooks/use-os-detection";
 
 interface PegasusLogoProps {
   sidebarOpen: boolean;
@@ -9,37 +9,38 @@ interface PegasusLogoProps {
 
 function getOSAbbreviation(os: string): string {
   switch (os) {
-    case 'mac':
-      return 'M';
-    case 'windows':
-      return 'W';
-    case 'linux':
-      return 'L';
+    case "mac":
+      return "M";
+    case "windows":
+      return "W";
+    case "linux":
+      return "L";
     default:
-      return '?';
+      return "?";
   }
 }
 
 export function PegasusLogo({ sidebarOpen, navigate }: PegasusLogoProps) {
-  const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+  const appVersion =
+    typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "0.0.0";
   const { os } = useOSDetection();
-  const appMode = import.meta.env.VITE_APP_MODE || '?';
+  const appMode = import.meta.env.VITE_APP_MODE || "?";
   const versionSuffix = `${getOSAbbreviation(os)}${appMode}`;
 
   return (
     <div
       className={cn(
-        'flex items-center gap-3 titlebar-no-drag cursor-pointer group',
-        !sidebarOpen && 'flex-col gap-1'
+        "flex items-center gap-3 titlebar-no-drag cursor-pointer group",
+        !sidebarOpen && "flex-col gap-1",
       )}
-      onClick={() => navigate({ to: '/overview' })}
+      onClick={() => navigate({ to: "/overview" })}
       data-testid="logo-button"
     >
       {/* Collapsed logo - only shown when sidebar is closed */}
       <div
         className={cn(
-          'relative flex flex-col items-center justify-center rounded-lg gap-0.5',
-          sidebarOpen ? 'hidden' : 'flex'
+          "relative flex flex-col items-center justify-center rounded-lg gap-0.5",
+          sidebarOpen ? "hidden" : "flex",
         )}
       >
         <svg
@@ -58,10 +59,16 @@ export function PegasusLogo({ sidebarOpen, navigate }: PegasusLogoProps) {
               y2="256"
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%" style={{ stopColor: 'var(--brand-400)' }} />
-              <stop offset="100%" style={{ stopColor: 'var(--brand-600)' }} />
+              <stop offset="0%" style={{ stopColor: "var(--brand-400)" }} />
+              <stop offset="100%" style={{ stopColor: "var(--brand-600)" }} />
             </linearGradient>
-            <filter id="iconShadow-collapsed" x="-20%" y="-20%" width="140%" height="140%">
+            <filter
+              id="iconShadow-collapsed"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
               <feDropShadow
                 dx="0"
                 dy="4"
@@ -71,7 +78,14 @@ export function PegasusLogo({ sidebarOpen, navigate }: PegasusLogoProps) {
               />
             </filter>
           </defs>
-          <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg-collapsed)" />
+          <rect
+            x="16"
+            y="16"
+            width="224"
+            height="224"
+            rx="56"
+            fill="url(#bg-collapsed)"
+          />
           <g
             fill="none"
             stroke="#FFFFFF"
@@ -110,10 +124,19 @@ export function PegasusLogo({ sidebarOpen, navigate }: PegasusLogoProps) {
                   y2="256"
                   gradientUnits="userSpaceOnUse"
                 >
-                  <stop offset="0%" style={{ stopColor: 'var(--brand-400)' }} />
-                  <stop offset="100%" style={{ stopColor: 'var(--brand-600)' }} />
+                  <stop offset="0%" style={{ stopColor: "var(--brand-400)" }} />
+                  <stop
+                    offset="100%"
+                    style={{ stopColor: "var(--brand-600)" }}
+                  />
                 </linearGradient>
-                <filter id="iconShadow-expanded" x="-20%" y="-20%" width="140%" height="140%">
+                <filter
+                  id="iconShadow-expanded"
+                  x="-20%"
+                  y="-20%"
+                  width="140%"
+                  height="140%"
+                >
                   <feDropShadow
                     dx="0"
                     dy="4"
@@ -123,7 +146,14 @@ export function PegasusLogo({ sidebarOpen, navigate }: PegasusLogoProps) {
                   />
                 </filter>
               </defs>
-              <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg-expanded)" />
+              <rect
+                x="16"
+                y="16"
+                width="224"
+                height="224"
+                rx="56"
+                fill="url(#bg-expanded)"
+              />
               <g
                 fill="none"
                 stroke="#FFFFFF"

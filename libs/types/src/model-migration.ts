@@ -5,17 +5,24 @@
  * This ensures backward compatibility when loading settings from older versions.
  */
 
-import type { CursorModelId, LegacyCursorModelId } from './cursor-models.js';
-import { LEGACY_CURSOR_MODEL_MAP, CURSOR_MODEL_MAP } from './cursor-models.js';
-import type { OpencodeModelId, LegacyOpencodeModelId } from './opencode-models.js';
+import type { CursorModelId, LegacyCursorModelId } from "./cursor-models.js";
+import { LEGACY_CURSOR_MODEL_MAP, CURSOR_MODEL_MAP } from "./cursor-models.js";
+import type {
+  OpencodeModelId,
+  LegacyOpencodeModelId,
+} from "./opencode-models.js";
 import {
   LEGACY_OPENCODE_MODEL_MAP,
   OPENCODE_MODEL_CONFIG_MAP,
   RETIRED_OPENCODE_MODEL_MAP,
-} from './opencode-models.js';
-import type { ClaudeCanonicalId } from './model.js';
-import { LEGACY_CLAUDE_ALIAS_MAP, CLAUDE_CANONICAL_MAP, CLAUDE_MODEL_MAP } from './model.js';
-import type { PhaseModelEntry } from './settings.js';
+} from "./opencode-models.js";
+import type { ClaudeCanonicalId } from "./model.js";
+import {
+  LEGACY_CLAUDE_ALIAS_MAP,
+  CLAUDE_CANONICAL_MAP,
+  CLAUDE_MODEL_MAP,
+} from "./model.js";
+import type { PhaseModelEntry } from "./settings.js";
 
 /**
  * Check if a string is a legacy Cursor model ID (without prefix)
@@ -27,7 +34,9 @@ export function isLegacyCursorModelId(id: string): id is LegacyCursorModelId {
 /**
  * Check if a string is a legacy OpenCode model ID (with slash format)
  */
-export function isLegacyOpencodeModelId(id: string): id is LegacyOpencodeModelId {
+export function isLegacyOpencodeModelId(
+  id: string,
+): id is LegacyOpencodeModelId {
   return id in LEGACY_OPENCODE_MODEL_MAP;
 }
 
@@ -56,7 +65,7 @@ export function migrateModelId(legacyId: string | undefined | null): string {
   }
 
   // Already has cursor- prefix and is in the map - it's canonical
-  if (legacyId.startsWith('cursor-') && legacyId in CURSOR_MODEL_MAP) {
+  if (legacyId.startsWith("cursor-") && legacyId in CURSOR_MODEL_MAP) {
     return legacyId;
   }
 
@@ -66,12 +75,18 @@ export function migrateModelId(legacyId: string | undefined | null): string {
   }
 
   // Already has opencode- prefix - check if it's a current canonical ID
-  if (legacyId.startsWith('opencode-') && legacyId in OPENCODE_MODEL_CONFIG_MAP) {
+  if (
+    legacyId.startsWith("opencode-") &&
+    legacyId in OPENCODE_MODEL_CONFIG_MAP
+  ) {
     return legacyId;
   }
 
   // Retired opencode- canonical IDs (e.g., 'opencode-grok-code' → 'opencode-big-pickle')
-  if (legacyId.startsWith('opencode-') && legacyId in RETIRED_OPENCODE_MODEL_MAP) {
+  if (
+    legacyId.startsWith("opencode-") &&
+    legacyId in RETIRED_OPENCODE_MODEL_MAP
+  ) {
     return RETIRED_OPENCODE_MODEL_MAP[legacyId];
   }
 
@@ -81,7 +96,7 @@ export function migrateModelId(legacyId: string | undefined | null): string {
   }
 
   // Already has claude- prefix and is in canonical map
-  if (legacyId.startsWith('claude-') && legacyId in CLAUDE_CANONICAL_MAP) {
+  if (legacyId.startsWith("claude-") && legacyId in CLAUDE_CANONICAL_MAP) {
     return legacyId;
   }
 
@@ -107,7 +122,7 @@ export function migrateCursorModelIds(ids: string[]): CursorModelId[] {
 
   return ids.map((id) => {
     // Already canonical
-    if (id.startsWith('cursor-') && id in CURSOR_MODEL_MAP) {
+    if (id.startsWith("cursor-") && id in CURSOR_MODEL_MAP) {
       return id as CursorModelId;
     }
 
@@ -117,7 +132,7 @@ export function migrateCursorModelIds(ids: string[]): CursorModelId[] {
     }
 
     // Unknown - assume it might be a valid cursor model with prefix
-    if (id.startsWith('cursor-')) {
+    if (id.startsWith("cursor-")) {
       return id as CursorModelId;
     }
 
@@ -140,12 +155,12 @@ export function migrateOpencodeModelIds(ids: string[]): OpencodeModelId[] {
   return ids
     .map((id) => {
       // Already canonical (dash format) and current
-      if (id.startsWith('opencode-') && id in OPENCODE_MODEL_CONFIG_MAP) {
+      if (id.startsWith("opencode-") && id in OPENCODE_MODEL_CONFIG_MAP) {
         return id as OpencodeModelId;
       }
 
       // Retired canonical IDs (e.g., 'opencode-grok-code') → replacement
-      if (id.startsWith('opencode-') && id in RETIRED_OPENCODE_MODEL_MAP) {
+      if (id.startsWith("opencode-") && id in RETIRED_OPENCODE_MODEL_MAP) {
         return RETIRED_OPENCODE_MODEL_MAP[id];
       }
 
@@ -155,12 +170,12 @@ export function migrateOpencodeModelIds(ids: string[]): OpencodeModelId[] {
       }
 
       // Convert slash to dash format for unknown models
-      if (id.startsWith('opencode/')) {
-        return id.replace('opencode/', 'opencode-') as OpencodeModelId;
+      if (id.startsWith("opencode/")) {
+        return id.replace("opencode/", "opencode-") as OpencodeModelId;
       }
 
       // Add prefix if not present
-      if (!id.startsWith('opencode-')) {
+      if (!id.startsWith("opencode-")) {
         return `opencode-${id}` as OpencodeModelId;
       }
 
@@ -176,15 +191,15 @@ export function migrateOpencodeModelIds(ids: string[]): OpencodeModelId[] {
  * @returns Migrated phase model entry with canonical model ID
  */
 export function migratePhaseModelEntry(
-  entry: PhaseModelEntry | string | undefined | null
+  entry: PhaseModelEntry | string | undefined | null,
 ): PhaseModelEntry {
   // Handle null/undefined
   if (!entry) {
-    return { model: 'claude-sonnet' }; // Default
+    return { model: "claude-sonnet" }; // Default
   }
 
   // Handle legacy string format
-  if (typeof entry === 'string') {
+  if (typeof entry === "string") {
     return { model: migrateModelId(entry) };
   }
 
@@ -212,7 +227,7 @@ export function getBareModelIdForCli(modelId: string): string {
   if (!modelId) return modelId;
 
   // Cursor models
-  if (modelId.startsWith('cursor-')) {
+  if (modelId.startsWith("cursor-")) {
     const bareId = modelId.slice(7); // Remove 'cursor-'
     // For GPT models, keep the gpt- prefix since that's what the CLI expects
     // e.g., 'cursor-gpt-5.2' -> 'gpt-5.2'
@@ -220,12 +235,12 @@ export function getBareModelIdForCli(modelId: string): string {
   }
 
   // OpenCode models - strip prefix
-  if (modelId.startsWith('opencode-')) {
+  if (modelId.startsWith("opencode-")) {
     return modelId.slice(9); // Remove 'opencode-'
   }
 
   // Codex models - strip prefix
-  if (modelId.startsWith('codex-')) {
+  if (modelId.startsWith("codex-")) {
     return modelId.slice(6); // Remove 'codex-'
   }
 

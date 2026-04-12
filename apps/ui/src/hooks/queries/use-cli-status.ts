@@ -4,10 +4,10 @@
  * React Query hooks for fetching CLI tool status (Claude, GitHub CLI, etc.)
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
 
 /**
  * Fetch Claude CLI status
@@ -20,11 +20,11 @@ export function useClaudeCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup) {
-        throw new Error('Setup API not available');
+        throw new Error("Setup API not available");
       }
       const result = await api.setup.getClaudeStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Claude status');
+        throw new Error(result.error || "Failed to fetch Claude status");
       }
       return result;
     },
@@ -43,11 +43,11 @@ export function useGitHubCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getGhStatus) {
-        throw new Error('GitHub CLI status API not available');
+        throw new Error("GitHub CLI status API not available");
       }
       const result = await api.setup.getGhStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch GitHub CLI status');
+        throw new Error(result.error || "Failed to fetch GitHub CLI status");
       }
       return result;
     },
@@ -66,11 +66,11 @@ export function useApiKeysStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup) {
-        throw new Error('Setup API not available');
+        throw new Error("Setup API not available");
       }
       const result = await api.setup.getApiKeys();
       if (!result.success) {
-        throw new Error('Failed to fetch API keys');
+        throw new Error("Failed to fetch API keys");
       }
       return result;
     },
@@ -89,11 +89,11 @@ export function usePlatformInfo() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup) {
-        throw new Error('Setup API not available');
+        throw new Error("Setup API not available");
       }
       const result = await api.setup.getPlatform();
       if (!result.success) {
-        throw new Error('Failed to fetch platform info');
+        throw new Error("Failed to fetch platform info");
       }
       return result;
     },
@@ -112,11 +112,11 @@ export function useCursorCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getCursorStatus) {
-        throw new Error('Cursor CLI status API not available');
+        throw new Error("Cursor CLI status API not available");
       }
       const result = await api.setup.getCursorStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Cursor CLI status');
+        throw new Error(result.error || "Failed to fetch Cursor CLI status");
       }
       return result;
     },
@@ -135,11 +135,11 @@ export function useCopilotCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getCopilotStatus) {
-        throw new Error('Copilot CLI status API not available');
+        throw new Error("Copilot CLI status API not available");
       }
       const result = await api.setup.getCopilotStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Copilot CLI status');
+        throw new Error(result.error || "Failed to fetch Copilot CLI status");
       }
       return result;
     },
@@ -158,11 +158,11 @@ export function useGeminiCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getGeminiStatus) {
-        throw new Error('Gemini CLI status API not available');
+        throw new Error("Gemini CLI status API not available");
       }
       const result = await api.setup.getGeminiStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch Gemini CLI status');
+        throw new Error(result.error || "Failed to fetch Gemini CLI status");
       }
       return result;
     },
@@ -181,11 +181,11 @@ export function useOpencodeCliStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.setup?.getOpencodeStatus) {
-        throw new Error('OpenCode CLI status API not available');
+        throw new Error("OpenCode CLI status API not available");
       }
       const result = await api.setup.getOpencodeStatus();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch OpenCode CLI status');
+        throw new Error(result.error || "Failed to fetch OpenCode CLI status");
       }
       return result;
     },

@@ -1,7 +1,7 @@
 export const uxReviewTemplate = {
-  id: 'ux-reviewer',
-  name: 'User Experience',
-  colorClass: 'bg-purple-500/20',
+  id: "ux-reviewer",
+  name: "User Experience",
+  colorClass: "bg-purple-500/20",
   instructions: `## User Experience Review & Update
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODE TO IMPROVE UX ⚠️

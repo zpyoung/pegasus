@@ -1,7 +1,7 @@
 export const documentationTemplate = {
-  id: 'documentation',
-  name: 'Documentation',
-  colorClass: 'bg-amber-500/20',
+  id: "documentation",
+  name: "Documentation",
+  colorClass: "bg-amber-500/20",
   instructions: `## Documentation Step
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODE WITH DOCUMENTATION ⚠️

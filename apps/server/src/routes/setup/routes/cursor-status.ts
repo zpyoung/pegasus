@@ -2,18 +2,22 @@
  * GET /cursor-status endpoint - Get Cursor CLI installation and auth status
  */
 
-import type { Request, Response } from 'express';
-import { CursorProvider } from '../../../providers/cursor-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { CursorProvider } from "../../../providers/cursor-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs";
+import * as path from "path";
 
-const DISCONNECTED_MARKER_FILE = '.cursor-disconnected';
+const DISCONNECTED_MARKER_FILE = ".cursor-disconnected";
 
 function isCursorDisconnectedFromApp(): boolean {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.pegasus', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(
+      projectRoot,
+      ".pegasus",
+      DISCONNECTED_MARKER_FILE,
+    );
     return fs.existsSync(markerPath);
   } catch {
     return false;
@@ -25,8 +29,8 @@ function isCursorDisconnectedFromApp(): boolean {
  * Returns Cursor CLI installation and authentication status
  */
 export function createCursorStatusHandler() {
-  const installCommand = 'curl https://cursor.com/install -fsS | bash';
-  const loginCommand = 'cursor-agent login';
+  const installCommand = "curl https://cursor.com/install -fsS | bash";
+  const loginCommand = "cursor-agent login";
 
   return async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -46,7 +50,7 @@ export function createCursorStatusHandler() {
           path: cliPath,
           auth: {
             authenticated: false,
-            method: 'none',
+            method: "none",
           },
           installCommand,
           loginCommand,
@@ -78,7 +82,7 @@ export function createCursorStatusHandler() {
         loginCommand,
       });
     } catch (error) {
-      logError(error, 'Get Cursor status failed');
+      logError(error, "Get Cursor status failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

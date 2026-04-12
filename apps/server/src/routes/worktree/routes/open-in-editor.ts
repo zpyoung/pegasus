@@ -6,19 +6,19 @@
  * This module uses @pegasus/platform for cross-platform editor detection and launching.
  */
 
-import type { Request, Response } from 'express';
-import { isAbsolute } from 'path';
+import type { Request, Response } from "express";
+import { isAbsolute } from "path";
 import {
   clearEditorCache,
   detectAllEditors,
   detectDefaultEditor,
   openInEditor,
   openInFileManager,
-} from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+} from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
-const logger = createLogger('open-in-editor');
+const logger = createLogger("open-in-editor");
 
 export function createGetAvailableEditorsHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
@@ -31,7 +31,7 @@ export function createGetAvailableEditorsHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Get available editors failed');
+      logError(error, "Get available editors failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -49,7 +49,7 @@ export function createGetDefaultEditorHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Get default editor failed');
+      logError(error, "Get default editor failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -78,7 +78,7 @@ export function createRefreshEditorsHandler() {
         },
       });
     } catch (error) {
-      logError(error, 'Refresh editors failed');
+      logError(error, "Refresh editors failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -95,7 +95,7 @@ export function createOpenInEditorHandler() {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -104,7 +104,7 @@ export function createOpenInEditorHandler() {
       if (!isAbsolute(worktreePath)) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath must be an absolute path',
+          error: "worktreePath must be an absolute path",
         });
         return;
       }
@@ -122,7 +122,7 @@ export function createOpenInEditorHandler() {
       } catch (editorError) {
         // If the specified editor fails, try opening in default file manager as fallback
         logger.warn(
-          `Failed to open in editor, falling back to file manager: ${getErrorMessage(editorError)}`
+          `Failed to open in editor, falling back to file manager: ${getErrorMessage(editorError)}`,
         );
 
         const result = await openInFileManager(worktreePath);
@@ -135,7 +135,7 @@ export function createOpenInEditorHandler() {
         });
       }
     } catch (error) {
-      logError(error, 'Open in editor failed');
+      logError(error, "Open in editor failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -35,7 +35,7 @@ import type {
   McpStdioServerConfig,
   McpSSEServerConfig,
   McpHttpServerConfig,
-} from '@pegasus/types';
+} from "@pegasus/types";
 ```
 
 ### Codex CLI Types
@@ -51,7 +51,7 @@ import type {
   CodexEventType,
   CodexItemType,
   CodexEvent,
-} from '@pegasus/types';
+} from "@pegasus/types";
 ```
 
 ### Feature Types
@@ -59,7 +59,12 @@ import type {
 Feature management and workflow types.
 
 ```typescript
-import type { Feature, FeatureStatus, PlanningMode, PlanSpec } from '@pegasus/types';
+import type {
+  Feature,
+  FeatureStatus,
+  PlanningMode,
+  PlanSpec,
+} from "@pegasus/types";
 ```
 
 **Feature Interface:**
@@ -82,7 +87,7 @@ import type {
   SessionListItem,
   CreateSessionParams,
   UpdateSessionParams,
-} from '@pegasus/types';
+} from "@pegasus/types";
 ```
 
 ### Error Types
@@ -90,7 +95,7 @@ import type {
 Error classification and handling.
 
 ```typescript
-import type { ErrorType, ErrorInfo } from '@pegasus/types';
+import type { ErrorType, ErrorInfo } from "@pegasus/types";
 ```
 
 ### Image Types
@@ -98,7 +103,7 @@ import type { ErrorType, ErrorInfo } from '@pegasus/types';
 Image handling for prompts.
 
 ```typescript
-import type { ImageData, ImageContentBlock } from '@pegasus/types';
+import type { ImageData, ImageContentBlock } from "@pegasus/types";
 ```
 
 ### Model Types
@@ -106,25 +111,29 @@ import type { ImageData, ImageContentBlock } from '@pegasus/types';
 Claude model definitions and mappings.
 
 ```typescript
-import { CLAUDE_MODEL_MAP, DEFAULT_MODELS, type ModelAlias } from '@pegasus/types';
+import {
+  CLAUDE_MODEL_MAP,
+  DEFAULT_MODELS,
+  type ModelAlias,
+} from "@pegasus/types";
 ```
 
 ## Usage Example
 
 ```typescript
-import type { Feature, ExecuteOptions } from '@pegasus/types';
+import type { Feature, ExecuteOptions } from "@pegasus/types";
 
 const feature: Feature = {
-  id: 'auth-feature',
-  category: 'backend',
-  description: 'Implement user authentication',
-  dependencies: ['database-setup'],
-  status: 'pending',
-  planningMode: 'spec',
+  id: "auth-feature",
+  category: "backend",
+  description: "Implement user authentication",
+  dependencies: ["database-setup"],
+  status: "pending",
+  planningMode: "spec",
 };
 
 const options: ExecuteOptions = {
-  model: 'claude-sonnet-4-20250514',
+  model: "claude-sonnet-4-20250514",
   temperature: 0.7,
 };
 ```

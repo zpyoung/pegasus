@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 import {
   getPegasusDir,
   getFeaturesDir,
@@ -18,18 +18,18 @@ import {
   getCredentialsPath,
   getProjectSettingsPath,
   ensureDataDir,
-} from '../src/paths';
+} from "../src/paths";
 
-describe('paths.ts', () => {
+describe("paths.ts", () => {
   let tempDir: string;
   let projectPath: string;
   let dataDir: string;
 
   beforeEach(async () => {
     // Create a temporary directory for testing
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'platform-paths-test-'));
-    projectPath = path.join(tempDir, 'test-project');
-    dataDir = path.join(tempDir, 'user-data');
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "platform-paths-test-"));
+    projectPath = path.join(tempDir, "test-project");
+    dataDir = path.join(tempDir, "user-data");
     await fs.mkdir(projectPath, { recursive: true });
   });
 
@@ -42,88 +42,94 @@ describe('paths.ts', () => {
     }
   });
 
-  describe('Project-level path construction', () => {
-    it('should return pegasus directory path', () => {
+  describe("Project-level path construction", () => {
+    it("should return pegasus directory path", () => {
       const result = getPegasusDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus'));
+      expect(result).toBe(path.join(projectPath, ".pegasus"));
     });
 
-    it('should return features directory path', () => {
+    it("should return features directory path", () => {
       const result = getFeaturesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'features'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "features"));
     });
 
-    it('should return feature directory path', () => {
-      const featureId = 'auth-feature';
+    it("should return feature directory path", () => {
+      const featureId = "auth-feature";
       const result = getFeatureDir(projectPath, featureId);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'features', featureId));
+      expect(result).toBe(
+        path.join(projectPath, ".pegasus", "features", featureId),
+      );
     });
 
-    it('should return feature images directory path', () => {
-      const featureId = 'auth-feature';
+    it("should return feature images directory path", () => {
+      const featureId = "auth-feature";
       const result = getFeatureImagesDir(projectPath, featureId);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'features', featureId, 'images'));
+      expect(result).toBe(
+        path.join(projectPath, ".pegasus", "features", featureId, "images"),
+      );
     });
 
-    it('should return board directory path', () => {
+    it("should return board directory path", () => {
       const result = getBoardDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'board'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "board"));
     });
 
-    it('should return images directory path', () => {
+    it("should return images directory path", () => {
       const result = getImagesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'images'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "images"));
     });
 
-    it('should return context directory path', () => {
+    it("should return context directory path", () => {
       const result = getContextDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'context'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "context"));
     });
 
-    it('should return worktrees directory path', () => {
+    it("should return worktrees directory path", () => {
       const result = getWorktreesDir(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'worktrees'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "worktrees"));
     });
 
-    it('should return app spec file path', () => {
+    it("should return app spec file path", () => {
       const result = getAppSpecPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'app_spec.txt'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "app_spec.txt"));
     });
 
-    it('should return branch tracking file path', () => {
+    it("should return branch tracking file path", () => {
       const result = getBranchTrackingPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'active-branches.json'));
+      expect(result).toBe(
+        path.join(projectPath, ".pegasus", "active-branches.json"),
+      );
     });
 
-    it('should return project settings file path', () => {
+    it("should return project settings file path", () => {
       const result = getProjectSettingsPath(projectPath);
-      expect(result).toBe(path.join(projectPath, '.pegasus', 'settings.json'));
+      expect(result).toBe(path.join(projectPath, ".pegasus", "settings.json"));
     });
   });
 
-  describe('Global settings path construction', () => {
-    it('should return global settings path', () => {
+  describe("Global settings path construction", () => {
+    it("should return global settings path", () => {
       const result = getGlobalSettingsPath(dataDir);
-      expect(result).toBe(path.join(dataDir, 'settings.json'));
+      expect(result).toBe(path.join(dataDir, "settings.json"));
     });
 
-    it('should return credentials path', () => {
+    it("should return credentials path", () => {
       const result = getCredentialsPath(dataDir);
-      expect(result).toBe(path.join(dataDir, 'credentials.json'));
+      expect(result).toBe(path.join(dataDir, "credentials.json"));
     });
   });
 
-  describe('Directory creation', () => {
-    it('should create pegasus directory', async () => {
+  describe("Directory creation", () => {
+    it("should create pegasus directory", async () => {
       const pegasusDir = await ensurePegasusDir(projectPath);
 
-      expect(pegasusDir).toBe(path.join(projectPath, '.pegasus'));
+      expect(pegasusDir).toBe(path.join(projectPath, ".pegasus"));
 
       const stats = await fs.stat(pegasusDir);
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it('should be idempotent when creating pegasus directory', async () => {
+    it("should be idempotent when creating pegasus directory", async () => {
       // Create directory first time
       const firstResult = await ensurePegasusDir(projectPath);
 
@@ -136,7 +142,7 @@ describe('paths.ts', () => {
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it('should create data directory', async () => {
+    it("should create data directory", async () => {
       const result = await ensureDataDir(dataDir);
 
       expect(result).toBe(dataDir);
@@ -145,7 +151,7 @@ describe('paths.ts', () => {
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it('should be idempotent when creating data directory', async () => {
+    it("should be idempotent when creating data directory", async () => {
       // Create directory first time
       const firstResult = await ensureDataDir(dataDir);
 
@@ -158,8 +164,8 @@ describe('paths.ts', () => {
       expect(stats.isDirectory()).toBe(true);
     });
 
-    it('should create nested directories recursively', async () => {
-      const deepProjectPath = path.join(tempDir, 'nested', 'deep', 'project');
+    it("should create nested directories recursively", async () => {
+      const deepProjectPath = path.join(tempDir, "nested", "deep", "project");
       await fs.mkdir(deepProjectPath, { recursive: true });
 
       const pegasusDir = await ensurePegasusDir(deepProjectPath);
@@ -169,29 +175,29 @@ describe('paths.ts', () => {
     });
   });
 
-  describe('Path handling with special characters', () => {
-    it('should handle feature IDs with special characters', () => {
-      const featureId = 'feature-with-dashes_and_underscores';
+  describe("Path handling with special characters", () => {
+    it("should handle feature IDs with special characters", () => {
+      const featureId = "feature-with-dashes_and_underscores";
       const result = getFeatureDir(projectPath, featureId);
       expect(result).toContain(featureId);
     });
 
-    it('should handle paths with spaces', () => {
-      const pathWithSpaces = path.join(tempDir, 'path with spaces');
+    it("should handle paths with spaces", () => {
+      const pathWithSpaces = path.join(tempDir, "path with spaces");
       const result = getPegasusDir(pathWithSpaces);
-      expect(result).toBe(path.join(pathWithSpaces, '.pegasus'));
+      expect(result).toBe(path.join(pathWithSpaces, ".pegasus"));
     });
   });
 
-  describe('Path relationships', () => {
-    it('should have feature dir as child of features dir', () => {
+  describe("Path relationships", () => {
+    it("should have feature dir as child of features dir", () => {
       const featuresDir = getFeaturesDir(projectPath);
-      const featureDir = getFeatureDir(projectPath, 'test-feature');
+      const featureDir = getFeatureDir(projectPath, "test-feature");
 
       expect(featureDir.startsWith(featuresDir)).toBe(true);
     });
 
-    it('should have all project paths under pegasus dir', () => {
+    it("should have all project paths under pegasus dir", () => {
       const pegasusDir = getPegasusDir(projectPath);
       const paths = [
         getFeaturesDir(projectPath),

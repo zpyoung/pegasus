@@ -1,9 +1,9 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Zap } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import type { ProviderConfig } from '@/config/api-providers';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Zap } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import type { ProviderConfig } from "@/config/api-providers";
 
 interface ApiKeyFieldProps {
   config: ProviderConfig;
@@ -43,7 +43,7 @@ export function ApiKeyField({ config }: ApiKeyFieldProps) {
         <div className="relative flex-1">
           <Input
             id={inputId}
-            type={showValue ? 'text' : 'password'}
+            type={showValue ? "text" : "password"}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
@@ -58,7 +58,11 @@ export function ApiKeyField({ config }: ApiKeyFieldProps) {
             onClick={() => setShowValue(!showValue)}
             data-testid={toggleTestId}
           >
-            {showValue ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showValue ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <Button
@@ -83,7 +87,7 @@ export function ApiKeyField({ config }: ApiKeyFieldProps) {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        {descriptionPrefix}{' '}
+        {descriptionPrefix}{" "}
         <a
           href={descriptionLinkHref}
           target="_blank"
@@ -98,8 +102,8 @@ export function ApiKeyField({ config }: ApiKeyFieldProps) {
         <div
           className={`flex items-center gap-2 p-3 rounded-lg ${
             result.success
-              ? 'bg-green-500/10 border border-green-500/20 text-green-400'
-              : 'bg-red-500/10 border border-red-500/20 text-red-400'
+              ? "bg-green-500/10 border border-green-500/20 text-green-400"
+              : "bg-red-500/10 border border-red-500/20 text-red-400"
           }`}
           data-testid={resultTestId}
         >

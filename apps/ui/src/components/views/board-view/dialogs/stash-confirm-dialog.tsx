@@ -9,7 +9,7 @@
  * user can make an informed decision.
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,9 +17,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, Archive, XCircle, FileEdit, FilePlus, FileQuestion } from 'lucide-react';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Archive,
+  XCircle,
+  FileEdit,
+  FilePlus,
+  FileQuestion,
+} from "lucide-react";
 
 export interface UncommittedChangesInfo {
   staged: string[];
@@ -28,7 +35,10 @@ export interface UncommittedChangesInfo {
   totalFiles: number;
 }
 
-export type StashConfirmAction = 'stash-and-proceed' | 'proceed-without-stash' | 'cancel';
+export type StashConfirmAction =
+  | "stash-and-proceed"
+  | "proceed-without-stash"
+  | "cancel";
 
 interface StashConfirmDialogProps {
   open: boolean;
@@ -52,15 +62,15 @@ export function StashConfirmDialog({
   isLoading = false,
 }: StashConfirmDialogProps) {
   const handleStashAndProceed = useCallback(() => {
-    onConfirm('stash-and-proceed');
+    onConfirm("stash-and-proceed");
   }, [onConfirm]);
 
   const handleProceedWithoutStash = useCallback(() => {
-    onConfirm('proceed-without-stash');
+    onConfirm("proceed-without-stash");
   }, [onConfirm]);
 
   const handleCancel = useCallback(() => {
-    onConfirm('cancel');
+    onConfirm("cancel");
     onOpenChange(false);
   }, [onConfirm, onOpenChange]);
 
@@ -69,7 +79,10 @@ export function StashConfirmDialog({
   const { staged, unstaged, untracked } = changesInfo;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isLoading && onOpenChange(isOpen)}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => !isLoading && onOpenChange(isOpen)}
+    >
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -79,7 +92,7 @@ export function StashConfirmDialog({
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                You have uncommitted changes that may be affected when you{' '}
+                You have uncommitted changes that may be affected when you{" "}
                 <strong>{operationDescription}</strong>.
               </span>
 
@@ -114,12 +127,12 @@ export function StashConfirmDialog({
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Stash & Proceed</strong> &mdash; Saves your changes, performs the
-                    operation, then restores them
+                    <strong>Stash & Proceed</strong> &mdash; Saves your changes,
+                    performs the operation, then restores them
                   </li>
                   <li>
-                    <strong>Proceed Without Stashing</strong> &mdash; Carries your uncommitted
-                    changes into the new branch as-is
+                    <strong>Proceed Without Stashing</strong> &mdash; Carries
+                    your uncommitted changes into the new branch as-is
                   </li>
                 </ul>
               </div>
@@ -131,7 +144,11 @@ export function StashConfirmDialog({
           <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
             Cancel
           </Button>
-          <Button variant="secondary" onClick={handleProceedWithoutStash} disabled={isLoading}>
+          <Button
+            variant="secondary"
+            onClick={handleProceedWithoutStash}
+            disabled={isLoading}
+          >
             <FileQuestion className="w-4 h-4 mr-2" />
             Proceed Without Stashing
           </Button>
@@ -176,7 +193,7 @@ function FileSection({
         ))}
         {remaining > 0 && (
           <div className="px-3 py-1 text-xs text-muted-foreground border-b border-border last:border-b-0">
-            ...and {remaining} more {remaining === 1 ? 'file' : 'files'}
+            ...and {remaining} more {remaining === 1 ? "file" : "files"}
           </div>
         )}
       </div>

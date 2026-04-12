@@ -6,21 +6,24 @@
  * automatic caching, deduplication, and background refetching.
  */
 
-import { useMemo, useEffect, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import { createSmartPollingInterval, getGlobalEventsRecent } from '@/hooks/use-event-recency';
-import { isPipelineStatus } from '@pegasus/types';
-import type { Feature } from '@/store/app-store';
+import { useMemo, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import {
+  createSmartPollingInterval,
+  getGlobalEventsRecent,
+} from "@/hooks/use-event-recency";
+import { isPipelineStatus } from "@pegasus/types";
+import type { Feature } from "@/store/app-store";
 
 const FEATURES_REFETCH_ON_FOCUS = false;
 const FEATURES_REFETCH_ON_RECONNECT = false;
 const FEATURES_POLLING_INTERVAL = 30000;
 /** Default polling interval for agent output when WebSocket is inactive */
 const AGENT_OUTPUT_POLLING_INTERVAL = 5000;
-const FEATURES_CACHE_PREFIX = 'pegasus:features-cache:';
+const FEATURES_CACHE_PREFIX = "pegasus:features-cache:";
 
 /**
  * Bump this version whenever the Feature shape changes so stale localStorage
@@ -39,29 +42,30 @@ interface PersistedFeaturesCache {
 }
 
 const STATIC_FEATURE_STATUSES: ReadonlySet<string> = new Set([
-  'backlog',
-  'merge_conflict',
-  'ready',
-  'in_progress',
-  'interrupted',
-  'waiting_approval',
-  'verified',
-  'completed',
+  "backlog",
+  "merge_conflict",
+  "ready",
+  "in_progress",
+  "interrupted",
+  "waiting_approval",
+  "verified",
+  "completed",
 ]);
 
-function isValidFeatureStatus(value: unknown): value is Feature['status'] {
+function isValidFeatureStatus(value: unknown): value is Feature["status"] {
   return (
-    typeof value === 'string' && (STATIC_FEATURE_STATUSES.has(value) || isPipelineStatus(value))
+    typeof value === "string" &&
+    (STATIC_FEATURE_STATUSES.has(value) || isPipelineStatus(value))
   );
 }
 
 function sanitizePersistedFeatureEntry(value: unknown): Feature | null {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return null;
   }
 
   const raw = value as Record<string, unknown>;
-  const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+  const id = typeof raw.id === "string" ? raw.id.trim() : "";
   if (!id) {
     return null;
   }
@@ -69,16 +73,21 @@ function sanitizePersistedFeatureEntry(value: unknown): Feature | null {
   return {
     ...(raw as Feature),
     id,
-    title: typeof raw.title === 'string' ? raw.title : undefined,
-    titleGenerating: typeof raw.titleGenerating === 'boolean' ? raw.titleGenerating : undefined,
-    category: typeof raw.category === 'string' ? raw.category : '',
-    description: typeof raw.description === 'string' ? raw.description : '',
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    titleGenerating:
+      typeof raw.titleGenerating === "boolean"
+        ? raw.titleGenerating
+        : undefined,
+    category: typeof raw.category === "string" ? raw.category : "",
+    description: typeof raw.description === "string" ? raw.description : "",
     steps: Array.isArray(raw.steps)
-      ? raw.steps.filter((step): step is string => typeof step === 'string')
+      ? raw.steps.filter((step): step is string => typeof step === "string")
       : [],
-    status: isValidFeatureStatus(raw.status) ? raw.status : 'backlog',
+    status: isValidFeatureStatus(raw.status) ? raw.status : "backlog",
     branchName:
-      typeof raw.branchName === 'string' && raw.branchName.trim() ? raw.branchName : undefined,
+      typeof raw.branchName === "string" && raw.branchName.trim()
+        ? raw.branchName
+        : undefined,
   };
 }
 
@@ -96,17 +105,21 @@ export function sanitizePersistedFeatures(features: unknown): Feature[] {
   return sanitized;
 }
 
-function readPersistedFeatures(projectPath: string): PersistedFeaturesCache | null {
-  if (typeof window === 'undefined') return null;
+function readPersistedFeatures(
+  projectPath: string,
+): PersistedFeaturesCache | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(`${FEATURES_CACHE_PREFIX}${projectPath}`);
+    const raw = window.localStorage.getItem(
+      `${FEATURES_CACHE_PREFIX}${projectPath}`,
+    );
     if (!raw) return null;
     const parsed = JSON.parse(raw) as {
       schemaVersion?: number;
       timestamp?: number;
       features?: unknown;
     };
-    if (!parsed || typeof parsed.timestamp !== 'number') {
+    if (!parsed || typeof parsed.timestamp !== "number") {
       return null;
     }
     // Reject entries written by an older (or newer) schema version
@@ -118,20 +131,27 @@ function readPersistedFeatures(projectPath: string): PersistedFeaturesCache | nu
     const features = sanitizePersistedFeatures(parsed.features);
 
     // If schema claims valid but nothing survived sanitization, treat as corrupt.
-    if (Array.isArray(parsed.features) && parsed.features.length > 0 && features.length === 0) {
+    if (
+      Array.isArray(parsed.features) &&
+      parsed.features.length > 0 &&
+      features.length === 0
+    ) {
       window.localStorage.removeItem(`${FEATURES_CACHE_PREFIX}${projectPath}`);
       return null;
     }
 
     // Migrate partial/corrupt entries in-place so later reads are clean.
-    if (Array.isArray(parsed.features) && features.length !== parsed.features.length) {
+    if (
+      Array.isArray(parsed.features) &&
+      features.length !== parsed.features.length
+    ) {
       window.localStorage.setItem(
         `${FEATURES_CACHE_PREFIX}${projectPath}`,
         JSON.stringify({
           schemaVersion: FEATURES_CACHE_VERSION,
           timestamp: parsed.timestamp,
           features,
-        } satisfies PersistedFeaturesCache)
+        } satisfies PersistedFeaturesCache),
       );
     }
 
@@ -145,15 +165,21 @@ function readPersistedFeatures(projectPath: string): PersistedFeaturesCache | nu
   }
 }
 
-function writePersistedFeatures(projectPath: string, features: Feature[]): void {
-  if (typeof window === 'undefined') return;
+function writePersistedFeatures(
+  projectPath: string,
+  features: Feature[],
+): void {
+  if (typeof window === "undefined") return;
   try {
     const payload: PersistedFeaturesCache = {
       schemaVersion: FEATURES_CACHE_VERSION,
       timestamp: Date.now(),
       features,
     };
-    window.localStorage.setItem(`${FEATURES_CACHE_PREFIX}${projectPath}`, JSON.stringify(payload));
+    window.localStorage.setItem(
+      `${FEATURES_CACHE_PREFIX}${projectPath}`,
+      JSON.stringify(payload),
+    );
   } catch {
     // Best effort cache only.
   }
@@ -167,7 +193,7 @@ function writePersistedFeatures(projectPath: string, features: Feature[]): void 
  * caches don't accumulate indefinitely.
  */
 function evictStaleFeaturesCache(): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     // First pass: collect all matching keys without mutating localStorage.
     // Iterating forward while calling removeItem() shifts indexes and can skip keys.
@@ -186,7 +212,10 @@ function evictStaleFeaturesCache(): void {
       try {
         const raw = window.localStorage.getItem(key);
         if (!raw) continue;
-        const parsed = JSON.parse(raw) as { timestamp?: number; schemaVersion?: number };
+        const parsed = JSON.parse(raw) as {
+          timestamp?: number;
+          schemaVersion?: number;
+        };
         // Evict entries with wrong schema version
         if (parsed.schemaVersion !== FEATURES_CACHE_VERSION) {
           keysToRemove.push(key);
@@ -194,7 +223,8 @@ function evictStaleFeaturesCache(): void {
         }
         validEntries.push({
           key,
-          timestamp: typeof parsed.timestamp === 'number' ? parsed.timestamp : 0,
+          timestamp:
+            typeof parsed.timestamp === "number" ? parsed.timestamp : 0,
         });
       } catch {
         // Corrupt entry — mark for removal
@@ -235,7 +265,7 @@ export function useFeatures(projectPath: string | undefined) {
   // the same memoized value to avoid a redundant second localStorage read.
   const persisted = useMemo(
     () => (projectPath ? readPersistedFeatures(projectPath) : null),
-    [projectPath]
+    [projectPath],
   );
 
   const queryClient = useQueryClient();
@@ -253,8 +283,8 @@ export function useFeatures(projectPath: string | undefined) {
     const targetQueryHash = JSON.stringify(queryKeys.features.all(projectPath));
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (
-        event.type === 'updated' &&
-        event.action.type === 'success' &&
+        event.type === "updated" &&
+        event.action.type === "success" &&
         event.query.queryHash === targetQueryHash
       ) {
         const features = event.query.state.data as Feature[] | undefined;
@@ -267,13 +297,13 @@ export function useFeatures(projectPath: string | undefined) {
   }, [projectPath, queryClient]);
 
   return useQuery({
-    queryKey: queryKeys.features.all(projectPath ?? ''),
+    queryKey: queryKeys.features.all(projectPath ?? ""),
     queryFn: async (): Promise<Feature[]> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       const result = await api.features?.getAll(projectPath);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to fetch features');
+        throw new Error(result?.error || "Failed to fetch features");
       }
       const features = (result.features ?? []) as Feature[];
       writePersistedFeatures(projectPath, features);
@@ -310,18 +340,19 @@ interface UseFeatureOptions {
 export function useFeature(
   projectPath: string | undefined,
   featureId: string | undefined,
-  options: UseFeatureOptions = {}
+  options: UseFeatureOptions = {},
 ) {
   const { enabled = true, pollingInterval } = options;
 
   return useQuery({
-    queryKey: queryKeys.features.single(projectPath ?? '', featureId ?? ''),
+    queryKey: queryKeys.features.single(projectPath ?? "", featureId ?? ""),
     queryFn: async (): Promise<Feature | null> => {
-      if (!projectPath || !featureId) throw new Error('Missing project path or feature ID');
+      if (!projectPath || !featureId)
+        throw new Error("Missing project path or feature ID");
       const api = getElectronAPI();
       const result = await api.features?.get(projectPath, featureId);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to fetch feature');
+        throw new Error(result?.error || "Failed to fetch feature");
       }
       return (result.feature as Feature) ?? null;
     },
@@ -354,20 +385,24 @@ interface UseAgentOutputOptions {
 export function useAgentOutput(
   projectPath: string | undefined,
   featureId: string | undefined,
-  options: UseAgentOutputOptions = {}
+  options: UseAgentOutputOptions = {},
 ) {
   const { enabled = true, pollingInterval } = options;
 
   return useQuery({
-    queryKey: queryKeys.features.agentOutput(projectPath ?? '', featureId ?? ''),
+    queryKey: queryKeys.features.agentOutput(
+      projectPath ?? "",
+      featureId ?? "",
+    ),
     queryFn: async (): Promise<string> => {
-      if (!projectPath || !featureId) throw new Error('Missing project path or feature ID');
+      if (!projectPath || !featureId)
+        throw new Error("Missing project path or feature ID");
       const api = getElectronAPI();
       const result = await api.features?.getAgentOutput(projectPath, featureId);
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to fetch agent output');
+        throw new Error(result?.error || "Failed to fetch agent output");
       }
-      return result.content ?? '';
+      return result.content ?? "";
     },
     enabled: !!projectPath && !!featureId && enabled,
     staleTime: STALE_TIMES.AGENT_OUTPUT,

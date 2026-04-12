@@ -1,7 +1,7 @@
 export const testingTemplate = {
-  id: 'testing',
-  name: 'Testing',
-  colorClass: 'bg-green-500/20',
+  id: "testing",
+  name: "Testing",
+  colorClass: "bg-green-500/20",
   instructions: `## Testing Step
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODEBASE WITH TESTS ⚠️

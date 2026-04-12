@@ -5,15 +5,15 @@
  * for a specific pull request, providing file path and line context.
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from './common.js';
-import { checkGitHubRemote } from './check-github-remote.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "./common.js";
+import { checkGitHubRemote } from "./check-github-remote.js";
 import {
   fetchPRReviewComments,
   fetchReviewThreadResolvedStatus,
   type PRReviewComment,
   type ListPRReviewCommentsResult,
-} from '../../../services/pr-review-comments.service.js';
+} from "../../../services/pr-review-comments.service.js";
 
 // Re-export types so existing callers continue to work
 export type { PRReviewComment, ListPRReviewCommentsResult };
@@ -31,23 +31,30 @@ export function createListPRReviewCommentsHandler() {
       const { projectPath, prNumber } = req.body as ListPRReviewCommentsRequest;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!prNumber || typeof prNumber !== 'number') {
-        res
-          .status(400)
-          .json({ success: false, error: 'prNumber is required and must be a number' });
+      if (!prNumber || typeof prNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "prNumber is required and must be a number",
+        });
         return;
       }
 
       // Check if this is a GitHub repo and get owner/repo
       const remoteStatus = await checkGitHubRemote(projectPath);
-      if (!remoteStatus.hasGitHubRemote || !remoteStatus.owner || !remoteStatus.repo) {
+      if (
+        !remoteStatus.hasGitHubRemote ||
+        !remoteStatus.owner ||
+        !remoteStatus.repo
+      ) {
         res.status(400).json({
           success: false,
-          error: 'Project does not have a GitHub remote',
+          error: "Project does not have a GitHub remote",
         });
         return;
       }
@@ -56,7 +63,7 @@ export function createListPRReviewCommentsHandler() {
         projectPath,
         remoteStatus.owner,
         remoteStatus.repo,
-        prNumber
+        prNumber,
       );
 
       res.json({
@@ -65,7 +72,7 @@ export function createListPRReviewCommentsHandler() {
         totalCount: comments.length,
       });
     } catch (error) {
-      logError(error, 'Fetch PR review comments failed');
+      logError(error, "Fetch PR review comments failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

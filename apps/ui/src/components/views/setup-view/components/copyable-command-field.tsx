@@ -1,16 +1,19 @@
-import { Button } from '@/components/ui/button';
-import { Copy } from 'lucide-react';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 interface CopyableCommandFieldProps {
   command: string;
   label?: string;
 }
 
-export function CopyableCommandField({ command, label }: CopyableCommandFieldProps) {
+export function CopyableCommandField({
+  command,
+  label,
+}: CopyableCommandFieldProps) {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(command);
-    toast.success('Command copied to clipboard');
+    toast.success("Command copied to clipboard");
   };
 
   return (

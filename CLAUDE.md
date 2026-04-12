@@ -162,17 +162,17 @@ Always import from shared packages, never from old paths:
 
 ```typescript
 // ✅ Correct
-import type { Feature, ExecuteOptions } from '@pegasus/types';
-import { createLogger, classifyError } from '@pegasus/utils';
-import { getEnhancementPrompt } from '@pegasus/prompts';
-import { getFeatureDir, ensurePegasusDir } from '@pegasus/platform';
-import { resolveModelString } from '@pegasus/model-resolver';
-import { resolveDependencies } from '@pegasus/dependency-resolver';
-import { getGitRepositoryDiffs } from '@pegasus/git-utils';
+import type { Feature, ExecuteOptions } from "@pegasus/types";
+import { createLogger, classifyError } from "@pegasus/utils";
+import { getEnhancementPrompt } from "@pegasus/prompts";
+import { getFeatureDir, ensurePegasusDir } from "@pegasus/platform";
+import { resolveModelString } from "@pegasus/model-resolver";
+import { resolveDependencies } from "@pegasus/dependency-resolver";
+import { getGitRepositoryDiffs } from "@pegasus/git-utils";
 
 // ❌ Never import from old paths
-import { Feature } from '../services/feature-loader'; // Wrong
-import { createLogger } from '../lib/logger'; // Wrong
+import { Feature } from "../services/feature-loader"; // Wrong
+import { createLogger } from "../lib/logger"; // Wrong
 ```
 
 ## Key Patterns
@@ -200,6 +200,7 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 ## Environment Variables
 
 ### Server
+
 - `PORT` - Server port (default: 3008)
 - `HOST` - Host to bind server to (default: 0.0.0.0)
 - `HOSTNAME` - Hostname for user-facing URLs (default: localhost)
@@ -213,10 +214,12 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `PEGASUS_SKIP_SANDBOX_WARNING` - Set `true` to suppress sandbox risk warnings regardless of container status
 
 ### Frontend
+
 - `PEGASUS_WEB_PORT` - Vite dev server port (default: 3007)
 - `VITE_HOSTNAME` - Hostname for frontend API URLs (default: localhost)
 
 ### Auth & API Keys
+
 - `ANTHROPIC_API_KEY` - Anthropic API key (or use Claude Code CLI auth)
 - `ANTHROPIC_AUTH_TOKEN` - Anthropic OAuth token
 - `ANTHROPIC_BASE_URL` - Custom Anthropic API base URL
@@ -236,6 +239,7 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `PEGASUS_DISABLE_AUTH` - Set `true` to disable API authentication entirely (for trusted local/network deployments)
 
 ### Model Overrides
+
 - `PEGASUS_MODEL_DEFAULT` - Fallback model for all operations when no use-case-specific override is set
 - `PEGASUS_MODEL_AUTO` - Model used for autonomous kanban card implementation (default: opus)
 - `PEGASUS_MODEL_SPEC` - Model used for app spec generation (default: haiku)
@@ -244,6 +248,7 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `PEGASUS_MODEL_CHAT` - Model used for chat interactions (default: haiku)
 
 ### Debug & Development
+
 - `PEGASUS_AUTO_LOGIN=true` - Skip login prompt (disabled when NODE_ENV=production)
 - `PEGASUS_MOCK_AGENT=true` - Fake agent responses, no API calls (for UI testing)
 - `PEGASUS_DEBUG_RAW_OUTPUT=true` - Log raw agent output streams

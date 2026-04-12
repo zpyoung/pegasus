@@ -11,17 +11,17 @@
  * Mounted at /api/pipeline in the main server.
  */
 
-import { Router } from 'express';
-import type { PipelineService } from '../../services/pipeline-service.js';
-import { validatePathParams } from '../../middleware/validate-paths.js';
-import { createGetConfigHandler } from './routes/get-config.js';
-import { createSaveConfigHandler } from './routes/save-config.js';
-import { createAddStepHandler } from './routes/add-step.js';
-import { createUpdateStepHandler } from './routes/update-step.js';
-import { createDeleteStepHandler } from './routes/delete-step.js';
-import { createReorderStepsHandler } from './routes/reorder-steps.js';
-import { createDiscoverPipelinesHandler } from './routes/discover-pipelines.js';
-import { createCopyTemplatesHandler } from './routes/copy-templates.js';
+import { Router } from "express";
+import type { PipelineService } from "../../services/pipeline-service.js";
+import { validatePathParams } from "../../middleware/validate-paths.js";
+import { createGetConfigHandler } from "./routes/get-config.js";
+import { createSaveConfigHandler } from "./routes/save-config.js";
+import { createAddStepHandler } from "./routes/add-step.js";
+import { createUpdateStepHandler } from "./routes/update-step.js";
+import { createDeleteStepHandler } from "./routes/delete-step.js";
+import { createReorderStepsHandler } from "./routes/reorder-steps.js";
+import { createDiscoverPipelinesHandler } from "./routes/discover-pipelines.js";
+import { createCopyTemplatesHandler } from "./routes/copy-templates.js";
 
 /**
  * Create pipeline router with all endpoints
@@ -44,48 +44,48 @@ export function createPipelineRoutes(pipelineService: PipelineService): Router {
 
   // Get pipeline configuration
   router.post(
-    '/config',
-    validatePathParams('projectPath'),
-    createGetConfigHandler(pipelineService)
+    "/config",
+    validatePathParams("projectPath"),
+    createGetConfigHandler(pipelineService),
   );
 
   // Save entire pipeline configuration
   router.post(
-    '/config/save',
-    validatePathParams('projectPath'),
-    createSaveConfigHandler(pipelineService)
+    "/config/save",
+    validatePathParams("projectPath"),
+    createSaveConfigHandler(pipelineService),
   );
 
   // Pipeline step operations
   router.post(
-    '/steps/add',
-    validatePathParams('projectPath'),
-    createAddStepHandler(pipelineService)
+    "/steps/add",
+    validatePathParams("projectPath"),
+    createAddStepHandler(pipelineService),
   );
   router.post(
-    '/steps/update',
-    validatePathParams('projectPath'),
-    createUpdateStepHandler(pipelineService)
+    "/steps/update",
+    validatePathParams("projectPath"),
+    createUpdateStepHandler(pipelineService),
   );
   router.post(
-    '/steps/delete',
-    validatePathParams('projectPath'),
-    createDeleteStepHandler(pipelineService)
+    "/steps/delete",
+    validatePathParams("projectPath"),
+    createDeleteStepHandler(pipelineService),
   );
   router.post(
-    '/steps/reorder',
-    validatePathParams('projectPath'),
-    createReorderStepsHandler(pipelineService)
+    "/steps/reorder",
+    validatePathParams("projectPath"),
+    createReorderStepsHandler(pipelineService),
   );
 
   // YAML pipeline discovery
-  router.get('/discover', createDiscoverPipelinesHandler());
+  router.get("/discover", createDiscoverPipelinesHandler());
 
   // Copy built-in pipeline templates to project
   router.post(
-    '/copy-templates',
-    validatePathParams('projectPath'),
-    createCopyTemplatesHandler()
+    "/copy-templates",
+    validatePathParams("projectPath"),
+    createCopyTemplatesHandler(),
   );
 
   return router;

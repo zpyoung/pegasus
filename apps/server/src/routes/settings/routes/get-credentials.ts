@@ -8,9 +8,9 @@
  * Response: `{ "success": true, "credentials": { anthropic, google, openai } }`
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler factory for GET /api/settings/credentials
@@ -28,7 +28,7 @@ export function createGetCredentialsHandler(settingsService: SettingsService) {
         credentials,
       });
     } catch (error) {
-      logError(error, 'Get credentials failed');
+      logError(error, "Get credentials failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

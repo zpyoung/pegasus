@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { UIEvent } from 'react';
-import { useAppStore, ChatSession } from '@/store/app-store';
-import { useShallow } from 'zustand/react/shallow';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { UIEvent } from "react";
+import { useAppStore, ChatSession } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Plus,
   MessageSquare,
@@ -13,16 +13,16 @@ import {
   Search,
   ChevronLeft,
   ArchiveRestore,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 const CHAT_SESSION_ROW_HEIGHT_PX = 84;
 const CHAT_SESSION_OVERSCAN_COUNT = 6;
@@ -52,10 +52,10 @@ export function ChatHistory() {
       unarchiveChatSession: state.unarchiveChatSession,
       deleteChatSession: state.deleteChatSession,
       setChatHistoryOpen: state.setChatHistoryOpen,
-    }))
+    })),
   );
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const scrollRafRef = useRef<number | null>(null);
@@ -68,14 +68,20 @@ export function ChatHistory() {
   // Filter sessions for current project
   const projectSessions = useMemo(() => {
     if (!currentProjectId) return [];
-    return chatSessions.filter((session) => session.projectId === currentProjectId);
+    return chatSessions.filter(
+      (session) => session.projectId === currentProjectId,
+    );
   }, [chatSessions, currentProjectId]);
 
   // Filter by search query and archived status
   const filteredSessions = useMemo(() => {
     return projectSessions.filter((session) => {
-      const matchesSearch = session.title.toLowerCase().includes(normalizedQuery);
-      const matchesArchivedStatus = showArchived ? session.archived : !session.archived;
+      const matchesSearch = session.title
+        .toLowerCase()
+        .includes(normalizedQuery);
+      const matchesArchivedStatus = showArchived
+        ? session.archived
+        : !session.archived;
       return matchesSearch && matchesArchivedStatus;
     });
   }, [projectSessions, normalizedQuery, showArchived]);
@@ -83,20 +89,23 @@ export function ChatHistory() {
   // Sort by most recently updated
   const sortedSessions = useMemo(() => {
     return [...filteredSessions].sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
   }, [filteredSessions]);
 
   const totalHeight =
-    sortedSessions.length * CHAT_SESSION_ROW_HEIGHT_PX + CHAT_SESSION_LIST_PADDING_PX * 2;
+    sortedSessions.length * CHAT_SESSION_ROW_HEIGHT_PX +
+    CHAT_SESSION_LIST_PADDING_PX * 2;
   const startIndex = Math.max(
     0,
-    Math.floor(scrollTop / CHAT_SESSION_ROW_HEIGHT_PX) - CHAT_SESSION_OVERSCAN_COUNT
+    Math.floor(scrollTop / CHAT_SESSION_ROW_HEIGHT_PX) -
+      CHAT_SESSION_OVERSCAN_COUNT,
   );
   const endIndex = Math.min(
     sortedSessions.length,
     Math.ceil((scrollTop + viewportHeight) / CHAT_SESSION_ROW_HEIGHT_PX) +
-      CHAT_SESSION_OVERSCAN_COUNT
+      CHAT_SESSION_OVERSCAN_COUNT,
   );
   const offsetTop = startIndex * CHAT_SESSION_ROW_HEIGHT_PX;
   const visibleSessions = sortedSessions.slice(startIndex, endIndex);
@@ -114,7 +123,7 @@ export function ChatHistory() {
 
   useEffect(() => {
     const container = listRef.current;
-    if (!container || typeof window === 'undefined') return;
+    if (!container || typeof window === "undefined") return;
 
     const updateHeight = () => {
       setViewportHeight(container.clientHeight);
@@ -122,9 +131,9 @@ export function ChatHistory() {
 
     updateHeight();
 
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', updateHeight);
-      return () => window.removeEventListener('resize', updateHeight);
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateHeight);
+      return () => window.removeEventListener("resize", updateHeight);
     }
 
     const observer = new ResizeObserver(() => updateHeight());
@@ -172,7 +181,7 @@ export function ChatHistory() {
 
   const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this chat session?')) {
+    if (confirm("Are you sure you want to delete this chat session?")) {
       deleteChatSession(sessionId);
     }
   };
@@ -180,8 +189,8 @@ export function ChatHistory() {
   return (
     <div
       className={cn(
-        'flex flex-col h-full bg-zinc-950/50 backdrop-blur-md border-r border-white/10 transition-all duration-200',
-        chatHistoryOpen ? 'w-80' : 'w-0 overflow-hidden'
+        "flex flex-col h-full bg-zinc-950/50 backdrop-blur-md border-r border-white/10 transition-all duration-200",
+        chatHistoryOpen ? "w-80" : "w-0 overflow-hidden",
       )}
     >
       {chatHistoryOpen && (
@@ -192,7 +201,11 @@ export function ChatHistory() {
               <MessageSquare className="w-5 h-5" />
               <h2 className="font-semibold">Chat History</h2>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setChatHistoryOpen(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setChatHistoryOpen(false)}
+            >
               <ChevronLeft className="w-4 h-4" />
             </Button>
           </div>
@@ -235,7 +248,7 @@ export function ChatHistory() {
               ) : (
                 <Archive className="w-4 h-4" />
               )}
-              {showArchived ? 'Show Active' : 'Show Archived'}
+              {showArchived ? "Show Active" : "Show Archived"}
               {showArchived && (
                 <Badge variant="outline" className="ml-auto">
                   {projectSessions.filter((s) => s.archived).length}
@@ -277,14 +290,16 @@ export function ChatHistory() {
                     <div
                       key={session.id}
                       className={cn(
-                        'flex items-center gap-2 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group',
-                        currentChatSession?.id === session.id && 'bg-accent'
+                        "flex items-center gap-2 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group",
+                        currentChatSession?.id === session.id && "bg-accent",
                       )}
                       style={{ height: CHAT_SESSION_ROW_HEIGHT_PX }}
                       onClick={() => handleSelectSession(session)}
                     >
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-sm truncate">{session.title}</h3>
+                        <h3 className="font-medium text-sm truncate">
+                          {session.title}
+                        </h3>
                         <p className="text-xs text-muted-foreground truncate">
                           {session.messages.length} messages
                         </p>
@@ -296,21 +311,29 @@ export function ChatHistory() {
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                            >
                               <MoreVertical className="w-3 h-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {session.archived ? (
                               <DropdownMenuItem
-                                onClick={(e) => handleUnarchiveSession(session.id, e)}
+                                onClick={(e) =>
+                                  handleUnarchiveSession(session.id, e)
+                                }
                               >
                                 <ArchiveRestore className="w-4 h-4 mr-2" />
                                 Unarchive
                               </DropdownMenuItem>
                             ) : (
                               <DropdownMenuItem
-                                onClick={(e) => handleArchiveSession(session.id, e)}
+                                onClick={(e) =>
+                                  handleArchiveSession(session.id, e)
+                                }
                               >
                                 <Archive className="w-4 h-4 mr-2" />
                                 Archive
@@ -318,7 +341,9 @@ export function ChatHistory() {
                             )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={(e) => handleDeleteSession(session.id, e)}
+                              onClick={(e) =>
+                                handleDeleteSession(session.id, e)
+                              }
                               className="text-destructive"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />

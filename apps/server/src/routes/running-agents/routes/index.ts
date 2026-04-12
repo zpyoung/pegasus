@@ -2,12 +2,15 @@
  * GET / endpoint - Get all running agents
  */
 
-import type { Request, Response } from 'express';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
-import { getBacklogPlanStatus, getRunningDetails } from '../../backlog-plan/common.js';
-import { getAllRunningGenerations } from '../../app-spec/common.js';
-import path from 'path';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
+import {
+  getBacklogPlanStatus,
+  getRunningDetails,
+} from "../../backlog-plan/common.js";
+import { getAllRunningGenerations } from "../../app-spec/common.js";
+import path from "path";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createIndexHandler(autoModeService: AutoModeServiceCompat) {
   return async (_req: Request, res: Response): Promise<void> => {
@@ -23,7 +26,7 @@ export function createIndexHandler(autoModeService: AutoModeServiceCompat) {
           projectPath: backlogPlanDetails.projectPath,
           projectName: path.basename(backlogPlanDetails.projectPath),
           isAutoMode: false,
-          title: 'Backlog plan',
+          title: "Backlog plan",
           description: backlogPlanDetails.prompt,
         });
       }
@@ -35,17 +38,17 @@ export function createIndexHandler(autoModeService: AutoModeServiceCompat) {
         let description: string;
 
         switch (generation.type) {
-          case 'feature_generation':
-            title = 'Generating features from spec';
-            description = 'Creating features from the project specification';
+          case "feature_generation":
+            title = "Generating features from spec";
+            description = "Creating features from the project specification";
             break;
-          case 'sync':
-            title = 'Syncing spec with code';
-            description = 'Updating spec from codebase and completed features';
+          case "sync":
+            title = "Syncing spec with code";
+            description = "Updating spec from codebase and completed features";
             break;
           default:
-            title = 'Regenerating spec';
-            description = 'Analyzing project and generating specification';
+            title = "Regenerating spec";
+            description = "Analyzing project and generating specification";
         }
 
         runningAgents.push({
@@ -64,7 +67,7 @@ export function createIndexHandler(autoModeService: AutoModeServiceCompat) {
         totalCount: runningAgents.length,
       });
     } catch (error) {
-      logError(error, 'Get running agents failed');
+      logError(error, "Get running agents failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

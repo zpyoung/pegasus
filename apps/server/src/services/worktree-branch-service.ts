@@ -17,12 +17,17 @@
  * rebase-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { execGitCommand } from '../lib/git.js';
-import type { EventEmitter } from '../lib/events.js';
-import { hasAnyChanges, stashChanges, popStash, localBranchExists } from './branch-utils.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { execGitCommand } from "../lib/git.js";
+import type { EventEmitter } from "../lib/events.js";
+import {
+  hasAnyChanges,
+  stashChanges,
+  popStash,
+  localBranchExists,
+} from "./branch-utils.js";
 
-const logger = createLogger('WorktreeBranchService');
+const logger = createLogger("WorktreeBranchService");
 
 // ============================================================================
 // Types
@@ -66,15 +71,22 @@ async function fetchRemotes(cwd: string): Promise<void> {
   const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    await execGitCommand(['fetch', '--all', '--quiet'], cwd, undefined, controller);
+    await execGitCommand(
+      ["fetch", "--all", "--quiet"],
+      cwd,
+      undefined,
+      controller,
+    );
   } catch (error) {
     if (controller.signal.aborted) {
       // Fetch timed out - log and continue; callers should not be blocked by a slow remote
       logger.warn(
-        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`
+        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`,
       );
     } else {
-      logger.warn(`fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`);
+      logger.warn(
+        `fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`,
+      );
     }
     // Non-fatal: continue with locally available refs regardless of failure type
   } finally {
@@ -89,8 +101,10 @@ async function fetchRemotes(cwd: string): Promise<void> {
  * For example, "origin/feature/my-branch" → { remote: "origin", branch: "feature/my-branch" }.
  * Returns null if the input contains no slash.
  */
-function parseRemoteBranch(branchName: string): { remote: string; branch: string } | null {
-  const firstSlash = branchName.indexOf('/');
+function parseRemoteBranch(
+  branchName: string,
+): { remote: string; branch: string } | null {
+  const firstSlash = branchName.indexOf("/");
   if (firstSlash === -1) return null;
   return {
     remote: branchName.substring(0, firstSlash),
@@ -101,21 +115,30 @@ function parseRemoteBranch(branchName: string): { remote: string; branch: string
 /**
  * Check if a branch name refers to a remote branch
  */
-async function isRemoteBranch(cwd: string, branchName: string): Promise<boolean> {
+async function isRemoteBranch(
+  cwd: string,
+  branchName: string,
+): Promise<boolean> {
   try {
-    const stdout = await execGitCommand(['branch', '-r', '--format=%(refname:short)'], cwd);
+    const stdout = await execGitCommand(
+      ["branch", "-r", "--format=%(refname:short)"],
+      cwd,
+    );
     const remoteBranches = stdout
       .trim()
-      .split('\n')
-      .map((b) => b.trim().replace(/^['"]|['"]$/g, ''))
+      .split("\n")
+      .map((b) => b.trim().replace(/^['"]|['"]$/g, ""))
       .filter((b) => b);
     return remoteBranches.includes(branchName);
   } catch (err) {
-    logger.error('isRemoteBranch: failed to list remote branches — returning false', {
-      branchName,
-      cwd,
-      error: getErrorMessage(err),
-    });
+    logger.error(
+      "isRemoteBranch: failed to list remote branches — returning false",
+      {
+        branchName,
+        cwd,
+        error: getErrorMessage(err),
+      },
+    );
     return false;
   }
 }
@@ -146,10 +169,10 @@ async function isRemoteBranch(cwd: string, branchName: string): Promise<boolean>
 export async function performSwitchBranch(
   worktreePath: string,
   branchName: string,
-  events?: EventEmitter
+  events?: EventEmitter,
 ): Promise<SwitchBranchResult> {
   // Emit start event
-  events?.emit('switch:start', { worktreePath, branchName });
+  events?.emit("switch:start", { worktreePath, branchName });
 
   // 1. Fetch latest from all remotes before switching
   //    This ensures remote branch refs are up-to-date so that isRemoteBranch()
@@ -159,8 +182,8 @@ export async function performSwitchBranch(
 
   // 2. Get current branch
   const currentBranchOutput = await execGitCommand(
-    ['rev-parse', '--abbrev-ref', 'HEAD'],
-    worktreePath
+    ["rev-parse", "--abbrev-ref", "HEAD"],
+    worktreePath,
   );
   const previousBranch = currentBranchOutput.trim();
 
@@ -176,7 +199,7 @@ export async function performSwitchBranch(
     if (parsedRemote) {
       targetBranch = parsedRemote.branch;
     } else {
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         worktreePath,
         branchName,
         error: `Failed to parse remote branch name '${branchName}'`,
@@ -190,7 +213,7 @@ export async function performSwitchBranch(
 
   // 4. Return early if already on the target branch
   if (previousBranch === targetBranch) {
-    events?.emit('switch:done', {
+    events?.emit("switch:done", {
       worktreePath,
       previousBranch,
       currentBranch: targetBranch,
@@ -209,7 +232,7 @@ export async function performSwitchBranch(
   // 5. Check if target branch exists as a local branch
   if (!isRemote) {
     if (!(await localBranchExists(worktreePath, branchName))) {
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         worktreePath,
         branchName,
         error: `Branch '${branchName}' does not exist`,
@@ -222,22 +245,24 @@ export async function performSwitchBranch(
   }
 
   // 6. Stash local changes if any exist
-  const hadChanges = await hasAnyChanges(worktreePath, { excludeWorktreePaths: true });
+  const hadChanges = await hasAnyChanges(worktreePath, {
+    excludeWorktreePaths: true,
+  });
   let didStash = false;
 
   if (hadChanges) {
-    events?.emit('switch:stash', {
+    events?.emit("switch:stash", {
       worktreePath,
       previousBranch,
       targetBranch,
-      action: 'push',
+      action: "push",
     });
     const stashMessage = `pegasus-branch-switch: ${previousBranch} → ${targetBranch}`;
     try {
       didStash = await stashChanges(worktreePath, stashMessage, true);
     } catch (stashError) {
       const stashErrorMsg = getErrorMessage(stashError);
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         worktreePath,
         branchName,
         error: `Failed to stash local changes: ${stashErrorMsg}`,
@@ -251,7 +276,7 @@ export async function performSwitchBranch(
 
   try {
     // 7. Switch to the target branch
-    events?.emit('switch:checkout', {
+    events?.emit("switch:checkout", {
       worktreePath,
       targetBranch,
       isRemote,
@@ -264,25 +289,28 @@ export async function performSwitchBranch(
       }
       if (await localBranchExists(worktreePath, parsedRemote.branch)) {
         // Local branch exists, just checkout
-        await execGitCommand(['checkout', parsedRemote.branch], worktreePath);
+        await execGitCommand(["checkout", parsedRemote.branch], worktreePath);
       } else {
         // Create local tracking branch from remote
-        await execGitCommand(['checkout', '-b', parsedRemote.branch, branchName], worktreePath);
+        await execGitCommand(
+          ["checkout", "-b", parsedRemote.branch, branchName],
+          worktreePath,
+        );
       }
     } else {
-      await execGitCommand(['checkout', targetBranch], worktreePath);
+      await execGitCommand(["checkout", targetBranch], worktreePath);
     }
 
     // 8. Reapply stashed changes if we stashed earlier
     let hasConflicts = false;
-    let conflictMessage = '';
+    let conflictMessage = "";
     let stashReapplied = false;
 
     if (didStash) {
-      events?.emit('switch:pop', {
+      events?.emit("switch:pop", {
         worktreePath,
         targetBranch,
-        action: 'pop',
+        action: "pop",
       });
 
       const popResult = await popStash(worktreePath);
@@ -298,7 +326,7 @@ export async function performSwitchBranch(
     }
 
     if (hasConflicts) {
-      events?.emit('switch:done', {
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: targetBranch,
@@ -316,7 +344,7 @@ export async function performSwitchBranch(
       };
     } else if (didStash && !stashReapplied) {
       // Stash pop failed for a non-conflict reason — stash is still present
-      events?.emit('switch:done', {
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: targetBranch,
@@ -333,8 +361,10 @@ export async function performSwitchBranch(
         },
       };
     } else {
-      const stashNote = stashReapplied ? ' (local changes stashed and reapplied)' : '';
-      events?.emit('switch:done', {
+      const stashNote = stashReapplied
+        ? " (local changes stashed and reapplied)"
+        : "";
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: targetBranch,
@@ -361,7 +391,7 @@ export async function performSwitchBranch(
         // the caller can prompt the user (or AI) to resolve conflicts rather than
         // simply retrying the branch switch.
         const checkoutErrorMsg = getErrorMessage(checkoutError);
-        events?.emit('switch:error', {
+        events?.emit("switch:error", {
           worktreePath,
           branchName,
           error: checkoutErrorMsg,
@@ -372,8 +402,8 @@ export async function performSwitchBranch(
           error: checkoutErrorMsg,
           stashPopConflicts: true,
           stashPopConflictMessage:
-            'Stash pop resulted in conflicts: your stashed changes were partially reapplied ' +
-            'but produced merge conflicts. Please resolve the conflicts before retrying the branch switch.',
+            "Stash pop resulted in conflicts: your stashed changes were partially reapplied " +
+            "but produced merge conflicts. Please resolve the conflicts before retrying the branch switch.",
         };
       } else if (!popResult.success) {
         // Stash pop failed for a non-conflict reason; the stash entry is still intact.
@@ -381,8 +411,8 @@ export async function performSwitchBranch(
         const checkoutErrorMsg = getErrorMessage(checkoutError);
         const combinedMessage =
           `${checkoutErrorMsg}. Additionally, restoring your stashed changes failed: ` +
-          `${popResult.error ?? 'unknown error'} — your changes are still saved in the stash.`;
-        events?.emit('switch:error', {
+          `${popResult.error ?? "unknown error"} — your changes are still saved in the stash.`;
+        events?.emit("switch:error", {
           worktreePath,
           branchName,
           error: combinedMessage,
@@ -396,7 +426,7 @@ export async function performSwitchBranch(
       // popResult.success === true: stash was cleanly restored, re-throw the checkout error
     }
     const checkoutErrorMsg = getErrorMessage(checkoutError);
-    events?.emit('switch:error', {
+    events?.emit("switch:error", {
       worktreePath,
       branchName,
       error: checkoutErrorMsg,

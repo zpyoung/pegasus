@@ -2,8 +2,8 @@
  * File system utilities that handle symlinks safely
  */
 
-import { secureFs } from '@pegasus/platform';
-import path from 'path';
+import { secureFs } from "@pegasus/platform";
+import path from "path";
 
 /**
  * Create a directory, handling symlinks safely to avoid ELOOP errors.
@@ -27,11 +27,13 @@ export async function mkdirSafe(dirPath: string): Promise<void> {
     }
   } catch (error: any) {
     // ENOENT means path doesn't exist - we should create it
-    if (error.code !== 'ENOENT') {
+    if (error.code !== "ENOENT") {
       // Some other error (could be ELOOP in parent path)
       // If it's ELOOP, the path involves symlinks - don't try to create
-      if (error.code === 'ELOOP') {
-        console.warn(`[fs-utils] Symlink loop detected at ${resolvedPath}, skipping mkdir`);
+      if (error.code === "ELOOP") {
+        console.warn(
+          `[fs-utils] Symlink loop detected at ${resolvedPath}, skipping mkdir`,
+        );
         return;
       }
       throw error;
@@ -43,7 +45,7 @@ export async function mkdirSafe(dirPath: string): Promise<void> {
     await secureFs.mkdir(resolvedPath, { recursive: true });
   } catch (error: any) {
     // Handle race conditions and symlink issues
-    if (error.code === 'EEXIST' || error.code === 'ELOOP') {
+    if (error.code === "EEXIST" || error.code === "ELOOP") {
       return;
     }
     throw error;
@@ -59,11 +61,11 @@ export async function existsSafe(filePath: string): Promise<boolean> {
     await secureFs.lstat(filePath);
     return true;
   } catch (error: any) {
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       return false;
     }
     // ELOOP or other errors - path exists but is problematic
-    if (error.code === 'ELOOP') {
+    if (error.code === "ELOOP") {
       return true; // Symlink exists, even if looping
     }
     throw error;

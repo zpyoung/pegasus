@@ -4,8 +4,8 @@
  * Handles shell operations like opening external links and files.
  */
 
-import { ipcMain, shell } from 'electron';
-import { IPC_CHANNELS } from './channels';
+import { ipcMain, shell } from "electron";
+import { IPC_CHANNELS } from "./channels";
 
 /**
  * Register shell IPC handlers
@@ -40,9 +40,9 @@ export function registerShellHandlers(): void {
         // This works on all platforms where VS Code is installed
         // URL encode the path to handle special characters (spaces, brackets, etc.)
         // Handle both Unix (/) and Windows (\) path separators
-        const normalizedPath = filePath.replace(/\\/g, '/');
-        const segments = normalizedPath.split('/').map(encodeURIComponent);
-        const encodedPath = segments.join('/');
+        const normalizedPath = filePath.replace(/\\/g, "/");
+        const segments = normalizedPath.split("/").map(encodeURIComponent);
+        const encodedPath = segments.join("/");
         // VS Code URL format requires a leading slash after 'file'
         let url = `vscode://file/${encodedPath}`;
         if (line !== undefined && line > 0) {
@@ -56,6 +56,6 @@ export function registerShellHandlers(): void {
       } catch (error) {
         return { success: false, error: (error as Error).message };
       }
-    }
+    },
   );
 }

@@ -19,12 +19,12 @@ pnpm add @pegasus/utils
 Structured logging with context.
 
 ```typescript
-import { createLogger, LogLevel } from '@pegasus/utils';
+import { createLogger, LogLevel } from "@pegasus/utils";
 
-const logger = createLogger('MyComponent');
-logger.info('Processing request');
-logger.error('Failed to process:', error);
-logger.debug('Debug information', { data });
+const logger = createLogger("MyComponent");
+logger.info("Processing request");
+logger.error("Failed to process:", error);
+logger.debug("Debug information", { data });
 ```
 
 ### Error Handler
@@ -38,13 +38,13 @@ import {
   isAuthenticationError,
   classifyError,
   getUserFriendlyErrorMessage,
-} from '@pegasus/utils';
+} from "@pegasus/utils";
 
 try {
   await operation();
 } catch (error) {
   if (isAbortError(error)) {
-    console.log('Operation was aborted');
+    console.log("Operation was aborted");
   }
 
   const errorInfo = classifyError(error);
@@ -62,7 +62,7 @@ import {
   normalizeContentBlocks,
   formatHistoryAsText,
   convertHistoryToMessages,
-} from '@pegasus/utils';
+} from "@pegasus/utils";
 
 const text = extractTextFromContent(contentBlocks);
 const normalized = normalizeContentBlocks(content);
@@ -80,10 +80,10 @@ import {
   readImageAsBase64,
   convertImagesToContentBlocks,
   formatImagePathsForPrompt,
-} from '@pegasus/utils';
+} from "@pegasus/utils";
 
-const mimeType = getMimeTypeForImage('screenshot.png');
-const base64 = await readImageAsBase64('/path/to/image.jpg');
+const mimeType = getMimeTypeForImage("screenshot.png");
+const base64 = await readImageAsBase64("/path/to/image.jpg");
 const blocks = await convertImagesToContentBlocks(imagePaths, basePath);
 const formatted = formatImagePathsForPrompt(imagePaths);
 ```
@@ -93,12 +93,12 @@ const formatted = formatImagePathsForPrompt(imagePaths);
 Build prompts with images for Claude.
 
 ```typescript
-import { buildPromptWithImages } from '@pegasus/utils';
+import { buildPromptWithImages } from "@pegasus/utils";
 
 const result = await buildPromptWithImages({
-  basePrompt: 'Analyze this screenshot',
-  imagePaths: ['/path/to/screenshot.png'],
-  basePath: '/project/path',
+  basePrompt: "Analyze this screenshot",
+  imagePaths: ["/path/to/screenshot.png"],
+  basePath: "/project/path",
 });
 
 console.log(result.prompt); // Prompt with image references
@@ -110,24 +110,33 @@ console.log(result.images); // Image data for Claude
 Common file system operations.
 
 ```typescript
-import { ensureDir, fileExists, readJsonFile, writeJsonFile } from '@pegasus/utils';
+import {
+  ensureDir,
+  fileExists,
+  readJsonFile,
+  writeJsonFile,
+} from "@pegasus/utils";
 
-await ensureDir('/path/to/dir');
-const exists = await fileExists('/path/to/file');
-const data = await readJsonFile('/config.json');
-await writeJsonFile('/config.json', data);
+await ensureDir("/path/to/dir");
+const exists = await fileExists("/path/to/file");
+const data = await readJsonFile("/config.json");
+await writeJsonFile("/config.json", data);
 ```
 
 ## Usage Example
 
 ```typescript
-import { createLogger, classifyError, buildPromptWithImages } from '@pegasus/utils';
+import {
+  createLogger,
+  classifyError,
+  buildPromptWithImages,
+} from "@pegasus/utils";
 
-const logger = createLogger('FeatureExecutor');
+const logger = createLogger("FeatureExecutor");
 
 async function executeWithImages(prompt: string, images: string[]) {
   try {
-    logger.info('Building prompt with images');
+    logger.info("Building prompt with images");
 
     const result = await buildPromptWithImages({
       basePrompt: prompt,
@@ -135,11 +144,13 @@ async function executeWithImages(prompt: string, images: string[]) {
       basePath: process.cwd(),
     });
 
-    logger.debug('Prompt built successfully', { imageCount: result.images.length });
+    logger.debug("Prompt built successfully", {
+      imageCount: result.images.length,
+    });
     return result;
   } catch (error) {
     const errorInfo = classifyError(error);
-    logger.error('Failed to build prompt:', errorInfo.message);
+    logger.error("Failed to build prompt:", errorInfo.message);
     throw error;
   }
 }

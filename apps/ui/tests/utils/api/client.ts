@@ -3,8 +3,8 @@
  * Provides type-safe wrappers around common API operations
  */
 
-import { Page, APIResponse } from '@playwright/test';
-import { API_BASE_URL, API_ENDPOINTS, WEB_BASE_URL } from '../core/constants';
+import { Page, APIResponse } from "@playwright/test";
+import { API_BASE_URL, API_ENDPOINTS, WEB_BASE_URL } from "../core/constants";
 
 // ============================================================================
 // Types
@@ -90,15 +90,18 @@ export class WorktreeApiClient {
   async create(
     projectPath: string,
     branchName: string,
-    baseBranch?: string
+    baseBranch?: string,
   ): Promise<{ response: APIResponse; data: WorktreeCreateResponse }> {
-    const response = await this.page.request.post(API_ENDPOINTS.worktree.create, {
-      data: {
-        projectPath,
-        branchName,
-        baseBranch,
+    const response = await this.page.request.post(
+      API_ENDPOINTS.worktree.create,
+      {
+        data: {
+          projectPath,
+          branchName,
+          baseBranch,
+        },
       },
-    });
+    );
     const data = await response.json();
     return { response, data };
   }
@@ -109,15 +112,18 @@ export class WorktreeApiClient {
   async delete(
     projectPath: string,
     worktreePath: string,
-    deleteBranch: boolean = true
+    deleteBranch: boolean = true,
   ): Promise<{ response: APIResponse; data: WorktreeDeleteResponse }> {
-    const response = await this.page.request.post(API_ENDPOINTS.worktree.delete, {
-      data: {
-        projectPath,
-        worktreePath,
-        deleteBranch,
+    const response = await this.page.request.post(
+      API_ENDPOINTS.worktree.delete,
+      {
+        data: {
+          projectPath,
+          worktreePath,
+          deleteBranch,
+        },
       },
-    });
+    );
     const data = await response.json();
     return { response, data };
   }
@@ -127,7 +133,7 @@ export class WorktreeApiClient {
    */
   async list(
     projectPath: string,
-    includeDetails: boolean = true
+    includeDetails: boolean = true,
   ): Promise<{ response: APIResponse; data: WorktreeListResponse }> {
     const response = await this.page.request.post(API_ENDPOINTS.worktree.list, {
       data: {
@@ -144,14 +150,17 @@ export class WorktreeApiClient {
    */
   async commit(
     worktreePath: string,
-    message: string
+    message: string,
   ): Promise<{ response: APIResponse; data: CommitResponse }> {
-    const response = await this.page.request.post(API_ENDPOINTS.worktree.commit, {
-      data: {
-        worktreePath,
-        message,
+    const response = await this.page.request.post(
+      API_ENDPOINTS.worktree.commit,
+      {
+        data: {
+          worktreePath,
+          message,
+        },
       },
-    });
+    );
     const data = await response.json();
     return { response, data };
   }
@@ -161,14 +170,17 @@ export class WorktreeApiClient {
    */
   async switchBranch(
     worktreePath: string,
-    branchName: string
+    branchName: string,
   ): Promise<{ response: APIResponse; data: SwitchBranchResponse }> {
-    const response = await this.page.request.post(API_ENDPOINTS.worktree.switchBranch, {
-      data: {
-        worktreePath,
-        branchName,
+    const response = await this.page.request.post(
+      API_ENDPOINTS.worktree.switchBranch,
+      {
+        data: {
+          worktreePath,
+          branchName,
+        },
       },
-    });
+    );
     const data = await response.json();
     return { response, data };
   }
@@ -177,13 +189,16 @@ export class WorktreeApiClient {
    * List all branches
    */
   async listBranches(
-    worktreePath: string
+    worktreePath: string,
   ): Promise<{ response: APIResponse; data: ListBranchesResponse }> {
-    const response = await this.page.request.post(API_ENDPOINTS.worktree.listBranches, {
-      data: {
-        worktreePath,
+    const response = await this.page.request.post(
+      API_ENDPOINTS.worktree.listBranches,
+      {
+        data: {
+          worktreePath,
+        },
       },
-    });
+    );
     const data = await response.json();
     return { response, data };
   }
@@ -211,9 +226,13 @@ export async function apiCreateWorktree(
   page: Page,
   projectPath: string,
   branchName: string,
-  baseBranch?: string
+  baseBranch?: string,
 ): Promise<{ response: APIResponse; data: WorktreeCreateResponse }> {
-  return new WorktreeApiClient(page).create(projectPath, branchName, baseBranch);
+  return new WorktreeApiClient(page).create(
+    projectPath,
+    branchName,
+    baseBranch,
+  );
 }
 
 /**
@@ -223,9 +242,13 @@ export async function apiDeleteWorktree(
   page: Page,
   projectPath: string,
   worktreePath: string,
-  deleteBranch: boolean = true
+  deleteBranch: boolean = true,
 ): Promise<{ response: APIResponse; data: WorktreeDeleteResponse }> {
-  return new WorktreeApiClient(page).delete(projectPath, worktreePath, deleteBranch);
+  return new WorktreeApiClient(page).delete(
+    projectPath,
+    worktreePath,
+    deleteBranch,
+  );
 }
 
 /**
@@ -234,7 +257,7 @@ export async function apiDeleteWorktree(
 export async function apiListWorktrees(
   page: Page,
   projectPath: string,
-  includeDetails: boolean = true
+  includeDetails: boolean = true,
 ): Promise<{ response: APIResponse; data: WorktreeListResponse }> {
   return new WorktreeApiClient(page).list(projectPath, includeDetails);
 }
@@ -245,7 +268,7 @@ export async function apiListWorktrees(
 export async function apiCommitWorktree(
   page: Page,
   worktreePath: string,
-  message: string
+  message: string,
 ): Promise<{ response: APIResponse; data: CommitResponse }> {
   return new WorktreeApiClient(page).commit(worktreePath, message);
 }
@@ -256,7 +279,7 @@ export async function apiCommitWorktree(
 export async function apiSwitchBranch(
   page: Page,
   worktreePath: string,
-  branchName: string
+  branchName: string,
 ): Promise<{ response: APIResponse; data: SwitchBranchResponse }> {
   return new WorktreeApiClient(page).switchBranch(worktreePath, branchName);
 }
@@ -266,7 +289,7 @@ export async function apiSwitchBranch(
  */
 export async function apiListBranches(
   page: Page,
-  worktreePath: string
+  worktreePath: string,
 ): Promise<{ response: APIResponse; data: ListBranchesResponse }> {
   return new WorktreeApiClient(page).listBranches(worktreePath);
 }
@@ -280,13 +303,19 @@ export async function apiListBranches(
  * This sets a session cookie that will be used for subsequent requests
  * Uses browser context to ensure cookies are properly set
  */
-export async function authenticateWithApiKey(page: Page, apiKey: string): Promise<boolean> {
+export async function authenticateWithApiKey(
+  page: Page,
+  apiKey: string,
+): Promise<boolean> {
   try {
     // Fast path: check if we already have a valid session (from global setup storageState)
     try {
-      const statusRes = await page.request.get(`${API_BASE_URL}/api/auth/status`, {
-        timeout: 3000,
-      });
+      const statusRes = await page.request.get(
+        `${API_BASE_URL}/api/auth/status`,
+        {
+          timeout: 3000,
+        },
+      );
       const statusJson = (await statusRes.json().catch(() => null)) as {
         authenticated?: boolean;
       } | null;
@@ -316,17 +345,20 @@ export async function authenticateWithApiKey(page: Page, apiKey: string): Promis
 
     // Ensure we're on a page (needed for cookies to work)
     const currentUrl = page.url();
-    if (!currentUrl || currentUrl === 'about:blank') {
-      await page.goto(WEB_BASE_URL, { waitUntil: 'domcontentloaded' });
+    if (!currentUrl || currentUrl === "about:blank") {
+      await page.goto(WEB_BASE_URL, { waitUntil: "domcontentloaded" });
     }
 
     // Use Playwright request API (tied to this browser context) to avoid flakiness
     // with cross-origin fetch inside page.evaluate.
-    const loginResponse = await page.request.post(`${API_BASE_URL}/api/auth/login`, {
-      data: { apiKey },
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 15000,
-    });
+    const loginResponse = await page.request.post(
+      `${API_BASE_URL}/api/auth/login`,
+      {
+        data: { apiKey },
+        headers: { "Content-Type": "application/json" },
+        timeout: 15000,
+      },
+    );
     const response = (await loginResponse.json().catch(() => null)) as {
       success?: boolean;
       token?: string;
@@ -335,22 +367,25 @@ export async function authenticateWithApiKey(page: Page, apiKey: string): Promis
     if (response?.success && response.token) {
       // Manually set the cookie in the browser context
       // Cookie name includes the server port for multi-instance isolation (see SESSION_COOKIE_NAME in auth.ts)
-      const serverPort = process.env.TEST_SERVER_PORT || '3108';
+      const serverPort = process.env.TEST_SERVER_PORT || "3108";
       await page.context().addCookies([
         {
           name: `pegasus_session_${serverPort}`,
           value: response.token,
-          domain: '127.0.0.1',
-          path: '/',
+          domain: "127.0.0.1",
+          path: "/",
           httpOnly: true,
-          sameSite: 'Lax',
+          sameSite: "Lax",
         },
       ]);
 
       // Single verification check (no polling loop needed)
-      const verifyRes = await page.request.get(`${API_BASE_URL}/api/auth/status`, {
-        timeout: 5000,
-      });
+      const verifyRes = await page.request.get(
+        `${API_BASE_URL}/api/auth/status`,
+        {
+          timeout: 5000,
+        },
+      );
       const verifyJson = (await verifyRes.json().catch(() => null)) as {
         authenticated?: boolean;
       } | null;
@@ -360,7 +395,7 @@ export async function authenticateWithApiKey(page: Page, apiKey: string): Promis
 
     return false;
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error("Authentication error:", error);
     return false;
   }
 }
@@ -371,7 +406,7 @@ export async function authenticateWithApiKey(page: Page, apiKey: string): Promis
  */
 export async function authenticateForTests(page: Page): Promise<boolean> {
   // Use the API key from environment, or a test default
-  const apiKey = process.env.PEGASUS_API_KEY || 'test-api-key-for-e2e-tests';
+  const apiKey = process.env.PEGASUS_API_KEY || "test-api-key-for-e2e-tests";
   return authenticateWithApiKey(page, apiKey);
 }
 
@@ -379,7 +414,10 @@ export async function authenticateForTests(page: Page): Promise<boolean> {
  * Check if the backend server is healthy
  * Returns true if the server responds with status 200, false otherwise
  */
-export async function checkBackendHealth(page: Page, timeout = 5000): Promise<boolean> {
+export async function checkBackendHealth(
+  page: Page,
+  timeout = 5000,
+): Promise<boolean> {
   try {
     const response = await page.request.get(`${API_BASE_URL}/api/health`, {
       timeout,
@@ -397,7 +435,7 @@ export async function checkBackendHealth(page: Page, timeout = 5000): Promise<bo
 export async function waitForBackendHealth(
   page: Page,
   maxWaitMs = 30000,
-  checkIntervalMs = 500
+  checkIntervalMs = 500,
 ): Promise<void> {
   const startTime = Date.now();
   let backoff = checkIntervalMs;
@@ -412,6 +450,6 @@ export async function waitForBackendHealth(
 
   throw new Error(
     `Backend did not become healthy within ${maxWaitMs}ms. ` +
-      `Last health check failed or timed out.`
+      `Last health check failed or timed out.`,
   );
 }

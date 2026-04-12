@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('app-spec/parse-and-create-features.ts - JSON extraction', () => {
+describe("app-spec/parse-and-create-features.ts - JSON extraction", () => {
   // Test the JSON extraction regex pattern used in parseAndCreateFeatures
   const jsonExtractionPattern = /\{[\s\S]*"features"[\s\S]*\}/;
 
-  describe('JSON extraction regex', () => {
-    it('should extract JSON with features array', () => {
+  describe("JSON extraction regex", () => {
+    it("should extract JSON with features array", () => {
       const content = `Here is the response:
 {
   "features": [
@@ -26,7 +26,7 @@ describe('app-spec/parse-and-create-features.ts - JSON extraction', () => {
       expect(match![0]).toContain('"id": "feature-1"');
     });
 
-    it('should extract JSON with multiple features', () => {
+    it("should extract JSON with multiple features", () => {
       const content = `Some text before
 {
   "features": [
@@ -49,7 +49,7 @@ Some text after`;
       expect(match![0]).toContain('"feature-2"');
     });
 
-    it('should extract JSON with nested objects and arrays', () => {
+    it("should extract JSON with nested objects and arrays", () => {
       const content = `Response:
 {
   "features": [
@@ -69,7 +69,7 @@ Some text after`;
       expect(match![0]).toContain('"dep-1"');
     });
 
-    it('should handle JSON with whitespace and newlines', () => {
+    it("should handle JSON with whitespace and newlines", () => {
       const content = `Text before
 {
   "features": [
@@ -87,7 +87,7 @@ Text after`;
       expect(match![0]).toContain('"features"');
     });
 
-    it('should extract JSON when features array is empty', () => {
+    it("should extract JSON when features array is empty", () => {
       const content = `Response:
 {
   "features": []
@@ -96,10 +96,10 @@ Text after`;
       const match = content.match(jsonExtractionPattern);
       expect(match).not.toBeNull();
       expect(match![0]).toContain('"features"');
-      expect(match![0]).toContain('[]');
+      expect(match![0]).toContain("[]");
     });
 
-    it('should not match content without features key', () => {
+    it("should not match content without features key", () => {
       const content = `{
   "otherKey": "value"
 }`;
@@ -108,13 +108,13 @@ Text after`;
       expect(match).toBeNull();
     });
 
-    it('should not match content without JSON structure', () => {
-      const content = 'Just plain text with features mentioned';
+    it("should not match content without JSON structure", () => {
+      const content = "Just plain text with features mentioned";
       const match = content.match(jsonExtractionPattern);
       expect(match).toBeNull();
     });
 
-    it('should extract JSON when features key appears multiple times', () => {
+    it("should extract JSON when features key appears multiple times", () => {
       const content = `Before:
 {
   "features": [
@@ -132,7 +132,7 @@ After: The word "features" appears again`;
       expect(match![0]).toContain('"features"');
     });
 
-    it('should handle JSON with escaped quotes', () => {
+    it("should handle JSON with escaped quotes", () => {
       const content = `{
   "features": [
     {
@@ -147,7 +147,7 @@ After: The word "features" appears again`;
       expect(match![0]).toContain('"features"');
     });
 
-    it('should extract JSON with complex nested structure', () => {
+    it("should extract JSON with complex nested structure", () => {
       const content = `Response:
 {
   "features": [
@@ -177,8 +177,8 @@ After: The word "features" appears again`;
     });
   });
 
-  describe('JSON parsing validation', () => {
-    it('should parse valid feature JSON structure', () => {
+  describe("JSON parsing validation", () => {
+    it("should parse valid feature JSON structure", () => {
       const validJson = `{
   "features": [
     {
@@ -196,11 +196,11 @@ After: The word "features" appears again`;
       expect(parsed.features).toBeDefined();
       expect(Array.isArray(parsed.features)).toBe(true);
       expect(parsed.features.length).toBe(1);
-      expect(parsed.features[0].id).toBe('feature-1');
-      expect(parsed.features[0].title).toBe('Test Feature');
+      expect(parsed.features[0].id).toBe("feature-1");
+      expect(parsed.features[0].title).toBe("Test Feature");
     });
 
-    it('should handle features with optional fields', () => {
+    it("should handle features with optional fields", () => {
       const jsonWithOptionalFields = `{
   "features": [
     {
@@ -213,14 +213,14 @@ After: The word "features" appears again`;
 }`;
 
       const parsed = JSON.parse(jsonWithOptionalFields);
-      expect(parsed.features[0].id).toBe('feature-1');
+      expect(parsed.features[0].id).toBe("feature-1");
       expect(parsed.features[0].priority).toBe(2);
       // description and dependencies are optional
       expect(parsed.features[0].description).toBeUndefined();
       expect(parsed.features[0].dependencies).toBeUndefined();
     });
 
-    it('should handle features with dependencies', () => {
+    it("should handle features with dependencies", () => {
       const jsonWithDeps = `{
   "features": [
     {
@@ -238,7 +238,7 @@ After: The word "features" appears again`;
 
       const parsed = JSON.parse(jsonWithDeps);
       expect(parsed.features[0].dependencies).toEqual([]);
-      expect(parsed.features[1].dependencies).toEqual(['feature-1']);
+      expect(parsed.features[1].dependencies).toEqual(["feature-1"]);
     });
   });
 });

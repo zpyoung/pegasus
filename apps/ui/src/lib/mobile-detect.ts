@@ -18,18 +18,20 @@
  * - Touch detection as supplementary signal
  */
 export const isMobileDevice: boolean = (() => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
   // Check viewport width (consistent with useIsMobile hook's 768px breakpoint)
-  const isSmallViewport = window.matchMedia('(max-width: 768px)').matches;
+  const isSmallViewport = window.matchMedia("(max-width: 768px)").matches;
 
   // Check user agent for mobile devices
-  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
+  const isMobileUA =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
 
   // Check for touch-primary device (most mobile devices)
-  const isTouchPrimary = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isTouchPrimary =
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
   // Consider it mobile if viewport is small OR if it's a mobile UA with touch
   return isSmallViewport || (isMobileUA && isTouchPrimary);
@@ -41,7 +43,7 @@ export const isMobileDevice: boolean = (() => {
  * Falls back to mobile detection as a heuristic.
  */
 export function isSlowConnection(): boolean {
-  if (typeof navigator === 'undefined') return false;
+  if (typeof navigator === "undefined") return false;
 
   const connection = (
     navigator as Navigator & {
@@ -56,7 +58,11 @@ export function isSlowConnection(): boolean {
     // Respect data saver mode
     if (connection.saveData) return true;
     // 2g and slow-2g are definitely slow
-    if (connection.effectiveType === '2g' || connection.effectiveType === 'slow-2g') return true;
+    if (
+      connection.effectiveType === "2g" ||
+      connection.effectiveType === "slow-2g"
+    )
+      return true;
   }
 
   // On mobile without connection info, assume potentially slow
@@ -72,13 +78,14 @@ export function isSlowConnection(): boolean {
  * can be reduced further to maximize usable screen space.
  */
 export const isPwaStandalone: boolean = (() => {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === "undefined") return false;
 
   // Standard: works on Chrome, Edge, Firefox, and modern Safari
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
 
   // iOS Safari: navigator.standalone is true when launched from home screen
-  const isIOSStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const isIOSStandalone =
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
   return isStandalone || isIOSStandalone;
 })();

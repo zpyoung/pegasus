@@ -22,10 +22,7 @@
         "supportsThinking": false,
         "reasoningCapable": false,
         "stabilityTier": "ga",
-        "aliases": [
-          "claude-haiku",
-          "haiku"
-        ]
+        "aliases": ["claude-haiku", "haiku"]
       },
       {
         "id": "claude-opus-4-1-20250805",
@@ -66,10 +63,7 @@
         "supportsThinking": true,
         "reasoningCapable": false,
         "stabilityTier": "ga",
-        "aliases": [
-          "claude-opus",
-          "opus"
-        ],
+        "aliases": ["claude-opus", "opus"],
         "defaultFor": "claude"
       },
       {
@@ -101,10 +95,7 @@
         "supportsThinking": true,
         "reasoningCapable": false,
         "stabilityTier": "ga",
-        "aliases": [
-          "claude-sonnet",
-          "sonnet"
-        ]
+        "aliases": ["claude-sonnet", "sonnet"]
       }
     ],
     "openai": [

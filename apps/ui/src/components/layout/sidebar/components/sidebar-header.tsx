@@ -1,23 +1,27 @@
-import { useState, useCallback, startTransition } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { ChevronsUpDown, Folder, Plus, FolderOpen, LogOut } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { cn, isMac } from '@/lib/utils';
-import { formatShortcut } from '@/store/app-store';
-import { isElectron, type Project } from '@/lib/electron';
-import { initializeProject } from '@/lib/project-init';
-import { MACOS_ELECTRON_TOP_PADDING_CLASS } from '../constants';
-import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import { useAppStore } from '@/store/app-store';
+import { useState, useCallback, startTransition } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { ChevronsUpDown, Folder, Plus, FolderOpen, LogOut } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { cn, isMac } from "@/lib/utils";
+import { formatShortcut } from "@/store/app-store";
+import { isElectron, type Project } from "@/lib/electron";
+import { initializeProject } from "@/lib/project-init";
+import { MACOS_ELECTRON_TOP_PADDING_CLASS } from "../constants";
+import { getAuthenticatedImageUrl } from "@/lib/api-fetch";
+import { useAppStore } from "@/store/app-store";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SidebarHeaderProps {
   sidebarOpen: boolean;
@@ -42,21 +46,21 @@ export function SidebarHeader({
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogoClick = useCallback(() => {
-    navigate({ to: '/overview' });
+    navigate({ to: "/overview" });
   }, [navigate]);
 
   const handleProjectSelect = useCallback(
     async (project: Project) => {
       if (project.id === currentProject?.id) {
         setDropdownOpen(false);
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
         return;
       }
       try {
         // Ensure .pegasus directory structure exists before switching
         await initializeProject(project.path);
       } catch (error) {
-        console.error('Failed to initialize project during switch:', error);
+        console.error("Failed to initialize project during switch:", error);
         // Continue with switch even if initialization fails -
         // the project may already be initialized
       }
@@ -65,30 +69,35 @@ export function SidebarHeader({
       startTransition(() => {
         setCurrentProject(project);
         setDropdownOpen(false);
-        navigate({ to: '/board' });
+        navigate({ to: "/board" });
       });
     },
-    [currentProject?.id, setCurrentProject, navigate]
+    [currentProject?.id, setCurrentProject, navigate],
   );
 
   const getIconComponent = (project: Project): LucideIcon => {
     if (project.icon && project.icon in LucideIcons) {
-      return (LucideIcons as unknown as Record<string, LucideIcon>)[project.icon];
+      return (LucideIcons as unknown as Record<string, LucideIcon>)[
+        project.icon
+      ];
     }
     return Folder;
   };
 
-  const renderProjectIcon = (project: Project, size: 'sm' | 'md' = 'md') => {
+  const renderProjectIcon = (project: Project, size: "sm" | "md" = "md") => {
     const IconComponent = getIconComponent(project);
-    const sizeClasses = size === 'sm' ? 'w-6 h-6' : 'w-8 h-8';
-    const iconSizeClasses = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+    const sizeClasses = size === "sm" ? "w-6 h-6" : "w-8 h-8";
+    const iconSizeClasses = size === "sm" ? "w-4 h-4" : "w-5 h-5";
 
     if (project.customIconPath) {
       return (
         <img
           src={getAuthenticatedImageUrl(project.customIconPath, project.path)}
           alt={project.name}
-          className={cn(sizeClasses, 'rounded-lg object-cover ring-1 ring-border/50')}
+          className={cn(
+            sizeClasses,
+            "rounded-lg object-cover ring-1 ring-border/50",
+          )}
         />
       );
     }
@@ -97,10 +106,10 @@ export function SidebarHeader({
       <div
         className={cn(
           sizeClasses,
-          'rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center'
+          "rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center",
         )}
       >
-        <IconComponent className={cn(iconSizeClasses, 'text-brand-500')} />
+        <IconComponent className={cn(iconSizeClasses, "text-brand-500")} />
       </div>
     );
   };
@@ -110,8 +119,8 @@ export function SidebarHeader({
     return (
       <div
         className={cn(
-          'shrink-0 flex flex-col items-center relative px-2 pt-3 pb-2',
-          isMac && isElectron() && MACOS_ELECTRON_TOP_PADDING_CLASS
+          "shrink-0 flex flex-col items-center relative px-2 pt-3 pb-2",
+          isMac && isElectron() && MACOS_ELECTRON_TOP_PADDING_CLASS,
         )}
       >
         <Tooltip>
@@ -137,11 +146,24 @@ export function SidebarHeader({
                     y2="256"
                     gradientUnits="userSpaceOnUse"
                   >
-                    <stop offset="0%" style={{ stopColor: 'var(--brand-400)' }} />
-                    <stop offset="100%" style={{ stopColor: 'var(--brand-600)' }} />
+                    <stop
+                      offset="0%"
+                      style={{ stopColor: "var(--brand-400)" }}
+                    />
+                    <stop
+                      offset="100%"
+                      style={{ stopColor: "var(--brand-600)" }}
+                    />
                   </linearGradient>
                 </defs>
-                <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg-collapsed)" />
+                <rect
+                  x="16"
+                  y="16"
+                  width="224"
+                  height="224"
+                  rx="56"
+                  fill="url(#bg-collapsed)"
+                />
                 <g
                   fill="none"
                   stroke="#FFFFFF"
@@ -170,7 +192,9 @@ export function SidebarHeader({
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
                     <button
-                      onContextMenu={(e) => onProjectContextMenu(currentProject, e)}
+                      onContextMenu={(e) =>
+                        onProjectContextMenu(currentProject, e)
+                      }
                       className="p-1 rounded-lg hover:bg-accent/50 transition-colors"
                       data-testid="collapsed-project-button"
                     >
@@ -190,11 +214,14 @@ export function SidebarHeader({
                 data-testid="collapsed-project-dropdown-content"
               >
                 <div className="px-2 py-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">Projects</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Projects
+                  </span>
                 </div>
                 {projects.map((project, index) => {
                   const isActive = currentProject?.id === project.id;
-                  const hotkeyLabel = index < 9 ? `${index + 1}` : index === 9 ? '0' : undefined;
+                  const hotkeyLabel =
+                    index < 9 ? `${index + 1}` : index === 9 ? "0" : undefined;
 
                   return (
                     <DropdownMenuItem
@@ -209,11 +236,11 @@ export function SidebarHeader({
                       className="flex items-center gap-3 cursor-pointer"
                       data-testid={`collapsed-project-item-${project.id}`}
                     >
-                      {renderProjectIcon(project, 'sm')}
+                      {renderProjectIcon(project, "sm")}
                       <span
                         className={cn(
-                          'flex-1 truncate',
-                          isActive && 'font-semibold text-foreground'
+                          "flex-1 truncate",
+                          isActive && "font-semibold text-foreground",
                         )}
                       >
                         {project.name}
@@ -277,8 +304,8 @@ export function SidebarHeader({
   return (
     <div
       className={cn(
-        'shrink-0 flex flex-col relative px-3 pt-3 pb-2',
-        isMac && isElectron() && MACOS_ELECTRON_TOP_PADDING_CLASS
+        "shrink-0 flex flex-col relative px-3 pt-3 pb-2",
+        isMac && isElectron() && MACOS_ELECTRON_TOP_PADDING_CLASS,
       )}
     >
       {/* Header with logo and project dropdown */}
@@ -306,11 +333,18 @@ export function SidebarHeader({
                 y2="256"
                 gradientUnits="userSpaceOnUse"
               >
-                <stop offset="0%" style={{ stopColor: 'var(--brand-400)' }} />
-                <stop offset="100%" style={{ stopColor: 'var(--brand-600)' }} />
+                <stop offset="0%" style={{ stopColor: "var(--brand-400)" }} />
+                <stop offset="100%" style={{ stopColor: "var(--brand-600)" }} />
               </linearGradient>
             </defs>
-            <rect x="16" y="16" width="224" height="224" rx="56" fill="url(#bg-header)" />
+            <rect
+              x="16"
+              y="16"
+              width="224"
+              height="224"
+              rx="56"
+              fill="url(#bg-header)"
+            />
             <g
               fill="none"
               stroke="#FFFFFF"
@@ -331,14 +365,14 @@ export function SidebarHeader({
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  'flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg min-w-0',
-                  'hover:bg-accent/50 transition-colors titlebar-no-drag',
-                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1'
+                  "flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg min-w-0",
+                  "hover:bg-accent/50 transition-colors titlebar-no-drag",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
                 )}
                 onContextMenu={(e) => onProjectContextMenu(currentProject, e)}
                 data-testid="project-dropdown-trigger"
               >
-                {renderProjectIcon(currentProject, 'sm')}
+                {renderProjectIcon(currentProject, "sm")}
                 <span className="flex-1 text-sm font-semibold text-foreground truncate text-left">
                   {currentProject.name}
                 </span>
@@ -353,11 +387,14 @@ export function SidebarHeader({
               data-testid="project-dropdown-content"
             >
               <div className="px-2 py-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Projects</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Projects
+                </span>
               </div>
               {projects.map((project, index) => {
                 const isActive = currentProject?.id === project.id;
-                const hotkeyLabel = index < 9 ? `${index + 1}` : index === 9 ? '0' : undefined;
+                const hotkeyLabel =
+                  index < 9 ? `${index + 1}` : index === 9 ? "0" : undefined;
 
                 return (
                   <DropdownMenuItem
@@ -372,9 +409,12 @@ export function SidebarHeader({
                     className="flex items-center gap-3 cursor-pointer"
                     data-testid={`project-item-${project.id}`}
                   >
-                    {renderProjectIcon(project, 'sm')}
+                    {renderProjectIcon(project, "sm")}
                     <span
-                      className={cn('flex-1 truncate', isActive && 'font-semibold text-foreground')}
+                      className={cn(
+                        "flex-1 truncate",
+                        isActive && "font-semibold text-foreground",
+                      )}
                     >
                       {project.name}
                     </span>
@@ -428,9 +468,9 @@ export function SidebarHeader({
             <button
               onClick={onNewProject}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                'text-sm text-muted-foreground hover:text-foreground',
-                'hover:bg-accent/50 transition-colors titlebar-no-drag'
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg",
+                "text-sm text-muted-foreground hover:text-foreground",
+                "hover:bg-accent/50 transition-colors titlebar-no-drag",
               )}
               data-testid="new-project-button"
             >
@@ -440,9 +480,9 @@ export function SidebarHeader({
             <button
               onClick={onOpenFolder}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                'text-sm text-muted-foreground hover:text-foreground',
-                'hover:bg-accent/50 transition-colors titlebar-no-drag'
+                "flex items-center gap-2 px-3 py-1.5 rounded-lg",
+                "text-sm text-muted-foreground hover:text-foreground",
+                "hover:bg-accent/50 transition-colors titlebar-no-drag",
               )}
               data-testid="open-project-button"
             >

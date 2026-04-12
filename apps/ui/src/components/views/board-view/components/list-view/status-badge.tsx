@@ -1,7 +1,7 @@
-import { memo, useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { COLUMNS, isPipelineStatus } from '../../constants';
-import type { FeatureStatusWithPipeline, PipelineConfig } from '@pegasus/types';
+import { memo, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { COLUMNS, isPipelineStatus } from "../../constants";
+import type { FeatureStatusWithPipeline, PipelineConfig } from "@pegasus/types";
 
 /**
  * Status display configuration
@@ -18,34 +18,34 @@ interface StatusDisplay {
  */
 const BASE_STATUS_DISPLAY: Record<string, StatusDisplay> = {
   backlog: {
-    label: 'Backlog',
-    colorClass: 'text-[var(--status-backlog)]',
-    bgClass: 'bg-[var(--status-backlog)]/15',
-    borderClass: 'border-[var(--status-backlog)]/30',
+    label: "Backlog",
+    colorClass: "text-[var(--status-backlog)]",
+    bgClass: "bg-[var(--status-backlog)]/15",
+    borderClass: "border-[var(--status-backlog)]/30",
   },
   merge_conflict: {
-    label: 'Merge Conflict',
-    colorClass: 'text-[var(--status-warning)]',
-    bgClass: 'bg-[var(--status-warning)]/15',
-    borderClass: 'border-[var(--status-warning)]/30',
+    label: "Merge Conflict",
+    colorClass: "text-[var(--status-warning)]",
+    bgClass: "bg-[var(--status-warning)]/15",
+    borderClass: "border-[var(--status-warning)]/30",
   },
   in_progress: {
-    label: 'In Progress',
-    colorClass: 'text-[var(--status-in-progress)]',
-    bgClass: 'bg-[var(--status-in-progress)]/15',
-    borderClass: 'border-[var(--status-in-progress)]/30',
+    label: "In Progress",
+    colorClass: "text-[var(--status-in-progress)]",
+    bgClass: "bg-[var(--status-in-progress)]/15",
+    borderClass: "border-[var(--status-in-progress)]/30",
   },
   waiting_approval: {
-    label: 'Waiting Approval',
-    colorClass: 'text-[var(--status-waiting)]',
-    bgClass: 'bg-[var(--status-waiting)]/15',
-    borderClass: 'border-[var(--status-waiting)]/30',
+    label: "Waiting Approval",
+    colorClass: "text-[var(--status-waiting)]",
+    bgClass: "bg-[var(--status-waiting)]/15",
+    borderClass: "border-[var(--status-waiting)]/30",
   },
   verified: {
-    label: 'Verified',
-    colorClass: 'text-[var(--status-success)]',
-    bgClass: 'bg-[var(--status-success)]/15',
-    borderClass: 'border-[var(--status-success)]/30',
+    label: "Verified",
+    colorClass: "text-[var(--status-success)]",
+    bgClass: "bg-[var(--status-success)]/15",
+    borderClass: "border-[var(--status-success)]/30",
   },
 };
 
@@ -54,13 +54,13 @@ const BASE_STATUS_DISPLAY: Record<string, StatusDisplay> = {
  */
 function getPipelineStatusDisplay(
   status: string,
-  pipelineConfig: PipelineConfig | null
+  pipelineConfig: PipelineConfig | null,
 ): StatusDisplay | null {
   if (!isPipelineStatus(status) || !pipelineConfig?.steps) {
     return null;
   }
 
-  const stepId = status.replace('pipeline_', '');
+  const stepId = status.replace("pipeline_", "");
   const step = pipelineConfig.steps.find((s) => s.id === stepId);
 
   if (!step) {
@@ -69,10 +69,11 @@ function getPipelineStatusDisplay(
 
   // Extract the color variable from the colorClass (e.g., "bg-[var(--status-in-progress)]")
   // and use it for the badge styling
-  const colorVar = step.colorClass?.match(/var\(([^)]+)\)/)?.[1] || '--status-in-progress';
+  const colorVar =
+    step.colorClass?.match(/var\(([^)]+)\)/)?.[1] || "--status-in-progress";
 
   return {
-    label: step.name || 'Pipeline Step',
+    label: step.name || "Pipeline Step",
     colorClass: `text-[var(${colorVar})]`,
     bgClass: `bg-[var(${colorVar})]/15`,
     borderClass: `border-[var(${colorVar})]/30`,
@@ -84,7 +85,7 @@ function getPipelineStatusDisplay(
  */
 function getStatusDisplay(
   status: FeatureStatusWithPipeline,
-  pipelineConfig: PipelineConfig | null
+  pipelineConfig: PipelineConfig | null,
 ): StatusDisplay {
   // Check for pipeline status first
   if (isPipelineStatus(status)) {
@@ -94,10 +95,10 @@ function getStatusDisplay(
     }
     // Fallback for unknown pipeline status
     return {
-      label: status.replace('pipeline_', '').replace(/_/g, ' '),
-      colorClass: 'text-[var(--status-in-progress)]',
-      bgClass: 'bg-[var(--status-in-progress)]/15',
-      borderClass: 'border-[var(--status-in-progress)]/30',
+      label: status.replace("pipeline_", "").replace(/_/g, " "),
+      colorClass: "text-[var(--status-in-progress)]",
+      bgClass: "bg-[var(--status-in-progress)]/15",
+      borderClass: "border-[var(--status-in-progress)]/30",
     };
   }
 
@@ -112,18 +113,18 @@ function getStatusDisplay(
   if (column) {
     return {
       label: column.title,
-      colorClass: 'text-muted-foreground',
-      bgClass: 'bg-muted/50',
-      borderClass: 'border-border/50',
+      colorClass: "text-muted-foreground",
+      bgClass: "bg-muted/50",
+      borderClass: "border-border/50",
     };
   }
 
   // Fallback for unknown status
   return {
-    label: status.replace(/_/g, ' '),
-    colorClass: 'text-muted-foreground',
-    bgClass: 'bg-muted/50',
-    borderClass: 'border-border/50',
+    label: status.replace(/_/g, " "),
+    colorClass: "text-muted-foreground",
+    bgClass: "bg-muted/50",
+    borderClass: "border-border/50",
   };
 }
 
@@ -133,7 +134,7 @@ export interface StatusBadgeProps {
   /** Optional pipeline configuration for custom pipeline steps */
   pipelineConfig?: PipelineConfig | null;
   /** Size variant for the badge */
-  size?: 'sm' | 'default' | 'lg';
+  size?: "sm" | "default" | "lg";
   /** Additional className for custom styling */
   className?: string;
 }
@@ -163,27 +164,30 @@ export interface StatusBadgeProps {
 export const StatusBadge = memo(function StatusBadge({
   status,
   pipelineConfig = null,
-  size = 'default',
+  size = "default",
   className,
 }: StatusBadgeProps) {
-  const display = useMemo(() => getStatusDisplay(status, pipelineConfig), [status, pipelineConfig]);
+  const display = useMemo(
+    () => getStatusDisplay(status, pipelineConfig),
+    [status, pipelineConfig],
+  );
 
   const sizeClasses = {
-    sm: 'px-1.5 py-0.5 text-[10px]',
-    default: 'px-2 py-0.5 text-xs',
-    lg: 'px-2.5 py-1 text-sm',
+    sm: "px-1.5 py-0.5 text-[10px]",
+    default: "px-2 py-0.5 text-xs",
+    lg: "px-2.5 py-1 text-sm",
   };
 
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-medium whitespace-nowrap',
-        'transition-colors duration-200',
+        "inline-flex items-center rounded-full border font-medium whitespace-nowrap",
+        "transition-colors duration-200",
         sizeClasses[size],
         display.colorClass,
         display.bgClass,
         display.borderClass,
-        className
+        className,
       )}
       data-testid={`status-badge-${status}`}
     >
@@ -198,7 +202,7 @@ export const StatusBadge = memo(function StatusBadge({
  */
 export function getStatusLabel(
   status: FeatureStatusWithPipeline,
-  pipelineConfig: PipelineConfig | null = null
+  pipelineConfig: PipelineConfig | null = null,
 ): string {
   return getStatusDisplay(status, pipelineConfig).label;
 }

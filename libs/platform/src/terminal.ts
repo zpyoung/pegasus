@@ -7,19 +7,19 @@
  * - Caching of detected terminals for performance
  */
 
-import { execFile, spawn, type ChildProcess } from 'child_process';
-import { promisify } from 'util';
-import { homedir } from 'os';
-import { join } from 'path';
-import { access } from 'fs/promises';
-import type { TerminalInfo } from '@pegasus/types';
+import { execFile, spawn, type ChildProcess } from "child_process";
+import { promisify } from "util";
+import { homedir } from "os";
+import { join } from "path";
+import { access } from "fs/promises";
+import type { TerminalInfo } from "@pegasus/types";
 
 const execFileAsync = promisify(execFile);
 
 // Platform detection
-const isWindows = process.platform === 'win32';
-const isMac = process.platform === 'darwin';
-const isLinux = process.platform === 'linux';
+const isWindows = process.platform === "win32";
+const isMac = process.platform === "darwin";
+const isLinux = process.platform === "linux";
 
 // Cache with TTL for terminal detection
 let cachedTerminals: TerminalInfo[] | null = null;
@@ -48,7 +48,7 @@ export function clearTerminalCache(): void {
  */
 async function commandExists(cmd: string): Promise<boolean> {
   try {
-    const whichCmd = isWindows ? 'where' : 'which';
+    const whichCmd = isWindows ? "where" : "which";
     await execFileAsync(whichCmd, [cmd]);
     return true;
   } catch {
@@ -64,7 +64,7 @@ async function findMacApp(appName: string): Promise<string | null> {
   if (!isMac) return null;
 
   // Check /Applications first (third-party apps)
-  const appPath = join('/Applications', `${appName}.app`);
+  const appPath = join("/Applications", `${appName}.app`);
   try {
     await access(appPath);
     return appPath;
@@ -73,7 +73,7 @@ async function findMacApp(appName: string): Promise<string | null> {
   }
 
   // Check /System/Applications (built-in macOS apps like Terminal on Catalina+)
-  const systemAppPath = join('/System/Applications', `${appName}.app`);
+  const systemAppPath = join("/System/Applications", `${appName}.app`);
   try {
     await access(systemAppPath);
     return systemAppPath;
@@ -82,7 +82,7 @@ async function findMacApp(appName: string): Promise<string | null> {
   }
 
   // Check ~/Applications (used by some installers)
-  const userAppPath = join(homedir(), 'Applications', `${appName}.app`);
+  const userAppPath = join(homedir(), "Applications", `${appName}.app`);
   try {
     await access(userAppPath);
     return userAppPath;
@@ -122,7 +122,7 @@ interface TerminalDefinition {
   /** Linux binary paths to check */
   linuxPaths?: readonly string[];
   /** Platform restriction */
-  platform?: 'darwin' | 'win32' | 'linux';
+  platform?: "darwin" | "win32" | "linux";
 }
 
 /**
@@ -131,151 +131,168 @@ interface TerminalDefinition {
 const SUPPORTED_TERMINALS: TerminalDefinition[] = [
   // macOS terminals
   {
-    id: 'iterm2',
-    name: 'iTerm2',
-    cliCommand: 'iterm2',
-    macAppName: 'iTerm',
-    platform: 'darwin',
+    id: "iterm2",
+    name: "iTerm2",
+    cliCommand: "iterm2",
+    macAppName: "iTerm",
+    platform: "darwin",
   },
   {
-    id: 'warp',
-    name: 'Warp',
-    cliCommand: 'warp-cli',
-    cliAliases: ['warp-terminal', 'warp'],
-    macAppName: 'Warp',
+    id: "warp",
+    name: "Warp",
+    cliCommand: "warp-cli",
+    cliAliases: ["warp-terminal", "warp"],
+    macAppName: "Warp",
   },
   {
-    id: 'ghostty',
-    name: 'Ghostty',
-    cliCommand: 'ghostty',
-    macAppName: 'Ghostty',
+    id: "ghostty",
+    name: "Ghostty",
+    cliCommand: "ghostty",
+    macAppName: "Ghostty",
   },
   {
-    id: 'rio',
-    name: 'Rio',
-    cliCommand: 'rio',
-    macAppName: 'Rio',
+    id: "rio",
+    name: "Rio",
+    cliCommand: "rio",
+    macAppName: "Rio",
   },
   {
-    id: 'alacritty',
-    name: 'Alacritty',
-    cliCommand: 'alacritty',
-    macAppName: 'Alacritty',
+    id: "alacritty",
+    name: "Alacritty",
+    cliCommand: "alacritty",
+    macAppName: "Alacritty",
   },
   {
-    id: 'wezterm',
-    name: 'WezTerm',
-    cliCommand: 'wezterm',
-    macAppName: 'WezTerm',
+    id: "wezterm",
+    name: "WezTerm",
+    cliCommand: "wezterm",
+    macAppName: "WezTerm",
   },
   {
-    id: 'kitty',
-    name: 'Kitty',
-    cliCommand: 'kitty',
-    macAppName: 'kitty',
+    id: "kitty",
+    name: "Kitty",
+    cliCommand: "kitty",
+    macAppName: "kitty",
   },
   {
-    id: 'hyper',
-    name: 'Hyper',
-    cliCommand: 'hyper',
-    macAppName: 'Hyper',
+    id: "hyper",
+    name: "Hyper",
+    cliCommand: "hyper",
+    macAppName: "Hyper",
   },
   {
-    id: 'tabby',
-    name: 'Tabby',
-    cliCommand: 'tabby',
-    macAppName: 'Tabby',
+    id: "tabby",
+    name: "Tabby",
+    cliCommand: "tabby",
+    macAppName: "Tabby",
   },
   {
-    id: 'terminal-macos',
-    name: 'System Terminal',
-    macAppName: 'Utilities/Terminal',
-    platform: 'darwin',
+    id: "terminal-macos",
+    name: "System Terminal",
+    macAppName: "Utilities/Terminal",
+    platform: "darwin",
   },
 
   // Windows terminals
   {
-    id: 'windows-terminal',
-    name: 'Windows Terminal',
-    cliCommand: 'wt',
-    windowsPaths: [join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WindowsApps', 'wt.exe')],
-    platform: 'win32',
-  },
-  {
-    id: 'powershell',
-    name: 'PowerShell',
-    cliCommand: 'pwsh',
-    cliAliases: ['powershell'],
+    id: "windows-terminal",
+    name: "Windows Terminal",
+    cliCommand: "wt",
     windowsPaths: [
       join(
-        process.env.SYSTEMROOT || 'C:\\Windows',
-        'System32',
-        'WindowsPowerShell',
-        'v1.0',
-        'powershell.exe'
+        process.env.LOCALAPPDATA || "",
+        "Microsoft",
+        "WindowsApps",
+        "wt.exe",
       ),
     ],
-    platform: 'win32',
+    platform: "win32",
   },
   {
-    id: 'cmd',
-    name: 'Command Prompt',
-    cliCommand: 'cmd',
-    windowsPaths: [join(process.env.SYSTEMROOT || 'C:\\Windows', 'System32', 'cmd.exe')],
-    platform: 'win32',
-  },
-  {
-    id: 'git-bash',
-    name: 'Git Bash',
+    id: "powershell",
+    name: "PowerShell",
+    cliCommand: "pwsh",
+    cliAliases: ["powershell"],
     windowsPaths: [
-      join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Git', 'git-bash.exe'),
-      join(process.env['PROGRAMFILES(X86)'] || 'C:\\Program Files (x86)', 'Git', 'git-bash.exe'),
+      join(
+        process.env.SYSTEMROOT || "C:\\Windows",
+        "System32",
+        "WindowsPowerShell",
+        "v1.0",
+        "powershell.exe",
+      ),
     ],
-    platform: 'win32',
+    platform: "win32",
+  },
+  {
+    id: "cmd",
+    name: "Command Prompt",
+    cliCommand: "cmd",
+    windowsPaths: [
+      join(process.env.SYSTEMROOT || "C:\\Windows", "System32", "cmd.exe"),
+    ],
+    platform: "win32",
+  },
+  {
+    id: "git-bash",
+    name: "Git Bash",
+    windowsPaths: [
+      join(
+        process.env.PROGRAMFILES || "C:\\Program Files",
+        "Git",
+        "git-bash.exe",
+      ),
+      join(
+        process.env["PROGRAMFILES(X86)"] || "C:\\Program Files (x86)",
+        "Git",
+        "git-bash.exe",
+      ),
+    ],
+    platform: "win32",
   },
 
   // Linux terminals
   {
-    id: 'gnome-terminal',
-    name: 'GNOME Terminal',
-    cliCommand: 'gnome-terminal',
-    platform: 'linux',
+    id: "gnome-terminal",
+    name: "GNOME Terminal",
+    cliCommand: "gnome-terminal",
+    platform: "linux",
   },
   {
-    id: 'konsole',
-    name: 'Konsole',
-    cliCommand: 'konsole',
-    platform: 'linux',
+    id: "konsole",
+    name: "Konsole",
+    cliCommand: "konsole",
+    platform: "linux",
   },
   {
-    id: 'xfce4-terminal',
-    name: 'XFCE4 Terminal',
-    cliCommand: 'xfce4-terminal',
-    platform: 'linux',
+    id: "xfce4-terminal",
+    name: "XFCE4 Terminal",
+    cliCommand: "xfce4-terminal",
+    platform: "linux",
   },
   {
-    id: 'tilix',
-    name: 'Tilix',
-    cliCommand: 'tilix',
-    platform: 'linux',
+    id: "tilix",
+    name: "Tilix",
+    cliCommand: "tilix",
+    platform: "linux",
   },
   {
-    id: 'terminator',
-    name: 'Terminator',
-    cliCommand: 'terminator',
-    platform: 'linux',
+    id: "terminator",
+    name: "Terminator",
+    cliCommand: "terminator",
+    platform: "linux",
   },
   {
-    id: 'foot',
-    name: 'Foot',
-    cliCommand: 'foot',
-    platform: 'linux',
+    id: "foot",
+    name: "Foot",
+    cliCommand: "foot",
+    platform: "linux",
   },
   {
-    id: 'xterm',
-    name: 'XTerm',
-    cliCommand: 'xterm',
-    platform: 'linux',
+    id: "xterm",
+    name: "XTerm",
+    cliCommand: "xterm",
+    platform: "linux",
   },
 ];
 
@@ -283,18 +300,21 @@ const SUPPORTED_TERMINALS: TerminalDefinition[] = [
  * Try to find a terminal - checks CLI, macOS app bundle, or Windows paths
  * Returns TerminalInfo if found, null otherwise
  */
-async function findTerminal(definition: TerminalDefinition): Promise<TerminalInfo | null> {
+async function findTerminal(
+  definition: TerminalDefinition,
+): Promise<TerminalInfo | null> {
   // Skip if terminal is for a different platform
   if (definition.platform) {
-    if (definition.platform === 'darwin' && !isMac) return null;
-    if (definition.platform === 'win32' && !isWindows) return null;
-    if (definition.platform === 'linux' && !isLinux) return null;
+    if (definition.platform === "darwin" && !isMac) return null;
+    if (definition.platform === "win32" && !isWindows) return null;
+    if (definition.platform === "linux" && !isLinux) return null;
   }
 
   // Try CLI command first (works on all platforms)
-  const cliCandidates = [definition.cliCommand, ...(definition.cliAliases ?? [])].filter(
-    Boolean
-  ) as string[];
+  const cliCandidates = [
+    definition.cliCommand,
+    ...(definition.cliAliases ?? []),
+  ].filter(Boolean) as string[];
   for (const cliCommand of cliCandidates) {
     if (await commandExists(cliCommand)) {
       return {
@@ -370,7 +390,9 @@ export async function detectDefaultTerminal(): Promise<TerminalInfo | null> {
  * Find a specific terminal by ID
  * Returns the terminal info if available, null otherwise
  */
-export async function findTerminalById(id: string): Promise<TerminalInfo | null> {
+export async function findTerminalById(
+  id: string,
+): Promise<TerminalInfo | null> {
   const terminals = await detectAllTerminals();
   return terminals.find((t) => t.id === id) ?? null;
 }
@@ -389,7 +411,7 @@ export async function findTerminalById(id: string): Promise<TerminalInfo | null>
  */
 export async function openInExternalTerminal(
   targetPath: string,
-  terminalId?: string
+  terminalId?: string,
 ): Promise<{ terminalName: string }> {
   // Determine which terminal to use
   let terminal: TerminalInfo | null;
@@ -405,7 +427,7 @@ export async function openInExternalTerminal(
   }
 
   if (!terminal) {
-    throw new Error('No external terminal available');
+    throw new Error("No external terminal available");
   }
 
   // Execute the terminal
@@ -418,18 +440,21 @@ export async function openInExternalTerminal(
  * Execute a terminal command to open at a specific path
  * Handles platform-specific differences in command execution
  */
-async function executeTerminalCommand(terminal: TerminalInfo, targetPath: string): Promise<void> {
+async function executeTerminalCommand(
+  terminal: TerminalInfo,
+  targetPath: string,
+): Promise<void> {
   const { id, command } = terminal;
 
   // Handle 'open -a "AppPath"' style commands (macOS app bundles)
-  if (command.startsWith('open -a ')) {
-    const appPath = command.replace('open -a ', '').replace(/"/g, '');
+  if (command.startsWith("open -a ")) {
+    const appPath = command.replace("open -a ", "").replace(/"/g, "");
 
     // Different terminals have different ways to open at a directory
-    if (id === 'iterm2') {
+    if (id === "iterm2") {
       // iTerm2: Use AppleScript to open a new window at the path
-      await execFileAsync('osascript', [
-        '-e',
+      await execFileAsync("osascript", [
+        "-e",
         `tell application "iTerm"
           create window with default profile
           tell current session of current window
@@ -437,31 +462,31 @@ async function executeTerminalCommand(terminal: TerminalInfo, targetPath: string
           end tell
         end tell`,
       ]);
-    } else if (id === 'terminal-macos') {
+    } else if (id === "terminal-macos") {
       // macOS Terminal: Use AppleScript
-      await execFileAsync('osascript', [
-        '-e',
+      await execFileAsync("osascript", [
+        "-e",
         `tell application "Terminal"
           do script "cd ${escapeShellArg(targetPath)}"
           activate
         end tell`,
       ]);
-    } else if (id === 'warp') {
+    } else if (id === "warp") {
       // Warp: Open app and use AppleScript to cd
-      await execFileAsync('open', ['-a', appPath, targetPath]);
+      await execFileAsync("open", ["-a", appPath, targetPath]);
     } else {
       // Generic: Just open the app with the directory as argument
-      await execFileAsync('open', ['-a', appPath, targetPath]);
+      await execFileAsync("open", ["-a", appPath, targetPath]);
     }
     return;
   }
 
   // Handle different terminals based on their ID
   switch (id) {
-    case 'iterm2':
+    case "iterm2":
       // iTerm2 CLI mode
-      await execFileAsync('osascript', [
-        '-e',
+      await execFileAsync("osascript", [
+        "-e",
         `tell application "iTerm"
           create window with default profile
           tell current session of current window
@@ -471,100 +496,100 @@ async function executeTerminalCommand(terminal: TerminalInfo, targetPath: string
       ]);
       break;
 
-    case 'ghostty':
+    case "ghostty":
       // Ghostty: uses --working-directory=PATH format (single arg)
       await spawnDetached(command, [`--working-directory=${targetPath}`]);
       break;
 
-    case 'warp':
+    case "warp":
       // Warp: uses --cwd flag (CLI mode, not app bundle)
-      await spawnDetached(command, ['--cwd', targetPath]);
+      await spawnDetached(command, ["--cwd", targetPath]);
       break;
 
-    case 'alacritty':
+    case "alacritty":
       // Alacritty: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'wezterm':
+    case "wezterm":
       // WezTerm: uses start --cwd flag
-      await spawnDetached(command, ['start', '--cwd', targetPath]);
+      await spawnDetached(command, ["start", "--cwd", targetPath]);
       break;
 
-    case 'kitty':
+    case "kitty":
       // Kitty: uses --directory flag
-      await spawnDetached(command, ['--directory', targetPath]);
+      await spawnDetached(command, ["--directory", targetPath]);
       break;
 
-    case 'hyper':
+    case "hyper":
       // Hyper: open at directory by setting cwd
       await spawnDetached(command, [targetPath]);
       break;
 
-    case 'tabby':
+    case "tabby":
       // Tabby: open at directory
-      await spawnDetached(command, ['open', targetPath]);
+      await spawnDetached(command, ["open", targetPath]);
       break;
 
-    case 'rio':
+    case "rio":
       // Rio: uses --working-dir flag
-      await spawnDetached(command, ['--working-dir', targetPath]);
+      await spawnDetached(command, ["--working-dir", targetPath]);
       break;
 
-    case 'windows-terminal':
+    case "windows-terminal":
       // Windows Terminal: uses -d flag for directory
-      await spawnDetached(command, ['-d', targetPath], { shell: true });
+      await spawnDetached(command, ["-d", targetPath], { shell: true });
       break;
 
-    case 'powershell':
-    case 'cmd':
+    case "powershell":
+    case "cmd":
       // PowerShell/CMD: Start in directory with /K to keep open
-      await spawnDetached('start', [command, '/K', `cd /d "${targetPath}"`], {
+      await spawnDetached("start", [command, "/K", `cd /d "${targetPath}"`], {
         shell: true,
       });
       break;
 
-    case 'git-bash':
+    case "git-bash":
       // Git Bash: uses --cd flag
-      await spawnDetached(command, ['--cd', targetPath], { shell: true });
+      await spawnDetached(command, ["--cd", targetPath], { shell: true });
       break;
 
-    case 'gnome-terminal':
+    case "gnome-terminal":
       // GNOME Terminal: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'konsole':
+    case "konsole":
       // Konsole: uses --workdir flag
-      await spawnDetached(command, ['--workdir', targetPath]);
+      await spawnDetached(command, ["--workdir", targetPath]);
       break;
 
-    case 'xfce4-terminal':
+    case "xfce4-terminal":
       // XFCE4 Terminal: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'tilix':
+    case "tilix":
       // Tilix: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'terminator':
+    case "terminator":
       // Terminator: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'foot':
+    case "foot":
       // Foot: uses --working-directory flag
-      await spawnDetached(command, ['--working-directory', targetPath]);
+      await spawnDetached(command, ["--working-directory", targetPath]);
       break;
 
-    case 'xterm':
+    case "xterm":
       // XTerm: uses -e to run a shell in the directory
       await spawnDetached(command, [
-        '-e',
-        'sh',
-        '-c',
+        "-e",
+        "sh",
+        "-c",
         `cd ${escapeShellArg(targetPath)} && $SHELL`,
       ]);
       break;
@@ -581,19 +606,19 @@ async function executeTerminalCommand(terminal: TerminalInfo, targetPath: string
 function spawnDetached(
   command: string,
   args: string[],
-  options: { shell?: boolean } = {}
+  options: { shell?: boolean } = {},
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const child: ChildProcess = spawn(command, args, {
       shell: options.shell ?? false,
-      stdio: 'ignore',
+      stdio: "ignore",
       detached: true,
     });
 
     // Unref to allow the parent process to exit independently
     child.unref();
 
-    child.on('error', (err) => {
+    child.on("error", (err) => {
       reject(err);
     });
 

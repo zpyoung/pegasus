@@ -156,12 +156,15 @@ export function create{Module}Routes(events: EventEmitter, settingsService?: Set
 **Pattern**:
 
 ```typescript
-import { createLogger } from '@pegasus/utils';
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('{ModuleName}');
+const logger = createLogger("{ModuleName}");
 
 // Shared state — scoped by project path to support concurrent projects
-const runningProjects = new Map<string, { isRunning: boolean; type: string; startedAt: string }>();
+const runningProjects = new Map<
+  string,
+  { isRunning: boolean; type: string; startedAt: string }
+>();
 const abortControllers = new Map<string, AbortController>();
 
 // State management
@@ -169,10 +172,14 @@ export function setRunningState(
   projectPath: string,
   running: boolean,
   controller: AbortController | null = null,
-  type: string = 'default'
+  type: string = "default",
 ): void {
   if (running) {
-    runningProjects.set(projectPath, { isRunning: true, type, startedAt: new Date().toISOString() });
+    runningProjects.set(projectPath, {
+      isRunning: true,
+      type,
+      startedAt: new Date().toISOString(),
+    });
     if (controller) abortControllers.set(projectPath, controller);
   } else {
     runningProjects.delete(projectPath);
@@ -186,7 +193,7 @@ export function logError(error: unknown, context: string): void {
 }
 
 // getErrorMessage is re-exported from routes/common.ts
-import { getErrorMessage as getErrorMessageShared } from '../common.js';
+import { getErrorMessage as getErrorMessageShared } from "../common.js";
 export { getErrorMessageShared as getErrorMessage };
 ```
 
@@ -302,21 +309,21 @@ export function create{Action}Handler(events: EventEmitter, settingsService?: Se
  * {Brief description of what this function does}
  */
 
-import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
-import type { EventEmitter } from '../../lib/events.js';
-import { createLogger } from '@pegasus/utils';
-import { logAuthStatus } from './common.js';
-import { anotherBusinessFunction } from './another-business-function.js';
+import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
+import type { EventEmitter } from "../../lib/events.js";
+import { createLogger } from "@pegasus/utils";
+import { logAuthStatus } from "./common.js";
+import { anotherBusinessFunction } from "./another-business-function.js";
 
-const logger = createLogger('{ModuleName}');
+const logger = createLogger("{ModuleName}");
 
 export async function businessLogicFunction(
   param1: string,
   param2: number,
   events: EventEmitter,
-  abortController: AbortController
+  abortController: AbortController,
 ): Promise<void> {
-  logger.debug('========== businessLogicFunction() started ==========');
+  logger.debug("========== businessLogicFunction() started ==========");
 
   try {
     // Business logic here
@@ -325,9 +332,9 @@ export async function businessLogicFunction(
     // Can call other business logic functions
     await anotherBusinessFunction(param1, events, abortController);
 
-    logger.debug('========== businessLogicFunction() completed ==========');
+    logger.debug("========== businessLogicFunction() completed ==========");
   } catch (error) {
-    logger.error('❌ businessLogicFunction() failed:', error);
+    logger.error("❌ businessLogicFunction() failed:", error);
     throw error;
   }
 }
@@ -517,11 +524,11 @@ The `app-spec` module demonstrates this pattern:
 
 ```typescript
 // routes.ts - 500+ lines
-router.post('/create', async (req, res) => {
+router.post("/create", async (req, res) => {
   // 200 lines of logic
 });
 
-router.post('/generate', async (req, res) => {
+router.post("/generate", async (req, res) => {
   // 200 lines of similar logic
 });
 ```

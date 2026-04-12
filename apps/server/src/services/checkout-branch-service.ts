@@ -20,12 +20,17 @@
  * 7. Handle error recovery (restore stash if checkout fails)
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { execGitCommand } from '../lib/git.js';
-import type { EventEmitter } from '../lib/events.js';
-import { hasAnyChanges, stashChanges, popStash, localBranchExists } from './branch-utils.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { execGitCommand } from "../lib/git.js";
+import type { EventEmitter } from "../lib/events.js";
+import {
+  hasAnyChanges,
+  stashChanges,
+  popStash,
+  localBranchExists,
+} from "./branch-utils.js";
 
-const logger = createLogger('CheckoutBranchService');
+const logger = createLogger("CheckoutBranchService");
 
 // ============================================================================
 // Local Helpers
@@ -49,15 +54,22 @@ async function fetchRemotes(cwd: string): Promise<void> {
   const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    await execGitCommand(['fetch', '--all', '--quiet'], cwd, undefined, controller);
+    await execGitCommand(
+      ["fetch", "--all", "--quiet"],
+      cwd,
+      undefined,
+      controller,
+    );
   } catch (error) {
     if (controller.signal.aborted) {
       // Fetch timed out - log and continue; callers should not be blocked by a slow remote
       logger.warn(
-        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`
+        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`,
       );
     } else {
-      logger.warn(`fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`);
+      logger.warn(
+        `fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`,
+      );
     }
     // Non-fatal: continue with locally available refs regardless of failure type
   } finally {
@@ -111,13 +123,17 @@ export async function performCheckoutBranch(
   branchName: string,
   baseBranch?: string,
   options?: CheckoutBranchOptions,
-  events?: EventEmitter
+  events?: EventEmitter,
 ): Promise<CheckoutBranchResult> {
   const shouldStash = options?.stashChanges ?? false;
   const includeUntracked = options?.includeUntracked ?? true;
 
   // Emit start event
-  events?.emit('switch:start', { worktreePath, branchName, operation: 'checkout' });
+  events?.emit("switch:start", {
+    worktreePath,
+    branchName,
+    operation: "checkout",
+  });
 
   // 0. Fetch latest from all remotes before creating the branch
   //    This ensures remote refs are up-to-date so that base branch validation
@@ -128,13 +144,13 @@ export async function performCheckoutBranch(
   let previousBranch: string;
   try {
     const currentBranchOutput = await execGitCommand(
-      ['rev-parse', '--abbrev-ref', 'HEAD'],
-      worktreePath
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      worktreePath,
     );
     previousBranch = currentBranchOutput.trim();
   } catch (branchError) {
     const branchErrorMsg = getErrorMessage(branchError);
-    events?.emit('switch:error', {
+    events?.emit("switch:error", {
       worktreePath,
       branchName,
       error: branchErrorMsg,
@@ -147,7 +163,7 @@ export async function performCheckoutBranch(
 
   // 2. Check if branch already exists
   if (await localBranchExists(worktreePath, branchName)) {
-    events?.emit('switch:error', {
+    events?.emit("switch:error", {
       worktreePath,
       branchName,
       error: `Branch '${branchName}' already exists`,
@@ -161,9 +177,9 @@ export async function performCheckoutBranch(
   // 3. Validate base branch if provided
   if (baseBranch) {
     try {
-      await execGitCommand(['rev-parse', '--verify', baseBranch], worktreePath);
+      await execGitCommand(["rev-parse", "--verify", baseBranch], worktreePath);
     } catch {
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         worktreePath,
         branchName,
         error: `Base branch '${baseBranch}' does not exist`,
@@ -181,19 +197,23 @@ export async function performCheckoutBranch(
   if (shouldStash) {
     const hadChanges = await hasAnyChanges(worktreePath, { includeUntracked });
     if (hadChanges) {
-      events?.emit('switch:stash', {
+      events?.emit("switch:stash", {
         worktreePath,
         previousBranch,
         targetBranch: branchName,
-        action: 'push',
+        action: "push",
       });
 
       const stashMessage = `Auto-stash before switching to ${branchName}`;
       try {
-        didStash = await stashChanges(worktreePath, stashMessage, includeUntracked);
+        didStash = await stashChanges(
+          worktreePath,
+          stashMessage,
+          includeUntracked,
+        );
       } catch (stashError) {
         const stashErrorMsg = getErrorMessage(stashError);
-        events?.emit('switch:error', {
+        events?.emit("switch:error", {
           worktreePath,
           branchName,
           error: `Failed to stash local changes: ${stashErrorMsg}`,
@@ -208,14 +228,14 @@ export async function performCheckoutBranch(
 
   try {
     // 5. Create and checkout the new branch
-    events?.emit('switch:checkout', {
+    events?.emit("switch:checkout", {
       worktreePath,
       targetBranch: branchName,
       isRemote: false,
       previousBranch,
     });
 
-    const checkoutArgs = ['checkout', '-b', branchName];
+    const checkoutArgs = ["checkout", "-b", branchName];
     if (baseBranch) {
       checkoutArgs.push(baseBranch);
     }
@@ -223,14 +243,14 @@ export async function performCheckoutBranch(
 
     // 6. Reapply stashed changes if we stashed earlier
     let hasConflicts = false;
-    let conflictMessage = '';
+    let conflictMessage = "";
     let stashReapplied = false;
 
     if (didStash) {
-      events?.emit('switch:pop', {
+      events?.emit("switch:pop", {
         worktreePath,
         targetBranch: branchName,
-        action: 'pop',
+        action: "pop",
       });
 
       // Isolate the pop in its own try/catch so a thrown exception does not
@@ -252,17 +272,17 @@ export async function performCheckoutBranch(
         // so the outer catch does not attempt a second pop.
         didStash = false;
         conflictMessage = `Created branch '${branchName}' but an error occurred while reapplying stashed changes: ${getErrorMessage(popError)}. Your changes may still be in the stash.`;
-        events?.emit('switch:pop', {
+        events?.emit("switch:pop", {
           worktreePath,
           targetBranch: branchName,
-          action: 'pop',
+          action: "pop",
           error: getErrorMessage(popError),
         });
       }
     }
 
     if (hasConflicts) {
-      events?.emit('switch:done', {
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: branchName,
@@ -280,7 +300,7 @@ export async function performCheckoutBranch(
       };
     } else if (didStash && !stashReapplied) {
       // Stash pop failed for a non-conflict reason — stash is still present
-      events?.emit('switch:done', {
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: branchName,
@@ -297,8 +317,10 @@ export async function performCheckoutBranch(
         },
       };
     } else {
-      const stashNote = stashReapplied ? ' (local changes stashed and reapplied)' : '';
-      events?.emit('switch:done', {
+      const stashNote = stashReapplied
+        ? " (local changes stashed and reapplied)"
+        : "";
+      events?.emit("switch:done", {
         worktreePath,
         previousBranch,
         currentBranch: branchName,
@@ -322,7 +344,7 @@ export async function performCheckoutBranch(
         const popResult = await popStash(worktreePath);
         if (popResult.hasConflicts) {
           const checkoutErrorMsg = getErrorMessage(checkoutError);
-          events?.emit('switch:error', {
+          events?.emit("switch:error", {
             worktreePath,
             branchName,
             error: checkoutErrorMsg,
@@ -333,15 +355,15 @@ export async function performCheckoutBranch(
             error: checkoutErrorMsg,
             stashPopConflicts: true,
             stashPopConflictMessage:
-              'Stash pop resulted in conflicts: your stashed changes were partially reapplied ' +
-              'but produced merge conflicts. Please resolve the conflicts before retrying.',
+              "Stash pop resulted in conflicts: your stashed changes were partially reapplied " +
+              "but produced merge conflicts. Please resolve the conflicts before retrying.",
           };
         } else if (!popResult.success) {
           const checkoutErrorMsg = getErrorMessage(checkoutError);
           const combinedMessage =
             `${checkoutErrorMsg}. Additionally, restoring your stashed changes failed: ` +
-            `${popResult.error ?? 'unknown error'} — your changes are still saved in the stash.`;
-          events?.emit('switch:error', {
+            `${popResult.error ?? "unknown error"} — your changes are still saved in the stash.`;
+          events?.emit("switch:error", {
             worktreePath,
             branchName,
             error: combinedMessage,
@@ -361,7 +383,7 @@ export async function performCheckoutBranch(
         const combinedMessage =
           `${checkoutErrorMsg}. Additionally, an error occurred while attempting to restore ` +
           `your stashed changes: ${popErrorMsg} — your changes may still be saved in the stash.`;
-        events?.emit('switch:error', {
+        events?.emit("switch:error", {
           worktreePath,
           branchName,
           error: combinedMessage,
@@ -375,7 +397,7 @@ export async function performCheckoutBranch(
       }
     }
     const checkoutErrorMsg = getErrorMessage(checkoutError);
-    events?.emit('switch:error', {
+    events?.emit("switch:error", {
       worktreePath,
       branchName,
       error: checkoutErrorMsg,

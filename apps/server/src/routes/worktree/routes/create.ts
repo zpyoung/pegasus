@@ -8,32 +8,32 @@
  * 4. Only creates a new worktree if none exists for the branch
  */
 
-import type { Request, Response } from 'express';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
-import * as secureFs from '../../../lib/secure-fs.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { WorktreeService } from '../../../services/worktree-service.js';
-import { isGitRepo } from '@pegasus/git-utils';
+import type { Request, Response } from "express";
+import { exec } from "child_process";
+import { promisify } from "util";
+import path from "path";
+import * as secureFs from "../../../lib/secure-fs.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { WorktreeService } from "../../../services/worktree-service.js";
+import { isGitRepo } from "@pegasus/git-utils";
 import {
   getErrorMessage,
   logError,
   normalizePath,
   ensureInitialCommit,
   isValidBranchName,
-} from '../common.js';
-import { execGitCommand } from '../../../lib/git.js';
-import { trackBranch } from './branch-tracking.js';
-import { createLogger } from '@pegasus/utils';
-import { runInitScript } from '../../../services/init-script-service.js';
+} from "../common.js";
+import { execGitCommand } from "../../../lib/git.js";
+import { trackBranch } from "./branch-tracking.js";
+import { createLogger } from "@pegasus/utils";
+import { runInitScript } from "../../../services/init-script-service.js";
 import {
   syncBaseBranch,
   type BaseBranchSyncResult,
-} from '../../../services/branch-sync-service.js';
+} from "../../../services/branch-sync-service.js";
 
-const logger = createLogger('Worktree');
+const logger = createLogger("Worktree");
 
 /** Timeout for git fetch operations (30 seconds) */
 const FETCH_TIMEOUT_MS = 30_000;
@@ -45,23 +45,23 @@ const execAsync = promisify(exec);
  */
 async function findExistingWorktreeForBranch(
   projectPath: string,
-  branchName: string
+  branchName: string,
 ): Promise<{ path: string; branch: string } | null> {
   try {
-    const { stdout } = await execAsync('git worktree list --porcelain', {
+    const { stdout } = await execAsync("git worktree list --porcelain", {
       cwd: projectPath,
     });
 
-    const lines = stdout.split('\n');
+    const lines = stdout.split("\n");
     let currentPath: string | null = null;
     let currentBranch: string | null = null;
 
     for (const line of lines) {
-      if (line.startsWith('worktree ')) {
+      if (line.startsWith("worktree ")) {
         currentPath = line.slice(9);
-      } else if (line.startsWith('branch ')) {
-        currentBranch = line.slice(7).replace('refs/heads/', '');
-      } else if (line === '' && currentPath && currentBranch) {
+      } else if (line.startsWith("branch ")) {
+        currentBranch = line.slice(7).replace("refs/heads/", "");
+      } else if (line === "" && currentPath && currentBranch) {
         // End of a worktree entry
         if (currentBranch === branchName) {
           // Resolve to absolute path - git may return relative paths
@@ -91,7 +91,10 @@ async function findExistingWorktreeForBranch(
   }
 }
 
-export function createCreateHandler(events: EventEmitter, settingsService?: SettingsService) {
+export function createCreateHandler(
+  events: EventEmitter,
+  settingsService?: SettingsService,
+) {
   const worktreeService = new WorktreeService();
 
   return async (req: Request, res: Response): Promise<void> => {
@@ -105,7 +108,7 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       if (!projectPath || !branchName) {
         res.status(400).json({
           success: false,
-          error: 'projectPath and branchName required',
+          error: "projectPath and branchName required",
         });
         return;
       }
@@ -115,17 +118,21 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
         res.status(400).json({
           success: false,
           error:
-            'Invalid branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.',
+            "Invalid branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.",
         });
         return;
       }
 
       // Validate base branch if provided
-      if (baseBranch && !isValidBranchName(baseBranch) && baseBranch !== 'HEAD') {
+      if (
+        baseBranch &&
+        !isValidBranchName(baseBranch) &&
+        baseBranch !== "HEAD"
+      ) {
         res.status(400).json({
           success: false,
           error:
-            'Invalid base branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.',
+            "Invalid base branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.",
         });
         return;
       }
@@ -133,7 +140,7 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       if (!(await isGitRepo(projectPath))) {
         res.status(400).json({
           success: false,
-          error: 'Not a git repository',
+          error: "Not a git repository",
         });
         return;
       }
@@ -141,20 +148,23 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // Ensure the repository has at least one commit so worktree commands referencing HEAD succeed
       // Pass git identity env vars so commits work without global git config
       const gitEnv = {
-        GIT_AUTHOR_NAME: 'Pegasus',
-        GIT_AUTHOR_EMAIL: 'pegasus@localhost',
-        GIT_COMMITTER_NAME: 'Pegasus',
-        GIT_COMMITTER_EMAIL: 'pegasus@localhost',
+        GIT_AUTHOR_NAME: "Pegasus",
+        GIT_AUTHOR_EMAIL: "pegasus@localhost",
+        GIT_COMMITTER_NAME: "Pegasus",
+        GIT_COMMITTER_EMAIL: "pegasus@localhost",
       };
       await ensureInitialCommit(projectPath, gitEnv);
 
       // First, check if git already has a worktree for this branch (anywhere)
-      const existingWorktree = await findExistingWorktreeForBranch(projectPath, branchName);
+      const existingWorktree = await findExistingWorktreeForBranch(
+        projectPath,
+        branchName,
+      );
       if (existingWorktree) {
         // Worktree already exists, return it as success (not an error)
         // This handles manually created worktrees or worktrees from previous runs
         logger.info(
-          `Found existing worktree for branch "${branchName}" at: ${existingWorktree.path}`
+          `Found existing worktree for branch "${branchName}" at: ${existingWorktree.path}`,
         );
 
         // Track the branch so it persists in the UI
@@ -172,8 +182,8 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       }
 
       // Sanitize branch name for directory usage
-      const sanitizedName = branchName.replace(/[^a-zA-Z0-9_-]/g, '-');
-      const worktreesDir = path.join(projectPath, '.worktrees');
+      const sanitizedName = branchName.replace(/[^a-zA-Z0-9_-]/g, "-");
+      const worktreesDir = path.join(projectPath, ".worktrees");
       const worktreePath = path.join(worktreesDir, sanitizedName);
 
       // Create worktrees directory if it doesn't exist
@@ -184,31 +194,43 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // - Remote base branches (e.g. "origin/main")
       // - Existing remote branches being checked out as worktrees
       // - Branch existence checks against fresh remote state
-      logger.info('Fetching from all remotes before creating worktree');
+      logger.info("Fetching from all remotes before creating worktree");
       try {
         const controller = new AbortController();
         const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
         try {
-          await execGitCommand(['fetch', '--all', '--quiet'], projectPath, undefined, controller);
+          await execGitCommand(
+            ["fetch", "--all", "--quiet"],
+            projectPath,
+            undefined,
+            controller,
+          );
         } finally {
           clearTimeout(timerId);
         }
       } catch (fetchErr) {
         // Non-fatal: log but continue — refs might already be cached locally
-        logger.warn(`Failed to fetch from remotes: ${getErrorMessage(fetchErr)}`);
+        logger.warn(
+          `Failed to fetch from remotes: ${getErrorMessage(fetchErr)}`,
+        );
       }
 
       // Sync the base branch with its remote tracking branch (fast-forward only).
       // This ensures the new worktree starts from an up-to-date state rather than
       // a potentially stale local copy. If the sync fails or the branch has diverged,
       // we proceed with the local copy and inform the user.
-      const effectiveBase = baseBranch || 'HEAD';
-      let syncResult: BaseBranchSyncResult = { attempted: false, synced: false };
+      const effectiveBase = baseBranch || "HEAD";
+      let syncResult: BaseBranchSyncResult = {
+        attempted: false,
+        synced: false,
+      };
 
       // Only sync if the base is a real branch (not 'HEAD')
       // Pass skipFetch=true because we already fetched all remotes above.
-      if (effectiveBase !== 'HEAD') {
-        logger.info(`Syncing base branch '${effectiveBase}' before creating worktree`);
+      if (effectiveBase !== "HEAD") {
+        logger.info(
+          `Syncing base branch '${effectiveBase}' before creating worktree`,
+        );
         syncResult = await syncBaseBranch(projectPath, effectiveBase, true);
         if (syncResult.attempted) {
           if (syncResult.synced) {
@@ -222,13 +244,13 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
         // Pass skipFetch=true because we already fetched all remotes above.
         try {
           const currentBranch = await execGitCommand(
-            ['rev-parse', '--abbrev-ref', 'HEAD'],
-            projectPath
+            ["rev-parse", "--abbrev-ref", "HEAD"],
+            projectPath,
           );
           const trimmedBranch = currentBranch.trim();
-          if (trimmedBranch && trimmedBranch !== 'HEAD') {
+          if (trimmedBranch && trimmedBranch !== "HEAD") {
             logger.info(
-              `Syncing current branch '${trimmedBranch}' (HEAD) before creating worktree`
+              `Syncing current branch '${trimmedBranch}' (HEAD) before creating worktree`,
             );
             syncResult = await syncBaseBranch(projectPath, trimmedBranch, true);
             if (syncResult.attempted) {
@@ -247,7 +269,10 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // Check if branch exists (using array arguments to prevent injection)
       let branchExists = false;
       try {
-        await execGitCommand(['rev-parse', '--verify', branchName], projectPath);
+        await execGitCommand(
+          ["rev-parse", "--verify", branchName],
+          projectPath,
+        );
         branchExists = true;
       } catch {
         // Branch doesn't exist
@@ -256,13 +281,16 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // Create worktree (using array arguments to prevent injection)
       if (branchExists) {
         // Use existing branch
-        await execGitCommand(['worktree', 'add', worktreePath, branchName], projectPath);
+        await execGitCommand(
+          ["worktree", "add", worktreePath, branchName],
+          projectPath,
+        );
       } else {
         // Create new branch from base or HEAD
-        const base = baseBranch || 'HEAD';
+        const base = baseBranch || "HEAD";
         await execGitCommand(
-          ['worktree', 'add', '-b', branchName, worktreePath, base],
-          projectPath
+          ["worktree", "add", "-b", branchName, worktreePath, base],
+          projectPath,
         );
       }
 
@@ -280,14 +308,19 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
       // Get the commit hash the new worktree is based on for logging
       let baseCommitHash: string | undefined;
       try {
-        const hash = await execGitCommand(['rev-parse', '--short', 'HEAD'], absoluteWorktreePath);
+        const hash = await execGitCommand(
+          ["rev-parse", "--short", "HEAD"],
+          absoluteWorktreePath,
+        );
         baseCommitHash = hash.trim();
       } catch {
         // Non-critical — just for logging
       }
 
       if (baseCommitHash) {
-        logger.info(`New worktree for '${branchName}' based on commit ${baseCommitHash}`);
+        logger.info(
+          `New worktree for '${branchName}' based on commit ${baseCommitHash}`,
+        );
       }
 
       // Copy configured files into the new worktree before responding
@@ -297,11 +330,14 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
           projectPath,
           absoluteWorktreePath,
           settingsService,
-          events
+          events,
         );
       } catch (copyErr) {
         // Log but don't fail worktree creation – files may be partially copied
-        logger.warn('Some configured files failed to copy to worktree:', copyErr);
+        logger.warn(
+          "Some configured files failed to copy to worktree:",
+          copyErr,
+        );
       }
 
       // Symlink configured files into the new worktree before responding
@@ -311,11 +347,14 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
           projectPath,
           absoluteWorktreePath,
           settingsService,
-          events
+          events,
         );
       } catch (symlinkErr) {
         // Log but don't fail worktree creation – files may be partially linked
-        logger.warn('Some configured files failed to symlink to worktree:', symlinkErr);
+        logger.warn(
+          "Some configured files failed to symlink to worktree:",
+          symlinkErr,
+        );
       }
 
       // Respond immediately (non-blocking)
@@ -350,7 +389,7 @@ export function createCreateHandler(events: EventEmitter, settingsService?: Sett
         logger.error(`Init script failed for ${branchName}:`, err);
       });
     } catch (error) {
-      logError(error, 'Create worktree failed');
+      logError(error, "Create worktree failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

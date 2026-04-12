@@ -7,18 +7,18 @@
 // ============================================================================
 
 export type IdeaCategory =
-  | 'feature'
-  | 'ux-ui'
-  | 'dx'
-  | 'growth'
-  | 'technical'
-  | 'security'
-  | 'performance'
-  | 'accessibility'
-  | 'analytics';
-export type IdeaStatus = 'raw' | 'refined' | 'ready' | 'archived';
-export type ImpactLevel = 'low' | 'medium' | 'high';
-export type EffortLevel = 'low' | 'medium' | 'high';
+  | "feature"
+  | "ux-ui"
+  | "dx"
+  | "growth"
+  | "technical"
+  | "security"
+  | "performance"
+  | "accessibility"
+  | "analytics";
+export type IdeaStatus = "raw" | "refined" | "ready" | "archived";
+export type ImpactLevel = "low" | "medium" | "high";
+export type EffortLevel = "low" | "medium" | "high";
 
 // ============================================================================
 // Idea Entity
@@ -26,7 +26,7 @@ export type EffortLevel = 'low' | 'medium' | 'high';
 
 export interface IdeaAttachment {
   id: string;
-  type: 'image' | 'link' | 'reference';
+  type: "image" | "link" | "reference";
   path?: string;
   url?: string;
   description?: string;
@@ -64,7 +64,7 @@ export interface Idea {
 // Ideation Session
 // ============================================================================
 
-export type IdeationSessionStatus = 'active' | 'completed' | 'abandoned';
+export type IdeationSessionStatus = "active" | "completed" | "abandoned";
 
 export interface IdeationSession {
   id: string;
@@ -78,7 +78,7 @@ export interface IdeationSession {
 
 export interface IdeationMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
   savedAsIdeaId?: string;
@@ -114,7 +114,14 @@ export interface IdeationPrompt {
 
 export interface AnalysisFileInfo {
   path: string;
-  type: 'route' | 'component' | 'service' | 'model' | 'config' | 'test' | 'other';
+  type:
+    | "route"
+    | "component"
+    | "service"
+    | "model"
+    | "config"
+    | "test"
+    | "other";
   name: string;
 }
 
@@ -125,7 +132,7 @@ export interface AnalysisSuggestion {
   description: string;
   rationale: string;
   relatedFiles?: string[];
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface ProjectAnalysisResult {
@@ -201,16 +208,16 @@ export interface ConvertToFeatureOptions {
 // ============================================================================
 
 export type IdeationEventType =
-  | 'ideation:stream'
-  | 'ideation:session-started'
-  | 'ideation:session-ended'
-  | 'ideation:analysis-started'
-  | 'ideation:analysis-progress'
-  | 'ideation:analysis-complete'
-  | 'ideation:analysis-error';
+  | "ideation:stream"
+  | "ideation:session-started"
+  | "ideation:session-ended"
+  | "ideation:analysis-started"
+  | "ideation:analysis-progress"
+  | "ideation:analysis-complete"
+  | "ideation:analysis-error";
 
 export interface IdeationStreamEvent {
-  type: 'ideation:stream';
+  type: "ideation:stream";
   sessionId: string;
   content: string;
   done: boolean;
@@ -218,10 +225,10 @@ export interface IdeationStreamEvent {
 
 export interface IdeationAnalysisEvent {
   type:
-    | 'ideation:analysis-started'
-    | 'ideation:analysis-progress'
-    | 'ideation:analysis-complete'
-    | 'ideation:analysis-error';
+    | "ideation:analysis-started"
+    | "ideation:analysis-progress"
+    | "ideation:analysis-complete"
+    | "ideation:analysis-error";
   projectPath: string;
   progress?: number;
   message?: string;

@@ -4,8 +4,8 @@
  * try-catch block in every route handler
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import { validatePath, PathNotAllowedError } from '@pegasus/platform';
+import type { Request, Response, NextFunction } from "express";
+import { validatePath, PathNotAllowedError } from "@pegasus/platform";
 
 /**
  * Helper to get parameter value from request (checks body first, then query)
@@ -40,22 +40,22 @@ export function validatePathParams(...paramNames: string[]) {
     try {
       for (const paramName of paramNames) {
         // Handle optional parameters (paramName?)
-        if (paramName.endsWith('?')) {
+        if (paramName.endsWith("?")) {
           const actualName = paramName.slice(0, -1);
           const value = getParamValue(req, actualName);
-          if (value && typeof value === 'string') {
+          if (value && typeof value === "string") {
             validatePath(value);
           }
           continue;
         }
 
         // Handle array parameters (paramName[])
-        if (paramName.endsWith('[]')) {
+        if (paramName.endsWith("[]")) {
           const actualName = paramName.slice(0, -2);
           const values = getParamValue(req, actualName);
           if (Array.isArray(values) && values.length > 0) {
             for (const value of values) {
-              if (typeof value === 'string') {
+              if (typeof value === "string") {
                 validatePath(value);
               }
             }
@@ -65,7 +65,7 @@ export function validatePathParams(...paramNames: string[]) {
 
         // Handle regular parameters
         const value = getParamValue(req, paramName);
-        if (value && typeof value === 'string') {
+        if (value && typeof value === "string") {
           validatePath(value);
         }
       }

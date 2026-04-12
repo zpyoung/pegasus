@@ -1,9 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download, AlertCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { CopyableCommandField } from './copyable-command-field';
-import { TerminalOutput } from './terminal-output';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download, AlertCircle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { CopyableCommandField } from "./copyable-command-field";
+import { TerminalOutput } from "./terminal-output";
 
 interface CommandInfo {
   label: string; // e.g., "macOS / Linux"
@@ -18,7 +24,7 @@ interface CliInstallationCardProps {
   installProgress: { output: string[] };
   onInstall: () => void;
   warningMessage?: string;
-  color?: 'brand' | 'green'; // For different CLI themes
+  color?: "brand" | "green"; // For different CLI themes
 }
 
 export function CliInstallationCard({
@@ -29,11 +35,11 @@ export function CliInstallationCard({
   installProgress,
   onInstall,
   warningMessage,
-  color = 'brand',
+  color = "brand",
 }: CliInstallationCardProps) {
   const colorClasses = {
-    brand: 'bg-brand-500 hover:bg-brand-600',
-    green: 'bg-green-500 hover:bg-green-600',
+    brand: "bg-brand-500 hover:bg-brand-600",
+    green: "bg-green-500 hover:bg-green-600",
   };
 
   return (
@@ -47,7 +53,11 @@ export function CliInstallationCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {commands.map((cmd, index) => (
-          <CopyableCommandField key={index} label={cmd.label} command={cmd.command} />
+          <CopyableCommandField
+            key={index}
+            label={cmd.label}
+            command={cmd.command}
+          />
         ))}
 
         {isInstalling && <TerminalOutput lines={installProgress.output} />}
@@ -75,7 +85,9 @@ export function CliInstallationCard({
           <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5" />
-              <p className="text-xs text-yellow-600 dark:text-yellow-400">{warningMessage}</p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                {warningMessage}
+              </p>
             </div>
           </div>
         )}

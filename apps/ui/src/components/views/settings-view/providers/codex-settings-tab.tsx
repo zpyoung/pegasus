@@ -1,17 +1,17 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useSetupStore } from '@/store/setup-store';
-import { CodexCliStatus } from '../cli-status/codex-cli-status';
-import { CodexSettings } from '../codex/codex-settings';
-import { CodexUsageSection } from '../codex/codex-usage-section';
-import { CodexModelConfiguration } from './codex-model-configuration';
-import { ProviderToggle } from './provider-toggle';
-import { getElectronAPI } from '@/lib/electron';
-import { createLogger } from '@pegasus/utils/logger';
-import type { CliStatus as SharedCliStatus } from '../shared/types';
-import type { CodexModelId } from '@pegasus/types';
+import { useState, useCallback, useEffect } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useSetupStore } from "@/store/setup-store";
+import { CodexCliStatus } from "../cli-status/codex-cli-status";
+import { CodexSettings } from "../codex/codex-settings";
+import { CodexUsageSection } from "../codex/codex-usage-section";
+import { CodexModelConfiguration } from "./codex-model-configuration";
+import { ProviderToggle } from "./provider-toggle";
+import { getElectronAPI } from "@/lib/electron";
+import { createLogger } from "@pegasus/utils/logger";
+import type { CliStatus as SharedCliStatus } from "../shared/types";
+import type { CodexModelId } from "@pegasus/types";
 
-const logger = createLogger('CodexSettings');
+const logger = createLogger("CodexSettings");
 
 export function CodexSettingsTab() {
   const {
@@ -35,7 +35,8 @@ export function CodexSettingsTab() {
   } = useSetupStore();
 
   const [isCheckingCodexCli, setIsCheckingCodexCli] = useState(false);
-  const [displayCliStatus, setDisplayCliStatus] = useState<SharedCliStatus | null>(null);
+  const [displayCliStatus, setDisplayCliStatus] =
+    useState<SharedCliStatus | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const codexCliStatus: SharedCliStatus | null =
@@ -43,7 +44,7 @@ export function CodexSettingsTab() {
     (setupCliStatus
       ? {
           success: true,
-          status: setupCliStatus.installed ? 'installed' : 'not_installed',
+          status: setupCliStatus.installed ? "installed" : "not_installed",
           method: setupCliStatus.method,
           version: setupCliStatus.version || undefined,
           path: setupCliStatus.path || undefined,
@@ -55,14 +56,19 @@ export function CodexSettingsTab() {
     const checkCodexStatus = async () => {
       const api = getElectronAPI();
       // Check if getCodexStatus method exists on the API (may not be implemented yet)
-      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)?.getCodexStatus as
+      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)
+        ?.getCodexStatus as
         | (() => Promise<{
             success: boolean;
             installed: boolean;
             version?: string;
             path?: string;
             recommendation?: string;
-            installCommands?: { npm?: string; macos?: string; windows?: string };
+            installCommands?: {
+              npm?: string;
+              macos?: string;
+              windows?: string;
+            };
             auth?: {
               authenticated: boolean;
               method: string;
@@ -75,7 +81,7 @@ export function CodexSettingsTab() {
           const result = await getCodexStatus();
           setDisplayCliStatus({
             success: result.success,
-            status: result.installed ? 'installed' : 'not_installed',
+            status: result.installed ? "installed" : "not_installed",
             method: result.auth?.method,
             version: result.version,
             path: result.path,
@@ -86,22 +92,22 @@ export function CodexSettingsTab() {
             installed: result.installed,
             version: result.version ?? null,
             path: result.path ?? null,
-            method: result.auth?.method || 'none',
+            method: result.auth?.method || "none",
           });
           if (result.auth) {
             setCodexAuthStatus({
               authenticated: result.auth.authenticated,
               method: result.auth.method as
-                | 'cli_authenticated'
-                | 'api_key'
-                | 'api_key_env'
-                | 'none',
-              hasAuthFile: result.auth.method === 'cli_authenticated',
+                | "cli_authenticated"
+                | "api_key"
+                | "api_key_env"
+                | "none",
+              hasAuthFile: result.auth.method === "cli_authenticated",
               hasApiKey: result.auth.hasApiKey,
             });
           }
         } catch (error) {
-          logger.error('Failed to check Codex CLI status:', error);
+          logger.error("Failed to check Codex CLI status:", error);
         }
       }
     };
@@ -113,14 +119,19 @@ export function CodexSettingsTab() {
     try {
       const api = getElectronAPI();
       // Check if getCodexStatus method exists on the API (may not be implemented yet)
-      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)?.getCodexStatus as
+      const getCodexStatus = (api?.setup as Record<string, unknown> | undefined)
+        ?.getCodexStatus as
         | (() => Promise<{
             success: boolean;
             installed: boolean;
             version?: string;
             path?: string;
             recommendation?: string;
-            installCommands?: { npm?: string; macos?: string; windows?: string };
+            installCommands?: {
+              npm?: string;
+              macos?: string;
+              windows?: string;
+            };
             auth?: {
               authenticated: boolean;
               method: string;
@@ -132,7 +143,7 @@ export function CodexSettingsTab() {
         const result = await getCodexStatus();
         setDisplayCliStatus({
           success: result.success,
-          status: result.installed ? 'installed' : 'not_installed',
+          status: result.installed ? "installed" : "not_installed",
           method: result.auth?.method,
           version: result.version,
           path: result.path,
@@ -143,19 +154,23 @@ export function CodexSettingsTab() {
           installed: result.installed,
           version: result.version ?? null,
           path: result.path ?? null,
-          method: result.auth?.method || 'none',
+          method: result.auth?.method || "none",
         });
         if (result.auth) {
           setCodexAuthStatus({
             authenticated: result.auth.authenticated,
-            method: result.auth.method as 'cli_authenticated' | 'api_key' | 'api_key_env' | 'none',
-            hasAuthFile: result.auth.method === 'cli_authenticated',
+            method: result.auth.method as
+              | "cli_authenticated"
+              | "api_key"
+              | "api_key_env"
+              | "none",
+            hasAuthFile: result.auth.method === "cli_authenticated",
             hasApiKey: result.auth.hasApiKey,
           });
         }
       }
     } catch (error) {
-      logger.error('Failed to refresh Codex CLI status:', error);
+      logger.error("Failed to refresh Codex CLI status:", error);
     } finally {
       setIsCheckingCodexCli(false);
     }
@@ -170,7 +185,7 @@ export function CodexSettingsTab() {
         setIsSaving(false);
       }
     },
-    [setCodexDefaultModel]
+    [setCodexDefaultModel],
   );
 
   const handleModelToggle = useCallback(
@@ -182,7 +197,7 @@ export function CodexSettingsTab() {
         setIsSaving(false);
       }
     },
-    [toggleCodexModel]
+    [toggleCodexModel],
   );
 
   const showUsageTracking = codexAuthStatus?.authenticated ?? false;

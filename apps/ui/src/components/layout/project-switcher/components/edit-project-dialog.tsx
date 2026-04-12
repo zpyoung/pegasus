@@ -1,21 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, X, ImageIcon } from 'lucide-react';
-import { useAppStore } from '@/store/app-store';
-import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import type { Project } from '@/lib/electron';
-import { IconPicker } from './icon-picker';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, X, ImageIcon } from "lucide-react";
+import { useAppStore } from "@/store/app-store";
+import { getAuthenticatedImageUrl } from "@/lib/api-fetch";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import type { Project } from "@/lib/electron";
+import { IconPicker } from "./icon-picker";
+import { toast } from "sonner";
 
 interface EditProjectDialogProps {
   project: Project;
@@ -23,12 +23,17 @@ interface EditProjectDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDialogProps) {
-  const { setProjectName, setProjectIcon, setProjectCustomIcon } = useAppStore();
+export function EditProjectDialog({
+  project,
+  open,
+  onOpenChange,
+}: EditProjectDialogProps) {
+  const { setProjectName, setProjectIcon, setProjectCustomIcon } =
+    useAppStore();
   const [name, setName] = useState(project.name);
   const [icon, setIcon] = useState<string | null>(project.icon || null);
   const [customIconPath, setCustomIconPath] = useState<string | null>(
-    project.customIconPath || null
+    project.customIconPath || null,
   );
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,15 +51,17 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
     onOpenChange(false);
   };
 
-  const handleCustomIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomIconUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!validTypes.includes(file.type)) {
       toast.error(
-        `Invalid file type: ${file.type || 'unknown'}. Please use JPG, PNG, GIF or WebP.`
+        `Invalid file type: ${file.type || "unknown"}. Please use JPG, PNG, GIF or WebP.`,
       );
       return;
     }
@@ -63,7 +70,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error(
-        `File too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Maximum size is 5 MB.`
+        `File too large (${(file.size / 1024 / 1024).toFixed(2)} MB). Maximum size is 5 MB.`,
       );
       return;
     }
@@ -78,26 +85,26 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
           base64Data,
           `project-icon-${file.name}`,
           file.type,
-          project.path
+          project.path,
         );
 
         if (result.success && result.path) {
           setCustomIconPath(result.path);
           // Clear the Lucide icon when custom icon is set
           setIcon(null);
-          toast.success('Icon uploaded successfully');
+          toast.success("Icon uploaded successfully");
         } else {
-          toast.error('Failed to upload icon');
+          toast.error("Failed to upload icon");
         }
         setIsUploadingIcon(false);
       };
       reader.onerror = () => {
-        toast.error('Failed to read file');
+        toast.error("Failed to read file");
         setIsUploadingIcon(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      toast.error('Failed to upload icon');
+      toast.error("Failed to upload icon");
       setIsUploadingIcon(false);
     }
   };
@@ -105,7 +112,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
   const handleRemoveCustomIcon = () => {
     setCustomIconPath(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -141,7 +148,10 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
                 {customIconPath ? (
                   <div className="relative">
                     <img
-                      src={getAuthenticatedImageUrl(customIconPath, project.path)}
+                      src={getAuthenticatedImageUrl(
+                        customIconPath,
+                        project.path,
+                      )}
                       alt="Custom project icon"
                       className="w-12 h-12 rounded-lg object-cover border border-border"
                     />
@@ -176,7 +186,7 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
                     className="gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    {isUploadingIcon ? 'Uploading...' : 'Upload Custom Icon'}
+                    {isUploadingIcon ? "Uploading..." : "Upload Custom Icon"}
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
                     PNG, JPG, GIF or WebP. Max 5MB.
@@ -186,7 +196,9 @@ export function EditProjectDialog({ project, open, onOpenChange }: EditProjectDi
             </div>
 
             {/* Preset Icon Picker - only show if no custom icon */}
-            {!customIconPath && <IconPicker selectedIcon={icon} onSelectIcon={setIcon} />}
+            {!customIconPath && (
+              <IconPicker selectedIcon={icon} onSelectIcon={setIcon} />
+            )}
           </div>
         </div>
 

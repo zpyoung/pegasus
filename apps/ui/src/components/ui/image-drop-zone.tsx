@@ -1,11 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { cn } from '@/lib/utils';
+import React, { useState, useRef, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { cn } from "@/lib/utils";
 
-const logger = createLogger('ImageDropZone');
-import { ImageIcon, X } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import type { ImageAttachment } from '@/store/app-store';
+const logger = createLogger("ImageDropZone");
+import { ImageIcon, X } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import type { ImageAttachment } from "@/store/app-store";
 import {
   fileToBase64,
   generateImageId,
@@ -14,7 +14,7 @@ import {
   ACCEPTED_IMAGE_TYPES,
   DEFAULT_MAX_FILE_SIZE,
   DEFAULT_MAX_FILES,
-} from '@/lib/image-utils';
+} from "@/lib/image-utils";
 
 interface ImageDropZoneProps {
   onImagesSelected: (images: ImageAttachment[]) => void;
@@ -51,7 +51,7 @@ export function ImageDropZone({
       }
       onImagesSelected(newImages);
     },
-    [images, onImagesSelected]
+    [images, onImagesSelected],
   );
 
   const processFiles = useCallback(
@@ -92,7 +92,7 @@ export function ImageDropZone({
       }
 
       if (errors.length > 0) {
-        logger.warn('Image upload errors:', errors);
+        logger.warn("Image upload errors:", errors);
       }
 
       if (newImages.length > 0) {
@@ -102,7 +102,14 @@ export function ImageDropZone({
 
       setIsProcessing(false);
     },
-    [disabled, isProcessing, maxFiles, maxFileSize, selectedImages, updateImages]
+    [
+      disabled,
+      isProcessing,
+      maxFiles,
+      maxFileSize,
+      selectedImages,
+      updateImages,
+    ],
   );
 
   const handleDrop = useCallback(
@@ -118,7 +125,7 @@ export function ImageDropZone({
         processFiles(files);
       }
     },
-    [disabled, processFiles]
+    [disabled, processFiles],
   );
 
   const handleDragOver = useCallback(
@@ -129,7 +136,7 @@ export function ImageDropZone({
         setIsDragOver(true);
       }
     },
-    [disabled]
+    [disabled],
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -146,10 +153,10 @@ export function ImageDropZone({
       }
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     },
-    [processFiles]
+    [processFiles],
   );
 
   const handleBrowseClick = useCallback(() => {
@@ -163,7 +170,7 @@ export function ImageDropZone({
       const updated = selectedImages.filter((img) => img.id !== imageId);
       updateImages(updated);
     },
-    [selectedImages, updateImages]
+    [selectedImages, updateImages],
   );
 
   const clearAllImages = useCallback(() => {
@@ -171,13 +178,13 @@ export function ImageDropZone({
   }, [updateImages]);
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}
@@ -188,20 +195,27 @@ export function ImageDropZone({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={cn('relative rounded-lg border-2 border-dashed transition-all duration-200', {
-          'border-blue-400 bg-blue-50 dark:bg-blue-950/20': isDragOver && !disabled,
-          'border-muted-foreground/25': !isDragOver && !disabled,
-          'border-muted-foreground/10 opacity-50 cursor-not-allowed': disabled,
-          'hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10':
-            !disabled && !isDragOver,
-        })}
+        className={cn(
+          "relative rounded-lg border-2 border-dashed transition-all duration-200",
+          {
+            "border-blue-400 bg-blue-50 dark:bg-blue-950/20":
+              isDragOver && !disabled,
+            "border-muted-foreground/25": !isDragOver && !disabled,
+            "border-muted-foreground/10 opacity-50 cursor-not-allowed":
+              disabled,
+            "hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10":
+              !disabled && !isDragOver,
+          },
+        )}
       >
         {children || (
           <div className="flex flex-col items-center justify-center p-6 text-center">
             <div
               className={cn(
-                'rounded-full p-3 mb-4',
-                isDragOver && !disabled ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-muted'
+                "rounded-full p-3 mb-4",
+                isDragOver && !disabled
+                  ? "bg-blue-100 dark:bg-blue-900/30"
+                  : "bg-muted",
               )}
             >
               {isProcessing ? (
@@ -212,11 +226,11 @@ export function ImageDropZone({
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
               {isDragOver && !disabled
-                ? 'Drop your images here'
-                : 'Drag images here or click to browse'}
+                ? "Drop your images here"
+                : "Drag images here or click to browse"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {maxFiles > 1 ? `Up to ${maxFiles} images` : '1 image'}, max{' '}
+              {maxFiles > 1 ? `Up to ${maxFiles} images` : "1 image"}, max{" "}
               {Math.round(maxFileSize / (1024 * 1024))}MB each
             </p>
             {!disabled && (
@@ -237,7 +251,8 @@ export function ImageDropZone({
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">
-              {selectedImages.length} image{selectedImages.length > 1 ? 's' : ''} selected
+              {selectedImages.length} image
+              {selectedImages.length > 1 ? "s" : ""} selected
             </p>
             <button
               onClick={clearAllImages}
@@ -263,9 +278,13 @@ export function ImageDropZone({
                 </div>
                 {/* Image info */}
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-foreground truncate">{image.filename}</p>
+                  <p className="text-xs font-medium text-foreground truncate">
+                    {image.filename}
+                  </p>
                   {image.size !== undefined && (
-                    <p className="text-xs text-muted-foreground">{formatFileSize(image.size)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(image.size)}
+                    </p>
                   )}
                 </div>
                 {/* Remove button */}

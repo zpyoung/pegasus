@@ -14,11 +14,11 @@
  * merge-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import type { EventEmitter } from '../lib/events.js';
-import { execGitCommand, execGitCommandWithLockRetry } from '../lib/git.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import type { EventEmitter } from "../lib/events.js";
+import { execGitCommand, execGitCommandWithLockRetry } from "../lib/git.js";
 
-const logger = createLogger('StashService');
+const logger = createLogger("StashService");
 
 // ============================================================================
 // Types
@@ -35,7 +35,7 @@ export interface StashApplyResult {
   applied?: boolean;
   hasConflicts?: boolean;
   conflictFiles?: string[];
-  operation?: 'apply' | 'pop';
+  operation?: "apply" | "pop";
   stashIndex?: number;
   message?: string;
 }
@@ -81,15 +81,17 @@ export interface StashDropResult {
  * @param worktreePath - Path to the git worktree
  * @returns Array of file paths that have unresolved conflicts
  */
-export async function getConflictedFiles(worktreePath: string): Promise<string[]> {
+export async function getConflictedFiles(
+  worktreePath: string,
+): Promise<string[]> {
   try {
     const diffOutput = await execGitCommand(
-      ['diff', '--name-only', '--diff-filter=U'],
-      worktreePath
+      ["diff", "--name-only", "--diff-filter=U"],
+      worktreePath,
     );
     return diffOutput
       .trim()
-      .split('\n')
+      .split("\n")
       .filter((f) => f.trim().length > 0);
   } catch {
     // If we cannot get the file list, return an empty array
@@ -101,7 +103,7 @@ export async function getConflictedFiles(worktreePath: string): Promise<string[]
  * Determine whether command output indicates a merge conflict.
  */
 function isConflictOutput(output: string): boolean {
-  return output.includes('CONFLICT') || output.includes('Merge conflict');
+  return output.includes("CONFLICT") || output.includes("Merge conflict");
 }
 
 /**
@@ -111,12 +113,12 @@ function isConflictOutput(output: string): boolean {
 async function handleStashConflicts(
   worktreePath: string,
   stashIndex: number,
-  operation: 'apply' | 'pop',
-  events?: EventEmitter
+  operation: "apply" | "pop",
+  events?: EventEmitter,
 ): Promise<StashApplyResult> {
   const conflictFiles = await getConflictedFiles(worktreePath);
 
-  events?.emit('stash:conflicts', {
+  events?.emit("stash:conflicts", {
     worktreePath,
     stashIndex,
     operation,
@@ -130,10 +132,10 @@ async function handleStashConflicts(
     conflictFiles,
     operation,
     stashIndex,
-    message: `Stash ${operation === 'pop' ? 'popped' : 'applied'} with conflicts. Please resolve the conflicts.`,
+    message: `Stash ${operation === "pop" ? "popped" : "applied"} with conflicts. Please resolve the conflicts.`,
   };
 
-  events?.emit('stash:success', {
+  events?.emit("stash:success", {
     worktreePath,
     stashIndex,
     operation,
@@ -170,31 +172,43 @@ export async function applyOrPop(
   worktreePath: string,
   stashIndex: number,
   options?: StashApplyOptions,
-  events?: EventEmitter
+  events?: EventEmitter,
 ): Promise<StashApplyResult> {
-  const operation: 'apply' | 'pop' = options?.pop ? 'pop' : 'apply';
+  const operation: "apply" | "pop" = options?.pop ? "pop" : "apply";
   const stashRef = `stash@{${stashIndex}}`;
 
   logger.info(`[StashService] ${operation} ${stashRef} in ${worktreePath}`);
 
   // 1. Emit start event
-  events?.emit('stash:start', { worktreePath, stashIndex, stashRef, operation });
+  events?.emit("stash:start", {
+    worktreePath,
+    stashIndex,
+    stashRef,
+    operation,
+  });
 
   try {
     // 2. Run git stash apply / pop
-    let stdout = '';
+    let stdout = "";
 
     try {
-      stdout = await execGitCommand(['stash', operation, stashRef], worktreePath);
+      stdout = await execGitCommand(
+        ["stash", operation, stashRef],
+        worktreePath,
+      );
     } catch (gitError: unknown) {
-      const err = gitError as { stdout?: string; stderr?: string; message?: string };
-      const errStdout = err.stdout || '';
-      const errStderr = err.stderr || err.message || '';
+      const err = gitError as {
+        stdout?: string;
+        stderr?: string;
+        message?: string;
+      };
+      const errStdout = err.stdout || "";
+      const errStderr = err.stderr || err.message || "";
 
       const combinedOutput = `${errStdout}\n${errStderr}`;
 
       // 3. Emit progress with raw output
-      events?.emit('stash:progress', {
+      events?.emit("stash:progress", {
         worktreePath,
         stashIndex,
         operation,
@@ -203,7 +217,12 @@ export async function applyOrPop(
 
       // 4. Check if the error is a conflict
       if (isConflictOutput(combinedOutput)) {
-        return handleStashConflicts(worktreePath, stashIndex, operation, events);
+        return handleStashConflicts(
+          worktreePath,
+          stashIndex,
+          operation,
+          events,
+        );
       }
 
       // 5. Non-conflict git error – re-throw so the outer catch logs and handles it
@@ -214,7 +233,12 @@ export async function applyOrPop(
     //    exit 0 even when conflicts occur during apply)
     const combinedOutput = stdout;
 
-    events?.emit('stash:progress', { worktreePath, stashIndex, operation, output: combinedOutput });
+    events?.emit("stash:progress", {
+      worktreePath,
+      stashIndex,
+      operation,
+      output: combinedOutput,
+    });
 
     if (isConflictOutput(combinedOutput)) {
       return handleStashConflicts(worktreePath, stashIndex, operation, events);
@@ -227,10 +251,10 @@ export async function applyOrPop(
       hasConflicts: false,
       operation,
       stashIndex,
-      message: `Stash ${operation === 'pop' ? 'popped' : 'applied'} successfully`,
+      message: `Stash ${operation === "pop" ? "popped" : "applied"} successfully`,
     };
 
-    events?.emit('stash:success', {
+    events?.emit("stash:success", {
       worktreePath,
       stashIndex,
       operation,
@@ -241,9 +265,11 @@ export async function applyOrPop(
   } catch (error) {
     const errorMessage = getErrorMessage(error);
 
-    logger.error(`Stash ${operation} failed`, { error: getErrorMessage(error) });
+    logger.error(`Stash ${operation} failed`, {
+      error: getErrorMessage(error),
+    });
 
-    events?.emit('stash:failure', {
+    events?.emit("stash:failure", {
       worktreePath,
       stashIndex,
       operation,
@@ -282,35 +308,39 @@ export async function applyOrPop(
 export async function pushStash(
   worktreePath: string,
   options?: { message?: string; files?: string[] },
-  events?: EventEmitter
+  events?: EventEmitter,
 ): Promise<StashPushResult> {
   const message = options?.message;
   const files = options?.files;
 
   logger.info(`[StashService] push stash in ${worktreePath}`);
-  events?.emit('stash:start', { worktreePath, operation: 'push' });
+  events?.emit("stash:start", { worktreePath, operation: "push" });
 
   // 1. Check for any changes to stash
-  const status = await execGitCommand(['status', '--porcelain'], worktreePath);
+  const status = await execGitCommand(["status", "--porcelain"], worktreePath);
 
   if (!status.trim()) {
-    events?.emit('stash:success', { worktreePath, operation: 'push', stashed: false });
+    events?.emit("stash:success", {
+      worktreePath,
+      operation: "push",
+      stashed: false,
+    });
     return {
       success: true,
       stashed: false,
-      message: 'No changes to stash',
+      message: "No changes to stash",
     };
   }
 
   // 2. Build stash push command args
-  const args = ['stash', 'push', '--include-untracked'];
+  const args = ["stash", "push", "--include-untracked"];
   if (message && message.trim()) {
-    args.push('-m', message.trim());
+    args.push("-m", message.trim());
   }
 
   // If specific files are provided, add them as pathspecs after '--'
   if (files && files.length > 0) {
-    args.push('--');
+    args.push("--");
     args.push(...files);
   }
 
@@ -318,12 +348,15 @@ export async function pushStash(
   await execGitCommandWithLockRetry(args, worktreePath);
 
   // 4. Get current branch name
-  const branchOutput = await execGitCommand(['rev-parse', '--abbrev-ref', 'HEAD'], worktreePath);
+  const branchOutput = await execGitCommand(
+    ["rev-parse", "--abbrev-ref", "HEAD"],
+    worktreePath,
+  );
   const branchName = branchOutput.trim();
 
-  events?.emit('stash:success', {
+  events?.emit("stash:success", {
     worktreePath,
-    operation: 'push',
+    operation: "push",
     stashed: true,
     branch: branchName,
   });
@@ -352,14 +385,16 @@ export async function pushStash(
  * @param worktreePath - Absolute path to the git worktree
  * @returns StashListResult with all stash entries and their metadata
  */
-export async function listStash(worktreePath: string): Promise<StashListResult> {
+export async function listStash(
+  worktreePath: string,
+): Promise<StashListResult> {
   logger.info(`[StashService] list stashes in ${worktreePath}`);
 
   // 1. Get stash list with format: index, message, date
   // Use %aI (strict ISO 8601) instead of %ai to ensure cross-browser compatibility
   const stashOutput = await execGitCommand(
-    ['stash', 'list', '--format=%gd|||%s|||%aI'],
-    worktreePath
+    ["stash", "list", "--format=%gd|||%s|||%aI"],
+    worktreePath,
   );
 
   if (!stashOutput.trim()) {
@@ -372,12 +407,12 @@ export async function listStash(worktreePath: string): Promise<StashListResult> 
 
   const stashLines = stashOutput
     .trim()
-    .split('\n')
+    .split("\n")
     .filter((l) => l.trim());
   const stashes: StashEntry[] = [];
 
   for (const line of stashLines) {
-    const parts = line.split('|||');
+    const parts = line.split("|||");
     if (parts.length < 3) continue;
 
     const refSpec = parts[0].trim(); // e.g., "stash@{0}"
@@ -390,7 +425,7 @@ export async function listStash(worktreePath: string): Promise<StashListResult> 
     const index = parseInt(indexMatch[1], 10);
 
     // Extract branch name from message (format: "WIP on branch: hash message" or "On branch: hash message")
-    let branch = '';
+    let branch = "";
     const branchMatch = stashMessage.match(/^(?:WIP on|On) ([^:]+):/);
     if (branchMatch) {
       branch = branchMatch[1];
@@ -400,12 +435,12 @@ export async function listStash(worktreePath: string): Promise<StashListResult> 
     let files: string[] = [];
     try {
       const filesOutput = await execGitCommand(
-        ['stash', 'show', refSpec, '--name-only'],
-        worktreePath
+        ["stash", "show", refSpec, "--name-only"],
+        worktreePath,
       );
       files = filesOutput
         .trim()
-        .split('\n')
+        .split("\n")
         .filter((f) => f.trim());
     } catch {
       // Ignore errors getting file list
@@ -441,16 +476,26 @@ export async function listStash(worktreePath: string): Promise<StashListResult> 
 export async function dropStash(
   worktreePath: string,
   stashIndex: number,
-  events?: EventEmitter
+  events?: EventEmitter,
 ): Promise<StashDropResult> {
   const stashRef = `stash@{${stashIndex}}`;
 
   logger.info(`[StashService] drop ${stashRef} in ${worktreePath}`);
-  events?.emit('stash:start', { worktreePath, stashIndex, stashRef, operation: 'drop' });
+  events?.emit("stash:start", {
+    worktreePath,
+    stashIndex,
+    stashRef,
+    operation: "drop",
+  });
 
-  await execGitCommand(['stash', 'drop', stashRef], worktreePath);
+  await execGitCommand(["stash", "drop", stashRef], worktreePath);
 
-  events?.emit('stash:success', { worktreePath, stashIndex, stashRef, operation: 'drop' });
+  events?.emit("stash:success", {
+    worktreePath,
+    stashIndex,
+    stashRef,
+    operation: "drop",
+  });
 
   return {
     success: true,

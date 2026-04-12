@@ -2,12 +2,12 @@
  * GET /check-github-remote endpoint - Check if project has a GitHub remote
  */
 
-import type { Request, Response } from 'express';
-import { execAsync, execEnv, getErrorMessage, logError } from './common.js';
+import type { Request, Response } from "express";
+import { execAsync, execEnv, getErrorMessage, logError } from "./common.js";
 
-const GIT_REMOTE_ORIGIN_COMMAND = 'git remote get-url origin';
-const GH_REPO_VIEW_COMMAND = 'gh repo view --json name,owner';
-const GITHUB_REPO_URL_PREFIX = 'https://github.com/';
+const GIT_REMOTE_ORIGIN_COMMAND = "git remote get-url origin";
+const GH_REPO_VIEW_COMMAND = "gh repo view --json name,owner";
+const GITHUB_REPO_URL_PREFIX = "https://github.com/";
 const GITHUB_HTTPS_REMOTE_REGEX = /https:\/\/github\.com\/([^/]+)\/([^/.]+)/;
 const GITHUB_SSH_REMOTE_REGEX = /git@github\.com:([^/]+)\/([^/.]+)/;
 
@@ -29,8 +29,9 @@ async function resolveRepoFromGh(projectPath: string): Promise<{
     });
 
     const data = JSON.parse(stdout) as GhRepoViewResponse;
-    const owner = typeof data.owner?.login === 'string' ? data.owner.login : null;
-    const repo = typeof data.name === 'string' ? data.name : null;
+    const owner =
+      typeof data.owner?.login === "string" ? data.owner.login : null;
+    const repo = typeof data.name === "string" ? data.name : null;
 
     if (!owner || !repo) {
       return null;
@@ -49,7 +50,9 @@ export interface GitHubRemoteStatus {
   repo: string | null;
 }
 
-export async function checkGitHubRemote(projectPath: string): Promise<GitHubRemoteStatus> {
+export async function checkGitHubRemote(
+  projectPath: string,
+): Promise<GitHubRemoteStatus> {
   const status: GitHubRemoteStatus = {
     hasGitHubRemote: false,
     remoteUrl: null,
@@ -58,7 +61,7 @@ export async function checkGitHubRemote(projectPath: string): Promise<GitHubRemo
   };
 
   try {
-    let remoteUrl = '';
+    let remoteUrl = "";
     try {
       // Get the remote URL (origin by default)
       const { stdout } = await execAsync(GIT_REMOTE_ORIGIN_COMMAND, {
@@ -95,7 +98,7 @@ export async function checkGitHubRemote(projectPath: string): Promise<GitHubRemo
     if (match) {
       status.hasGitHubRemote = true;
       status.owner = match[1];
-      status.repo = match[2].replace(/\.git$/, '');
+      status.repo = match[2].replace(/\.git$/, "");
     }
   } catch {
     // No remote or not a git repo - that's okay
@@ -110,7 +113,9 @@ export function createCheckGitHubRemoteHandler() {
       const { projectPath } = req.body;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -120,7 +125,7 @@ export function createCheckGitHubRemoteHandler() {
         ...status,
       });
     } catch (error) {
-      logError(error, 'Check GitHub remote failed');
+      logError(error, "Check GitHub remote failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

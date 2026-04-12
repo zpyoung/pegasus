@@ -2,9 +2,9 @@
  * Middleware for worktree route validation
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import { isGitRepo } from '@pegasus/git-utils';
-import { hasCommits } from './common.js';
+import type { Request, Response, NextFunction } from "express";
+import { isGitRepo } from "@pegasus/git-utils";
+import { hasCommits } from "./common.js";
 
 interface ValidationOptions {
   /** Check if the path is a git repository (default: true) */
@@ -12,7 +12,7 @@ interface ValidationOptions {
   /** Check if the repository has at least one commit (default: true) */
   requireCommits?: boolean;
   /** The name of the request body field containing the path (default: 'worktreePath') */
-  pathField?: 'worktreePath' | 'projectPath';
+  pathField?: "worktreePath" | "projectPath";
 }
 
 /**
@@ -23,9 +23,17 @@ interface ValidationOptions {
  * @returns Express middleware function
  */
 export function requireValidGitRepo(options: ValidationOptions = {}) {
-  const { requireGitRepo = true, requireCommits = true, pathField = 'worktreePath' } = options;
+  const {
+    requireGitRepo = true,
+    requireCommits = true,
+    pathField = "worktreePath",
+  } = options;
 
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     const repoPath = req.body[pathField] as string | undefined;
 
     if (!repoPath) {
@@ -37,8 +45,8 @@ export function requireValidGitRepo(options: ValidationOptions = {}) {
     if (requireGitRepo && !(await isGitRepo(repoPath))) {
       res.status(400).json({
         success: false,
-        error: 'Not a git repository',
-        code: 'NOT_GIT_REPO',
+        error: "Not a git repository",
+        code: "NOT_GIT_REPO",
       });
       return;
     }
@@ -46,8 +54,8 @@ export function requireValidGitRepo(options: ValidationOptions = {}) {
     if (requireCommits && !(await hasCommits(repoPath))) {
       res.status(400).json({
         success: false,
-        error: 'Repository has no commits yet',
-        code: 'NO_COMMITS',
+        error: "Repository has no commits yet",
+        code: "NO_COMMITS",
       });
       return;
     }
@@ -59,17 +67,21 @@ export function requireValidGitRepo(options: ValidationOptions = {}) {
 /**
  * Middleware to validate git repo for worktreePath field
  */
-export const requireValidWorktree = requireValidGitRepo({ pathField: 'worktreePath' });
+export const requireValidWorktree = requireValidGitRepo({
+  pathField: "worktreePath",
+});
 
 /**
  * Middleware to validate git repo for projectPath field
  */
-export const requireValidProject = requireValidGitRepo({ pathField: 'projectPath' });
+export const requireValidProject = requireValidGitRepo({
+  pathField: "projectPath",
+});
 
 /**
  * Middleware to validate git repo without requiring commits (for commit route)
  */
 export const requireGitRepoOnly = requireValidGitRepo({
-  pathField: 'worktreePath',
+  pathField: "worktreePath",
   requireCommits: false,
 });

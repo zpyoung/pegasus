@@ -74,7 +74,12 @@
 }
 
 .paper .content-bg {
-  background: linear-gradient(135deg, oklch(0.99 0 0), oklch(0.98 0 0), oklch(0.99 0 0));
+  background: linear-gradient(
+    135deg,
+    oklch(0.99 0 0),
+    oklch(0.98 0 0),
+    oklch(0.99 0 0)
+  );
 }
 
 .paper .animated-outline-gradient {

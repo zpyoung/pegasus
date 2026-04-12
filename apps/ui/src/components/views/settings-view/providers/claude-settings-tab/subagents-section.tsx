@@ -9,16 +9,24 @@
  * - Project-level: .claude/agents/
  */
 
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { Bot, RefreshCw, Users, ExternalLink, Globe, FolderOpen, Sparkles } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useSubagents } from './hooks/use-subagents';
-import { useSubagentsSettings } from './hooks/use-subagents-settings';
-import { SubagentCard } from './subagent-card';
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  Bot,
+  RefreshCw,
+  Users,
+  ExternalLink,
+  Globe,
+  FolderOpen,
+  Sparkles,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useSubagents } from "./hooks/use-subagents";
+import { useSubagentsSettings } from "./hooks/use-subagents-settings";
+import { SubagentCard } from "./subagent-card";
 
 export function SubagentsSection() {
   const {
@@ -40,9 +48,9 @@ export function SubagentsSection() {
     await refreshFilesystemAgents();
   };
 
-  const toggleSource = (source: 'user' | 'project') => {
+  const toggleSource = (source: "user" | "project") => {
     if (sources.includes(source)) {
-      updateSources(sources.filter((s: 'user' | 'project') => s !== source));
+      updateSources(sources.filter((s: "user" | "project") => s !== source));
     } else {
       updateSources([...sources, source]);
     }
@@ -51,10 +59,10 @@ export function SubagentsSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-linear-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -68,7 +76,8 @@ export function SubagentsSection() {
               Custom Subagents
               {enabled && subagentsWithScope.length > 0 && (
                 <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-500">
-                  {subagentsWithScope.length} agent{subagentsWithScope.length !== 1 ? 's' : ''}
+                  {subagentsWithScope.length} agent
+                  {subagentsWithScope.length !== 1 ? "s" : ""}
                 </span>
               )}
             </h3>
@@ -98,16 +107,16 @@ export function SubagentsSection() {
               <label
                 htmlFor="subagent-source-user"
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200',
-                  sources.includes('user')
-                    ? 'border-violet-500/50 bg-violet-500/10'
-                    : 'border-border/50 bg-accent/20 hover:bg-accent/30'
+                  "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                  sources.includes("user")
+                    ? "border-violet-500/50 bg-violet-500/10"
+                    : "border-border/50 bg-accent/20 hover:bg-accent/30",
                 )}
               >
                 <Checkbox
                   id="subagent-source-user"
-                  checked={sources.includes('user')}
-                  onCheckedChange={() => toggleSource('user')}
+                  checked={sources.includes("user")}
+                  onCheckedChange={() => toggleSource("user")}
                   disabled={isLoading}
                   className="data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500"
                 />
@@ -126,16 +135,16 @@ export function SubagentsSection() {
               <label
                 htmlFor="subagent-source-project"
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200',
-                  sources.includes('project')
-                    ? 'border-violet-500/50 bg-violet-500/10'
-                    : 'border-border/50 bg-accent/20 hover:bg-accent/30'
+                  "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                  sources.includes("project")
+                    ? "border-violet-500/50 bg-violet-500/10"
+                    : "border-border/50 bg-accent/20 hover:bg-accent/30",
                 )}
               >
                 <Checkbox
                   id="subagent-source-project"
-                  checked={sources.includes('project')}
-                  onCheckedChange={() => toggleSource('project')}
+                  checked={sources.includes("project")}
+                  onCheckedChange={() => toggleSource("project")}
                   disabled={isLoading}
                   className="data-[state=checked]:bg-violet-500 data-[state=checked]:border-violet-500"
                 />
@@ -169,7 +178,11 @@ export function SubagentsSection() {
                 title="Refresh agents from disk"
                 className="gap-1.5 h-7 px-2 text-xs"
               >
-                {isLoadingAgents ? <Spinner size="xs" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                {isLoadingAgents ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
                 Refresh
               </Button>
             </div>
@@ -179,13 +192,21 @@ export function SubagentsSection() {
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm font-medium">No agents found</p>
                 <p className="text-xs mt-1 max-w-sm mx-auto">
-                  Create <code className="text-xs bg-muted px-1 rounded">.md</code> files in{' '}
-                  {sources.includes('user') && (
-                    <code className="text-xs bg-muted px-1 rounded">~/.claude/agents/</code>
+                  Create{" "}
+                  <code className="text-xs bg-muted px-1 rounded">.md</code>{" "}
+                  files in{" "}
+                  {sources.includes("user") && (
+                    <code className="text-xs bg-muted px-1 rounded">
+                      ~/.claude/agents/
+                    </code>
                   )}
-                  {sources.includes('user') && sources.includes('project') && ' or '}
-                  {sources.includes('project') && (
-                    <code className="text-xs bg-muted px-1 rounded">.claude/agents/</code>
+                  {sources.includes("user") &&
+                    sources.includes("project") &&
+                    " or "}
+                  {sources.includes("project") && (
+                    <code className="text-xs bg-muted px-1 rounded">
+                      .claude/agents/
+                    </code>
                   )}
                 </p>
               </div>
@@ -212,9 +233,16 @@ export function SubagentsSection() {
               <div className="text-xs text-muted-foreground space-y-1">
                 <p className="font-medium text-foreground/80">Auto-Discovery</p>
                 <p>
-                  Subagents are automatically discovered when agents start. Define agents as{' '}
-                  <code className="text-xs bg-muted px-1 rounded">AGENT.md</code> files or{' '}
-                  <code className="text-xs bg-muted px-1 rounded">agent-name.md</code> files.
+                  Subagents are automatically discovered when agents start.
+                  Define agents as{" "}
+                  <code className="text-xs bg-muted px-1 rounded">
+                    AGENT.md
+                  </code>{" "}
+                  files or{" "}
+                  <code className="text-xs bg-muted px-1 rounded">
+                    agent-name.md
+                  </code>{" "}
+                  files.
                 </p>
               </div>
             </div>
@@ -235,7 +263,9 @@ export function SubagentsSection() {
           <div className="text-center py-6 text-muted-foreground">
             <Bot className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">Subagents are disabled</p>
-            <p className="text-xs mt-1">Enable to load custom agent definitions</p>
+            <p className="text-xs mt-1">
+              Enable to load custom agent definitions
+            </p>
           </div>
         )}
       </div>

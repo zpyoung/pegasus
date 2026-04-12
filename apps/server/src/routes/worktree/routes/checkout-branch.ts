@@ -15,16 +15,16 @@
  * middleware in index.ts.
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import { stat } from 'fs/promises';
-import { getErrorMessage, logError, isValidBranchName } from '../common.js';
-import { execGitCommand } from '../../../lib/git.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import { performCheckoutBranch } from '../../../services/checkout-branch-service.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response } from "express";
+import path from "path";
+import { stat } from "fs/promises";
+import { getErrorMessage, logError, isValidBranchName } from "../common.js";
+import { execGitCommand } from "../../../lib/git.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import { performCheckoutBranch } from "../../../services/checkout-branch-service.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('CheckoutBranchRoute');
+const logger = createLogger("CheckoutBranchRoute");
 
 /** Timeout for git fetch operations (30 seconds) */
 const FETCH_TIMEOUT_MS = 30_000;
@@ -38,14 +38,21 @@ async function fetchRemotes(cwd: string): Promise<void> {
   const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    await execGitCommand(['fetch', '--all', '--quiet'], cwd, undefined, controller);
+    await execGitCommand(
+      ["fetch", "--all", "--quiet"],
+      cwd,
+      undefined,
+      controller,
+    );
   } catch (error) {
-    if (error instanceof Error && error.message === 'Process aborted') {
+    if (error instanceof Error && error.message === "Process aborted") {
       logger.warn(
-        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`
+        `fetchRemotes timed out after ${FETCH_TIMEOUT_MS}ms - continuing without latest remote refs`,
       );
     } else {
-      logger.warn(`fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`);
+      logger.warn(
+        `fetchRemotes failed: ${getErrorMessage(error)} - continuing with local refs`,
+      );
     }
     // Non-fatal: continue with locally available refs
   } finally {
@@ -56,7 +63,13 @@ async function fetchRemotes(cwd: string): Promise<void> {
 export function createCheckoutBranchHandler(events?: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { worktreePath, branchName, baseBranch, stashChanges, includeUntracked } = req.body as {
+      const {
+        worktreePath,
+        branchName,
+        baseBranch,
+        stashChanges,
+        includeUntracked,
+      } = req.body as {
         worktreePath: string;
         branchName: string;
         baseBranch?: string;
@@ -69,7 +82,7 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -77,7 +90,7 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
       if (!branchName) {
         res.status(400).json({
           success: false,
-          error: 'branchName required',
+          error: "branchName required",
         });
         return;
       }
@@ -87,17 +100,21 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
         res.status(400).json({
           success: false,
           error:
-            'Invalid branch name. Must contain only letters, numbers, dots, dashes, underscores, or slashes.',
+            "Invalid branch name. Must contain only letters, numbers, dots, dashes, underscores, or slashes.",
         });
         return;
       }
 
       // Validate base branch if provided
-      if (baseBranch && !isValidBranchName(baseBranch) && baseBranch !== 'HEAD') {
+      if (
+        baseBranch &&
+        !isValidBranchName(baseBranch) &&
+        baseBranch !== "HEAD"
+      ) {
         res.status(400).json({
           success: false,
           error:
-            'Invalid base branch name. Must contain only letters, numbers, dots, dashes, underscores, or slashes.',
+            "Invalid base branch name. Must contain only letters, numbers, dots, dashes, underscores, or slashes.",
         });
         return;
       }
@@ -109,14 +126,14 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
         if (!stats.isDirectory()) {
           res.status(400).json({
             success: false,
-            error: 'worktreePath is not a directory',
+            error: "worktreePath is not a directory",
           });
           return;
         }
       } catch {
         res.status(400).json({
           success: false,
-          error: 'worktreePath does not exist or is not accessible',
+          error: "worktreePath does not exist or is not accessible",
         });
         return;
       }
@@ -131,7 +148,7 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
             stashChanges: true,
             includeUntracked: includeUntracked ?? true,
           },
-          events
+          events,
         );
 
         if (!result.success) {
@@ -162,14 +179,17 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
       await fetchRemotes(resolvedPath);
 
       const currentBranchOutput = await execGitCommand(
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        resolvedPath
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        resolvedPath,
       );
       const currentBranch = currentBranchOutput.trim();
 
       // Check if branch already exists
       try {
-        await execGitCommand(['rev-parse', '--verify', branchName], resolvedPath);
+        await execGitCommand(
+          ["rev-parse", "--verify", branchName],
+          resolvedPath,
+        );
         res.status(400).json({
           success: false,
           error: `Branch '${branchName}' already exists`,
@@ -182,7 +202,10 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
       // If baseBranch is provided, verify it exists before using it
       if (baseBranch) {
         try {
-          await execGitCommand(['rev-parse', '--verify', baseBranch], resolvedPath);
+          await execGitCommand(
+            ["rev-parse", "--verify", baseBranch],
+            resolvedPath,
+          );
         } catch {
           res.status(400).json({
             success: false,
@@ -193,7 +216,7 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
       }
 
       // Create and checkout the new branch
-      const checkoutArgs = ['checkout', '-b', branchName];
+      const checkoutArgs = ["checkout", "-b", branchName];
       if (baseBranch) {
         checkoutArgs.push(baseBranch);
       }
@@ -208,11 +231,11 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
         },
       });
     } catch (error) {
-      events?.emit('switch:error', {
+      events?.emit("switch:error", {
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Checkout branch failed');
+      logError(error, "Checkout branch failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -225,5 +248,5 @@ export function createCheckoutBranchHandler(events?: EventEmitter) {
  */
 function isBranchError(error?: string): boolean {
   if (!error) return false;
-  return error.includes('already exists') || error.includes('does not exist');
+  return error.includes("already exists") || error.includes("does not exist");
 }

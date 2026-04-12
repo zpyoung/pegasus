@@ -21,8 +21,8 @@
  * ```
  */
 
-import { execSync } from 'child_process';
-import * as path from 'path';
+import { execSync } from "child_process";
+import * as path from "path";
 
 /**
  * Get the full path to wsl.exe
@@ -30,8 +30,9 @@ import * as path from 'path';
  */
 function getWslExePath(): string {
   // wsl.exe is in System32 on Windows
-  const systemRoot = process.env.SystemRoot || process.env.SYSTEMROOT || 'C:\\Windows';
-  return path.join(systemRoot, 'System32', 'wsl.exe');
+  const systemRoot =
+    process.env.SystemRoot || process.env.SYSTEMROOT || "C:\\Windows";
+  return path.join(systemRoot, "System32", "wsl.exe");
 }
 
 /** Result of finding a CLI in WSL */
@@ -67,7 +68,7 @@ export function isWslAvailable(options: WslOptions = {}): boolean {
   const { timeout = 5000, logger = () => {} } = options;
 
   // Only relevant on Windows
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return false;
   }
 
@@ -78,30 +79,30 @@ export function isWslAvailable(options: WslOptions = {}): boolean {
 
   try {
     // Try to run a simple command via WSL
-    execSync('wsl.exe echo ok', {
-      encoding: 'utf8',
+    execSync("wsl.exe echo ok", {
+      encoding: "utf8",
       timeout,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     });
     wslAvailableCache = true;
-    logger('WSL is available');
+    logger("WSL is available");
     return true;
   } catch {
     // Try wsl --status as fallback
     try {
-      execSync('wsl.exe --status', {
-        encoding: 'utf8',
+      execSync("wsl.exe --status", {
+        encoding: "utf8",
         timeout,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       });
       wslAvailableCache = true;
-      logger('WSL is available (via --status)');
+      logger("WSL is available (via --status)");
       return true;
     } catch {
       wslAvailableCache = false;
-      logger('WSL is not available');
+      logger("WSL is not available");
       return false;
     }
   }
@@ -118,7 +119,9 @@ export function clearWslCache(): void {
 /**
  * Get the default WSL distribution name
  */
-export function getDefaultWslDistribution(options: WslOptions = {}): string | null {
+export function getDefaultWslDistribution(
+  options: WslOptions = {},
+): string | null {
   const { timeout = 5000 } = options;
 
   if (!isWslAvailable(options)) {
@@ -127,16 +130,16 @@ export function getDefaultWslDistribution(options: WslOptions = {}): string | nu
 
   try {
     // wsl -l -q returns distributions, first one marked with (Default)
-    const result = execSync('wsl.exe -l -q', {
-      encoding: 'utf16le', // WSL list output uses UTF-16LE on Windows
+    const result = execSync("wsl.exe -l -q", {
+      encoding: "utf16le", // WSL list output uses UTF-16LE on Windows
       timeout,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     }).trim();
 
     // First non-empty line is the default
     const lines = result.split(/\r?\n/).filter((l) => l.trim());
-    return lines[0]?.replace(/\0/g, '').trim() || null;
+    return lines[0]?.replace(/\0/g, "").trim() || null;
   } catch {
     return null;
   }
@@ -153,19 +156,19 @@ export function getWslDistributions(options: WslOptions = {}): string[] {
   }
 
   try {
-    const result = execSync('wsl.exe -l -q', {
-      encoding: 'utf16le', // WSL list output uses UTF-16LE on Windows
+    const result = execSync("wsl.exe -l -q", {
+      encoding: "utf16le", // WSL list output uses UTF-16LE on Windows
       timeout,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     }).trim();
 
     const distributions = result
       .split(/\r?\n/)
-      .map((l) => l.replace(/\0/g, '').trim())
-      .filter((l) => l && !l.includes('docker-desktop')); // Exclude docker-desktop as it's minimal
+      .map((l) => l.replace(/\0/g, "").trim())
+      .filter((l) => l && !l.includes("docker-desktop")); // Exclude docker-desktop as it's minimal
 
-    logger(`Found WSL distributions: ${distributions.join(', ')}`);
+    logger(`Found WSL distributions: ${distributions.join(", ")}`);
     return distributions;
   } catch {
     return [];
@@ -182,7 +185,10 @@ export function getWslDistributions(options: WslOptions = {}): string[] {
  * @param options - WSL options
  * @returns The Linux path to the CLI and the distribution where found, or null if not found
  */
-export function findCliInWsl(cliName: string, options: WslOptions = {}): WslCliResult | null {
+export function findCliInWsl(
+  cliName: string,
+  options: WslOptions = {},
+): WslCliResult | null {
   const { distribution, timeout = 10000, logger = () => {} } = options;
 
   if (!isWslAvailable(options)) {
@@ -190,21 +196,25 @@ export function findCliInWsl(cliName: string, options: WslOptions = {}): WslCliR
   }
 
   // Helper to search in a specific distribution
-  const searchInDistribution = (distro: string | undefined): WslCliResult | null => {
-    const wslPrefix = distro ? `wsl.exe -d ${distro}` : 'wsl.exe';
-    const distroLabel = distro || 'default';
+  const searchInDistribution = (
+    distro: string | undefined,
+  ): WslCliResult | null => {
+    const wslPrefix = distro ? `wsl.exe -d ${distro}` : "wsl.exe";
+    const distroLabel = distro || "default";
 
     // Try 'which' first (works if PATH is set up correctly)
     try {
       const result = execSync(`${wslPrefix} which ${cliName}`, {
-        encoding: 'utf8',
+        encoding: "utf8",
         timeout,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
         windowsHide: true,
       }).trim();
 
-      if (result && !result.includes('not found') && result.startsWith('/')) {
-        logger(`Found ${cliName} in WSL (${distroLabel}) via 'which': ${result}`);
+      if (result && !result.includes("not found") && result.startsWith("/")) {
+        logger(
+          `Found ${cliName} in WSL (${distroLabel}) via 'which': ${result}`,
+        );
         return { wslPath: result, distribution: distro };
       }
     } catch {
@@ -213,20 +223,20 @@ export function findCliInWsl(cliName: string, options: WslOptions = {}): WslCliR
 
     // Check common installation paths using sh -c for better compatibility
     // Use $HOME instead of ~ for reliable expansion
-    const commonPaths = ['$HOME/.local/bin', '/usr/local/bin', '/usr/bin'];
+    const commonPaths = ["$HOME/.local/bin", "/usr/local/bin", "/usr/bin"];
 
     for (const basePath of commonPaths) {
       try {
         // Use sh -c to properly expand $HOME and test if executable
         const checkCmd = `${wslPrefix} sh -c "test -x ${basePath}/${cliName} && echo ${basePath}/${cliName}"`;
         const result = execSync(checkCmd, {
-          encoding: 'utf8',
+          encoding: "utf8",
           timeout,
-          stdio: ['pipe', 'pipe', 'pipe'],
+          stdio: ["pipe", "pipe", "pipe"],
           windowsHide: true,
         }).trim();
 
-        if (result && result.startsWith('/')) {
+        if (result && result.startsWith("/")) {
           logger(`Found ${cliName} in WSL (${distroLabel}) at: ${result}`);
           return { wslPath: result, distribution: distro };
         }
@@ -247,17 +257,23 @@ export function findCliInWsl(cliName: string, options: WslOptions = {}): WslCliR
   const distributions = getWslDistributions(options);
 
   // Prioritize common user distributions
-  const priorityDistros = ['Ubuntu', 'Debian', 'openSUSE', 'Fedora', 'Arch'];
+  const priorityDistros = ["Ubuntu", "Debian", "openSUSE", "Fedora", "Arch"];
   const sortedDistros = distributions.sort((a, b) => {
-    const aIndex = priorityDistros.findIndex((p) => a.toLowerCase().includes(p.toLowerCase()));
-    const bIndex = priorityDistros.findIndex((p) => b.toLowerCase().includes(p.toLowerCase()));
+    const aIndex = priorityDistros.findIndex((p) =>
+      a.toLowerCase().includes(p.toLowerCase()),
+    );
+    const bIndex = priorityDistros.findIndex((p) =>
+      b.toLowerCase().includes(p.toLowerCase()),
+    );
     if (aIndex === -1 && bIndex === -1) return 0;
     if (aIndex === -1) return 1;
     if (bIndex === -1) return -1;
     return aIndex - bIndex;
   });
 
-  logger(`Searching for ${cliName} in WSL distributions: ${sortedDistros.join(', ')}`);
+  logger(
+    `Searching for ${cliName} in WSL distributions: ${sortedDistros.join(", ")}`,
+  );
 
   for (const distro of sortedDistros) {
     const result = searchInDistribution(distro);
@@ -283,20 +299,23 @@ export function findCliInWsl(cliName: string, options: WslOptions = {}): WslCliR
  * @param options - WSL options
  * @returns Command output, or null if failed
  */
-export function execInWsl(command: string, options: WslOptions = {}): string | null {
+export function execInWsl(
+  command: string,
+  options: WslOptions = {},
+): string | null {
   const { distribution, timeout = 30000 } = options;
 
   if (!isWslAvailable(options)) {
     return null;
   }
 
-  const wslPrefix = distribution ? `wsl.exe -d ${distribution}` : 'wsl.exe';
+  const wslPrefix = distribution ? `wsl.exe -d ${distribution}` : "wsl.exe";
 
   try {
     return execSync(`${wslPrefix} ${command}`, {
-      encoding: 'utf8',
+      encoding: "utf8",
       timeout,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     }).trim();
   } catch {
@@ -327,7 +346,7 @@ export function execInWsl(command: string, options: WslOptions = {}): string | n
 export function createWslCommand(
   wslCliPath: string,
   args: string[],
-  options: WslOptions = {}
+  options: WslOptions = {},
 ): { command: string; args: string[] } {
   const { distribution } = options;
   // Use full path to wsl.exe to ensure spawn() can find it
@@ -336,7 +355,7 @@ export function createWslCommand(
   if (distribution) {
     return {
       command: wslExe,
-      args: ['-d', distribution, wslCliPath, ...args],
+      args: ["-d", distribution, wslCliPath, ...args],
     };
   }
 
@@ -354,7 +373,7 @@ export function createWslCommand(
  */
 export function windowsToWslPath(windowsPath: string): string {
   // Handle UNC paths
-  if (windowsPath.startsWith('\\\\')) {
+  if (windowsPath.startsWith("\\\\")) {
     // UNC paths are not directly supported, return as-is
     return windowsPath;
   }
@@ -363,12 +382,12 @@ export function windowsToWslPath(windowsPath: string): string {
   const match = windowsPath.match(/^([A-Za-z]):\\(.*)$/);
   if (match) {
     const [, drive, rest] = match;
-    const wslPath = `/mnt/${drive.toLowerCase()}/${rest.replace(/\\/g, '/')}`;
+    const wslPath = `/mnt/${drive.toLowerCase()}/${rest.replace(/\\/g, "/")}`;
     return wslPath;
   }
 
   // Already a Unix-style path or relative path
-  return windowsPath.replace(/\\/g, '/');
+  return windowsPath.replace(/\\/g, "/");
 }
 
 /**
@@ -381,7 +400,7 @@ export function wslToWindowsPath(wslPath: string): string {
   const match = wslPath.match(/^\/mnt\/([a-z])\/(.*)$/);
   if (match) {
     const [, drive, rest] = match;
-    return `${drive.toUpperCase()}:\\${rest.replace(/\//g, '\\')}`;
+    return `${drive.toUpperCase()}:\\${rest.replace(/\//g, "\\")}`;
   }
 
   // Not a /mnt/ path, return as-is

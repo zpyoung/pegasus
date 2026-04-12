@@ -10,45 +10,45 @@
  * - Frontend receives events in the exact same format as before (no breaking changes)
  */
 
-import type { EventEmitter, EventType, EventCallback } from '../lib/events.js';
+import type { EventEmitter, EventType, EventCallback } from "../lib/events.js";
 
 /**
  * Auto-mode event types that can be emitted through the TypedEventBus.
  * These correspond to the event types expected by the frontend.
  */
 export type AutoModeEventType =
-  | 'auto_mode_started'
-  | 'auto_mode_stopped'
-  | 'auto_mode_idle'
-  | 'auto_mode_error'
-  | 'auto_mode_paused_failures'
-  | 'auto_mode_feature_start'
-  | 'auto_mode_feature_complete'
-  | 'auto_mode_feature_resuming'
-  | 'auto_mode_progress'
-  | 'auto_mode_tool'
-  | 'auto_mode_task_started'
-  | 'auto_mode_task_complete'
-  | 'auto_mode_task_status'
-  | 'auto_mode_phase_complete'
-  | 'auto_mode_summary'
-  | 'auto_mode_resuming_features'
-  | 'planning_started'
-  | 'plan_approval_required'
-  | 'plan_approved'
-  | 'plan_auto_approved'
-  | 'plan_rejected'
-  | 'plan_revision_requested'
-  | 'plan_revision_warning'
-  | 'plan_spec_updated'
-  | 'pipeline_step_started'
-  | 'pipeline_step_complete'
-  | 'pipeline_test_failed'
-  | 'pipeline_merge_conflict'
-  | 'feature_status_changed'
-  | 'features_reconciled'
-  | 'question_required'
-  | 'question_answered';
+  | "auto_mode_started"
+  | "auto_mode_stopped"
+  | "auto_mode_idle"
+  | "auto_mode_error"
+  | "auto_mode_paused_failures"
+  | "auto_mode_feature_start"
+  | "auto_mode_feature_complete"
+  | "auto_mode_feature_resuming"
+  | "auto_mode_progress"
+  | "auto_mode_tool"
+  | "auto_mode_task_started"
+  | "auto_mode_task_complete"
+  | "auto_mode_task_status"
+  | "auto_mode_phase_complete"
+  | "auto_mode_summary"
+  | "auto_mode_resuming_features"
+  | "planning_started"
+  | "plan_approval_required"
+  | "plan_approved"
+  | "plan_auto_approved"
+  | "plan_rejected"
+  | "plan_revision_requested"
+  | "plan_revision_warning"
+  | "plan_spec_updated"
+  | "pipeline_step_started"
+  | "pipeline_step_complete"
+  | "pipeline_test_failed"
+  | "pipeline_merge_conflict"
+  | "feature_status_changed"
+  | "features_reconciled"
+  | "question_required"
+  | "question_answered";
 
 /**
  * TypedEventBus wraps an EventEmitter to provide type-safe event emission
@@ -86,9 +86,12 @@ export class TypedEventBus {
    * @param eventType - The auto-mode event type (e.g., 'auto_mode_started')
    * @param data - Additional data to include in the event payload
    */
-  emitAutoModeEvent(eventType: AutoModeEventType, data: Record<string, unknown>): void {
+  emitAutoModeEvent(
+    eventType: AutoModeEventType,
+    data: Record<string, unknown>,
+  ): void {
     // Wrap the event in auto-mode:event format expected by the client
-    this.events.emit('auto-mode:event', {
+    this.events.emit("auto-mode:event", {
       type: eventType,
       ...data,
     });

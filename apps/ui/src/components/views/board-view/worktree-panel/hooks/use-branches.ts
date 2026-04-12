@@ -1,11 +1,15 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useWorktreeBranches } from '@/hooks/queries';
-import type { GitRepoStatus } from '../types';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useWorktreeBranches } from "@/hooks/queries";
+import type { GitRepoStatus } from "../types";
 
 /** Explicit return type for the useBranches hook */
 export interface UseBranchesReturn {
   branches: Array<{ name: string; isCurrent: boolean; isRemote: boolean }>;
-  filteredBranches: Array<{ name: string; isCurrent: boolean; isRemote: boolean }>;
+  filteredBranches: Array<{
+    name: string;
+    isCurrent: boolean;
+    isRemote: boolean;
+  }>;
   aheadCount: number;
   behindCount: number;
   hasRemoteBranch: boolean;
@@ -37,8 +41,10 @@ export interface UseBranchesReturn {
  * worktree path is currently being viewed and fetches branches on demand.
  */
 export function useBranches(): UseBranchesReturn {
-  const [currentWorktreePath, setCurrentWorktreePath] = useState<string | undefined>();
-  const [branchFilter, setBranchFilter] = useState('');
+  const [currentWorktreePath, setCurrentWorktreePath] = useState<
+    string | undefined
+  >();
+  const [branchFilter, setBranchFilter] = useState("");
 
   const {
     data: branchData,
@@ -55,12 +61,15 @@ export function useBranches(): UseBranchesReturn {
 
   // Per-worktree tracking remote cache: keeps results from previous fetchBranches()
   // calls so multiple WorktreePanel instances don't all share a single stale value.
-  const trackingRemoteByPathRef = useRef<Record<string, string | undefined>>({});
+  const trackingRemoteByPathRef = useRef<Record<string, string | undefined>>(
+    {},
+  );
 
   // Update cache whenever query data changes for the current path
   useEffect(() => {
     if (currentWorktreePath && branchData) {
-      trackingRemoteByPathRef.current[currentWorktreePath] = branchData.trackingRemote;
+      trackingRemoteByPathRef.current[currentWorktreePath] =
+        branchData.trackingRemote;
     }
   }, [currentWorktreePath, branchData]);
 
@@ -73,7 +82,7 @@ export function useBranches(): UseBranchesReturn {
       // Otherwise fall back to the cached value from a previous fetch
       return trackingRemoteByPathRef.current[worktreePath];
     },
-    [currentWorktreePath, trackingRemote]
+    [currentWorktreePath, trackingRemote],
   );
 
   // Use conservative defaults (false) until data is confirmed
@@ -93,11 +102,11 @@ export function useBranches(): UseBranchesReturn {
         setCurrentWorktreePath(worktreePath);
       }
     },
-    [currentWorktreePath, refetch]
+    [currentWorktreePath, refetch],
   );
 
   const resetBranchFilter = useCallback(() => {
-    setBranchFilter('');
+    setBranchFilter("");
   }, []);
 
   /** Remove cached tracking-remote entries for worktree paths that no longer exist. */
@@ -111,7 +120,7 @@ export function useBranches(): UseBranchesReturn {
   }, []);
 
   const filteredBranches = branches.filter((b) =>
-    b.name.toLowerCase().includes(branchFilter.toLowerCase())
+    b.name.toLowerCase().includes(branchFilter.toLowerCase()),
   );
 
   return {

@@ -1,14 +1,14 @@
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { SkeletonPulse } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { CliStatus } from '../shared/types';
-import type { ClaudeAuthStatus } from '@/store/setup-store';
-import { AnthropicIcon } from '@/components/ui/provider-icon';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { SkeletonPulse } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { CliStatus } from "../shared/types";
+import type { ClaudeAuthStatus } from "@/store/setup-store";
+import { AnthropicIcon } from "@/components/ui/provider-icon";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
 
 interface CliStatusProps {
   status: CliStatus | null;
@@ -19,20 +19,20 @@ interface CliStatusProps {
 
 function getAuthMethodLabel(method: string): string {
   switch (method) {
-    case 'oauth_token':
-      return 'OAuth Token (Subscription)';
-    case 'oauth_token_env':
-      return 'OAuth Token (Environment)';
-    case 'api_key':
-      return 'API Key';
-    case 'api_key_env':
-      return 'API Key (Environment)';
-    case 'credentials_file':
-      return 'Credentials File';
-    case 'cli_authenticated':
-      return 'CLI Authentication';
+    case "oauth_token":
+      return "OAuth Token (Subscription)";
+    case "oauth_token_env":
+      return "OAuth Token (Environment)";
+    case "api_key":
+      return "API Key";
+    case "api_key_env":
+      return "API Key (Environment)";
+    case "credentials_file":
+      return "Credentials File";
+    case "cli_authenticated":
+      return "CLI Authentication";
     default:
-      return method || 'Unknown';
+      return method || "Unknown";
   }
 }
 
@@ -40,10 +40,10 @@ function ClaudeCliStatusSkeleton() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -81,7 +81,12 @@ function ClaudeCliStatusSkeleton() {
   );
 }
 
-export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: CliStatusProps) {
+export function ClaudeCliStatus({
+  status,
+  authStatus,
+  isChecking,
+  onRefresh,
+}: CliStatusProps) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
@@ -90,30 +95,31 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
     try {
       const api = getElectronAPI();
       // Check if authClaude method exists on the API
-      const authClaude = (api.setup as Record<string, unknown> | undefined)?.authClaude as
+      const authClaude = (api.setup as Record<string, unknown> | undefined)
+        ?.authClaude as
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!authClaude) {
-        toast.error('Authentication Failed', {
-          description: 'Claude authentication is not available',
+        toast.error("Authentication Failed", {
+          description: "Claude authentication is not available",
         });
         return;
       }
       const result = await authClaude();
 
       if (result.success) {
-        toast.success('Signed In', {
-          description: 'Successfully authenticated Claude CLI',
+        toast.success("Signed In", {
+          description: "Successfully authenticated Claude CLI",
         });
         onRefresh();
       } else if (result.error) {
-        toast.error('Authentication Failed', {
+        toast.error("Authentication Failed", {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Authentication Failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Authentication Failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsAuthenticating(false);
@@ -125,31 +131,32 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
     try {
       const api = getElectronAPI();
       // Check if deauthClaude method exists on the API
-      const deauthClaude = (api.setup as Record<string, unknown> | undefined)?.deauthClaude as
+      const deauthClaude = (api.setup as Record<string, unknown> | undefined)
+        ?.deauthClaude as
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!deauthClaude) {
-        toast.error('Sign Out Failed', {
-          description: 'Claude sign out is not available',
+        toast.error("Sign Out Failed", {
+          description: "Claude sign out is not available",
         });
         return;
       }
       const result = await deauthClaude();
 
       if (result.success) {
-        toast.success('Signed Out', {
-          description: 'Successfully signed out from Claude CLI',
+        toast.success("Signed Out", {
+          description: "Successfully signed out from Claude CLI",
         });
         // Refresh status after successful logout
         onRefresh();
       } else if (result.error) {
-        toast.error('Sign Out Failed', {
+        toast.error("Sign Out Failed", {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Sign Out Failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Sign Out Failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsDeauthenticating(false);
@@ -161,10 +168,10 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -185,28 +192,34 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
             data-testid="refresh-claude-cli"
             title="Refresh Claude CLI detection"
             className={cn(
-              'h-9 w-9 rounded-lg',
-              'hover:bg-accent/50 hover:scale-105',
-              'transition-all duration-200'
+              "h-9 w-9 rounded-lg",
+              "hover:bg-accent/50 hover:scale-105",
+              "transition-all duration-200",
             )}
           >
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Claude Code CLI provides better performance for long-running tasks, especially with
-          ultrathink.
+          Claude Code CLI provides better performance for long-running tasks,
+          especially with ultrathink.
         </p>
       </div>
       <div className="p-6 space-y-4">
-        {status.success && status.status === 'installed' ? (
+        {status.success && status.status === "installed" ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20 shrink-0">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Claude Code CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  Claude Code CLI Installed
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.method && (
                     <p>
@@ -215,12 +228,16 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   )}
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      Version:{" "}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                   {status.path && (
                     <p className="truncate" title={status.path}>
-                      Path: <span className="font-mono text-[10px]">{status.path}</span>
+                      Path:{" "}
+                      <span className="font-mono text-[10px]">
+                        {status.path}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -233,11 +250,15 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    Authenticated
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     <p>
-                      Method:{' '}
-                      <span className="font-mono">{getAuthMethodLabel(authStatus.method)}</span>
+                      Method:{" "}
+                      <span className="font-mono">
+                        {getAuthMethodLabel(authStatus.method)}
+                      </span>
                     </p>
                   </div>
                   <Button
@@ -247,7 +268,7 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                     disabled={isDeauthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isDeauthenticating ? 'Signing Out...' : 'Sign Out'}
+                    {isDeauthenticating ? "Signing Out..." : "Sign Out"}
                   </Button>
                 </div>
               </div>
@@ -257,7 +278,9 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                   <XCircle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">Not Authenticated</p>
+                  <p className="text-sm font-medium text-amber-400">
+                    Not Authenticated
+                  </p>
                   <p className="text-xs text-amber-400/70 mt-1">
                     Click Sign In below to get authentication instructions.
                   </p>
@@ -268,14 +291,16 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                     disabled={isAuthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isAuthenticating ? 'Requesting...' : 'Sign In'}
+                    {isAuthenticating ? "Requesting..." : "Sign In"}
                   </Button>
                 </div>
               </div>
             )}
 
             {status.recommendation && (
-              <p className="text-xs text-muted-foreground/70 ml-1">{status.recommendation}</p>
+              <p className="text-xs text-muted-foreground/70 ml-1">
+                {status.recommendation}
+              </p>
             )}
           </div>
         ) : (
@@ -285,16 +310,20 @@ export function ClaudeCliStatus({ status, authStatus, isChecking, onRefresh }: C
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Claude Code CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  Claude Code CLI Not Detected
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   {status.recommendation ||
-                    'Consider installing Claude Code CLI for optimal performance with ultrathink.'}
+                    "Consider installing Claude Code CLI for optimal performance with ultrathink."}
                 </p>
               </div>
             </div>
             {status.installCommands && (
               <div className="space-y-3">
-                <p className="text-xs font-medium text-foreground/80">Installation Commands:</p>
+                <p className="text-xs font-medium text-foreground/80">
+                  Installation Commands:
+                </p>
                 <div className="space-y-2">
                   {status.installCommands.npm && (
                     <div className="p-3 rounded-xl bg-accent/30 border border-border/50">

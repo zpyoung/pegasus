@@ -11,14 +11,14 @@
  * its new conversation context.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { AgentQuestion, FeatureQuestionState } from '@pegasus/types';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { AgentQuestion, FeatureQuestionState } from "@pegasus/types";
 
 // ============================================================================
 // Mocks (must be declared before importing the SUT)
 // ============================================================================
 
-vi.mock('@pegasus/utils', () => ({
+vi.mock("@pegasus/utils", () => ({
   createLogger: () => ({
     info: vi.fn(),
     warn: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@pegasus/utils', () => ({
   DEFAULT_BACKUP_COUNT: 3,
 }));
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   getFeatureDir: (projectPath: string, featureId: string) =>
     `${projectPath}/.pegasus/features/${featureId}`,
 }));
@@ -41,15 +41,15 @@ import {
   extractAndPauseForAskUserQuestion,
   formatAnsweredAgentQuestions,
   QuestionService,
-} from '@/services/question-service.js';
-import { PauseExecutionError } from '@/services/pause-execution-error.js';
+} from "@/services/question-service.js";
+import { PauseExecutionError } from "@/services/pause-execution-error.js";
 
 // ============================================================================
 // Fixtures
 // ============================================================================
 
-const PROJECT_PATH = '/test/project';
-const FEATURE_ID = 'feat-abc';
+const PROJECT_PATH = "/test/project";
+const FEATURE_ID = "feat-abc";
 
 function makeMockQuestionService(): QuestionService {
   return {
@@ -60,17 +60,20 @@ function makeMockQuestionService(): QuestionService {
   } as unknown as QuestionService;
 }
 
-function makeAskUserQuestionBlock(overrides?: { name?: string; input?: unknown }) {
+function makeAskUserQuestionBlock(overrides?: {
+  name?: string;
+  input?: unknown;
+}) {
   return {
     name: ASK_USER_QUESTION_TOOL_NAME,
     input: {
       questions: [
         {
-          question: 'Which library should we use for date formatting?',
-          header: 'Library',
+          question: "Which library should we use for date formatting?",
+          header: "Library",
           options: [
-            { label: 'date-fns', description: 'Modular, tree-shakeable' },
-            { label: 'dayjs', description: 'Tiny, immutable' },
+            { label: "date-fns", description: "Modular, tree-shakeable" },
+            { label: "dayjs", description: "Tiny, immutable" },
           ],
           multiSelect: false,
         },
@@ -84,7 +87,7 @@ function makeAskUserQuestionBlock(overrides?: { name?: string; input?: unknown }
 // Tests
 // ============================================================================
 
-describe('extractAndPauseForAskUserQuestion', () => {
+describe("extractAndPauseForAskUserQuestion", () => {
   let questionService: QuestionService;
   let abortController: AbortController;
 
@@ -94,9 +97,9 @@ describe('extractAndPauseForAskUserQuestion', () => {
     abortController = new AbortController();
   });
 
-  describe('non-AskUserQuestion blocks', () => {
-    it('is a no-op for tool_use blocks with a different name', async () => {
-      const block = { name: 'Bash', input: { command: 'ls' } };
+  describe("non-AskUserQuestion blocks", () => {
+    it("is a no-op for tool_use blocks with a different name", async () => {
+      const block = { name: "Bash", input: { command: "ls" } };
 
       await expect(
         extractAndPauseForAskUserQuestion({
@@ -105,14 +108,14 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(questionService.askQuestion).not.toHaveBeenCalled();
       expect(abortController.signal.aborted).toBe(false);
     });
 
-    it('is a no-op for tool_use blocks with no name', async () => {
+    it("is a no-op for tool_use blocks with no name", async () => {
       const block = { input: { questions: [] } };
 
       await expect(
@@ -122,15 +125,15 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(questionService.askQuestion).not.toHaveBeenCalled();
     });
   });
 
-  describe('AskUserQuestion blocks', () => {
-    it('throws PauseExecutionError for an AskUserQuestion tool call', async () => {
+  describe("AskUserQuestion blocks", () => {
+    it("throws PauseExecutionError for an AskUserQuestion tool call", async () => {
       const block = makeAskUserQuestionBlock();
 
       await expect(
@@ -140,7 +143,7 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
     });
 
@@ -163,10 +166,10 @@ describe('extractAndPauseForAskUserQuestion', () => {
       expect(thrown).toBeInstanceOf(PauseExecutionError);
       const pauseError = thrown as PauseExecutionError;
       expect(pauseError.featureId).toBe(FEATURE_ID);
-      expect(pauseError.reason).toBe('question');
+      expect(pauseError.reason).toBe("question");
     });
 
-    it('persists the question via questionService.askQuestion before throwing', async () => {
+    it("persists the question via questionService.askQuestion before throwing", async () => {
       const block = makeAskUserQuestionBlock();
 
       await expect(
@@ -176,12 +179,12 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
       expect(questionService.askQuestion).toHaveBeenCalledTimes(1);
       const [actualProjectPath, actualFeatureId, actualQuestions] = vi.mocked(
-        questionService.askQuestion
+        questionService.askQuestion,
       ).mock.calls[0];
       expect(actualProjectPath).toBe(PROJECT_PATH);
       expect(actualFeatureId).toBe(FEATURE_ID);
@@ -189,7 +192,7 @@ describe('extractAndPauseForAskUserQuestion', () => {
       expect(actualQuestions).toHaveLength(1);
     });
 
-    it('does NOT abort the abort controller (regression guard)', async () => {
+    it("does NOT abort the abort controller (regression guard)", async () => {
       // Regression guard for the bug fixed in the same commit as this assertion:
       //
       // A previous version of the extractor called `abortController.abort()` as
@@ -213,33 +216,33 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
       expect(abortController.signal.aborted).toBe(false);
     });
 
-    it('maps multi-question SDK input to multiple AgentQuestion entries', async () => {
+    it("maps multi-question SDK input to multiple AgentQuestion entries", async () => {
       const block = {
         name: ASK_USER_QUESTION_TOOL_NAME,
         input: {
           questions: [
             {
-              question: 'Auth method?',
-              header: 'Auth',
+              question: "Auth method?",
+              header: "Auth",
               options: [
-                { label: 'OAuth', description: 'Third-party' },
-                { label: 'JWT', description: 'Self-issued' },
+                { label: "OAuth", description: "Third-party" },
+                { label: "JWT", description: "Self-issued" },
               ],
               multiSelect: false,
             },
             {
-              question: 'Which features do you want to enable?',
-              header: 'Features',
+              question: "Which features do you want to enable?",
+              header: "Features",
               options: [
-                { label: 'Email', description: 'SMTP' },
-                { label: 'SMS', description: 'Twilio' },
-                { label: 'Push', description: 'FCM' },
+                { label: "Email", description: "SMTP" },
+                { label: "SMS", description: "Twilio" },
+                { label: "Push", description: "FCM" },
               ],
               multiSelect: true,
             },
@@ -254,25 +257,26 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
       expect(persistedQuestions).toHaveLength(2);
       expect(persistedQuestions[0]).toMatchObject({
-        question: 'Auth method?',
-        header: 'Auth',
-        type: 'single-select',
-        source: 'agent',
-        status: 'pending',
+        question: "Auth method?",
+        header: "Auth",
+        type: "single-select",
+        source: "agent",
+        status: "pending",
       });
       expect(persistedQuestions[0].options).toHaveLength(2);
       expect(persistedQuestions[1]).toMatchObject({
-        question: 'Which features do you want to enable?',
-        header: 'Features',
-        type: 'multi-select',
-        source: 'agent',
-        status: 'pending',
+        question: "Which features do you want to enable?",
+        header: "Features",
+        type: "multi-select",
+        source: "agent",
+        status: "pending",
       });
       expect(persistedQuestions[1].options).toHaveLength(3);
     });
@@ -287,16 +291,17 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
       for (const q of persistedQuestions) {
-        expect(q.source).toBe('agent');
+        expect(q.source).toBe("agent");
       }
     });
 
-    it('derives stageId from featureStatus when status starts with pipeline_', async () => {
+    it("derives stageId from featureStatus when status starts with pipeline_", async () => {
       const block = makeAskUserQuestionBlock();
 
       await expect(
@@ -306,12 +311,13 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-          featureStatus: 'pipeline_implement',
-        })
+          featureStatus: "pipeline_implement",
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
-      expect(persistedQuestions[0].stageId).toBe('implement');
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
+      expect(persistedQuestions[0].stageId).toBe("implement");
     });
 
     it('defaults stageId to "agent" when featureStatus is not a pipeline status', async () => {
@@ -324,12 +330,13 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-          featureStatus: 'in_progress',
-        })
+          featureStatus: "in_progress",
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
-      expect(persistedQuestions[0].stageId).toBe('agent');
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
+      expect(persistedQuestions[0].stageId).toBe("agent");
     });
 
     it('defaults stageId to "agent" when featureStatus is undefined (legacy flow)', async () => {
@@ -342,21 +349,22 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
-      expect(persistedQuestions[0].stageId).toBe('agent');
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
+      expect(persistedQuestions[0].stageId).toBe("agent");
     });
 
-    it('classifies a question with no options as free-text', async () => {
+    it("classifies a question with no options as free-text", async () => {
       const block = {
         name: ASK_USER_QUESTION_TOOL_NAME,
         input: {
           questions: [
             {
-              question: 'Describe the desired behavior in your own words.',
-              header: 'Describe',
+              question: "Describe the desired behavior in your own words.",
+              header: "Describe",
             },
           ],
         },
@@ -369,17 +377,18 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).rejects.toThrow(PauseExecutionError);
 
-      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion).mock.calls[0];
-      expect(persistedQuestions[0].type).toBe('free-text');
+      const [, , persistedQuestions] = vi.mocked(questionService.askQuestion)
+        .mock.calls[0];
+      expect(persistedQuestions[0].type).toBe("free-text");
       expect(persistedQuestions[0].options).toBeUndefined();
     });
   });
 
-  describe('graceful no-op paths', () => {
-    it('warns and does NOT throw when questionService is null', async () => {
+  describe("graceful no-op paths", () => {
+    it("warns and does NOT throw when questionService is null", async () => {
       const block = makeAskUserQuestionBlock();
 
       await expect(
@@ -389,13 +398,13 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(abortController.signal.aborted).toBe(false);
     });
 
-    it('warns and does NOT throw when input is missing', async () => {
+    it("warns and does NOT throw when input is missing", async () => {
       const block = { name: ASK_USER_QUESTION_TOOL_NAME };
 
       await expect(
@@ -405,14 +414,14 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(questionService.askQuestion).not.toHaveBeenCalled();
       expect(abortController.signal.aborted).toBe(false);
     });
 
-    it('warns and does NOT throw when questions array is empty', async () => {
+    it("warns and does NOT throw when questions array is empty", async () => {
       const block = {
         name: ASK_USER_QUESTION_TOOL_NAME,
         input: { questions: [] },
@@ -425,16 +434,16 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(questionService.askQuestion).not.toHaveBeenCalled();
     });
 
-    it('warns and does NOT throw when questions field is not an array', async () => {
+    it("warns and does NOT throw when questions field is not an array", async () => {
       const block = {
         name: ASK_USER_QUESTION_TOOL_NAME,
-        input: { questions: 'not an array' },
+        input: { questions: "not an array" },
       };
 
       await expect(
@@ -444,7 +453,7 @@ describe('extractAndPauseForAskUserQuestion', () => {
           featureId: FEATURE_ID,
           projectPath: PROJECT_PATH,
           abortController,
-        })
+        }),
       ).resolves.toBeUndefined();
 
       expect(questionService.askQuestion).not.toHaveBeenCalled();
@@ -452,105 +461,107 @@ describe('extractAndPauseForAskUserQuestion', () => {
   });
 });
 
-describe('formatAnsweredAgentQuestions', () => {
-  function makeAnsweredQuestion(overrides?: Partial<AgentQuestion>): AgentQuestion {
+describe("formatAnsweredAgentQuestions", () => {
+  function makeAnsweredQuestion(
+    overrides?: Partial<AgentQuestion>,
+  ): AgentQuestion {
     return {
-      id: 'q-1',
-      stageId: 'agent',
-      question: 'Which library?',
-      type: 'single-select',
-      status: 'answered',
-      askedAt: '2024-01-01T00:00:00Z',
-      answer: 'date-fns',
-      answeredAt: '2024-01-01T00:01:00Z',
-      source: 'agent',
+      id: "q-1",
+      stageId: "agent",
+      question: "Which library?",
+      type: "single-select",
+      status: "answered",
+      askedAt: "2024-01-01T00:00:00Z",
+      answer: "date-fns",
+      answeredAt: "2024-01-01T00:01:00Z",
+      source: "agent",
       ...overrides,
     };
   }
 
-  it('returns empty string when questionState is undefined', () => {
-    expect(formatAnsweredAgentQuestions(undefined)).toBe('');
+  it("returns empty string when questionState is undefined", () => {
+    expect(formatAnsweredAgentQuestions(undefined)).toBe("");
   });
 
-  it('returns empty string when questionState has no questions', () => {
-    const state: FeatureQuestionState = { questions: [], status: 'pending' };
-    expect(formatAnsweredAgentQuestions(state)).toBe('');
+  it("returns empty string when questionState has no questions", () => {
+    const state: FeatureQuestionState = { questions: [], status: "pending" };
+    expect(formatAnsweredAgentQuestions(state)).toBe("");
   });
 
-  it('returns empty string when only YAML pre-stage questions are answered', () => {
+  it("returns empty string when only YAML pre-stage questions are answered", () => {
     const state: FeatureQuestionState = {
-      questions: [makeAnsweredQuestion({ source: 'yaml' })],
-      status: 'answered',
+      questions: [makeAnsweredQuestion({ source: "yaml" })],
+      status: "answered",
     };
-    expect(formatAnsweredAgentQuestions(state)).toBe('');
+    expect(formatAnsweredAgentQuestions(state)).toBe("");
   });
 
-  it('returns empty string when agent questions are still pending', () => {
+  it("returns empty string when agent questions are still pending", () => {
     const state: FeatureQuestionState = {
       questions: [
         makeAnsweredQuestion({
-          status: 'pending',
+          status: "pending",
           answer: undefined,
           answeredAt: undefined,
         }),
       ],
-      status: 'pending',
+      status: "pending",
     };
-    expect(formatAnsweredAgentQuestions(state)).toBe('');
+    expect(formatAnsweredAgentQuestions(state)).toBe("");
   });
 
-  it('formats a single answered agent question as a Q&A block', () => {
+  it("formats a single answered agent question as a Q&A block", () => {
     const state: FeatureQuestionState = {
       questions: [makeAnsweredQuestion()],
-      status: 'answered',
+      status: "answered",
     };
     const result = formatAnsweredAgentQuestions(state);
 
-    expect(result).toContain('## Previous User Q&A');
-    expect(result).toContain('**Q:** Which library?');
-    expect(result).toContain('**A:** date-fns');
+    expect(result).toContain("## Previous User Q&A");
+    expect(result).toContain("**Q:** Which library?");
+    expect(result).toContain("**A:** date-fns");
   });
 
-  it('formats multiple answered agent questions in order', () => {
+  it("formats multiple answered agent questions in order", () => {
     const state: FeatureQuestionState = {
       questions: [
-        makeAnsweredQuestion({ id: 'q-1', question: 'Q1?', answer: 'A1' }),
-        makeAnsweredQuestion({ id: 'q-2', question: 'Q2?', answer: 'A2' }),
+        makeAnsweredQuestion({ id: "q-1", question: "Q1?", answer: "A1" }),
+        makeAnsweredQuestion({ id: "q-2", question: "Q2?", answer: "A2" }),
       ],
-      status: 'answered',
+      status: "answered",
     };
     const result = formatAnsweredAgentQuestions(state);
 
-    expect(result).toContain('**Q:** Q1?');
-    expect(result).toContain('**A:** A1');
-    expect(result).toContain('**Q:** Q2?');
-    expect(result).toContain('**A:** A2');
-    expect(result.indexOf('Q1?')).toBeLessThan(result.indexOf('Q2?'));
+    expect(result).toContain("**Q:** Q1?");
+    expect(result).toContain("**A:** A1");
+    expect(result).toContain("**Q:** Q2?");
+    expect(result).toContain("**A:** A2");
+    expect(result.indexOf("Q1?")).toBeLessThan(result.indexOf("Q2?"));
   });
 
-  it('skips YAML questions even when mixed with answered agent questions', () => {
+  it("skips YAML questions even when mixed with answered agent questions", () => {
     const state: FeatureQuestionState = {
       questions: [
         makeAnsweredQuestion({
-          id: 'q-yaml',
-          source: 'yaml',
-          question: 'YAML pre-stage Q?',
-          answer: 'YAML A',
+          id: "q-yaml",
+          source: "yaml",
+          question: "YAML pre-stage Q?",
+          answer: "YAML A",
         }),
         makeAnsweredQuestion({
-          id: 'q-agent',
-          source: 'agent',
-          question: 'Agent Q?',
-          answer: 'Agent A',
+          id: "q-agent",
+          source: "agent",
+          question: "Agent Q?",
+          answer: "Agent A",
         }),
       ],
-      status: 'answered',
+      status: "answered",
     };
     const result = formatAnsweredAgentQuestions(state);
 
-    expect(result).not.toContain('YAML pre-stage Q?');
-    expect(result).not.toContain('YAML A');
-    expect(result).toContain('Agent Q?');
-    expect(result).toContain('Agent A');
+    expect(result).not.toContain("YAML pre-stage Q?");
+    expect(result).not.toContain("YAML A");
+    expect(result).toContain("Agent Q?");
+    expect(result).toContain("Agent A");
   });
 });

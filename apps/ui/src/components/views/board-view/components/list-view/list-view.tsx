@@ -1,18 +1,22 @@
-import { memo, useMemo, useCallback, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { getBlockingDependencies } from '@pegasus/dependency-resolver';
-import { useAppStore, formatShortcut } from '@/store/app-store';
-import type { Feature } from '@/store/app-store';
-import type { PipelineConfig, FeatureStatusWithPipeline, FeatureTemplate } from '@pegasus/types';
-import { ListHeader } from './list-header';
-import { ListRow, sortFeatures } from './list-row';
-import { createRowActionHandlers, type RowActionHandlers } from './row-actions';
-import { getStatusOrder } from './status-badge';
-import { getColumnsWithPipeline } from '../../constants';
-import { AddFeatureButton } from '../add-feature-button';
-import type { SortConfig, SortColumn } from '../../hooks/use-list-view-state';
+import { memo, useMemo, useCallback, useState } from "react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { getBlockingDependencies } from "@pegasus/dependency-resolver";
+import { useAppStore, formatShortcut } from "@/store/app-store";
+import type { Feature } from "@/store/app-store";
+import type {
+  PipelineConfig,
+  FeatureStatusWithPipeline,
+  FeatureTemplate,
+} from "@pegasus/types";
+import { ListHeader } from "./list-header";
+import { ListRow, sortFeatures } from "./list-row";
+import { createRowActionHandlers, type RowActionHandlers } from "./row-actions";
+import { getStatusOrder } from "./status-badge";
+import { getColumnsWithPipeline } from "../../constants";
+import { AddFeatureButton } from "../add-feature-button";
+import type { SortConfig, SortColumn } from "../../hooks/use-list-view-state";
 
 /** Empty set constant to avoid creating new instances on each render */
 const EMPTY_SET = new Set<string>();
@@ -105,22 +109,26 @@ const StatusGroupHeader = memo(function StatusGroupHeader({
       type="button"
       onClick={onToggle}
       className={cn(
-        'flex items-center gap-2 w-full px-3 py-2 text-left',
-        'bg-muted/50 hover:bg-muted/70 transition-colors duration-200',
-        'border-b border-border/50',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
+        "flex items-center gap-2 w-full px-3 py-2 text-left",
+        "bg-muted/50 hover:bg-muted/70 transition-colors duration-200",
+        "border-b border-border/50",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
       )}
       aria-expanded={isExpanded}
       data-testid={`list-group-header-${group.id}`}
     >
       {/* Collapse indicator */}
       <span className="text-muted-foreground">
-        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4" />
+        ) : (
+          <ChevronRight className="w-4 h-4" />
+        )}
       </span>
 
       {/* Status color indicator */}
       <span
-        className={cn('w-2.5 h-2.5 rounded-full shrink-0', group.colorClass)}
+        className={cn("w-2.5 h-2.5 rounded-full shrink-0", group.colorClass)}
         aria-hidden="true"
       />
 
@@ -128,7 +136,9 @@ const StatusGroupHeader = memo(function StatusGroupHeader({
       <span className="font-medium text-sm">{group.title}</span>
 
       {/* Feature count */}
-      <span className="text-xs text-muted-foreground">({group.features.length})</span>
+      <span className="text-xs text-muted-foreground">
+        ({group.features.length})
+      </span>
     </button>
   );
 });
@@ -155,8 +165,8 @@ const EmptyState = memo(function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center py-16 px-4',
-        'text-center text-muted-foreground'
+        "flex flex-col items-center justify-center py-16 px-4",
+        "text-center text-muted-foreground",
       )}
       data-testid="list-view-empty"
     >
@@ -236,23 +246,28 @@ export const ListView = memo(function ListView({
   sortNewestCardOnTop = false,
 }: ListViewProps) {
   // Track collapsed state for each status group
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Get the keyboard shortcut for adding features
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
-  const addFeatureShortcut = keyboardShortcuts.addFeature || 'N';
+  const addFeatureShortcut = keyboardShortcuts.addFeature || "N";
 
   // Effective sort config: when sortNewestCardOnTop is enabled, sort by createdAt desc
   const effectiveSortConfig: SortConfig = useMemo(
-    () => (sortNewestCardOnTop ? { column: 'createdAt', direction: 'desc' } : sortConfig),
-    [sortNewestCardOnTop, sortConfig]
+    () =>
+      sortNewestCardOnTop
+        ? { column: "createdAt", direction: "desc" }
+        : sortConfig,
+    [sortNewestCardOnTop, sortConfig],
   );
 
   // Generate status groups from columnFeaturesMap
   const statusGroups = useMemo<StatusGroup[]>(() => {
     // Effective sort config: when sortNewestCardOnTop is enabled, sort by createdAt desc
     const effectiveSortConfig: SortConfig = sortNewestCardOnTop
-      ? { column: 'createdAt', direction: 'desc' }
+      ? { column: "createdAt", direction: "desc" }
       : sortConfig;
 
     const columns = getColumnsWithPipeline(pipelineConfig);
@@ -265,7 +280,7 @@ export const ListView = memo(function ListView({
         const sortedFeatures = sortFeatures(
           features,
           effectiveSortConfig.column,
-          effectiveSortConfig.direction
+          effectiveSortConfig.direction,
         );
 
         groups.push({
@@ -284,7 +299,7 @@ export const ListView = memo(function ListView({
   // Calculate total feature count
   const totalFeatures = useMemo(
     () => statusGroups.reduce((sum, group) => sum + group.features.length, 0),
-    [statusGroups]
+    [statusGroups],
   );
 
   // Toggle group collapse state
@@ -407,7 +422,7 @@ export const ListView = memo(function ListView({
           : undefined,
       });
     },
-    [actionHandlers, allFeatures]
+    [actionHandlers, allFeatures],
   );
 
   // Get blocking dependencies for a feature
@@ -415,7 +430,7 @@ export const ListView = memo(function ListView({
     (feature: Feature): string[] => {
       return getBlockingDependencies(feature, allFeatures);
     },
-    [allFeatures]
+    [allFeatures],
   );
 
   // Calculate selection state for header checkbox
@@ -448,12 +463,20 @@ export const ListView = memo(function ListView({
         }
       }
     }
-  }, [onToggleFeatureSelection, selectionState.allSelected, selectedFeatureIds, statusGroups]);
+  }, [
+    onToggleFeatureSelection,
+    selectionState.allSelected,
+    selectedFeatureIds,
+    statusGroups,
+  ]);
 
   // Show empty state if no features
   if (totalFeatures === 0) {
     return (
-      <div className={cn('flex flex-col h-full bg-background', className)} data-testid="list-view">
+      <div
+        className={cn("flex flex-col h-full bg-background", className)}
+        data-testid="list-view"
+      >
         <EmptyState
           onAddFeature={onAddFeature}
           onQuickAdd={onQuickAdd}
@@ -467,7 +490,7 @@ export const ListView = memo(function ListView({
 
   return (
     <div
-      className={cn('flex flex-col h-full bg-background', className)}
+      className={cn("flex flex-col h-full bg-background", className)}
       role="table"
       aria-label="Features list"
       data-testid="list-view"
@@ -511,7 +534,9 @@ export const ListView = memo(function ListView({
                       isCurrentAutoTask={runningAutoTasks.includes(feature.id)}
                       isSelected={selectedFeatureIds.has(feature.id)}
                       showCheckbox={isSelectionMode}
-                      onToggleSelect={() => onToggleFeatureSelection?.(feature.id)}
+                      onToggleSelect={() =>
+                        onToggleFeatureSelection?.(feature.id)
+                      }
                       onClick={() => onRowClick?.(feature)}
                       blockingDependencies={getBlockingDeps(feature)}
                     />
@@ -544,13 +569,20 @@ export const ListView = memo(function ListView({
 /**
  * Helper to get all features from the columnFeaturesMap as a flat array
  */
-export function getFlatFeatures(columnFeaturesMap: Record<string, Feature[]>): Feature[] {
+export function getFlatFeatures(
+  columnFeaturesMap: Record<string, Feature[]>,
+): Feature[] {
   return Object.values(columnFeaturesMap).flat();
 }
 
 /**
  * Helper to count total features across all groups
  */
-export function getTotalFeatureCount(columnFeaturesMap: Record<string, Feature[]>): number {
-  return Object.values(columnFeaturesMap).reduce((sum, features) => sum + features.length, 0);
+export function getTotalFeatureCount(
+  columnFeaturesMap: Record<string, Feature[]>,
+): number {
+  return Object.values(columnFeaturesMap).reduce(
+    (sum, features) => sum + features.length,
+    0,
+  );
 }

@@ -2,7 +2,7 @@
  * Git command execution utilities
  */
 
-import { spawnProcess } from '@pegasus/platform';
+import { spawnProcess } from "@pegasus/platform";
 
 /**
  * Execute git command with array arguments to prevent command injection.
@@ -46,10 +46,10 @@ export async function execGitCommand(
   args: string[],
   cwd: string,
   env?: Record<string, string>,
-  abortController?: AbortController
+  abortController?: AbortController,
 ): Promise<string> {
   const result = await spawnProcess({
-    command: 'git',
+    command: "git",
     args,
     cwd,
     ...(env !== undefined ? { env } : {}),
@@ -61,7 +61,9 @@ export async function execGitCommand(
     return result.stdout;
   } else {
     const errorMessage =
-      result.stderr || result.stdout || `Git command failed with code ${result.exitCode}`;
+      result.stderr ||
+      result.stdout ||
+      `Git command failed with code ${result.exitCode}`;
     throw Object.assign(new Error(errorMessage), {
       stdout: result.stdout,
       stderr: result.stderr,

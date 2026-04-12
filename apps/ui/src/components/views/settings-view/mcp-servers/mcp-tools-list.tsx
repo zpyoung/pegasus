@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, Wrench } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Wrench } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export interface MCPToolDisplay {
   name: string;
@@ -18,7 +22,12 @@ interface MCPToolsListProps {
   className?: string;
 }
 
-export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsListProps) {
+export function MCPToolsList({
+  tools,
+  isLoading,
+  error,
+  className,
+}: MCPToolsListProps) {
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
 
   const toggleTool = (toolName: string) => {
@@ -35,36 +44,49 @@ export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsLis
 
   if (isLoading) {
     return (
-      <div className={cn('text-sm text-muted-foreground animate-pulse', className)}>
+      <div
+        className={cn("text-sm text-muted-foreground animate-pulse", className)}
+      >
         Loading tools...
       </div>
     );
   }
 
   if (error) {
-    return <div className={cn('text-sm text-destructive wrap-break-word', className)}>{error}</div>;
+    return (
+      <div
+        className={cn("text-sm text-destructive wrap-break-word", className)}
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!tools || tools.length === 0) {
     return (
-      <div className={cn('text-sm text-muted-foreground italic', className)}>
+      <div className={cn("text-sm text-muted-foreground italic", className)}>
         No tools available
       </div>
     );
   }
 
   return (
-    <div className={cn('space-y-1 overflow-hidden', className)}>
+    <div className={cn("space-y-1 overflow-hidden", className)}>
       {tools.map((tool) => {
         const isExpanded = expandedTools.has(tool.name);
-        const hasSchema = tool.inputSchema && Object.keys(tool.inputSchema).length > 0;
+        const hasSchema =
+          tool.inputSchema && Object.keys(tool.inputSchema).length > 0;
 
         return (
-          <Collapsible key={tool.name} open={isExpanded} onOpenChange={() => toggleTool(tool.name)}>
+          <Collapsible
+            key={tool.name}
+            open={isExpanded}
+            onOpenChange={() => toggleTool(tool.name)}
+          >
             <div
               className={cn(
-                'rounded-lg border border-border/30 bg-background/50 overflow-hidden',
-                'hover:border-border/50 transition-colors'
+                "rounded-lg border border-border/30 bg-background/50 overflow-hidden",
+                "hover:border-border/50 transition-colors",
               )}
             >
               <CollapsibleTrigger asChild>
@@ -87,7 +109,9 @@ export function MCPToolsList({ tools, isLoading, error, className }: MCPToolsLis
                       <Wrench className="w-3.5 h-3.5 text-brand-500" />
                     </div>
                     <div className="flex flex-col items-start text-left min-w-0 overflow-hidden flex-1">
-                      <span className="font-medium text-xs truncate max-w-full">{tool.name}</span>
+                      <span className="font-medium text-xs truncate max-w-full">
+                        {tool.name}
+                      </span>
                       {tool.description && (
                         <span className="text-xs text-muted-foreground line-clamp-2 wrap-break-word w-full">
                           {tool.description}

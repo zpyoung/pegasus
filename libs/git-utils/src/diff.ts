@@ -2,16 +2,25 @@
  * Git diff generation utilities
  */
 
-import { createLogger } from '@pegasus/utils';
-import { secureFs } from '@pegasus/platform';
-import path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { BINARY_EXTENSIONS, type FileStatus, type MergeStateInfo } from './types.js';
-import { isGitRepo, parseGitStatus, detectMergeState, detectMergeCommit } from './status.js';
+import { createLogger } from "@pegasus/utils";
+import { secureFs } from "@pegasus/platform";
+import path from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
+import {
+  BINARY_EXTENSIONS,
+  type FileStatus,
+  type MergeStateInfo,
+} from "./types.js";
+import {
+  isGitRepo,
+  parseGitStatus,
+  detectMergeState,
+  detectMergeCommit,
+} from "./status.js";
 
 const execAsync = promisify(exec);
-const logger = createLogger('GitUtils');
+const logger = createLogger("GitUtils");
 
 // Max file size for generating synthetic diffs (1MB)
 const MAX_SYNTHETIC_DIFF_SIZE = 1024 * 1024;
@@ -28,16 +37,20 @@ function isBinaryFile(filePath: string): boolean {
  * Create a synthetic diff for a new file with the given content lines
  * This helper reduces duplication in diff generation logic
  */
-function createNewFileDiff(relativePath: string, mode: string, contentLines: string[]): string {
+function createNewFileDiff(
+  relativePath: string,
+  mode: string,
+  contentLines: string[],
+): string {
   const lineCount = contentLines.length;
-  const addedLines = contentLines.map((line) => `+${line}`).join('\n');
+  const addedLines = contentLines.map((line) => `+${line}`).join("\n");
 
   return `diff --git a/${relativePath} b/${relativePath}
 new file mode ${mode}
 index 0000000..0000000
 --- /dev/null
 +++ b/${relativePath}
-@@ -0,0 +${lineCount === 1 ? '1' : `1,${lineCount}`} @@
+@@ -0,0 +${lineCount === 1 ? "1" : `1,${lineCount}`} @@
 ${addedLines}
 `;
 }
@@ -50,10 +63,12 @@ ${addedLines}
  */
 export async function generateSyntheticDiffForNewFile(
   basePath: string,
-  relativePath: string
+  relativePath: string,
 ): Promise<string> {
   // Remove trailing slash if present (git status reports directories with trailing /)
-  const cleanPath = relativePath.endsWith('/') ? relativePath.slice(0, -1) : relativePath;
+  const cleanPath = relativePath.endsWith("/")
+    ? relativePath.slice(0, -1)
+    : relativePath;
   const fullPath = path.join(basePath, cleanPath);
 
   try {
@@ -66,7 +81,7 @@ export async function generateSyntheticDiffForNewFile(
       const filesInDir = await listAllFilesInDirectory(basePath, cleanPath);
       if (filesInDir.length === 0) {
         // Empty directory
-        return createNewFileDiff(cleanPath, '040000', ['[Empty directory]']);
+        return createNewFileDiff(cleanPath, "040000", ["[Empty directory]"]);
       }
       // Generate diffs for all files in the directory sequentially
       // Using sequential processing to avoid exhausting file descriptors on large directories
@@ -74,7 +89,7 @@ export async function generateSyntheticDiffForNewFile(
       for (const filePath of filesInDir) {
         diffs.push(await generateSyntheticDiffForNewFile(basePath, filePath));
       }
-      return diffs.join('');
+      return diffs.join("");
     }
 
     // Check if it's a binary file (after directory check to handle dirs with binary extensions)
@@ -89,22 +104,24 @@ Binary file ${cleanPath} added
     const fileSize = Number(stats.size);
     if (fileSize > MAX_SYNTHETIC_DIFF_SIZE) {
       const sizeKB = Math.round(fileSize / 1024);
-      return createNewFileDiff(cleanPath, '100644', [`[File too large to display: ${sizeKB}KB]`]);
+      return createNewFileDiff(cleanPath, "100644", [
+        `[File too large to display: ${sizeKB}KB]`,
+      ]);
     }
 
     // Read file content
-    const content = (await secureFs.readFile(fullPath, 'utf-8')) as string;
-    const hasTrailingNewline = content.endsWith('\n');
-    const lines = content.split('\n');
+    const content = (await secureFs.readFile(fullPath, "utf-8")) as string;
+    const hasTrailingNewline = content.endsWith("\n");
+    const lines = content.split("\n");
 
     // Remove trailing empty line if the file ends with newline
-    if (lines.length > 0 && lines[lines.length - 1] === '') {
+    if (lines.length > 0 && lines[lines.length - 1] === "") {
       lines.pop();
     }
 
     // Generate diff format
     const lineCount = lines.length;
-    const addedLines = lines.map((line) => `+${line}`).join('\n');
+    const addedLines = lines.map((line) => `+${line}`).join("\n");
 
     let diff = `diff --git a/${cleanPath} b/${cleanPath}
 new file mode 100644
@@ -116,15 +133,17 @@ ${addedLines}`;
 
     // Add "No newline at end of file" indicator if needed
     if (!hasTrailingNewline && content.length > 0) {
-      diff += '\n\\ No newline at end of file';
+      diff += "\n\\ No newline at end of file";
     }
 
-    return diff + '\n';
+    return diff + "\n";
   } catch (error) {
     // Log the error for debugging
     logger.error(`Failed to generate synthetic diff for ${fullPath}:`, error);
     // Return a placeholder diff
-    return createNewFileDiff(cleanPath, '100644', ['[Unable to read file content]']);
+    return createNewFileDiff(cleanPath, "100644", [
+      "[Unable to read file content]",
+    ]);
   }
 }
 
@@ -134,10 +153,10 @@ ${addedLines}`;
 export async function appendUntrackedFileDiffs(
   basePath: string,
   existingDiff: string,
-  files: Array<{ status: string; path: string }>
+  files: Array<{ status: string; path: string }>,
 ): Promise<string> {
   // Find untracked files (status "?")
-  const untrackedFiles = files.filter((f) => f.status === '?');
+  const untrackedFiles = files.filter((f) => f.status === "?");
 
   if (untrackedFiles.length === 0) {
     return existingDiff;
@@ -145,11 +164,13 @@ export async function appendUntrackedFileDiffs(
 
   // Generate synthetic diffs for each untracked file
   const syntheticDiffs = await Promise.all(
-    untrackedFiles.map((f) => generateSyntheticDiffForNewFile(basePath, f.path))
+    untrackedFiles.map((f) =>
+      generateSyntheticDiffForNewFile(basePath, f.path),
+    ),
   );
 
   // Combine existing diff with synthetic diffs
-  const combinedDiff = existingDiff + syntheticDiffs.join('');
+  const combinedDiff = existingDiff + syntheticDiffs.join("");
 
   return combinedDiff;
 }
@@ -160,31 +181,31 @@ export async function appendUntrackedFileDiffs(
  */
 export async function listAllFilesInDirectory(
   basePath: string,
-  relativePath: string = ''
+  relativePath: string = "",
 ): Promise<string[]> {
   const files: string[] = [];
   const fullPath = path.join(basePath, relativePath);
 
   // Directories to skip
   const skipDirs = new Set([
-    'node_modules',
-    '.git',
-    '.pegasus',
-    'dist',
-    'build',
-    '.next',
-    '.nuxt',
-    '__pycache__',
-    '.cache',
-    'coverage',
-    '.venv',
-    'venv',
-    'target',
-    'vendor',
-    '.gradle',
-    'out',
-    'tmp',
-    '.tmp',
+    "node_modules",
+    ".git",
+    ".pegasus",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "__pycache__",
+    ".cache",
+    "coverage",
+    ".venv",
+    "venv",
+    "target",
+    "vendor",
+    ".gradle",
+    "out",
+    "tmp",
+    ".tmp",
   ]);
 
   try {
@@ -192,15 +213,20 @@ export async function listAllFilesInDirectory(
 
     for (const entry of entries) {
       // Skip hidden files/folders (except we want to allow some)
-      if (entry.name.startsWith('.') && entry.name !== '.env') {
+      if (entry.name.startsWith(".") && entry.name !== ".env") {
         continue;
       }
 
-      const entryRelPath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+      const entryRelPath = relativePath
+        ? `${relativePath}/${entry.name}`
+        : entry.name;
 
       if (entry.isDirectory()) {
         if (!skipDirs.has(entry.name)) {
-          const subFiles = await listAllFilesInDirectory(basePath, entryRelPath);
+          const subFiles = await listAllFilesInDirectory(
+            basePath,
+            entryRelPath,
+          );
           files.push(...subFiles);
         }
       } else if (entry.isFile()) {
@@ -220,23 +246,23 @@ export async function listAllFilesInDirectory(
  * Treats all files as "new" files
  */
 export async function generateDiffsForNonGitDirectory(
-  basePath: string
+  basePath: string,
 ): Promise<{ diff: string; files: FileStatus[] }> {
   const allFiles = await listAllFilesInDirectory(basePath);
 
   const files: FileStatus[] = allFiles.map((filePath) => ({
-    status: '?',
+    status: "?",
     path: filePath,
-    statusText: 'New',
+    statusText: "New",
   }));
 
   // Generate synthetic diffs for all files
   const syntheticDiffs = await Promise.all(
-    files.map((f) => generateSyntheticDiffForNewFile(basePath, f.path))
+    files.map((f) => generateSyntheticDiffForNewFile(basePath, f.path)),
   );
 
   return {
-    diff: syntheticDiffs.join(''),
+    diff: syntheticDiffs.join(""),
     files,
   };
 }
@@ -266,11 +292,11 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
   }
 
   // Get git diff and status
-  const { stdout: diff } = await execAsync('git diff HEAD', {
+  const { stdout: diff } = await execAsync("git diff HEAD", {
     cwd: repoPath,
     maxBuffer: 10 * 1024 * 1024,
   });
-  const { stdout: status } = await execAsync('git status --porcelain', {
+  const { stdout: status } = await execAsync("git status --porcelain", {
     cwd: repoPath,
   });
 
@@ -287,10 +313,13 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
   if (!mergeState.isMerging) {
     const mergeCommitInfo = await detectMergeCommit(repoPath);
 
-    if (mergeCommitInfo.isMergeCommit && mergeCommitInfo.mergeAffectedFiles.length > 0) {
+    if (
+      mergeCommitInfo.isMergeCommit &&
+      mergeCommitInfo.mergeAffectedFiles.length > 0
+    ) {
       // Get the diff of the merge commit relative to first parent
       try {
-        const { stdout: mergeDiff } = await execAsync('git diff HEAD~1 HEAD', {
+        const { stdout: mergeDiff } = await execAsync("git diff HEAD~1 HEAD", {
           cwd: repoPath,
           maxBuffer: 10 * 1024 * 1024,
         });
@@ -301,13 +330,13 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
         for (const filePath of mergeCommitInfo.mergeAffectedFiles) {
           if (!existingPaths.has(filePath)) {
             const newFile = {
-              status: 'M',
+              status: "M",
               path: filePath,
-              statusText: 'Merged',
-              indexStatus: ' ',
-              workTreeStatus: ' ',
+              statusText: "Merged",
+              indexStatus: " ",
+              workTreeStatus: " ",
               isMergeAffected: true,
-              mergeType: 'merged',
+              mergeType: "merged",
             };
             files.push(newFile);
             fileByPath.set(filePath, newFile);
@@ -317,7 +346,7 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
             const existing = fileByPath.get(filePath);
             if (existing) {
               existing.isMergeAffected = true;
-              existing.mergeType = 'merged';
+              existing.mergeType = "merged";
             }
           }
         }
@@ -327,9 +356,9 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
         if (mergeDiff.trim()) {
           // Parse the existing working tree diff to find which files it covers
           const workingTreeDiffPaths = new Set<string>();
-          const diffLines = combinedDiff.split('\n');
+          const diffLines = combinedDiff.split("\n");
           for (const line of diffLines) {
-            if (line.startsWith('diff --git')) {
+            if (line.startsWith("diff --git")) {
               const match = line.match(/diff --git a\/(.*?) b\/(.*)/);
               if (match) {
                 workingTreeDiffPaths.add(match[2]);
@@ -349,12 +378,12 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
           }
 
           if (newMergeDiffs.length > 0) {
-            combinedDiff = newMergeDiffs.join('') + combinedDiff;
+            combinedDiff = newMergeDiffs.join("") + combinedDiff;
           }
         }
       } catch (mergeError) {
         // Best-effort: log and continue without merge diff
-        logger.error('Failed to get merge commit diff:', mergeError);
+        logger.error("Failed to get merge commit diff:", mergeError);
 
         // Ensure files[] is consistent with mergeState.mergeAffectedFiles even when the
         // diff command failed. Without this, mergeAffectedFiles would list paths that have
@@ -363,13 +392,13 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
         for (const filePath of mergeCommitInfo.mergeAffectedFiles) {
           if (!existingPathsAfterError.has(filePath)) {
             files.push({
-              status: 'M',
+              status: "M",
               path: filePath,
-              statusText: 'Merged',
-              indexStatus: ' ',
-              workTreeStatus: ' ',
+              statusText: "Merged",
+              indexStatus: " ",
+              workTreeStatus: " ",
               isMergeAffected: true,
-              mergeType: 'merged',
+              mergeType: "merged",
             });
             existingPathsAfterError.add(filePath);
           } else {
@@ -377,7 +406,7 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
             const existing = files.find((f) => f.path === filePath);
             if (existing) {
               existing.isMergeAffected = true;
-              existing.mergeType = 'merged';
+              existing.mergeType = "merged";
             }
           }
         }
@@ -390,7 +419,7 @@ export async function getGitRepositoryDiffs(repoPath: string): Promise<{
         hasChanges: files.length > 0,
         mergeState: {
           isMerging: false,
-          mergeOperationType: 'merge',
+          mergeOperationType: "merge",
           isCleanMerge: true,
           mergeAffectedFiles: mergeCommitInfo.mergeAffectedFiles,
           conflictFiles: [],

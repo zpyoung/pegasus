@@ -138,20 +138,20 @@ Before contributing to Pegasus, ensure you have the following installed on your 
 
 **Common development commands:**
 
-| Command              | Description                      |
-| -------------------- | -------------------------------- |
-| `pnpm dev`           | Interactive development launcher |
-| `pnpm dev:web`       | Start in browser mode            |
-| `pnpm dev:electron`  | Start desktop app                |
-| `pnpm build`         | Build all packages and apps      |
-| `pnpm build:packages`| Build shared packages only       |
-| `pnpm lint`          | Run ESLint checks                |
-| `pnpm format`        | Format code with Prettier        |
-| `pnpm format:check`  | Check formatting without changes |
-| `pnpm test`          | Run E2E tests (Playwright)       |
-| `pnpm test:server`   | Run server unit tests            |
-| `pnpm test:packages` | Run package tests                |
-| `pnpm test:all`      | Run all tests                    |
+| Command               | Description                      |
+| --------------------- | -------------------------------- |
+| `pnpm dev`            | Interactive development launcher |
+| `pnpm dev:web`        | Start in browser mode            |
+| `pnpm dev:electron`   | Start desktop app                |
+| `pnpm build`          | Build all packages and apps      |
+| `pnpm build:packages` | Build shared packages only       |
+| `pnpm lint`           | Run ESLint checks                |
+| `pnpm format`         | Format code with Prettier        |
+| `pnpm format:check`   | Check formatting without changes |
+| `pnpm test`           | Run E2E tests (Playwright)       |
+| `pnpm test:server`    | Run server unit tests            |
+| `pnpm test:packages`  | Run package tests                |
+| `pnpm test:all`       | Run all tests                    |
 
 ### Project Structure
 
@@ -458,13 +458,13 @@ Testing helps prevent regressions. Pegasus uses **Playwright** for end-to-end te
 
 Use these commands to run tests locally:
 
-| Command                    | Description                           |
-| -------------------------- | ------------------------------------- |
-| `pnpm test`                | Run E2E tests (Playwright)            |
-| `pnpm test:server`         | Run server unit tests (Vitest)        |
-| `pnpm test:packages`       | Run shared package tests              |
-| `pnpm test:all`            | Run all tests                         |
-| `pnpm test:server:coverage`| Run server tests with coverage report |
+| Command                     | Description                           |
+| --------------------------- | ------------------------------------- |
+| `pnpm test`                 | Run E2E tests (Playwright)            |
+| `pnpm test:server`          | Run server unit tests (Vitest)        |
+| `pnpm test:packages`        | Run shared package tests              |
+| `pnpm test:all`             | Run all tests                         |
+| `pnpm test:server:coverage` | Run server tests with coverage report |
 
 **Before submitting a PR**, always run the full test suite:
 
@@ -551,12 +551,12 @@ Pegasus uses **GitHub Actions** for continuous integration. Every pull request t
 
 The following checks must pass before your PR can be merged:
 
-| Check             | Description                                   |
-| ----------------- | --------------------------------------------- |
-| **Format**        | Verifies code is formatted with Prettier      |
-| **Build**         | Ensures the project compiles without errors   |
+| Check             | Description                                 |
+| ----------------- | ------------------------------------------- |
+| **Format**        | Verifies code is formatted with Prettier    |
+| **Build**         | Ensures the project compiles without errors |
 | **Package Tests** | Runs tests for shared `@pegasus/*` packages |
-| **Server Tests**  | Runs server unit tests with coverage          |
+| **Server Tests**  | Runs server unit tests with coverage        |
 
 #### CI Testing Environment
 
@@ -578,12 +578,12 @@ This allows tests to run without requiring a real Claude API connection.
 
 #### Common CI Failures
 
-| Issue               | Solution                                    |
-| ------------------- | ------------------------------------------- |
-| Format check failed | Run `pnpm format` locally                   |
-| Build failed        | Run `pnpm build` and fix TypeScript errors  |
-| Tests failed        | Run `pnpm test:all` locally to reproduce    |
-| Coverage decreased  | Add tests for new code paths                  |
+| Issue               | Solution                                   |
+| ------------------- | ------------------------------------------ |
+| Format check failed | Run `pnpm format` locally                  |
+| Build failed        | Run `pnpm build` and fix TypeScript errors |
+| Tests failed        | Run `pnpm test:all` locally to reproduce   |
+| Coverage decreased  | Add tests for new code paths               |
 
 ### Coverage Requirements
 

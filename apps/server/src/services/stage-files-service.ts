@@ -6,9 +6,9 @@
  * reused independently of the HTTP layer.
  */
 
-import path from 'path';
-import fs from 'fs/promises';
-import { execGitCommand } from '../lib/git.js';
+import path from "path";
+import fs from "fs/promises";
+import { execGitCommand } from "../lib/git.js";
 
 /**
  * Result returned by `stageFiles` on success.
@@ -28,7 +28,7 @@ export interface StageFilesResult {
 export class StageFilesValidationError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'StageFilesValidationError';
+    this.name = "StageFilesValidationError";
   }
 }
 
@@ -51,7 +51,7 @@ export class StageFilesValidationError extends Error {
 export async function stageFiles(
   worktreePath: string,
   files: string[],
-  operation: 'stage' | 'unstage'
+  operation: "stage" | "unstage",
 ): Promise<StageFilesResult> {
   // Canonicalize the worktree root by resolving symlinks so that
   // path-traversal checks are reliable even when symlinks are involved.
@@ -59,7 +59,9 @@ export async function stageFiles(
   try {
     canonicalRoot = await fs.realpath(worktreePath);
   } catch {
-    throw new StageFilesValidationError('worktreePath does not exist or is not accessible');
+    throw new StageFilesValidationError(
+      "worktreePath does not exist or is not accessible",
+    );
   }
 
   // Validate and sanitize each file path to prevent path traversal attacks.
@@ -71,21 +73,21 @@ export async function stageFiles(
     // Reject empty or whitespace-only paths — path.resolve(canonicalRoot, '')
     // returns canonicalRoot itself, so without this guard an empty string would
     // pass all subsequent checks and be forwarded to git unchanged.
-    if (file.trim() === '') {
+    if (file.trim() === "") {
       throw new StageFilesValidationError(
-        'Invalid file path (empty or whitespace-only paths not allowed)'
+        "Invalid file path (empty or whitespace-only paths not allowed)",
       );
     }
     // Reject absolute paths
     if (path.isAbsolute(file)) {
       throw new StageFilesValidationError(
-        `Invalid file path (absolute paths not allowed): ${file}`
+        `Invalid file path (absolute paths not allowed): ${file}`,
       );
     }
     // Reject entries containing '..'
-    if (file.includes('..')) {
+    if (file.includes("..")) {
       throw new StageFilesValidationError(
-        `Invalid file path (path traversal not allowed): ${file}`
+        `Invalid file path (path traversal not allowed): ${file}`,
       );
     }
     // Resolve the file path against the canonicalized worktree root and
@@ -93,7 +95,7 @@ export async function stageFiles(
     const resolved = path.resolve(canonicalRoot, file);
     if (resolved !== canonicalRoot && !resolved.startsWith(base)) {
       throw new StageFilesValidationError(
-        `Invalid file path (outside worktree directory): ${file}`
+        `Invalid file path (outside worktree directory): ${file}`,
       );
     }
     // Forward only the original relative path to git — git interprets
@@ -102,12 +104,15 @@ export async function stageFiles(
     sanitizedFiles.push(file);
   }
 
-  if (operation === 'stage') {
+  if (operation === "stage") {
     // Stage the specified files
-    await execGitCommand(['add', '--', ...sanitizedFiles], worktreePath);
+    await execGitCommand(["add", "--", ...sanitizedFiles], worktreePath);
   } else {
     // Unstage the specified files
-    await execGitCommand(['reset', 'HEAD', '--', ...sanitizedFiles], worktreePath);
+    await execGitCommand(
+      ["reset", "HEAD", "--", ...sanitizedFiles],
+      worktreePath,
+    );
   }
 
   return {

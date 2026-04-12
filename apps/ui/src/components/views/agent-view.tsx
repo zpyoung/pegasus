@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useElectronAgent } from '@/hooks/use-electron-agent';
-import { SessionManager } from '@/components/session-manager';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useElectronAgent } from "@/hooks/use-electron-agent";
+import { SessionManager } from "@/components/session-manager";
 
 // Extracted hooks
 import {
@@ -9,23 +9,26 @@ import {
   useFileAttachments,
   useAgentShortcuts,
   useAgentSession,
-} from './agent-view/hooks';
+} from "./agent-view/hooks";
 
 // Extracted components
-import { NoProjectState, AgentHeader, ChatArea } from './agent-view/components';
-import { AgentInputArea } from './agent-view/input-area';
+import { NoProjectState, AgentHeader, ChatArea } from "./agent-view/components";
+import { AgentInputArea } from "./agent-view/input-area";
 
 /** Tailwind lg breakpoint in pixels */
 const LG_BREAKPOINT = 1024;
 
 export function AgentView() {
   const { currentProject, getCurrentWorktree } = useAppStore();
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [currentTool, setCurrentTool] = useState<string | null>(null);
 
   // Get the current worktree to scope sessions and agent working directory
-  const currentWorktree = currentProject ? getCurrentWorktree(currentProject.path) : null;
-  const effectiveWorkingDirectory = currentWorktree?.path || currentProject?.path;
+  const currentWorktree = currentProject
+    ? getCurrentWorktree(currentProject.path)
+    : null;
+  const effectiveWorkingDirectory =
+    currentWorktree?.path || currentProject?.path;
   // Initialize session manager state - starts as true to match SSR
   // Then updates on mount based on actual screen size to prevent hydration mismatch
   const [showSessionManager, setShowSessionManager] = useState(true);
@@ -41,8 +44,8 @@ export function AgentView() {
     updateVisibility();
 
     // Listen for resize events
-    window.addEventListener('resize', updateVisibility);
-    return () => window.removeEventListener('resize', updateVisibility);
+    window.addEventListener("resize", updateVisibility);
+    return () => window.removeEventListener("resize", updateVisibility);
   }, []);
 
   // Input ref for auto-focus
@@ -55,11 +58,15 @@ export function AgentView() {
 
   // Session management hook - scoped to current worktree
   // Also handles model selection persistence per session
-  const { currentSessionId, handleSelectSession, modelSelection, setModelSelection } =
-    useAgentSession({
-      projectPath: currentProject?.path,
-      workingDirectory: effectiveWorkingDirectory,
-    });
+  const {
+    currentSessionId,
+    handleSelectSession,
+    modelSelection,
+    setModelSelection,
+  } = useAgentSession({
+    projectPath: currentProject?.path,
+    workingDirectory: effectiveWorkingDirectory,
+  });
 
   // Use the Electron agent hook (only if we have a session)
   const {
@@ -74,7 +81,7 @@ export function AgentView() {
     removeFromServerQueue,
     clearServerQueue,
   } = useElectronAgent({
-    sessionId: currentSessionId || '',
+    sessionId: currentSessionId || "",
     workingDirectory: effectiveWorkingDirectory,
     model: modelSelection.model,
     thinkingLevel: modelSelection.thinkingLevel,
@@ -112,13 +119,18 @@ export function AgentView() {
       setShowImageDropZone,
     } = fileAttachments;
 
-    if (!input.trim() && selectedImages.length === 0 && selectedTextFiles.length === 0) return;
+    if (
+      !input.trim() &&
+      selectedImages.length === 0 &&
+      selectedTextFiles.length === 0
+    )
+      return;
 
     const messageContent = input;
     const messageImages = selectedImages;
     const messageTextFiles = selectedTextFiles;
 
-    setInput('');
+    setInput("");
     setSelectedImages([]);
     setSelectedTextFiles([]);
     setShowImageDropZone(false);
@@ -132,7 +144,7 @@ export function AgentView() {
   }, [input, fileAttachments, isProcessing, sendMessage, addToServerQueue]);
 
   const handleClearChat = async () => {
-    if (!confirm('Are you sure you want to clear this conversation?')) return;
+    if (!confirm("Are you sure you want to clear this conversation?")) return;
     await clearHistory();
   };
 
@@ -157,7 +169,7 @@ export function AgentView() {
         const MAX_RETRIES = 5;
         for (let i = 0; i < MAX_RETRIES; i++) {
           await new Promise<void>((r) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => r()))
+            requestAnimationFrame(() => requestAnimationFrame(() => r())),
           );
           createFn = quickCreateSessionRef.current;
           if (createFn) break;
@@ -173,7 +185,7 @@ export function AgentView() {
         await createFn();
       } else {
         console.warn(
-          '[AgentView] quickCreateSessionRef was not populated after retries — SessionManager may not have mounted'
+          "[AgentView] quickCreateSessionRef was not populated after retries — SessionManager may not have mounted",
         );
       }
     } finally {
@@ -192,7 +204,11 @@ export function AgentView() {
 
   // Auto-close session manager on mobile when a session is selected
   useEffect(() => {
-    if (currentSessionId && typeof window !== 'undefined' && window.innerWidth < 1024) {
+    if (
+      currentSessionId &&
+      typeof window !== "undefined" &&
+      window.innerWidth < 1024
+    ) {
       setShowSessionManager(false);
     }
   }, [currentSessionId]);
@@ -202,8 +218,8 @@ export function AgentView() {
     messages.length === 0
       ? [
           {
-            id: 'welcome',
-            role: 'assistant' as const,
+            id: "welcome",
+            role: "assistant" as const,
             content:
               "Hello! I'm the Pegasus Agent. I can help you build software autonomously. I can read and modify files in this project, run commands, and execute tests. What would you like to create today?",
             timestamp: new Date().toISOString(),
@@ -216,7 +232,10 @@ export function AgentView() {
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-background" data-testid="agent-view">
+    <div
+      className="flex-1 flex overflow-hidden bg-background"
+      data-testid="agent-view"
+    >
       {/* Mobile backdrop overlay for Session Manager */}
       {showSessionManager && currentProject && (
         <div
@@ -251,7 +270,9 @@ export function AgentView() {
           currentTool={currentTool}
           messagesCount={messages.length}
           showSessionManager={showSessionManager}
-          onToggleSessionManager={() => setShowSessionManager(!showSessionManager)}
+          onToggleSessionManager={() =>
+            setShowSessionManager(!showSessionManager)
+          }
           onClearChat={handleClearChat}
           worktreeBranch={currentWorktree?.branch}
         />

@@ -2,19 +2,22 @@
  * POST /generate endpoint - Generate a backlog plan
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
 import {
   getBacklogPlanStatus,
   setRunningState,
   setRunningDetails,
   getErrorMessage,
   logError,
-} from '../common.js';
-import { generateBacklogPlan } from '../generate-plan.js';
-import type { SettingsService } from '../../../services/settings-service.js';
+} from "../common.js";
+import { generateBacklogPlan } from "../generate-plan.js";
+import type { SettingsService } from "../../../services/settings-service.js";
 
-export function createGenerateHandler(events: EventEmitter, settingsService?: SettingsService) {
+export function createGenerateHandler(
+  events: EventEmitter,
+  settingsService?: SettingsService,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const { projectPath, prompt, model, branchName } = req.body as {
@@ -25,12 +28,12 @@ export function createGenerateHandler(events: EventEmitter, settingsService?: Se
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath required' });
+        res.status(400).json({ success: false, error: "projectPath required" });
         return;
       }
 
       if (!prompt) {
-        res.status(400).json({ success: false, error: 'prompt required' });
+        res.status(400).json({ success: false, error: "prompt required" });
         return;
       }
 
@@ -38,7 +41,7 @@ export function createGenerateHandler(events: EventEmitter, settingsService?: Se
       if (isRunning) {
         res.json({
           success: false,
-          error: 'Backlog plan generation is already running',
+          error: "Backlog plan generation is already running",
         });
         return;
       }
@@ -62,15 +65,15 @@ export function createGenerateHandler(events: EventEmitter, settingsService?: Se
         abortController,
         settingsService,
         model,
-        branchName
+        branchName,
       ).catch((error) => {
         // Just log - error event already emitted by generateBacklogPlan
-        logError(error, 'Generate backlog plan failed (background)');
+        logError(error, "Generate backlog plan failed (background)");
       });
 
       res.json({ success: true });
     } catch (error) {
-      logError(error, 'Generate backlog plan failed');
+      logError(error, "Generate backlog plan failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

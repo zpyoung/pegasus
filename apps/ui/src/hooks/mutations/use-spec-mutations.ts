@@ -4,11 +4,11 @@
  * React Query mutations for spec operations like creating, regenerating, and saving.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { FeatureCount } from '@/components/views/spec-view/types';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type { FeatureCount } from "@/components/views/spec-view/types";
 
 /**
  * Input for creating a spec
@@ -54,11 +54,16 @@ interface RegenerateSpecInput {
 export function useCreateSpec(projectPath: string) {
   return useMutation({
     mutationFn: async (input: CreateSpecInput) => {
-      const { projectOverview, generateFeatures, analyzeProject, featureCount } = input;
+      const {
+        projectOverview,
+        generateFeatures,
+        analyzeProject,
+        featureCount,
+      } = input;
 
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        throw new Error('Spec regeneration API not available');
+        throw new Error("Spec regeneration API not available");
       }
 
       const result = await api.specRegeneration.create(
@@ -66,11 +71,11 @@ export function useCreateSpec(projectPath: string) {
         projectOverview.trim(),
         generateFeatures,
         analyzeProject,
-        generateFeatures ? featureCount : undefined
+        generateFeatures ? featureCount : undefined,
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start spec creation');
+        throw new Error(result.error || "Failed to start spec creation");
       }
 
       return result;
@@ -88,11 +93,16 @@ export function useCreateSpec(projectPath: string) {
 export function useRegenerateSpec(projectPath: string) {
   return useMutation({
     mutationFn: async (input: RegenerateSpecInput) => {
-      const { projectDefinition, generateFeatures, analyzeProject, featureCount } = input;
+      const {
+        projectDefinition,
+        generateFeatures,
+        analyzeProject,
+        featureCount,
+      } = input;
 
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        throw new Error('Spec regeneration API not available');
+        throw new Error("Spec regeneration API not available");
       }
 
       const result = await api.specRegeneration.generate(
@@ -100,11 +110,11 @@ export function useRegenerateSpec(projectPath: string) {
         projectDefinition.trim(),
         generateFeatures,
         analyzeProject,
-        generateFeatures ? featureCount : undefined
+        generateFeatures ? featureCount : undefined,
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start spec regeneration');
+        throw new Error(result.error || "Failed to start spec regeneration");
       }
 
       return result;
@@ -123,13 +133,13 @@ export function useGenerateFeatures(projectPath: string) {
     mutationFn: async () => {
       const api = getElectronAPI();
       if (!api.specRegeneration) {
-        throw new Error('Spec regeneration API not available');
+        throw new Error("Spec regeneration API not available");
       }
 
       const result = await api.specRegeneration.generateFeatures(projectPath);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start feature generation');
+        throw new Error(result.error || "Failed to start feature generation");
       }
 
       return result;
@@ -158,8 +168,10 @@ export function useSaveSpec(projectPath: string) {
   return useMutation({
     mutationFn: async (content: string) => {
       // Guard against empty projectPath to prevent writing to invalid locations
-      if (!projectPath || projectPath.trim() === '') {
-        throw new Error('Invalid project path: cannot save spec without a valid project');
+      if (!projectPath || projectPath.trim() === "") {
+        throw new Error(
+          "Invalid project path: cannot save spec without a valid project",
+        );
       }
 
       const api = getElectronAPI();
@@ -173,11 +185,11 @@ export function useSaveSpec(projectPath: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.spec.file(projectPath),
       });
-      toast.success('Spec saved');
+      toast.success("Spec saved");
     },
     onError: (error) => {
-      toast.error('Failed to save spec', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to save spec", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     },
   });

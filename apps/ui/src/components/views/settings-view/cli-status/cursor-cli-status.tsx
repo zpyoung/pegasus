@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { SkeletonPulse } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
-import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { CursorIcon } from '@/components/ui/provider-icon';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { SkeletonPulse } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { CheckCircle2, AlertCircle, RefreshCw, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CursorIcon } from "@/components/ui/provider-icon";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
 
 interface CursorStatus {
   installed: boolean;
@@ -25,10 +25,10 @@ export function CursorCliStatusSkeleton() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -69,10 +69,10 @@ export function CursorPermissionsSkeleton() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent flex items-center justify-between">
@@ -103,7 +103,10 @@ export function CursorPermissionsSkeleton() {
           <SkeletonPulse className="h-4 w-36" />
           <div className="grid gap-3">
             {[1, 2].map((i) => (
-              <div key={i} className="p-4 rounded-xl border border-border/30 bg-muted/10">
+              <div
+                key={i}
+                className="p-4 rounded-xl border border-border/30 bg-muted/10"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
@@ -154,10 +157,10 @@ export function ModelConfigSkeleton() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -201,7 +204,11 @@ export function ModelConfigSkeleton() {
   );
 }
 
-export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStatusProps) {
+export function CursorCliStatus({
+  status,
+  isChecking,
+  onRefresh,
+}: CursorCliStatusProps) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isDeauthenticating, setIsDeauthenticating] = useState(false);
 
@@ -210,30 +217,31 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
     try {
       const api = getElectronAPI();
       // Check if authCursor method exists on the API
-      const authCursor = (api?.setup as Record<string, unknown> | undefined)?.authCursor as
+      const authCursor = (api?.setup as Record<string, unknown> | undefined)
+        ?.authCursor as
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!authCursor) {
-        toast.error('Authentication Failed', {
-          description: 'Cursor authentication is not available',
+        toast.error("Authentication Failed", {
+          description: "Cursor authentication is not available",
         });
         return;
       }
       const result = await authCursor();
 
       if (result.success) {
-        toast.success('Signed In', {
-          description: 'Successfully authenticated Cursor CLI',
+        toast.success("Signed In", {
+          description: "Successfully authenticated Cursor CLI",
         });
         onRefresh();
       } else if (result.error) {
-        toast.error('Authentication Failed', {
+        toast.error("Authentication Failed", {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Authentication Failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Authentication Failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsAuthenticating(false);
@@ -245,31 +253,32 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
     try {
       const api = getElectronAPI();
       // Check if deauthCursor method exists on the API
-      const deauthCursor = (api?.setup as Record<string, unknown> | undefined)?.deauthCursor as
+      const deauthCursor = (api?.setup as Record<string, unknown> | undefined)
+        ?.deauthCursor as
         | (() => Promise<{ success: boolean; error?: string }>)
         | undefined;
       if (!deauthCursor) {
-        toast.error('Sign Out Failed', {
-          description: 'Cursor sign out is not available',
+        toast.error("Sign Out Failed", {
+          description: "Cursor sign out is not available",
         });
         return;
       }
       const result = await deauthCursor();
 
       if (result.success) {
-        toast.success('Signed Out', {
-          description: 'Successfully signed out from Cursor CLI',
+        toast.success("Signed Out", {
+          description: "Successfully signed out from Cursor CLI",
         });
         // Refresh status after successful logout
         onRefresh();
       } else if (result.error) {
-        toast.error('Sign Out Failed', {
+        toast.error("Sign Out Failed", {
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error('Sign Out Failed', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Sign Out Failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
       setIsDeauthenticating(false);
@@ -281,10 +290,10 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -293,7 +302,9 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center border border-brand-500/20">
               <CursorIcon className="w-5 h-5 text-brand-500" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground tracking-tight">Cursor CLI</h2>
+            <h2 className="text-lg font-semibold text-foreground tracking-tight">
+              Cursor CLI
+            </h2>
           </div>
           <Button
             variant="ghost"
@@ -303,12 +314,16 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
             data-testid="refresh-cursor-cli"
             title="Refresh Cursor CLI detection"
             className={cn(
-              'h-9 w-9 rounded-lg',
-              'hover:bg-accent/50 hover:scale-105',
-              'transition-all duration-200'
+              "h-9 w-9 rounded-lg",
+              "hover:bg-accent/50 hover:scale-105",
+              "transition-all duration-200",
             )}
           >
-            {isChecking ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+            {isChecking ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
@@ -324,11 +339,14 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-400">Cursor CLI Installed</p>
+                <p className="text-sm font-medium text-emerald-400">
+                  Cursor CLI Installed
+                </p>
                 <div className="text-xs text-emerald-400/70 mt-1.5 space-y-0.5">
                   {status.version && (
                     <p>
-                      Version: <span className="font-mono">{status.version}</span>
+                      Version:{" "}
+                      <span className="font-mono">{status.version}</span>
                     </p>
                   )}
                 </div>
@@ -342,12 +360,16 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-emerald-400">Authenticated</p>
+                  <p className="text-sm font-medium text-emerald-400">
+                    Authenticated
+                  </p>
                   <div className="text-xs text-emerald-400/70 mt-1.5">
                     <p>
-                      Method:{' '}
+                      Method:{" "}
                       <span className="font-mono">
-                        {status.method === 'api_key' ? 'API Key' : 'Browser Login'}
+                        {status.method === "api_key"
+                          ? "API Key"
+                          : "Browser Login"}
                       </span>
                     </p>
                   </div>
@@ -358,7 +380,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                     disabled={isDeauthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isDeauthenticating ? 'Signing Out...' : 'Sign Out'}
+                    {isDeauthenticating ? "Signing Out..." : "Sign Out"}
                   </Button>
                 </div>
               </div>
@@ -368,7 +390,9 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                   <XCircle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-amber-400">Not Authenticated</p>
+                  <p className="text-sm font-medium text-amber-400">
+                    Not Authenticated
+                  </p>
                   <p className="text-xs text-amber-400/70 mt-1">
                     Click Sign In below to get authentication instructions.
                   </p>
@@ -379,7 +403,7 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                     disabled={isAuthenticating}
                     className="mt-3 h-8 text-xs"
                   >
-                    {isAuthenticating ? 'Requesting...' : 'Sign In'}
+                    {isAuthenticating ? "Requesting..." : "Sign In"}
                   </Button>
                 </div>
               </div>
@@ -392,14 +416,18 @@ export function CursorCliStatus({ status, isChecking, onRefresh }: CursorCliStat
                 <AlertCircle className="w-5 h-5 text-amber-500" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-400">Cursor CLI Not Detected</p>
+                <p className="text-sm font-medium text-amber-400">
+                  Cursor CLI Not Detected
+                </p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   Install Cursor CLI to use Cursor models in Pegasus.
                 </p>
               </div>
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-medium text-foreground/80">Installation:</p>
+              <p className="text-xs font-medium text-foreground/80">
+                Installation:
+              </p>
               <a
                 href="https://cursor.com/docs/cli"
                 target="_blank"

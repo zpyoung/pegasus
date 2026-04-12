@@ -1,5 +1,5 @@
-import { Card } from '@/components/ui/card';
-import { XmlSyntaxEditor } from '@/components/ui/xml-syntax-editor';
+import { Card } from "@/components/ui/card";
+import { XmlSyntaxEditor } from "@/components/ui/xml-syntax-editor";
 
 interface SpecEditorProps {
   value: string;

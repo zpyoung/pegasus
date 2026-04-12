@@ -15,11 +15,11 @@
  * and cherry-pick-service.ts.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { execGitCommand, getConflictFiles } from '@pegasus/git-utils';
-import { execGitCommandWithLockRetry, getCurrentBranch } from '../lib/git.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { execGitCommand, getConflictFiles } from "@pegasus/git-utils";
+import { execGitCommandWithLockRetry, getCurrentBranch } from "../lib/git.js";
 
-const logger = createLogger('PullService');
+const logger = createLogger("PullService");
 
 // ============================================================================
 // Types
@@ -45,7 +45,7 @@ export interface PullResult {
   stashRestored?: boolean;
   stashRecoveryFailed?: boolean;
   hasConflicts?: boolean;
-  conflictSource?: 'pull' | 'stash';
+  conflictSource?: "pull" | "stash";
   conflictFiles?: string[];
   message?: string;
   /** Whether the pull resulted in a merge commit (not fast-forward) */
@@ -66,8 +66,11 @@ export interface PullResult {
  * @param worktreePath - Path to the git worktree
  * @param remote - Remote name (e.g. 'origin')
  */
-export async function fetchRemote(worktreePath: string, remote: string): Promise<void> {
-  await execGitCommand(['fetch', remote], worktreePath);
+export async function fetchRemote(
+  worktreePath: string,
+  remote: string,
+): Promise<void> {
+  await execGitCommand(["fetch", remote], worktreePath);
 }
 
 /**
@@ -77,21 +80,26 @@ export async function fetchRemote(worktreePath: string, remote: string): Promise
  * @returns Object with hasLocalChanges flag and list of changed file paths
  */
 export async function getLocalChanges(
-  worktreePath: string
+  worktreePath: string,
 ): Promise<{ hasLocalChanges: boolean; localChangedFiles: string[] }> {
-  const statusOutput = await execGitCommand(['status', '--porcelain'], worktreePath);
+  const statusOutput = await execGitCommand(
+    ["status", "--porcelain"],
+    worktreePath,
+  );
   const hasLocalChanges = statusOutput.trim().length > 0;
 
   let localChangedFiles: string[] = [];
   if (hasLocalChanges) {
     localChangedFiles = statusOutput
       .trim()
-      .split('\n')
+      .split("\n")
       .filter((line) => line.trim().length > 0)
       .map((line) => {
         const entry = line.substring(3).trim();
-        const arrowIndex = entry.indexOf(' -> ');
-        return arrowIndex !== -1 ? entry.substring(arrowIndex + 4).trim() : entry;
+        const arrowIndex = entry.indexOf(" -> ");
+        return arrowIndex !== -1
+          ? entry.substring(arrowIndex + 4).trim()
+          : entry;
       });
   }
 
@@ -105,11 +113,14 @@ export async function getLocalChanges(
  * @param branchName - Current branch name (used in stash message)
  * @returns Promise<void> — resolves on success, throws on failure
  */
-export async function stashChanges(worktreePath: string, branchName: string): Promise<void> {
+export async function stashChanges(
+  worktreePath: string,
+  branchName: string,
+): Promise<void> {
   const stashMessage = `pegasus-pull-stash: Pre-pull stash on ${branchName}`;
   await execGitCommandWithLockRetry(
-    ['stash', 'push', '--include-untracked', '-m', stashMessage],
-    worktreePath
+    ["stash", "push", "--include-untracked", "-m", stashMessage],
+    worktreePath,
   );
 }
 
@@ -120,7 +131,7 @@ export async function stashChanges(worktreePath: string, branchName: string): Pr
  * @returns The stdout from stash pop
  */
 export async function popStash(worktreePath: string): Promise<string> {
-  return await execGitCommandWithLockRetry(['stash', 'pop'], worktreePath);
+  return await execGitCommandWithLockRetry(["stash", "pop"], worktreePath);
 }
 
 /**
@@ -131,11 +142,11 @@ export async function popStash(worktreePath: string): Promise<string> {
  */
 async function tryPopStash(worktreePath: string): Promise<boolean> {
   try {
-    await execGitCommandWithLockRetry(['stash', 'pop'], worktreePath);
+    await execGitCommandWithLockRetry(["stash", "pop"], worktreePath);
     return true;
   } catch (stashPopError) {
     // Stash pop failed - leave it in stash list for manual recovery
-    logger.error('Failed to reapply stash during error recovery', {
+    logger.error("Failed to reapply stash during error recovery", {
       worktreePath,
       error: getErrorMessage(stashPopError),
     });
@@ -149,7 +160,7 @@ async function tryPopStash(worktreePath: string): Promise<boolean> {
  * - 'remote': no tracking ref, but the remote branch exists
  * - 'none': neither a tracking ref nor a remote branch was found
  */
-export type UpstreamStatus = 'tracking' | 'remote' | 'none';
+export type UpstreamStatus = "tracking" | "remote" | "none";
 
 /**
  * Check whether the branch has an upstream tracking ref, or whether
@@ -163,18 +174,24 @@ export type UpstreamStatus = 'tracking' | 'remote' | 'none';
 export async function hasUpstreamOrRemoteBranch(
   worktreePath: string,
   branchName: string,
-  remote: string
+  remote: string,
 ): Promise<UpstreamStatus> {
   try {
-    await execGitCommand(['rev-parse', '--abbrev-ref', `${branchName}@{upstream}`], worktreePath);
-    return 'tracking';
+    await execGitCommand(
+      ["rev-parse", "--abbrev-ref", `${branchName}@{upstream}`],
+      worktreePath,
+    );
+    return "tracking";
   } catch {
     // No upstream tracking - check if the remote branch exists
     try {
-      await execGitCommand(['rev-parse', '--verify', `${remote}/${branchName}`], worktreePath);
-      return 'remote';
+      await execGitCommand(
+        ["rev-parse", "--verify", `${remote}/${branchName}`],
+        worktreePath,
+      );
+      return "remote";
     } catch {
-      return 'none';
+      return "none";
     }
   }
 }
@@ -183,7 +200,10 @@ export async function hasUpstreamOrRemoteBranch(
  * Check whether an error output string indicates a merge conflict.
  */
 function isConflictError(errorOutput: string): boolean {
-  return errorOutput.includes('CONFLICT') || errorOutput.includes('Automatic merge failed');
+  return (
+    errorOutput.includes("CONFLICT") ||
+    errorOutput.includes("Automatic merge failed")
+  );
 }
 
 /**
@@ -198,7 +218,10 @@ function isConflictError(errorOutput: string): boolean {
  */
 async function isMergeCommit(worktreePath: string): Promise<boolean> {
   try {
-    const output = await execGitCommand(['show', '-s', '--pretty=%P', 'HEAD'], worktreePath);
+    const output = await execGitCommand(
+      ["show", "-s", "--pretty=%P", "HEAD"],
+      worktreePath,
+    );
     // Each parent SHA is separated by a space; two or more means it's a merge
     const parents = output
       .trim()
@@ -215,7 +238,7 @@ async function isMergeCommit(worktreePath: string): Promise<boolean> {
  * Check whether an output string indicates a stash conflict.
  */
 function isStashConflict(output: string): boolean {
-  return output.includes('CONFLICT') || output.includes('Merge conflict');
+  return output.includes("CONFLICT") || output.includes("Merge conflict");
 }
 
 // ============================================================================
@@ -241,9 +264,9 @@ function isStashConflict(output: string): boolean {
  */
 export async function performPull(
   worktreePath: string,
-  options?: PullOptions
+  options?: PullOptions,
 ): Promise<PullResult> {
-  const targetRemote = options?.remote || 'origin';
+  const targetRemote = options?.remote || "origin";
   const stashIfNeeded = options?.stashIfNeeded ?? false;
   const targetRemoteBranch = options?.remoteBranch;
 
@@ -259,10 +282,11 @@ export async function performPull(
   }
 
   // 2. Check for detached HEAD state
-  if (branchName === 'HEAD') {
+  if (branchName === "HEAD") {
     return {
       success: false,
-      error: 'Cannot pull in detached HEAD state. Please checkout a branch first.',
+      error:
+        "Cannot pull in detached HEAD state. Please checkout a branch first.",
     };
   }
 
@@ -280,7 +304,8 @@ export async function performPull(
   let hasLocalChanges: boolean;
   let localChangedFiles: string[];
   try {
-    ({ hasLocalChanges, localChangedFiles } = await getLocalChanges(worktreePath));
+    ({ hasLocalChanges, localChangedFiles } =
+      await getLocalChanges(worktreePath));
   } catch (err) {
     return {
       success: false,
@@ -297,7 +322,7 @@ export async function performPull(
       hasLocalChanges: true,
       localChangedFiles,
       message:
-        'Local changes detected. Use stashIfNeeded to automatically stash and reapply changes.',
+        "Local changes detected. Use stashIfNeeded to automatically stash and reapply changes.",
     };
   }
 
@@ -318,10 +343,14 @@ export async function performPull(
   // 7. Verify upstream tracking or remote branch exists
   // Skip this check when a specific remote branch is provided - we always use
   // explicit 'git pull <remote> <branch>' args in that case.
-  let upstreamStatus: UpstreamStatus = 'tracking';
+  let upstreamStatus: UpstreamStatus = "tracking";
   if (!targetRemoteBranch) {
-    upstreamStatus = await hasUpstreamOrRemoteBranch(worktreePath, branchName, targetRemote);
-    if (upstreamStatus === 'none') {
+    upstreamStatus = await hasUpstreamOrRemoteBranch(
+      worktreePath,
+      branchName,
+      targetRemote,
+    );
+    if (upstreamStatus === "none") {
       let stashRecoveryFailed = false;
       if (didStash) {
         const stashPopped = await tryPopStash(worktreePath);
@@ -329,8 +358,10 @@ export async function performPull(
       }
       return {
         success: false,
-        error: `Branch '${branchName}' has no upstream branch on remote '${targetRemote}'. Push it first or set upstream with: git branch --set-upstream-to=${targetRemote}/${branchName}${stashRecoveryFailed ? ' Local changes remain stashed and need manual recovery (run: git stash pop).' : ''}`,
-        stashRecoveryFailed: stashRecoveryFailed ? stashRecoveryFailed : undefined,
+        error: `Branch '${branchName}' has no upstream branch on remote '${targetRemote}'. Push it first or set upstream with: git branch --set-upstream-to=${targetRemote}/${branchName}${stashRecoveryFailed ? " Local changes remain stashed and need manual recovery (run: git stash pop)." : ""}`,
+        stashRecoveryFailed: stashRecoveryFailed
+          ? stashRecoveryFailed
+          : undefined,
       };
     }
   }
@@ -340,10 +371,10 @@ export async function performPull(
   // When the branch has a configured upstream tracking ref, let Git use it automatically.
   // When only the remote branch exists (no tracking ref), explicitly specify remote and branch.
   const pullArgs = targetRemoteBranch
-    ? ['pull', targetRemote, targetRemoteBranch]
-    : upstreamStatus === 'tracking'
-      ? ['pull']
-      : ['pull', targetRemote, branchName];
+    ? ["pull", targetRemote, targetRemoteBranch]
+    : upstreamStatus === "tracking"
+      ? ["pull"]
+      : ["pull", targetRemote, branchName];
   let pullConflict = false;
   let pullConflictFiles: string[] = [];
 
@@ -356,24 +387,29 @@ export async function performPull(
   try {
     const pullOutput = await execGitCommand(pullArgs, worktreePath);
 
-    const alreadyUpToDate = pullOutput.includes('Already up to date');
+    const alreadyUpToDate = pullOutput.includes("Already up to date");
     // Detect fast-forward from git pull output
-    isFastForward = pullOutput.includes('Fast-forward') || pullOutput.includes('fast-forward');
+    isFastForward =
+      pullOutput.includes("Fast-forward") ||
+      pullOutput.includes("fast-forward");
     // Detect merge by checking whether the new HEAD has two parents (more reliable
     // than string-matching localised pull output which may not contain 'Merge').
-    isMerge = !alreadyUpToDate && !isFastForward ? await isMergeCommit(worktreePath) : false;
+    isMerge =
+      !alreadyUpToDate && !isFastForward
+        ? await isMergeCommit(worktreePath)
+        : false;
 
     // If it was a real merge (not fast-forward), get the affected files
     if (isMerge) {
       try {
         // Get files changed in the merge commit
         const diffOutput = await execGitCommand(
-          ['diff', '--name-only', 'HEAD~1', 'HEAD'],
-          worktreePath
+          ["diff", "--name-only", "HEAD~1", "HEAD"],
+          worktreePath,
         );
         mergeAffectedFiles = diffOutput
           .trim()
-          .split('\n')
+          .split("\n")
           .filter((f: string) => f.trim().length > 0);
       } catch {
         // Ignore errors - this is best-effort
@@ -389,14 +425,20 @@ export async function performPull(
         hasLocalChanges: false,
         stashed: false,
         stashRestored: false,
-        message: alreadyUpToDate ? 'Already up to date' : 'Pulled latest changes',
+        message: alreadyUpToDate
+          ? "Already up to date"
+          : "Pulled latest changes",
         ...(isMerge ? { isMerge: true, mergeAffectedFiles } : {}),
         ...(isFastForward ? { isFastForward: true } : {}),
       };
     }
   } catch (pullError: unknown) {
-    const err = pullError as { stderr?: string; stdout?: string; message?: string };
-    const errorOutput = `${err.stderr || ''} ${err.stdout || ''} ${err.message || ''}`;
+    const err = pullError as {
+      stderr?: string;
+      stdout?: string;
+      message?: string;
+    };
+    const errorOutput = `${err.stderr || ""} ${err.stdout || ""} ${err.message || ""}`;
 
     if (isConflictError(errorOutput)) {
       pullConflict = true;
@@ -414,19 +456,23 @@ export async function performPull(
       }
 
       // Check for common errors
-      const errorMsg = err.stderr || err.message || 'Pull failed';
-      if (errorMsg.includes('no tracking information')) {
+      const errorMsg = err.stderr || err.message || "Pull failed";
+      if (errorMsg.includes("no tracking information")) {
         return {
           success: false,
-          error: `Branch '${branchName}' has no upstream branch. Push it first or set upstream with: git branch --set-upstream-to=${targetRemote}/${branchName}${stashRecoveryFailed ? ' Local changes remain stashed and need manual recovery (run: git stash pop).' : ''}`,
-          stashRecoveryFailed: stashRecoveryFailed ? stashRecoveryFailed : undefined,
+          error: `Branch '${branchName}' has no upstream branch. Push it first or set upstream with: git branch --set-upstream-to=${targetRemote}/${branchName}${stashRecoveryFailed ? " Local changes remain stashed and need manual recovery (run: git stash pop)." : ""}`,
+          stashRecoveryFailed: stashRecoveryFailed
+            ? stashRecoveryFailed
+            : undefined,
         };
       }
 
       return {
         success: false,
-        error: `${errorMsg}${stashRecoveryFailed ? ' Local changes remain stashed and need manual recovery (run: git stash pop).' : ''}`,
-        stashRecoveryFailed: stashRecoveryFailed ? stashRecoveryFailed : undefined,
+        error: `${errorMsg}${stashRecoveryFailed ? " Local changes remain stashed and need manual recovery (run: git stash pop)." : ""}`,
+        stashRecoveryFailed: stashRecoveryFailed
+          ? stashRecoveryFailed
+          : undefined,
       };
     }
   }
@@ -438,12 +484,12 @@ export async function performPull(
       branch: branchName,
       pulled: true,
       hasConflicts: true,
-      conflictSource: 'pull',
+      conflictSource: "pull",
       conflictFiles: pullConflictFiles,
       stashed: didStash,
       stashRestored: false,
       message:
-        `Pull resulted in merge conflicts. ${didStash ? 'Your local changes are still stashed.' : ''}`.trim(),
+        `Pull resulted in merge conflicts. ${didStash ? "Your local changes are still stashed." : ""}`.trim(),
     };
   }
 
@@ -461,7 +507,7 @@ export async function performPull(
     success: true,
     branch: branchName,
     pulled: true,
-    message: 'Pulled latest changes',
+    message: "Pulled latest changes",
   };
 }
 
@@ -477,7 +523,11 @@ export async function performPull(
 async function reapplyStash(
   worktreePath: string,
   branchName: string,
-  mergeInfo: { isMerge: boolean; isFastForward: boolean; mergeAffectedFiles: string[] }
+  mergeInfo: {
+    isMerge: boolean;
+    isFastForward: boolean;
+    mergeAffectedFiles: string[];
+  },
 ): Promise<PullResult> {
   const mergeFields: Partial<PullResult> = {
     ...(mergeInfo.isMerge
@@ -498,11 +548,15 @@ async function reapplyStash(
       stashed: true,
       stashRestored: true,
       ...mergeFields,
-      message: 'Pulled latest changes and restored your stashed changes.',
+      message: "Pulled latest changes and restored your stashed changes.",
     };
   } catch (stashPopError: unknown) {
-    const err = stashPopError as { stderr?: string; stdout?: string; message?: string };
-    const errorOutput = `${err.stderr || ''} ${err.stdout || ''} ${err.message || ''}`;
+    const err = stashPopError as {
+      stderr?: string;
+      stdout?: string;
+      message?: string;
+    };
+    const errorOutput = `${err.stderr || ""} ${err.stdout || ""} ${err.message || ""}`;
 
     // Check if stash pop failed due to conflicts
     // The stash remains in the stash list when conflicts occur, so stashRestored is false
@@ -519,17 +573,21 @@ async function reapplyStash(
         branch: branchName,
         pulled: true,
         hasConflicts: true,
-        conflictSource: 'stash',
+        conflictSource: "stash",
         conflictFiles: stashConflictFiles,
         stashed: true,
         stashRestored: false,
         ...mergeFields,
-        message: 'Pull succeeded but reapplying your stashed changes resulted in merge conflicts.',
+        message:
+          "Pull succeeded but reapplying your stashed changes resulted in merge conflicts.",
       };
     }
 
     // Non-conflict stash pop error - stash is still in the stash list
-    logger.warn('Failed to reapply stash after pull', { worktreePath, error: errorOutput });
+    logger.warn("Failed to reapply stash after pull", {
+      worktreePath,
+      error: errorOutput,
+    });
 
     return {
       success: true,
@@ -540,7 +598,7 @@ async function reapplyStash(
       stashRestored: false,
       ...mergeFields,
       message:
-        'Pull succeeded but failed to reapply stashed changes. Your changes are still in the stash list.',
+        "Pull succeeded but failed to reapply stashed changes. Your changes are still in the stash list.",
     };
   }
 }

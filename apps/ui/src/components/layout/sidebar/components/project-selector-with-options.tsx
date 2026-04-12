@@ -1,4 +1,4 @@
-import { useCallback, startTransition } from 'react';
+import { useCallback, startTransition } from "react";
 import {
   Folder,
   ChevronDown,
@@ -13,12 +13,12 @@ import {
   Trash2,
   Search,
   LogOut,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { formatShortcut, type ThemeMode, useAppStore } from '@/store/app-store';
-import { initializeProject } from '@/lib/project-init';
-import { toast } from 'sonner';
-import type { Project } from '@/lib/electron';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatShortcut, type ThemeMode, useAppStore } from "@/store/app-store";
+import { initializeProject } from "@/lib/project-init";
+import { toast } from "sonner";
+import type { Project } from "@/lib/electron";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,13 +31,20 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { SortableProjectItem, ThemeMenuItem } from './';
-import { PROJECT_DARK_THEMES, PROJECT_LIGHT_THEMES, THEME_SUBMENU_CONSTANTS } from '../constants';
-import { useProjectPicker, useDragAndDrop, useProjectTheme } from '../hooks';
-import { useKeyboardShortcutsConfig } from '@/hooks/use-keyboard-shortcuts';
+} from "@/components/ui/dropdown-menu";
+import { DndContext, closestCenter } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableProjectItem, ThemeMenuItem } from "./";
+import {
+  PROJECT_DARK_THEMES,
+  PROJECT_LIGHT_THEMES,
+  THEME_SUBMENU_CONSTANTS,
+} from "../constants";
+import { useProjectPicker, useDragAndDrop, useProjectTheme } from "../hooks";
+import { useKeyboardShortcutsConfig } from "@/hooks/use-keyboard-shortcuts";
 
 /**
  * Props for the ProjectSelectorWithOptions component.
@@ -49,7 +56,9 @@ interface ProjectSelectorWithOptionsProps {
   /** Whether the project picker dropdown is currently open */
   isProjectPickerOpen: boolean;
   /** Callback to control the project picker dropdown open state */
-  setIsProjectPickerOpen: (value: boolean | ((prev: boolean) => boolean)) => void;
+  setIsProjectPickerOpen: (
+    value: boolean | ((prev: boolean) => boolean),
+  ) => void;
   /** Callback to show the delete project confirmation dialog */
   setShowDeleteProjectDialog: (show: boolean) => void;
   /** Callback to show the remove from pegasus confirmation dialog */
@@ -98,8 +107,8 @@ export function ProjectSelectorWithOptions({
       // Fire-and-forget: initialize .pegasus directory structure in background
       // so the project switch is not blocked by filesystem operations
       initializeProject(p.path).catch((error) => {
-        console.error('Failed to initialize project during switch:', error);
-        toast.error('Failed to initialize project .pegasus', {
+        console.error("Failed to initialize project during switch:", error);
+        toast.error("Failed to initialize project .pegasus", {
           description: error instanceof Error ? error.message : String(error),
         });
       });
@@ -108,7 +117,7 @@ export function ProjectSelectorWithOptions({
         setCurrentProject(p);
       });
     },
-    [currentProject?.id, setCurrentProject]
+    [currentProject?.id, setCurrentProject],
   );
 
   const {
@@ -126,17 +135,25 @@ export function ProjectSelectorWithOptions({
     setCurrentProject: setCurrentProjectWithInit,
   });
 
-  const { sensors, handleDragEnd } = useDragAndDrop({ projects, reorderProjects });
+  const { sensors, handleDragEnd } = useDragAndDrop({
+    projects,
+    reorderProjects,
+  });
 
-  const { globalTheme, setProjectTheme, setPreviewTheme, handlePreviewEnter, handlePreviewLeave } =
-    useProjectTheme();
+  const {
+    globalTheme,
+    setProjectTheme,
+    setPreviewTheme,
+    handlePreviewEnter,
+    handlePreviewLeave,
+  } = useProjectTheme();
 
   const handleSelectProject = useCallback(
     (p: Project) => {
       setCurrentProjectWithInit(p);
       setIsProjectPickerOpen(false);
     },
-    [setCurrentProjectWithInit, setIsProjectPickerOpen]
+    [setCurrentProjectWithInit, setIsProjectPickerOpen],
   );
 
   if (!sidebarOpen || projects.length === 0) {
@@ -145,28 +162,31 @@ export function ProjectSelectorWithOptions({
 
   return (
     <div className="px-3 mt-3 flex items-center gap-2.5">
-      <DropdownMenu open={isProjectPickerOpen} onOpenChange={setIsProjectPickerOpen}>
+      <DropdownMenu
+        open={isProjectPickerOpen}
+        onOpenChange={setIsProjectPickerOpen}
+      >
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'flex-1 flex items-center justify-between px-3.5 py-3 rounded-xl',
+              "flex-1 flex items-center justify-between px-3.5 py-3 rounded-xl",
               // Premium glass background
-              'bg-gradient-to-br from-accent/40 to-accent/20',
-              'hover:from-accent/50 hover:to-accent/30',
-              'border border-border/50 hover:border-border/70',
+              "bg-gradient-to-br from-accent/40 to-accent/20",
+              "hover:from-accent/50 hover:to-accent/30",
+              "border border-border/50 hover:border-border/70",
               // Subtle inner shadow
-              'shadow-sm shadow-black/5',
-              'text-foreground titlebar-no-drag min-w-0',
-              'transition-all duration-200 ease-out',
+              "shadow-sm shadow-black/5",
+              "text-foreground titlebar-no-drag min-w-0",
+              "transition-all duration-200 ease-out",
               isProjectPickerOpen &&
-                'from-brand-500/10 to-brand-600/5 border-brand-500/30 ring-2 ring-brand-500/20 shadow-lg shadow-brand-500/5'
+                "from-brand-500/10 to-brand-600/5 border-brand-500/30 ring-2 ring-brand-500/20 shadow-lg shadow-brand-500/5",
             )}
             data-testid="project-selector"
           >
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <Folder className="h-4 w-4 text-brand-500 shrink-0" />
               <span className="text-sm font-medium truncate">
-                {currentProject?.name || 'Select Project'}
+                {currentProject?.name || "Select Project"}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -178,8 +198,8 @@ export function ProjectSelectorWithOptions({
               </span>
               <ChevronDown
                 className={cn(
-                  'h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200',
-                  isProjectPickerOpen && 'rotate-180'
+                  "h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200",
+                  isProjectPickerOpen && "rotate-180",
                 )}
               />
             </div>
@@ -201,11 +221,11 @@ export function ProjectSelectorWithOptions({
                 value={projectSearchQuery}
                 onChange={(e) => setProjectSearchQuery(e.target.value)}
                 className={cn(
-                  'w-full h-8 pl-8 pr-3 text-sm rounded-lg',
-                  'border border-border bg-background/50',
-                  'text-foreground placeholder:text-muted-foreground',
-                  'focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:border-brand-500/50',
-                  'transition-all duration-200'
+                  "w-full h-8 pl-8 pr-3 text-sm rounded-lg",
+                  "border border-border bg-background/50",
+                  "text-foreground placeholder:text-muted-foreground",
+                  "focus:outline-none focus:ring-1 focus:ring-brand-500/30 focus:border-brand-500/50",
+                  "transition-all duration-200",
                 )}
                 data-testid="project-search-input"
               />
@@ -247,10 +267,10 @@ export function ProjectSelectorWithOptions({
           {/* Keyboard hint */}
           <div className="px-2 pt-2 mt-1.5 border-t border-border/50">
             <p className="text-[10px] text-muted-foreground text-center tracking-wide">
-              <span className="text-foreground/60">↑↓</span> navigate{' '}
-              <span className="mx-1 text-foreground/30">|</span>{' '}
-              <span className="text-foreground/60">↵</span> select{' '}
-              <span className="mx-1 text-foreground/30">|</span>{' '}
+              <span className="text-foreground/60">↑↓</span> navigate{" "}
+              <span className="mx-1 text-foreground/30">|</span>{" "}
+              <span className="text-foreground/60">↵</span> select{" "}
+              <span className="mx-1 text-foreground/30">|</span>{" "}
               <span className="text-foreground/60">esc</span> close
             </p>
           </div>
@@ -270,11 +290,11 @@ export function ProjectSelectorWithOptions({
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                'flex items-center justify-center w-[42px] h-[42px] rounded-lg',
-                'text-muted-foreground hover:text-foreground',
-                'bg-transparent hover:bg-accent/60',
-                'border border-border/50 hover:border-border',
-                'transition-all duration-200 ease-out titlebar-no-drag'
+                "flex items-center justify-center w-[42px] h-[42px] rounded-lg",
+                "text-muted-foreground hover:text-foreground",
+                "bg-transparent hover:bg-accent/60",
+                "border border-border/50 hover:border-border",
+                "transition-all duration-200 ease-out titlebar-no-drag",
               )}
               title="Project options"
               data-testid="project-options-menu"
@@ -282,7 +302,10 @@ export function ProjectSelectorWithOptions({
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-popover/95 backdrop-blur-xl">
+          <DropdownMenuContent
+            align="end"
+            className="w-56 bg-popover/95 backdrop-blur-xl"
+          >
             {/* Project Theme Submenu */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger data-testid="project-theme-trigger">
@@ -304,7 +327,7 @@ export function ProjectSelectorWithOptions({
                 }}
               >
                 <DropdownMenuRadioGroup
-                  value={currentProject.theme || ''}
+                  value={currentProject.theme || ""}
                   onValueChange={(value) => {
                     if (currentProject) {
                       setPreviewTheme(null);
@@ -312,7 +335,7 @@ export function ProjectSelectorWithOptions({
                       // The UI uses getEffectiveTheme() which handles: previewTheme ?? projectTheme ?? globalTheme
                       setProjectTheme(
                         currentProject.id,
-                        value === '' ? null : (value as ThemeMode)
+                        value === "" ? null : (value as ThemeMode),
                       );
                     }
                   }}
@@ -383,21 +406,30 @@ export function ProjectSelectorWithOptions({
                 <DropdownMenuLabel className="text-xs text-muted-foreground">
                   Project History
                 </DropdownMenuLabel>
-                <DropdownMenuItem onClick={cyclePrevProject} data-testid="cycle-prev-project">
+                <DropdownMenuItem
+                  onClick={cyclePrevProject}
+                  data-testid="cycle-prev-project"
+                >
                   <Undo2 className="w-4 h-4 mr-2" />
                   <span className="flex-1">Previous</span>
                   <span className="text-[10px] font-mono text-muted-foreground ml-2">
                     {formatShortcut(shortcuts.cyclePrevProject, true)}
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={cycleNextProject} data-testid="cycle-next-project">
+                <DropdownMenuItem
+                  onClick={cycleNextProject}
+                  data-testid="cycle-next-project"
+                >
                   <Redo2 className="w-4 h-4 mr-2" />
                   <span className="flex-1">Next</span>
                   <span className="text-[10px] font-mono text-muted-foreground ml-2">
                     {formatShortcut(shortcuts.cycleNextProject, true)}
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={clearProjectHistory} data-testid="clear-project-history">
+                <DropdownMenuItem
+                  onClick={clearProjectHistory}
+                  data-testid="clear-project-history"
+                >
                   <RotateCcw className="w-4 h-4 mr-2" />
                   <span>Clear history</span>
                 </DropdownMenuItem>

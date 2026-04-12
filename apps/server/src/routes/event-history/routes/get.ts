@@ -5,9 +5,9 @@
  * Response: { success: true, event: StoredEvent } or { success: false, error: string }
  */
 
-import type { Request, Response } from 'express';
-import type { EventHistoryService } from '../../../services/event-history-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { EventHistoryService } from "../../../services/event-history-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createGetHandler(eventHistoryService: EventHistoryService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -17,20 +17,22 @@ export function createGetHandler(eventHistoryService: EventHistoryService) {
         eventId: string;
       };
 
-      if (!projectPath || typeof projectPath !== 'string') {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+      if (!projectPath || typeof projectPath !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!eventId || typeof eventId !== 'string') {
-        res.status(400).json({ success: false, error: 'eventId is required' });
+      if (!eventId || typeof eventId !== "string") {
+        res.status(400).json({ success: false, error: "eventId is required" });
         return;
       }
 
       const event = await eventHistoryService.getEvent(projectPath, eventId);
 
       if (!event) {
-        res.status(404).json({ success: false, error: 'Event not found' });
+        res.status(404).json({ success: false, error: "Event not found" });
         return;
       }
 
@@ -39,7 +41,7 @@ export function createGetHandler(eventHistoryService: EventHistoryService) {
         event,
       });
     } catch (error) {
-      logError(error, 'Get event failed');
+      logError(error, "Get event failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

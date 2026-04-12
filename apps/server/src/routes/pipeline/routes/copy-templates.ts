@@ -21,14 +21,14 @@
  * }
  */
 
-import type { Request, Response } from 'express';
-import { ensurePipelinesDir, getPipelineFilePath } from '@pegasus/platform';
-import * as secureFs from '../../../lib/secure-fs.js';
+import type { Request, Response } from "express";
+import { ensurePipelinesDir, getPipelineFilePath } from "@pegasus/platform";
+import * as secureFs from "../../../lib/secure-fs.js";
 import {
   BUILT_IN_YAML_MAP,
   BUILT_IN_PIPELINE_SLUGS,
-} from '../../../services/built-in-pipelines/index.js';
-import { logger, getErrorMessage, logError } from '../common.js';
+} from "../../../services/built-in-pipelines/index.js";
+import { logger, getErrorMessage, logError } from "../common.js";
 
 /** Result details for individual slug operations */
 interface CopyResult {
@@ -57,7 +57,11 @@ interface CopyResult {
 export function createCopyTemplatesHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, slugs, overwrite = false } = req.body as {
+      const {
+        projectPath,
+        slugs,
+        overwrite = false,
+      } = req.body as {
         projectPath: string;
         slugs?: string[];
         overwrite?: boolean;
@@ -67,7 +71,7 @@ export function createCopyTemplatesHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -77,12 +81,12 @@ export function createCopyTemplatesHandler() {
 
       // Validate all requested slugs are valid built-in pipelines
       const invalidSlugs = requestedSlugs.filter(
-        (slug) => !(slug in BUILT_IN_YAML_MAP)
+        (slug) => !(slug in BUILT_IN_YAML_MAP),
       );
       if (invalidSlugs.length > 0) {
         res.status(400).json({
           success: false,
-          error: `Unknown built-in pipeline slug(s): ${invalidSlugs.join(', ')}. Available: ${BUILT_IN_PIPELINE_SLUGS.join(', ')}`,
+          error: `Unknown built-in pipeline slug(s): ${invalidSlugs.join(", ")}. Available: ${BUILT_IN_PIPELINE_SLUGS.join(", ")}`,
         });
         return;
       }
@@ -90,7 +94,8 @@ export function createCopyTemplatesHandler() {
       if (requestedSlugs.length === 0) {
         res.status(400).json({
           success: false,
-          error: 'No pipeline slugs specified and no built-in pipelines available',
+          error:
+            "No pipeline slugs specified and no built-in pipelines available",
         });
         return;
       }
@@ -99,7 +104,7 @@ export function createCopyTemplatesHandler() {
       const pipelinesDir = await ensurePipelinesDir(projectPath);
       logger.info(
         `Copying ${requestedSlugs.length} built-in template(s) to ${pipelinesDir}` +
-          (overwrite ? ' (overwrite enabled)' : '')
+          (overwrite ? " (overwrite enabled)" : ""),
       );
 
       // ── Copy each template ──────────────────────────────────────────
@@ -130,7 +135,7 @@ export function createCopyTemplatesHandler() {
           const yamlContent = BUILT_IN_YAML_MAP[slug];
 
           // Write the YAML content to the project's pipelines directory
-          await secureFs.writeFile(destPath, yamlContent, 'utf-8');
+          await secureFs.writeFile(destPath, yamlContent, "utf-8");
           logger.info(`Copied built-in template "${slug}" to ${destPath}`);
           result.copied.push(slug);
         } catch (error) {
@@ -143,7 +148,7 @@ export function createCopyTemplatesHandler() {
       // ── Respond ─────────────────────────────────────────────────────
       logger.info(
         `Copy templates complete: ${result.copied.length} copied, ` +
-          `${result.skipped.length} skipped, ${result.errors.length} error(s)`
+          `${result.skipped.length} skipped, ${result.errors.length} error(s)`,
       );
 
       res.json({
@@ -153,7 +158,7 @@ export function createCopyTemplatesHandler() {
         errors: result.errors,
       });
     } catch (error) {
-      logError(error, 'Copy pipeline templates failed');
+      logError(error, "Copy pipeline templates failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

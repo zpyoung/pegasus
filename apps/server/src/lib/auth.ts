@@ -8,17 +8,17 @@
  * Auto-generates an API key on first run if none is configured.
  */
 
-import type { Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
-import path from 'path';
-import * as secureFs from './secure-fs.js';
-import { createLogger } from '@pegasus/utils';
+import type { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
+import path from "path";
+import * as secureFs from "./secure-fs.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('Auth');
+const logger = createLogger("Auth");
 
-const DATA_DIR = process.env.DATA_DIR || './data';
-const SERVER_PORT = process.env.PORT || '3008';
-const API_KEY_FILE = path.join(DATA_DIR, '.api-key');
+const DATA_DIR = process.env.DATA_DIR || "./data";
+const SERVER_PORT = process.env.PORT || "3008";
+const API_KEY_FILE = path.join(DATA_DIR, ".api-key");
 const SESSIONS_FILE = path.join(DATA_DIR, `.sessions-${SERVER_PORT}`);
 // Cookie name includes the server port so multiple Pegasus instances on the same
 // hostname don't overwrite each other's cookies (HTTP cookies are not port-scoped).
@@ -30,14 +30,20 @@ const WS_TOKEN_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes for WebSocket connection
  * Check if an environment variable is set to 'true'
  */
 function isEnvTrue(envVar: string | undefined): boolean {
-  return envVar === 'true';
+  return envVar === "true";
 }
 
 // Session store - persisted to file for survival across server restarts
-const validSessions = new Map<string, { createdAt: number; expiresAt: number }>();
+const validSessions = new Map<
+  string,
+  { createdAt: number; expiresAt: number }
+>();
 
 // Short-lived WebSocket connection tokens (in-memory only, not persisted)
-const wsConnectionTokens = new Map<string, { createdAt: number; expiresAt: number }>();
+const wsConnectionTokens = new Map<
+  string,
+  { createdAt: number; expiresAt: number }
+>();
 
 // Clean up expired WebSocket tokens periodically
 setInterval(() => {
@@ -55,7 +61,7 @@ setInterval(() => {
 function loadSessions(): void {
   try {
     if (secureFs.existsSync(SESSIONS_FILE)) {
-      const data = secureFs.readFileSync(SESSIONS_FILE, 'utf-8') as string;
+      const data = secureFs.readFileSync(SESSIONS_FILE, "utf-8") as string;
       const sessions = JSON.parse(data) as Array<
         [string, { createdAt: number; expiresAt: number }]
       >;
@@ -78,7 +84,7 @@ function loadSessions(): void {
       }
     }
   } catch (error) {
-    logger.warn('Error loading sessions:', error);
+    logger.warn("Error loading sessions:", error);
   }
 }
 
@@ -90,11 +96,11 @@ async function saveSessions(): Promise<void> {
     await secureFs.mkdir(path.dirname(SESSIONS_FILE), { recursive: true });
     const sessions = Array.from(validSessions.entries());
     await secureFs.writeFile(SESSIONS_FILE, JSON.stringify(sessions), {
-      encoding: 'utf-8',
+      encoding: "utf-8",
       mode: 0o600,
     });
   } catch (error) {
-    logger.error('Failed to save sessions:', error);
+    logger.error("Failed to save sessions:", error);
   }
 }
 
@@ -108,31 +114,36 @@ loadSessions();
 function ensureApiKey(): string {
   // First check environment variable (Electron passes it this way)
   if (process.env.PEGASUS_API_KEY) {
-    logger.info('Using API key from environment variable');
+    logger.info("Using API key from environment variable");
     return process.env.PEGASUS_API_KEY;
   }
 
   // Try to read from file
   try {
     if (secureFs.existsSync(API_KEY_FILE)) {
-      const key = (secureFs.readFileSync(API_KEY_FILE, 'utf-8') as string).trim();
+      const key = (
+        secureFs.readFileSync(API_KEY_FILE, "utf-8") as string
+      ).trim();
       if (key) {
-        logger.info('Loaded API key from file');
+        logger.info("Loaded API key from file");
         return key;
       }
     }
   } catch (error) {
-    logger.warn('Error reading API key file:', error);
+    logger.warn("Error reading API key file:", error);
   }
 
   // Generate new key
   const newKey = crypto.randomUUID();
   try {
     secureFs.mkdirSync(path.dirname(API_KEY_FILE), { recursive: true });
-    secureFs.writeFileSync(API_KEY_FILE, newKey, { encoding: 'utf-8', mode: 0o600 });
-    logger.info('Generated new API key');
+    secureFs.writeFileSync(API_KEY_FILE, newKey, {
+      encoding: "utf-8",
+      mode: 0o600,
+    });
+    logger.info("Generated new API key");
   } catch (error) {
-    logger.error('Failed to save API key:', error);
+    logger.error("Failed to save API key:", error);
   }
   return newKey;
 }
@@ -146,21 +157,33 @@ const BOX_CONTENT_WIDTH = 67;
 // Print API key to console for web mode users (unless suppressed for production logging)
 if (!isEnvTrue(process.env.PEGASUS_HIDE_API_KEY)) {
   const autoLoginEnabled = isEnvTrue(process.env.PEGASUS_AUTO_LOGIN);
-  const autoLoginStatus = autoLoginEnabled ? 'enabled (auto-login active)' : 'disabled';
+  const autoLoginStatus = autoLoginEnabled
+    ? "enabled (auto-login active)"
+    : "disabled";
 
   // Build box lines with exact padding
-  const header = '🔐 API Key for Web Mode Authentication'.padEnd(BOX_CONTENT_WIDTH);
-  const line1 = "When accessing via browser, you'll be prompted to enter this key:".padEnd(
-    BOX_CONTENT_WIDTH
+  const header = "🔐 API Key for Web Mode Authentication".padEnd(
+    BOX_CONTENT_WIDTH,
   );
+  const line1 =
+    "When accessing via browser, you'll be prompted to enter this key:".padEnd(
+      BOX_CONTENT_WIDTH,
+    );
   const line2 = API_KEY.padEnd(BOX_CONTENT_WIDTH);
-  const line3 = 'In Electron mode, authentication is handled automatically.'.padEnd(
-    BOX_CONTENT_WIDTH
+  const line3 =
+    "In Electron mode, authentication is handled automatically.".padEnd(
+      BOX_CONTENT_WIDTH,
+    );
+  const line4 = `Auto-login (PEGASUS_AUTO_LOGIN): ${autoLoginStatus}`.padEnd(
+    BOX_CONTENT_WIDTH,
   );
-  const line4 = `Auto-login (PEGASUS_AUTO_LOGIN): ${autoLoginStatus}`.padEnd(BOX_CONTENT_WIDTH);
-  const tipHeader = '💡 Tips'.padEnd(BOX_CONTENT_WIDTH);
-  const line5 = 'Set PEGASUS_API_KEY env var to use a fixed key'.padEnd(BOX_CONTENT_WIDTH);
-  const line6 = 'Set PEGASUS_AUTO_LOGIN=true to skip the login prompt'.padEnd(BOX_CONTENT_WIDTH);
+  const tipHeader = "💡 Tips".padEnd(BOX_CONTENT_WIDTH);
+  const line5 = "Set PEGASUS_API_KEY env var to use a fixed key".padEnd(
+    BOX_CONTENT_WIDTH,
+  );
+  const line6 = "Set PEGASUS_AUTO_LOGIN=true to skip the login prompt".padEnd(
+    BOX_CONTENT_WIDTH,
+  );
 
   logger.info(`
 ╔═════════════════════════════════════════════════════════════════════╗
@@ -183,14 +206,14 @@ if (!isEnvTrue(process.env.PEGASUS_HIDE_API_KEY)) {
 ╚═════════════════════════════════════════════════════════════════════╝
 `);
 } else {
-  logger.info('API key banner hidden (PEGASUS_HIDE_API_KEY=true)');
+  logger.info("API key banner hidden (PEGASUS_HIDE_API_KEY=true)");
 }
 
 /**
  * Generate a cryptographically secure session token
  */
 function generateSessionToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomBytes(32).toString("hex");
 }
 
 /**
@@ -218,7 +241,7 @@ export function validateSession(token: string): boolean {
   if (Date.now() > session.expiresAt) {
     validSessions.delete(token);
     // Fire-and-forget: persist removal asynchronously
-    saveSessions().catch((err) => logger.error('Error saving sessions:', err));
+    saveSessions().catch((err) => logger.error("Error saving sessions:", err));
     return false;
   }
 
@@ -272,7 +295,7 @@ export function validateWsConnectionToken(token: string): boolean {
  * Prevents timing attacks that could leak information about the key
  */
 export function validateApiKey(key: string): boolean {
-  if (!key || typeof key !== 'string') return false;
+  if (!key || typeof key !== "string") return false;
 
   // Both buffers must be the same length for timingSafeEqual
   const keyBuffer = Buffer.from(key);
@@ -293,16 +316,16 @@ export function validateApiKey(key: string): boolean {
 export function getSessionCookieOptions(): {
   httpOnly: boolean;
   secure: boolean;
-  sameSite: 'strict' | 'lax' | 'none';
+  sameSite: "strict" | "lax" | "none";
   maxAge: number;
   path: string;
 } {
   return {
     httpOnly: true, // JavaScript cannot access this cookie
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax', // Sent for same-site requests and top-level navigations, but not cross-origin fetch/XHR
+    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    sameSite: "lax", // Sent for same-site requests and top-level navigations, but not cross-origin fetch/XHR
     maxAge: SESSION_MAX_AGE_MS,
-    path: '/',
+    path: "/",
   };
 }
 
@@ -318,7 +341,10 @@ export function getSessionCookieName(): string {
  */
 type AuthResult =
   | { authenticated: true }
-  | { authenticated: false; errorType: 'invalid_api_key' | 'invalid_session' | 'no_auth' };
+  | {
+      authenticated: false;
+      errorType: "invalid_api_key" | "invalid_session" | "no_auth";
+    };
 
 /**
  * Core authentication check - shared between middleware and status check
@@ -327,24 +353,24 @@ type AuthResult =
 function checkAuthentication(
   headers: Record<string, string | string[] | undefined>,
   query: Record<string, string | undefined>,
-  cookies: Record<string, string | undefined>
+  cookies: Record<string, string | undefined>,
 ): AuthResult {
   // Check for API key in header (Electron mode)
-  const headerKey = headers['x-api-key'] as string | undefined;
+  const headerKey = headers["x-api-key"] as string | undefined;
   if (headerKey) {
     if (validateApiKey(headerKey)) {
       return { authenticated: true };
     }
-    return { authenticated: false, errorType: 'invalid_api_key' };
+    return { authenticated: false, errorType: "invalid_api_key" };
   }
 
   // Check for session token in header (web mode with explicit token)
-  const sessionTokenHeader = headers['x-session-token'] as string | undefined;
+  const sessionTokenHeader = headers["x-session-token"] as string | undefined;
   if (sessionTokenHeader) {
     if (validateSession(sessionTokenHeader)) {
       return { authenticated: true };
     }
-    return { authenticated: false, errorType: 'invalid_session' };
+    return { authenticated: false, errorType: "invalid_session" };
   }
 
   // Check for API key in query parameter (fallback)
@@ -353,7 +379,7 @@ function checkAuthentication(
     if (validateApiKey(queryKey)) {
       return { authenticated: true };
     }
-    return { authenticated: false, errorType: 'invalid_api_key' };
+    return { authenticated: false, errorType: "invalid_api_key" };
   }
 
   // Check for session token in query parameter (web mode - needed for image loads)
@@ -362,7 +388,7 @@ function checkAuthentication(
     if (validateSession(queryToken)) {
       return { authenticated: true };
     }
-    return { authenticated: false, errorType: 'invalid_session' };
+    return { authenticated: false, errorType: "invalid_session" };
   }
 
   // Check for session cookie (web mode)
@@ -371,7 +397,7 @@ function checkAuthentication(
     return { authenticated: true };
   }
 
-  return { authenticated: false, errorType: 'no_auth' };
+  return { authenticated: false, errorType: "no_auth" };
 }
 
 /**
@@ -384,7 +410,11 @@ function checkAuthentication(
  * 4. token query parameter (fallback for web mode, needed for image loads via CSS/img tags)
  * 5. Session cookie (for web mode)
  */
-export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
   // Allow disabling auth for local/trusted networks
   if (isEnvTrue(process.env.PEGASUS_DISABLE_AUTH)) {
     next();
@@ -394,7 +424,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   const result = checkAuthentication(
     req.headers as Record<string, string | string[] | undefined>,
     req.query as Record<string, string | undefined>,
-    (req.cookies || {}) as Record<string, string | undefined>
+    (req.cookies || {}) as Record<string, string | undefined>,
   );
 
   if (result.authenticated) {
@@ -404,23 +434,23 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   // Return appropriate error based on what failed
   switch (result.errorType) {
-    case 'invalid_api_key':
+    case "invalid_api_key":
       res.status(403).json({
         success: false,
-        error: 'Invalid API key.',
+        error: "Invalid API key.",
       });
       break;
-    case 'invalid_session':
+    case "invalid_session":
       res.status(403).json({
         success: false,
-        error: 'Invalid or expired session token.',
+        error: "Invalid or expired session token.",
       });
       break;
-    case 'no_auth':
+    case "no_auth":
     default:
       res.status(401).json({
         success: false,
-        error: 'Authentication required.',
+        error: "Authentication required.",
       });
   }
 }
@@ -439,7 +469,7 @@ export function getAuthStatus(): { enabled: boolean; method: string } {
   const disabled = isEnvTrue(process.env.PEGASUS_DISABLE_AUTH);
   return {
     enabled: !disabled,
-    method: disabled ? 'disabled' : 'api_key_or_session',
+    method: disabled ? "disabled" : "api_key_or_session",
   };
 }
 
@@ -451,7 +481,7 @@ export function isRequestAuthenticated(req: Request): boolean {
   const result = checkAuthentication(
     req.headers as Record<string, string | string[] | undefined>,
     req.query as Record<string, string | undefined>,
-    (req.cookies || {}) as Record<string, string | undefined>
+    (req.cookies || {}) as Record<string, string | undefined>,
   );
   return result.authenticated;
 }
@@ -463,7 +493,7 @@ export function isRequestAuthenticated(req: Request): boolean {
 export function checkRawAuthentication(
   headers: Record<string, string | string[] | undefined>,
   query: Record<string, string | undefined>,
-  cookies: Record<string, string | undefined>
+  cookies: Record<string, string | undefined>,
 ): boolean {
   if (isEnvTrue(process.env.PEGASUS_DISABLE_AUTH)) return true;
   return checkAuthentication(headers, query, cookies).authenticated;

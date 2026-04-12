@@ -2,16 +2,23 @@
  * Notification Bell - Bell icon with unread count and popover
  */
 
-import { useCallback } from 'react';
-import { Bell, Check, Trash2, AlertCircle } from 'lucide-react';
-import { useNavigate } from '@tanstack/react-router';
-import { useNotificationsStore } from '@/store/notifications-store';
-import { useLoadNotifications, useNotificationEvents } from '@/hooks/use-notification-events';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { Notification } from '@pegasus/types';
-import { cn, formatRelativeTime } from '@/lib/utils';
+import { useCallback } from "react";
+import { Bell, Check, Trash2, AlertCircle } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { useNotificationsStore } from "@/store/notifications-store";
+import {
+  useLoadNotifications,
+  useNotificationEvents,
+} from "@/hooks/use-notification-events";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import type { Notification } from "@pegasus/types";
+import { cn, formatRelativeTime } from "@/lib/utils";
 
 interface NotificationBellProps {
   projectPath: string | null;
@@ -43,7 +50,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
       const api = getHttpApiClient();
       await api.notifications.markAsRead(projectPath, notificationId);
     },
-    [projectPath, markAsRead]
+    [projectPath, markAsRead],
   );
 
   const handleDismiss = useCallback(
@@ -57,7 +64,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
       const api = getHttpApiClient();
       await api.notifications.dismiss(projectPath, notificationId);
     },
-    [projectPath, dismissNotification]
+    [projectPath, dismissNotification],
   );
 
   const handleNotificationClick = useCallback(
@@ -69,7 +76,7 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
       // Navigate to the relevant view based on notification type
       if (notification.featureId) {
         navigate({
-          to: '/board',
+          to: "/board",
           search: {
             featureId: notification.featureId,
             projectPath: notification.projectPath || undefined,
@@ -77,25 +84,25 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
         });
       }
     },
-    [handleMarkAsRead, setPopoverOpen, navigate]
+    [handleMarkAsRead, setPopoverOpen, navigate],
   );
 
   const handleViewAll = useCallback(() => {
     setPopoverOpen(false);
-    navigate({ to: '/notifications' });
+    navigate({ to: "/notifications" });
   }, [setPopoverOpen, navigate]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'feature_waiting_approval':
+      case "feature_waiting_approval":
         return <Bell className="h-4 w-4 text-yellow-500" />;
-      case 'feature_verified':
+      case "feature_verified":
         return <Check className="h-4 w-4 text-green-500" />;
-      case 'spec_regeneration_complete':
+      case "spec_regeneration_complete":
         return <Check className="h-4 w-4 text-blue-500" />;
-      case 'feature_error':
+      case "feature_error":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case 'auto_mode_error':
+      case "auto_mode_error":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Bell className="h-4 w-4" />;
@@ -114,16 +121,16 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'relative flex items-center justify-center w-8 h-8 rounded-md',
-            'hover:bg-accent transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+            "relative flex items-center justify-center w-8 h-8 rounded-md",
+            "hover:bg-accent transition-colors",
+            "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
           )}
           title="Notifications"
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </button>
@@ -132,7 +139,9 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h4 className="font-medium text-sm">Notifications</h4>
           {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+            <span className="text-xs text-muted-foreground">
+              {unreadCount} unread
+            </span>
           )}
         </div>
 
@@ -147,15 +156,19 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
               <div
                 key={notification.id}
                 className={cn(
-                  'flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-accent/50 border-b last:border-b-0',
-                  !notification.read && 'bg-primary/5'
+                  "flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-accent/50 border-b last:border-b-0",
+                  !notification.read && "bg-primary/5",
                 )}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="flex-shrink-0 mt-0.5">{getNotificationIcon(notification.type)}</div>
+                <div className="flex-shrink-0 mt-0.5">
+                  {getNotificationIcon(notification.type)}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-medium truncate">{notification.title}</p>
+                    <p className="text-sm font-medium truncate">
+                      {notification.title}
+                    </p>
                     {!notification.read && (
                       <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                     )}
@@ -188,7 +201,12 @@ export function NotificationBell({ projectPath }: NotificationBellProps) {
 
         {notifications.length > 0 && (
           <div className="border-t px-4 py-2">
-            <Button variant="ghost" size="sm" className="w-full text-xs" onClick={handleViewAll}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={handleViewAll}
+            >
               View all notifications
             </Button>
           </div>

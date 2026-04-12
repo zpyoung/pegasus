@@ -3,7 +3,7 @@
  * Transforms vague or unclear requests into clear, actionable task descriptions.
  */
 
-import type { EnhancementExample } from '@pegasus/types';
+import type { EnhancementExample } from "@pegasus/types";
 
 /**
  * System prompt for the "improve" enhancement mode.
@@ -40,7 +40,7 @@ Output ONLY the improved task description. Do not include explanations, markdown
  */
 export const IMPROVE_EXAMPLES: EnhancementExample[] = [
   {
-    input: 'add dark mode',
+    input: "add dark mode",
     output: `Add Dark Mode Theme Support
 
 Implement a dark mode option that allows users to switch between light and dark themes throughout the application.
@@ -53,7 +53,7 @@ Requirements:
 - Ensure smooth transition when switching themes`,
   },
   {
-    input: 'fix the login bug',
+    input: "fix the login bug",
     output: `Fix Login Authentication Flow
 
 Investigate and resolve issues preventing users from successfully logging in to the application.
@@ -66,7 +66,7 @@ Requirements:
 - Test with various credential combinations (valid, invalid, edge cases)`,
   },
   {
-    input: 'make it faster',
+    input: "make it faster",
     output: `Improve Application Performance
 
 Optimize application loading and response times to enhance user experience.
@@ -85,4 +85,4 @@ Requirements:
  * Description of what this enhancement mode does
  */
 export const IMPROVE_DESCRIPTION =
-  'Transform vague requests into clear, actionable task descriptions';
+  "Transform vague requests into clear, actionable task descriptions";

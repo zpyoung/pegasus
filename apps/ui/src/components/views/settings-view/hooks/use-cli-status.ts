@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { useSetupStore } from '@/store/setup-store';
+import { useState, useEffect, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { useSetupStore } from "@/store/setup-store";
 
-const logger = createLogger('CliStatus');
-import { getElectronAPI } from '@/lib/electron';
+const logger = createLogger("CliStatus");
+import { getElectronAPI } from "@/lib/electron";
 
 interface CliStatusResult {
   success: boolean;
@@ -28,7 +28,8 @@ interface CliStatusResult {
 export function useCliStatus() {
   const { setClaudeAuthStatus } = useSetupStore();
 
-  const [claudeCliStatus, setClaudeCliStatus] = useState<CliStatusResult | null>(null);
+  const [claudeCliStatus, setClaudeCliStatus] =
+    useState<CliStatusResult | null>(null);
 
   const [isCheckingClaudeCli, setIsCheckingClaudeCli] = useState(false);
 
@@ -48,34 +49,39 @@ export function useCliStatus() {
         // Map server method names to client method types
         // Server returns: oauth_token_env, oauth_token, api_key_env, api_key, credentials_file, cli_authenticated, none
         const validMethods = [
-          'oauth_token_env',
-          'oauth_token',
-          'api_key',
-          'api_key_env',
-          'credentials_file',
-          'cli_authenticated',
-          'none',
+          "oauth_token_env",
+          "oauth_token",
+          "api_key",
+          "api_key_env",
+          "credentials_file",
+          "cli_authenticated",
+          "none",
         ] as const;
         type AuthMethod = (typeof validMethods)[number];
-        const method: AuthMethod = validMethods.includes(auth.method as AuthMethod)
+        const method: AuthMethod = validMethods.includes(
+          auth.method as AuthMethod,
+        )
           ? (auth.method as AuthMethod)
           : auth.authenticated
-            ? 'api_key'
-            : 'none'; // Default authenticated to api_key, not none
+            ? "api_key"
+            : "none"; // Default authenticated to api_key, not none
         const authStatus = {
           authenticated: auth.authenticated,
           method,
           hasCredentialsFile: auth.hasCredentialsFile ?? false,
           oauthTokenValid:
-            auth.oauthTokenValid || auth.hasStoredOAuthToken || auth.hasEnvOAuthToken,
-          apiKeyValid: auth.apiKeyValid || auth.hasStoredApiKey || auth.hasEnvApiKey,
+            auth.oauthTokenValid ||
+            auth.hasStoredOAuthToken ||
+            auth.hasEnvOAuthToken,
+          apiKeyValid:
+            auth.apiKeyValid || auth.hasStoredApiKey || auth.hasEnvApiKey,
           hasEnvOAuthToken: auth.hasEnvOAuthToken,
           hasEnvApiKey: auth.hasEnvApiKey,
         };
         setClaudeAuthStatus(authStatus);
       }
     } catch (error) {
-      logger.error('Failed to refresh Claude auth status:', error);
+      logger.error("Failed to refresh Claude auth status:", error);
     }
   }, [setClaudeAuthStatus]);
 
@@ -90,7 +96,7 @@ export function useCliStatus() {
           const status = await api.checkClaudeCli();
           setClaudeCliStatus(status);
         } catch (error) {
-          logger.error('Failed to check Claude CLI status:', error);
+          logger.error("Failed to check Claude CLI status:", error);
         }
       }
 
@@ -113,7 +119,7 @@ export function useCliStatus() {
       // Also refresh auth status
       await refreshAuthStatus();
     } catch (error) {
-      logger.error('Failed to refresh Claude CLI status:', error);
+      logger.error("Failed to refresh Claude CLI status:", error);
     } finally {
       setIsCheckingClaudeCli(false);
     }

@@ -1,18 +1,18 @@
 // Spec view mode - determines how the spec is displayed/edited
-export type SpecViewMode = 'view' | 'edit' | 'source';
+export type SpecViewMode = "view" | "edit" | "source";
 
 // Feature count options for spec generation
 export type FeatureCount = 20 | 50 | 100;
 
 // Generation phases for UI display
 export type GenerationPhase =
-  | 'initialization'
-  | 'setup'
-  | 'analysis'
-  | 'spec_complete'
-  | 'feature_generation'
-  | 'complete'
-  | 'error';
+  | "initialization"
+  | "setup"
+  | "analysis"
+  | "spec_complete"
+  | "feature_generation"
+  | "complete"
+  | "error";
 
 // Props for the unified create spec dialog
 export interface CreateSpecDialogProps {

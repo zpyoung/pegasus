@@ -1,36 +1,39 @@
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { RefreshCw, AlertCircle } from 'lucide-react';
-import { OpenAIIcon } from '@/components/ui/provider-icon';
-import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { RefreshCw, AlertCircle } from "lucide-react";
+import { OpenAIIcon } from "@/components/ui/provider-icon";
+import { cn } from "@/lib/utils";
 import {
   formatCodexPlanType,
   formatCodexResetTime,
   getCodexWindowLabel,
-} from '@/lib/codex-usage-format';
-import { useSetupStore } from '@/store/setup-store';
-import { useCodexUsage } from '@/hooks/queries';
-import type { CodexRateLimitWindow } from '@/store/app-store';
-import { getExpectedCodexPacePercentage, getPaceStatusLabel } from '@/store/utils/usage-utils';
+} from "@/lib/codex-usage-format";
+import { useSetupStore } from "@/store/setup-store";
+import { useCodexUsage } from "@/hooks/queries";
+import type { CodexRateLimitWindow } from "@/store/app-store";
+import {
+  getExpectedCodexPacePercentage,
+  getPaceStatusLabel,
+} from "@/store/utils/usage-utils";
 
-const CODEX_USAGE_TITLE = 'Codex Usage';
-const CODEX_USAGE_SUBTITLE = 'Shows usage limits reported by the Codex CLI.';
-const CODEX_AUTH_WARNING = 'Authenticate Codex CLI to view usage limits.';
-const CODEX_LOGIN_COMMAND = 'codex login';
+const CODEX_USAGE_TITLE = "Codex Usage";
+const CODEX_USAGE_SUBTITLE = "Shows usage limits reported by the Codex CLI.";
+const CODEX_AUTH_WARNING = "Authenticate Codex CLI to view usage limits.";
+const CODEX_LOGIN_COMMAND = "codex login";
 const CODEX_NO_USAGE_MESSAGE =
-  'Usage limits are not available yet. Try refreshing if this persists.';
-const UPDATED_LABEL = 'Updated';
-const CODEX_REFRESH_LABEL = 'Refresh Codex usage';
-const PLAN_LABEL = 'Plan';
+  "Usage limits are not available yet. Try refreshing if this persists.";
+const UPDATED_LABEL = "Updated";
+const CODEX_REFRESH_LABEL = "Refresh Codex usage";
+const PLAN_LABEL = "Plan";
 const WARNING_THRESHOLD = 75;
 const CAUTION_THRESHOLD = 50;
 const MAX_PERCENTAGE = 100;
-const USAGE_COLOR_CRITICAL = 'bg-red-500';
-const USAGE_COLOR_WARNING = 'bg-amber-500';
-const USAGE_COLOR_OK = 'bg-emerald-500';
+const USAGE_COLOR_CRITICAL = "bg-red-500";
+const USAGE_COLOR_WARNING = "bg-amber-500";
+const USAGE_COLOR_OK = "bg-emerald-500";
 
 const isRateLimitWindow = (
-  limitWindow: CodexRateLimitWindow | null
+  limitWindow: CodexRateLimitWindow | null,
 ): limitWindow is CodexRateLimitWindow => Boolean(limitWindow);
 
 export function CodexUsageSection() {
@@ -39,7 +42,13 @@ export function CodexUsageSection() {
   const canFetchUsage = !!codexAuthStatus?.authenticated;
 
   // Use React Query for data fetching with automatic polling
-  const { data: codexUsage, isLoading, isFetching, error, refetch } = useCodexUsage(canFetchUsage);
+  const {
+    data: codexUsage,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useCodexUsage(canFetchUsage);
 
   const rateLimits = codexUsage?.rateLimits ?? null;
   const primary = rateLimits?.primary ?? null;
@@ -51,7 +60,8 @@ export function CodexUsageSection() {
     ? new Date(codexUsage.lastUpdated).toLocaleString()
     : null;
   const showAuthWarning = !canFetchUsage && !codexUsage && !isLoading;
-  const errorMessage = error instanceof Error ? error.message : error ? String(error) : null;
+  const errorMessage =
+    error instanceof Error ? error.message : error ? String(error) : null;
 
   const getUsageColor = (percentage: number) => {
     if (percentage >= WARNING_THRESHOLD) {
@@ -72,14 +82,19 @@ export function CodexUsageSection() {
     subtitle: string;
     window: CodexRateLimitWindow;
   }) => {
-    const safePercentage = Math.min(Math.max(limitWindow.usedPercent, 0), MAX_PERCENTAGE);
+    const safePercentage = Math.min(
+      Math.max(limitWindow.usedPercent, 0),
+      MAX_PERCENTAGE,
+    );
     const resetLabel = formatCodexResetTime(limitWindow.resetsAt);
     const pacePercentage = getExpectedCodexPacePercentage(
       limitWindow.resetsAt,
-      limitWindow.windowDurationMins
+      limitWindow.windowDurationMins,
     );
     const paceLabel =
-      pacePercentage != null ? getPaceStatusLabel(safePercentage, pacePercentage) : null;
+      pacePercentage != null
+        ? getPaceStatusLabel(safePercentage, pacePercentage)
+        : null;
 
     return (
       <div className="rounded-xl border border-border/60 bg-card/50 p-4">
@@ -95,25 +110,29 @@ export function CodexUsageSection() {
         <div className="relative mt-3 h-2 w-full rounded-full bg-secondary/60">
           <div
             className={cn(
-              'h-full rounded-full transition-all duration-300',
-              getUsageColor(safePercentage)
+              "h-full rounded-full transition-all duration-300",
+              getUsageColor(safePercentage),
             )}
             style={{ width: `${safePercentage}%` }}
           />
-          {pacePercentage != null && pacePercentage > 0 && pacePercentage < 100 && (
-            <div
-              className="absolute top-0 h-full w-0.5 bg-foreground/60"
-              style={{ left: `${pacePercentage}%` }}
-              title={`Expected: ${Math.round(pacePercentage)}%`}
-            />
-          )}
+          {pacePercentage != null &&
+            pacePercentage > 0 &&
+            pacePercentage < 100 && (
+              <div
+                className="absolute top-0 h-full w-0.5 bg-foreground/60"
+                style={{ left: `${pacePercentage}%` }}
+                title={`Expected: ${Math.round(pacePercentage)}%`}
+              />
+            )}
         </div>
         <div className="mt-2 flex items-center justify-between">
           {paceLabel ? (
             <p
               className={cn(
-                'text-xs font-medium',
-                safePercentage > (pacePercentage ?? 0) ? 'text-orange-500' : 'text-green-500'
+                "text-xs font-medium",
+                safePercentage > (pacePercentage ?? 0)
+                  ? "text-orange-500"
+                  : "text-green-500",
               )}
             >
               {paceLabel}
@@ -121,7 +140,9 @@ export function CodexUsageSection() {
           ) : (
             <div />
           )}
-          {resetLabel && <p className="text-xs text-muted-foreground">{resetLabel}</p>}
+          {resetLabel && (
+            <p className="text-xs text-muted-foreground">{resetLabel}</p>
+          )}
         </div>
       </div>
     );
@@ -130,10 +151,10 @@ export function CodexUsageSection() {
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -153,17 +174,24 @@ export function CodexUsageSection() {
             data-testid="refresh-codex-usage"
             title={CODEX_REFRESH_LABEL}
           >
-            {isFetching ? <Spinner size="sm" /> : <RefreshCw className="w-4 h-4" />}
+            {isFetching ? (
+              <Spinner size="sm" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground/80 ml-12">{CODEX_USAGE_SUBTITLE}</p>
+        <p className="text-sm text-muted-foreground/80 ml-12">
+          {CODEX_USAGE_SUBTITLE}
+        </p>
       </div>
       <div className="p-6 space-y-4">
         {showAuthWarning && (
           <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
             <div className="text-sm text-amber-400">
-              {CODEX_AUTH_WARNING} Run <span className="font-mono">{CODEX_LOGIN_COMMAND}</span>.
+              {CODEX_AUTH_WARNING} Run{" "}
+              <span className="font-mono">{CODEX_LOGIN_COMMAND}</span>.
             </div>
           </div>
         )}
@@ -176,7 +204,9 @@ export function CodexUsageSection() {
         {hasMetrics && (
           <div className="grid gap-3 sm:grid-cols-2">
             {rateLimitWindows.map((limitWindow, index) => {
-              const { title, subtitle } = getCodexWindowLabel(limitWindow.windowDurationMins);
+              const { title, subtitle } = getCodexWindowLabel(
+                limitWindow.windowDurationMins,
+              );
               return (
                 <RateLimitCard
                   key={`${title}-${index}`}
@@ -191,7 +221,10 @@ export function CodexUsageSection() {
         {planType && (
           <div className="rounded-xl border border-border/60 bg-secondary/20 p-4 text-xs text-muted-foreground">
             <div>
-              {PLAN_LABEL}: <span className="text-foreground">{formatCodexPlanType(planType)}</span>
+              {PLAN_LABEL}:{" "}
+              <span className="text-foreground">
+                {formatCodexPlanType(planType)}
+              </span>
             </div>
           </div>
         )}

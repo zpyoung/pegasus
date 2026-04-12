@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,14 +6,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { GitPullRequest } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getElectronAPI } from '@/lib/electron';
-import { toast } from 'sonner';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { GitPullRequest } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getElectronAPI } from "@/lib/electron";
+import { toast } from "sonner";
 
 interface WorktreeInfo {
   path: string;
@@ -43,7 +43,7 @@ export function ChangePRNumberDialog({
   projectPath,
   onChanged,
 }: ChangePRNumberDialogProps) {
-  const [prNumberInput, setPrNumberInput] = useState('');
+  const [prNumberInput, setPrNumberInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +52,7 @@ export function ChangePRNumberDialog({
     if (open && worktree?.pr?.number) {
       setPrNumberInput(String(worktree.pr.number));
     } else if (open) {
-      setPrNumberInput('');
+      setPrNumberInput("");
     }
     setError(null);
   }, [open, worktree]);
@@ -62,12 +62,12 @@ export function ChangePRNumberDialog({
 
     const trimmed = prNumberInput.trim();
     if (!/^\d+$/.test(trimmed)) {
-      setError('Please enter a valid positive PR number');
+      setError("Please enter a valid positive PR number");
       return;
     }
     const prNumber = Number(trimmed);
     if (prNumber <= 0) {
-      setError('Please enter a valid positive PR number');
+      setError("Please enter a valid positive PR number");
       return;
     }
 
@@ -77,19 +77,19 @@ export function ChangePRNumberDialog({
     try {
       const api = getElectronAPI();
       if (!api?.worktree?.updatePRNumber) {
-        setError('Worktree API not available');
+        setError("Worktree API not available");
         return;
       }
 
       const result = await api.worktree.updatePRNumber(
         worktree.path,
         prNumber,
-        projectPath || undefined
+        projectPath || undefined,
       );
 
       if (result.success) {
         const prInfo = result.result?.prInfo;
-        toast.success('PR tracking updated', {
+        toast.success("PR tracking updated", {
           description: prInfo?.title
             ? `Now tracking PR #${prNumber}: ${prInfo.title}`
             : `Now tracking PR #${prNumber}`,
@@ -97,10 +97,12 @@ export function ChangePRNumberDialog({
         onOpenChange(false);
         onChanged();
       } else {
-        setError(result.error || 'Failed to update PR number');
+        setError(result.error || "Failed to update PR number");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update PR number');
+      setError(
+        err instanceof Error ? err.message : "Failed to update PR number",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -108,12 +110,12 @@ export function ChangePRNumberDialog({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !isLoading) {
+      if (e.key === "Enter" && !isLoading) {
         e.preventDefault();
         handleSubmit();
       }
     },
-    [isLoading, handleSubmit]
+    [isLoading, handleSubmit],
   );
 
   if (!worktree) return null;
@@ -134,8 +136,11 @@ export function ChangePRNumberDialog({
             Change Tracked PR Number
           </DialogTitle>
           <DialogDescription>
-            Update which pull request number is tracked for{' '}
-            <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>.
+            Update which pull request number is tracked for{" "}
+            <code className="font-mono bg-muted px-1 rounded">
+              {worktree.branch}
+            </code>
+            .
             {worktree.pr && (
               <span className="block mt-1 text-xs">
                 Currently tracking PR #{worktree.pr.number}
@@ -165,8 +170,8 @@ export function ChangePRNumberDialog({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Enter the GitHub PR number to associate with this worktree. The PR info will be
-              fetched from GitHub if available.
+              Enter the GitHub PR number to associate with this worktree. The PR
+              info will be fetched from GitHub if available.
             </p>
           </div>
 
@@ -174,10 +179,17 @@ export function ChangePRNumberDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading || !prNumberInput.trim()}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isLoading || !prNumberInput.trim()}
+          >
             {isLoading ? (
               <>
                 <Spinner size="xs" className="mr-2" />

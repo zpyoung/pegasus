@@ -1,13 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import type { PhaseModelEntry } from '@pegasus/types';
-import { useAppStore } from '@/store/app-store';
-import { useShallow } from 'zustand/react/shallow';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import type { PhaseModelEntry } from "@pegasus/types";
+import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 
-const logger = createLogger('AgentSession');
+const logger = createLogger("AgentSession");
 
 // Default model selection when none is persisted
-const DEFAULT_MODEL_SELECTION: PhaseModelEntry = { model: 'claude-sonnet' };
+const DEFAULT_MODEL_SELECTION: PhaseModelEntry = { model: "claude-sonnet" };
 
 interface UseAgentSessionOptions {
   projectPath: string | undefined;
@@ -37,11 +37,12 @@ export function useAgentSession({
       getLastSelectedSession: state.getLastSelectedSession,
       setAgentModelForSession: state.setAgentModelForSession,
       getAgentModelForSession: state.getAgentModelForSession,
-    }))
+    })),
   );
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [modelSelection, setModelSelectionState] =
-    useState<PhaseModelEntry>(DEFAULT_MODEL_SELECTION);
+  const [modelSelection, setModelSelectionState] = useState<PhaseModelEntry>(
+    DEFAULT_MODEL_SELECTION,
+  );
 
   // Track if initial session has been loaded
   const initialSessionLoadedRef = useRef(false);
@@ -56,13 +57,17 @@ export function useAgentSession({
     (sessionId: string) => {
       const persistedModel = getAgentModelForSession(sessionId);
       if (persistedModel) {
-        logger.debug('Restoring model selection for session:', sessionId, persistedModel);
+        logger.debug(
+          "Restoring model selection for session:",
+          sessionId,
+          persistedModel,
+        );
         setModelSelectionState(persistedModel);
       } else {
         setModelSelectionState(DEFAULT_MODEL_SELECTION);
       }
     },
-    [getAgentModelForSession]
+    [getAgentModelForSession],
   );
 
   // Handle session selection with persistence
@@ -78,7 +83,7 @@ export function useAgentSession({
         restoreModelForSession(sessionId);
       }
     },
-    [persistenceKey, setLastSelectedSession, restoreModelForSession]
+    [persistenceKey, setLastSelectedSession, restoreModelForSession],
   );
 
   // Wrapper for setModelSelection that also persists
@@ -94,7 +99,7 @@ export function useAgentSession({
         setAgentModelForSession(currentSessionId, model);
       }
     },
-    [currentSessionId, setAgentModelForSession]
+    [currentSessionId, setAgentModelForSession],
   );
 
   // Track the previous persistence key to detect actual changes
@@ -103,7 +108,8 @@ export function useAgentSession({
   // Restore last selected session when switching to Agent view or when worktree changes
   useEffect(() => {
     // Detect if persistenceKey actually changed (worktree/project switch)
-    const persistenceKeyChanged = prevPersistenceKeyRef.current !== persistenceKey;
+    const persistenceKeyChanged =
+      prevPersistenceKeyRef.current !== persistenceKey;
 
     if (persistenceKeyChanged) {
       // Reset state when switching worktree/project
@@ -128,7 +134,7 @@ export function useAgentSession({
 
     const lastSessionId = getLastSelectedSession(persistenceKey);
     if (lastSessionId) {
-      logger.debug('Restoring last selected session:', lastSessionId);
+      logger.debug("Restoring last selected session:", lastSessionId);
       setCurrentSessionId(lastSessionId);
       // Also restore model selection for this session
       restoreModelForSession(lastSessionId);

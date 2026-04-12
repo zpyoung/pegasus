@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuGroup,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   GitBranch,
   ChevronDown,
@@ -17,9 +21,9 @@ import {
   GitPullRequest,
   FlaskConical,
   AlertTriangle,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import type {
   WorktreeInfo,
   BranchInfo,
@@ -28,10 +32,10 @@ import type {
   GitRepoStatus,
   TestSessionInfo,
   MergeConflictInfo,
-} from '../types';
-import { WorktreeDropdownItem } from './worktree-dropdown-item';
-import { BranchSwitchDropdown } from './branch-switch-dropdown';
-import { WorktreeActionsDropdown } from './worktree-actions-dropdown';
+} from "../types";
+import { WorktreeDropdownItem } from "./worktree-dropdown-item";
+import { BranchSwitchDropdown } from "./branch-switch-dropdown";
+import { WorktreeActionsDropdown } from "./worktree-actions-dropdown";
 import {
   truncateBranchName,
   getPRBadgeStyles,
@@ -39,7 +43,7 @@ import {
   getConflictBadgeStyles,
   getConflictTypeLabel,
   getTestStatusStyles,
-} from './worktree-indicator-utils';
+} from "./worktree-indicator-utils";
 
 export interface WorktreeDropdownProps {
   /** List of all worktrees to display in the dropdown */
@@ -73,7 +77,9 @@ export interface WorktreeDropdownProps {
   branchFilter: string;
   isLoadingBranches: boolean;
   isSwitching: boolean;
-  onBranchDropdownOpenChange: (worktree: WorktreeInfo) => (open: boolean) => void;
+  onBranchDropdownOpenChange: (
+    worktree: WorktreeInfo,
+  ) => (open: boolean) => void;
   onBranchFilterChange: (value: string) => void;
   onSwitchBranch: (worktree: WorktreeInfo, branchName: string) => void;
   onCreateBranch: (worktree: WorktreeInfo) => void;
@@ -93,13 +99,21 @@ export interface WorktreeDropdownProps {
   hasTestCommand: boolean;
   isStartingTests: boolean;
   hasInitScript: boolean;
-  onActionsDropdownOpenChange: (worktree: WorktreeInfo) => (open: boolean) => void;
+  onActionsDropdownOpenChange: (
+    worktree: WorktreeInfo,
+  ) => (open: boolean) => void;
   onPull: (worktree: WorktreeInfo) => void;
   onPush: (worktree: WorktreeInfo) => void;
   onPushNewBranch: (worktree: WorktreeInfo) => void;
   onOpenInEditor: (worktree: WorktreeInfo, editorCommand?: string) => void;
-  onOpenInIntegratedTerminal: (worktree: WorktreeInfo, mode?: 'tab' | 'split') => void;
-  onOpenInExternalTerminal: (worktree: WorktreeInfo, terminalId?: string) => void;
+  onOpenInIntegratedTerminal: (
+    worktree: WorktreeInfo,
+    mode?: "tab" | "split",
+  ) => void;
+  onOpenInExternalTerminal: (
+    worktree: WorktreeInfo,
+    terminalId?: string,
+  ) => void;
   onViewChanges: (worktree: WorktreeInfo) => void;
   onViewCommits: (worktree: WorktreeInfo) => void;
   onDiscardChanges: (worktree: WorktreeInfo) => void;
@@ -139,7 +153,7 @@ export interface WorktreeDropdownProps {
   /** Push to a specific remote, bypassing the remote selection dialog */
   onPushWithRemote?: (worktree: WorktreeInfo, remote: string) => void;
   /** Terminal quick scripts configured for the project */
-  terminalScripts?: import('@/components/views/project-settings-view/terminal-scripts-constants').TerminalScript[];
+  terminalScripts?: import("@/components/views/project-settings-view/terminal-scripts-constants").TerminalScript[];
   /** Callback to run a terminal quick script in a new terminal session */
   onRunTerminalScript?: (worktree: WorktreeInfo, command: string) => void;
   /** Callback to open the script editor UI */
@@ -262,11 +276,9 @@ export function WorktreeDropdown({
   const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w));
   const displayBranch =
     selectedWorktree?.branch ??
-    (worktrees.length > 0 ? `+${worktrees.length} more` : 'Select worktree');
-  const { truncated: truncatedBranch, isTruncated: isBranchNameTruncated } = truncateBranchName(
-    displayBranch,
-    MAX_TRIGGER_BRANCH_NAME_LENGTH
-  );
+    (worktrees.length > 0 ? `+${worktrees.length} more` : "Select worktree");
+  const { truncated: truncatedBranch, isTruncated: isBranchNameTruncated } =
+    truncateBranchName(displayBranch, MAX_TRIGGER_BRANCH_NAME_LENGTH);
 
   // Separate main worktree from others for grouping
   const mainWorktree = worktrees.find((w) => w.isMain);
@@ -309,17 +321,17 @@ export function WorktreeDropdown({
   const triggerButton = useMemo(
     () => (
       <Button
-        variant={selectedWorktree && highlightTrigger ? 'default' : 'outline'}
+        variant={selectedWorktree && highlightTrigger ? "default" : "outline"}
         size="sm"
         className={cn(
-          'h-7 px-3 gap-1.5 font-mono text-xs min-w-0',
+          "h-7 px-3 gap-1.5 font-mono text-xs min-w-0",
           selectedWorktree &&
             highlightTrigger &&
-            'bg-primary text-primary-foreground border-r-0 rounded-l-md rounded-r-none',
+            "bg-primary text-primary-foreground border-r-0 rounded-l-md rounded-r-none",
           selectedWorktree &&
             !highlightTrigger &&
-            'bg-secondary/50 hover:bg-secondary border-r-0 rounded-l-md rounded-r-none',
-          !selectedWorktree && 'bg-secondary/50 hover:bg-secondary rounded-md'
+            "bg-secondary/50 hover:bg-secondary border-r-0 rounded-l-md rounded-r-none",
+          !selectedWorktree && "bg-secondary/50 hover:bg-secondary rounded-md",
         )}
         disabled={isActivating}
       >
@@ -328,7 +340,9 @@ export function WorktreeDropdown({
           <Spinner
             size="xs"
             className="shrink-0"
-            variant={selectedWorktree && highlightTrigger ? 'foreground' : 'primary'}
+            variant={
+              selectedWorktree && highlightTrigger ? "foreground" : "primary"
+            }
           />
         )}
 
@@ -351,24 +365,25 @@ export function WorktreeDropdown({
         {selectedWorktree?.hasChanges && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium rounded border shrink-0',
-              getChangesBadgeStyles()
+              "inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium rounded border shrink-0",
+              getChangesBadgeStyles(),
             )}
           >
             <CircleDot className="w-2.5 h-2.5 mr-0.5" />
-            {selectedWorktree.changedFilesCount ?? '!'}
+            {selectedWorktree.changedFilesCount ?? "!"}
           </span>
         )}
 
         {/* Dev server indicator - only shown when port is confirmed detected */}
-        {selectedStatus.devServerRunning && selectedStatus.devServerInfo?.urlDetected !== false && (
-          <span
-            className="inline-flex items-center justify-center h-4 w-4 text-green-500 shrink-0"
-            title={`Dev server running on port ${selectedStatus.devServerInfo?.port}`}
-          >
-            <Globe className="w-3 h-3" />
-          </span>
-        )}
+        {selectedStatus.devServerRunning &&
+          selectedStatus.devServerInfo?.urlDetected !== false && (
+            <span
+              className="inline-flex items-center justify-center h-4 w-4 text-green-500 shrink-0"
+              title={`Dev server running on port ${selectedStatus.devServerInfo?.port}`}
+            >
+              <Globe className="w-3 h-3" />
+            </span>
+          )}
 
         {/* Dev server starting indicator */}
         {selectedStatus.devServerStarting && (
@@ -394,8 +409,8 @@ export function WorktreeDropdown({
         {!selectedStatus.testRunning && selectedStatus.testSessionInfo && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 w-4 shrink-0',
-              getTestStatusStyles(selectedStatus.testSessionInfo.status)
+              "inline-flex items-center justify-center h-4 w-4 shrink-0",
+              getTestStatusStyles(selectedStatus.testSessionInfo.status),
             )}
             title={`Last test: ${selectedStatus.testSessionInfo.status}`}
           >
@@ -417,8 +432,8 @@ export function WorktreeDropdown({
         {selectedWorktree?.hasConflicts && (
           <span
             className={cn(
-              'inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium rounded border shrink-0',
-              getConflictBadgeStyles()
+              "inline-flex items-center justify-center h-4 min-w-4 px-1 text-[10px] font-medium rounded border shrink-0",
+              getConflictBadgeStyles(),
             )}
             title={`${getConflictTypeLabel(selectedWorktree.conflictType)} conflicts detected`}
           >
@@ -431,11 +446,12 @@ export function WorktreeDropdown({
         {selectedWorktree?.pr && (
           <span
             className={cn(
-              'inline-flex items-center gap-0.5 h-4 px-1 text-[10px] font-medium rounded border shrink-0',
-              getPRBadgeStyles(selectedWorktree.pr.state)
+              "inline-flex items-center gap-0.5 h-4 px-1 text-[10px] font-medium rounded border shrink-0",
+              getPRBadgeStyles(selectedWorktree.pr.state),
             )}
           >
-            <GitPullRequest className="w-2.5 h-2.5" />#{selectedWorktree.pr.number}
+            <GitPullRequest className="w-2.5 h-2.5" />#
+            {selectedWorktree.pr.number}
           </span>
         )}
 
@@ -450,11 +466,13 @@ export function WorktreeDropdown({
       selectedWorktree,
       branchCardCounts,
       highlightTrigger,
-    ]
+    ],
   );
 
   // Wrap trigger button with dropdown trigger first to ensure ref is passed correctly
-  const dropdownTrigger = <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>;
+  const dropdownTrigger = (
+    <DropdownMenuTrigger asChild>{triggerButton}</DropdownMenuTrigger>
+  );
 
   const triggerWithTooltip = isBranchNameTruncated ? (
     <Tooltip>
@@ -561,7 +579,9 @@ export function WorktreeDropdown({
           behindCount={behindCount}
           hasRemoteBranch={hasRemoteBranch}
           trackingRemote={
-            getTrackingRemote ? getTrackingRemote(selectedWorktree.path) : trackingRemote
+            getTrackingRemote
+              ? getTrackingRemote(selectedWorktree.path)
+              : trackingRemote
           }
           isPulling={isPulling}
           isPushing={isPushing}

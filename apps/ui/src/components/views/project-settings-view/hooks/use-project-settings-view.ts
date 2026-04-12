@@ -1,25 +1,26 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export type ProjectSettingsViewId =
-  | 'identity'
-  | 'theme'
-  | 'worktrees'
-  | 'commands'
-  | 'scripts'
-  | 'commands-scripts'
-  | 'claude'
-  | 'data'
-  | 'orphaned'
-  | 'danger';
+  | "identity"
+  | "theme"
+  | "worktrees"
+  | "commands"
+  | "scripts"
+  | "commands-scripts"
+  | "claude"
+  | "data"
+  | "orphaned"
+  | "danger";
 
 interface UseProjectSettingsViewOptions {
   initialView?: ProjectSettingsViewId;
 }
 
 export function useProjectSettingsView({
-  initialView = 'identity',
+  initialView = "identity",
 }: UseProjectSettingsViewOptions = {}) {
-  const [activeView, setActiveView] = useState<ProjectSettingsViewId>(initialView);
+  const [activeView, setActiveView] =
+    useState<ProjectSettingsViewId>(initialView);
 
   const navigateTo = useCallback((viewId: ProjectSettingsViewId) => {
     setActiveView(viewId);

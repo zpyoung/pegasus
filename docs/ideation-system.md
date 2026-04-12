@@ -20,12 +20,12 @@ All data is stored per-project under `.pegasus/ideation/`.
 
 Ideas move through four statuses:
 
-| Status     | Meaning                                              |
-|------------|------------------------------------------------------|
+| Status     | Meaning                                                  |
+| ---------- | -------------------------------------------------------- |
 | `raw`      | Newly captured, unrefined; the default for all new ideas |
-| `refined`  | Being shaped — more details added, user stories written |
-| `ready`    | Approved for promotion to a feature                  |
-| `archived` | Removed from active consideration but not deleted    |
+| `refined`  | Being shaped — more details added, user stories written  |
+| `ready`    | Approved for promotion to a feature                      |
+| `archived` | Removed from active consideration but not deleted        |
 
 Only ideas with status `ready` can be converted to features. Attempting to convert an idea in any other status returns HTTP 422 with error code `IDEA_NOT_READY`.
 
@@ -39,18 +39,18 @@ interface Idea {
   title: string;
   description: string;
   category: IdeaCategory;
-  status: IdeaStatus;          // 'raw' | 'refined' | 'ready' | 'archived'
-  impact: ImpactLevel;         // 'low' | 'medium' | 'high'
-  effort: EffortLevel;         // 'low' | 'medium' | 'high'
+  status: IdeaStatus; // 'raw' | 'refined' | 'ready' | 'archived'
+  impact: ImpactLevel; // 'low' | 'medium' | 'high'
+  effort: EffortLevel; // 'low' | 'medium' | 'high'
 
-  conversationId?: string;     // links back to the ideation session that generated it
-  sourcePromptId?: string;     // which guided prompt produced it
+  conversationId?: string; // links back to the ideation session that generated it
+  sourcePromptId?: string; // which guided prompt produced it
 
   attachments?: IdeaAttachment[];
   userStories?: string[];
   notes?: string;
 
-  createdAt: string;           // ISO 8601
+  createdAt: string; // ISO 8601
   updatedAt: string;
   archivedAt?: string;
 }
@@ -86,21 +86,21 @@ The fastest way to fill the board with ideas is the **Generate Ideas** button in
 
 Prompts are defined server-side in `IdeationService.getAllPrompts()` and served via `GET /api/ideation/prompts`. There are 35 built-in prompts across all nine categories. Examples:
 
-| Category    | Prompt ID           | Title                      |
-|-------------|---------------------|----------------------------|
-| feature     | `feature-missing`   | Missing Features            |
-| feature     | `feature-automation`| Automation Opportunities    |
-| feature     | `feature-integrations` | Integration Ideas        |
-| ux-ui       | `ux-friction`       | Friction Points             |
-| ux-ui       | `ux-empty-states`   | Empty States                |
-| dx          | `dx-documentation`  | Documentation Gaps          |
-| dx          | `dx-testing`        | Testing Improvements        |
-| growth      | `growth-onboarding` | Onboarding Flow             |
-| technical   | `tech-performance`  | Performance Optimization    |
-| security    | `security-auth`     | Authentication Security     |
-| performance | `perf-frontend`     | Frontend Performance        |
-| accessibility | `a11y-keyboard`  | Keyboard Navigation         |
-| analytics   | *(analytics prompts)* | Various analytics prompts |
+| Category      | Prompt ID              | Title                     |
+| ------------- | ---------------------- | ------------------------- |
+| feature       | `feature-missing`      | Missing Features          |
+| feature       | `feature-automation`   | Automation Opportunities  |
+| feature       | `feature-integrations` | Integration Ideas         |
+| ux-ui         | `ux-friction`          | Friction Points           |
+| ux-ui         | `ux-empty-states`      | Empty States              |
+| dx            | `dx-documentation`     | Documentation Gaps        |
+| dx            | `dx-testing`           | Testing Improvements      |
+| growth        | `growth-onboarding`    | Onboarding Flow           |
+| technical     | `tech-performance`     | Performance Optimization  |
+| security      | `security-auth`        | Authentication Security   |
+| performance   | `perf-frontend`        | Frontend Performance      |
+| accessibility | `a11y-keyboard`        | Keyboard Navigation       |
+| analytics     | _(analytics prompts)_  | Various analytics prompts |
 
 Prompts can also be fetched by category:
 
@@ -127,11 +127,11 @@ Each project can independently toggle which sources contribute to suggestion gen
 
 ```typescript
 interface IdeationContextSources {
-  useContextFiles: boolean;      // .pegasus/context/*.md|.txt
-  useMemoryFiles: boolean;       // .pegasus/memory/*.md
-  useExistingFeatures: boolean;  // feature board state
-  useExistingIdeas: boolean;     // ideas already on the board
-  useAppSpec: boolean;           // .pegasus/app_spec.txt
+  useContextFiles: boolean; // .pegasus/context/*.md|.txt
+  useMemoryFiles: boolean; // .pegasus/memory/*.md
+  useExistingFeatures: boolean; // feature board state
+  useExistingIdeas: boolean; // ideas already on the board
+  useAppSpec: boolean; // .pegasus/app_spec.txt
 }
 ```
 
@@ -158,19 +158,19 @@ Sessions are persisted to disk immediately on creation and after each message. A
 interface IdeationSession {
   id: string;
   projectPath: string;
-  promptCategory?: IdeaCategory;  // optional category focus
-  promptId?: string;              // optional guided prompt that started the session
-  status: 'active' | 'completed' | 'abandoned';
+  promptCategory?: IdeaCategory; // optional category focus
+  promptId?: string; // optional guided prompt that started the session
+  status: "active" | "completed" | "abandoned";
   createdAt: string;
   updatedAt: string;
 }
 
 interface IdeationMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
-  savedAsIdeaId?: string;  // if this message was saved as an idea
+  savedAsIdeaId?: string; // if this message was saved as an idea
 }
 ```
 
@@ -184,11 +184,11 @@ interface IdeationMessage {
 
 WebSocket events emitted during a session:
 
-| Event                    | When                                      |
-|--------------------------|-------------------------------------------|
-| `ideation:session-started` | Session created                         |
-| `ideation:stream`         | Per streaming chunk and message complete |
-| `ideation:session-ended`  | Session stopped                          |
+| Event                      | When                                     |
+| -------------------------- | ---------------------------------------- |
+| `ideation:session-started` | Session created                          |
+| `ideation:stream`          | Per streaming chunk and message complete |
+| `ideation:session-ended`   | Session stopped                          |
 
 The `ideation:stream` event carries a `type` field with values: `message`, `stream`, `message-complete`, `aborted`, `error`.
 
@@ -202,16 +202,17 @@ The analysis feature scans the project directory structure and uses AI to genera
 
 **Analysis events:**
 
-| Event                          | Description                    |
-|--------------------------------|--------------------------------|
-| `ideation:analysis-started`    | Analysis has begun             |
-| `ideation:analysis-progress`   | Progress update (0–100%)       |
-| `ideation:analysis-complete`   | Analysis finished with result  |
-| `ideation:analysis-error`      | Analysis failed                |
+| Event                        | Description                   |
+| ---------------------------- | ----------------------------- |
+| `ideation:analysis-started`  | Analysis has begun            |
+| `ideation:analysis-progress` | Progress update (0–100%)      |
+| `ideation:analysis-complete` | Analysis finished with result |
+| `ideation:analysis-error`    | Analysis failed               |
 
 **Getting the result:** `POST /api/ideation/analysis` returns the cached `analysis.json` file synchronously.
 
 The `ProjectAnalysisResult` includes:
+
 - File structure breakdown (routes, components, services)
 - Detected tech stack (framework, language, dependencies)
 - AI-generated `AnalysisSuggestion[]` ranked by priority
@@ -237,13 +238,13 @@ When an idea has status `ready`, it can be promoted to a feature on the main Kan
 
 ### What gets mapped
 
-| Idea field         | Feature field          |
-|--------------------|------------------------|
-| `title`            | `title`                |
-| `description`      | `description` (base)   |
-| `userStories`      | appended to description as `## User Stories` |
-| `notes`            | appended to description as `## Notes` |
-| `category`         | mapped to feature category |
+| Idea field    | Feature field                                |
+| ------------- | -------------------------------------------- |
+| `title`       | `title`                                      |
+| `description` | `description` (base)                         |
+| `userStories` | appended to description as `## User Stories` |
+| `notes`       | appended to description as `## Notes`        |
+| `category`    | mapped to feature category                   |
 
 The new feature starts in `backlog` status by default. The `column` option overrides this.
 
@@ -252,7 +253,10 @@ The new feature starts in `backlog` status by default. The `column` option overr
 If the idea is not `ready`, the server returns HTTP 422:
 
 ```json
-{ "success": false, "error": "Cannot convert idea: status must be 'ready', got 'raw'" }
+{
+  "success": false,
+  "error": "Cannot convert idea: status must be 'ready', got 'raw'"
+}
 ```
 
 ---
@@ -263,14 +267,15 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 
 ### Sessions
 
-| Method | Path              | Description                          |
-|--------|-------------------|--------------------------------------|
-| POST   | `/session/start`  | Start a new session                  |
-| POST   | `/session/message`| Send a message; response via WebSocket |
-| POST   | `/session/stop`   | Stop an active session               |
-| POST   | `/session/get`    | Retrieve session with full history   |
+| Method | Path               | Description                            |
+| ------ | ------------------ | -------------------------------------- |
+| POST   | `/session/start`   | Start a new session                    |
+| POST   | `/session/message` | Send a message; response via WebSocket |
+| POST   | `/session/stop`    | Stop an active session                 |
+| POST   | `/session/get`     | Retrieve session with full history     |
 
 **Start session request:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -283,6 +288,7 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 ```
 
 **Send message request:**
+
 ```json
 {
   "sessionId": "session-abc123",
@@ -295,15 +301,16 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 
 ### Ideas CRUD
 
-| Method | Path           | Description                       |
-|--------|----------------|-----------------------------------|
-| POST   | `/ideas/list`  | List all ideas for a project      |
-| POST   | `/ideas/create`| Create a new idea                 |
-| POST   | `/ideas/get`   | Get a single idea by ID           |
-| POST   | `/ideas/update`| Update idea fields or status      |
-| POST   | `/ideas/delete`| Delete an idea permanently        |
+| Method | Path            | Description                  |
+| ------ | --------------- | ---------------------------- |
+| POST   | `/ideas/list`   | List all ideas for a project |
+| POST   | `/ideas/create` | Create a new idea            |
+| POST   | `/ideas/get`    | Get a single idea by ID      |
+| POST   | `/ideas/update` | Update idea fields or status |
+| POST   | `/ideas/delete` | Delete an idea permanently   |
 
 **Create idea request:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -319,31 +326,35 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 ```
 
 **Update idea request (e.g., advance to refined):**
+
 ```json
 {
   "projectPath": "/path/to/project",
   "ideaId": "idea-abc123",
   "updates": {
     "status": "refined",
-    "userStories": ["As a user, I want to toggle dark mode from the settings page"]
+    "userStories": [
+      "As a user, I want to toggle dark mode from the settings page"
+    ]
   }
 }
 ```
 
 ### Project Analysis
 
-| Method | Path        | Description                                      |
-|--------|-------------|--------------------------------------------------|
-| POST   | `/analyze`  | Start async analysis; progress via WebSocket     |
-| POST   | `/analysis` | Get cached analysis result                       |
+| Method | Path        | Description                                  |
+| ------ | ----------- | -------------------------------------------- |
+| POST   | `/analyze`  | Start async analysis; progress via WebSocket |
+| POST   | `/analysis` | Get cached analysis result                   |
 
 ### Suggestion Generation
 
-| Method | Path                    | Description                                    |
-|--------|-------------------------|------------------------------------------------|
-| POST   | `/suggestions/generate` | Generate structured suggestions from a prompt  |
+| Method | Path                    | Description                                   |
+| ------ | ----------------------- | --------------------------------------------- |
+| POST   | `/suggestions/generate` | Generate structured suggestions from a prompt |
 
 **Request:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -361,6 +372,7 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -380,12 +392,13 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 
 ### Convert and Add
 
-| Method | Path              | Description                                            |
-|--------|-------------------|--------------------------------------------------------|
-| POST   | `/convert`        | Promote a ready idea to a feature                      |
-| POST   | `/add-suggestion` | Add an analysis suggestion to the board as a raw idea  |
+| Method | Path              | Description                                           |
+| ------ | ----------------- | ----------------------------------------------------- |
+| POST   | `/convert`        | Promote a ready idea to a feature                     |
+| POST   | `/add-suggestion` | Add an analysis suggestion to the board as a raw idea |
 
 **Convert request:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -398,6 +411,7 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 ```
 
 **Add suggestion request:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -414,10 +428,10 @@ All endpoints are prefixed with `/api/ideation`. Every POST body includes `proje
 
 ### Guided Prompts
 
-| Method | Path                    | Description                              |
-|--------|-------------------------|------------------------------------------|
-| GET    | `/prompts`              | All prompts and categories               |
-| GET    | `/prompts/:category`    | Prompts for one category                 |
+| Method | Path                 | Description                |
+| ------ | -------------------- | -------------------------- |
+| GET    | `/prompts`           | All prompts and categories |
+| GET    | `/prompts/:category` | Prompts for one category   |
 
 ---
 
@@ -429,15 +443,15 @@ The Ideation System is mounted at the `/ideation` TanStack Router route (`apps/u
 
 ### Components
 
-| Component               | File                                               | Purpose                                               |
-|-------------------------|----------------------------------------------------|-------------------------------------------------------|
-| `IdeaBoard`             | `ideation-view/idea-board.tsx`                     | Root component; owns DnD context and column layout    |
-| `IdeaCard`              | `ideation-view/idea-card.tsx`                      | Draggable card rendering one idea                     |
-| `IdeaEditModal`         | `ideation-view/idea-card.tsx` (co-located)         | Dialog for editing title, description, notes, stories |
-| `PromoteModal`          | `ideation-view/promote-modal.tsx`                  | Confirmation dialog before converting to feature      |
-| `PromptCommandPopover`  | `ideation-view/prompt-command-popover.tsx`          | Searchable command palette for selecting AI prompts   |
-| `GenerationJobsIndicator` | `ideation-view/generation-jobs-indicator.tsx`    | Spinner showing count of active generation jobs       |
-| `QuickAddInput`         | `ideation-view/idea-board.tsx` (inline)            | Pinned input at the top of the Raw column             |
+| Component                 | File                                          | Purpose                                               |
+| ------------------------- | --------------------------------------------- | ----------------------------------------------------- |
+| `IdeaBoard`               | `ideation-view/idea-board.tsx`                | Root component; owns DnD context and column layout    |
+| `IdeaCard`                | `ideation-view/idea-card.tsx`                 | Draggable card rendering one idea                     |
+| `IdeaEditModal`           | `ideation-view/idea-card.tsx` (co-located)    | Dialog for editing title, description, notes, stories |
+| `PromoteModal`            | `ideation-view/promote-modal.tsx`             | Confirmation dialog before converting to feature      |
+| `PromptCommandPopover`    | `ideation-view/prompt-command-popover.tsx`    | Searchable command palette for selecting AI prompts   |
+| `GenerationJobsIndicator` | `ideation-view/generation-jobs-indicator.tsx` | Spinner showing count of active generation jobs       |
+| `QuickAddInput`           | `ideation-view/idea-board.tsx` (inline)       | Pinned input at the top of the Raw column             |
 
 ### State management
 
@@ -450,13 +464,13 @@ The `useIdeationStore` (Zustand, persisted as `pegasus-ideation-store`) owns:
 
 Server data (ideas list, prompts) is managed by TanStack Query hooks:
 
-| Hook                          | File                                        | Description                    |
-|-------------------------------|---------------------------------------------|--------------------------------|
-| `useIdeas`                    | `hooks/queries/use-ideation.ts`             | Fetch ideas list               |
-| `useIdea`                     | `hooks/queries/use-ideation.ts`             | Fetch single idea              |
-| `useIdeationPrompts`          | `hooks/queries/use-ideation.ts`             | Fetch all prompts              |
+| Hook                             | File                                        | Description                   |
+| -------------------------------- | ------------------------------------------- | ----------------------------- |
+| `useIdeas`                       | `hooks/queries/use-ideation.ts`             | Fetch ideas list              |
+| `useIdea`                        | `hooks/queries/use-ideation.ts`             | Fetch single idea             |
+| `useIdeationPrompts`             | `hooks/queries/use-ideation.ts`             | Fetch all prompts             |
 | `useGenerateIdeationSuggestions` | `hooks/mutations/use-ideation-mutations.ts` | Trigger suggestion generation |
-| `useConvertIdea`              | `ideation-view/hooks/use-convert-idea.ts`   | Convert idea to feature        |
+| `useConvertIdea`                 | `ideation-view/hooks/use-convert-idea.ts`   | Convert idea to feature       |
 
 ### Keyboard shortcut
 

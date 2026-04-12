@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { useState, useEffect, useCallback } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   Dialog,
   DialogContent,
@@ -7,30 +7,37 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { getErrorMessage } from '@/lib/utils';
-import { toast } from 'sonner';
-import { Upload, RefreshCw, AlertTriangle, Sparkles, Plus, Link } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import type { WorktreeInfo } from '../worktree-panel/types';
+} from "@/components/ui/select";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { getErrorMessage } from "@/lib/utils";
+import { toast } from "sonner";
+import {
+  Upload,
+  RefreshCw,
+  AlertTriangle,
+  Sparkles,
+  Plus,
+  Link,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import type { WorktreeInfo } from "../worktree-panel/types";
 
 interface RemoteInfo {
   name: string;
   url: string;
 }
 
-const logger = createLogger('PushToRemoteDialog');
+const logger = createLogger("PushToRemoteDialog");
 
 interface PushToRemoteDialogProps {
   open: boolean;
@@ -46,15 +53,15 @@ export function PushToRemoteDialog({
   onConfirm,
 }: PushToRemoteDialogProps) {
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
-  const [selectedRemote, setSelectedRemote] = useState<string>('');
+  const [selectedRemote, setSelectedRemote] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Add remote form state
   const [showAddRemoteForm, setShowAddRemoteForm] = useState(false);
-  const [newRemoteName, setNewRemoteName] = useState('origin');
-  const [newRemoteUrl, setNewRemoteUrl] = useState('');
+  const [newRemoteName, setNewRemoteName] = useState("origin");
+  const [newRemoteUrl, setNewRemoteUrl] = useState("");
   const [isAddingRemote, setIsAddingRemote] = useState(false);
   const [addRemoteError, setAddRemoteError] = useState<string | null>(null);
 
@@ -68,7 +75,7 @@ export function PushToRemoteDialog({
         url: r.url,
       }));
     },
-    []
+    [],
   );
 
   /**
@@ -95,10 +102,10 @@ export function PushToRemoteDialog({
         const remoteInfos = transformRemoteData(result.result.remotes);
         updateRemotesState(remoteInfos);
       } else {
-        setError(result.error || 'Failed to fetch remotes');
+        setError(result.error || "Failed to fetch remotes");
       }
     } catch (err) {
-      logger.error('Failed to fetch remotes:', err);
+      logger.error("Failed to fetch remotes:", err);
       setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
@@ -115,11 +122,11 @@ export function PushToRemoteDialog({
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
-      setSelectedRemote('');
+      setSelectedRemote("");
       setError(null);
       setShowAddRemoteForm(false);
-      setNewRemoteName('origin');
-      setNewRemoteUrl('');
+      setNewRemoteName("origin");
+      setNewRemoteUrl("");
       setAddRemoteError(null);
     }
   }, [open]);
@@ -128,7 +135,8 @@ export function PushToRemoteDialog({
   useEffect(() => {
     if (remotes.length > 0 && !selectedRemote) {
       // Default to 'origin' if available, otherwise first remote
-      const defaultRemote = remotes.find((r) => r.name === 'origin') || remotes[0];
+      const defaultRemote =
+        remotes.find((r) => r.name === "origin") || remotes[0];
       setSelectedRemote(defaultRemote.name);
     }
   }, [remotes, selectedRemote]);
@@ -153,12 +161,12 @@ export function PushToRemoteDialog({
       if (result.success && result.result) {
         const remoteInfos = transformRemoteData(result.result.remotes);
         updateRemotesState(remoteInfos);
-        toast.success('Remotes refreshed');
+        toast.success("Remotes refreshed");
       } else {
-        toast.error(result.error || 'Failed to refresh remotes');
+        toast.error(result.error || "Failed to refresh remotes");
       }
     } catch (err) {
-      logger.error('Failed to refresh remotes:', err);
+      logger.error("Failed to refresh remotes:", err);
       toast.error(getErrorMessage(err));
     } finally {
       setIsRefreshing(false);
@@ -176,7 +184,7 @@ export function PushToRemoteDialog({
       const result = await api.worktree.addRemote(
         worktree.path,
         newRemoteName.trim(),
-        newRemoteUrl.trim()
+        newRemoteUrl.trim(),
       );
 
       if (result.success && result.result) {
@@ -189,13 +197,13 @@ export function PushToRemoteDialog({
         setRemotes((prev) => [...prev, newRemote]);
         setSelectedRemote(newRemote.name);
         setShowAddRemoteForm(false);
-        setNewRemoteName('origin');
-        setNewRemoteUrl('');
+        setNewRemoteName("origin");
+        setNewRemoteUrl("");
       } else {
-        setAddRemoteError(result.error || 'Failed to add remote');
+        setAddRemoteError(result.error || "Failed to add remote");
       }
     } catch (err) {
-      logger.error('Failed to add remote:', err);
+      logger.error("Failed to add remote:", err);
       setAddRemoteError(getErrorMessage(err));
     } finally {
       setIsAddingRemote(false);
@@ -214,8 +222,8 @@ export function PushToRemoteDialog({
         <Link className="w-4 h-4" />
         <span className="text-sm">
           {remotes.length === 0
-            ? 'No remotes found. Add a remote to push your branch.'
-            : 'Add a new remote'}
+            ? "No remotes found. Add a remote to push your branch."
+            : "Add a new remote"}
         </span>
       </div>
 
@@ -245,7 +253,7 @@ export function PushToRemoteDialog({
           }}
           onKeyDown={(e) => {
             if (
-              e.key === 'Enter' &&
+              e.key === "Enter" &&
               newRemoteName.trim() &&
               newRemoteUrl.trim() &&
               !isAddingRemote
@@ -325,10 +333,10 @@ export function PushToRemoteDialog({
       {selectedRemote && (
         <div className="mt-2 p-3 rounded-md bg-muted/50 border border-border">
           <p className="text-sm text-muted-foreground">
-            This will create a new remote branch{' '}
+            This will create a new remote branch{" "}
             <span className="font-mono text-foreground">
               {selectedRemote}/{worktree?.branch}
-            </span>{' '}
+            </span>{" "}
             and set up tracking.
           </p>
         </div>
@@ -349,12 +357,18 @@ export function PushToRemoteDialog({
               Back
             </Button>
           )}
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isAddingRemote}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isAddingRemote}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleAddRemote}
-            disabled={!newRemoteName.trim() || !newRemoteUrl.trim() || isAddingRemote}
+            disabled={
+              !newRemoteName.trim() || !newRemoteUrl.trim() || isAddingRemote
+            }
           >
             {isAddingRemote ? (
               <>
@@ -379,7 +393,7 @@ export function PushToRemoteDialog({
         </Button>
         <Button onClick={handleConfirm} disabled={!selectedRemote || isLoading}>
           <Upload className="w-4 h-4 mr-2" />
-          Push to {selectedRemote || 'Remote'}
+          Push to {selectedRemote || "Remote"}
         </Button>
       </DialogFooter>
     );
@@ -411,10 +425,10 @@ export function PushToRemoteDialog({
               <>Add a remote repository to push your changes to.</>
             ) : (
               <>
-                Push{' '}
+                Push{" "}
                 <span className="font-mono text-foreground">
-                  {worktree?.branch || 'current branch'}
-                </span>{' '}
+                  {worktree?.branch || "current branch"}
+                </span>{" "}
                 to a remote repository for the first time.
               </>
             )}

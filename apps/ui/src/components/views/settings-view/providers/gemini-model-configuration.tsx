@@ -1,7 +1,10 @@
-import type { GeminiModelId } from '@pegasus/types';
-import { GeminiIcon } from '@/components/ui/provider-icon';
-import { GEMINI_MODEL_MAP } from '@pegasus/types';
-import { BaseModelConfiguration, type BaseModelInfo } from './shared/base-model-configuration';
+import type { GeminiModelId } from "@pegasus/types";
+import { GeminiIcon } from "@/components/ui/provider-icon";
+import { GEMINI_MODEL_MAP } from "@pegasus/types";
+import {
+  BaseModelConfiguration,
+  type BaseModelInfo,
+} from "./shared/base-model-configuration";
 
 interface GeminiModelConfigurationProps {
   enabledGeminiModels: GeminiModelId[];
@@ -16,12 +19,14 @@ interface GeminiModelInfo extends BaseModelInfo<GeminiModelId> {
 }
 
 // Build model info from the GEMINI_MODEL_MAP
-const GEMINI_MODELS: GeminiModelInfo[] = Object.entries(GEMINI_MODEL_MAP).map(([id, config]) => ({
-  id: id as GeminiModelId,
-  label: config.label,
-  description: config.description,
-  supportsThinking: config.supportsThinking,
-}));
+const GEMINI_MODELS: GeminiModelInfo[] = Object.entries(GEMINI_MODEL_MAP).map(
+  ([id, config]) => ({
+    id: id as GeminiModelId,
+    label: config.label,
+    description: config.description,
+    supportsThinking: config.supportsThinking,
+  }),
+);
 
 export function GeminiModelConfiguration({
   enabledGeminiModels,
@@ -44,7 +49,9 @@ export function GeminiModelConfiguration({
       onModelToggle={onModelToggle}
       getFeatureBadge={(model) => {
         const geminiModel = model as GeminiModelInfo;
-        return geminiModel.supportsThinking ? { show: true, label: 'Thinking' } : null;
+        return geminiModel.supportsThinking
+          ? { show: true, label: "Thinking" }
+          : null;
       }}
     />
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,17 +6,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   GitCommit,
   AlertTriangle,
@@ -29,12 +29,12 @@ import {
   ChevronDown,
   ChevronRight,
   FileText,
-} from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import type { WorktreeInfo, MergeConflictInfo } from '../worktree-panel/types';
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import type { WorktreeInfo, MergeConflictInfo } from "../worktree-panel/types";
 
 export interface CherryPickConflictInfo {
   commitHashes: string[];
@@ -81,7 +81,7 @@ function formatRelativeDate(dateStr: string): string {
   const diffWeeks = Math.floor(diffDays / 7);
   const diffMonths = Math.floor(diffDays / 30);
 
-  if (diffSecs < 60) return 'just now';
+  if (diffSecs < 60) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
@@ -100,7 +100,7 @@ function CopyHashButton({ hash }: { hash: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy hash');
+      toast.error("Failed to copy hash");
     }
   };
 
@@ -120,7 +120,7 @@ function CopyHashButton({ hash }: { hash: string }) {
   );
 }
 
-type Step = 'select-branch' | 'select-commits' | 'conflict';
+type Step = "select-branch" | "select-commits" | "conflict";
 
 export function CherryPickDialog({
   open,
@@ -130,19 +130,23 @@ export function CherryPickDialog({
   onCreateConflictResolutionFeature,
 }: CherryPickDialogProps) {
   // Step management
-  const [step, setStep] = useState<Step>('select-branch');
+  const [step, setStep] = useState<Step>("select-branch");
 
   // Branch selection state
   const [remotes, setRemotes] = useState<RemoteInfo[]>([]);
   const [localBranches, setLocalBranches] = useState<string[]>([]);
-  const [selectedRemote, setSelectedRemote] = useState<string>('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('');
+  const [selectedRemote, setSelectedRemote] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [loadingBranches, setLoadingBranches] = useState(false);
 
   // Commits state
   const [commits, setCommits] = useState<CommitInfo[]>([]);
-  const [selectedCommitHashes, setSelectedCommitHashes] = useState<Set<string>>(new Set());
-  const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set());
+  const [selectedCommitHashes, setSelectedCommitHashes] = useState<Set<string>>(
+    new Set(),
+  );
+  const [expandedCommits, setExpandedCommits] = useState<Set<string>>(
+    new Set(),
+  );
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [loadingMoreCommits, setLoadingMoreCommits] = useState(false);
   const [commitsError, setCommitsError] = useState<string | null>(null);
@@ -156,20 +160,23 @@ export function CherryPickDialog({
   const [isCherryPicking, setIsCherryPicking] = useState(false);
 
   // Conflict state
-  const [conflictInfo, setConflictInfo] = useState<CherryPickConflictInfo | null>(null);
+  const [conflictInfo, setConflictInfo] =
+    useState<CherryPickConflictInfo | null>(null);
 
   // All available branch options for the current remote selection
   const branchOptions =
-    selectedRemote === '__local__'
+    selectedRemote === "__local__"
       ? localBranches.filter((b) => b !== worktree?.branch)
-      : (remotes.find((r) => r.name === selectedRemote)?.branches || []).map((b) => b.fullRef);
+      : (remotes.find((r) => r.name === selectedRemote)?.branches || []).map(
+          (b) => b.fullRef,
+        );
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      setStep('select-branch');
-      setSelectedRemote('');
-      setSelectedBranch('');
+      setStep("select-branch");
+      setSelectedRemote("");
+      setSelectedBranch("");
       setCommits([]);
       setSelectedCommitHashes(new Set());
       setExpandedCommits(new Set());
@@ -206,21 +213,22 @@ export function CherryPickDialog({
           if (remotesResult.result.remotes.length > 0) {
             setSelectedRemote(remotesResult.result.remotes[0].name);
           } else {
-            setSelectedRemote('__local__');
+            setSelectedRemote("__local__");
           }
         }
 
         if (branchesResult.success && branchesResult.result) {
           const branches = branchesResult.result.branches
             .filter(
-              (b: { isRemote: boolean; name: string }) => !b.isRemote && b.name !== worktree.branch
+              (b: { isRemote: boolean; name: string }) =>
+                !b.isRemote && b.name !== worktree.branch,
             )
             .map((b: { name: string }) => b.name);
           setLocalBranches(branches);
         }
       } catch (err) {
         if (!mounted) return;
-        console.error('Failed to fetch branch data:', err);
+        console.error("Failed to fetch branch data:", err);
       } finally {
         if (mounted) {
           setLoadingBranches(false);
@@ -254,7 +262,11 @@ export function CherryPickDialog({
 
       try {
         const api = getHttpApiClient();
-        const result = await api.worktree.getBranchCommitLog(worktree.path, selectedBranch, limit);
+        const result = await api.worktree.getBranchCommitLog(
+          worktree.path,
+          selectedBranch,
+          limit,
+        );
 
         // Ignore stale responses from superseded requests
         if (requestId !== fetchCommitsRequestRef.current) return;
@@ -264,13 +276,15 @@ export function CherryPickDialog({
           // If we got exactly the limit, there may be more commits
           setHasMoreCommits(result.result.commits.length >= limit);
         } else if (!append) {
-          setCommitsError(result.error || 'Failed to load commits');
+          setCommitsError(result.error || "Failed to load commits");
         }
       } catch (err) {
         // Ignore stale responses from superseded requests
         if (requestId !== fetchCommitsRequestRef.current) return;
         if (!append) {
-          setCommitsError(err instanceof Error ? err.message : 'Failed to load commits');
+          setCommitsError(
+            err instanceof Error ? err.message : "Failed to load commits",
+          );
         }
       } finally {
         // Only update loading state if this is still the current request
@@ -280,13 +294,13 @@ export function CherryPickDialog({
         }
       }
     },
-    [worktree, selectedBranch]
+    [worktree, selectedBranch],
   );
 
   // Handle proceeding from branch selection to commit selection
   const handleProceedToCommits = useCallback(() => {
     if (!selectedBranch) return;
-    setStep('select-commits');
+    setStep("select-commits");
     fetchCommits(commitLimit);
   }, [selectedBranch, fetchCommits, commitLimit]);
 
@@ -311,18 +325,21 @@ export function CherryPickDialog({
   }, []);
 
   // Toggle commit file list expansion
-  const toggleCommitExpanded = useCallback((hash: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedCommits((prev) => {
-      const next = new Set(prev);
-      if (next.has(hash)) {
-        next.delete(hash);
-      } else {
-        next.add(hash);
-      }
-      return next;
-    });
-  }, []);
+  const toggleCommitExpanded = useCallback(
+    (hash: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setExpandedCommits((prev) => {
+        const next = new Set(prev);
+        if (next.has(hash)) {
+          next.delete(hash);
+        } else {
+          next.add(hash);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   // Handle cherry-pick execution
   const handleCherryPick = useCallback(async () => {
@@ -338,7 +355,10 @@ export function CherryPickDialog({
         .reverse()
         .map((c) => c.hash);
 
-      const result = await api.worktree.cherryPick(worktree.path, orderedHashes);
+      const result = await api.worktree.cherryPick(
+        worktree.path,
+        orderedHashes,
+      );
 
       if (result.success) {
         toast.success(`Cherry-picked ${orderedHashes.length} commit(s)`, {
@@ -348,8 +368,10 @@ export function CherryPickDialog({
         onOpenChange(false);
       } else {
         // Check for conflicts
-        const errorMessage = result.error || '';
-        const hasConflicts = errorMessage.toLowerCase().includes('conflict') || result.hasConflicts;
+        const errorMessage = result.error || "";
+        const hasConflicts =
+          errorMessage.toLowerCase().includes("conflict") ||
+          result.hasConflicts;
 
         if (hasConflicts && onCreateConflictResolutionFeature) {
           setConflictInfo({
@@ -357,21 +379,22 @@ export function CherryPickDialog({
             targetBranch: worktree.branch,
             targetWorktreePath: worktree.path,
           });
-          setStep('conflict');
-          toast.error('Cherry-pick conflicts detected', {
-            description: 'The cherry-pick was aborted due to conflicts. No changes were applied.',
+          setStep("conflict");
+          toast.error("Cherry-pick conflicts detected", {
+            description:
+              "The cherry-pick was aborted due to conflicts. No changes were applied.",
           });
         } else {
-          toast.error('Cherry-pick failed', {
+          toast.error("Cherry-pick failed", {
             description: result.error,
           });
         }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       const hasConflicts =
-        errorMessage.toLowerCase().includes('conflict') ||
-        errorMessage.toLowerCase().includes('cherry-pick failed');
+        errorMessage.toLowerCase().includes("conflict") ||
+        errorMessage.toLowerCase().includes("cherry-pick failed");
 
       if (hasConflicts && onCreateConflictResolutionFeature) {
         const orderedHashes = commits
@@ -383,12 +406,13 @@ export function CherryPickDialog({
           targetBranch: worktree.branch,
           targetWorktreePath: worktree.path,
         });
-        setStep('conflict');
-        toast.error('Cherry-pick conflicts detected', {
-          description: 'The cherry-pick was aborted due to conflicts. No changes were applied.',
+        setStep("conflict");
+        toast.error("Cherry-pick conflicts detected", {
+          description:
+            "The cherry-pick was aborted due to conflicts. No changes were applied.",
         });
       } else {
-        toast.error('Cherry-pick failed', {
+        toast.error("Cherry-pick failed", {
           description: errorMessage,
         });
       }
@@ -411,16 +435,21 @@ export function CherryPickDialog({
         sourceBranch: selectedBranch,
         targetBranch: conflictInfo.targetBranch,
         targetWorktreePath: conflictInfo.targetWorktreePath,
-        operationType: 'cherry-pick',
+        operationType: "cherry-pick",
       });
       onOpenChange(false);
     }
-  }, [conflictInfo, selectedBranch, onCreateConflictResolutionFeature, onOpenChange]);
+  }, [
+    conflictInfo,
+    selectedBranch,
+    onCreateConflictResolutionFeature,
+    onOpenChange,
+  ]);
 
   if (!worktree) return null;
 
   // Conflict resolution UI
-  if (step === 'conflict' && conflictInfo) {
+  if (step === "conflict" && conflictInfo) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
@@ -432,8 +461,11 @@ export function CherryPickDialog({
             <DialogDescription asChild>
               <div className="space-y-4">
                 <span className="block">
-                  There are conflicts when cherry-picking commits from{' '}
-                  <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code> into{' '}
+                  There are conflicts when cherry-picking commits from{" "}
+                  <code className="font-mono bg-muted px-1 rounded">
+                    {selectedBranch}
+                  </code>{" "}
+                  into{" "}
                   <code className="font-mono bg-muted px-1 rounded">
                     {conflictInfo.targetBranch}
                   </code>
@@ -443,11 +475,11 @@ export function CherryPickDialog({
                 <div className="flex items-start gap-2 p-3 rounded-md bg-orange-500/10 border border-orange-500/20">
                   <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
                   <span className="text-orange-500 text-sm">
-                    The cherry-pick could not be completed automatically. You can create a feature
-                    task to resolve the conflicts in the{' '}
+                    The cherry-pick could not be completed automatically. You
+                    can create a feature task to resolve the conflicts in the{" "}
                     <code className="font-mono bg-muted px-0.5 rounded">
                       {conflictInfo.targetBranch}
-                    </code>{' '}
+                    </code>{" "}
                     branch.
                   </span>
                 </div>
@@ -458,8 +490,10 @@ export function CherryPickDialog({
                   </p>
                   <ul className="text-sm text-muted-foreground mt-2 list-disc list-inside space-y-1">
                     <li>
-                      Cherry-pick the selected commit(s) from{' '}
-                      <code className="font-mono bg-muted px-0.5 rounded">{selectedBranch}</code>
+                      Cherry-pick the selected commit(s) from{" "}
+                      <code className="font-mono bg-muted px-0.5 rounded">
+                        {selectedBranch}
+                      </code>
                     </li>
                     <li>Resolve any cherry-pick conflicts</li>
                     <li>Ensure the code compiles and tests pass</li>
@@ -470,7 +504,7 @@ export function CherryPickDialog({
           </DialogHeader>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setStep('select-commits')}>
+            <Button variant="ghost" onClick={() => setStep("select-commits")}>
               Back
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -490,7 +524,7 @@ export function CherryPickDialog({
   }
 
   // Step 2: Select commits
-  if (step === 'select-commits') {
+  if (step === "select-commits") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-full h-full max-w-full max-h-full sm:w-[90vw] sm:max-w-[640px] sm:max-h-[85dvh] sm:h-auto sm:rounded-xl rounded-none flex flex-col dialog-fullscreen-mobile">
@@ -500,9 +534,14 @@ export function CherryPickDialog({
               Cherry Pick Commits
             </DialogTitle>
             <DialogDescription>
-              Select commits from{' '}
-              <code className="font-mono bg-muted px-1 rounded">{selectedBranch}</code> to apply to{' '}
-              <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+              Select commits from{" "}
+              <code className="font-mono bg-muted px-1 rounded">
+                {selectedBranch}
+              </code>{" "}
+              to apply to{" "}
+              <code className="font-mono bg-muted px-1 rounded">
+                {worktree.branch}
+              </code>
             </DialogDescription>
           </DialogHeader>
 
@@ -511,7 +550,9 @@ export function CherryPickDialog({
               {loadingCommits && (
                 <div className="flex items-center justify-center py-12">
                   <Spinner size="md" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading commits...</span>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    Loading commits...
+                  </span>
                 </div>
               )}
 
@@ -523,7 +564,9 @@ export function CherryPickDialog({
 
               {!loadingCommits && !commitsError && commits.length === 0 && (
                 <div className="flex items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">No commits found on this branch</p>
+                  <p className="text-sm text-muted-foreground">
+                    No commits found on this branch
+                  </p>
                 </div>
               )}
 
@@ -537,25 +580,27 @@ export function CherryPickDialog({
                       <div
                         key={commit.hash}
                         className={cn(
-                          'group relative rounded-md transition-colors',
+                          "group relative rounded-md transition-colors",
                           isSelected
-                            ? 'bg-primary/10 border border-primary/30'
-                            : 'border border-transparent',
-                          index === 0 && !isSelected && 'bg-muted/30'
+                            ? "bg-primary/10 border border-primary/30"
+                            : "border border-transparent",
+                          index === 0 && !isSelected && "bg-muted/30",
                         )}
                       >
                         <div
                           onClick={() => toggleCommitSelection(commit.hash)}
                           className={cn(
-                            'flex gap-3 py-2.5 px-3 cursor-pointer rounded-md transition-colors',
-                            !isSelected && 'hover:bg-muted/50'
+                            "flex gap-3 py-2.5 px-3 cursor-pointer rounded-md transition-colors",
+                            !isSelected && "hover:bg-muted/50",
                           )}
                         >
                           {/* Checkbox */}
                           <div className="flex items-start pt-1 shrink-0">
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => toggleCommitSelection(commit.hash)}
+                              onCheckedChange={() =>
+                                toggleCommitSelection(commit.hash)
+                              }
                               onClick={(e) => e.stopPropagation()}
                               className="mt-0.5"
                             />
@@ -590,7 +635,9 @@ export function CherryPickDialog({
                               </span>
                               {hasFiles && (
                                 <button
-                                  onClick={(e) => toggleCommitExpanded(commit.hash, e)}
+                                  onClick={(e) =>
+                                    toggleCommitExpanded(commit.hash, e)
+                                  }
                                   className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
                                 >
                                   {isExpanded ? (
@@ -599,7 +646,8 @@ export function CherryPickDialog({
                                     <ChevronRight className="w-3 h-3" />
                                   )}
                                   <FileText className="w-3 h-3" />
-                                  {commit.files.length} file{commit.files.length !== 1 ? 's' : ''}
+                                  {commit.files.length} file
+                                  {commit.files.length !== 1 ? "s" : ""}
                                 </button>
                               )}
                             </div>
@@ -616,7 +664,9 @@ export function CherryPickDialog({
                                   className="flex items-center gap-2 text-xs text-muted-foreground py-0.5"
                                 >
                                   <FileText className="w-3 h-3 shrink-0" />
-                                  <span className="font-mono break-all">{file}</span>
+                                  <span className="font-mono break-all">
+                                    {file}
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -662,13 +712,17 @@ export function CherryPickDialog({
             <Button
               variant="ghost"
               onClick={() => {
-                setStep('select-branch');
-                setSelectedBranch('');
+                setStep("select-branch");
+                setSelectedBranch("");
               }}
             >
               Back
             </Button>
-            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isCherryPicking}>
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={isCherryPicking}
+            >
               Cancel
             </Button>
             <Button
@@ -684,7 +738,9 @@ export function CherryPickDialog({
                 <>
                   <Cherry className="w-4 h-4 mr-2" />
                   Cherry Pick
-                  {selectedCommitHashes.size > 0 ? ` (${selectedCommitHashes.size})` : ''}
+                  {selectedCommitHashes.size > 0
+                    ? ` (${selectedCommitHashes.size})`
+                    : ""}
                 </>
               )}
             </Button>
@@ -706,8 +762,10 @@ export function CherryPickDialog({
           <DialogDescription asChild>
             <div className="space-y-4">
               <span className="block">
-                Select a branch to cherry-pick commits from into{' '}
-                <code className="font-mono bg-muted px-1 rounded">{worktree.branch}</code>
+                Select a branch to cherry-pick commits from into{" "}
+                <code className="font-mono bg-muted px-1 rounded">
+                  {worktree.branch}
+                </code>
               </span>
 
               {loadingBranches ? (
@@ -725,14 +783,16 @@ export function CherryPickDialog({
                         value={selectedRemote}
                         onValueChange={(value) => {
                           setSelectedRemote(value);
-                          setSelectedBranch('');
+                          setSelectedBranch("");
                         }}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select source..." />
                         </SelectTrigger>
                         <SelectContent className="text-foreground">
-                          <SelectItem value="__local__">Local Branches</SelectItem>
+                          <SelectItem value="__local__">
+                            Local Branches
+                          </SelectItem>
                           {remotes.map((remote) => (
                             <SelectItem key={remote.name} value={remote.name}>
                               {remote.name} ({remote.url})
@@ -747,9 +807,14 @@ export function CherryPickDialog({
                   <div className="space-y-2">
                     <Label className="text-sm text-foreground">Branch</Label>
                     {branchOptions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No other branches available</p>
+                      <p className="text-sm text-muted-foreground">
+                        No other branches available
+                      </p>
                     ) : (
-                      <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                      <Select
+                        value={selectedBranch}
+                        onValueChange={setSelectedBranch}
+                      >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a branch..." />
                         </SelectTrigger>
@@ -773,7 +838,10 @@ export function CherryPickDialog({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleProceedToCommits} disabled={!selectedBranch || loadingBranches}>
+          <Button
+            onClick={handleProceedToCommits}
+            disabled={!selectedBranch || loadingBranches}
+          >
             <GitCommit className="w-4 h-4 mr-2" />
             View Commits
           </Button>

@@ -1,23 +1,32 @@
-import { useEffect, useRef, useState, memo, useCallback, useMemo } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Edit2, Trash2, Palette, ChevronRight, Moon, Sun, Monitor, LogOut } from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { type ThemeMode, useAppStore } from '@/store/app-store';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import type { Project } from '@/lib/electron';
+import { useEffect, useRef, useState, memo, useCallback, useMemo } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  Palette,
+  ChevronRight,
+  Moon,
+  Sun,
+  Monitor,
+  LogOut,
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { type ThemeMode, useAppStore } from "@/store/app-store";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { Project } from "@/lib/electron";
 import {
   PROJECT_DARK_THEMES,
   PROJECT_LIGHT_THEMES,
   THEME_SUBMENU_CONSTANTS,
-} from '@/components/layout/sidebar/constants';
-import { useThemePreview } from '@/components/layout/sidebar/hooks';
+} from "@/components/layout/sidebar/constants";
+import { useThemePreview } from "@/components/layout/sidebar/hooks";
 
 /**
  * Constant representing the "use global theme" option.
  * An empty string is used to indicate that no project-specific theme is set.
  */
-const USE_GLOBAL_THEME = '' as const;
+const USE_GLOBAL_THEME = "" as const;
 
 /**
  * Z-index values for context menu layering.
@@ -82,11 +91,11 @@ const ThemeButton = memo(function ThemeButton({
       onPointerLeave={onPointerLeave}
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md',
-        'text-xs text-left',
-        'hover:bg-accent transition-colors',
-        'focus:outline-none focus:bg-accent',
-        isSelected && 'bg-accent'
+        "w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md",
+        "text-xs text-left",
+        "hover:bg-accent transition-colors",
+        "focus:outline-none focus:bg-accent",
+        isSelected && "bg-accent",
       )}
       data-testid={`project-theme-${option.value}`}
     >
@@ -202,12 +211,15 @@ export function ProjectContextMenu({
     setPreviewTheme,
   } = useAppStore();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [showRemoveFromPegasusDialog, setShowRemoveFromPegasusDialog] = useState(false);
+  const [showRemoveFromPegasusDialog, setShowRemoveFromPegasusDialog] =
+    useState(false);
   const [showThemeSubmenu, setShowThemeSubmenu] = useState(false);
   const themeSubmenuRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { handlePreviewEnter, handlePreviewLeave } = useThemePreview({ setPreviewTheme });
+  const { handlePreviewEnter, handlePreviewLeave } = useThemePreview({
+    setPreviewTheme,
+  });
 
   // Handler to open theme submenu and cancel any pending close
   const handleThemeMenuEnter = useCallback(() => {
@@ -244,21 +256,28 @@ export function ProjectContextMenu({
     const { ESTIMATED_SUBMENU_HEIGHT, COLLISION_PADDING, THEME_BUTTON_OFFSET } =
       THEME_SUBMENU_CONSTANTS;
 
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : 800;
 
     // Calculate where the submenu's bottom edge would be if positioned normally
-    const submenuBottomY = position.y + THEME_BUTTON_OFFSET + ESTIMATED_SUBMENU_HEIGHT;
+    const submenuBottomY =
+      position.y + THEME_BUTTON_OFFSET + ESTIMATED_SUBMENU_HEIGHT;
 
     // Check if submenu would overflow bottom of viewport
-    const wouldOverflowBottom = submenuBottomY > viewportHeight - COLLISION_PADDING;
+    const wouldOverflowBottom =
+      submenuBottomY > viewportHeight - COLLISION_PADDING;
 
     // If it would overflow, calculate how much to shift it up
     if (wouldOverflowBottom) {
       // Calculate the offset needed to align submenu bottom with viewport bottom minus padding
-      const overflowAmount = submenuBottomY - (viewportHeight - COLLISION_PADDING);
+      const overflowAmount =
+        submenuBottomY - (viewportHeight - COLLISION_PADDING);
       return {
         top: -overflowAmount,
-        maxHeight: Math.min(ESTIMATED_SUBMENU_HEIGHT, viewportHeight - COLLISION_PADDING * 2),
+        maxHeight: Math.min(
+          ESTIMATED_SUBMENU_HEIGHT,
+          viewportHeight - COLLISION_PADDING * 2,
+        ),
       };
     }
 
@@ -267,7 +286,7 @@ export function ProjectContextMenu({
       top: 0,
       maxHeight: Math.min(
         ESTIMATED_SUBMENU_HEIGHT,
-        viewportHeight - position.y - THEME_BUTTON_OFFSET - COLLISION_PADDING
+        viewportHeight - position.y - THEME_BUTTON_OFFSET - COLLISION_PADDING,
       ),
     };
   }, [position.y]);
@@ -286,7 +305,10 @@ export function ProjectContextMenu({
       // Don't close if a confirmation dialog is open (dialog is in a portal)
       if (showRemoveDialog || showRemoveFromPegasusDialog) return;
 
-      if (menuRef.current && !menuRef.current.contains(event.target as globalThis.Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as globalThis.Node)
+      ) {
         setPreviewTheme(null);
         onClose();
       }
@@ -296,18 +318,18 @@ export function ProjectContextMenu({
       // Don't close if a confirmation dialog is open (let the dialog handle escape)
       if (showRemoveDialog || showRemoveFromPegasusDialog) return;
 
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setPreviewTheme(null);
         onClose();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [onClose, setPreviewTheme, showRemoveDialog, showRemoveFromPegasusDialog]);
 
@@ -338,12 +360,12 @@ export function ProjectContextMenu({
       // The UI uses getEffectiveTheme() which handles: previewTheme ?? projectTheme ?? globalTheme
       setProjectTheme(project.id, isUsingGlobal ? null : value);
     },
-    [onClose, project.id, setPreviewTheme, setProjectTheme]
+    [onClose, project.id, setPreviewTheme, setProjectTheme],
   );
 
   const handleConfirmRemove = useCallback(() => {
     moveProjectToTrash(project.id);
-    toast.success('Project removed', {
+    toast.success("Project removed", {
       description: `${project.name} has been removed from your projects list`,
     });
   }, [moveProjectToTrash, project.id, project.name]);
@@ -358,7 +380,7 @@ export function ProjectContextMenu({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   const handleRemoveFromPegasus = () => {
@@ -367,7 +389,7 @@ export function ProjectContextMenu({
 
   const handleConfirmRemoveFromPegasus = useCallback(() => {
     removeProject(project.id);
-    toast.success('Project removed from Pegasus', {
+    toast.success("Project removed from Pegasus", {
       description: `${project.name} has been removed. The folder remains on disk.`,
     });
   }, [removeProject, project.id, project.name]);
@@ -379,7 +401,7 @@ export function ProjectContextMenu({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   return (
@@ -389,10 +411,10 @@ export function ProjectContextMenu({
         <div
           ref={menuRef}
           className={cn(
-            'fixed min-w-48 rounded-lg',
-            'bg-popover text-popover-foreground',
-            'border border-border shadow-lg',
-            'animate-in fade-in zoom-in-95 duration-100'
+            "fixed min-w-48 rounded-lg",
+            "bg-popover text-popover-foreground",
+            "border border-border shadow-lg",
+            "animate-in fade-in zoom-in-95 duration-100",
           )}
           style={{
             top: position.y,
@@ -405,10 +427,10 @@ export function ProjectContextMenu({
             <button
               onClick={handleEdit}
               className={cn(
-                'w-full flex items-center gap-2 px-3 py-2 rounded-md',
-                'text-sm font-medium text-left',
-                'hover:bg-accent transition-colors',
-                'focus:outline-none focus:bg-accent'
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md",
+                "text-sm font-medium text-left",
+                "hover:bg-accent transition-colors",
+                "focus:outline-none focus:bg-accent",
               )}
               data-testid="edit-project-button"
             >
@@ -425,10 +447,10 @@ export function ProjectContextMenu({
               <button
                 onClick={() => setShowThemeSubmenu(!showThemeSubmenu)}
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 rounded-md',
-                  'text-sm font-medium text-left',
-                  'hover:bg-accent transition-colors',
-                  'focus:outline-none focus:bg-accent'
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md",
+                  "text-sm font-medium text-left",
+                  "hover:bg-accent transition-colors",
+                  "focus:outline-none focus:bg-accent",
                 )}
                 data-testid="theme-project-button"
               >
@@ -447,10 +469,10 @@ export function ProjectContextMenu({
                 <div
                   ref={themeSubmenuRef}
                   className={cn(
-                    'absolute left-full ml-1 min-w-[420px] rounded-lg',
-                    'bg-popover text-popover-foreground',
-                    'border border-border shadow-lg',
-                    'animate-in fade-in zoom-in-95 duration-100'
+                    "absolute left-full ml-1 min-w-[420px] rounded-lg",
+                    "bg-popover text-popover-foreground",
+                    "border border-border shadow-lg",
+                    "animate-in fade-in zoom-in-95 duration-100",
                   )}
                   style={{
                     zIndex: Z_INDEX.THEME_SUBMENU,
@@ -471,11 +493,11 @@ export function ProjectContextMenu({
                         handleThemeSelect(USE_GLOBAL_THEME);
                       }}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-md',
-                        'text-sm font-medium text-left',
-                        'hover:bg-accent transition-colors',
-                        'focus:outline-none focus:bg-accent',
-                        !project.theme && 'bg-accent'
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-md",
+                        "text-sm font-medium text-left",
+                        "hover:bg-accent transition-colors",
+                        "focus:outline-none focus:bg-accent",
+                        !project.theme && "bg-accent",
                       )}
                       data-testid="project-theme-global"
                     >
@@ -523,11 +545,11 @@ export function ProjectContextMenu({
             <button
               onClick={handleRemove}
               className={cn(
-                'w-full flex items-center gap-2 px-3 py-2 rounded-md',
-                'text-sm font-medium text-left',
-                'text-destructive hover:bg-destructive/10',
-                'transition-colors',
-                'focus:outline-none focus:bg-destructive/10'
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md",
+                "text-sm font-medium text-left",
+                "text-destructive hover:bg-destructive/10",
+                "transition-colors",
+                "focus:outline-none focus:bg-destructive/10",
               )}
               data-testid="remove-project-button"
             >
@@ -538,11 +560,11 @@ export function ProjectContextMenu({
             <button
               onClick={handleRemoveFromPegasus}
               className={cn(
-                'w-full flex items-center gap-2 px-3 py-2 rounded-md',
-                'text-sm font-medium text-left',
-                'text-muted-foreground hover:text-foreground hover:bg-accent',
-                'transition-colors',
-                'focus:outline-none focus:bg-accent'
+                "w-full flex items-center gap-2 px-3 py-2 rounded-md",
+                "text-sm font-medium text-left",
+                "text-muted-foreground hover:text-foreground hover:bg-accent",
+                "transition-colors",
+                "focus:outline-none focus:bg-accent",
               )}
               data-testid="remove-from-pegasus-button"
             >

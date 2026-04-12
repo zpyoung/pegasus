@@ -5,13 +5,13 @@
  * and thinking levels used throughout the application UI.
  */
 
-import type { ModelAlias, ThinkingLevel, ModelProvider } from './settings.js';
-import type { ReasoningEffort } from './provider.js';
-import type { CursorModelId } from './cursor-models.js';
-import type { AgentModel, CodexModelId } from './model.js';
-import { CODEX_MODEL_MAP } from './model.js';
-import { GEMINI_MODEL_MAP, type GeminiModelId } from './gemini-models.js';
-import { MODEL_DISPLAY_NAMES } from './model-display.gen.js';
+import type { ModelAlias, ThinkingLevel, ModelProvider } from "./settings.js";
+import type { ReasoningEffort } from "./provider.js";
+import type { CursorModelId } from "./cursor-models.js";
+import type { AgentModel, CodexModelId } from "./model.js";
+import { CODEX_MODEL_MAP } from "./model.js";
+import { GEMINI_MODEL_MAP, type GeminiModelId } from "./gemini-models.js";
+import { MODEL_DISPLAY_NAMES } from "./model-display.gen.js";
 
 /**
  * ModelOption - Display metadata for a model option in the UI
@@ -46,25 +46,25 @@ export interface ThinkingLevelOption {
  */
 export const CLAUDE_MODELS: ModelOption[] = [
   {
-    id: 'haiku',
-    label: 'Claude Haiku',
-    description: 'Fast and efficient for simple tasks.',
-    badge: 'Speed',
-    provider: 'claude',
+    id: "haiku",
+    label: "Claude Haiku",
+    description: "Fast and efficient for simple tasks.",
+    badge: "Speed",
+    provider: "claude",
   },
   {
-    id: 'sonnet',
-    label: 'Claude Sonnet',
-    description: 'Balanced performance with strong reasoning.',
-    badge: 'Balanced',
-    provider: 'claude',
+    id: "sonnet",
+    label: "Claude Sonnet",
+    description: "Balanced performance with strong reasoning.",
+    badge: "Balanced",
+    provider: "claude",
   },
   {
-    id: 'opus',
-    label: 'Claude Opus',
-    description: 'Most capable model for complex work.',
-    badge: 'Premium',
-    provider: 'claude',
+    id: "opus",
+    label: "Claude Opus",
+    description: "Most capable model for complex work.",
+    badge: "Premium",
+    provider: "claude",
   },
 ];
 
@@ -75,90 +75,91 @@ export const CLAUDE_MODELS: ModelOption[] = [
 export const CODEX_MODELS: (ModelOption & { hasReasoning?: boolean })[] = [
   {
     id: CODEX_MODEL_MAP.gpt53Codex,
-    label: 'GPT-5.3-Codex',
-    description: 'Latest frontier agentic coding model.',
-    badge: 'Premium',
-    provider: 'codex',
+    label: "GPT-5.3-Codex",
+    description: "Latest frontier agentic coding model.",
+    badge: "Premium",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt53CodexSpark,
-    label: 'GPT-5.3-Codex-Spark',
-    description: 'Near-instant real-time coding model, 1000+ tokens/sec.',
-    badge: 'Speed',
-    provider: 'codex',
+    label: "GPT-5.3-Codex-Spark",
+    description: "Near-instant real-time coding model, 1000+ tokens/sec.",
+    badge: "Speed",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt52Codex,
-    label: 'GPT-5.2-Codex',
-    description: 'Frontier agentic coding model.',
-    badge: 'Premium',
-    provider: 'codex',
+    label: "GPT-5.2-Codex",
+    description: "Frontier agentic coding model.",
+    badge: "Premium",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51CodexMax,
-    label: 'GPT-5.1-Codex-Max',
-    description: 'Codex-optimized flagship for deep and fast reasoning.',
-    badge: 'Premium',
-    provider: 'codex',
+    label: "GPT-5.1-Codex-Max",
+    description: "Codex-optimized flagship for deep and fast reasoning.",
+    badge: "Premium",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51CodexMini,
-    label: 'GPT-5.1-Codex-Mini',
-    description: 'Optimized for codex. Cheaper, faster, but less capable.',
-    badge: 'Speed',
-    provider: 'codex',
+    label: "GPT-5.1-Codex-Mini",
+    description: "Optimized for codex. Cheaper, faster, but less capable.",
+    badge: "Speed",
+    provider: "codex",
     hasReasoning: false,
   },
   {
     id: CODEX_MODEL_MAP.gpt51Codex,
-    label: 'GPT-5.1-Codex',
-    description: 'Original GPT-5.1 Codex agentic coding model.',
-    badge: 'Balanced',
-    provider: 'codex',
+    label: "GPT-5.1-Codex",
+    description: "Original GPT-5.1 Codex agentic coding model.",
+    badge: "Balanced",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt5Codex,
-    label: 'GPT-5-Codex',
-    description: 'Original GPT-5 Codex model.',
-    badge: 'Balanced',
-    provider: 'codex',
+    label: "GPT-5-Codex",
+    description: "Original GPT-5 Codex model.",
+    badge: "Balanced",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt5CodexMini,
-    label: 'GPT-5-Codex-Mini',
-    description: 'Smaller, cheaper GPT-5 Codex variant.',
-    badge: 'Speed',
-    provider: 'codex',
+    label: "GPT-5-Codex-Mini",
+    description: "Smaller, cheaper GPT-5 Codex variant.",
+    badge: "Speed",
+    provider: "codex",
     hasReasoning: false,
   },
   {
     id: CODEX_MODEL_MAP.gpt52,
-    label: 'GPT-5.2',
-    description: 'Latest frontier model with improvements across knowledge, reasoning and coding.',
-    badge: 'Balanced',
-    provider: 'codex',
+    label: "GPT-5.2",
+    description:
+      "Latest frontier model with improvements across knowledge, reasoning and coding.",
+    badge: "Balanced",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt51,
-    label: 'GPT-5.1',
-    description: 'Great for coding and agentic tasks across domains.',
-    badge: 'Balanced',
-    provider: 'codex',
+    label: "GPT-5.1",
+    description: "Great for coding and agentic tasks across domains.",
+    badge: "Balanced",
+    provider: "codex",
     hasReasoning: true,
   },
   {
     id: CODEX_MODEL_MAP.gpt5,
-    label: 'GPT-5',
-    description: 'Base GPT-5 model.',
-    badge: 'Balanced',
-    provider: 'codex',
+    label: "GPT-5",
+    description: "Base GPT-5 model.",
+    badge: "Balanced",
+    provider: "codex",
     hasReasoning: true,
   },
 ];
@@ -168,16 +169,15 @@ export const CODEX_MODELS: (ModelOption & { hasReasoning?: boolean })[] = [
  * Based on https://github.com/google-gemini/gemini-cli
  * Model IDs match the keys in GEMINI_MODEL_MAP (e.g., 'gemini-2.5-flash')
  */
-export const GEMINI_MODELS: (ModelOption & { hasThinking?: boolean })[] = Object.entries(
-  GEMINI_MODEL_MAP
-).map(([id, config]) => ({
-  id: id as GeminiModelId,
-  label: config.label,
-  description: config.description,
-  badge: config.supportsThinking ? 'Thinking' : 'Speed',
-  provider: 'gemini' as const,
-  hasThinking: config.supportsThinking,
-}));
+export const GEMINI_MODELS: (ModelOption & { hasThinking?: boolean })[] =
+  Object.entries(GEMINI_MODEL_MAP).map(([id, config]) => ({
+    id: id as GeminiModelId,
+    label: config.label,
+    description: config.description,
+    badge: config.supportsThinking ? "Thinking" : "Speed",
+    provider: "gemini" as const,
+    hasThinking: config.supportsThinking,
+  }));
 
 /**
  * Thinking level options with display labels
@@ -185,12 +185,12 @@ export const GEMINI_MODELS: (ModelOption & { hasThinking?: boolean })[] = Object
  * Ordered from least to most intensive reasoning.
  */
 export const THINKING_LEVELS: ThinkingLevelOption[] = [
-  { id: 'none', label: 'None' },
-  { id: 'low', label: 'Low' },
-  { id: 'medium', label: 'Medium' },
-  { id: 'high', label: 'High' },
-  { id: 'ultrathink', label: 'Ultrathink' },
-  { id: 'adaptive', label: 'Adaptive' },
+  { id: "none", label: "None" },
+  { id: "low", label: "Low" },
+  { id: "medium", label: "Medium" },
+  { id: "high", label: "High" },
+  { id: "ultrathink", label: "Ultrathink" },
+  { id: "adaptive", label: "Adaptive" },
 ];
 
 /**
@@ -199,12 +199,12 @@ export const THINKING_LEVELS: ThinkingLevelOption[] = [
  * Used for compact UI elements like badges or dropdowns.
  */
 export const THINKING_LEVEL_LABELS: Record<ThinkingLevel, string> = {
-  none: 'None',
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
-  ultrathink: 'Ultra',
-  adaptive: 'Adaptive',
+  none: "None",
+  low: "Low",
+  medium: "Med",
+  high: "High",
+  ultrathink: "Ultra",
+  adaptive: "Adaptive",
 };
 
 /**
@@ -224,24 +224,44 @@ export interface ReasoningEffortOption {
  * All models support reasoning effort levels
  */
 export const REASONING_EFFORT_LEVELS: ReasoningEffortOption[] = [
-  { id: 'none', label: 'None', description: 'No reasoning tokens (GPT-5.1 models only)' },
-  { id: 'minimal', label: 'Minimal', description: 'Very quick reasoning' },
-  { id: 'low', label: 'Low', description: 'Quick responses for simpler queries' },
-  { id: 'medium', label: 'Medium', description: 'Balance between depth and speed (default)' },
-  { id: 'high', label: 'High', description: 'Maximizes reasoning depth for critical tasks' },
-  { id: 'xhigh', label: 'XHigh', description: 'Highest level for gpt-5.1-codex-max and newer' },
+  {
+    id: "none",
+    label: "None",
+    description: "No reasoning tokens (GPT-5.1 models only)",
+  },
+  { id: "minimal", label: "Minimal", description: "Very quick reasoning" },
+  {
+    id: "low",
+    label: "Low",
+    description: "Quick responses for simpler queries",
+  },
+  {
+    id: "medium",
+    label: "Medium",
+    description: "Balance between depth and speed (default)",
+  },
+  {
+    id: "high",
+    label: "High",
+    description: "Maximizes reasoning depth for critical tasks",
+  },
+  {
+    id: "xhigh",
+    label: "XHigh",
+    description: "Highest level for gpt-5.1-codex-max and newer",
+  },
 ];
 
 /**
  * Map of reasoning effort levels to short display labels
  */
 export const REASONING_EFFORT_LABELS: Record<ReasoningEffort, string> = {
-  none: 'None',
-  minimal: 'Min',
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
-  xhigh: 'XHigh',
+  none: "None",
+  minimal: "Min",
+  low: "Low",
+  medium: "Med",
+  high: "High",
+  xhigh: "XHigh",
 };
 
 /**
@@ -264,12 +284,12 @@ export function getModelDisplayName(model: ModelAlias | string): string {
 
   // Legacy alias fallback for short names and patterns not in registry
   const displayNames: Record<string, string> = {
-    haiku: 'Claude Haiku',
-    sonnet: 'Claude Sonnet',
-    opus: 'Claude Opus',
-    'claude-haiku': 'Claude Haiku',
-    'claude-sonnet': 'Claude Sonnet',
-    'claude-opus': 'Claude Opus',
+    haiku: "Claude Haiku",
+    sonnet: "Claude Sonnet",
+    opus: "Claude Opus",
+    "claude-haiku": "Claude Haiku",
+    "claude-sonnet": "Claude Sonnet",
+    "claude-opus": "Claude Opus",
   };
 
   if (model in displayNames) {

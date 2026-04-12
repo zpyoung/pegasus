@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { getElectronAPI } from '@/lib/electron';
-import { createLogger } from '@pegasus/utils/logger';
-import type { Feature } from '@/store/app-store';
+import { useEffect, useMemo, useRef } from "react";
+import { getElectronAPI } from "@/lib/electron";
+import { createLogger } from "@pegasus/utils/logger";
+import type { Feature } from "@/store/app-store";
 
-const logger = createLogger('BoardEffects');
+const logger = createLogger("BoardEffects");
 
 interface UseBoardEffectsProps {
   currentProject: { path: string; id: string; name?: string } | null;
@@ -47,15 +47,20 @@ export function useBoardEffects({
     if (!api.specRegeneration) return;
 
     const unsubscribe = api.specRegeneration.onEvent((event) => {
-      logger.info('Spec regeneration event:', event.type, 'for project:', event.projectPath);
+      logger.info(
+        "Spec regeneration event:",
+        event.type,
+        "for project:",
+        event.projectPath,
+      );
 
       if (event.projectPath !== specCreatingForProject) {
         return;
       }
 
-      if (event.type === 'spec_regeneration_complete') {
+      if (event.type === "spec_regeneration_complete") {
         setSpecCreatingForProject(null);
-      } else if (event.type === 'spec_regeneration_error') {
+      } else if (event.type === "spec_regeneration_error") {
         setSpecCreatingForProject(null);
       }
     });
@@ -75,7 +80,7 @@ export function useBoardEffects({
     return features
       .map((f) => `${f.id}:${f.status}`)
       .sort()
-      .join(',');
+      .join(",");
   }, [features]);
 
   // Keep a ref to the latest features array for use inside the effect
@@ -90,21 +95,21 @@ export function useBoardEffects({
       const currentFeatures = featuresRef.current;
       const featuresWithPotentialContext = currentFeatures.filter(
         (f) =>
-          f.status === 'backlog' ||
-          f.status === 'merge_conflict' ||
-          f.status === 'ready' ||
-          f.status === 'interrupted' ||
-          f.status === 'in_progress' ||
-          f.status === 'waiting_question' ||
-          f.status === 'waiting_approval' ||
-          f.status === 'verified' ||
-          (typeof f.status === 'string' && f.status.startsWith('pipeline_'))
+          f.status === "backlog" ||
+          f.status === "merge_conflict" ||
+          f.status === "ready" ||
+          f.status === "interrupted" ||
+          f.status === "in_progress" ||
+          f.status === "waiting_question" ||
+          f.status === "waiting_approval" ||
+          f.status === "verified" ||
+          (typeof f.status === "string" && f.status.startsWith("pipeline_")),
       );
       const contextChecks = await Promise.all(
         featuresWithPotentialContext.map(async (f) => ({
           id: f.id,
           hasContext: await checkContextExists(f.id),
-        }))
+        })),
       );
 
       const newSet = new Set<string>();
@@ -120,7 +125,12 @@ export function useBoardEffects({
     if (featuresFingerprint && !isLoading) {
       checkAllContexts();
     }
-  }, [featuresFingerprint, isLoading, checkContextExists, setFeaturesWithContext]);
+  }, [
+    featuresFingerprint,
+    isLoading,
+    checkContextExists,
+    setFeaturesWithContext,
+  ]);
 
   // Re-check context when a feature stops, completes, or errors
   // This ensures hasContext is updated even if the features array doesn't change
@@ -131,7 +141,8 @@ export function useBoardEffects({
     const unsubscribe = api.autoMode.onEvent(async (event) => {
       // When a feature stops (error/abort) or completes, re-check its context
       if (
-        (event.type === 'auto_mode_error' || event.type === 'auto_mode_feature_complete') &&
+        (event.type === "auto_mode_error" ||
+          event.type === "auto_mode_feature_complete") &&
         event.featureId
       ) {
         const hasContext = await checkContextExists(event.featureId);

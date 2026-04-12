@@ -76,7 +76,12 @@
 /* Theme-specific overrides */
 
 .solarized .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #268bd2 0%, #2aa198 50%, #268bd2 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #268bd2 0%,
+    #2aa198 50%,
+    #268bd2 100%
+  );
 }
 
 .solarized .animated-outline-inner {
@@ -84,7 +89,9 @@
   color: #268bd2 !important;
 }
 
-.solarized [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.solarized
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.25 0.03 230) !important;
   color: #2aa198 !important;
 }

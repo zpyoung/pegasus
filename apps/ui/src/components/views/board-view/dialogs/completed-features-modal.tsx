@@ -5,13 +5,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArchiveRestore, Trash2 } from 'lucide-react';
-import { Feature } from '@/store/app-store';
-import { extractImplementationSummary } from '@/lib/log-parser';
-import { getFirstNonEmptySummary } from '@/lib/summary-selection';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { ArchiveRestore, Trash2 } from "lucide-react";
+import { Feature } from "@/store/app-store";
+import { extractImplementationSummary } from "@/lib/log-parser";
+import { getFirstNonEmptySummary } from "@/lib/summary-selection";
 
 interface CompletedFeaturesModalProps {
   open: boolean;
@@ -38,9 +43,9 @@ export function CompletedFeaturesModal({
           <DialogTitle>Completed Features</DialogTitle>
           <DialogDescription>
             {completedFeatures.length === 0
-              ? 'No completed features yet.'
+              ? "No completed features yet."
               : `${completedFeatures.length} completed feature${
-                  completedFeatures.length > 1 ? 's' : ''
+                  completedFeatures.length > 1 ? "s" : ""
                 }`}
           </DialogDescription>
         </DialogHeader>
@@ -53,12 +58,14 @@ export function CompletedFeaturesModal({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {completedFeatures.map((feature) => {
-                const implementationSummary = extractImplementationSummary(feature.summary);
+                const implementationSummary = extractImplementationSummary(
+                  feature.summary,
+                );
                 const displayText = getFirstNonEmptySummary(
                   implementationSummary,
                   feature.summary,
                   feature.description,
-                  feature.id
+                  feature.id,
                 );
 
                 return (
@@ -72,7 +79,7 @@ export function CompletedFeaturesModal({
                         {displayText ?? feature.id}
                       </CardTitle>
                       <CardDescription className="text-xs mt-1 truncate">
-                        {feature.category || 'Uncategorized'}
+                        {feature.category || "Uncategorized"}
                       </CardDescription>
                     </CardHeader>
                     <div className="p-3 pt-0 flex gap-2">

@@ -16,9 +16,9 @@
  * ```
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler factory for GET /api/settings/status
@@ -40,7 +40,7 @@ export function createStatusHandler(settingsService: SettingsService) {
         needsMigration: !hasGlobalSettings,
       });
     } catch (error) {
-      logError(error, 'Get settings status failed');
+      logError(error, "Get settings status failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

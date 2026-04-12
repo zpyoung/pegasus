@@ -1,7 +1,7 @@
 export const codeReviewTemplate = {
-  id: 'code-review',
-  name: 'Code Review',
-  colorClass: 'bg-blue-500/20',
+  id: "code-review",
+  name: "Code Review",
+  colorClass: "bg-blue-500/20",
   instructions: `## Code Review & Update
 
 # ⚠️ CRITICAL REQUIREMENT: YOU MUST UPDATE THE CODE ⚠️

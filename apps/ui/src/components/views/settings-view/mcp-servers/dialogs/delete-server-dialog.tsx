@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 interface DeleteServerDialogProps {
   open: boolean;
@@ -14,14 +14,19 @@ interface DeleteServerDialogProps {
   onConfirm: () => void;
 }
 
-export function DeleteServerDialog({ open, onOpenChange, onConfirm }: DeleteServerDialogProps) {
+export function DeleteServerDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: DeleteServerDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent data-testid="mcp-server-delete-dialog">
         <DialogHeader>
           <DialogTitle>Delete MCP Server</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this MCP server? This action cannot be undone.
+            Are you sure you want to delete this MCP server? This action cannot
+            be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Trash2,
   MoreHorizontal,
@@ -47,10 +47,10 @@ import {
   Check,
   Hash,
   Sparkles,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { Spinner } from '@/components/ui/spinner';
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 import type {
   WorktreeInfo,
   DevServerInfo,
@@ -58,17 +58,20 @@ import type {
   GitRepoStatus,
   TestSessionInfo,
   MergeConflictInfo,
-} from '../types';
-import { TooltipWrapper } from './tooltip-wrapper';
-import { useAvailableEditors, useEffectiveDefaultEditor } from '../hooks/use-available-editors';
+} from "../types";
+import { TooltipWrapper } from "./tooltip-wrapper";
+import {
+  useAvailableEditors,
+  useEffectiveDefaultEditor,
+} from "../hooks/use-available-editors";
 import {
   useAvailableTerminals,
   useEffectiveDefaultTerminal,
-} from '../hooks/use-available-terminals';
-import { getEditorIcon } from '@/components/icons/editor-icons';
-import { getTerminalIcon } from '@/components/icons/terminal-icons';
-import { useAppStore } from '@/store/app-store';
-import type { TerminalScript } from '@/components/views/project-settings-view/terminal-scripts-constants';
+} from "../hooks/use-available-terminals";
+import { getEditorIcon } from "@/components/icons/editor-icons";
+import { getTerminalIcon } from "@/components/icons/terminal-icons";
+import { useAppStore } from "@/store/app-store";
+import type { TerminalScript } from "@/components/views/project-settings-view/terminal-scripts-constants";
 
 interface WorktreeActionsDropdownProps {
   worktree: WorktreeInfo;
@@ -110,8 +113,14 @@ interface WorktreeActionsDropdownProps {
   /** Push to a specific remote, bypassing the remote selection dialog */
   onPushWithRemote?: (worktree: WorktreeInfo, remote: string) => void;
   onOpenInEditor: (worktree: WorktreeInfo, editorCommand?: string) => void;
-  onOpenInIntegratedTerminal: (worktree: WorktreeInfo, mode?: 'tab' | 'split') => void;
-  onOpenInExternalTerminal: (worktree: WorktreeInfo, terminalId?: string) => void;
+  onOpenInIntegratedTerminal: (
+    worktree: WorktreeInfo,
+    mode?: "tab" | "split",
+  ) => void;
+  onOpenInExternalTerminal: (
+    worktree: WorktreeInfo,
+    terminalId?: string,
+  ) => void;
   onViewChanges: (worktree: WorktreeInfo) => void;
   onViewCommits: (worktree: WorktreeInfo) => void;
   onDiscardChanges: (worktree: WorktreeInfo) => void;
@@ -325,7 +334,9 @@ export function WorktreeActionsDropdown({
   const effectiveDefaultEditor = useEffectiveDefaultEditor(editors);
 
   // Get other editors (excluding the default) for the submenu
-  const otherEditors = editors.filter((e) => e.command !== effectiveDefaultEditor?.command);
+  const otherEditors = editors.filter(
+    (e) => e.command !== effectiveDefaultEditor?.command,
+  );
 
   // Get icon component for the effective editor (avoid IIFE in JSX)
   const DefaultEditorIcon = effectiveDefaultEditor
@@ -354,11 +365,11 @@ export function WorktreeActionsDropdown({
   // While git status is loading, treat git ops as unavailable to avoid stale state enabling actions
   const isGitOpsAvailable = !isLoadingGitStatus && canPerformGitOps;
   const gitOpsDisabledReason = isLoadingGitStatus
-    ? 'Checking git status...'
+    ? "Checking git status..."
     : !gitRepoStatus.isGitRepo
-      ? 'Not a git repository'
+      ? "Not a git repository"
       : !gitRepoStatus.hasCommits
-        ? 'Repository has no commits yet'
+        ? "Repository has no commits yet"
         : null;
 
   // Check if the branch exists on remotes other than the tracking remote.
@@ -381,7 +392,10 @@ export function WorktreeActionsDropdown({
   const showCreatePR = !hasPR;
   const showPRInfo = hasPR && !!worktree.pr;
   const hasChangesSectionContent =
-    worktree.hasChanges || showCreatePR || showPRInfo || !!(onStashChanges || onViewStashes);
+    worktree.hasChanges ||
+    showCreatePR ||
+    showPRInfo ||
+    !!(onStashChanges || onViewStashes);
 
   // Determine if the destructive/bottom section has any visible items
   const hasDestructiveSectionContent = worktree.hasChanges || !worktree.isMain;
@@ -394,15 +408,18 @@ export function WorktreeActionsDropdown({
       title: worktree.pr.title,
       url: worktree.pr.url,
       state: worktree.pr.state,
-      author: '',
-      body: '',
+      author: "",
+      body: "",
       comments: [],
       reviewComments: [],
     };
   }, [showPRInfo, worktree.pr]);
 
   const viewDevServerLogsItem = (
-    <DropdownMenuItem onClick={() => onViewDevServerLogs(worktree)} className="text-xs">
+    <DropdownMenuItem
+      onClick={() => onViewDevServerLogs(worktree)}
+      className="text-xs"
+    >
       <ScrollText className="w-3.5 h-3.5 mr-2" />
       View Dev Server Logs
     </DropdownMenuItem>
@@ -412,14 +429,14 @@ export function WorktreeActionsDropdown({
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={standalone ? 'outline' : isSelected ? 'default' : 'outline'}
+          variant={standalone ? "outline" : isSelected ? "default" : "outline"}
           size="sm"
           className={cn(
-            'h-7 w-7 p-0',
-            !standalone && 'rounded-l-none',
-            standalone && 'h-8 w-8 shrink-0',
-            !standalone && isSelected && 'bg-primary text-primary-foreground',
-            !standalone && !isSelected && 'bg-secondary/50 hover:bg-secondary'
+            "h-7 w-7 p-0",
+            !standalone && "rounded-l-none",
+            standalone && "h-8 w-8 shrink-0",
+            !standalone && isSelected && "bg-primary text-primary-foreground",
+            !standalone && !isSelected && "bg-secondary/50 hover:bg-secondary",
           )}
         >
           <MoreHorizontal className="w-3.5 h-3.5" />
@@ -431,18 +448,18 @@ export function WorktreeActionsDropdown({
           <>
             <DropdownMenuLabel className="text-xs flex items-center gap-2 text-red-600 dark:text-red-400">
               <AlertTriangle className="w-3.5 h-3.5" />
-              {worktree.conflictType === 'merge'
-                ? 'Merge'
-                : worktree.conflictType === 'rebase'
-                  ? 'Rebase'
-                  : worktree.conflictType === 'cherry-pick'
-                    ? 'Cherry-pick'
-                    : 'Operation'}{' '}
+              {worktree.conflictType === "merge"
+                ? "Merge"
+                : worktree.conflictType === "rebase"
+                  ? "Rebase"
+                  : worktree.conflictType === "cherry-pick"
+                    ? "Cherry-pick"
+                    : "Operation"}{" "}
               Conflicts
               {worktree.conflictFiles && worktree.conflictFiles.length > 0 && (
                 <span className="ml-auto text-[10px] bg-red-500/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded">
                   {worktree.conflictFiles.length} file
-                  {worktree.conflictFiles.length !== 1 ? 's' : ''}
+                  {worktree.conflictFiles.length !== 1 ? "s" : ""}
                 </span>
               )}
             </DropdownMenuLabel>
@@ -452,14 +469,14 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-destructive focus:text-destructive"
               >
                 <XCircle className="w-3.5 h-3.5 mr-2" />
-                Abort{' '}
-                {worktree.conflictType === 'merge'
-                  ? 'Merge'
-                  : worktree.conflictType === 'rebase'
-                    ? 'Rebase'
-                    : worktree.conflictType === 'cherry-pick'
-                      ? 'Cherry-pick'
-                      : 'Operation'}
+                Abort{" "}
+                {worktree.conflictType === "merge"
+                  ? "Merge"
+                  : worktree.conflictType === "rebase"
+                    ? "Rebase"
+                    : worktree.conflictType === "cherry-pick"
+                      ? "Cherry-pick"
+                      : "Operation"}
               </DropdownMenuItem>
             )}
             {onContinueOperation && (
@@ -468,21 +485,22 @@ export function WorktreeActionsDropdown({
                 className="text-xs text-green-600 focus:text-green-700"
               >
                 <CheckCircle className="w-3.5 h-3.5 mr-2" />
-                Continue{' '}
-                {worktree.conflictType === 'merge'
-                  ? 'Merge'
-                  : worktree.conflictType === 'rebase'
-                    ? 'Rebase'
-                    : worktree.conflictType === 'cherry-pick'
-                      ? 'Cherry-pick'
-                      : 'Operation'}
+                Continue{" "}
+                {worktree.conflictType === "merge"
+                  ? "Merge"
+                  : worktree.conflictType === "rebase"
+                    ? "Rebase"
+                    : worktree.conflictType === "cherry-pick"
+                      ? "Cherry-pick"
+                      : "Operation"}
               </DropdownMenuItem>
             )}
             {onCreateConflictResolutionFeature && (
               <DropdownMenuItem
                 onClick={() =>
                   onCreateConflictResolutionFeature({
-                    sourceBranch: worktree.conflictSourceBranch ?? worktree.branch,
+                    sourceBranch:
+                      worktree.conflictSourceBranch ?? worktree.branch,
                     targetBranch: worktree.branch,
                     targetWorktreePath: worktree.path,
                     conflictFiles: worktree.conflictFiles,
@@ -522,7 +540,10 @@ export function WorktreeActionsDropdown({
         {onToggleAutoMode && (
           <>
             {isAutoModeRunning ? (
-              <DropdownMenuItem onClick={() => onToggleAutoMode(worktree)} className="text-xs">
+              <DropdownMenuItem
+                onClick={() => onToggleAutoMode(worktree)}
+                className="text-xs"
+              >
                 <span className="flex items-center mr-2">
                   <Zap className="w-3.5 h-3.5 text-yellow-500" />
                   <span className="ml-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
@@ -530,7 +551,10 @@ export function WorktreeActionsDropdown({
                 Stop Auto Mode
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => onToggleAutoMode(worktree)} className="text-xs">
+              <DropdownMenuItem
+                onClick={() => onToggleAutoMode(worktree)}
+                className="text-xs"
+              >
                 <Zap className="w-3.5 h-3.5 mr-2" />
                 Start Auto Mode
               </DropdownMenuItem>
@@ -542,7 +566,7 @@ export function WorktreeActionsDropdown({
             <DropdownMenuLabel className="text-xs flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               {devServerInfo?.urlDetected === false
-                ? 'Dev Server Starting...'
+                ? "Dev Server Starting..."
                 : `Dev Server Running (:${devServerInfo?.port})`}
             </DropdownMenuLabel>
             {devServerInfo != null &&
@@ -569,7 +593,9 @@ export function WorktreeActionsDropdown({
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
               </div>
-              <DropdownMenuSubContent>{viewDevServerLogsItem}</DropdownMenuSubContent>
+              <DropdownMenuSubContent>
+                {viewDevServerLogsItem}
+              </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
           </>
@@ -585,24 +611,27 @@ export function WorktreeActionsDropdown({
                 >
                   <Play
                     className={cn(
-                      'w-3.5 h-3.5 mr-2',
-                      (isStartingAnyDevServer || isDevServerStarting) && 'animate-pulse'
+                      "w-3.5 h-3.5 mr-2",
+                      (isStartingAnyDevServer || isDevServerStarting) &&
+                        "animate-pulse",
                     )}
                   />
                   {isStartingAnyDevServer || isDevServerStarting
-                    ? 'Starting...'
-                    : 'Start Dev Server'}
+                    ? "Starting..."
+                    : "Start Dev Server"}
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger
                   className={cn(
-                    'text-xs px-1 rounded-l-none border-l border-border/30 h-8',
+                    "text-xs px-1 rounded-l-none border-l border-border/30 h-8",
                     (isStartingAnyDevServer || isDevServerStarting) &&
-                      'opacity-50 cursor-not-allowed'
+                      "opacity-50 cursor-not-allowed",
                   )}
                   disabled={isStartingAnyDevServer || isDevServerStarting}
                 />
               </div>
-              <DropdownMenuSubContent>{viewDevServerLogsItem}</DropdownMenuSubContent>
+              <DropdownMenuSubContent>
+                {viewDevServerLogsItem}
+              </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
           </>
@@ -617,7 +646,10 @@ export function WorktreeActionsDropdown({
                   Tests Running
                 </DropdownMenuLabel>
                 {onViewTestLogs && (
-                  <DropdownMenuItem onClick={() => onViewTestLogs(worktree)} className="text-xs">
+                  <DropdownMenuItem
+                    onClick={() => onViewTestLogs(worktree)}
+                    className="text-xs"
+                  >
                     <ScrollText className="w-3.5 h-3.5 mr-2" />
                     View Test Logs
                   </DropdownMenuItem>
@@ -641,20 +673,26 @@ export function WorktreeActionsDropdown({
                   className="text-xs"
                 >
                   <FlaskConical
-                    className={cn('w-3.5 h-3.5 mr-2', isStartingTests && 'animate-pulse')}
+                    className={cn(
+                      "w-3.5 h-3.5 mr-2",
+                      isStartingTests && "animate-pulse",
+                    )}
                   />
-                  {isStartingTests ? 'Starting Tests...' : 'Run Tests'}
+                  {isStartingTests ? "Starting Tests..." : "Run Tests"}
                 </DropdownMenuItem>
                 {onViewTestLogs && testSessionInfo && (
-                  <DropdownMenuItem onClick={() => onViewTestLogs(worktree)} className="text-xs">
+                  <DropdownMenuItem
+                    onClick={() => onViewTestLogs(worktree)}
+                    className="text-xs"
+                  >
                     <ScrollText className="w-3.5 h-3.5 mr-2" />
                     View Last Test Results
-                    {testSessionInfo.status === 'passed' && (
+                    {testSessionInfo.status === "passed" && (
                       <span className="ml-auto text-[10px] bg-green-500/20 text-green-600 px-1.5 py-0.5 rounded">
                         passed
                       </span>
                     )}
-                    {testSessionInfo.status === 'failed' && (
+                    {testSessionInfo.status === "failed" && (
                       <span className="ml-auto text-[10px] bg-red-500/20 text-red-600 px-1.5 py-0.5 rounded">
                         failed
                       </span>
@@ -672,10 +710,14 @@ export function WorktreeActionsDropdown({
             <div className="flex items-center">
               {/* Main clickable area - opens in default editor */}
               <DropdownMenuItem
-                onClick={() => onOpenInEditor(worktree, effectiveDefaultEditor.command)}
+                onClick={() =>
+                  onOpenInEditor(worktree, effectiveDefaultEditor.command)
+                }
                 className="text-xs flex-1 pr-0 rounded-r-none"
               >
-                {DefaultEditorIcon && <DefaultEditorIcon className="w-3.5 h-3.5 mr-2" />}
+                {DefaultEditorIcon && (
+                  <DefaultEditorIcon className="w-3.5 h-3.5 mr-2" />
+                )}
                 Open in {effectiveDefaultEditor.name}
               </DropdownMenuItem>
               {/* Chevron trigger for submenu with other editors and Copy Path */}
@@ -701,9 +743,9 @@ export function WorktreeActionsDropdown({
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(worktree.path);
-                    toast.success('Path copied to clipboard');
+                    toast.success("Path copied to clipboard");
                   } catch {
-                    toast.error('Failed to copy path to clipboard');
+                    toast.error("Failed to copy path to clipboard");
                   }
                 }}
                 className="text-xs"
@@ -722,17 +764,20 @@ export function WorktreeActionsDropdown({
               onClick={() => {
                 if (effectiveDefaultTerminal) {
                   // External terminal is the default
-                  onOpenInExternalTerminal(worktree, effectiveDefaultTerminal.id);
+                  onOpenInExternalTerminal(
+                    worktree,
+                    effectiveDefaultTerminal.id,
+                  );
                 } else {
                   // Integrated terminal is the default - use user's preferred mode
-                  const mode = openTerminalMode === 'newTab' ? 'tab' : 'split';
+                  const mode = openTerminalMode === "newTab" ? "tab" : "split";
                   onOpenInIntegratedTerminal(worktree, mode);
                 }
               }}
               className="text-xs flex-1 pr-0 rounded-r-none"
             >
               <DefaultTerminalIcon className="w-3.5 h-3.5 mr-2" />
-              Open in {effectiveDefaultTerminal?.name ?? 'Terminal'}
+              Open in {effectiveDefaultTerminal?.name ?? "Terminal"}
             </DropdownMenuItem>
             {/* Chevron trigger for submenu with all terminals */}
             <DropdownMenuSubTrigger className="text-xs px-1 rounded-l-none border-l border-border/30 h-8" />
@@ -744,19 +789,21 @@ export function WorktreeActionsDropdown({
                 <Terminal className="w-3.5 h-3.5 mr-2" />
                 Terminal
                 {!effectiveDefaultTerminal && (
-                  <span className="ml-auto mr-2 text-[10px] text-muted-foreground">(default)</span>
+                  <span className="ml-auto mr-2 text-[10px] text-muted-foreground">
+                    (default)
+                  </span>
                 )}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 <DropdownMenuItem
-                  onClick={() => onOpenInIntegratedTerminal(worktree, 'tab')}
+                  onClick={() => onOpenInIntegratedTerminal(worktree, "tab")}
                   className="text-xs"
                 >
                   <SquarePlus className="w-3.5 h-3.5 mr-2" />
                   New Tab
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => onOpenInIntegratedTerminal(worktree, 'split')}
+                  onClick={() => onOpenInIntegratedTerminal(worktree, "split")}
                   className="text-xs"
                 >
                   <SplitSquareHorizontal className="w-3.5 h-3.5 mr-2" />
@@ -772,13 +819,17 @@ export function WorktreeActionsDropdown({
               return (
                 <DropdownMenuItem
                   key={terminal.id}
-                  onClick={() => onOpenInExternalTerminal(worktree, terminal.id)}
+                  onClick={() =>
+                    onOpenInExternalTerminal(worktree, terminal.id)
+                  }
                   className="text-xs"
                 >
                   <TerminalIcon className="w-3.5 h-3.5 mr-2" />
                   {terminal.name}
                   {isDefault && (
-                    <span className="ml-auto text-[10px] text-muted-foreground">(default)</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground">
+                      (default)
+                    </span>
                   )}
                 </DropdownMenuItem>
               );
@@ -811,7 +862,9 @@ export function WorktreeActionsDropdown({
               terminalScripts.map((script) => (
                 <DropdownMenuItem
                   key={script.id}
-                  onClick={() => onRunTerminalScript?.(worktree, script.command)}
+                  onClick={() =>
+                    onRunTerminalScript?.(worktree, script.command)
+                  }
                   className="text-xs"
                   disabled={!onRunTerminalScript}
                 >
@@ -820,7 +873,10 @@ export function WorktreeActionsDropdown({
                 </DropdownMenuItem>
               ))
             ) : (
-              <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+              <DropdownMenuItem
+                disabled
+                className="text-xs text-muted-foreground"
+              >
                 No scripts configured
               </DropdownMenuItem>
             )}
@@ -837,7 +893,10 @@ export function WorktreeActionsDropdown({
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <TooltipWrapper showTooltip={!!gitOpsDisabledReason} tooltipContent={gitOpsDisabledReason}>
+        <TooltipWrapper
+          showTooltip={!!gitOpsDisabledReason}
+          tooltipContent={gitOpsDisabledReason}
+        >
           {remotes && remotes.length > 1 && onPullWithRemote ? (
             // Multiple remotes - show split button: click main area to pull (default behavior),
             // chevron opens submenu showing individual remotes to pull from
@@ -847,31 +906,39 @@ export function WorktreeActionsDropdown({
                   onClick={() => isGitOpsAvailable && onPull(worktree)}
                   disabled={isPulling || !isGitOpsAvailable}
                   className={cn(
-                    'text-xs flex-1 pr-0 rounded-r-none',
-                    !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                    "text-xs flex-1 pr-0 rounded-r-none",
+                    !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
                   )}
                 >
-                  <Download className={cn('w-3.5 h-3.5 mr-2', isPulling && 'animate-pulse')} />
-                  {isPulling ? 'Pulling...' : 'Pull'}
+                  <Download
+                    className={cn(
+                      "w-3.5 h-3.5 mr-2",
+                      isPulling && "animate-pulse",
+                    )}
+                  />
+                  {isPulling ? "Pulling..." : "Pull"}
                   {!isGitOpsAvailable && (
                     <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                   )}
-                  {isGitOpsAvailable && !isOnDifferentRemote && behindCount > 0 && (
-                    <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                      {behindCount} behind
-                    </span>
-                  )}
+                  {isGitOpsAvailable &&
+                    !isOnDifferentRemote &&
+                    behindCount > 0 && (
+                      <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded">
+                        {behindCount} behind
+                      </span>
+                    )}
                   {isGitOpsAvailable && isOnDifferentRemote && (
                     <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                       <Globe className="w-2.5 h-2.5" />
-                      on {otherRemotesWithBranch.join(', ')}
+                      on {otherRemotesWithBranch.join(", ")}
                     </span>
                   )}
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger
                   className={cn(
-                    'text-xs px-1 rounded-l-none border-l border-border/30 h-8',
-                    (!isGitOpsAvailable || isPulling) && 'opacity-50 cursor-not-allowed'
+                    "text-xs px-1 rounded-l-none border-l border-border/30 h-8",
+                    (!isGitOpsAvailable || isPulling) &&
+                      "opacity-50 cursor-not-allowed",
                   )}
                   disabled={!isGitOpsAvailable || isPulling}
                 />
@@ -889,10 +956,15 @@ export function WorktreeActionsDropdown({
                     trackingRemote={trackingRemote}
                     isDisabled={isPulling}
                     isGitOpsAvailable={isGitOpsAvailable}
-                    onAction={() => isGitOpsAvailable && onPullWithRemote(worktree, remote.name)}
+                    onAction={() =>
+                      isGitOpsAvailable &&
+                      onPullWithRemote(worktree, remote.name)
+                    }
                     onSetTracking={
                       onSetTracking
-                        ? () => isGitOpsAvailable && onSetTracking(worktree, remote.name)
+                        ? () =>
+                            isGitOpsAvailable &&
+                            onSetTracking(worktree, remote.name)
                         : undefined
                     }
                   />
@@ -904,10 +976,15 @@ export function WorktreeActionsDropdown({
             <DropdownMenuItem
               onClick={() => isGitOpsAvailable && onPull(worktree)}
               disabled={isPulling || !isGitOpsAvailable}
-              className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                "text-xs",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+              )}
             >
-              <Download className={cn('w-3.5 h-3.5 mr-2', isPulling && 'animate-pulse')} />
-              {isPulling ? 'Pulling...' : 'Pull'}
+              <Download
+                className={cn("w-3.5 h-3.5 mr-2", isPulling && "animate-pulse")}
+              />
+              {isPulling ? "Pulling..." : "Pull"}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -919,13 +996,16 @@ export function WorktreeActionsDropdown({
               {isGitOpsAvailable && isOnDifferentRemote && (
                 <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                   <Globe className="w-2.5 h-2.5" />
-                  on {otherRemotesWithBranch.join(', ')}
+                  on {otherRemotesWithBranch.join(", ")}
                 </span>
               )}
             </DropdownMenuItem>
           )}
         </TooltipWrapper>
-        <TooltipWrapper showTooltip={!!gitOpsDisabledReason} tooltipContent={gitOpsDisabledReason}>
+        <TooltipWrapper
+          showTooltip={!!gitOpsDisabledReason}
+          tooltipContent={gitOpsDisabledReason}
+        >
           {remotes && remotes.length > 1 && onPushWithRemote ? (
             // Multiple remotes - show split button: click main area for default push behavior,
             // chevron opens submenu showing individual remotes to push to
@@ -942,16 +1022,23 @@ export function WorktreeActionsDropdown({
                   }}
                   disabled={
                     isPushing ||
-                    (hasRemoteBranch && !isOnDifferentRemote && aheadCount === 0) ||
+                    (hasRemoteBranch &&
+                      !isOnDifferentRemote &&
+                      aheadCount === 0) ||
                     !isGitOpsAvailable
                   }
                   className={cn(
-                    'text-xs flex-1 pr-0 rounded-r-none',
-                    !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                    "text-xs flex-1 pr-0 rounded-r-none",
+                    !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
                   )}
                 >
-                  <Upload className={cn('w-3.5 h-3.5 mr-2', isPushing && 'animate-pulse')} />
-                  {isPushing ? 'Pushing...' : 'Push'}
+                  <Upload
+                    className={cn(
+                      "w-3.5 h-3.5 mr-2",
+                      isPushing && "animate-pulse",
+                    )}
+                  />
+                  {isPushing ? "Pushing..." : "Push"}
                   {!isGitOpsAvailable && (
                     <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                   )}
@@ -961,12 +1048,14 @@ export function WorktreeActionsDropdown({
                       local only
                     </span>
                   )}
-                  {isGitOpsAvailable && hasRemoteBranch && isOnDifferentRemote && (
-                    <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
-                      <Globe className="w-2.5 h-2.5" />
-                      on {otherRemotesWithBranch.join(', ')}
-                    </span>
-                  )}
+                  {isGitOpsAvailable &&
+                    hasRemoteBranch &&
+                    isOnDifferentRemote && (
+                      <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                        <Globe className="w-2.5 h-2.5" />
+                        on {otherRemotesWithBranch.join(", ")}
+                      </span>
+                    )}
                   {isGitOpsAvailable &&
                     hasRemoteBranch &&
                     !isOnDifferentRemote &&
@@ -981,8 +1070,8 @@ export function WorktreeActionsDropdown({
                     trackingRemote && (
                       <span
                         className={cn(
-                          'text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded',
-                          aheadCount > 0 ? 'ml-1' : 'ml-auto'
+                          "text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded",
+                          aheadCount > 0 ? "ml-1" : "ml-auto",
                         )}
                       >
                         {trackingRemote}
@@ -991,8 +1080,9 @@ export function WorktreeActionsDropdown({
                 </DropdownMenuItem>
                 <DropdownMenuSubTrigger
                   className={cn(
-                    'text-xs px-1 rounded-l-none border-l border-border/30 h-8',
-                    (!isGitOpsAvailable || isPushing) && 'opacity-50 cursor-not-allowed'
+                    "text-xs px-1 rounded-l-none border-l border-border/30 h-8",
+                    (!isGitOpsAvailable || isPushing) &&
+                      "opacity-50 cursor-not-allowed",
                   )}
                   disabled={!isGitOpsAvailable || isPushing}
                 />
@@ -1010,10 +1100,15 @@ export function WorktreeActionsDropdown({
                     trackingRemote={trackingRemote}
                     isDisabled={isPushing}
                     isGitOpsAvailable={isGitOpsAvailable}
-                    onAction={() => isGitOpsAvailable && onPushWithRemote(worktree, remote.name)}
+                    onAction={() =>
+                      isGitOpsAvailable &&
+                      onPushWithRemote(worktree, remote.name)
+                    }
                     onSetTracking={
                       onSetTracking
-                        ? () => isGitOpsAvailable && onSetTracking(worktree, remote.name)
+                        ? () =>
+                            isGitOpsAvailable &&
+                            onSetTracking(worktree, remote.name)
                         : undefined
                     }
                   />
@@ -1036,10 +1131,15 @@ export function WorktreeActionsDropdown({
                 (hasRemoteBranch && !isOnDifferentRemote && aheadCount === 0) ||
                 !isGitOpsAvailable
               }
-              className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                "text-xs",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+              )}
             >
-              <Upload className={cn('w-3.5 h-3.5 mr-2', isPushing && 'animate-pulse')} />
-              {isPushing ? 'Pushing...' : 'Push'}
+              <Upload
+                className={cn("w-3.5 h-3.5 mr-2", isPushing && "animate-pulse")}
+              />
+              {isPushing ? "Pushing..." : "Push"}
               {!isGitOpsAvailable && (
                 <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
               )}
@@ -1052,24 +1152,30 @@ export function WorktreeActionsDropdown({
               {isGitOpsAvailable && hasRemoteBranch && isOnDifferentRemote && (
                 <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
                   <Globe className="w-2.5 h-2.5" />
-                  on {otherRemotesWithBranch.join(', ')}
+                  on {otherRemotesWithBranch.join(", ")}
                 </span>
               )}
-              {isGitOpsAvailable && hasRemoteBranch && !isOnDifferentRemote && aheadCount > 0 && (
-                <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                  {aheadCount} ahead
-                </span>
-              )}
-              {isGitOpsAvailable && hasRemoteBranch && !isOnDifferentRemote && trackingRemote && (
-                <span
-                  className={cn(
-                    'text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded',
-                    aheadCount > 0 ? 'ml-1' : 'ml-auto'
-                  )}
-                >
-                  {trackingRemote}
-                </span>
-              )}
+              {isGitOpsAvailable &&
+                hasRemoteBranch &&
+                !isOnDifferentRemote &&
+                aheadCount > 0 && (
+                  <span className="ml-auto text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                    {aheadCount} ahead
+                  </span>
+                )}
+              {isGitOpsAvailable &&
+                hasRemoteBranch &&
+                !isOnDifferentRemote &&
+                trackingRemote && (
+                  <span
+                    className={cn(
+                      "text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded",
+                      aheadCount > 0 ? "ml-1" : "ml-auto",
+                    )}
+                  >
+                    {trackingRemote}
+                  </span>
+                )}
             </DropdownMenuItem>
           )}
         </TooltipWrapper>
@@ -1085,20 +1191,26 @@ export function WorktreeActionsDropdown({
                     onClick={() => isGitOpsAvailable && onSync(worktree)}
                     disabled={isSyncing || !isGitOpsAvailable}
                     className={cn(
-                      'text-xs flex-1 pr-0 rounded-r-none',
-                      !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                      "text-xs flex-1 pr-0 rounded-r-none",
+                      !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
                     )}
                   >
-                    <RefreshCw className={cn('w-3.5 h-3.5 mr-2', isSyncing && 'animate-spin')} />
-                    {isSyncing ? 'Syncing...' : 'Sync'}
+                    <RefreshCw
+                      className={cn(
+                        "w-3.5 h-3.5 mr-2",
+                        isSyncing && "animate-spin",
+                      )}
+                    />
+                    {isSyncing ? "Syncing..." : "Sync"}
                     {!isGitOpsAvailable && (
                       <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                     )}
                   </DropdownMenuItem>
                   <DropdownMenuSubTrigger
                     className={cn(
-                      'text-xs px-1 rounded-l-none border-l border-border/30 h-8',
-                      (!isGitOpsAvailable || isSyncing) && 'opacity-50 cursor-not-allowed'
+                      "text-xs px-1 rounded-l-none border-l border-border/30 h-8",
+                      (!isGitOpsAvailable || isSyncing) &&
+                        "opacity-50 cursor-not-allowed",
                     )}
                     disabled={!isGitOpsAvailable || isSyncing}
                   />
@@ -1111,7 +1223,10 @@ export function WorktreeActionsDropdown({
                   {remotes.map((remote) => (
                     <DropdownMenuItem
                       key={`sync-${remote.name}`}
-                      onClick={() => isGitOpsAvailable && onSyncWithRemote(worktree, remote.name)}
+                      onClick={() =>
+                        isGitOpsAvailable &&
+                        onSyncWithRemote(worktree, remote.name)
+                      }
                       disabled={isSyncing || !isGitOpsAvailable}
                       className="text-xs"
                     >
@@ -1128,10 +1243,18 @@ export function WorktreeActionsDropdown({
               <DropdownMenuItem
                 onClick={() => isGitOpsAvailable && onSync(worktree)}
                 disabled={isSyncing || !isGitOpsAvailable}
-                className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+                className={cn(
+                  "text-xs",
+                  !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+                )}
               >
-                <RefreshCw className={cn('w-3.5 h-3.5 mr-2', isSyncing && 'animate-spin')} />
-                {isSyncing ? 'Syncing...' : 'Sync'}
+                <RefreshCw
+                  className={cn(
+                    "w-3.5 h-3.5 mr-2",
+                    isSyncing && "animate-spin",
+                  )}
+                />
+                {isSyncing ? "Syncing..." : "Sync"}
                 {!isGitOpsAvailable && (
                   <AlertCircle className="w-3 h-3 ml-auto text-muted-foreground" />
                 )}
@@ -1139,13 +1262,16 @@ export function WorktreeActionsDropdown({
             )}
           </TooltipWrapper>
         )}
-        <TooltipWrapper showTooltip={!!gitOpsDisabledReason} tooltipContent={gitOpsDisabledReason}>
+        <TooltipWrapper
+          showTooltip={!!gitOpsDisabledReason}
+          tooltipContent={gitOpsDisabledReason}
+        >
           <DropdownMenuItem
             onClick={() => isGitOpsAvailable && onResolveConflicts(worktree)}
             disabled={!isGitOpsAvailable}
             className={cn(
-              'text-xs text-purple-500 focus:text-purple-600',
-              !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+              "text-xs text-purple-500 focus:text-purple-600",
+              !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
             )}
           >
             <GitMerge className="w-3.5 h-3.5 mr-2" />
@@ -1164,8 +1290,8 @@ export function WorktreeActionsDropdown({
               onClick={() => isGitOpsAvailable && onMerge(worktree)}
               disabled={!isGitOpsAvailable}
               className={cn(
-                'text-xs text-green-600 focus:text-green-700',
-                !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                "text-xs text-green-600 focus:text-green-700",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
               )}
             >
               <GitMerge className="w-3.5 h-3.5 mr-2" />
@@ -1190,8 +1316,8 @@ export function WorktreeActionsDropdown({
                   onClick={() => isGitOpsAvailable && onViewCommits(worktree)}
                   disabled={!isGitOpsAvailable}
                   className={cn(
-                    'text-xs flex-1 pr-0 rounded-r-none',
-                    !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                    "text-xs flex-1 pr-0 rounded-r-none",
+                    !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
                   )}
                 >
                   <History className="w-3.5 h-3.5 mr-2" />
@@ -1204,8 +1330,8 @@ export function WorktreeActionsDropdown({
                 <DropdownMenuSubTrigger
                   disabled={!isGitOpsAvailable}
                   className={cn(
-                    'text-xs px-1 rounded-l-none border-l border-border/30 h-8',
-                    !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                    "text-xs px-1 rounded-l-none border-l border-border/30 h-8",
+                    !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
                   )}
                 />
               </div>
@@ -1215,7 +1341,10 @@ export function WorktreeActionsDropdown({
               <DropdownMenuItem
                 onClick={() => isGitOpsAvailable && onCherryPick(worktree)}
                 disabled={!isGitOpsAvailable}
-                className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+                className={cn(
+                  "text-xs",
+                  !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+                )}
               >
                 <Cherry className="w-3.5 h-3.5 mr-2" />
                 Cherry Pick
@@ -1233,7 +1362,10 @@ export function WorktreeActionsDropdown({
             <DropdownMenuItem
               onClick={() => isGitOpsAvailable && onViewCommits(worktree)}
               disabled={!isGitOpsAvailable}
-              className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                "text-xs",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+              )}
             >
               <History className="w-3.5 h-3.5 mr-2" />
               View Commits
@@ -1243,7 +1375,9 @@ export function WorktreeActionsDropdown({
             </DropdownMenuItem>
           </TooltipWrapper>
         )}
-        {(hasChangesSectionContent || hasDestructiveSectionContent) && <DropdownMenuSeparator />}
+        {(hasChangesSectionContent || hasDestructiveSectionContent) && (
+          <DropdownMenuSeparator />
+        )}
 
         {/* View Changes split button - main action views changes directly, chevron reveals stash options.
             Only render when at least one action is meaningful:
@@ -1277,7 +1411,10 @@ export function WorktreeActionsDropdown({
                       onStashChanges(worktree);
                     }}
                     disabled={!isGitOpsAvailable}
-                    className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+                    className={cn(
+                      "text-xs",
+                      !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+                    )}
                   >
                     <Archive className="w-3.5 h-3.5 mr-2" />
                     Create Stash
@@ -1288,7 +1425,10 @@ export function WorktreeActionsDropdown({
                 </TooltipWrapper>
               )}
               {onViewStashes && (
-                <DropdownMenuItem onClick={() => onViewStashes(worktree)} className="text-xs">
+                <DropdownMenuItem
+                  onClick={() => onViewStashes(worktree)}
+                  className="text-xs"
+                >
                   <Eye className="w-3.5 h-3.5 mr-2" />
                   View Stashes
                 </DropdownMenuItem>
@@ -1296,12 +1436,18 @@ export function WorktreeActionsDropdown({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         ) : worktree.hasChanges ? (
-          <DropdownMenuItem onClick={() => onViewChanges(worktree)} className="text-xs">
+          <DropdownMenuItem
+            onClick={() => onViewChanges(worktree)}
+            className="text-xs"
+          >
             <Eye className="w-3.5 h-3.5 mr-2" />
             View Changes
           </DropdownMenuItem>
         ) : onViewStashes ? (
-          <DropdownMenuItem onClick={() => onViewStashes(worktree)} className="text-xs">
+          <DropdownMenuItem
+            onClick={() => onViewStashes(worktree)}
+            className="text-xs"
+          >
             <Eye className="w-3.5 h-3.5 mr-2" />
             View Stashes
           </DropdownMenuItem>
@@ -1314,7 +1460,10 @@ export function WorktreeActionsDropdown({
             <DropdownMenuItem
               onClick={() => isGitOpsAvailable && onCommit(worktree)}
               disabled={!isGitOpsAvailable}
-              className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                "text-xs",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+              )}
             >
               <GitCommit className="w-3.5 h-3.5 mr-2" />
               Commit Changes
@@ -1333,7 +1482,10 @@ export function WorktreeActionsDropdown({
             <DropdownMenuItem
               onClick={() => isGitOpsAvailable && onCreatePR(worktree)}
               disabled={!isGitOpsAvailable}
-              className={cn('text-xs', !isGitOpsAvailable && 'opacity-50 cursor-not-allowed')}
+              className={cn(
+                "text-xs",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
+              )}
             >
               <GitPullRequest className="w-3.5 h-3.5 mr-2" />
               Create Pull Request
@@ -1350,7 +1502,11 @@ export function WorktreeActionsDropdown({
               {/* Main clickable area - opens PR in browser */}
               <DropdownMenuItem
                 onClick={() => {
-                  window.open(worktree.pr!.url, '_blank', 'noopener,noreferrer');
+                  window.open(
+                    worktree.pr!.url,
+                    "_blank",
+                    "noopener,noreferrer",
+                  );
                 }}
                 className="text-xs flex-1 pr-0 rounded-r-none"
               >
@@ -1358,12 +1514,12 @@ export function WorktreeActionsDropdown({
                 PR #{worktree.pr.number}
                 <span
                   className={cn(
-                    'ml-auto mr-1 text-[10px] px-1.5 py-0.5 rounded uppercase',
-                    worktree.pr.state === 'MERGED'
-                      ? 'bg-purple-500/20 text-purple-600'
-                      : worktree.pr.state === 'CLOSED'
-                        ? 'bg-gray-500/20 text-gray-500'
-                        : 'bg-green-500/20 text-green-600'
+                    "ml-auto mr-1 text-[10px] px-1.5 py-0.5 rounded uppercase",
+                    worktree.pr.state === "MERGED"
+                      ? "bg-purple-500/20 text-purple-600"
+                      : worktree.pr.state === "CLOSED"
+                        ? "bg-gray-500/20 text-gray-500"
+                        : "bg-green-500/20 text-green-600",
                   )}
                 >
                   {worktree.pr.state}
@@ -1388,7 +1544,10 @@ export function WorktreeActionsDropdown({
                 Address PR Comments
               </DropdownMenuItem>
               {onChangePRNumber && (
-                <DropdownMenuItem onClick={() => onChangePRNumber(worktree)} className="text-xs">
+                <DropdownMenuItem
+                  onClick={() => onChangePRNumber(worktree)}
+                  className="text-xs"
+                >
                   <Hash className="w-3.5 h-3.5 mr-2" />
                   Change PR Number
                 </DropdownMenuItem>
@@ -1396,7 +1555,9 @@ export function WorktreeActionsDropdown({
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}
-        {hasChangesSectionContent && hasDestructiveSectionContent && <DropdownMenuSeparator />}
+        {hasChangesSectionContent && hasDestructiveSectionContent && (
+          <DropdownMenuSeparator />
+        )}
         {worktree.hasChanges && (
           <TooltipWrapper
             showTooltip={!!gitOpsDisabledReason}
@@ -1406,8 +1567,8 @@ export function WorktreeActionsDropdown({
               onClick={() => isGitOpsAvailable && onDiscardChanges(worktree)}
               disabled={!isGitOpsAvailable}
               className={cn(
-                'text-xs text-destructive focus:text-destructive',
-                !isGitOpsAvailable && 'opacity-50 cursor-not-allowed'
+                "text-xs text-destructive focus:text-destructive",
+                !isGitOpsAvailable && "opacity-50 cursor-not-allowed",
               )}
             >
               <Undo2 className="w-3.5 h-3.5 mr-2" />
@@ -1441,7 +1602,9 @@ export function WorktreeActionsDropdown({
                         className="flex items-center gap-2 cursor-pointer font-mono text-xs"
                       >
                         <span className="truncate flex-1">{wt.branch}</span>
-                        {isPinned && <Check className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                        {isPinned && (
+                          <Check className="w-3 h-3 shrink-0 text-muted-foreground" />
+                        )}
                       </DropdownMenuItem>
                     );
                   })}

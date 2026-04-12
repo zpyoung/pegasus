@@ -5,7 +5,7 @@
  * 2. Resolve with AI - creates a feature task for AI-powered conflict resolution
  */
 
-import { useCallback } from 'react';
+import { useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, XCircle, Wrench, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
-import type { StashApplyConflictInfo } from '../worktree-panel/types';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, XCircle, Wrench, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import type { StashApplyConflictInfo } from "../worktree-panel/types";
 
 interface StashApplyConflictDialogProps {
   open: boolean;
@@ -33,8 +33,8 @@ export function StashApplyConflictDialog({
   onResolveWithAI,
 }: StashApplyConflictDialogProps) {
   const handleResolveManually = useCallback(() => {
-    toast.info('Conflict markers left in place', {
-      description: 'Edit the conflicting files to resolve conflicts manually.',
+    toast.info("Conflict markers left in place", {
+      description: "Edit the conflicting files to resolve conflicts manually.",
       duration: 6000,
     });
     onOpenChange(false);
@@ -49,7 +49,8 @@ export function StashApplyConflictDialog({
 
   if (!conflictInfo) return null;
 
-  const operationLabel = conflictInfo.operation === 'pop' ? 'popped' : 'applied';
+  const operationLabel =
+    conflictInfo.operation === "pop" ? "popped" : "applied";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,10 +63,14 @@ export function StashApplyConflictDialog({
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                Stash{' '}
-                <code className="font-mono bg-muted px-1 rounded">{conflictInfo.stashRef}</code> was{' '}
-                {operationLabel} on branch{' '}
-                <code className="font-mono bg-muted px-1 rounded">{conflictInfo.branchName}</code>{' '}
+                Stash{" "}
+                <code className="font-mono bg-muted px-1 rounded">
+                  {conflictInfo.stashRef}
+                </code>{" "}
+                was {operationLabel} on branch{" "}
+                <code className="font-mono bg-muted px-1 rounded">
+                  {conflictInfo.branchName}
+                </code>{" "}
                 but resulted in merge conflicts.
               </span>
 
@@ -94,12 +99,12 @@ export function StashApplyConflictDialog({
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Resolve with AI</strong> &mdash; Creates a task to analyze and resolve
-                    conflicts automatically
+                    <strong>Resolve with AI</strong> &mdash; Creates a task to
+                    analyze and resolve conflicts automatically
                   </li>
                   <li>
-                    <strong>Resolve Manually</strong> &mdash; Leaves conflict markers in place for
-                    you to edit directly
+                    <strong>Resolve Manually</strong> &mdash; Leaves conflict
+                    markers in place for you to edit directly
                   </li>
                 </ul>
               </div>

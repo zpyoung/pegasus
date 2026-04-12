@@ -3,59 +3,59 @@
  * Supports verifying either CLI auth or API key auth independently
  */
 
-import type { Request, Response } from 'express';
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import { createLogger } from '@pegasus/utils';
-import { getClaudeAuthIndicators } from '@pegasus/platform';
-import { getApiKey } from '../common.js';
+import type { Request, Response } from "express";
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { createLogger } from "@pegasus/utils";
+import { getClaudeAuthIndicators } from "@pegasus/platform";
+import { getApiKey } from "../common.js";
 import {
   createSecureAuthEnv,
   AuthSessionManager,
   AuthRateLimiter,
   validateApiKey,
   createTempEnvOverride,
-} from '../../../lib/auth-utils.js';
+} from "../../../lib/auth-utils.js";
 
-const logger = createLogger('Setup');
+const logger = createLogger("Setup");
 const rateLimiter = new AuthRateLimiter();
 
 // Known error patterns that indicate auth failure
 const AUTH_ERROR_PATTERNS = [
-  'OAuth token revoked',
-  'Please run /login',
-  'please run /login',
-  'token revoked',
-  'invalid_api_key',
-  'authentication_error',
-  'unauthorized',
-  'not authenticated',
-  'authentication failed',
-  'invalid api key',
-  'api key is invalid',
+  "OAuth token revoked",
+  "Please run /login",
+  "please run /login",
+  "token revoked",
+  "invalid_api_key",
+  "authentication_error",
+  "unauthorized",
+  "not authenticated",
+  "authentication failed",
+  "invalid api key",
+  "api key is invalid",
 ];
 
 // Patterns that indicate billing/credit issues - should FAIL verification
 const BILLING_ERROR_PATTERNS = [
-  'credit balance is too low',
-  'credit balance too low',
-  'insufficient credits',
-  'insufficient balance',
-  'no credits',
-  'out of credits',
-  'billing',
-  'payment required',
-  'add credits',
+  "credit balance is too low",
+  "credit balance too low",
+  "insufficient credits",
+  "insufficient balance",
+  "no credits",
+  "out of credits",
+  "billing",
+  "payment required",
+  "add credits",
 ];
 
 // Patterns that indicate rate/usage limits - should FAIL verification
 // Users need to wait or upgrade their plan
 const RATE_LIMIT_PATTERNS = [
-  'limit reached',
-  'rate limit',
-  'rate_limit',
-  'resets', // Only valid if it's a temporary reset, not a billing issue
-  '/upgrade',
-  'extra-usage',
+  "limit reached",
+  "rate limit",
+  "rate_limit",
+  "resets", // Only valid if it's a temporary reset, not a billing issue
+  "/upgrade",
+  "extra-usage",
 ];
 
 function isRateLimitError(text: string): boolean {
@@ -64,49 +64,55 @@ function isRateLimitError(text: string): boolean {
   if (isBillingError(text)) {
     return false;
   }
-  return RATE_LIMIT_PATTERNS.some((pattern) => lowerText.includes(pattern.toLowerCase()));
+  return RATE_LIMIT_PATTERNS.some((pattern) =>
+    lowerText.includes(pattern.toLowerCase()),
+  );
 }
 
 function isBillingError(text: string): boolean {
   const lowerText = text.toLowerCase();
-  return BILLING_ERROR_PATTERNS.some((pattern) => lowerText.includes(pattern.toLowerCase()));
+  return BILLING_ERROR_PATTERNS.some((pattern) =>
+    lowerText.includes(pattern.toLowerCase()),
+  );
 }
 
 function containsAuthError(text: string): boolean {
   const lowerText = text.toLowerCase();
-  return AUTH_ERROR_PATTERNS.some((pattern) => lowerText.includes(pattern.toLowerCase()));
+  return AUTH_ERROR_PATTERNS.some((pattern) =>
+    lowerText.includes(pattern.toLowerCase()),
+  );
 }
 
 export function createVerifyClaudeAuthHandler() {
   return async (req: Request, res: Response): Promise<void> => {
     try {
       // In E2E/CI mock mode, skip real API calls
-      if (process.env.PEGASUS_MOCK_AGENT === 'true') {
+      if (process.env.PEGASUS_MOCK_AGENT === "true") {
         res.json({ success: true, authenticated: true });
         return;
       }
 
       // Get the auth method and optional API key from the request body
       const { authMethod, apiKey } = req.body as {
-        authMethod?: 'cli' | 'api_key';
+        authMethod?: "cli" | "api_key";
         apiKey?: string;
       };
 
       // Rate limiting to prevent abuse
-      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
       if (!rateLimiter.canAttempt(clientIp)) {
         const resetTime = rateLimiter.getResetTime(clientIp);
         res.status(429).json({
           success: false,
           authenticated: false,
-          error: 'Too many authentication attempts. Please try again later.',
+          error: "Too many authentication attempts. Please try again later.",
           resetTime,
         });
         return;
       }
 
       logger.info(
-        `[Setup] Verifying Claude authentication using method: ${authMethod || 'auto'}${apiKey ? ' (with provided key)' : ''}`
+        `[Setup] Verifying Claude authentication using method: ${authMethod || "auto"}${apiKey ? " (with provided key)" : ""}`,
       );
 
       // Create an AbortController with a 30-second timeout
@@ -114,7 +120,7 @@ export function createVerifyClaudeAuthHandler() {
       const timeoutId = setTimeout(() => abortController.abort(), 30000);
 
       let authenticated = false;
-      let errorMessage = '';
+      let errorMessage = "";
       let receivedAnyContent = false;
       let cleanupEnv: (() => void) | undefined;
 
@@ -123,8 +129,8 @@ export function createVerifyClaudeAuthHandler() {
 
       try {
         // For API key verification, validate the key first
-        if (authMethod === 'api_key' && apiKey) {
-          const validation = validateApiKey(apiKey, 'anthropic');
+        if (authMethod === "api_key" && apiKey) {
+          const validation = validateApiKey(apiKey, "anthropic");
           if (!validation.isValid) {
             res.json({
               success: true,
@@ -136,26 +142,35 @@ export function createVerifyClaudeAuthHandler() {
         }
 
         // Create secure environment without modifying process.env
-        const authEnv = createSecureAuthEnv(authMethod || 'api_key', apiKey, 'anthropic');
+        const authEnv = createSecureAuthEnv(
+          authMethod || "api_key",
+          apiKey,
+          "anthropic",
+        );
 
         // For API key verification without provided key, use stored key or env var
-        if (authMethod === 'api_key' && !apiKey) {
-          const storedApiKey = getApiKey('anthropic');
+        if (authMethod === "api_key" && !apiKey) {
+          const storedApiKey = getApiKey("anthropic");
           if (storedApiKey) {
             authEnv.ANTHROPIC_API_KEY = storedApiKey;
-            logger.info('[Setup] Using stored API key for verification');
+            logger.info("[Setup] Using stored API key for verification");
           } else if (!authEnv.ANTHROPIC_API_KEY) {
             res.json({
               success: true,
               authenticated: false,
-              error: 'No API key configured. Please enter an API key first.',
+              error: "No API key configured. Please enter an API key first.",
             });
             return;
           }
         }
 
         // Store the secure environment in session manager
-        AuthSessionManager.createSession(sessionId, authMethod || 'api_key', apiKey, 'anthropic');
+        AuthSessionManager.createSession(
+          sessionId,
+          authMethod || "api_key",
+          apiKey,
+          "anthropic",
+        );
 
         // Create temporary environment override for SDK call
         cleanupEnv = createTempEnvOverride(authEnv);
@@ -164,7 +179,7 @@ export function createVerifyClaudeAuthHandler() {
         const stream = query({
           prompt: "Reply with only the word 'ok'",
           options: {
-            model: 'claude-sonnet-4-6',
+            model: "claude-sonnet-4-6",
             maxTurns: 1,
             allowedTools: [],
             abortController,
@@ -177,52 +192,54 @@ export function createVerifyClaudeAuthHandler() {
         for await (const msg of stream) {
           const msgStr = JSON.stringify(msg);
           allMessages.push(msgStr);
-          logger.info('[Setup] Stream message:', msgStr.substring(0, 500));
+          logger.info("[Setup] Stream message:", msgStr.substring(0, 500));
 
           // Check for billing errors FIRST - these should fail verification
           if (isBillingError(msgStr)) {
-            logger.error('[Setup] Found billing error in message');
+            logger.error("[Setup] Found billing error in message");
             errorMessage =
-              'Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com';
+              "Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com";
             authenticated = false;
             break;
           }
 
           // Check if any part of the message contains auth errors
           if (containsAuthError(msgStr)) {
-            logger.error('[Setup] Found auth error in message');
-            if (authMethod === 'cli') {
+            logger.error("[Setup] Found auth error in message");
+            if (authMethod === "cli") {
               errorMessage =
                 "CLI authentication failed. Please run 'claude login' in your terminal to authenticate.";
             } else {
-              errorMessage = 'API key is invalid or has been revoked.';
+              errorMessage = "API key is invalid or has been revoked.";
             }
             break;
           }
 
           // Check specifically for assistant messages with text content
           const msgRecord = msg as Record<string, unknown>;
-          const msgMessage = msgRecord.message as Record<string, unknown> | undefined;
-          if (msg.type === 'assistant' && msgMessage?.content) {
+          const msgMessage = msgRecord.message as
+            | Record<string, unknown>
+            | undefined;
+          if (msg.type === "assistant" && msgMessage?.content) {
             const content = msgMessage.content;
             if (Array.isArray(content)) {
               for (const block of content) {
-                if (block.type === 'text' && block.text) {
+                if (block.type === "text" && block.text) {
                   const text = block.text;
-                  logger.info('[Setup] Assistant text:', text);
+                  logger.info("[Setup] Assistant text:", text);
 
                   if (containsAuthError(text)) {
-                    if (authMethod === 'cli') {
+                    if (authMethod === "cli") {
                       errorMessage =
                         "CLI authentication failed. Please run 'claude login' in your terminal to authenticate.";
                     } else {
-                      errorMessage = 'API key is invalid or has been revoked.';
+                      errorMessage = "API key is invalid or has been revoked.";
                     }
                     break;
                   }
 
                   // Valid text response that's not an error
-                  if (text.toLowerCase().includes('ok') || text.length > 0) {
+                  if (text.toLowerCase().includes("ok") || text.length > 0) {
                     receivedAnyContent = true;
                   }
                 }
@@ -231,30 +248,34 @@ export function createVerifyClaudeAuthHandler() {
           }
 
           // Check for result messages
-          if (msg.type === 'result') {
+          if (msg.type === "result") {
             const resultStr = JSON.stringify(msg);
 
             // First check for billing errors - these should FAIL verification
             if (isBillingError(resultStr)) {
-              logger.error('[Setup] Billing error detected - insufficient credits');
+              logger.error(
+                "[Setup] Billing error detected - insufficient credits",
+              );
               errorMessage =
-                'Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com';
+                "Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com";
               authenticated = false;
               break;
             }
             // Check if it's a rate limit error - should FAIL verification
             else if (isRateLimitError(resultStr)) {
-              logger.warn('[Setup] Rate limit detected - treating as unverified');
+              logger.warn(
+                "[Setup] Rate limit detected - treating as unverified",
+              );
               errorMessage =
-                'Rate limit reached. Please wait a while before trying again or upgrade your plan.';
+                "Rate limit reached. Please wait a while before trying again or upgrade your plan.";
               authenticated = false;
               break;
             } else if (containsAuthError(resultStr)) {
-              if (authMethod === 'cli') {
+              if (authMethod === "cli") {
                 errorMessage =
                   "CLI authentication failed. Please run 'claude login' in your terminal to authenticate.";
               } else {
-                errorMessage = 'API key is invalid or has been revoked.';
+                errorMessage = "API key is invalid or has been revoked.";
               }
             } else {
               // Got a result without errors
@@ -270,48 +291,60 @@ export function createVerifyClaudeAuthHandler() {
           authenticated = true;
         } else {
           // No content received - might be an issue
-          logger.warn('[Setup] No content received from stream');
-          logger.warn('[Setup] All messages:', allMessages.join('\n'));
-          errorMessage = 'No response received from Claude. Please check your authentication.';
+          logger.warn("[Setup] No content received from stream");
+          logger.warn("[Setup] All messages:", allMessages.join("\n"));
+          errorMessage =
+            "No response received from Claude. Please check your authentication.";
         }
       } catch (error: unknown) {
-        const errMessage = error instanceof Error ? error.message : String(error);
+        const errMessage =
+          error instanceof Error ? error.message : String(error);
 
-        logger.error('[Setup] Claude auth verification exception:', errMessage);
+        logger.error("[Setup] Claude auth verification exception:", errMessage);
 
         // Check for billing errors FIRST - these always fail
         if (isBillingError(errMessage)) {
           authenticated = false;
           errorMessage =
-            'Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com';
+            "Credit balance is too low. Please add credits to your Anthropic account at console.anthropic.com";
         }
         // Check for rate limit in exception - should FAIL verification
         else if (isRateLimitError(errMessage)) {
           authenticated = false;
           errorMessage =
-            'Rate limit reached. Please wait a while before trying again or upgrade your plan.';
-          logger.warn('[Setup] Rate limit in exception - treating as unverified');
+            "Rate limit reached. Please wait a while before trying again or upgrade your plan.";
+          logger.warn(
+            "[Setup] Rate limit in exception - treating as unverified",
+          );
         }
         // If we already determined auth was successful, keep it
         else if (authenticated) {
-          logger.info('[Setup] Auth already confirmed, ignoring exception');
+          logger.info("[Setup] Auth already confirmed, ignoring exception");
         }
         // Check for auth-related errors in exception
         else if (containsAuthError(errMessage)) {
-          if (authMethod === 'cli') {
+          if (authMethod === "cli") {
             errorMessage =
               "CLI authentication failed. Please run 'claude login' in your terminal to authenticate.";
           } else {
-            errorMessage = 'API key is invalid or has been revoked.';
+            errorMessage = "API key is invalid or has been revoked.";
           }
-        } else if (errMessage.includes('abort') || errMessage.includes('timeout')) {
-          errorMessage = 'Verification timed out. Please try again.';
-        } else if (errMessage.includes('exit') && errMessage.includes('code 1')) {
+        } else if (
+          errMessage.includes("abort") ||
+          errMessage.includes("timeout")
+        ) {
+          errorMessage = "Verification timed out. Please try again.";
+        } else if (
+          errMessage.includes("exit") &&
+          errMessage.includes("code 1")
+        ) {
           // Process exited with code 1 but we might have gotten rate limit info in the stream
           // Check if we received any content that indicated auth worked
           if (receivedAnyContent && !errorMessage) {
             authenticated = true;
-            logger.info('[Setup] Process exit 1 but content received - auth valid');
+            logger.info(
+              "[Setup] Process exit 1 but content received - auth valid",
+            );
           } else if (!errorMessage) {
             errorMessage = errMessage;
           }
@@ -326,26 +359,26 @@ export function createVerifyClaudeAuthHandler() {
         AuthSessionManager.destroySession(sessionId);
       }
 
-      logger.info('[Setup] Verification result:', {
+      logger.info("[Setup] Verification result:", {
         authenticated,
         errorMessage,
         authMethod,
       });
 
       // Determine specific auth type for success messages
-      const effectiveAuthMethod = authMethod ?? 'api_key';
-      let authType: 'oauth' | 'api_key' | 'cli' | undefined;
+      const effectiveAuthMethod = authMethod ?? "api_key";
+      let authType: "oauth" | "api_key" | "cli" | undefined;
       if (authenticated) {
-        if (effectiveAuthMethod === 'api_key') {
-          authType = 'api_key';
-        } else if (effectiveAuthMethod === 'cli') {
+        if (effectiveAuthMethod === "api_key") {
+          authType = "api_key";
+        } else if (effectiveAuthMethod === "cli") {
           // Check if CLI auth is via OAuth (Claude Code subscription) or generic CLI
           try {
             const indicators = await getClaudeAuthIndicators();
-            authType = indicators.credentials?.hasOAuthToken ? 'oauth' : 'cli';
+            authType = indicators.credentials?.hasOAuthToken ? "oauth" : "cli";
           } catch {
             // Fall back to generic CLI if credential check fails
-            authType = 'cli';
+            authType = "cli";
           }
         }
       }
@@ -357,11 +390,11 @@ export function createVerifyClaudeAuthHandler() {
         error: errorMessage || undefined,
       });
     } catch (error) {
-      logger.error('[Setup] Verify Claude auth endpoint error:', error);
+      logger.error("[Setup] Verify Claude auth endpoint error:", error);
       res.status(500).json({
         success: false,
         authenticated: false,
-        error: error instanceof Error ? error.message : 'Verification failed',
+        error: error instanceof Error ? error.message : "Verification failed",
       });
     }
   };

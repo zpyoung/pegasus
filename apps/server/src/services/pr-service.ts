@@ -8,36 +8,39 @@
 // TODO: Move execAsync/execEnv to a shared lib (lib/exec.ts or @pegasus/utils) so that
 // services no longer depend on route internals. Tracking issue: route-to-service dependency
 // inversion. For now, a local thin wrapper is used within the service boundary.
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { createLogger, isValidRemoteName } from '@pegasus/utils';
+import { exec } from "child_process";
+import { promisify } from "util";
+import { createLogger, isValidRemoteName } from "@pegasus/utils";
 
 // Thin local wrapper — duplicates the route-level execAsync/execEnv until a
 // shared lib/exec.ts (or @pegasus/utils export) is created.
 const execAsync = promisify(exec);
 
-const pathSeparator = process.platform === 'win32' ? ';' : ':';
+const pathSeparator = process.platform === "win32" ? ";" : ":";
 const _additionalPaths: string[] = [];
-if (process.platform === 'win32') {
+if (process.platform === "win32") {
   if (process.env.LOCALAPPDATA)
     _additionalPaths.push(`${process.env.LOCALAPPDATA}\\Programs\\Git\\cmd`);
-  if (process.env.PROGRAMFILES) _additionalPaths.push(`${process.env.PROGRAMFILES}\\Git\\cmd`);
-  if (process.env['ProgramFiles(x86)'])
-    _additionalPaths.push(`${process.env['ProgramFiles(x86)']}\\Git\\cmd`);
+  if (process.env.PROGRAMFILES)
+    _additionalPaths.push(`${process.env.PROGRAMFILES}\\Git\\cmd`);
+  if (process.env["ProgramFiles(x86)"])
+    _additionalPaths.push(`${process.env["ProgramFiles(x86)"]}\\Git\\cmd`);
 } else {
   _additionalPaths.push(
-    '/opt/homebrew/bin',
-    '/usr/local/bin',
-    '/home/linuxbrew/.linuxbrew/bin',
-    `${process.env.HOME}/.local/bin`
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    "/home/linuxbrew/.linuxbrew/bin",
+    `${process.env.HOME}/.local/bin`,
   );
 }
 const execEnv = {
   ...process.env,
-  PATH: [process.env.PATH, ..._additionalPaths.filter(Boolean)].filter(Boolean).join(pathSeparator),
+  PATH: [process.env.PATH, ..._additionalPaths.filter(Boolean)]
+    .filter(Boolean)
+    .join(pathSeparator),
 };
 
-const logger = createLogger('PRService');
+const logger = createLogger("PRService");
 
 export interface ParsedRemote {
   owner: string;
@@ -87,7 +90,7 @@ export async function resolvePrTarget({
   const parsedRemotes: Map<string, ParsedRemote> = new Map();
 
   try {
-    const { stdout: remotes } = await execAsync('git remote -v', {
+    const { stdout: remotes } = await execAsync("git remote -v", {
       cwd: worktreePath,
       env: execEnv,
     });
@@ -100,28 +103,28 @@ export async function resolvePrTarget({
       // Pattern 2: https://github.com/owner/repo.git (fetch)
       // Pattern 3: https://github.com/owner/repo (fetch)
       let match = line.match(
-        /^([a-zA-Z0-9._-]+)\s+.*[:/]([^/]+)\/([^/\s]+?)(?:\.git)?\s+\(fetch\)/
+        /^([a-zA-Z0-9._-]+)\s+.*[:/]([^/]+)\/([^/\s]+?)(?:\.git)?\s+\(fetch\)/,
       );
       if (!match) {
         // Try SSH format: git@github.com:owner/repo.git
         match = line.match(
-          /^([a-zA-Z0-9._-]+)\s+git@[^:]+:([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/
+          /^([a-zA-Z0-9._-]+)\s+git@[^:]+:([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/,
         );
       }
       if (!match) {
         // Try HTTPS format: https://github.com/owner/repo.git
         match = line.match(
-          /^([a-zA-Z0-9._-]+)\s+https?:\/\/[^/]+\/([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/
+          /^([a-zA-Z0-9._-]+)\s+https?:\/\/[^/]+\/([^/]+)\/([^\s]+?)(?:\.git)?\s+\(fetch\)/,
         );
       }
 
       if (match) {
         const [, remoteName, owner, repo] = match;
         parsedRemotes.set(remoteName, { owner, repo });
-        if (remoteName === 'upstream') {
+        if (remoteName === "upstream") {
           upstreamRepo = `${owner}/${repo}`;
           repoUrl = `https://github.com/${owner}/${repo}`;
-        } else if (remoteName === 'origin') {
+        } else if (remoteName === "origin") {
           originOwner = owner;
           if (!repoUrl) {
             repoUrl = `https://github.com/${owner}/${repo}`;
@@ -131,7 +134,7 @@ export async function resolvePrTarget({
     }
   } catch (err) {
     // Log the failure for debugging — control flow falls through to auto-detection
-    logger.debug('Failed to parse git remotes', { worktreePath, error: err });
+    logger.debug("Failed to parse git remotes", { worktreePath, error: err });
   }
 
   // When targetRemote is explicitly provided but remote parsing failed entirely
@@ -141,7 +144,7 @@ export async function resolvePrTarget({
   if (targetRemote && parsedRemotes.size === 0) {
     throw new Error(
       `targetRemote "${targetRemote}" was specified but no remotes could be parsed from the repository. ` +
-        `Ensure the repository has at least one configured remote (parsedRemotes is empty).`
+        `Ensure the repository has at least one configured remote (parsedRemotes is empty).`,
     );
   }
 
@@ -149,8 +152,14 @@ export async function resolvePrTarget({
   // before using it. Silently falling back to auto-detection when the caller
   // explicitly requested a remote that doesn't exist is misleading, so we
   // fail fast here instead.
-  if (targetRemote && parsedRemotes.size > 0 && !parsedRemotes.has(targetRemote)) {
-    throw new Error(`targetRemote "${targetRemote}" not found in repository remotes`);
+  if (
+    targetRemote &&
+    parsedRemotes.size > 0 &&
+    !parsedRemotes.has(targetRemote)
+  ) {
+    throw new Error(
+      `targetRemote "${targetRemote}" not found in repository remotes`,
+    );
   }
 
   // When a targetRemote is explicitly specified, override fork detection
@@ -165,12 +174,14 @@ export async function resolvePrTarget({
     // determine the push owner and would build incorrect URLs. Fail fast
     // instead of silently proceeding with null values.
     if (!pushInfo) {
-      logger.warn('Push remote not found in parsed remotes', {
+      logger.warn("Push remote not found in parsed remotes", {
         pushRemote,
         targetRemote,
         availableRemotes: [...parsedRemotes.keys()],
       });
-      throw new Error(`Push remote "${pushRemote}" not found in repository remotes`);
+      throw new Error(
+        `Push remote "${pushRemote}" not found in repository remotes`,
+      );
     }
 
     if (targetInfo) {
@@ -195,10 +206,13 @@ export async function resolvePrTarget({
   // Fallback: Try to get repo URL from git config if remote parsing failed
   if (!repoUrl) {
     try {
-      const { stdout: originUrl } = await execAsync('git config --get remote.origin.url', {
-        cwd: worktreePath,
-        env: execEnv,
-      });
+      const { stdout: originUrl } = await execAsync(
+        "git config --get remote.origin.url",
+        {
+          cwd: worktreePath,
+          env: execEnv,
+        },
+      );
       const url = originUrl.trim();
 
       // Parse URL to extract owner/repo

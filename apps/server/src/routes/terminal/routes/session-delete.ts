@@ -2,8 +2,8 @@
  * DELETE /sessions/:id endpoint - Kill a terminal session
  */
 
-import type { Request, Response } from 'express';
-import { getTerminalService } from '../../../services/terminal-service.js';
+import type { Request, Response } from "express";
+import { getTerminalService } from "../../../services/terminal-service.js";
 
 export function createSessionDeleteHandler() {
   return (req: Request, res: Response): void => {
@@ -14,7 +14,7 @@ export function createSessionDeleteHandler() {
     if (!killed) {
       res.status(404).json({
         success: false,
-        error: 'Session not found',
+        error: "Session not found",
       });
       return;
     }

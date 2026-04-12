@@ -2,9 +2,9 @@
  * POST /auth-copilot endpoint - Connect Copilot CLI to the app
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { connectCopilot } from '../../../services/copilot-connection-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { connectCopilot } from "../../../services/copilot-connection-service.js";
 
 /**
  * Creates handler for POST /api/setup/auth-copilot
@@ -17,10 +17,10 @@ export function createAuthCopilotHandler() {
 
       res.json({
         success: true,
-        message: 'Copilot CLI connected to app',
+        message: "Copilot CLI connected to app",
       });
     } catch (error) {
-      logError(error, 'Auth Copilot failed');
+      logError(error, "Auth Copilot failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

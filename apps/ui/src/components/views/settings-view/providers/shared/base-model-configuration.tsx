@@ -1,15 +1,15 @@
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import type { ReactNode } from 'react';
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 /**
  * Generic model info structure for model configuration components
@@ -79,19 +79,19 @@ export function BaseModelConfiguration<T extends string>({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
         <div className="flex items-center gap-3 mb-2">
           <div
             className={cn(
-              'w-9 h-9 rounded-xl flex items-center justify-center border',
+              "w-9 h-9 rounded-xl flex items-center justify-center border",
               `bg-gradient-to-br ${iconGradient}`,
-              iconBorder
+              iconBorder,
             )}
           >
             {icon}
@@ -101,7 +101,8 @@ export function BaseModelConfiguration<T extends string>({
           </h2>
         </div>
         <p className="text-sm text-muted-foreground/80 ml-12">
-          Configure which {providerName} models are available in the feature modal
+          Configure which {providerName} models are available in the feature
+          modal
         </p>
       </div>
       <div className="p-6 space-y-6">
@@ -152,12 +153,16 @@ export function BaseModelConfiguration<T extends string>({
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={isEnabled}
-                      onCheckedChange={(checked) => onModelToggle(model.id, !!checked)}
+                      onCheckedChange={(checked) =>
+                        onModelToggle(model.id, !!checked)
+                      }
                       disabled={isSaving || isDefault}
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{model.label}</span>
+                        <span className="text-sm font-medium">
+                          {model.label}
+                        </span>
                         {badge?.show && (
                           <Badge variant="outline" className="text-xs">
                             {badge.label}
@@ -169,7 +174,9 @@ export function BaseModelConfiguration<T extends string>({
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {model.description}
+                      </p>
                     </div>
                   </div>
                 </div>

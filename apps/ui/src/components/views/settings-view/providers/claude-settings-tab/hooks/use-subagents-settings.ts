@@ -5,17 +5,19 @@
  * configuring which sources to load Subagents from (user/project).
  */
 
-import { useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { toast } from 'sonner';
-import { useUpdateGlobalSettings } from '@/hooks/mutations';
+import { useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { toast } from "sonner";
+import { useUpdateGlobalSettings } from "@/hooks/mutations";
 
 export function useSubagentsSettings() {
   const enabled = useAppStore((state) => state.enableSubagents);
   const sources = useAppStore((state) => state.subagentsSources);
 
   // React Query mutation (disable default toast)
-  const updateSettingsMutation = useUpdateGlobalSettings({ showSuccessToast: false });
+  const updateSettingsMutation = useUpdateGlobalSettings({
+    showSuccessToast: false,
+  });
 
   const updateEnabled = useCallback(
     (newEnabled: boolean) => {
@@ -24,27 +26,29 @@ export function useSubagentsSettings() {
         {
           onSuccess: () => {
             useAppStore.setState({ enableSubagents: newEnabled });
-            toast.success(newEnabled ? 'Subagents enabled' : 'Subagents disabled');
+            toast.success(
+              newEnabled ? "Subagents enabled" : "Subagents disabled",
+            );
           },
-        }
+        },
       );
     },
-    [updateSettingsMutation]
+    [updateSettingsMutation],
   );
 
   const updateSources = useCallback(
-    (newSources: Array<'user' | 'project'>) => {
+    (newSources: Array<"user" | "project">) => {
       updateSettingsMutation.mutate(
         { subagentsSources: newSources },
         {
           onSuccess: () => {
             useAppStore.setState({ subagentsSources: newSources });
-            toast.success('Subagents sources updated');
+            toast.success("Subagents sources updated");
           },
-        }
+        },
       );
     },
-    [updateSettingsMutation]
+    [updateSettingsMutation],
   );
 
   return {

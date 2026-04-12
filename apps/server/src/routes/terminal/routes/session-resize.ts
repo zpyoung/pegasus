@@ -2,8 +2,8 @@
  * POST /sessions/:id/resize endpoint - Resize a terminal session
  */
 
-import type { Request, Response } from 'express';
-import { getTerminalService } from '../../../services/terminal-service.js';
+import type { Request, Response } from "express";
+import { getTerminalService } from "../../../services/terminal-service.js";
 
 export function createSessionResizeHandler() {
   return (req: Request, res: Response): void => {
@@ -14,7 +14,7 @@ export function createSessionResizeHandler() {
     if (!cols || !rows) {
       res.status(400).json({
         success: false,
-        error: 'cols and rows are required',
+        error: "cols and rows are required",
       });
       return;
     }
@@ -24,7 +24,7 @@ export function createSessionResizeHandler() {
     if (!resized) {
       res.status(404).json({
         success: false,
-        error: 'Session not found',
+        error: "Session not found",
       });
       return;
     }

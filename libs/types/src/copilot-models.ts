@@ -8,7 +8,7 @@
  * for UI consistency and offline use.
  */
 
-import type { CopilotModelId as CopilotRegistryModelId } from './model-registry.gen.js';
+import type { CopilotModelId as CopilotRegistryModelId } from "./model-registry.gen.js";
 
 /**
  * Copilot model configuration
@@ -32,109 +32,109 @@ export interface CopilotModelConfig {
  */
 export const COPILOT_MODEL_MAP = {
   // Claude models (Anthropic via GitHub Copilot)
-  'copilot-claude-sonnet-4.6': {
-    label: 'Claude Sonnet 4.6',
-    description: 'Anthropic Claude Sonnet 4.6 via GitHub Copilot.',
+  "copilot-claude-sonnet-4.6": {
+    label: "Claude Sonnet 4.6",
+    description: "Anthropic Claude Sonnet 4.6 via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 200000,
   },
-  'copilot-claude-sonnet-4.5': {
-    label: 'Claude Sonnet 4.5',
-    description: 'Anthropic Claude Sonnet 4.5 via GitHub Copilot.',
+  "copilot-claude-sonnet-4.5": {
+    label: "Claude Sonnet 4.5",
+    description: "Anthropic Claude Sonnet 4.5 via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 200000,
   },
-  'copilot-claude-haiku-4.5': {
-    label: 'Claude Haiku 4.5',
-    description: 'Fast and efficient Claude Haiku 4.5 via GitHub Copilot.',
+  "copilot-claude-haiku-4.5": {
+    label: "Claude Haiku 4.5",
+    description: "Fast and efficient Claude Haiku 4.5 via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 200000,
   },
-  'copilot-claude-opus-4.5': {
-    label: 'Claude Opus 4.5',
-    description: 'Most capable Claude Opus 4.5 via GitHub Copilot.',
+  "copilot-claude-opus-4.5": {
+    label: "Claude Opus 4.5",
+    description: "Most capable Claude Opus 4.5 via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 200000,
   },
-  'copilot-claude-sonnet-4': {
-    label: 'Claude Sonnet 4',
-    description: 'Anthropic Claude Sonnet 4 via GitHub Copilot.',
+  "copilot-claude-sonnet-4": {
+    label: "Claude Sonnet 4",
+    description: "Anthropic Claude Sonnet 4 via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 200000,
   },
   // GPT-5 series (OpenAI via GitHub Copilot)
-  'copilot-gpt-5.2-codex': {
-    label: 'GPT-5.2 Codex',
-    description: 'OpenAI GPT-5.2 Codex for advanced coding tasks.',
+  "copilot-gpt-5.2-codex": {
+    label: "GPT-5.2 Codex",
+    description: "OpenAI GPT-5.2 Codex for advanced coding tasks.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5.1-codex-max': {
-    label: 'GPT-5.1 Codex Max',
-    description: 'Maximum capability GPT-5.1 Codex model.',
+  "copilot-gpt-5.1-codex-max": {
+    label: "GPT-5.1 Codex Max",
+    description: "Maximum capability GPT-5.1 Codex model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5.1-codex': {
-    label: 'GPT-5.1 Codex',
-    description: 'OpenAI GPT-5.1 Codex for coding tasks.',
+  "copilot-gpt-5.1-codex": {
+    label: "GPT-5.1 Codex",
+    description: "OpenAI GPT-5.1 Codex for coding tasks.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5.2': {
-    label: 'GPT-5.2',
-    description: 'Latest OpenAI GPT-5.2 model.',
+  "copilot-gpt-5.2": {
+    label: "GPT-5.2",
+    description: "Latest OpenAI GPT-5.2 model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5.1': {
-    label: 'GPT-5.1',
-    description: 'OpenAI GPT-5.1 model.',
+  "copilot-gpt-5.1": {
+    label: "GPT-5.1",
+    description: "OpenAI GPT-5.1 model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5': {
-    label: 'GPT-5',
-    description: 'OpenAI GPT-5 base model.',
+  "copilot-gpt-5": {
+    label: "GPT-5",
+    description: "OpenAI GPT-5 base model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5.1-codex-mini': {
-    label: 'GPT-5.1 Codex Mini',
-    description: 'Fast and efficient GPT-5.1 Codex Mini.',
+  "copilot-gpt-5.1-codex-mini": {
+    label: "GPT-5.1 Codex Mini",
+    description: "Fast and efficient GPT-5.1 Codex Mini.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-5-mini': {
-    label: 'GPT-5 Mini',
-    description: 'Lightweight GPT-5 Mini model.',
+  "copilot-gpt-5-mini": {
+    label: "GPT-5 Mini",
+    description: "Lightweight GPT-5 Mini model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
-  'copilot-gpt-4.1': {
-    label: 'GPT-4.1',
-    description: 'OpenAI GPT-4.1 model.',
+  "copilot-gpt-4.1": {
+    label: "GPT-4.1",
+    description: "OpenAI GPT-4.1 model.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 128000,
   },
   // Gemini models (Google via GitHub Copilot)
-  'copilot-gemini-3-pro-preview': {
-    label: 'Gemini 3 Pro Preview',
-    description: 'Google Gemini 3 Pro Preview via GitHub Copilot.',
+  "copilot-gemini-3-pro-preview": {
+    label: "Gemini 3 Pro Preview",
+    description: "Google Gemini 3 Pro Preview via GitHub Copilot.",
     supportsVision: true,
     supportsTools: true,
     contextWindow: 1000000,
@@ -156,14 +156,14 @@ export function getAllCopilotModelIds(): CopilotModelId[] {
 /**
  * Default Copilot model
  */
-export const DEFAULT_COPILOT_MODEL: CopilotModelId = 'copilot-openai/gpt-5';
+export const DEFAULT_COPILOT_MODEL: CopilotModelId = "copilot-openai/gpt-5";
 
 /**
  * GitHub Copilot authentication status
  */
 export interface CopilotAuthStatus {
   authenticated: boolean;
-  method: 'oauth' | 'cli' | 'none';
+  method: "oauth" | "cli" | "none";
   authType?: string;
   login?: string;
   host?: string;
@@ -194,7 +194,7 @@ export interface CopilotRuntimeModel {
     maxOutputTokens?: number;
   };
   policy?: {
-    state: 'enabled' | 'disabled' | 'unconfigured';
+    state: "enabled" | "disabled" | "unconfigured";
     terms?: string;
   };
   billing?: {

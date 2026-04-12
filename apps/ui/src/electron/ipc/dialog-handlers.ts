@@ -4,10 +4,10 @@
  * Handles native file dialog operations.
  */
 
-import { ipcMain, dialog } from 'electron';
-import { isPathAllowed, getAllowedRootDirectory } from '@pegasus/platform';
-import { IPC_CHANNELS } from './channels';
-import { state } from '../state';
+import { ipcMain, dialog } from "electron";
+import { isPathAllowed, getAllowedRootDirectory } from "@pegasus/platform";
+import { IPC_CHANNELS } from "./channels";
+import { state } from "../state";
 
 /**
  * Register dialog IPC handlers
@@ -19,7 +19,7 @@ export function registerDialogHandlers(): void {
       return { canceled: true, filePaths: [] };
     }
     const result = await dialog.showOpenDialog(state.mainWindow, {
-      properties: ['openDirectory', 'createDirectory'],
+      properties: ["openDirectory", "createDirectory"],
     });
 
     // Validate selected path against ALLOWED_ROOT_DIRECTORY if configured
@@ -29,9 +29,9 @@ export function registerDialogHandlers(): void {
         const allowedRoot = getAllowedRootDirectory();
         const errorMessage = allowedRoot
           ? `The selected directory is not allowed. Please select a directory within: ${allowedRoot}`
-          : 'The selected directory is not allowed.';
+          : "The selected directory is not allowed.";
 
-        dialog.showErrorBox('Directory Not Allowed', errorMessage);
+        dialog.showErrorBox("Directory Not Allowed", errorMessage);
 
         return { canceled: true, filePaths: [] };
       }
@@ -50,15 +50,15 @@ export function registerDialogHandlers(): void {
       }
       // Ensure openFile is always present and filter out directory-related properties
       const inputProperties = (options.properties as string[]) ?? [];
-      const properties = ['openFile', ...inputProperties].filter(
-        (p) => p !== 'openDirectory' && p !== 'createDirectory'
+      const properties = ["openFile", ...inputProperties].filter(
+        (p) => p !== "openDirectory" && p !== "createDirectory",
       );
       const result = await dialog.showOpenDialog(state.mainWindow, {
         ...options,
-        properties: properties as Electron.OpenDialogOptions['properties'],
+        properties: properties as Electron.OpenDialogOptions["properties"],
       });
       return result;
-    }
+    },
   );
 
   // Save file dialog

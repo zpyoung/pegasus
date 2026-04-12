@@ -2,10 +2,13 @@
  * Common utilities for models routes
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
-const logger = createLogger('Models');
+const logger = createLogger("Models");
 
 // Re-export shared utilities
 export { getErrorMessageShared as getErrorMessage };

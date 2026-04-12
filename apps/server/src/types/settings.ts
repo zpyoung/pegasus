@@ -34,7 +34,7 @@ export type {
   // Legacy profile types (deprecated)
   ClaudeApiProfile,
   ClaudeApiProfileTemplate,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 export {
   DEFAULT_KEYBOARD_SHORTCUTS,
@@ -46,4 +46,4 @@ export {
   SETTINGS_VERSION,
   CREDENTIALS_VERSION,
   PROJECT_SETTINGS_VERSION,
-} from '@pegasus/types';
+} from "@pegasus/types";

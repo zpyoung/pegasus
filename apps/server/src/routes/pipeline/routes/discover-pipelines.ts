@@ -11,9 +11,9 @@
  * Response: { success: true, pipelines: DiscoveredPipeline[] }
  */
 
-import type { Request, Response } from 'express';
-import { discoverPipelines } from '../../../services/pipeline-compiler.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { discoverPipelines } from "../../../services/pipeline-compiler.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler for discovering YAML pipeline definitions
@@ -34,7 +34,7 @@ export function createDiscoverPipelinesHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath query parameter is required',
+          error: "projectPath query parameter is required",
         });
         return;
       }
@@ -46,7 +46,7 @@ export function createDiscoverPipelinesHandler() {
         pipelines,
       });
     } catch (error) {
-      logError(error, 'Discover pipelines failed');
+      logError(error, "Discover pipelines failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

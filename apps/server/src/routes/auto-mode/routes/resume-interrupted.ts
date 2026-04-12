@@ -5,22 +5,24 @@
  * when the server was restarted and resumes them.
  */
 
-import type { Request, Response } from 'express';
-import { createLogger } from '@pegasus/utils';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
+import type { Request, Response } from "express";
+import { createLogger } from "@pegasus/utils";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
 
-const logger = createLogger('ResumeInterrupted');
+const logger = createLogger("ResumeInterrupted");
 
 interface ResumeInterruptedRequest {
   projectPath: string;
 }
 
-export function createResumeInterruptedHandler(autoModeService: AutoModeServiceCompat) {
+export function createResumeInterruptedHandler(
+  autoModeService: AutoModeServiceCompat,
+) {
   return async (req: Request, res: Response): Promise<void> => {
     const { projectPath } = req.body as ResumeInterruptedRequest;
 
     if (!projectPath) {
-      res.status(400).json({ error: 'Project path is required' });
+      res.status(400).json({ error: "Project path is required" });
       return;
     }
 
@@ -31,12 +33,12 @@ export function createResumeInterruptedHandler(autoModeService: AutoModeServiceC
 
       res.json({
         success: true,
-        message: 'Resume check completed',
+        message: "Resume check completed",
       });
     } catch (error) {
-      logger.error('Error resuming interrupted features:', error);
+      logger.error("Error resuming interrupted features:", error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   };

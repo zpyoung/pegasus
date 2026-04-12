@@ -6,8 +6,8 @@
  * Supports Claude, Codex, Cursor, and OpenCode models.
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
 import type {
   IssueValidationResult,
   IssueValidationEvent,
@@ -16,7 +16,7 @@ import type {
   LinkedPRInfo,
   ThinkingLevel,
   ReasoningEffort,
-} from '@pegasus/types';
+} from "@pegasus/types";
 import {
   DEFAULT_PHASE_MODELS,
   isClaudeModel,
@@ -24,30 +24,30 @@ import {
   isCursorModel,
   isOpencodeModel,
   supportsStructuredOutput,
-} from '@pegasus/types';
-import { resolvePhaseModel, resolveModelString } from '@pegasus/model-resolver';
-import { extractJson } from '../../../lib/json-extractor.js';
-import { writeValidation } from '../../../lib/validation-storage.js';
-import { streamingQuery } from '../../../providers/simple-query-service.js';
+} from "@pegasus/types";
+import { resolvePhaseModel, resolveModelString } from "@pegasus/model-resolver";
+import { extractJson } from "../../../lib/json-extractor.js";
+import { writeValidation } from "../../../lib/validation-storage.js";
+import { streamingQuery } from "../../../providers/simple-query-service.js";
 import {
   issueValidationSchema,
   buildValidationPrompt,
   ValidationComment,
   ValidationLinkedPR,
-} from './validation-schema.js';
+} from "./validation-schema.js";
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
   resolveProviderContext,
-} from '../../../lib/settings-helpers.js';
+} from "../../../lib/settings-helpers.js";
 import {
   trySetValidationRunning,
   clearValidationStatus,
   getErrorMessage,
   logError,
   logger,
-} from './validation-common.js';
-import type { SettingsService } from '../../../services/settings-service.js';
+} from "./validation-common.js";
+import type { SettingsService } from "../../../services/settings-service.js";
 
 /**
  * Request body for issue validation
@@ -93,16 +93,16 @@ async function runValidation(
   comments?: ValidationComment[],
   linkedPRs?: ValidationLinkedPR[],
   thinkingLevel?: ThinkingLevel,
-  reasoningEffort?: ReasoningEffort
+  reasoningEffort?: ReasoningEffort,
 ): Promise<void> {
   // Emit start event
   const startEvent: IssueValidationEvent = {
-    type: 'issue_validation_start',
+    type: "issue_validation_start",
     issueNumber,
     issueTitle,
     projectPath,
   };
-  events.emit('issue-validation:event', startEvent);
+  events.emit("issue-validation:event", startEvent);
 
   // Set up timeout (6 minutes)
   const VALIDATION_TIMEOUT_MS = 360000;
@@ -119,13 +119,16 @@ async function runValidation(
       issueBody,
       issueLabels,
       comments,
-      linkedPRs
+      linkedPRs,
     );
 
-    let responseText = '';
+    let responseText = "";
 
     // Get customized prompts from settings
-    const prompts = await getPromptCustomization(settingsService, '[ValidateIssue]');
+    const prompts = await getPromptCustomization(
+      settingsService,
+      "[ValidateIssue]",
+    );
     const issueValidationSystemPrompt = prompts.issueValidation.systemPrompt;
 
     // Determine if we should use structured output based on model type
@@ -153,7 +156,7 @@ ${basePrompt}`;
     const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
       projectPath,
       settingsService,
-      '[ValidateIssue]'
+      "[ValidateIssue]",
     );
 
     // Use request overrides if provided, otherwise fall back to settings
@@ -162,19 +165,22 @@ ${basePrompt}`;
     if (!effectiveThinkingLevel || !effectiveReasoningEffort) {
       const settings = await settingsService?.getGlobalSettings();
       const phaseModelEntry =
-        settings?.phaseModels?.validationModel || DEFAULT_PHASE_MODELS.validationModel;
+        settings?.phaseModels?.validationModel ||
+        DEFAULT_PHASE_MODELS.validationModel;
       const resolved = resolvePhaseModel(phaseModelEntry);
       if (!effectiveThinkingLevel) {
         effectiveThinkingLevel = resolved.thinkingLevel;
       }
-      if (!effectiveReasoningEffort && typeof phaseModelEntry !== 'string') {
+      if (!effectiveReasoningEffort && typeof phaseModelEntry !== "string") {
         effectiveReasoningEffort = phaseModelEntry.reasoningEffort;
       }
     }
 
     // Check if the model is a provider model (like "GLM-4.5-Air")
     // If so, get the provider config and resolved Claude model
-    let claudeCompatibleProvider: import('@pegasus/types').ClaudeCompatibleProvider | undefined;
+    let claudeCompatibleProvider:
+      | import("@pegasus/types").ClaudeCompatibleProvider
+      | undefined;
     let providerResolvedModel: string | undefined;
     let credentials = await settingsService?.getCredentials();
 
@@ -183,7 +189,7 @@ ${basePrompt}`;
         settingsService,
         model,
         providerId,
-        '[ValidateIssue]'
+        "[ValidateIssue]",
       );
       if (providerResult.provider) {
         claudeCompatibleProvider = providerResult.provider;
@@ -191,7 +197,9 @@ ${basePrompt}`;
         credentials = providerResult.credentials;
         logger.info(
           `Using provider "${providerResult.provider.name}" for model "${model}"` +
-            (providerResolvedModel ? ` -> resolved to "${providerResolvedModel}"` : '')
+            (providerResolvedModel
+              ? ` -> resolved to "${providerResolvedModel}"`
+              : ""),
         );
       }
     }
@@ -209,17 +217,21 @@ ${basePrompt}`;
       prompt: finalPrompt,
       model: effectiveModel,
       cwd: projectPath,
-      systemPrompt: useStructuredOutput ? issueValidationSystemPrompt : undefined,
+      systemPrompt: useStructuredOutput
+        ? issueValidationSystemPrompt
+        : undefined,
       abortController,
       thinkingLevel: effectiveThinkingLevel,
       reasoningEffort: effectiveReasoningEffort,
       readOnly: true, // Issue validation only reads code, doesn't write
-      settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+      settingSources: autoLoadClaudeMd
+        ? ["user", "project", "local"]
+        : undefined,
       claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
       credentials, // Pass credentials for resolving 'credentials' apiKeySource
       outputFormat: useStructuredOutput
         ? {
-            type: 'json_schema',
+            type: "json_schema",
             schema: issueValidationSchema as Record<string, unknown>,
           }
         : undefined,
@@ -227,12 +239,12 @@ ${basePrompt}`;
         responseText += text;
         // Emit progress event
         const progressEvent: IssueValidationEvent = {
-          type: 'issue_validation_progress',
+          type: "issue_validation_progress",
           issueNumber,
           content: text,
           projectPath,
         };
-        events.emit('issue-validation:event', progressEvent);
+        events.emit("issue-validation:event", progressEvent);
       },
     });
 
@@ -243,20 +255,25 @@ ${basePrompt}`;
     let validationResult: IssueValidationResult | null = null;
 
     if (result.structured_output) {
-      validationResult = result.structured_output as unknown as IssueValidationResult;
-      logger.debug('Received structured output:', validationResult);
+      validationResult =
+        result.structured_output as unknown as IssueValidationResult;
+      logger.debug("Received structured output:", validationResult);
     } else if (responseText) {
       // Parse JSON from response text
-      validationResult = extractJson<IssueValidationResult>(responseText, { logger });
+      validationResult = extractJson<IssueValidationResult>(responseText, {
+        logger,
+      });
     }
 
     // Require validation result
     if (!validationResult) {
-      logger.error('No validation result received from AI provider');
-      throw new Error('Validation failed: no valid result received');
+      logger.error("No validation result received from AI provider");
+      throw new Error("Validation failed: no valid result received");
     }
 
-    logger.info(`Issue #${issueNumber} validation complete: ${validationResult.verdict}`);
+    logger.info(
+      `Issue #${issueNumber} validation complete: ${validationResult.verdict}`,
+    );
 
     // Store the result
     await writeValidation(projectPath, issueNumber, {
@@ -269,14 +286,14 @@ ${basePrompt}`;
 
     // Emit completion event
     const completeEvent: IssueValidationEvent = {
-      type: 'issue_validation_complete',
+      type: "issue_validation_complete",
       issueNumber,
       issueTitle,
       result: validationResult,
       projectPath,
       model,
     };
-    events.emit('issue-validation:event', completeEvent);
+    events.emit("issue-validation:event", completeEvent);
   } catch (error) {
     clearTimeout(timeoutId);
 
@@ -285,12 +302,12 @@ ${basePrompt}`;
 
     // Emit error event
     const errorEvent: IssueValidationEvent = {
-      type: 'issue_validation_error',
+      type: "issue_validation_error",
       issueNumber,
       error: errorMessage,
       projectPath,
     };
-    events.emit('issue-validation:event', errorEvent);
+    events.emit("issue-validation:event", errorEvent);
 
     throw error;
   }
@@ -307,7 +324,7 @@ ${basePrompt}`;
  */
 export function createValidateIssueHandler(
   events: EventEmitter,
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
@@ -317,7 +334,7 @@ export function createValidateIssueHandler(
         issueTitle,
         issueBody,
         issueLabels,
-        model = 'opus',
+        model = "opus",
         thinkingLevel,
         reasoningEffort,
         providerId,
@@ -326,50 +343,63 @@ export function createValidateIssueHandler(
       } = req.body as ValidateIssueRequestBody;
 
       const normalizedProviderId =
-        typeof providerId === 'string' && providerId.trim().length > 0
+        typeof providerId === "string" && providerId.trim().length > 0
           ? providerId.trim()
           : undefined;
 
       // Transform GitHubComment[] to ValidationComment[] if provided
-      const validationComments: ValidationComment[] | undefined = rawComments?.map((c) => ({
-        author: c.author?.login || 'ghost',
-        createdAt: c.createdAt,
-        body: c.body,
-      }));
+      const validationComments: ValidationComment[] | undefined =
+        rawComments?.map((c) => ({
+          author: c.author?.login || "ghost",
+          createdAt: c.createdAt,
+          body: c.body,
+        }));
 
       // Transform LinkedPRInfo[] to ValidationLinkedPR[] if provided
-      const validationLinkedPRs: ValidationLinkedPR[] | undefined = rawLinkedPRs?.map((pr) => ({
-        number: pr.number,
-        title: pr.title,
-        state: pr.state,
-      }));
+      const validationLinkedPRs: ValidationLinkedPR[] | undefined =
+        rawLinkedPRs?.map((pr) => ({
+          number: pr.number,
+          title: pr.title,
+          state: pr.state,
+        }));
 
       logger.info(
         `[ValidateIssue] Received validation request for issue #${issueNumber}` +
-          (rawComments?.length ? ` with ${rawComments.length} comments` : ' (no comments)') +
-          (rawLinkedPRs?.length ? ` and ${rawLinkedPRs.length} linked PRs` : '')
+          (rawComments?.length
+            ? ` with ${rawComments.length} comments`
+            : " (no comments)") +
+          (rawLinkedPRs?.length
+            ? ` and ${rawLinkedPRs.length} linked PRs`
+            : ""),
       );
 
       // Validate required fields
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
-        return;
-      }
-
-      if (!issueNumber || typeof issueNumber !== 'number') {
         res
           .status(400)
-          .json({ success: false, error: 'issueNumber is required and must be a number' });
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
-      if (!issueTitle || typeof issueTitle !== 'string') {
-        res.status(400).json({ success: false, error: 'issueTitle is required' });
+      if (!issueNumber || typeof issueNumber !== "number") {
+        res.status(400).json({
+          success: false,
+          error: "issueNumber is required and must be a number",
+        });
         return;
       }
 
-      if (typeof issueBody !== 'string') {
-        res.status(400).json({ success: false, error: 'issueBody must be a string' });
+      if (!issueTitle || typeof issueTitle !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "issueTitle is required" });
+        return;
+      }
+
+      if (typeof issueBody !== "string") {
+        res
+          .status(400)
+          .json({ success: false, error: "issueBody must be a string" });
         return;
       }
 
@@ -385,12 +415,14 @@ export function createValidateIssueHandler(
         res.status(400).json({
           success: false,
           error:
-            'Invalid model. Must be a Claude, Cursor, Codex, or OpenCode model ID (or alias), or provide a valid providerId for custom Claude-compatible models.',
+            "Invalid model. Must be a Claude, Cursor, Codex, or OpenCode model ID (or alias), or provide a valid providerId for custom Claude-compatible models.",
         });
         return;
       }
 
-      logger.info(`Starting async validation for issue #${issueNumber}: ${issueTitle}`);
+      logger.info(
+        `Starting async validation for issue #${issueNumber}: ${issueTitle}`,
+      );
 
       // Create abort controller and atomically try to claim validation slot
       // This prevents TOCTOU race conditions
@@ -418,7 +450,7 @@ export function createValidateIssueHandler(
         validationComments,
         validationLinkedPRs,
         thinkingLevel,
-        reasoningEffort
+        reasoningEffort,
       )
         .catch(() => {
           // Error is already handled inside runValidation (event emitted)
@@ -435,7 +467,7 @@ export function createValidateIssueHandler(
       });
     } catch (error) {
       logError(error, `Issue validation failed`);
-      logger.error('Issue validation error:', error);
+      logger.error("Issue validation error:", error);
 
       if (!res.headersSent) {
         res.status(500).json({

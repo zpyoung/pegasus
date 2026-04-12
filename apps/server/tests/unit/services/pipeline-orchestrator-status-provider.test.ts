@@ -9,8 +9,8 @@
  * object passed to runAgentFn in both executePipeline and executeTestStep.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Feature, PipelineStep } from '@pegasus/types';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Feature, PipelineStep } from "@pegasus/types";
 import {
   PipelineOrchestrator,
   type PipelineContext,
@@ -18,22 +18,22 @@ import {
   type BuildFeaturePromptFn,
   type ExecuteFeatureFn,
   type RunAgentFn,
-} from '../../../src/services/pipeline-orchestrator.js';
-import type { TypedEventBus } from '../../../src/services/typed-event-bus.js';
-import type { FeatureStateManager } from '../../../src/services/feature-state-manager.js';
-import type { AgentExecutor } from '../../../src/services/agent-executor.js';
-import type { WorktreeResolver } from '../../../src/services/worktree-resolver.js';
-import type { ConcurrencyManager } from '../../../src/services/concurrency-manager.js';
-import type { TestRunnerService } from '../../../src/services/test-runner-service.js';
-import * as secureFs from '../../../src/lib/secure-fs.js';
-import { getFeatureDir } from '@pegasus/platform';
+} from "../../../src/services/pipeline-orchestrator.js";
+import type { TypedEventBus } from "../../../src/services/typed-event-bus.js";
+import type { FeatureStateManager } from "../../../src/services/feature-state-manager.js";
+import type { AgentExecutor } from "../../../src/services/agent-executor.js";
+import type { WorktreeResolver } from "../../../src/services/worktree-resolver.js";
+import type { ConcurrencyManager } from "../../../src/services/concurrency-manager.js";
+import type { TestRunnerService } from "../../../src/services/test-runner-service.js";
+import * as secureFs from "../../../src/lib/secure-fs.js";
+import { getFeatureDir } from "@pegasus/platform";
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
   filterClaudeMdFromContext,
-} from '../../../src/lib/settings-helpers.js';
+} from "../../../src/lib/settings-helpers.js";
 
-vi.mock('../../../src/services/pipeline-service.js', () => ({
+vi.mock("../../../src/services/pipeline-service.js", () => ({
   pipelineService: {
     isPipelineStatus: vi.fn(),
     getStepIdFromStatus: vi.fn(),
@@ -42,81 +42,82 @@ vi.mock('../../../src/services/pipeline-service.js', () => ({
   },
 }));
 
-vi.mock('../../../src/services/merge-service.js', () => ({
+vi.mock("../../../src/services/merge-service.js", () => ({
   performMerge: vi.fn().mockResolvedValue({ success: true }),
 }));
 
-vi.mock('../../../src/lib/secure-fs.js', () => ({
+vi.mock("../../../src/lib/secure-fs.js", () => ({
   readFile: vi.fn(),
   access: vi.fn(),
 }));
 
-vi.mock('../../../src/lib/settings-helpers.js', () => ({
+vi.mock("../../../src/lib/settings-helpers.js", () => ({
   getPromptCustomization: vi.fn().mockResolvedValue({
     taskExecution: {
-      implementationInstructions: 'test instructions',
-      playwrightVerificationInstructions: 'test playwright',
+      implementationInstructions: "test instructions",
+      playwrightVerificationInstructions: "test playwright",
     },
   }),
   getAutoLoadClaudeMdSetting: vi.fn().mockResolvedValue(true),
   getUseClaudeCodeSystemPromptSetting: vi.fn().mockResolvedValue(true),
-  filterClaudeMdFromContext: vi.fn().mockReturnValue('context prompt'),
+  filterClaudeMdFromContext: vi.fn().mockReturnValue("context prompt"),
 }));
 
-vi.mock('../../../src/lib/sdk-options.js', () => ({
+vi.mock("../../../src/lib/sdk-options.js", () => ({
   validateWorkingDirectory: vi.fn(),
 }));
 
-vi.mock('@pegasus/platform', () => ({
+vi.mock("@pegasus/platform", () => ({
   getFeatureDir: vi
     .fn()
     .mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.pegasus/features/${featureId}`
+      (projectPath: string, featureId: string) =>
+        `${projectPath}/.pegasus/features/${featureId}`,
     ),
 }));
 
-vi.mock('@pegasus/model-resolver', () => ({
-  resolveModelString: vi.fn().mockReturnValue('claude-sonnet-4'),
-  DEFAULT_MODELS: { claude: 'claude-sonnet-4' },
+vi.mock("@pegasus/model-resolver", () => ({
+  resolveModelString: vi.fn().mockReturnValue("claude-sonnet-4"),
+  DEFAULT_MODELS: { claude: "claude-sonnet-4" },
 }));
 
-describe('PipelineOrchestrator - status and providerId coexistence', () => {
+describe("PipelineOrchestrator - status and providerId coexistence", () => {
   let mockRunAgentFn: RunAgentFn;
   let orchestrator: PipelineOrchestrator;
 
   const testSteps: PipelineStep[] = [
     {
-      id: 'implement',
-      name: 'Implement Feature',
+      id: "implement",
+      name: "Implement Feature",
       order: 1,
-      instructions: 'Implement the feature',
-      colorClass: 'blue',
-      createdAt: '',
-      updatedAt: '',
+      instructions: "Implement the feature",
+      colorClass: "blue",
+      createdAt: "",
+      updatedAt: "",
     },
   ];
 
   const createFeature = (overrides: Partial<Feature> = {}): Feature => ({
-    id: 'feature-1',
-    title: 'Test Feature',
-    category: 'test',
-    description: 'Test description',
-    status: 'pipeline_implement',
-    branchName: 'feature/test-1',
-    providerId: 'moonshot-ai',
-    thinkingLevel: 'medium',
-    reasoningEffort: 'high',
+    id: "feature-1",
+    title: "Test Feature",
+    category: "test",
+    description: "Test description",
+    status: "pipeline_implement",
+    branchName: "feature/test-1",
+    providerId: "moonshot-ai",
+    thinkingLevel: "medium",
+    reasoningEffort: "high",
     ...overrides,
   });
 
   const createContext = (feature: Feature): PipelineContext => ({
-    projectPath: '/test/project',
+    projectPath: "/test/project",
     featureId: feature.id,
     feature,
     steps: testSteps,
-    workDir: '/test/project',
+    workDir: "/test/project",
     worktreePath: null,
-    branchName: feature.branchName ?? 'main',
+    branchName: feature.branchName ?? "main",
     abortController: new AbortController(),
     autoLoadClaudeMd: true,
     testAttempts: 0,
@@ -127,19 +128,20 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
     vi.clearAllMocks();
     mockRunAgentFn = vi.fn().mockResolvedValue(undefined);
 
-    vi.mocked(secureFs.readFile).mockResolvedValue('Previous context');
+    vi.mocked(secureFs.readFile).mockResolvedValue("Previous context");
     vi.mocked(secureFs.access).mockResolvedValue(undefined);
     vi.mocked(getFeatureDir).mockImplementation(
-      (projectPath: string, featureId: string) => `${projectPath}/.pegasus/features/${featureId}`
+      (projectPath: string, featureId: string) =>
+        `${projectPath}/.pegasus/features/${featureId}`,
     );
     vi.mocked(getPromptCustomization).mockResolvedValue({
       taskExecution: {
-        implementationInstructions: 'test instructions',
-        playwrightVerificationInstructions: 'test playwright',
+        implementationInstructions: "test instructions",
+        playwrightVerificationInstructions: "test playwright",
       },
     } as any);
     vi.mocked(getAutoLoadClaudeMdSetting).mockResolvedValue(true);
-    vi.mocked(filterClaudeMdFromContext).mockReturnValue('context prompt');
+    vi.mocked(filterClaudeMdFromContext).mockReturnValue("context prompt");
 
     const mockEventBus = {
       emitAutoModeEvent: vi.fn(),
@@ -152,18 +154,20 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
     } as unknown as FeatureStateManager;
 
     const mockTestRunnerService = {
-      startTests: vi
-        .fn()
-        .mockResolvedValue({ success: true, result: { sessionId: 'test-session-1' } }),
+      startTests: vi.fn().mockResolvedValue({
+        success: true,
+        result: { sessionId: "test-session-1" },
+      }),
       getSession: vi.fn().mockReturnValue({
-        status: 'passed',
+        status: "passed",
         exitCode: 0,
         startedAt: new Date(),
         finishedAt: new Date(),
       }),
-      getSessionOutput: vi
-        .fn()
-        .mockReturnValue({ success: true, result: { output: 'All tests passed' } }),
+      getSessionOutput: vi.fn().mockReturnValue({
+        success: true,
+        result: { output: "All tests passed" },
+      }),
     } as unknown as TestRunnerService;
 
     orchestrator = new PipelineOrchestrator(
@@ -172,13 +176,13 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       {} as AgentExecutor,
       mockTestRunnerService,
       {
-        findWorktreeForBranch: vi.fn().mockResolvedValue('/test/worktree'),
-        getCurrentBranch: vi.fn().mockResolvedValue('main'),
+        findWorktreeForBranch: vi.fn().mockResolvedValue("/test/worktree"),
+        getCurrentBranch: vi.fn().mockResolvedValue("main"),
       } as unknown as WorktreeResolver,
       {
         acquire: vi.fn().mockImplementation(({ featureId }) => ({
           featureId,
-          projectPath: '/test/project',
+          projectPath: "/test/project",
           abortController: new AbortController(),
           branchName: null,
           worktreePath: null,
@@ -189,114 +193,114 @@ describe('PipelineOrchestrator - status and providerId coexistence', () => {
       } as unknown as ConcurrencyManager,
       null,
       vi.fn().mockResolvedValue(undefined),
-      vi.fn().mockResolvedValue({ contextPrompt: 'test context' }),
-      vi.fn().mockReturnValue('Feature prompt content'),
+      vi.fn().mockResolvedValue({ contextPrompt: "test context" }),
+      vi.fn().mockReturnValue("Feature prompt content"),
       vi.fn().mockResolvedValue(undefined),
-      mockRunAgentFn
+      mockRunAgentFn,
     );
   });
 
-  describe('executePipeline - options object', () => {
-    it('should pass both status and providerId in options', async () => {
-      const feature = createFeature({ providerId: 'moonshot-ai' });
+  describe("executePipeline - options object", () => {
+    it("should pass both status and providerId in options", async () => {
+      const feature = createFeature({ providerId: "moonshot-ai" });
       const context = createContext(feature);
 
       await orchestrator.executePipeline(context);
 
       expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
       const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('status', 'pipeline_implement');
-      expect(options).toHaveProperty('providerId', 'moonshot-ai');
+      expect(options).toHaveProperty("status", "pipeline_implement");
+      expect(options).toHaveProperty("providerId", "moonshot-ai");
     });
 
-    it('should pass status even when providerId is undefined', async () => {
+    it("should pass status even when providerId is undefined", async () => {
       const feature = createFeature({ providerId: undefined });
       const context = createContext(feature);
 
       await orchestrator.executePipeline(context);
 
       const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('status', 'pipeline_implement');
-      expect(options).toHaveProperty('providerId', undefined);
+      expect(options).toHaveProperty("status", "pipeline_implement");
+      expect(options).toHaveProperty("providerId", undefined);
     });
 
-    it('should pass thinkingLevel and reasoningEffort alongside status and providerId', async () => {
+    it("should pass thinkingLevel and reasoningEffort alongside status and providerId", async () => {
       const feature = createFeature({
-        providerId: 'zhipu',
-        thinkingLevel: 'high',
-        reasoningEffort: 'medium',
+        providerId: "zhipu",
+        thinkingLevel: "high",
+        reasoningEffort: "medium",
       });
       const context = createContext(feature);
 
       await orchestrator.executePipeline(context);
 
       const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('status', 'pipeline_implement');
-      expect(options).toHaveProperty('providerId', 'zhipu');
-      expect(options).toHaveProperty('thinkingLevel', 'high');
-      expect(options).toHaveProperty('reasoningEffort', 'medium');
+      expect(options).toHaveProperty("status", "pipeline_implement");
+      expect(options).toHaveProperty("providerId", "zhipu");
+      expect(options).toHaveProperty("thinkingLevel", "high");
+      expect(options).toHaveProperty("reasoningEffort", "medium");
     });
   });
 
-  describe('executeTestStep - options object', () => {
-    it('should pass both status and providerId in test fix agent options', async () => {
+  describe("executeTestStep - options object", () => {
+    it("should pass both status and providerId in test fix agent options", async () => {
       const feature = createFeature({
-        status: 'running',
-        providerId: 'custom-provider',
+        status: "running",
+        providerId: "custom-provider",
       });
       const context = createContext(feature);
 
-      const mockTestRunner = orchestrator['testRunnerService'] as any;
+      const mockTestRunner = orchestrator["testRunnerService"] as any;
       vi.mocked(mockTestRunner.getSession)
         .mockReturnValueOnce({
-          status: 'failed',
+          status: "failed",
           exitCode: 1,
           startedAt: new Date(),
           finishedAt: new Date(),
         })
         .mockReturnValueOnce({
-          status: 'passed',
+          status: "passed",
           exitCode: 0,
           startedAt: new Date(),
           finishedAt: new Date(),
         });
 
-      await orchestrator.executeTestStep(context, 'pnpm test');
+      await orchestrator.executeTestStep(context, "pnpm test");
 
       expect(mockRunAgentFn).toHaveBeenCalledTimes(1);
       const options = mockRunAgentFn.mock.calls[0][7];
-      expect(options).toHaveProperty('status', 'running');
-      expect(options).toHaveProperty('providerId', 'custom-provider');
+      expect(options).toHaveProperty("status", "running");
+      expect(options).toHaveProperty("providerId", "custom-provider");
     }, 15000);
 
-    it('should pass feature.status (not currentStatus) in test fix context', async () => {
+    it("should pass feature.status (not currentStatus) in test fix context", async () => {
       const feature = createFeature({
-        status: 'pipeline_test',
-        providerId: 'moonshot-ai',
+        status: "pipeline_test",
+        providerId: "moonshot-ai",
       });
       const context = createContext(feature);
 
-      const mockTestRunner = orchestrator['testRunnerService'] as any;
+      const mockTestRunner = orchestrator["testRunnerService"] as any;
       vi.mocked(mockTestRunner.getSession)
         .mockReturnValueOnce({
-          status: 'failed',
+          status: "failed",
           exitCode: 1,
           startedAt: new Date(),
           finishedAt: new Date(),
         })
         .mockReturnValueOnce({
-          status: 'passed',
+          status: "passed",
           exitCode: 0,
           startedAt: new Date(),
           finishedAt: new Date(),
         });
 
-      await orchestrator.executeTestStep(context, 'pnpm test');
+      await orchestrator.executeTestStep(context, "pnpm test");
 
       const options = mockRunAgentFn.mock.calls[0][7];
       // In test fix context, status should come from context.feature.status
-      expect(options).toHaveProperty('status', 'pipeline_test');
-      expect(options).toHaveProperty('providerId', 'moonshot-ai');
+      expect(options).toHaveProperty("status", "pipeline_test");
+      expect(options).toHaveProperty("providerId", "moonshot-ai");
     }, 15000);
   });
 });

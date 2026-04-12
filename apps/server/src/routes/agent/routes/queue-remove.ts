@@ -2,9 +2,9 @@
  * POST /queue/remove endpoint - Remove a prompt from the queue
  */
 
-import type { Request, Response } from 'express';
-import { AgentService } from '../../../services/agent-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import { AgentService } from "../../../services/agent-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createQueueRemoveHandler(agentService: AgentService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -17,7 +17,7 @@ export function createQueueRemoveHandler(agentService: AgentService) {
       if (!sessionId || !promptId) {
         res.status(400).json({
           success: false,
-          error: 'sessionId and promptId are required',
+          error: "sessionId and promptId are required",
         });
         return;
       }
@@ -25,7 +25,7 @@ export function createQueueRemoveHandler(agentService: AgentService) {
       const result = await agentService.removeFromQueue(sessionId, promptId);
       res.json(result);
     } catch (error) {
-      logError(error, 'Remove from queue failed');
+      logError(error, "Remove from queue failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

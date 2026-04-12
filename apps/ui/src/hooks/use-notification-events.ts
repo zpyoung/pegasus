@@ -2,11 +2,11 @@
  * Hook to subscribe to notification WebSocket events and update the store.
  */
 
-import { useEffect } from 'react';
-import { useNotificationsStore } from '@/store/notifications-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { pathsEqual } from '@/lib/utils';
-import type { Notification } from '@pegasus/types';
+import { useEffect } from "react";
+import { useNotificationsStore } from "@/store/notifications-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { pathsEqual } from "@/lib/utils";
+import type { Notification } from "@pegasus/types";
 
 /**
  * Hook to subscribe to notification events and update the store.
@@ -20,12 +20,14 @@ export function useNotificationEvents(projectPath: string | null) {
 
     const api = getHttpApiClient();
 
-    const unsubscribe = api.notifications.onNotificationCreated((notification: Notification) => {
-      // Only handle notifications for the current project
-      if (!pathsEqual(notification.projectPath, projectPath)) return;
+    const unsubscribe = api.notifications.onNotificationCreated(
+      (notification: Notification) => {
+        // Only handle notifications for the current project
+        if (!pathsEqual(notification.projectPath, projectPath)) return;
 
-      addNotification(notification);
-    });
+        addNotification(notification);
+      },
+    );
 
     return unsubscribe;
   }, [projectPath, addNotification]);
@@ -67,12 +69,23 @@ export function useLoadNotifications(projectPath: string | null) {
           setUnreadCount(countResult.count);
         }
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to load notifications');
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load notifications",
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadNotifications();
-  }, [projectPath, setNotifications, setUnreadCount, setLoading, setError, reset]);
+  }, [
+    projectPath,
+    setNotifications,
+    setUnreadCount,
+    setLoading,
+    setError,
+    reset,
+  ]);
 }

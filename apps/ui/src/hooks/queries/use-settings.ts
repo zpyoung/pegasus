@@ -4,11 +4,11 @@
  * React Query hooks for fetching global and project settings.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import type { GlobalSettings, ProjectSettings } from '@pegasus/types';
+import { useQuery } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import type { GlobalSettings, ProjectSettings } from "@pegasus/types";
 
 /**
  * Fetch global settings
@@ -26,11 +26,11 @@ export function useGlobalSettings() {
     queryFn: async (): Promise<GlobalSettings> => {
       const api = getElectronAPI();
       if (!api.settings) {
-        throw new Error('Settings API not available');
+        throw new Error("Settings API not available");
       }
       const result = await api.settings.getGlobal();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch global settings');
+        throw new Error(result.error || "Failed to fetch global settings");
       }
       return result.settings as unknown as GlobalSettings;
     },
@@ -46,16 +46,16 @@ export function useGlobalSettings() {
  */
 export function useProjectSettings(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.settings.project(projectPath ?? ''),
+    queryKey: queryKeys.settings.project(projectPath ?? ""),
     queryFn: async (): Promise<ProjectSettings> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getElectronAPI();
       if (!api.settings) {
-        throw new Error('Settings API not available');
+        throw new Error("Settings API not available");
       }
       const result = await api.settings.getProject(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch project settings');
+        throw new Error(result.error || "Failed to fetch project settings");
       }
       return result.settings as unknown as ProjectSettings;
     },
@@ -75,7 +75,7 @@ export function useSettingsStatus() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.settings) {
-        throw new Error('Settings API not available');
+        throw new Error("Settings API not available");
       }
       const result = await api.settings.getStatus();
       return result;
@@ -95,11 +95,11 @@ export function useCredentials() {
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.settings) {
-        throw new Error('Settings API not available');
+        throw new Error("Settings API not available");
       }
       const result = await api.settings.getCredentials();
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch credentials');
+        throw new Error(result.error || "Failed to fetch credentials");
       }
       return result.credentials;
     },
@@ -116,19 +116,19 @@ export function useCredentials() {
  */
 export function useDiscoveredAgents(
   projectPath: string | undefined,
-  sources?: Array<'user' | 'project'>
+  sources?: Array<"user" | "project">,
 ) {
   return useQuery({
     // Include sources in query key so different source combinations have separate caches
-    queryKey: queryKeys.settings.agents(projectPath ?? '', sources),
+    queryKey: queryKeys.settings.agents(projectPath ?? "", sources),
     queryFn: async () => {
       const api = getElectronAPI();
       if (!api.settings) {
-        throw new Error('Settings API not available');
+        throw new Error("Settings API not available");
       }
       const result = await api.settings.discoverAgents(projectPath, sources);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to discover agents');
+        throw new Error(result.error || "Failed to discover agents");
       }
       return result.agents ?? [];
     },

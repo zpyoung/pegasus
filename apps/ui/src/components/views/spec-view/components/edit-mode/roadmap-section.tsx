@@ -1,22 +1,22 @@
-import { Plus, X, Map as MapIcon } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Plus, X, Map as MapIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { SpecOutput } from '@pegasus/spec-parser';
-import { generateUUID } from '@/lib/utils';
+} from "@/components/ui/select";
+import type { SpecOutput } from "@pegasus/spec-parser";
+import { generateUUID } from "@/lib/utils";
 
-type RoadmapPhase = NonNullable<SpecOutput['implementation_roadmap']>[number];
-type PhaseStatus = 'completed' | 'in_progress' | 'pending';
+type RoadmapPhase = NonNullable<SpecOutput["implementation_roadmap"]>[number];
+type PhaseStatus = "completed" | "in_progress" | "pending";
 
 interface PhaseWithId extends RoadmapPhase {
   _id: string;
@@ -86,7 +86,7 @@ function PhaseCard({ phase, onChange, onRemove }: PhaseCardProps) {
             <div>
               <Label className="sr-only">Description</Label>
               <Textarea
-                value={phase.description ?? ''}
+                value={phase.description ?? ""}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder="Describe what this phase involves..."
                 rows={2}
@@ -110,7 +110,9 @@ function PhaseCard({ phase, onChange, onRemove }: PhaseCardProps) {
 
 export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
   // Track phases with stable IDs
-  const [items, setItems] = useState<PhaseWithId[]>(() => phases.map(phaseToInternal));
+  const [items, setItems] = useState<PhaseWithId[]>(() =>
+    phases.map(phaseToInternal),
+  );
 
   // Track if we're making an internal change to avoid sync loops
   const isInternalChange = useRef(false);
@@ -137,7 +139,10 @@ export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
   }, [phases]);
 
   const handleAdd = () => {
-    const newItems = [...items, phaseToInternal({ phase: '', status: 'pending', description: '' })];
+    const newItems = [
+      ...items,
+      phaseToInternal({ phase: "", status: "pending", description: "" }),
+    ];
     setItems(newItems);
     isInternalChange.current = true;
     onChange(newItems.map(internalToPhase));
@@ -168,7 +173,8 @@ export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
       <CardContent className="space-y-3">
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">
-            No roadmap phases defined. Add phases to track implementation progress.
+            No roadmap phases defined. Add phases to track implementation
+            progress.
           </p>
         ) : (
           <div className="space-y-2">
@@ -182,7 +188,13 @@ export function RoadmapSection({ phases, onChange }: RoadmapSectionProps) {
             ))}
           </div>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={handleAdd} className="gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleAdd}
+          className="gap-1"
+        >
           <Plus className="w-4 h-4" />
           Add Phase
         </Button>

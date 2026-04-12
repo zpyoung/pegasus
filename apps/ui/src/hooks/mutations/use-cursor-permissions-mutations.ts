@@ -4,14 +4,14 @@
  * React Query mutations for managing Cursor CLI permissions.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
 
 interface ApplyProfileInput {
-  profileId: 'strict' | 'development';
-  scope: 'global' | 'project';
+  profileId: "strict" | "development";
+  scope: "global" | "project";
 }
 
 /**
@@ -36,11 +36,11 @@ export function useApplyCursorProfile(projectPath?: string) {
       const result = await api.setup.applyCursorPermissionProfile(
         profileId,
         scope,
-        scope === 'project' ? projectPath : undefined
+        scope === "project" ? projectPath : undefined,
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to apply profile');
+        throw new Error(result.error || "Failed to apply profile");
       }
 
       return result;
@@ -50,11 +50,11 @@ export function useApplyCursorProfile(projectPath?: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.cursorPermissions.permissions(projectPath),
       });
-      toast.success(result.message || 'Profile applied');
+      toast.success(result.message || "Profile applied");
     },
     onError: (error) => {
-      toast.error('Failed to apply profile', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to apply profile", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     },
   });
@@ -73,23 +73,23 @@ export function useApplyCursorProfile(projectPath?: string) {
  */
 export function useCopyCursorConfig() {
   return useMutation({
-    mutationFn: async (profileId: 'strict' | 'development') => {
+    mutationFn: async (profileId: "strict" | "development") => {
       const api = getHttpApiClient();
       const result = await api.setup.getCursorExampleConfig(profileId);
 
       if (!result.success || !result.config) {
-        throw new Error(result.error || 'Failed to get config');
+        throw new Error(result.error || "Failed to get config");
       }
 
       await navigator.clipboard.writeText(result.config);
       return result;
     },
     onSuccess: () => {
-      toast.success('Config copied to clipboard');
+      toast.success("Config copied to clipboard");
     },
     onError: (error) => {
-      toast.error('Failed to copy config', {
-        description: error instanceof Error ? error.message : 'Unknown error',
+      toast.error("Failed to copy config", {
+        description: error instanceof Error ? error.message : "Unknown error",
       });
     },
   });

@@ -2,12 +2,12 @@
  * POST /write endpoint - Write file
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { mkdirSafe } from '@pegasus/utils';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { mkdirSafe } from "@pegasus/utils";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createWriteHandler() {
   return async (req: Request, res: Response): Promise<void> => {
@@ -18,7 +18,7 @@ export function createWriteHandler() {
       };
 
       if (!filePath) {
-        res.status(400).json({ success: false, error: 'filePath is required' });
+        res.status(400).json({ success: false, error: "filePath is required" });
         return;
       }
 
@@ -26,7 +26,7 @@ export function createWriteHandler() {
       await mkdirSafe(path.dirname(path.resolve(filePath)));
       // Default content to empty string if undefined/null to prevent writing
       // "undefined" as literal text (e.g. when content field is missing from request)
-      await secureFs.writeFile(filePath, content ?? '', 'utf-8');
+      await secureFs.writeFile(filePath, content ?? "", "utf-8");
 
       res.json({ success: true });
     } catch (error) {
@@ -36,7 +36,7 @@ export function createWriteHandler() {
         return;
       }
 
-      logError(error, 'Write file failed');
+      logError(error, "Write file failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

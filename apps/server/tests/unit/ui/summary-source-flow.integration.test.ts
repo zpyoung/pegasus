@@ -1,6 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { parseAllPhaseSummaries, isAccumulatedSummary } from '../../../../ui/src/lib/log-parser.ts';
-import { getFirstNonEmptySummary } from '../../../../ui/src/lib/summary-selection.ts';
+import { describe, it, expect } from "vitest";
+import {
+  parseAllPhaseSummaries,
+  isAccumulatedSummary,
+} from "../../../../ui/src/lib/log-parser.ts";
+import { getFirstNonEmptySummary } from "../../../../ui/src/lib/summary-selection.ts";
 
 /**
  * Mirrors summary source priority in agent-info-panel.tsx:
@@ -16,7 +19,7 @@ function getCardEffectiveSummary(params: {
     params.freshFeatureSummary,
     params.featureSummary,
     params.summaryProp,
-    params.agentInfoSummary
+    params.agentInfoSummary,
   );
 }
 
@@ -32,13 +35,13 @@ function getDialogRawSummary(params: {
   return getFirstNonEmptySummary(
     params.summaryProp,
     params.featureSummary,
-    params.agentInfoSummary
+    params.agentInfoSummary,
   );
 }
 
-describe('Summary Source Flow Integration', () => {
-  it('uses fresh per-feature summary in card and preserves it through summary dialog', () => {
-    const staleListSummary = '## Old summary from stale list cache';
+describe("Summary Source Flow Integration", () => {
+  it("uses fresh per-feature summary in card and preserves it through summary dialog", () => {
+    const staleListSummary = "## Old summary from stale list cache";
     const freshAccumulatedSummary = `### Implementation
 
 Implemented auth + profile flow.
@@ -49,7 +52,7 @@ Implemented auth + profile flow.
 
 - Unit tests: 18 passed
 - Integration tests: 6 passed`;
-    const parsedAgentInfoSummary = 'Fallback summary from parsed agent output';
+    const parsedAgentInfoSummary = "Fallback summary from parsed agent output";
 
     const cardEffectiveSummary = getCardEffectiveSummary({
       freshFeatureSummary: freshAccumulatedSummary,
@@ -71,19 +74,19 @@ Implemented auth + profile flow.
 
     const phases = parseAllPhaseSummaries(dialogRawSummary ?? undefined);
     expect(phases).toHaveLength(2);
-    expect(phases[0]?.phaseName).toBe('Implementation');
-    expect(phases[1]?.phaseName).toBe('Testing');
+    expect(phases[0]?.phaseName).toBe("Implementation");
+    expect(phases[1]?.phaseName).toBe("Testing");
   });
 
-  it('falls back in order when fresher sources are absent', () => {
+  it("falls back in order when fresher sources are absent", () => {
     const cardEffectiveSummary = getCardEffectiveSummary({
       freshFeatureSummary: undefined,
-      featureSummary: '',
+      featureSummary: "",
       summaryProp: undefined,
-      agentInfoSummary: 'Agent parsed fallback',
+      agentInfoSummary: "Agent parsed fallback",
     });
 
-    expect(cardEffectiveSummary).toBe('Agent parsed fallback');
+    expect(cardEffectiveSummary).toBe("Agent parsed fallback");
 
     const dialogRawSummary = getDialogRawSummary({
       summaryProp: undefined,
@@ -91,18 +94,18 @@ Implemented auth + profile flow.
       agentInfoSummary: cardEffectiveSummary,
     });
 
-    expect(dialogRawSummary).toBe('Agent parsed fallback');
+    expect(dialogRawSummary).toBe("Agent parsed fallback");
     expect(isAccumulatedSummary(dialogRawSummary ?? undefined)).toBe(false);
   });
 
-  it('treats whitespace-only summaries as empty during fallback selection', () => {
+  it("treats whitespace-only summaries as empty during fallback selection", () => {
     const cardEffectiveSummary = getCardEffectiveSummary({
-      freshFeatureSummary: '   \n',
-      featureSummary: '\t',
-      summaryProp: '   ',
-      agentInfoSummary: 'Agent parsed fallback',
+      freshFeatureSummary: "   \n",
+      featureSummary: "\t",
+      summaryProp: "   ",
+      agentInfoSummary: "Agent parsed fallback",
     });
 
-    expect(cardEffectiveSummary).toBe('Agent parsed fallback');
+    expect(cardEffectiveSummary).toBe("Agent parsed fallback");
   });
 });

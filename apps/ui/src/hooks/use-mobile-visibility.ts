@@ -20,10 +20,10 @@
  * Desktop behavior is unchanged - this hook is a no-op on non-mobile devices.
  */
 
-import { useEffect } from 'react';
-import { focusManager, onlineManager } from '@tanstack/react-query';
-import { isMobileDevice } from '@/lib/mobile-detect';
-import { queryClient } from '@/lib/query-client';
+import { useEffect } from "react";
+import { focusManager, onlineManager } from "@tanstack/react-query";
+import { isMobileDevice } from "@/lib/mobile-detect";
+import { queryClient } from "@/lib/query-client";
 
 /**
  * Grace period (ms) after the app becomes visible before allowing refetches.
@@ -70,10 +70,10 @@ export function useMobileVisibility(): void {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (graceTimeout) clearTimeout(graceTimeout);
       // Restore default focus management
       focusManager.setFocused(undefined);
@@ -127,10 +127,10 @@ export function useMobileOnlineManager(): void {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       // Restore online status on cleanup
       onlineManager.setOnline(true);
     };

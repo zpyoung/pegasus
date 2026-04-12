@@ -4,9 +4,12 @@
  * This module re-exports terminal theme data for use in the server.
  */
 
-import { terminalThemeColors, getTerminalThemeColors as getThemeColors } from '@pegasus/platform';
-import type { ThemeMode } from '@pegasus/types';
-import type { TerminalTheme } from '@pegasus/platform';
+import {
+  terminalThemeColors,
+  getTerminalThemeColors as getThemeColors,
+} from "@pegasus/platform";
+import type { ThemeMode } from "@pegasus/types";
+import type { TerminalTheme } from "@pegasus/platform";
 
 /**
  * Get terminal theme colors for a given theme mode

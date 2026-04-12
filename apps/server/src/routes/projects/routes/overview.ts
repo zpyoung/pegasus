@@ -7,15 +7,15 @@
  * - Recent activity feed (placeholder for future implementation)
  */
 
-import type { Request, Response } from 'express';
-import type { FeatureLoader } from '../../../services/feature-loader.js';
+import type { Request, Response } from "express";
+import type { FeatureLoader } from "../../../services/feature-loader.js";
 import type {
   AutoModeServiceCompat,
   RunningAgentInfo,
   ProjectAutoModeStatus,
-} from '../../../services/auto-mode/index.js';
-import type { SettingsService } from '../../../services/settings-service.js';
-import type { NotificationService } from '../../../services/notification-service.js';
+} from "../../../services/auto-mode/index.js";
+import type { SettingsService } from "../../../services/settings-service.js";
+import type { NotificationService } from "../../../services/notification-service.js";
 import type {
   ProjectStatus,
   AggregateStatus,
@@ -26,8 +26,8 @@ import type {
   ProjectHealthStatus,
   Feature,
   ProjectRef,
-} from '@pegasus/types';
-import { getErrorMessage, logError } from '../common.js';
+} from "@pegasus/types";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Compute feature status counts from a list of features
@@ -43,26 +43,26 @@ function computeFeatureCounts(features: Feature[]): FeatureStatusCounts {
 
   for (const feature of features) {
     switch (feature.status) {
-      case 'pending':
-      case 'ready':
+      case "pending":
+      case "ready":
         counts.pending++;
         break;
-      case 'running':
-      case 'generating_spec':
-      case 'in_progress':
+      case "running":
+      case "generating_spec":
+      case "in_progress":
         counts.running++;
         break;
-      case 'waiting_approval':
+      case "waiting_approval":
         // waiting_approval means agent finished, needs human review - count as pending
         counts.pending++;
         break;
-      case 'completed':
+      case "completed":
         counts.completed++;
         break;
-      case 'failed':
+      case "failed":
         counts.failed++;
         break;
-      case 'verified':
+      case "verified":
         counts.verified++;
         break;
       default:
@@ -79,7 +79,7 @@ function computeFeatureCounts(features: Feature[]): FeatureStatusCounts {
  */
 function computeHealthStatus(
   featureCounts: FeatureStatusCounts,
-  isAutoModeRunning: boolean
+  isAutoModeRunning: boolean,
 ): ProjectHealthStatus {
   const totalFeatures =
     featureCounts.pending +
@@ -90,26 +90,33 @@ function computeHealthStatus(
 
   // If there are failed features, the project has errors
   if (featureCounts.failed > 0) {
-    return 'error';
+    return "error";
   }
 
   // If there are running features or auto mode is running with pending work
-  if (featureCounts.running > 0 || (isAutoModeRunning && featureCounts.pending > 0)) {
-    return 'active';
+  if (
+    featureCounts.running > 0 ||
+    (isAutoModeRunning && featureCounts.pending > 0)
+  ) {
+    return "active";
   }
 
   // Pending work but no active execution
   if (featureCounts.pending > 0) {
-    return 'waiting';
+    return "waiting";
   }
 
   // If all features are completed or verified
-  if (totalFeatures > 0 && featureCounts.pending === 0 && featureCounts.running === 0) {
-    return 'completed';
+  if (
+    totalFeatures > 0 &&
+    featureCounts.pending === 0 &&
+    featureCounts.running === 0
+  ) {
+    return "completed";
   }
 
   // Default to idle
-  return 'idle';
+  return "idle";
 }
 
 /**
@@ -146,14 +153,16 @@ function getLastActivityAt(features: Feature[]): string | undefined {
     }
   }
 
-  return latestTimestamp > 0 ? new Date(latestTimestamp).toISOString() : undefined;
+  return latestTimestamp > 0
+    ? new Date(latestTimestamp).toISOString()
+    : undefined;
 }
 
 export function createOverviewHandler(
   featureLoader: FeatureLoader,
   autoModeService: AutoModeServiceCompat,
   settingsService: SettingsService,
-  notificationService: NotificationService
+  notificationService: NotificationService,
 ) {
   return async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -162,78 +171,89 @@ export function createOverviewHandler(
       const projectRefs: ProjectRef[] = settings.projects || [];
 
       // Get all running agents once to count live running features per project
-      const allRunningAgents: RunningAgentInfo[] = await autoModeService.getRunningAgents();
+      const allRunningAgents: RunningAgentInfo[] =
+        await autoModeService.getRunningAgents();
 
       // Collect project statuses in parallel
-      const projectStatusPromises = projectRefs.map(async (projectRef): Promise<ProjectStatus> => {
-        try {
-          // Load features for this project
-          const features = await featureLoader.getAll(projectRef.path);
-          const featureCounts = computeFeatureCounts(features);
-          const totalFeatures = features.length;
-
-          // Get auto-mode status for this project (main worktree, branchName = null)
-          const autoModeStatus: ProjectAutoModeStatus = await autoModeService.getStatusForProject(
-            projectRef.path,
-            null
-          );
-          const isAutoModeRunning = autoModeStatus.isAutoLoopRunning;
-
-          // Count live running features for this project (across all branches)
-          // This ensures we only count features that are actually running in memory
-          const liveRunningCount = allRunningAgents.filter(
-            (agent) => agent.projectPath === projectRef.path
-          ).length;
-          featureCounts.running = liveRunningCount;
-
-          // Get notification count for this project
-          let unreadNotificationCount = 0;
+      const projectStatusPromises = projectRefs.map(
+        async (projectRef): Promise<ProjectStatus> => {
           try {
-            const notifications = await notificationService.getNotifications(projectRef.path);
-            unreadNotificationCount = notifications.filter((n) => !n.read).length;
-          } catch {
-            // Ignore notification errors - project may not have any notifications yet
+            // Load features for this project
+            const features = await featureLoader.getAll(projectRef.path);
+            const featureCounts = computeFeatureCounts(features);
+            const totalFeatures = features.length;
+
+            // Get auto-mode status for this project (main worktree, branchName = null)
+            const autoModeStatus: ProjectAutoModeStatus =
+              await autoModeService.getStatusForProject(projectRef.path, null);
+            const isAutoModeRunning = autoModeStatus.isAutoLoopRunning;
+
+            // Count live running features for this project (across all branches)
+            // This ensures we only count features that are actually running in memory
+            const liveRunningCount = allRunningAgents.filter(
+              (agent) => agent.projectPath === projectRef.path,
+            ).length;
+            featureCounts.running = liveRunningCount;
+
+            // Get notification count for this project
+            let unreadNotificationCount = 0;
+            try {
+              const notifications = await notificationService.getNotifications(
+                projectRef.path,
+              );
+              unreadNotificationCount = notifications.filter(
+                (n) => !n.read,
+              ).length;
+            } catch {
+              // Ignore notification errors - project may not have any notifications yet
+            }
+
+            // Compute health status
+            const healthStatus = computeHealthStatus(
+              featureCounts,
+              isAutoModeRunning,
+            );
+
+            // Get last activity timestamp
+            const lastActivityAt = getLastActivityAt(features);
+
+            return {
+              projectId: projectRef.id,
+              projectName: projectRef.name,
+              projectPath: projectRef.path,
+              healthStatus,
+              featureCounts,
+              totalFeatures,
+              lastActivityAt,
+              isAutoModeRunning,
+              activeBranch: autoModeStatus.branchName ?? undefined,
+              unreadNotificationCount,
+            };
+          } catch (error) {
+            logError(
+              error,
+              `Failed to load project status: ${projectRef.name}`,
+            );
+            // Return a minimal status for projects that fail to load
+            return {
+              projectId: projectRef.id,
+              projectName: projectRef.name,
+              projectPath: projectRef.path,
+              healthStatus: "error" as ProjectHealthStatus,
+              featureCounts: {
+                pending: 0,
+                running: 0,
+                completed: 0,
+                failed: 0,
+                verified: 0,
+              },
+              totalFeatures: 0,
+              isAutoModeRunning: false,
+              unreadNotificationCount: 0,
+            };
           }
-
-          // Compute health status
-          const healthStatus = computeHealthStatus(featureCounts, isAutoModeRunning);
-
-          // Get last activity timestamp
-          const lastActivityAt = getLastActivityAt(features);
-
-          return {
-            projectId: projectRef.id,
-            projectName: projectRef.name,
-            projectPath: projectRef.path,
-            healthStatus,
-            featureCounts,
-            totalFeatures,
-            lastActivityAt,
-            isAutoModeRunning,
-            activeBranch: autoModeStatus.branchName ?? undefined,
-            unreadNotificationCount,
-          };
-        } catch (error) {
-          logError(error, `Failed to load project status: ${projectRef.name}`);
-          // Return a minimal status for projects that fail to load
-          return {
-            projectId: projectRef.id,
-            projectName: projectRef.name,
-            projectPath: projectRef.path,
-            healthStatus: 'error' as ProjectHealthStatus,
-            featureCounts: {
-              pending: 0,
-              running: 0,
-              completed: 0,
-              failed: 0,
-              verified: 0,
-            },
-            totalFeatures: 0,
-            isAutoModeRunning: false,
-            unreadNotificationCount: 0,
-          };
-        }
-      });
+        },
+      );
 
       const projectStatuses = await Promise.all(projectStatusPromises);
 
@@ -270,19 +290,19 @@ export function createOverviewHandler(
 
         // Aggregate project counts by health status
         switch (status.healthStatus) {
-          case 'active':
+          case "active":
             aggregateProjectCounts.active++;
             break;
-          case 'idle':
+          case "idle":
             aggregateProjectCounts.idle++;
             break;
-          case 'waiting':
+          case "waiting":
             aggregateProjectCounts.waiting++;
             break;
-          case 'error':
+          case "error":
             aggregateProjectCounts.withErrors++;
             break;
-          case 'completed':
+          case "completed":
             aggregateProjectCounts.allCompleted++;
             break;
         }
@@ -317,7 +337,7 @@ export function createOverviewHandler(
         ...overview,
       });
     } catch (error) {
-      logError(error, 'Get project overview failed');
+      logError(error, "Get project overview failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

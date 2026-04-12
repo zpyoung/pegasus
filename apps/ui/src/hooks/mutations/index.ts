@@ -16,7 +16,7 @@ export {
   useDeleteFeature,
   useGenerateTitle,
   useBatchUpdateFeatures,
-} from './use-feature-mutations';
+} from "./use-feature-mutations";
 
 // Auto mode mutations
 export {
@@ -30,14 +30,14 @@ export {
   useAnalyzeProject,
   useStartAutoMode,
   useStopAutoMode,
-} from './use-auto-mode-mutations';
+} from "./use-auto-mode-mutations";
 
 // Settings mutations
 export {
   useUpdateGlobalSettings,
   useUpdateProjectSettings,
   useSaveCredentials,
-} from './use-settings-mutations';
+} from "./use-settings-mutations";
 
 // Worktree mutations
 export {
@@ -57,7 +57,7 @@ export {
   useInitGit,
   useSetInitScript,
   useDeleteInitScript,
-} from './use-worktree-mutations';
+} from "./use-worktree-mutations";
 
 // GitHub mutations
 export {
@@ -65,10 +65,10 @@ export {
   useMarkValidationViewed,
   useGetValidationStatus,
   useResolveReviewThread,
-} from './use-github-mutations';
+} from "./use-github-mutations";
 
 // Ideation mutations
-export { useGenerateIdeationSuggestions } from './use-ideation-mutations';
+export { useGenerateIdeationSuggestions } from "./use-ideation-mutations";
 
 // Spec mutations
 export {
@@ -76,7 +76,10 @@ export {
   useRegenerateSpec,
   useGenerateFeatures,
   useSaveSpec,
-} from './use-spec-mutations';
+} from "./use-spec-mutations";
 
 // Cursor Permissions mutations
-export { useApplyCursorProfile, useCopyCursorConfig } from './use-cursor-permissions-mutations';
+export {
+  useApplyCursorProfile,
+  useCopyCursorConfig,
+} from "./use-cursor-permissions-mutations";

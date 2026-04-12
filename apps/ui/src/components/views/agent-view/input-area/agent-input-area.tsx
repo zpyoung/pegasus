@@ -1,9 +1,9 @@
-import { ImageDropZone } from '@/components/ui/image-drop-zone';
-import type { ImageAttachment, TextFileAttachment } from '@/store/app-store';
-import type { PhaseModelEntry } from '@pegasus/types';
-import { FilePreview } from './file-preview';
-import { QueueDisplay } from './queue-display';
-import { InputControls } from './input-controls';
+import { ImageDropZone } from "@/components/ui/image-drop-zone";
+import type { ImageAttachment, TextFileAttachment } from "@/store/app-store";
+import type { PhaseModelEntry } from "@pegasus/types";
+import { FilePreview } from "./file-preview";
+import { QueueDisplay } from "./queue-display";
+import { InputControls } from "./input-controls";
 
 interface QueueItem {
   id: string;

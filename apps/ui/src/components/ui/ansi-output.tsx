@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface AnsiOutputProps {
   text: string;
@@ -9,43 +9,43 @@ interface AnsiOutputProps {
 // ANSI color codes to CSS color mappings
 const ANSI_COLORS: Record<number, string> = {
   // Standard colors
-  30: '#6b7280', // Black (use gray for visibility on dark bg)
-  31: '#ef4444', // Red
-  32: '#22c55e', // Green
-  33: '#eab308', // Yellow
-  34: '#3b82f6', // Blue
-  35: '#a855f7', // Magenta
-  36: '#06b6d4', // Cyan
-  37: '#d1d5db', // White
+  30: "#6b7280", // Black (use gray for visibility on dark bg)
+  31: "#ef4444", // Red
+  32: "#22c55e", // Green
+  33: "#eab308", // Yellow
+  34: "#3b82f6", // Blue
+  35: "#a855f7", // Magenta
+  36: "#06b6d4", // Cyan
+  37: "#d1d5db", // White
   // Bright colors
-  90: '#9ca3af', // Bright Black (Gray)
-  91: '#f87171', // Bright Red
-  92: '#4ade80', // Bright Green
-  93: '#facc15', // Bright Yellow
-  94: '#60a5fa', // Bright Blue
-  95: '#c084fc', // Bright Magenta
-  96: '#22d3ee', // Bright Cyan
-  97: '#ffffff', // Bright White
+  90: "#9ca3af", // Bright Black (Gray)
+  91: "#f87171", // Bright Red
+  92: "#4ade80", // Bright Green
+  93: "#facc15", // Bright Yellow
+  94: "#60a5fa", // Bright Blue
+  95: "#c084fc", // Bright Magenta
+  96: "#22d3ee", // Bright Cyan
+  97: "#ffffff", // Bright White
 };
 
 const ANSI_BG_COLORS: Record<number, string> = {
-  40: 'transparent',
-  41: '#ef4444',
-  42: '#22c55e',
-  43: '#eab308',
-  44: '#3b82f6',
-  45: '#a855f7',
-  46: '#06b6d4',
-  47: '#f3f4f6',
+  40: "transparent",
+  41: "#ef4444",
+  42: "#22c55e",
+  43: "#eab308",
+  44: "#3b82f6",
+  45: "#a855f7",
+  46: "#06b6d4",
+  47: "#f3f4f6",
   // Bright backgrounds
-  100: '#374151',
-  101: '#f87171',
-  102: '#4ade80',
-  103: '#facc15',
-  104: '#60a5fa',
-  105: '#c084fc',
-  106: '#22d3ee',
-  107: '#ffffff',
+  100: "#374151",
+  101: "#f87171",
+  102: "#4ade80",
+  103: "#facc15",
+  104: "#60a5fa",
+  105: "#c084fc",
+  106: "#22d3ee",
+  107: "#ffffff",
 };
 
 interface TextSegment {
@@ -66,7 +66,7 @@ interface TextSegment {
 function stripHyperlinks(text: string): string {
   // Remove OSC 8 hyperlink sequences
   // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+  return text.replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 }
 
 /**
@@ -75,7 +75,7 @@ function stripHyperlinks(text: string): string {
 function stripOtherOSC(text: string): string {
   // Remove OSC sequences (ESC ] ... BEL or ESC ] ... ST)
   // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+  return text.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 }
 
 function parseAnsi(text: string): TextSegment[] {
@@ -91,7 +91,7 @@ function parseAnsi(text: string): TextSegment[] {
   // eslint-disable-next-line no-control-regex
   const ansiRegex = /\x1b\[([0-9;]*)([a-zA-Z])/g;
 
-  let currentStyle: TextSegment['style'] = {};
+  let currentStyle: TextSegment["style"] = {};
   let lastIndex = 0;
   let match;
 
@@ -109,9 +109,11 @@ function parseAnsi(text: string): TextSegment[] {
 
     // Only process 'm' command (SGR - graphics/color)
     // Ignore other commands like K (erase), H (cursor), J (clear), etc.
-    if (command === 'm') {
+    if (command === "m") {
       // Parse the escape sequence codes
-      const codes = params ? params.split(';').map((c) => parseInt(c, 10) || 0) : [0];
+      const codes = params
+        ? params.split(";").map((c) => parseInt(c, 10) || 0)
+        : [0];
 
       for (let i = 0; i < codes.length; i++) {
         const code = codes[i];
@@ -121,16 +123,16 @@ function parseAnsi(text: string): TextSegment[] {
           currentStyle = {};
         } else if (code === 1) {
           // Bold
-          currentStyle.fontWeight = 'bold';
+          currentStyle.fontWeight = "bold";
         } else if (code === 2) {
           // Dim/faint
-          currentStyle.color = 'var(--muted-foreground)';
+          currentStyle.color = "var(--muted-foreground)";
         } else if (code === 3) {
           // Italic
-          currentStyle.fontStyle = 'italic';
+          currentStyle.fontStyle = "italic";
         } else if (code === 4) {
           // Underline
-          currentStyle.textDecoration = 'underline';
+          currentStyle.textDecoration = "underline";
         } else if (code === 22) {
           // Normal intensity (not bold, not dim)
           currentStyle.fontWeight = undefined;
@@ -212,22 +214,22 @@ function get256Color(index: number): string {
   // 0-15: Standard colors
   if (index < 16) {
     const standardColors = [
-      '#000000',
-      '#cd0000',
-      '#00cd00',
-      '#cdcd00',
-      '#0000ee',
-      '#cd00cd',
-      '#00cdcd',
-      '#e5e5e5',
-      '#7f7f7f',
-      '#ff0000',
-      '#00ff00',
-      '#ffff00',
-      '#5c5cff',
-      '#ff00ff',
-      '#00ffff',
-      '#ffffff',
+      "#000000",
+      "#cd0000",
+      "#00cd00",
+      "#cdcd00",
+      "#0000ee",
+      "#cd00cd",
+      "#00cdcd",
+      "#e5e5e5",
+      "#7f7f7f",
+      "#ff0000",
+      "#00ff00",
+      "#ffff00",
+      "#5c5cff",
+      "#ff00ff",
+      "#00ffff",
+      "#ffffff",
     ];
     return standardColors[index];
   }
@@ -253,8 +255,8 @@ export function AnsiOutput({ text, className }: AnsiOutputProps) {
   return (
     <pre
       className={cn(
-        'font-mono text-xs whitespace-pre-wrap break-words text-muted-foreground',
-        className
+        "font-mono text-xs whitespace-pre-wrap break-words text-muted-foreground",
+        className,
       )}
     >
       {segments.map((segment, index) => (

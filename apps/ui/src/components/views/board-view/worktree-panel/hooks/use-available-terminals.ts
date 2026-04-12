@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { getElectronAPI } from '@/lib/electron';
-import { useAppStore } from '@/store/app-store';
-import type { TerminalInfo } from '@pegasus/types';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { getElectronAPI } from "@/lib/electron";
+import { useAppStore } from "@/store/app-store";
+import type { TerminalInfo } from "@pegasus/types";
 
-const logger = createLogger('AvailableTerminals');
+const logger = createLogger("AvailableTerminals");
 
 // Re-export TerminalInfo for convenience
 export type { TerminalInfo };
@@ -26,7 +26,7 @@ export function useAvailableTerminals() {
         setTerminals(result.result.terminals);
       }
     } catch (error) {
-      logger.error('Failed to fetch available terminals:', error);
+      logger.error("Failed to fetch available terminals:", error);
     } finally {
       setIsLoading(false);
     }
@@ -48,10 +48,12 @@ export function useAvailableTerminals() {
       const result = await api.worktree.refreshTerminals();
       if (result.success && result.result?.terminals) {
         setTerminals(result.result.terminals);
-        logger.info(`Terminal cache refreshed, found ${result.result.terminals.length} terminals`);
+        logger.info(
+          `Terminal cache refreshed, found ${result.result.terminals.length} terminals`,
+        );
       }
     } catch (error) {
-      logger.error('Failed to refresh terminals:', error);
+      logger.error("Failed to refresh terminals:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -78,7 +80,9 @@ export function useAvailableTerminals() {
  * Returns null if user prefers integrated terminal (defaultTerminalId is null)
  * Falls back to: user preference > first available external terminal
  */
-export function useEffectiveDefaultTerminal(terminals: TerminalInfo[]): TerminalInfo | null {
+export function useEffectiveDefaultTerminal(
+  terminals: TerminalInfo[],
+): TerminalInfo | null {
   const defaultTerminalId = useAppStore((s) => s.defaultTerminalId);
 
   return useMemo(() => {

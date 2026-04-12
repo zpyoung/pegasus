@@ -2,11 +2,15 @@
  * POST /import endpoint - Import features from JSON or YAML format
  */
 
-import type { Request, Response } from 'express';
-import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { FeatureImportResult, Feature, FeatureExport } from '@pegasus/types';
-import { getFeatureExportService } from '../../../services/feature-export-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { FeatureLoader } from "../../../services/feature-loader.js";
+import type {
+  FeatureImportResult,
+  Feature,
+  FeatureExport,
+} from "@pegasus/types";
+import { getFeatureExportService } from "../../../services/feature-export-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 interface ImportRequest {
   projectPath: string;
@@ -47,12 +51,14 @@ export function createImportHandler(_featureLoader: FeatureLoader) {
       } = req.body as ImportRequest;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!data) {
-        res.status(400).json({ success: false, error: 'data is required' });
+        res.status(400).json({ success: false, error: "data is required" });
         return;
       }
 
@@ -61,7 +67,7 @@ export function createImportHandler(_featureLoader: FeatureLoader) {
       if (!format) {
         res.status(400).json({
           success: false,
-          error: 'Invalid data format. Expected valid JSON or YAML.',
+          error: "Invalid data format. Expected valid JSON or YAML.",
         });
         return;
       }
@@ -70,14 +76,16 @@ export function createImportHandler(_featureLoader: FeatureLoader) {
       if (!parsed) {
         res.status(400).json({
           success: false,
-          error: 'Failed to parse import data. Ensure it is valid JSON or YAML.',
+          error:
+            "Failed to parse import data. Ensure it is valid JSON or YAML.",
         });
         return;
       }
 
       // Determine if this is a single feature or bulk import
       const isBulkImport =
-        'features' in parsed && Array.isArray((parsed as { features: unknown }).features);
+        "features" in parsed &&
+        Array.isArray((parsed as { features: unknown }).features);
 
       let results: FeatureImportResult[];
 
@@ -113,7 +121,7 @@ export function createImportHandler(_featureLoader: FeatureLoader) {
         results,
       });
     } catch (error) {
-      logError(error, 'Import features failed');
+      logError(error, "Import features failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };
@@ -130,12 +138,14 @@ export function createConflictCheckHandler(featureLoader: FeatureLoader) {
       const { projectPath, data } = req.body as ConflictCheckRequest;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!data) {
-        res.status(400).json({ success: false, error: 'data is required' });
+        res.status(400).json({ success: false, error: "data is required" });
         return;
       }
 
@@ -144,7 +154,7 @@ export function createConflictCheckHandler(featureLoader: FeatureLoader) {
       if (!format) {
         res.status(400).json({
           success: false,
-          error: 'Invalid data format. Expected valid JSON or YAML.',
+          error: "Invalid data format. Expected valid JSON or YAML.",
         });
         return;
       }
@@ -153,7 +163,7 @@ export function createConflictCheckHandler(featureLoader: FeatureLoader) {
       if (!parsed) {
         res.status(400).json({
           success: false,
-          error: 'Failed to parse import data.',
+          error: "Failed to parse import data.",
         });
         return;
       }
@@ -190,7 +200,7 @@ export function createConflictCheckHandler(featureLoader: FeatureLoader) {
             existingTitle: existing?.title,
             hasConflict: !!existing,
           };
-        })
+        }),
       );
 
       const hasConflicts = conflicts.some((c) => c.hasConflict);
@@ -203,7 +213,7 @@ export function createConflictCheckHandler(featureLoader: FeatureLoader) {
         conflictCount: conflicts.filter((c) => c.hasConflict).length,
       });
     } catch (error) {
-      logError(error, 'Conflict check failed');
+      logError(error, "Conflict check failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

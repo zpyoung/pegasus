@@ -2,37 +2,43 @@
  * POST /convert - Convert an idea to a feature
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import type { IdeationService } from '../../../services/ideation-service.js';
-import type { FeatureLoader } from '../../../services/feature-loader.js';
-import type { ConvertToFeatureOptions } from '@pegasus/types';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import type { IdeationService } from "../../../services/ideation-service.js";
+import type { FeatureLoader } from "../../../services/feature-loader.js";
+import type { ConvertToFeatureOptions } from "@pegasus/types";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createConvertHandler(
   events: EventEmitter,
   ideationService: IdeationService,
-  featureLoader: FeatureLoader
+  featureLoader: FeatureLoader,
 ) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, ideaId, keepIdea, column, dependencies, tags } = req.body as {
-        projectPath: string;
-        ideaId: string;
-      } & ConvertToFeatureOptions;
+      const { projectPath, ideaId, keepIdea, column, dependencies, tags } =
+        req.body as {
+          projectPath: string;
+          ideaId: string;
+        } & ConvertToFeatureOptions;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
       if (!ideaId) {
-        res.status(400).json({ success: false, error: 'ideaId is required' });
+        res.status(400).json({ success: false, error: "ideaId is required" });
         return;
       }
 
       // Convert idea to feature structure
-      const featureData = await ideationService.convertToFeature(projectPath, ideaId);
+      const featureData = await ideationService.convertToFeature(
+        projectPath,
+        ideaId,
+      );
 
       // Apply any options from the request
       if (column) {
@@ -53,14 +59,14 @@ export function createConvertHandler(
         await ideationService.deleteIdea(projectPath, ideaId);
 
         // Emit idea deleted event
-        events.emit('ideation:idea-deleted', {
+        events.emit("ideation:idea-deleted", {
           projectPath,
           ideaId,
         });
       }
 
       // Emit idea converted event to notify frontend
-      events.emit('ideation:idea-converted', {
+      events.emit("ideation:idea-converted", {
         projectPath,
         ideaId,
         featureId: feature.id,
@@ -71,11 +77,11 @@ export function createConvertHandler(
       res.json({ success: true, featureId: feature.id });
     } catch (error) {
       const code = (error as Error & { code?: string }).code;
-      if (code === 'IDEA_NOT_READY') {
+      if (code === "IDEA_NOT_READY") {
         res.status(422).json({ success: false, error: getErrorMessage(error) });
         return;
       }
-      logError(error, 'Convert to feature failed');
+      logError(error, "Convert to feature failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator } from "@playwright/test";
 
 /**
  * Wait for a toast notification with specific text to appear
@@ -6,12 +6,12 @@ import { Page, Locator } from '@playwright/test';
 export async function waitForToast(
   page: Page,
   text: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<Locator> {
   const toast = page.locator(`[data-sonner-toast]:has-text("${text}")`).first();
   await toast.waitFor({
     timeout: options?.timeout ?? 5000,
-    state: 'visible',
+    state: "visible",
   });
   return toast;
 }
@@ -22,7 +22,7 @@ export async function waitForToast(
 export async function waitForErrorToast(
   page: Page,
   titleText?: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<Locator> {
   // Try multiple selectors for error toasts since Sonner versions may differ
   // 1. Try with data-type="error" attribute
@@ -33,19 +33,21 @@ export async function waitForErrorToast(
     // First try specific error type, then fallback to any toast with text
     const errorToast = page
       .locator(
-        `[data-sonner-toast][data-type="error"]:has-text("${titleText}"), [data-sonner-toast]:has-text("${titleText}")`
+        `[data-sonner-toast][data-type="error"]:has-text("${titleText}"), [data-sonner-toast]:has-text("${titleText}")`,
       )
       .first();
     await errorToast.waitFor({
       timeout,
-      state: 'visible',
+      state: "visible",
     });
     return errorToast;
   } else {
-    const errorToast = page.locator('[data-sonner-toast][data-type="error"]').first();
+    const errorToast = page
+      .locator('[data-sonner-toast][data-type="error"]')
+      .first();
     await errorToast.waitFor({
       timeout,
-      state: 'visible',
+      state: "visible",
     });
     return errorToast;
   }
@@ -54,7 +56,10 @@ export async function waitForErrorToast(
 /**
  * Check if an error toast is visible
  */
-export async function isErrorToastVisible(page: Page, titleText?: string): Promise<boolean> {
+export async function isErrorToastVisible(
+  page: Page,
+  titleText?: string,
+): Promise<boolean> {
   const toastSelector = titleText
     ? `[data-sonner-toast][data-type="error"]:has-text("${titleText}")`
     : '[data-sonner-toast][data-type="error"]';
@@ -69,7 +74,7 @@ export async function isErrorToastVisible(page: Page, titleText?: string): Promi
 export async function waitForSuccessToast(
   page: Page,
   titleText?: string,
-  options?: { timeout?: number }
+  options?: { timeout?: number },
 ): Promise<Locator> {
   // Sonner toasts use data-sonner-toast and data-type="success" for success toasts
   const toastSelector = titleText
@@ -79,7 +84,7 @@ export async function waitForSuccessToast(
   const toast = page.locator(toastSelector).first();
   await toast.waitFor({
     timeout: options?.timeout ?? 5000,
-    state: 'visible',
+    state: "visible",
   });
   return toast;
 }

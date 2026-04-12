@@ -1,4 +1,4 @@
-import type { ChatMessage, GroupedItem } from '../types.js';
+import type { ChatMessage, GroupedItem } from "../types.js";
 
 /**
  * Groups consecutive tool messages that appear between assistant messages.
@@ -10,17 +10,17 @@ export function groupMessages(messages: ChatMessage[]): GroupedItem[] {
 
   const flushTools = () => {
     if (toolBuffer.length > 0) {
-      result.push({ type: 'tool_group', messages: [...toolBuffer] });
+      result.push({ type: "tool_group", messages: [...toolBuffer] });
       toolBuffer = [];
     }
   };
 
   for (const message of messages) {
-    if (message.role === 'tool') {
+    if (message.role === "tool") {
       toolBuffer.push(message);
     } else {
       flushTools();
-      result.push({ type: 'message', message });
+      result.push({ type: "message", message });
     }
   }
 

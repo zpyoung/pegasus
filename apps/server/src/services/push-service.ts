@@ -10,12 +10,12 @@
  * Mirrors the pull-service.ts pattern for consistency.
  */
 
-import { createLogger, getErrorMessage } from '@pegasus/utils';
-import { execGitCommand } from '@pegasus/git-utils';
-import { getCurrentBranch } from '../lib/git.js';
-import { performPull } from './pull-service.js';
+import { createLogger, getErrorMessage } from "@pegasus/utils";
+import { execGitCommand } from "@pegasus/git-utils";
+import { getCurrentBranch } from "../lib/git.js";
+import { performPull } from "./pull-service.js";
 
-const logger = createLogger('PushService');
+const logger = createLogger("PushService");
 
 // ============================================================================
 // Types
@@ -57,10 +57,10 @@ function isDivergenceError(errorOutput: string): boolean {
   const lower = errorOutput.toLowerCase();
   // Require specific divergence indicators rather than just 'rejected' alone,
   // which could match pre-receive hook rejections or protected branch errors.
-  const hasNonFastForward = lower.includes('non-fast-forward');
-  const hasFetchFirst = lower.includes('fetch first');
-  const hasFailedToPush = lower.includes('failed to push some refs');
-  const hasRejected = lower.includes('rejected');
+  const hasNonFastForward = lower.includes("non-fast-forward");
+  const hasFetchFirst = lower.includes("fetch first");
+  const hasFailedToPush = lower.includes("failed to push some refs");
+  const hasRejected = lower.includes("rejected");
   return hasNonFastForward || hasFetchFirst || (hasRejected && hasFailedToPush);
 }
 
@@ -86,9 +86,9 @@ function isDivergenceError(errorOutput: string): boolean {
  */
 export async function performPush(
   worktreePath: string,
-  options?: PushOptions
+  options?: PushOptions,
 ): Promise<PushResult> {
-  const targetRemote = options?.remote || 'origin';
+  const targetRemote = options?.remote || "origin";
   const force = options?.force ?? false;
   const autoResolve = options?.autoResolve ?? false;
 
@@ -104,17 +104,18 @@ export async function performPush(
   }
 
   // 2. Check for detached HEAD state
-  if (branchName === 'HEAD') {
+  if (branchName === "HEAD") {
     return {
       success: false,
-      error: 'Cannot push in detached HEAD state. Please checkout a branch first.',
+      error:
+        "Cannot push in detached HEAD state. Please checkout a branch first.",
     };
   }
 
   // 3. Build push args (no -u flag; upstream is set in the fallback path only when needed)
-  const pushArgs = ['push', targetRemote, branchName];
+  const pushArgs = ["push", targetRemote, branchName];
   if (force) {
-    pushArgs.push('--force');
+    pushArgs.push("--force");
   }
 
   // 4. Attempt push
@@ -128,8 +129,12 @@ export async function performPush(
       message: `Successfully pushed ${branchName} to ${targetRemote}`,
     };
   } catch (pushError: unknown) {
-    const err = pushError as { stderr?: string; stdout?: string; message?: string };
-    const errorOutput = `${err.stderr || ''} ${err.stdout || ''} ${err.message || ''}`;
+    const err = pushError as {
+      stderr?: string;
+      stdout?: string;
+      message?: string;
+    };
+    const errorOutput = `${err.stderr || ""} ${err.stdout || ""} ${err.message || ""}`;
 
     // 5. Check if the error is a divergence rejection
     if (isDivergenceError(errorOutput)) {
@@ -145,11 +150,14 @@ export async function performPush(
       }
 
       // 6. Auto-resolve: pull then retry push
-      logger.info('Push rejected due to divergence, attempting auto-resolve via pull', {
-        worktreePath,
-        remote: targetRemote,
-        branch: branchName,
-      });
+      logger.info(
+        "Push rejected due to divergence, attempting auto-resolve via pull",
+        {
+          worktreePath,
+          remote: targetRemote,
+          branch: branchName,
+        },
+      );
 
       try {
         const pullResult = await performPull(worktreePath, {
@@ -178,7 +186,7 @@ export async function performPush(
             hasConflicts: true,
             conflictFiles: pullResult.conflictFiles,
             error:
-              'Auto-resolve pull resulted in merge conflicts. Resolve conflicts and push again.',
+              "Auto-resolve pull resulted in merge conflicts. Resolve conflicts and push again.",
           };
         }
 
@@ -202,7 +210,7 @@ export async function performPush(
             pushed: false,
             diverged: true,
             autoResolved: false,
-            error: `Push failed after auto-resolve pull: ${retryErr.stderr || retryErr.message || 'Unknown error'}`,
+            error: `Push failed after auto-resolve pull: ${retryErr.stderr || retryErr.message || "Unknown error"}`,
           };
         }
       } catch (pullError) {
@@ -219,14 +227,19 @@ export async function performPush(
 
     // 6b. Non-divergence error (e.g. no upstream configured) - retry with --set-upstream
     const isNoUpstreamError =
-      errorOutput.toLowerCase().includes('no upstream') ||
-      errorOutput.toLowerCase().includes('has no upstream branch') ||
-      errorOutput.toLowerCase().includes('set-upstream');
+      errorOutput.toLowerCase().includes("no upstream") ||
+      errorOutput.toLowerCase().includes("has no upstream branch") ||
+      errorOutput.toLowerCase().includes("set-upstream");
     if (isNoUpstreamError) {
       try {
-        const setUpstreamArgs = ['push', '--set-upstream', targetRemote, branchName];
+        const setUpstreamArgs = [
+          "push",
+          "--set-upstream",
+          targetRemote,
+          branchName,
+        ];
         if (force) {
-          setUpstreamArgs.push('--force');
+          setUpstreamArgs.push("--force");
         }
         await execGitCommand(setUpstreamArgs, worktreePath);
 
@@ -237,12 +250,18 @@ export async function performPush(
           message: `Successfully pushed ${branchName} to ${targetRemote} (set upstream)`,
         };
       } catch (upstreamError: unknown) {
-        const upstreamErr = upstreamError as { stderr?: string; message?: string };
+        const upstreamErr = upstreamError as {
+          stderr?: string;
+          message?: string;
+        };
         return {
           success: false,
           branch: branchName,
           pushed: false,
-          error: upstreamErr.stderr || upstreamErr.message || getErrorMessage(pushError),
+          error:
+            upstreamErr.stderr ||
+            upstreamErr.message ||
+            getErrorMessage(pushError),
         };
       }
     }

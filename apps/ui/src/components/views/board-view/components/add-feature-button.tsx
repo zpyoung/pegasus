@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Plus, ChevronDown, Zap, FileText } from 'lucide-react';
-import type { FeatureTemplate } from '@pegasus/types';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dropdown-menu";
+import { Plus, ChevronDown, Zap, FileText } from "lucide-react";
+import type { FeatureTemplate } from "@pegasus/types";
+import { cn } from "@/lib/utils";
 
 interface AddFeatureButtonProps {
   /** Handler for the primary "Add Feature" action (opens full dialog) */
@@ -39,7 +39,7 @@ export function AddFeatureButton({
   compact = false,
   fullWidth = false,
   className,
-  testIdPrefix = 'add-feature',
+  testIdPrefix = "add-feature",
   shortcut,
 }: AddFeatureButtonProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -57,7 +57,7 @@ export function AddFeatureButton({
   if (compact) {
     // Compact mode: Three small icon segments
     return (
-      <div className={cn('flex', className)}>
+      <div className={cn("flex", className)}>
         {/* Segment 1: Add Feature */}
         <Button
           variant="default"
@@ -102,7 +102,9 @@ export function AddFeatureButton({
                   data-testid={`template-menu-item-${template.id}`}
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  <span className="truncate max-w-[200px]">{template.name}</span>
+                  <span className="truncate max-w-[200px]">
+                    {template.name}
+                  </span>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -114,12 +116,14 @@ export function AddFeatureButton({
 
   // Full mode: Three-segment button
   return (
-    <div className={cn('flex justify-center', fullWidth && 'w-full', className)}>
+    <div
+      className={cn("flex justify-center", fullWidth && "w-full", className)}
+    >
       {/* Segment 1: Add Feature */}
       <Button
         variant="default"
         size="sm"
-        className={cn('h-8 text-xs px-3 rounded-r-none', fullWidth && 'flex-1')}
+        className={cn("h-8 text-xs px-3 rounded-r-none", fullWidth && "flex-1")}
         onClick={onAddFeature}
         data-testid={`${testIdPrefix}-button`}
       >
@@ -136,8 +140,8 @@ export function AddFeatureButton({
         variant="default"
         size="sm"
         className={cn(
-          'h-8 text-xs px-2.5 rounded-none border-l border-primary-foreground/20',
-          fullWidth && 'flex-shrink-0'
+          "h-8 text-xs px-2.5 rounded-none border-l border-primary-foreground/20",
+          fullWidth && "flex-shrink-0",
         )}
         onClick={onQuickAdd}
         data-testid={`${testIdPrefix}-quick-add-button`}
@@ -152,9 +156,9 @@ export function AddFeatureButton({
             variant="default"
             size="sm"
             className={cn(
-              'h-8 rounded-l-none border-l border-primary-foreground/20',
-              enabledTemplates.length > 0 ? 'px-1.5' : 'w-7 p-0',
-              fullWidth && 'flex-shrink-0'
+              "h-8 rounded-l-none border-l border-primary-foreground/20",
+              enabledTemplates.length > 0 ? "px-1.5" : "w-7 p-0",
+              fullWidth && "flex-shrink-0",
             )}
             aria-label="Templates"
             title="Templates"

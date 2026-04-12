@@ -5,8 +5,8 @@
  * Providers register themselves on import, making it easy to add new providers.
  */
 
-import { BaseProvider } from './base-provider.js';
-import type { InstallationStatus, ModelDefinition } from './types.js';
+import { BaseProvider } from "./base-provider.js";
+import type { InstallationStatus, ModelDefinition } from "./types.js";
 import {
   isCursorModel,
   isCodexModel,
@@ -14,17 +14,17 @@ import {
   isGeminiModel,
   isCopilotModel,
   type ModelProvider,
-} from '@pegasus/types';
-import * as fs from 'fs';
-import * as path from 'path';
+} from "@pegasus/types";
+import * as fs from "fs";
+import * as path from "path";
 
 const DISCONNECTED_MARKERS: Record<string, string> = {
-  claude: '.claude-disconnected',
-  codex: '.codex-disconnected',
-  cursor: '.cursor-disconnected',
-  opencode: '.opencode-disconnected',
-  gemini: '.gemini-disconnected',
-  copilot: '.copilot-disconnected',
+  claude: ".claude-disconnected",
+  codex: ".codex-disconnected",
+  cursor: ".cursor-disconnected",
+  opencode: ".opencode-disconnected",
+  gemini: ".gemini-disconnected",
+  copilot: ".copilot-disconnected",
 };
 
 /**
@@ -34,7 +34,7 @@ export function isProviderDisconnected(providerName: string): boolean {
   const markerFile = DISCONNECTED_MARKERS[providerName.toLowerCase()];
   if (!markerFile) return false;
 
-  const markerPath = path.join(process.cwd(), '.pegasus', markerFile);
+  const markerPath = path.join(process.cwd(), ".pegasus", markerFile);
   return fs.existsSync(markerPath);
 }
 
@@ -63,7 +63,10 @@ const providerRegistry = new Map<string, ProviderRegistration>();
  * @param name Provider name (e.g., 'claude', 'cursor')
  * @param registration Provider registration config
  */
-export function registerProvider(name: string, registration: ProviderRegistration): void {
+export function registerProvider(
+  name: string,
+  registration: ProviderRegistration,
+): void {
   providerRegistry.set(name.toLowerCase(), registration);
 }
 
@@ -85,14 +88,14 @@ export class ProviderFactory {
    * @returns Provider name (ModelProvider type)
    */
   static getProviderNameForModel(model: string): ModelProvider {
-    if (process.env.PEGASUS_MOCK_AGENT === 'true') {
-      return 'claude' as ModelProvider; // Name only; getProviderForModel returns MockProvider
+    if (process.env.PEGASUS_MOCK_AGENT === "true") {
+      return "claude" as ModelProvider; // Name only; getProviderForModel returns MockProvider
     }
     const lowerModel = model.toLowerCase();
 
     // Get all registered providers sorted by priority (descending)
     const registrations = Array.from(providerRegistry.entries()).sort(
-      ([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0)
+      ([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0),
     );
 
     // Check each provider's canHandleModel function
@@ -110,7 +113,7 @@ export class ProviderFactory {
     }
 
     // Default to claude (first registered provider or claude)
-    return 'claude';
+    return "claude";
   }
 
   /**
@@ -124,9 +127,9 @@ export class ProviderFactory {
    */
   static getProviderForModel(
     modelId: string,
-    options: { throwOnDisconnected?: boolean } = {}
+    options: { throwOnDisconnected?: boolean } = {},
   ): BaseProvider {
-    if (process.env.PEGASUS_MOCK_AGENT === 'true') {
+    if (process.env.PEGASUS_MOCK_AGENT === "true") {
       return getMockProvider();
     }
     const { throwOnDisconnected = true } = options;
@@ -136,7 +139,7 @@ export class ProviderFactory {
     if (throwOnDisconnected && isProviderDisconnected(providerName)) {
       throw new Error(
         `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} CLI is disconnected from the app. ` +
-          `Please go to Settings > Providers and click "Sign In" to reconnect.`
+          `Please go to Settings > Providers and click "Sign In" to reconnect.`,
       );
     }
 
@@ -144,7 +147,7 @@ export class ProviderFactory {
 
     if (!provider) {
       // Fallback to claude if provider not found
-      const claudeReg = providerRegistry.get('claude');
+      const claudeReg = providerRegistry.get("claude");
       if (claudeReg) {
         return claudeReg.factory();
       }
@@ -158,14 +161,14 @@ export class ProviderFactory {
    * Get the provider name for a given model ID (without creating provider instance)
    */
   static getProviderForModelName(modelId: string): string {
-    if (process.env.PEGASUS_MOCK_AGENT === 'true') {
-      return 'claude';
+    if (process.env.PEGASUS_MOCK_AGENT === "true") {
+      return "claude";
     }
     const lowerModel = modelId.toLowerCase();
 
     // Get all registered providers sorted by priority (descending)
     const registrations = Array.from(providerRegistry.entries()).sort(
-      ([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0)
+      ([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0),
     );
 
     // Check each provider's canHandleModel function
@@ -183,7 +186,7 @@ export class ProviderFactory {
     }
 
     // Default to claude (first registered provider or claude)
-    return 'claude';
+    return "claude";
   }
 
   /**
@@ -198,7 +201,9 @@ export class ProviderFactory {
    *
    * @returns Map of provider name to installation status
    */
-  static async checkAllProviders(): Promise<Record<string, InstallationStatus>> {
+  static async checkAllProviders(): Promise<
+    Record<string, InstallationStatus>
+  > {
     const statuses: Record<string, InstallationStatus> = {};
 
     for (const [name, reg] of providerRegistry.entries()) {
@@ -267,8 +272,10 @@ export class ProviderFactory {
         model.modelString === modelId ||
         model.id.endsWith(`-${modelId}`) ||
         model.modelString.endsWith(`-${modelId}`) ||
-        model.modelString === modelId.replace(/^(claude|cursor|codex|gemini)-/, '') ||
-        model.modelString === modelId.replace(/-(claude|cursor|codex|gemini)$/, '')
+        model.modelString ===
+          modelId.replace(/^(claude|cursor|codex|gemini)-/, "") ||
+        model.modelString ===
+          modelId.replace(/-(claude|cursor|codex|gemini)$/, "")
       ) {
         return model.supportsVision ?? true;
       }
@@ -291,60 +298,61 @@ export class ProviderFactory {
 // =============================================================================
 
 // Import providers for registration side-effects
-import { MockProvider } from './mock-provider.js';
-import { ClaudeProvider } from './claude-provider.js';
-import { CursorProvider } from './cursor-provider.js';
-import { CodexProvider } from './codex-provider.js';
-import { OpencodeProvider } from './opencode-provider.js';
-import { GeminiProvider } from './gemini-provider.js';
-import { CopilotProvider } from './copilot-provider.js';
+import { MockProvider } from "./mock-provider.js";
+import { ClaudeProvider } from "./claude-provider.js";
+import { CursorProvider } from "./cursor-provider.js";
+import { CodexProvider } from "./codex-provider.js";
+import { OpencodeProvider } from "./opencode-provider.js";
+import { GeminiProvider } from "./gemini-provider.js";
+import { CopilotProvider } from "./copilot-provider.js";
 
 // Register Claude provider
-registerProvider('claude', {
+registerProvider("claude", {
   factory: () => new ClaudeProvider(),
-  aliases: ['anthropic'],
+  aliases: ["anthropic"],
   canHandleModel: (model: string) => {
     return (
-      model.startsWith('claude-') || ['opus', 'sonnet', 'haiku'].some((n) => model.includes(n))
+      model.startsWith("claude-") ||
+      ["opus", "sonnet", "haiku"].some((n) => model.includes(n))
     );
   },
   priority: 0, // Default priority
 });
 
 // Register Cursor provider
-registerProvider('cursor', {
+registerProvider("cursor", {
   factory: () => new CursorProvider(),
   canHandleModel: (model: string) => isCursorModel(model),
   priority: 10, // Higher priority - check Cursor models first
 });
 
 // Register Codex provider
-registerProvider('codex', {
+registerProvider("codex", {
   factory: () => new CodexProvider(),
-  aliases: ['openai'],
+  aliases: ["openai"],
   canHandleModel: (model: string) => isCodexModel(model),
   priority: 5, // Medium priority - check after Cursor but before Claude
 });
 
 // Register OpenCode provider
-registerProvider('opencode', {
+registerProvider("opencode", {
   factory: () => new OpencodeProvider(),
   canHandleModel: (model: string) => isOpencodeModel(model),
   priority: 3, // Between codex (5) and claude (0)
 });
 
 // Register Gemini provider
-registerProvider('gemini', {
+registerProvider("gemini", {
   factory: () => new GeminiProvider(),
-  aliases: ['google'],
+  aliases: ["google"],
   canHandleModel: (model: string) => isGeminiModel(model),
   priority: 4, // Between opencode (3) and codex (5)
 });
 
 // Register Copilot provider (GitHub Copilot SDK)
-registerProvider('copilot', {
+registerProvider("copilot", {
   factory: () => new CopilotProvider(),
-  aliases: ['github-copilot', 'github'],
+  aliases: ["github-copilot", "github"],
   canHandleModel: (model: string) => isCopilotModel(model),
   priority: 6, // High priority - check before Codex since both can handle GPT models
 });

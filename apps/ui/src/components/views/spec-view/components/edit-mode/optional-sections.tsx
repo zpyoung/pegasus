@@ -1,20 +1,25 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollText, Wrench } from 'lucide-react';
-import { ArrayFieldEditor } from './array-field-editor';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollText, Wrench } from "lucide-react";
+import { ArrayFieldEditor } from "./array-field-editor";
 
 interface RequirementsSectionProps {
   requirements: string[];
   onChange: (requirements: string[]) => void;
 }
 
-export function RequirementsSection({ requirements, onChange }: RequirementsSectionProps) {
+export function RequirementsSection({
+  requirements,
+  onChange,
+}: RequirementsSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ScrollText className="w-5 h-5 text-primary" />
           Additional Requirements
-          <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            (Optional)
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -35,14 +40,19 @@ interface GuidelinesSectionProps {
   onChange: (guidelines: string[]) => void;
 }
 
-export function GuidelinesSection({ guidelines, onChange }: GuidelinesSectionProps) {
+export function GuidelinesSection({
+  guidelines,
+  onChange,
+}: GuidelinesSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Wrench className="w-5 h-5 text-primary" />
           Development Guidelines
-          <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            (Optional)
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent>

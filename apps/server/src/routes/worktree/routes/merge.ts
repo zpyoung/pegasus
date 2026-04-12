@@ -7,37 +7,38 @@
  * the requireValidProject middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import { performMerge } from '../../../services/merge-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import { performMerge } from "../../../services/merge-service.js";
 
 export function createMergeHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const { projectPath, branchName, worktreePath, targetBranch, options } = req.body as {
-        projectPath: string;
-        branchName: string;
-        worktreePath: string;
-        targetBranch?: string; // Branch to merge into (defaults to 'main')
-        options?: {
-          squash?: boolean;
-          message?: string;
-          deleteWorktreeAndBranch?: boolean;
-          remote?: string;
+      const { projectPath, branchName, worktreePath, targetBranch, options } =
+        req.body as {
+          projectPath: string;
+          branchName: string;
+          worktreePath: string;
+          targetBranch?: string; // Branch to merge into (defaults to 'main')
+          options?: {
+            squash?: boolean;
+            message?: string;
+            deleteWorktreeAndBranch?: boolean;
+            remote?: string;
+          };
         };
-      };
 
       if (!projectPath || !branchName || !worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath, branchName, and worktreePath are required',
+          error: "projectPath, branchName, and worktreePath are required",
         });
         return;
       }
 
       // Determine the target branch (default to 'main')
-      const mergeTo = targetBranch || 'main';
+      const mergeTo = targetBranch || "main";
 
       // Delegate all merge logic to the service
       const result = await performMerge(
@@ -46,7 +47,7 @@ export function createMergeHandler(events: EventEmitter) {
         worktreePath,
         mergeTo,
         options,
-        events
+        events,
       );
 
       if (!result.success) {
@@ -76,7 +77,7 @@ export function createMergeHandler(events: EventEmitter) {
         deleted: result.deleted,
       });
     } catch (error) {
-      logError(error, 'Merge worktree failed');
+      logError(error, "Merge worktree failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

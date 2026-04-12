@@ -15,8 +15,8 @@ export interface TerminalScript {
 
 /** Default scripts shown when the user has not configured any custom scripts yet. */
 export const DEFAULT_TERMINAL_SCRIPTS: TerminalScript[] = [
-  { id: 'default-dev', name: 'Dev Server', command: 'pnpm dev' },
-  { id: 'default-format', name: 'Format', command: 'pnpm format' },
-  { id: 'default-test', name: 'Test', command: 'pnpm test' },
-  { id: 'default-lint', name: 'Lint', command: 'pnpm lint' },
+  { id: "default-dev", name: "Dev Server", command: "pnpm dev" },
+  { id: "default-format", name: "Format", command: "pnpm format" },
+  { id: "default-test", name: "Test", command: "pnpm test" },
+  { id: "default-lint", name: "Lint", command: "pnpm lint" },
 ];

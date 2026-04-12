@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { pathsEqual } from '@/lib/utils';
+import { useEffect } from "react";
+import { useAppStore } from "@/store/app-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { pathsEqual } from "@/lib/utils";
 
 interface InitScriptStartedPayload {
   projectPath: string;
@@ -12,7 +12,7 @@ interface InitScriptStartedPayload {
 interface InitScriptOutputPayload {
   projectPath: string;
   branch: string;
-  type: 'stdout' | 'stderr';
+  type: "stdout" | "stderr";
   content: string;
 }
 
@@ -48,17 +48,17 @@ export function useInitScriptEvents(projectPath: string | null) {
       if (!pathsEqual(payload.projectPath, projectPath)) return;
 
       switch (event.type) {
-        case 'worktree:init-started': {
+        case "worktree:init-started": {
           const startPayload = payload as InitScriptStartedPayload;
           setInitScriptState(projectPath, startPayload.branch, {
-            status: 'running',
+            status: "running",
             branch: startPayload.branch,
             output: [],
             error: undefined,
           });
           break;
         }
-        case 'worktree:init-output': {
+        case "worktree:init-output": {
           const outputPayload = payload as InitScriptOutputPayload;
           appendInitScriptOutput(projectPath, outputPayload.branch, {
             type: outputPayload.type,
@@ -66,10 +66,10 @@ export function useInitScriptEvents(projectPath: string | null) {
           });
           break;
         }
-        case 'worktree:init-completed': {
+        case "worktree:init-completed": {
           const completePayload = payload as InitScriptCompletedPayload;
           setInitScriptState(projectPath, completePayload.branch, {
-            status: completePayload.success ? 'success' : 'failed',
+            status: completePayload.success ? "success" : "failed",
             error: completePayload.error,
           });
           break;

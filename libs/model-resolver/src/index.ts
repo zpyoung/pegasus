@@ -10,7 +10,7 @@ export {
   DEFAULT_MODELS,
   type ModelAlias,
   type CursorModelId,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 // Export resolver functions
 export {
@@ -18,4 +18,4 @@ export {
   getEffectiveModel,
   resolvePhaseModel,
   type ResolvedPhaseModel,
-} from './resolver.js';
+} from "./resolver.js";

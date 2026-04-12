@@ -140,6 +140,7 @@ All terminal REST endpoints are mounted at `/api/terminal`. Endpoints that requi
 Returns terminal status. No authentication required.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -161,11 +162,13 @@ Returns terminal status. No authentication required.
 Authenticate with the terminal password to receive a session token. No authentication required.
 
 **Request body:**
+
 ```json
 { "password": "yourpassword" }
 ```
 
 **Response (success):**
+
 ```json
 {
   "success": true,
@@ -184,6 +187,7 @@ Tokens are valid for **24 hours**. If no password is configured the response omi
 Invalidate a session token. Pass the token in the `X-Terminal-Token` header or in the request body as `{ "token": "..." }`.
 
 **Response:**
+
 ```json
 { "success": true }
 ```
@@ -197,11 +201,17 @@ All session endpoints require a valid token when password protection is enabled.
 List all active PTY sessions.
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": [
-    { "id": "term-...", "cwd": "/home/user/project", "shell": "/bin/bash", "createdAt": "..." }
+    {
+      "id": "term-...",
+      "cwd": "/home/user/project",
+      "shell": "/bin/bash",
+      "createdAt": "..."
+    }
   ]
 }
 ```
@@ -211,19 +221,27 @@ List all active PTY sessions.
 Create a new PTY session.
 
 **Request body (all fields optional):**
+
 ```json
 { "cwd": "/home/user/project", "cols": 80, "rows": 24, "shell": "/bin/zsh" }
 ```
 
 **Response (success):**
+
 ```json
 {
   "success": true,
-  "data": { "id": "term-...", "cwd": "/home/user/project", "shell": "/bin/bash", "createdAt": "..." }
+  "data": {
+    "id": "term-...",
+    "cwd": "/home/user/project",
+    "shell": "/bin/bash",
+    "createdAt": "..."
+  }
 }
 ```
 
 **Response (session limit reached — `429`):**
+
 ```json
 {
   "success": false,
@@ -239,11 +257,13 @@ Create a new PTY session.
 Kill a PTY session. Sends `SIGTERM` first, then `SIGKILL` after 1 second if the process is still alive.
 
 **Response (success):**
+
 ```json
 { "success": true }
 ```
 
 **Response (not found — `404`):**
+
 ```json
 { "success": false, "error": "Session not found" }
 ```
@@ -253,11 +273,13 @@ Kill a PTY session. Sends `SIGTERM` first, then `SIGKILL` after 1 second if the 
 Resize a PTY session.
 
 **Request body:**
+
 ```json
 { "cols": 120, "rows": 40 }
 ```
 
 **Response (success):**
+
 ```json
 { "success": true }
 ```
@@ -269,6 +291,7 @@ Resize a PTY session.
 Get current terminal server settings.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -281,11 +304,13 @@ Get current terminal server settings.
 Update terminal server settings at runtime (no restart required). Valid `maxSessions` range is `1`–`1000`.
 
 **Request body:**
+
 ```json
 { "maxSessions": 50 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -315,6 +340,7 @@ Once connected, the server immediately replays the scrollback buffer (up to ~50 
 ```
 
 WebSocket close codes:
+
 - `4001` — Authentication required (invalid or missing token)
 - `4002` — Session ID required
 - `4003` — Terminal access is disabled

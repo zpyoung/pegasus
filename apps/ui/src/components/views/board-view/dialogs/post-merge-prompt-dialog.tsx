@@ -9,7 +9,7 @@
  * The user's choice can be persisted as a preference to avoid repeated prompts.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,13 +17,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { GitMerge, GitCommitHorizontal, FileText, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  GitMerge,
+  GitCommitHorizontal,
+  FileText,
+  Settings,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export type MergePostAction = 'commit' | 'manual' | null;
+export type MergePostAction = "commit" | "manual" | null;
 
 interface PostMergePromptDialogProps {
   open: boolean;
@@ -68,7 +73,7 @@ export function PostMergePromptDialog({
 
   const handleCommitMerge = useCallback(() => {
     if (rememberChoice && onSavePreference) {
-      onSavePreference('commit');
+      onSavePreference("commit");
     }
     onCommitMerge();
     onOpenChange(false);
@@ -76,7 +81,7 @@ export function PostMergePromptDialog({
 
   const handleMergeManually = useCallback(() => {
     if (rememberChoice && onSavePreference) {
-      onSavePreference('manual');
+      onSavePreference("manual");
     }
     onMergeManually();
     onOpenChange(false);
@@ -93,12 +98,15 @@ export function PostMergePromptDialog({
           <DialogDescription asChild>
             <div className="space-y-3">
               <span className="block">
-                A merge was successfully completed on{' '}
-                <code className="font-mono bg-muted px-1 rounded">{branchName}</code>
+                A merge was successfully completed on{" "}
+                <code className="font-mono bg-muted px-1 rounded">
+                  {branchName}
+                </code>
                 {mergeFileCount > 0 && (
                   <span>
-                    {' '}
-                    affecting {mergeFileCount} file{mergeFileCount !== 1 ? 's' : ''}
+                    {" "}
+                    affecting {mergeFileCount} file
+                    {mergeFileCount !== 1 ? "s" : ""}
                   </span>
                 )}
                 . How would you like to proceed?
@@ -111,7 +119,8 @@ export function PostMergePromptDialog({
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
                   >
                     <FileText className="w-3 h-3" />
-                    {showFiles ? 'Hide' : 'Show'} affected files ({mergeAffectedFiles.length})
+                    {showFiles ? "Hide" : "Show"} affected files (
+                    {mergeAffectedFiles.length})
                   </button>
                   {showFiles && (
                     <div className="mt-1.5 border border-border rounded-lg overflow-hidden max-h-[150px] overflow-y-auto scrollbar-visible">
@@ -135,12 +144,14 @@ export function PostMergePromptDialog({
                 </p>
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>
-                    <strong>Commit Merge</strong> &mdash; Stage all merge files and open the commit
-                    dialog with a pre-populated merge commit message
+                    <strong>Commit Merge</strong> &mdash; Stage all merge files
+                    and open the commit dialog with a pre-populated merge commit
+                    message
                   </li>
                   <li>
-                    <strong>Review Manually</strong> &mdash; Leave the working tree as-is so you can
-                    review changes and commit at your own pace
+                    <strong>Review Manually</strong> &mdash; Leave the working
+                    tree as-is so you can review changes and commit at your own
+                    pace
                   </li>
                 </ul>
               </div>
@@ -171,8 +182,12 @@ export function PostMergePromptDialog({
           </div>
         )}
 
-        <DialogFooter className={cn('flex-col sm:flex-row gap-2')}>
-          <Button variant="outline" onClick={handleMergeManually} className="w-full sm:w-auto">
+        <DialogFooter className={cn("flex-col sm:flex-row gap-2")}>
+          <Button
+            variant="outline"
+            onClick={handleMergeManually}
+            className="w-full sm:w-auto"
+          >
             <FileText className="w-4 h-4 mr-2" />
             Review Manually
           </Button>

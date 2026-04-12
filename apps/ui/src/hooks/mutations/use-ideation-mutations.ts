@@ -4,12 +4,12 @@
  * React Query mutations for ideation operations like generating suggestions.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getElectronAPI } from '@/lib/electron';
-import { queryKeys } from '@/lib/query-keys';
-import { toast } from 'sonner';
-import type { IdeaCategory, AnalysisSuggestion } from '@pegasus/types';
-import { useIdeationStore } from '@/store/ideation-store';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { getElectronAPI } from "@/lib/electron";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import type { IdeaCategory, AnalysisSuggestion } from "@pegasus/types";
+import { useIdeationStore } from "@/store/ideation-store";
 
 /**
  * Input for generating ideation suggestions
@@ -60,27 +60,31 @@ export function useGenerateIdeationSuggestions(projectPath: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: GenerateSuggestionsInput): Promise<GenerateSuggestionsResult> => {
+    mutationFn: async (
+      input: GenerateSuggestionsInput,
+    ): Promise<GenerateSuggestionsResult> => {
       const { promptId, category, jobId, promptTitle } = input;
 
       const api = getElectronAPI();
       if (!api.ideation?.generateSuggestions) {
-        throw new Error('Ideation API not available');
+        throw new Error("Ideation API not available");
       }
 
       // Get context sources from store
-      const contextSources = useIdeationStore.getState().getContextSources(projectPath);
+      const contextSources = useIdeationStore
+        .getState()
+        .getContextSources(projectPath);
 
       const result = await api.ideation.generateSuggestions(
         projectPath,
         promptId,
         category,
         undefined, // count - use default
-        contextSources
+        contextSources,
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to generate suggestions');
+        throw new Error(result.error || "Failed to generate suggestions");
       }
 
       return {
@@ -95,12 +99,15 @@ export function useGenerateIdeationSuggestions(projectPath: string) {
       // Update job status in Zustand store - this runs even if the component unmounts
       // Using getState() to access store directly without hooks (safe in callbacks)
       const updateJobStatus = useIdeationStore.getState().updateJobStatus;
-      updateJobStatus(data.jobId, 'ready', data.suggestions);
+      updateJobStatus(data.jobId, "ready", data.suggestions);
 
       // Show success toast
-      toast.success(`Generated ${data.suggestions.length} ideas for "${data.promptTitle}"`, {
-        duration: 10000,
-      });
+      toast.success(
+        `Generated ${data.suggestions.length} ideas for "${data.promptTitle}"`,
+        {
+          duration: 10000,
+        },
+      );
 
       // Invalidate ideation ideas cache
       queryClient.invalidateQueries({
@@ -110,7 +117,7 @@ export function useGenerateIdeationSuggestions(projectPath: string) {
     onError: (error, variables) => {
       // Update job status to error - this runs even if the component unmounts
       const updateJobStatus = useIdeationStore.getState().updateJobStatus;
-      updateJobStatus(variables.jobId, 'error', undefined, error.message);
+      updateJobStatus(variables.jobId, "error", undefined, error.message);
 
       // Show error toast
       toast.error(`Failed to generate ideas: ${error.message}`);

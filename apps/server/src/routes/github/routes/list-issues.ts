@@ -2,22 +2,23 @@
  * POST /list-issues endpoint - List GitHub issues for a project
  */
 
-import { spawn } from 'child_process';
-import type { Request, Response } from 'express';
-import { execAsync, execEnv, getErrorMessage, logError } from './common.js';
-import { checkGitHubRemote } from './check-github-remote.js';
-import { createLogger } from '@pegasus/utils';
+import { spawn } from "child_process";
+import type { Request, Response } from "express";
+import { execAsync, execEnv, getErrorMessage, logError } from "./common.js";
+import { checkGitHubRemote } from "./check-github-remote.js";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('ListIssues');
+const logger = createLogger("ListIssues");
 const OPEN_ISSUES_LIMIT = 100;
 const CLOSED_ISSUES_LIMIT = 50;
-const ISSUE_LIST_FIELDS = 'number,title,state,author,createdAt,labels,url,body,assignees';
-const ISSUE_STATE_OPEN = 'open';
-const ISSUE_STATE_CLOSED = 'closed';
-const GH_ISSUE_LIST_COMMAND = 'gh issue list';
-const GH_STATE_FLAG = '--state';
-const GH_JSON_FLAG = '--json';
-const GH_LIMIT_FLAG = '--limit';
+const ISSUE_LIST_FIELDS =
+  "number,title,state,author,createdAt,labels,url,body,assignees";
+const ISSUE_STATE_OPEN = "open";
+const ISSUE_STATE_CLOSED = "closed";
+const GH_ISSUE_LIST_COMMAND = "gh issue list";
+const GH_STATE_FLAG = "--state";
+const GH_JSON_FLAG = "--json";
+const GH_LIMIT_FLAG = "--limit";
 const LINKED_PRS_BATCH_SIZE = 20;
 const LINKED_PRS_TIMELINE_ITEMS = 10;
 
@@ -70,7 +71,7 @@ async function fetchLinkedPRs(
   projectPath: string,
   owner: string,
   repo: string,
-  issueNumbers: number[]
+  issueNumbers: number[],
 ): Promise<Map<number, LinkedPullRequest[]>> {
   const linkedPRsMap = new Map<number, LinkedPullRequest[]>();
 
@@ -147,9 +148,9 @@ async function fetchLinkedPRs(
               }
             }
           }
-        }`
+        }`,
       )
-      .join('\n');
+      .join("\n");
 
     const query = `{
       repository(owner: "${owner}", name: "${repo}") {
@@ -161,44 +162,56 @@ async function fetchLinkedPRs(
       // Use spawn with stdin to avoid shell injection vulnerabilities
       // --input - reads the JSON request body from stdin
       const requestBody = JSON.stringify({ query });
-      const response = await new Promise<Record<string, unknown>>((resolve, reject) => {
-        const gh = spawn('gh', ['api', 'graphql', '--input', '-'], {
-          cwd: projectPath,
-          env: execEnv,
-        });
+      const response = await new Promise<Record<string, unknown>>(
+        (resolve, reject) => {
+          const gh = spawn("gh", ["api", "graphql", "--input", "-"], {
+            cwd: projectPath,
+            env: execEnv,
+          });
 
-        let stdout = '';
-        let stderr = '';
-        gh.stdout.on('data', (data: Buffer) => (stdout += data.toString()));
-        gh.stderr.on('data', (data: Buffer) => (stderr += data.toString()));
+          let stdout = "";
+          let stderr = "";
+          gh.stdout.on("data", (data: Buffer) => (stdout += data.toString()));
+          gh.stderr.on("data", (data: Buffer) => (stderr += data.toString()));
 
-        gh.on('close', (code) => {
-          if (code !== 0) {
-            return reject(new Error(`gh process exited with code ${code}: ${stderr}`));
-          }
-          try {
-            resolve(JSON.parse(stdout));
-          } catch (e) {
-            reject(e);
-          }
-        });
+          gh.on("close", (code) => {
+            if (code !== 0) {
+              return reject(
+                new Error(`gh process exited with code ${code}: ${stderr}`),
+              );
+            }
+            try {
+              resolve(JSON.parse(stdout));
+            } catch (e) {
+              reject(e);
+            }
+          });
 
-        gh.stdin.write(requestBody);
-        gh.stdin.end();
-      });
+          gh.stdin.write(requestBody);
+          gh.stdin.end();
+        },
+      );
 
-      const repoData = (response?.data as Record<string, unknown>)?.repository as Record<
-        string,
-        unknown
-      > | null;
+      const repoData = (response?.data as Record<string, unknown>)
+        ?.repository as Record<string, unknown> | null;
 
       if (repoData) {
         batch.forEach((issueNum, idx) => {
           const issueData = repoData[`issue${idx}`] as {
             timelineItems?: {
               nodes?: Array<{
-                source?: { number?: number; title?: string; state?: string; url?: string };
-                subject?: { number?: number; title?: string; state?: string; url?: string };
+                source?: {
+                  number?: number;
+                  title?: string;
+                  state?: string;
+                  url?: string;
+                };
+                subject?: {
+                  number?: number;
+                  title?: string;
+                  state?: string;
+                  url?: string;
+                };
               }>;
             };
           } | null;
@@ -212,9 +225,9 @@ async function fetchLinkedPRs(
                 seenPRs.add(pr.number);
                 linkedPRs.push({
                   number: pr.number,
-                  title: pr.title || '',
-                  state: (pr.state || '').toLowerCase(),
-                  url: pr.url || '',
+                  title: pr.title || "",
+                  state: (pr.state || "").toLowerCase(),
+                  url: pr.url || "",
                 });
               }
             }
@@ -228,8 +241,8 @@ async function fetchLinkedPRs(
     } catch (error) {
       // If GraphQL fails, continue without linked PRs
       logger.warn(
-        'Failed to fetch linked PRs via GraphQL:',
-        error instanceof Error ? error.message : error
+        "Failed to fetch linked PRs via GraphQL:",
+        error instanceof Error ? error.message : error,
       );
     }
   }
@@ -243,7 +256,9 @@ export function createListIssuesHandler() {
       const { projectPath } = req.body;
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -252,15 +267,17 @@ export function createListIssuesHandler() {
       if (!remoteStatus.hasGitHubRemote) {
         res.status(400).json({
           success: false,
-          error: 'Project does not have a GitHub remote',
+          error: "Project does not have a GitHub remote",
         });
         return;
       }
 
       // Fetch open and closed issues in parallel (now including assignees)
       const repoQualifier =
-        remoteStatus.owner && remoteStatus.repo ? `${remoteStatus.owner}/${remoteStatus.repo}` : '';
-      const repoFlag = repoQualifier ? `-R ${repoQualifier}` : '';
+        remoteStatus.owner && remoteStatus.repo
+          ? `${remoteStatus.owner}/${remoteStatus.repo}`
+          : "";
+      const repoFlag = repoQualifier ? `-R ${repoQualifier}` : "";
       const [openResult, closedResult] = await Promise.all([
         execAsync(
           [
@@ -271,11 +288,11 @@ export function createListIssuesHandler() {
             `${GH_LIMIT_FLAG} ${OPEN_ISSUES_LIMIT}`,
           ]
             .filter(Boolean)
-            .join(' '),
+            .join(" "),
           {
             cwd: projectPath,
             env: execEnv,
-          }
+          },
         ),
         execAsync(
           [
@@ -286,19 +303,19 @@ export function createListIssuesHandler() {
             `${GH_LIMIT_FLAG} ${CLOSED_ISSUES_LIMIT}`,
           ]
             .filter(Boolean)
-            .join(' '),
+            .join(" "),
           {
             cwd: projectPath,
             env: execEnv,
-          }
+          },
         ),
       ]);
 
       const { stdout: openStdout } = openResult;
       const { stdout: closedStdout } = closedResult;
 
-      const openIssues: GitHubIssue[] = JSON.parse(openStdout || '[]');
-      const closedIssues: GitHubIssue[] = JSON.parse(closedStdout || '[]');
+      const openIssues: GitHubIssue[] = JSON.parse(openStdout || "[]");
+      const closedIssues: GitHubIssue[] = JSON.parse(closedStdout || "[]");
 
       // Fetch linked PRs for open issues (more relevant for active work)
       if (remoteStatus.owner && remoteStatus.repo && openIssues.length > 0) {
@@ -306,7 +323,7 @@ export function createListIssuesHandler() {
           projectPath,
           remoteStatus.owner,
           remoteStatus.repo,
-          openIssues.map((i) => i.number)
+          openIssues.map((i) => i.number),
         );
 
         // Attach linked PRs to issues
@@ -324,7 +341,7 @@ export function createListIssuesHandler() {
         closedIssues,
       });
     } catch (error) {
-      logError(error, 'List GitHub issues failed');
+      logError(error, "List GitHub issues failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

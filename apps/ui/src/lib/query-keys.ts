@@ -21,13 +21,13 @@ export const queryKeys = {
   // ============================================
   features: {
     /** All features for a project */
-    all: (projectPath: string) => ['features', projectPath] as const,
+    all: (projectPath: string) => ["features", projectPath] as const,
     /** Single feature */
     single: (projectPath: string, featureId: string) =>
-      ['features', projectPath, featureId] as const,
+      ["features", projectPath, featureId] as const,
     /** Agent output for a feature */
     agentOutput: (projectPath: string, featureId: string) =>
-      ['features', projectPath, featureId, 'output'] as const,
+      ["features", projectPath, featureId, "output"] as const,
   },
 
   // ============================================
@@ -35,23 +35,24 @@ export const queryKeys = {
   // ============================================
   worktrees: {
     /** All worktrees for a project */
-    all: (projectPath: string) => ['worktrees', projectPath] as const,
+    all: (projectPath: string) => ["worktrees", projectPath] as const,
     /** Single worktree info */
     single: (projectPath: string, featureId: string) =>
-      ['worktrees', projectPath, featureId] as const,
+      ["worktrees", projectPath, featureId] as const,
     /** Branches for a worktree */
     branches: (worktreePath: string, includeRemote = false) =>
-      ['worktrees', 'branches', worktreePath, { includeRemote }] as const,
+      ["worktrees", "branches", worktreePath, { includeRemote }] as const,
     /** Worktree status */
     status: (projectPath: string, featureId: string) =>
-      ['worktrees', projectPath, featureId, 'status'] as const,
+      ["worktrees", projectPath, featureId, "status"] as const,
     /** Worktree diffs */
     diffs: (projectPath: string, featureId: string) =>
-      ['worktrees', projectPath, featureId, 'diffs'] as const,
+      ["worktrees", projectPath, featureId, "diffs"] as const,
     /** Init script for a project */
-    initScript: (projectPath: string) => ['worktrees', projectPath, 'init-script'] as const,
+    initScript: (projectPath: string) =>
+      ["worktrees", projectPath, "init-script"] as const,
     /** Available editors */
-    editors: () => ['worktrees', 'editors'] as const,
+    editors: () => ["worktrees", "editors"] as const,
   },
 
   // ============================================
@@ -59,22 +60,23 @@ export const queryKeys = {
   // ============================================
   github: {
     /** GitHub issues for a project */
-    issues: (projectPath: string) => ['github', 'issues', projectPath] as const,
+    issues: (projectPath: string) => ["github", "issues", projectPath] as const,
     /** GitHub PRs for a project */
-    prs: (projectPath: string) => ['github', 'prs', projectPath] as const,
+    prs: (projectPath: string) => ["github", "prs", projectPath] as const,
     /** GitHub validations for a project */
-    validations: (projectPath: string) => ['github', 'validations', projectPath] as const,
+    validations: (projectPath: string) =>
+      ["github", "validations", projectPath] as const,
     /** Single validation */
     validation: (projectPath: string, issueNumber: number) =>
-      ['github', 'validations', projectPath, issueNumber] as const,
+      ["github", "validations", projectPath, issueNumber] as const,
     /** Issue comments */
     issueComments: (projectPath: string, issueNumber: number) =>
-      ['github', 'issues', projectPath, issueNumber, 'comments'] as const,
+      ["github", "issues", projectPath, issueNumber, "comments"] as const,
     /** PR review comments */
     prReviewComments: (projectPath: string, prNumber: number) =>
-      ['github', 'prs', projectPath, prNumber, 'review-comments'] as const,
+      ["github", "prs", projectPath, prNumber, "review-comments"] as const,
     /** Remote info */
-    remote: (projectPath: string) => ['github', 'remote', projectPath] as const,
+    remote: (projectPath: string) => ["github", "remote", projectPath] as const,
   },
 
   // ============================================
@@ -82,16 +84,17 @@ export const queryKeys = {
   // ============================================
   settings: {
     /** Global settings */
-    global: () => ['settings', 'global'] as const,
+    global: () => ["settings", "global"] as const,
     /** Project-specific settings */
-    project: (projectPath: string) => ['settings', 'project', projectPath] as const,
+    project: (projectPath: string) =>
+      ["settings", "project", projectPath] as const,
     /** Settings status */
-    status: () => ['settings', 'status'] as const,
+    status: () => ["settings", "status"] as const,
     /** Credentials (API keys) */
-    credentials: () => ['settings', 'credentials'] as const,
+    credentials: () => ["settings", "credentials"] as const,
     /** Discovered agents */
-    agents: (projectPath: string, sources?: Array<'user' | 'project'>) =>
-      ['settings', 'agents', projectPath, sources ?? []] as const,
+    agents: (projectPath: string, sources?: Array<"user" | "project">) =>
+      ["settings", "agents", projectPath, sources ?? []] as const,
   },
 
   // ============================================
@@ -99,13 +102,13 @@ export const queryKeys = {
   // ============================================
   usage: {
     /** Claude API usage */
-    claude: () => ['usage', 'claude'] as const,
+    claude: () => ["usage", "claude"] as const,
     /** Codex API usage */
-    codex: () => ['usage', 'codex'] as const,
+    codex: () => ["usage", "codex"] as const,
     /** z.ai API usage */
-    zai: () => ['usage', 'zai'] as const,
+    zai: () => ["usage", "zai"] as const,
     /** Gemini API usage */
-    gemini: () => ['usage', 'gemini'] as const,
+    gemini: () => ["usage", "gemini"] as const,
   },
 
   // ============================================
@@ -113,15 +116,15 @@ export const queryKeys = {
   // ============================================
   models: {
     /** Available models */
-    available: () => ['models', 'available'] as const,
+    available: () => ["models", "available"] as const,
     /** Codex models */
-    codex: () => ['models', 'codex'] as const,
+    codex: () => ["models", "codex"] as const,
     /** OpenCode models */
-    opencode: () => ['models', 'opencode'] as const,
+    opencode: () => ["models", "opencode"] as const,
     /** OpenCode providers */
-    opencodeProviders: () => ['models', 'opencode', 'providers'] as const,
+    opencodeProviders: () => ["models", "opencode", "providers"] as const,
     /** Provider status */
-    providers: () => ['models', 'providers'] as const,
+    providers: () => ["models", "providers"] as const,
   },
 
   // ============================================
@@ -129,11 +132,12 @@ export const queryKeys = {
   // ============================================
   sessions: {
     /** All sessions */
-    all: (includeArchived?: boolean) => ['sessions', { includeArchived }] as const,
+    all: (includeArchived?: boolean) =>
+      ["sessions", { includeArchived }] as const,
     /** Session history */
-    history: (sessionId: string) => ['sessions', sessionId, 'history'] as const,
+    history: (sessionId: string) => ["sessions", sessionId, "history"] as const,
     /** Session queue */
-    queue: (sessionId: string) => ['sessions', sessionId, 'queue'] as const,
+    queue: (sessionId: string) => ["sessions", sessionId, "queue"] as const,
   },
 
   // ============================================
@@ -141,7 +145,7 @@ export const queryKeys = {
   // ============================================
   runningAgents: {
     /** All running agents */
-    all: () => ['runningAgents'] as const,
+    all: () => ["runningAgents"] as const,
   },
 
   // ============================================
@@ -149,10 +153,11 @@ export const queryKeys = {
   // ============================================
   autoMode: {
     /** Auto mode status */
-    status: (projectPath?: string) => ['autoMode', 'status', projectPath] as const,
+    status: (projectPath?: string) =>
+      ["autoMode", "status", projectPath] as const,
     /** Context exists check */
     contextExists: (projectPath: string, featureId: string) =>
-      ['autoMode', projectPath, featureId, 'context'] as const,
+      ["autoMode", projectPath, featureId, "context"] as const,
   },
 
   // ============================================
@@ -160,15 +165,15 @@ export const queryKeys = {
   // ============================================
   ideation: {
     /** Ideation prompts */
-    prompts: () => ['ideation', 'prompts'] as const,
+    prompts: () => ["ideation", "prompts"] as const,
     /** Ideas for a project */
-    ideas: (projectPath: string) => ['ideation', 'ideas', projectPath] as const,
+    ideas: (projectPath: string) => ["ideation", "ideas", projectPath] as const,
     /** Single idea */
     idea: (projectPath: string, ideaId: string) =>
-      ['ideation', 'ideas', projectPath, ideaId] as const,
+      ["ideation", "ideas", projectPath, ideaId] as const,
     /** Session */
     session: (projectPath: string, sessionId: string) =>
-      ['ideation', 'session', projectPath, sessionId] as const,
+      ["ideation", "session", projectPath, sessionId] as const,
   },
 
   // ============================================
@@ -176,23 +181,23 @@ export const queryKeys = {
   // ============================================
   cli: {
     /** Claude CLI status */
-    claude: () => ['cli', 'claude'] as const,
+    claude: () => ["cli", "claude"] as const,
     /** Cursor CLI status */
-    cursor: () => ['cli', 'cursor'] as const,
+    cursor: () => ["cli", "cursor"] as const,
     /** Codex CLI status */
-    codex: () => ['cli', 'codex'] as const,
+    codex: () => ["cli", "codex"] as const,
     /** OpenCode CLI status */
-    opencode: () => ['cli', 'opencode'] as const,
+    opencode: () => ["cli", "opencode"] as const,
     /** Gemini CLI status */
-    gemini: () => ['cli', 'gemini'] as const,
+    gemini: () => ["cli", "gemini"] as const,
     /** Copilot SDK status */
-    copilot: () => ['cli', 'copilot'] as const,
+    copilot: () => ["cli", "copilot"] as const,
     /** GitHub CLI status */
-    github: () => ['cli', 'github'] as const,
+    github: () => ["cli", "github"] as const,
     /** API keys status */
-    apiKeys: () => ['cli', 'apiKeys'] as const,
+    apiKeys: () => ["cli", "apiKeys"] as const,
     /** Platform info */
-    platform: () => ['cli', 'platform'] as const,
+    platform: () => ["cli", "platform"] as const,
   },
 
   // ============================================
@@ -200,7 +205,8 @@ export const queryKeys = {
   // ============================================
   cursorPermissions: {
     /** Cursor permissions for a project */
-    permissions: (projectPath?: string) => ['cursorPermissions', projectPath] as const,
+    permissions: (projectPath?: string) =>
+      ["cursorPermissions", projectPath] as const,
   },
 
   // ============================================
@@ -208,9 +214,9 @@ export const queryKeys = {
   // ============================================
   workspace: {
     /** Workspace config */
-    config: () => ['workspace', 'config'] as const,
+    config: () => ["workspace", "config"] as const,
     /** Workspace directories */
-    directories: () => ['workspace', 'directories'] as const,
+    directories: () => ["workspace", "directories"] as const,
   },
 
   // ============================================
@@ -218,7 +224,7 @@ export const queryKeys = {
   // ============================================
   mcp: {
     /** MCP server tools */
-    tools: (serverId: string) => ['mcp', 'tools', serverId] as const,
+    tools: (serverId: string) => ["mcp", "tools", serverId] as const,
   },
 
   // ============================================
@@ -226,9 +232,10 @@ export const queryKeys = {
   // ============================================
   pipeline: {
     /** Pipeline config for a project */
-    config: (projectPath: string) => ['pipeline', projectPath] as const,
+    config: (projectPath: string) => ["pipeline", projectPath] as const,
     /** Discovered YAML pipelines for a project */
-    discover: (projectPath: string) => ['pipeline', 'discover', projectPath] as const,
+    discover: (projectPath: string) =>
+      ["pipeline", "discover", projectPath] as const,
   },
 
   // ============================================
@@ -236,7 +243,7 @@ export const queryKeys = {
   // ============================================
   suggestions: {
     /** Suggestions status */
-    status: () => ['suggestions', 'status'] as const,
+    status: () => ["suggestions", "status"] as const,
   },
 
   // ============================================
@@ -244,7 +251,8 @@ export const queryKeys = {
   // ============================================
   specRegeneration: {
     /** Spec regeneration status */
-    status: (projectPath?: string) => ['specRegeneration', 'status', projectPath] as const,
+    status: (projectPath?: string) =>
+      ["specRegeneration", "status", projectPath] as const,
   },
 
   // ============================================
@@ -252,7 +260,7 @@ export const queryKeys = {
   // ============================================
   spec: {
     /** Spec file content */
-    file: (projectPath: string) => ['spec', 'file', projectPath] as const,
+    file: (projectPath: string) => ["spec", "file", projectPath] as const,
   },
 
   // ============================================
@@ -260,9 +268,9 @@ export const queryKeys = {
   // ============================================
   context: {
     /** File description */
-    file: (filePath: string) => ['context', 'file', filePath] as const,
+    file: (filePath: string) => ["context", "file", filePath] as const,
     /** Image description */
-    image: (imagePath: string) => ['context', 'image', imagePath] as const,
+    image: (imagePath: string) => ["context", "image", imagePath] as const,
   },
 
   // ============================================
@@ -270,11 +278,11 @@ export const queryKeys = {
   // ============================================
   fs: {
     /** Directory listing */
-    readdir: (dirPath: string) => ['fs', 'readdir', dirPath] as const,
+    readdir: (dirPath: string) => ["fs", "readdir", dirPath] as const,
     /** File existence */
-    exists: (filePath: string) => ['fs', 'exists', filePath] as const,
+    exists: (filePath: string) => ["fs", "exists", filePath] as const,
     /** File stats */
-    stat: (filePath: string) => ['fs', 'stat', filePath] as const,
+    stat: (filePath: string) => ["fs", "stat", filePath] as const,
   },
 
   // ============================================
@@ -282,10 +290,10 @@ export const queryKeys = {
   // ============================================
   git: {
     /** Git diffs for a project */
-    diffs: (projectPath: string) => ['git', 'diffs', projectPath] as const,
+    diffs: (projectPath: string) => ["git", "diffs", projectPath] as const,
     /** File diff */
     fileDiff: (projectPath: string, filePath: string) =>
-      ['git', 'diffs', projectPath, filePath] as const,
+      ["git", "diffs", projectPath, filePath] as const,
   },
 } as const;
 

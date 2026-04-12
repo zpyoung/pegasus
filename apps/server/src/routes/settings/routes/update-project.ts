@@ -8,10 +8,10 @@
  * Response: `{ "success": true, "settings": ProjectSettings }`
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import type { ProjectSettings } from '../../../types/settings.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import type { ProjectSettings } from "../../../types/settings.js";
+import { getErrorMessage, logError } from "../common.js";
 
 /**
  * Create handler factory for PUT /api/settings/project
@@ -27,30 +27,33 @@ export function createUpdateProjectHandler(settingsService: SettingsService) {
         updates?: Partial<ProjectSettings>;
       };
 
-      if (!projectPath || typeof projectPath !== 'string') {
+      if (!projectPath || typeof projectPath !== "string") {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
 
-      if (!updates || typeof updates !== 'object') {
+      if (!updates || typeof updates !== "object") {
         res.status(400).json({
           success: false,
-          error: 'updates object is required',
+          error: "updates object is required",
         });
         return;
       }
 
-      const settings = await settingsService.updateProjectSettings(projectPath, updates);
+      const settings = await settingsService.updateProjectSettings(
+        projectPath,
+        updates,
+      );
 
       res.json({
         success: true,
         settings,
       });
     } catch (error) {
-      logError(error, 'Update project settings failed');
+      logError(error, "Update project settings failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

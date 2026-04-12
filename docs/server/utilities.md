@@ -81,9 +81,9 @@ Read an image file and convert to base64 with metadata.
 
 ```typescript
 interface ImageData {
-  base64: string;       // Base64-encoded image data
-  mimeType: string;     // MIME type
-  filename: string;     // File basename
+  base64: string; // Base64-encoded image data
+  mimeType: string; // MIME type
+  filename: string; // File basename
   originalPath: string; // Original file path
 }
 ```
@@ -157,15 +157,15 @@ This is the **shared** error handler used across all packages. Note: a separate,
 ```typescript
 // ErrorType — 9 values
 export type ErrorType =
-  | 'authentication'
-  | 'cancellation'
-  | 'abort'
-  | 'execution'
-  | 'rate_limit'
-  | 'quota_exhausted'
-  | 'model_not_found'
-  | 'stream_disconnected'
-  | 'unknown';
+  | "authentication"
+  | "cancellation"
+  | "abort"
+  | "execution"
+  | "rate_limit"
+  | "quota_exhausted"
+  | "model_not_found"
+  | "stream_disconnected"
+  | "unknown";
 
 // ErrorInfo — 11 fields
 export interface ErrorInfo {
@@ -175,10 +175,10 @@ export interface ErrorInfo {
   isAuth: boolean;
   isCancellation: boolean;
   isRateLimit: boolean;
-  isQuotaExhausted: boolean;    // Session/weekly usage limit reached
-  isModelNotFound: boolean;     // Model does not exist or user lacks access
-  isStreamDisconnected: boolean;// Stream disconnected before completion
-  retryAfter?: number;          // Seconds to wait before retrying (rate limit errors)
+  isQuotaExhausted: boolean; // Session/weekly usage limit reached
+  isModelNotFound: boolean; // Model does not exist or user lacks access
+  isStreamDisconnected: boolean; // Stream disconnected before completion
+  retryAfter?: number; // Seconds to wait before retrying (rate limit errors)
   originalError: unknown;
 }
 ```
@@ -208,12 +208,12 @@ export interface ErrorInfo {
 All server modules should use this for consistent structured logging.
 
 ```typescript
-const logger = createLogger('MyModule');
+const logger = createLogger("MyModule");
 
-logger.debug('Detailed info', { key: 'value' });
-logger.info('Operation started');
-logger.warn('Something unexpected');
-logger.error('Failed', error);
+logger.debug("Detailed info", { key: "value" });
+logger.info("Operation started");
+logger.warn("Something unexpected");
+logger.error("Failed", error);
 ```
 
 **Additional exports**: `getLogLevel`, `setLogLevel`, `setColorsEnabled`, `setTimestampsEnabled`, `LogLevel`, `Logger`
@@ -232,14 +232,14 @@ Centralized model string mapping and resolution. Constants are re-exported from 
 ```typescript
 // From @pegasus/types, re-exported by @pegasus/model-resolver
 export const CLAUDE_MODEL_MAP: Record<string, string> = {
-  haiku: 'claude-haiku-4-5',
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-6',
+  haiku: "claude-haiku-4-5",
+  sonnet: "claude-sonnet-4-20250514",
+  opus: "claude-opus-4-6",
 };
 
 export const DEFAULT_MODELS = {
-  claude: 'claude-opus-4-6',
-  openai: 'gpt-5.2',
+  claude: "claude-opus-4-6",
+  openai: "gpt-5.2",
 };
 ```
 
@@ -260,11 +260,11 @@ Resolve a model key/alias to a full model string.
 **Example**:
 
 ```typescript
-import { resolveModelString } from '@pegasus/model-resolver';
+import { resolveModelString } from "@pegasus/model-resolver";
 
-resolveModelString('opus');                     // → "claude-opus-4-6"
-resolveModelString('gpt-5.2');                  // → "gpt-5.2"
-resolveModelString('claude-sonnet-4-20250514'); // → "claude-sonnet-4-20250514"
+resolveModelString("opus"); // → "claude-opus-4-6"
+resolveModelString("gpt-5.2"); // → "gpt-5.2"
+resolveModelString("claude-sonnet-4-20250514"); // → "claude-sonnet-4-20250514"
 ```
 
 #### `getEffectiveModel(explicitModel?, sessionModel?, defaultModel?): string`
@@ -333,11 +333,11 @@ Spawns a subprocess and collects all output into a single result.
 Drop-in replacement for Node.js `fs` that validates all paths before I/O:
 
 ```typescript
-import { secureFs } from '@pegasus/platform';
+import { secureFs } from "@pegasus/platform";
 
-await secureFs.readFile('/safe/path/file.txt', 'utf8');
-await secureFs.writeFile('/safe/path/out.txt', content);
-await secureFs.mkdir('/safe/path/dir', { recursive: true });
+await secureFs.readFile("/safe/path/file.txt", "utf8");
+await secureFs.writeFile("/safe/path/out.txt", content);
+await secureFs.mkdir("/safe/path/dir", { recursive: true });
 ```
 
 Includes async and sync variants of: `access`, `readFile`, `writeFile`, `mkdir`, `readdir`, `stat`, `rm`, `unlink`, `copyFile`, `appendFile`, `rename`, `lstat`, `joinPath`, `resolvePath`, `existsSync`, `readFileSync`, `writeFileSync`, `mkdirSync`, `readdirSync`, `statSync`.
@@ -355,6 +355,7 @@ These files live only in the server package and are imported with relative paths
 Scans the filesystem for `AGENT.md` files to discover custom subagent definitions.
 
 **Discovers from**:
+
 - `~/.claude/agents/` (user-level, global)
 - `.claude/agents/` (project-level)
 
@@ -362,10 +363,10 @@ Scans the filesystem for `AGENT.md` files to discover custom subagent definition
 
 ```typescript
 export interface FilesystemAgent {
-  name: string;          // Directory name (e.g., 'code-reviewer')
+  name: string; // Directory name (e.g., 'code-reviewer')
   definition: AgentDefinition;
-  source: 'user' | 'project';
-  filePath: string;      // Full path to AGENT.md
+  source: "user" | "project";
+  filePath: string; // Full path to AGENT.md
 }
 ```
 
@@ -397,18 +398,18 @@ Auto-generates an API key on first run if none is configured. Cookie name includ
 **Key exports**:
 
 ```typescript
-export function authMiddleware(req, res, next): void
-export function isAuthEnabled(): boolean
-export function getAuthStatus(): { enabled: boolean; method: string }
-export function isRequestAuthenticated(req): boolean
-export async function createSession(): Promise<string>
-export function validateSession(token): boolean
-export async function invalidateSession(token): Promise<void>
-export function createWsConnectionToken(): string    // Short-lived (5 min) for WebSocket
-export function validateWsConnectionToken(token): boolean
-export function validateApiKey(key): boolean
-export function getSessionCookieOptions(): object
-export function getSessionCookieName(): string
+export function authMiddleware(req, res, next): void;
+export function isAuthEnabled(): boolean;
+export function getAuthStatus(): { enabled: boolean; method: string };
+export function isRequestAuthenticated(req): boolean;
+export async function createSession(): Promise<string>;
+export function validateSession(token): boolean;
+export async function invalidateSession(token): Promise<void>;
+export function createWsConnectionToken(): string; // Short-lived (5 min) for WebSocket
+export function validateWsConnectionToken(token): boolean;
+export function validateApiKey(key): boolean;
+export function getSessionCookieOptions(): object;
+export function getSessionCookieName(): string;
 ```
 
 ---
@@ -428,8 +429,8 @@ export interface AuthValidationResult {
 
 export function validateApiKey(
   key: string,
-  provider: 'anthropic' | 'openai' | 'cursor'
-): AuthValidationResult
+  provider: "anthropic" | "openai" | "cursor",
+): AuthValidationResult;
 ```
 
 ---
@@ -448,7 +449,7 @@ export interface CliInfo {
   path?: string;
   installed: boolean;
   authenticated: boolean;
-  authMethod: 'cli' | 'api_key' | 'none';
+  authMethod: "cli" | "api_key" | "none";
   platform?: string;
   architectures?: string[];
 }
@@ -471,12 +472,12 @@ Shared utility for checking Codex CLI authentication status using `codex login s
 ```typescript
 export interface CodexAuthCheckResult {
   authenticated: boolean;
-  method: 'api_key_env' | 'cli_authenticated' | 'none';
+  method: "api_key_env" | "cli_authenticated" | "none";
 }
 
 export async function checkCodexAuthentication(
-  cliPath?: string | null
-): Promise<CodexAuthCheckResult>
+  cliPath?: string | null,
+): Promise<CodexAuthCheckResult>;
 ```
 
 ---
@@ -493,29 +494,34 @@ Prefer importing directly from `@pegasus/prompts` in new code.
 
 ## `error-handler.ts` (server)
 
-**Note**: This is a *separate, more extensive* error handler from the one in `@pegasus/utils`. It provides multi-provider error classification with pattern matching, severity levels, and retry handling specifically for CLI providers (Claude, Codex, Cursor).
+**Note**: This is a _separate, more extensive_ error handler from the one in `@pegasus/utils`. It provides multi-provider error classification with pattern matching, severity levels, and retry handling specifically for CLI providers (Claude, Codex, Cursor).
 
 ### Types
 
 ```typescript
 // 13 error types
 export enum ErrorType {
-  AUTHENTICATION = 'authentication',
-  BILLING = 'billing',
-  RATE_LIMIT = 'rate_limit',
-  NETWORK = 'network',
-  TIMEOUT = 'timeout',
-  VALIDATION = 'validation',
-  PERMISSION = 'permission',
-  CLI_NOT_FOUND = 'cli_not_found',
-  CLI_NOT_INSTALLED = 'cli_not_installed',
-  MODEL_NOT_SUPPORTED = 'model_not_supported',
-  INVALID_REQUEST = 'invalid_request',
-  SERVER_ERROR = 'server_error',
-  UNKNOWN = 'unknown',
+  AUTHENTICATION = "authentication",
+  BILLING = "billing",
+  RATE_LIMIT = "rate_limit",
+  NETWORK = "network",
+  TIMEOUT = "timeout",
+  VALIDATION = "validation",
+  PERMISSION = "permission",
+  CLI_NOT_FOUND = "cli_not_found",
+  CLI_NOT_INSTALLED = "cli_not_installed",
+  MODEL_NOT_SUPPORTED = "model_not_supported",
+  INVALID_REQUEST = "invalid_request",
+  SERVER_ERROR = "server_error",
+  UNKNOWN = "unknown",
 }
 
-export enum ErrorSeverity { LOW = 'low', MEDIUM = 'medium', HIGH = 'high', CRITICAL = 'critical' }
+export enum ErrorSeverity {
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  CRITICAL = "critical",
+}
 
 export interface ErrorClassification {
   type: ErrorType;
@@ -557,7 +563,7 @@ export interface EventEmitter {
   subscribe: (callback: EventCallback) => () => void; // returns unsubscribe fn
 }
 
-export function createEventEmitter(): EventEmitter
+export function createEventEmitter(): EventEmitter;
 ```
 
 ---
@@ -569,10 +575,10 @@ Shared process execution utilities providing a pre-configured PATH that includes
 **Key exports**:
 
 ```typescript
-export const extendedPath: string  // PATH extended with common tool locations
-export const execEnv: Record<string, string | undefined>  // process.env with extendedPath
+export const extendedPath: string; // PATH extended with common tool locations
+export const execEnv: Record<string, string | undefined>; // process.env with extendedPath
 
-export function getErrorMessage(error: unknown): string  // Extract message from any error type
+export function getErrorMessage(error: unknown): string; // Extract message from any error type
 ```
 
 ---
@@ -584,13 +590,22 @@ Canonical git command execution utilities. All server consumers should import fr
 **Key exports**:
 
 ```typescript
-export async function execGitCommand(args: string[], cwd: string, env?: object): Promise<string>
-export async function getCurrentBranch(worktreePath: string): Promise<string>
-export function isIndexLockError(errorMessage: string): boolean
-export async function removeStaleIndexLock(worktreePath: string): Promise<boolean>
+export async function execGitCommand(
+  args: string[],
+  cwd: string,
+  env?: object,
+): Promise<string>;
+export async function getCurrentBranch(worktreePath: string): Promise<string>;
+export function isIndexLockError(errorMessage: string): boolean;
+export async function removeStaleIndexLock(
+  worktreePath: string,
+): Promise<boolean>;
 export async function execGitCommandWithLockRetry(
-  args: string[], cwd: string, env?: object, maxRetries?: number
-): Promise<string>
+  args: string[],
+  cwd: string,
+  env?: object,
+  maxRetries?: number,
+): Promise<string>;
 ```
 
 ---
@@ -612,7 +627,7 @@ export interface CommitFields {
   body: string;
 }
 
-export function parseGitLogOutput(output: string): CommitFields[]
+export function parseGitLogOutput(output: string): CommitFields[];
 ```
 
 ---
@@ -626,11 +641,17 @@ Robust JSON extraction from AI responses that may contain markdown, code blocks,
 ```typescript
 export interface ExtractJsonOptions {
   logger?: JsonExtractorLogger;
-  requiredKey?: string;   // Required key that must be present in extracted JSON
+  requiredKey?: string; // Required key that must be present in extracted JSON
 }
 
-export function extractJson(text: string, options?: ExtractJsonOptions): unknown
-export function extractJsonArray(text: string, options?: ExtractJsonOptions): unknown[]
+export function extractJson(
+  text: string,
+  options?: ExtractJsonOptions,
+): unknown;
+export function extractJsonArray(
+  text: string,
+  options?: ExtractJsonOptions,
+): unknown[];
 ```
 
 ---
@@ -649,8 +670,8 @@ export interface PermissionCheckResult {
 
 export function checkToolCallPermission(
   toolCall: CursorToolCall,
-  permissions: CursorCliConfigFile | null
-): PermissionCheckResult
+  permissions: CursorCliConfigFile | null,
+): PermissionCheckResult;
 ```
 
 ---
@@ -662,12 +683,18 @@ Centralized SDK options factory for the Claude Agent SDK. Provides presets for c
 **Use case presets**:
 
 ```typescript
-export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Options
-export function createFeatureGenerationOptions(config: CreateSdkOptionsConfig): Options
-export function createSuggestionsOptions(config: CreateSdkOptionsConfig): Options
-export function createChatOptions(config: CreateSdkOptionsConfig): Options
-export function createAutoModeOptions(config: CreateSdkOptionsConfig): Options
-export function createCustomOptions(config: CreateSdkOptionsConfig): Options
+export function createSpecGenerationOptions(
+  config: CreateSdkOptionsConfig,
+): Options;
+export function createFeatureGenerationOptions(
+  config: CreateSdkOptionsConfig,
+): Options;
+export function createSuggestionsOptions(
+  config: CreateSdkOptionsConfig,
+): Options;
+export function createChatOptions(config: CreateSdkOptionsConfig): Options;
+export function createAutoModeOptions(config: CreateSdkOptionsConfig): Options;
+export function createCustomOptions(config: CreateSdkOptionsConfig): Options;
 ```
 
 **Config type**:
@@ -693,10 +720,10 @@ Re-exports `secureFs` from `@pegasus/platform` for backward compatibility with e
 
 ```typescript
 // Prefer importing directly from @pegasus/platform in new code:
-import { secureFs } from '@pegasus/platform';
+import { secureFs } from "@pegasus/platform";
 
 // Legacy server imports still work via named destructuring:
-import * as secureFs from '../lib/secure-fs.js';
+import * as secureFs from "../lib/secure-fs.js";
 ```
 
 ---
@@ -735,9 +762,9 @@ Re-exports terminal theme data from `@pegasus/platform` for use in the server.
 **Key exports**:
 
 ```typescript
-export function getTerminalThemeColors(theme: ThemeMode): TerminalTheme
-export function getAllTerminalThemes(): Record<ThemeMode, TerminalTheme>
-export default terminalThemeColors  // All themes keyed by ThemeMode
+export function getTerminalThemeColors(theme: ThemeMode): TerminalTheme;
+export function getAllTerminalThemes(): Record<ThemeMode, TerminalTheme>;
+export default terminalThemeColors; // All themes keyed by ThemeMode
 ```
 
 ---
@@ -749,12 +776,19 @@ CRUD operations for GitHub issue validation results. Stores results in `.pegasus
 **Key exports**:
 
 ```typescript
-export type { StoredValidation }  // Re-exported from @pegasus/types
+export type { StoredValidation }; // Re-exported from @pegasus/types
 
-export async function writeValidation(projectPath, issueNumber, data: StoredValidation): Promise<void>
-export async function readValidation(projectPath, issueNumber): Promise<StoredValidation | null>
-export async function deleteValidation(projectPath, issueNumber): Promise<void>
-export function isValidationStale(validation: StoredValidation): boolean
+export async function writeValidation(
+  projectPath,
+  issueNumber,
+  data: StoredValidation,
+): Promise<void>;
+export async function readValidation(
+  projectPath,
+  issueNumber,
+): Promise<StoredValidation | null>;
+export async function deleteValidation(projectPath, issueNumber): Promise<void>;
+export function isValidationStale(validation: StoredValidation): boolean;
 ```
 
 ---
@@ -766,7 +800,7 @@ Reads and caches the server version from `package.json`. Handles both developmen
 **Key exports**:
 
 ```typescript
-export function getVersion(): string  // Returns semver string, e.g. "1.0.0"
+export function getVersion(): string; // Returns semver string, e.g. "1.0.0"
 ```
 
 ---
@@ -783,13 +817,24 @@ export interface WorktreeMetadata {
   createdAt: string;
   pr?: WorktreePRInfo;
   initScriptRan?: boolean;
-  initScriptStatus?: 'running' | 'success' | 'failed';
+  initScriptStatus?: "running" | "success" | "failed";
   initScriptError?: string;
 }
 
-export async function readWorktreeMetadata(projectPath, branch): Promise<WorktreeMetadata | null>
-export async function writeWorktreeMetadata(projectPath, branch, data): Promise<void>
-export async function updateWorktreeMetadata(projectPath, branch, updates): Promise<void>
+export async function readWorktreeMetadata(
+  projectPath,
+  branch,
+): Promise<WorktreeMetadata | null>;
+export async function writeWorktreeMetadata(
+  projectPath,
+  branch,
+  data,
+): Promise<void>;
+export async function updateWorktreeMetadata(
+  projectPath,
+  branch,
+  updates,
+): Promise<void>;
 ```
 
 ---
@@ -807,10 +852,14 @@ export interface ImplementedFeature {
   file_locations?: string[];
 }
 
-export function extractSection(xml: string, tagName: string): string | null
-export function updateSection(xml: string, tagName: string, newContent: string): string
-export function extractImplementedFeatures(xml: string): ImplementedFeature[]
-export function extractSpec(xml: string): Partial<SpecOutput>
+export function extractSection(xml: string, tagName: string): string | null;
+export function updateSection(
+  xml: string,
+  tagName: string,
+  newContent: string,
+): string;
+export function extractImplementedFeatures(xml: string): ImplementedFeature[];
+export function extractSpec(xml: string): Partial<SpecOutput>;
 ```
 
 ---
@@ -823,14 +872,17 @@ Always import shared utilities from their package, never from old internal paths
 
 ```typescript
 // ✅ Correct
-import { createLogger, classifyError, getErrorMessage } from '@pegasus/utils';
-import { buildPromptWithImages, convertImagesToContentBlocks } from '@pegasus/utils';
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import { spawnProcess, spawnJSONLProcess, secureFs } from '@pegasus/platform';
+import { createLogger, classifyError, getErrorMessage } from "@pegasus/utils";
+import {
+  buildPromptWithImages,
+  convertImagesToContentBlocks,
+} from "@pegasus/utils";
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import { spawnProcess, spawnJSONLProcess, secureFs } from "@pegasus/platform";
 
 // ❌ Never import from old paths
-import { createLogger } from '../lib/logger.js';              // Wrong
-import { resolveModelString } from '../lib/model-resolver.js'; // Wrong
+import { createLogger } from "../lib/logger.js"; // Wrong
+import { resolveModelString } from "../lib/model-resolver.js"; // Wrong
 ```
 
 ### Server-Local Lib Files
@@ -839,17 +891,17 @@ Use `.js` extension in imports for ESM compatibility:
 
 ```typescript
 // ✅ Correct
-import { createEventEmitter } from '../lib/events.js';
-import { execGitCommand } from '../lib/git.js';
-import { createSpecGenerationOptions } from '../lib/sdk-options.js';
+import { createEventEmitter } from "../lib/events.js";
+import { execGitCommand } from "../lib/git.js";
+import { createSpecGenerationOptions } from "../lib/sdk-options.js";
 
 // ❌ Incorrect
-import { createEventEmitter } from '../lib/events';
+import { createEventEmitter } from "../lib/events";
 ```
 
 ### Choosing Between the Two `error-handler.ts` Files
 
-| Use case | Import from |
-|---|---|
-| General SDK error detection (`isAbortError`, `isRateLimitError`, `classifyError` → `ErrorInfo`) | `@pegasus/utils` |
-| CLI provider errors with pattern matching, severity, provider namespaces | `../lib/error-handler.js` |
+| Use case                                                                                        | Import from               |
+| ----------------------------------------------------------------------------------------------- | ------------------------- |
+| General SDK error detection (`isAbortError`, `isRateLimitError`, `classifyError` → `ErrorInfo`) | `@pegasus/utils`          |
+| CLI provider errors with pattern matching, severity, provider namespaces                        | `../lib/error-handler.js` |

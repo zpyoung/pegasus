@@ -11,10 +11,10 @@
  * the requireGitRepoOnly middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import { getErrorMessage, logError } from '../common.js';
-import { pushStash } from '../../../services/stash-service.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import { getErrorMessage, logError } from "../common.js";
+import { pushStash } from "../../../services/stash-service.js";
 
 export function createStashPushHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -28,32 +28,32 @@ export function createStashPushHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
 
       // Emit start event so the frontend can observe progress
-      events.emit('stash:start', {
+      events.emit("stash:start", {
         worktreePath,
-        operation: 'push',
+        operation: "push",
       });
 
       // Delegate all Git work to the service
       const result = await pushStash(worktreePath, { message, files });
 
       // Emit progress with stash result
-      events.emit('stash:progress', {
+      events.emit("stash:progress", {
         worktreePath,
-        operation: 'push',
+        operation: "push",
         stashed: result.stashed,
         branch: result.branch,
       });
 
       // Emit success event
-      events.emit('stash:success', {
+      events.emit("stash:success", {
         worktreePath,
-        operation: 'push',
+        operation: "push",
         stashed: result.stashed,
         branch: result.branch,
       });
@@ -68,13 +68,13 @@ export function createStashPushHandler(events: EventEmitter) {
       });
     } catch (error) {
       // Emit error event so the frontend can react
-      events.emit('stash:failure', {
+      events.emit("stash:failure", {
         worktreePath: req.body?.worktreePath,
-        operation: 'push',
+        operation: "push",
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Stash push failed');
+      logError(error, "Stash push failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

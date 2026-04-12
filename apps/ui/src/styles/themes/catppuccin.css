@@ -76,7 +76,12 @@
 /* Theme-specific overrides */
 
 .catppuccin .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #cba6f7 0%, #f5c2e7 50%, #cba6f7 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #cba6f7 0%,
+    #f5c2e7 50%,
+    #cba6f7 100%
+  );
 }
 
 .catppuccin .animated-outline-inner {
@@ -84,7 +89,9 @@
   color: #cba6f7 !important;
 }
 
-.catppuccin [data-slot='button'][class*='animated-outline']:hover .animated-outline-inner {
+.catppuccin
+  [data-slot="button"][class*="animated-outline"]:hover
+  .animated-outline-inner {
   background: oklch(0.24 0.03 260) !important;
   color: #f5c2e7 !important;
 }

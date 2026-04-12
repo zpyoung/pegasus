@@ -2,9 +2,9 @@
  * POST /deauth-copilot endpoint - Disconnect Copilot CLI from the app
  */
 
-import type { Request, Response } from 'express';
-import { getErrorMessage, logError } from '../common.js';
-import { disconnectCopilot } from '../../../services/copilot-connection-service.js';
+import type { Request, Response } from "express";
+import { getErrorMessage, logError } from "../common.js";
+import { disconnectCopilot } from "../../../services/copilot-connection-service.js";
 
 /**
  * Creates handler for POST /api/setup/deauth-copilot
@@ -17,10 +17,10 @@ export function createDeauthCopilotHandler() {
 
       res.json({
         success: true,
-        message: 'Copilot CLI disconnected from app',
+        message: "Copilot CLI disconnected from app",
       });
     } catch (error) {
-      logError(error, 'Deauth Copilot failed');
+      logError(error, "Deauth Copilot failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

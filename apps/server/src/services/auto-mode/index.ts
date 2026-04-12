@@ -9,13 +9,13 @@
  */
 
 // Main exports
-export { GlobalAutoModeService } from './global-service.js';
-export { AutoModeServiceFacade } from './facade.js';
-export { AutoModeServiceCompat } from './compat.js';
+export { GlobalAutoModeService } from "./global-service.js";
+export { AutoModeServiceFacade } from "./facade.js";
+export { AutoModeServiceCompat } from "./compat.js";
 
 // Convenience factory function
-import { AutoModeServiceFacade } from './facade.js';
-import type { FacadeOptions } from './types.js';
+import { AutoModeServiceFacade } from "./facade.js";
+import type { FacadeOptions } from "./types.js";
 
 /**
  * Create an AutoModeServiceFacade instance for a specific project.
@@ -44,7 +44,7 @@ import type { FacadeOptions } from './types.js';
  */
 export function createAutoModeFacade(
   projectPath: string,
-  options: FacadeOptions
+  options: FacadeOptions,
 ): AutoModeServiceFacade {
   return AutoModeServiceFacade.create(projectPath, options);
 }
@@ -60,7 +60,7 @@ export type {
   OrphanedFeatureInfo,
   FacadeError,
   GlobalAutoModeOperations,
-} from './types.js';
+} from "./types.js";
 
 // Re-export types from extracted services for route convenience
 export type {
@@ -74,4 +74,4 @@ export type {
   PlanApprovalResult,
   ResolveApprovalResult,
   ExecutionState,
-} from './types.js';
+} from "./types.js";

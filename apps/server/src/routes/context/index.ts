@@ -5,10 +5,10 @@
  * AI-powered image description generation.
  */
 
-import { Router } from 'express';
-import { createDescribeImageHandler } from './routes/describe-image.js';
-import { createDescribeFileHandler } from './routes/describe-file.js';
-import type { SettingsService } from '../../services/settings-service.js';
+import { Router } from "express";
+import { createDescribeImageHandler } from "./routes/describe-image.js";
+import { createDescribeFileHandler } from "./routes/describe-file.js";
+import type { SettingsService } from "../../services/settings-service.js";
 
 /**
  * Create the context router
@@ -19,8 +19,8 @@ import type { SettingsService } from '../../services/settings-service.js';
 export function createContextRoutes(settingsService?: SettingsService): Router {
   const router = Router();
 
-  router.post('/describe-image', createDescribeImageHandler(settingsService));
-  router.post('/describe-file', createDescribeFileHandler(settingsService));
+  router.post("/describe-image", createDescribeImageHandler(settingsService));
+  router.post("/describe-file", createDescribeFileHandler(settingsService));
 
   return router;
 }

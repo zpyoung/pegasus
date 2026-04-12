@@ -1,39 +1,42 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
-import { ImageIcon, Upload, Trash2 } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { createLogger } from "@pegasus/utils/logger";
+import { ImageIcon, Upload, Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
-const logger = createLogger('BoardBackgroundModal');
+const logger = createLogger("BoardBackgroundModal");
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
-import { useAppStore, defaultBackgroundSettings } from '@/store/app-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import { useBoardBackgroundSettings } from '@/hooks/use-board-background-settings';
-import { toast } from 'sonner';
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { useAppStore, defaultBackgroundSettings } from "@/store/app-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { getAuthenticatedImageUrl } from "@/lib/api-fetch";
+import { useBoardBackgroundSettings } from "@/hooks/use-board-background-settings";
+import { toast } from "sonner";
 import {
   fileToBase64,
   validateImageFile,
   ACCEPTED_IMAGE_TYPES,
   DEFAULT_MAX_FILE_SIZE,
-} from '@/lib/image-utils';
+} from "@/lib/image-utils";
 
 interface BoardBackgroundModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModalProps) {
+export function BoardBackgroundModal({
+  open,
+  onOpenChange,
+}: BoardBackgroundModalProps) {
   const { currentProject, boardBackgroundByProject } = useAppStore();
   const {
     setBoardBackground,
@@ -55,13 +58,18 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
 
   // Get current background settings (live from store)
   const backgroundSettings =
-    (currentProject && boardBackgroundByProject[currentProject.path]) || defaultBackgroundSettings;
+    (currentProject && boardBackgroundByProject[currentProject.path]) ||
+    defaultBackgroundSettings;
 
   // Local state for sliders during dragging (avoids store updates during drag)
-  const [localCardOpacity, setLocalCardOpacity] = useState(backgroundSettings.cardOpacity);
-  const [localColumnOpacity, setLocalColumnOpacity] = useState(backgroundSettings.columnOpacity);
+  const [localCardOpacity, setLocalCardOpacity] = useState(
+    backgroundSettings.cardOpacity,
+  );
+  const [localColumnOpacity, setLocalColumnOpacity] = useState(
+    backgroundSettings.columnOpacity,
+  );
   const [localCardBorderOpacity, setLocalCardBorderOpacity] = useState(
-    backgroundSettings.cardBorderOpacity
+    backgroundSettings.cardBorderOpacity,
   );
   const [isDragging, setIsDragging] = useState(false);
 
@@ -93,7 +101,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       const imagePath = getAuthenticatedImageUrl(
         backgroundSettings.imagePath,
         currentProject.path,
-        cacheBuster
+        cacheBuster,
       );
       setPreviewImage(imagePath);
     } else {
@@ -104,7 +112,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
   const processFile = useCallback(
     async (file: File) => {
       if (!currentProject) {
-        toast.error('No project selected');
+        toast.error("No project selected");
         return;
       }
 
@@ -128,26 +136,26 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
           base64,
           file.name,
           file.type,
-          currentProject.path
+          currentProject.path,
         );
 
         if (result.success && result.path) {
           // Update store and persist to server
           await setBoardBackground(currentProject.path, result.path);
-          toast.success('Background image saved');
+          toast.success("Background image saved");
         } else {
-          toast.error(result.error || 'Failed to save background image');
+          toast.error(result.error || "Failed to save background image");
           setPreviewImage(null);
         }
       } catch (error) {
-        logger.error('Failed to process image:', error);
-        toast.error('Failed to process image');
+        logger.error("Failed to process image:", error);
+        toast.error("Failed to process image");
         setPreviewImage(null);
       } finally {
         setIsProcessing(false);
       }
     },
-    [currentProject, setBoardBackground]
+    [currentProject, setBoardBackground],
   );
 
   const handleDrop = useCallback(
@@ -161,7 +169,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
         processFile(files[0]);
       }
     },
-    [processFile]
+    [processFile],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -184,10 +192,10 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       }
       // Reset the input so the same file can be selected again
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     },
-    [processFile]
+    [processFile],
   );
 
   const handleBrowseClick = useCallback(() => {
@@ -202,18 +210,20 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
     try {
       setIsProcessing(true);
       const httpClient = getHttpApiClient();
-      const result = await httpClient.deleteBoardBackground(currentProject.path);
+      const result = await httpClient.deleteBoardBackground(
+        currentProject.path,
+      );
 
       if (result.success) {
         await clearBoardBackground(currentProject.path);
         setPreviewImage(null);
-        toast.success('Background image cleared');
+        toast.success("Background image cleared");
       } else {
-        toast.error(result.error || 'Failed to clear background image');
+        toast.error(result.error || "Failed to clear background image");
       }
     } catch (error) {
-      logger.error('Failed to clear background:', error);
-      toast.error('Failed to clear background');
+      logger.error("Failed to clear background:", error);
+      toast.error("Failed to clear background");
     } finally {
       setIsProcessing(false);
     }
@@ -232,9 +242,12 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       setIsDragging(false);
       setCardOpacity(currentProject.path, value[0]);
       const current = getCurrentSettings(currentProject.path);
-      persistSettings(currentProject.path, { ...current, cardOpacity: value[0] });
+      persistSettings(currentProject.path, {
+        ...current,
+        cardOpacity: value[0],
+      });
     },
-    [currentProject, setCardOpacity, getCurrentSettings, persistSettings]
+    [currentProject, setCardOpacity, getCurrentSettings, persistSettings],
   );
 
   // Live update local state during drag (modal-only, no store update)
@@ -250,9 +263,12 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       setIsDragging(false);
       setColumnOpacity(currentProject.path, value[0]);
       const current = getCurrentSettings(currentProject.path);
-      persistSettings(currentProject.path, { ...current, columnOpacity: value[0] });
+      persistSettings(currentProject.path, {
+        ...current,
+        columnOpacity: value[0],
+      });
     },
-    [currentProject, setColumnOpacity, getCurrentSettings, persistSettings]
+    [currentProject, setColumnOpacity, getCurrentSettings, persistSettings],
   );
 
   const handleColumnBorderToggle = useCallback(
@@ -260,7 +276,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       if (!currentProject) return;
       await setColumnBorderEnabled(currentProject.path, checked);
     },
-    [currentProject, setColumnBorderEnabled]
+    [currentProject, setColumnBorderEnabled],
   );
 
   const handleCardGlassmorphismToggle = useCallback(
@@ -268,7 +284,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       if (!currentProject) return;
       await setCardGlassmorphism(currentProject.path, checked);
     },
-    [currentProject, setCardGlassmorphism]
+    [currentProject, setCardGlassmorphism],
   );
 
   const handleCardBorderToggle = useCallback(
@@ -276,7 +292,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       if (!currentProject) return;
       await setCardBorderEnabled(currentProject.path, checked);
     },
-    [currentProject, setCardBorderEnabled]
+    [currentProject, setCardBorderEnabled],
   );
 
   // Live update local state during drag (modal-only, no store update)
@@ -292,9 +308,12 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       setIsDragging(false);
       setCardBorderOpacity(currentProject.path, value[0]);
       const current = getCurrentSettings(currentProject.path);
-      persistSettings(currentProject.path, { ...current, cardBorderOpacity: value[0] });
+      persistSettings(currentProject.path, {
+        ...current,
+        cardBorderOpacity: value[0],
+      });
     },
-    [currentProject, setCardBorderOpacity, getCurrentSettings, persistSettings]
+    [currentProject, setCardBorderOpacity, getCurrentSettings, persistSettings],
   );
 
   const handleHideScrollbarToggle = useCallback(
@@ -302,7 +321,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
       if (!currentProject) return;
       await setHideScrollbar(currentProject.path, checked);
     },
-    [currentProject, setHideScrollbar]
+    [currentProject, setHideScrollbar],
   );
 
   if (!currentProject) {
@@ -315,7 +334,8 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
         <SheetHeader
           className="px-6"
           style={{
-            paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))',
+            paddingTop:
+              "max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1rem))",
           }}
         >
           <SheetTitle className="flex items-center gap-2">
@@ -323,7 +343,8 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
             Board Background Settings
           </SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Set a custom background image for your kanban board and adjust card/column opacity
+            Set a custom background image for your kanban board and adjust
+            card/column opacity
           </SheetDescription>
         </SheetHeader>
 
@@ -336,7 +357,7 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
             <input
               ref={fileInputRef}
               type="file"
-              accept={ACCEPTED_IMAGE_TYPES.join(',')}
+              accept={ACCEPTED_IMAGE_TYPES.join(",")}
               onChange={handleFileSelect}
               className="hidden"
               disabled={isProcessing}
@@ -348,15 +369,16 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               className={cn(
-                'relative rounded-lg border-2 border-dashed transition-all duration-200',
+                "relative rounded-lg border-2 border-dashed transition-all duration-200",
                 {
-                  'border-brand-500/60 bg-brand-500/5 dark:bg-brand-500/10':
+                  "border-brand-500/60 bg-brand-500/5 dark:bg-brand-500/10":
                     isDragOver && !isProcessing,
-                  'border-muted-foreground/25': !isDragOver && !isProcessing,
-                  'border-muted-foreground/10 opacity-50 cursor-not-allowed': isProcessing,
-                  'hover:border-brand-500/40 hover:bg-brand-500/5 dark:hover:bg-brand-500/5':
+                  "border-muted-foreground/25": !isDragOver && !isProcessing,
+                  "border-muted-foreground/10 opacity-50 cursor-not-allowed":
+                    isProcessing,
+                  "hover:border-brand-500/40 hover:bg-brand-500/5 dark:hover:bg-brand-500/5":
                     !isProcessing && !isDragOver,
-                }
+                },
               )}
             >
               {previewImage ? (
@@ -402,10 +424,10 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 >
                   <div
                     className={cn(
-                      'rounded-full p-3 mb-3',
+                      "rounded-full p-3 mb-3",
                       isDragOver && !isProcessing
-                        ? 'bg-brand-500/10 dark:bg-brand-500/20'
-                        : 'bg-muted'
+                        ? "bg-brand-500/10 dark:bg-brand-500/20"
+                        : "bg-muted",
                     )}
                   >
                     {isProcessing ? (
@@ -416,11 +438,12 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {isDragOver && !isProcessing
-                      ? 'Drop image here'
-                      : 'Click to upload or drag and drop'}
+                      ? "Drop image here"
+                      : "Click to upload or drag and drop"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    JPG, PNG, GIF, or WebP (max {Math.round(DEFAULT_MAX_FILE_SIZE / (1024 * 1024))}
+                    JPG, PNG, GIF, or WebP (max{" "}
+                    {Math.round(DEFAULT_MAX_FILE_SIZE / (1024 * 1024))}
                     MB)
                   </p>
                 </div>
@@ -433,7 +456,9 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Card Opacity</Label>
-                <span className="text-sm text-muted-foreground">{localCardOpacity}%</span>
+                <span className="text-sm text-muted-foreground">
+                  {localCardOpacity}%
+                </span>
               </div>
               <Slider
                 value={[localCardOpacity]}
@@ -449,7 +474,9 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Column Opacity</Label>
-                <span className="text-sm text-muted-foreground">{localColumnOpacity}%</span>
+                <span className="text-sm text-muted-foreground">
+                  {localColumnOpacity}%
+                </span>
               </div>
               <Slider
                 value={[localColumnOpacity]}
@@ -481,7 +508,10 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
                 checked={cardGlassmorphism}
                 onCheckedChange={handleCardGlassmorphismToggle}
               />
-              <Label htmlFor="card-glassmorphism-toggle" className="cursor-pointer">
+              <Label
+                htmlFor="card-glassmorphism-toggle"
+                className="cursor-pointer"
+              >
                 Card Glassmorphism (blur effect)
               </Label>
             </div>
@@ -503,7 +533,9 @@ export function BoardBackgroundModal({ open, onOpenChange }: BoardBackgroundModa
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>Card Border Opacity</Label>
-                  <span className="text-sm text-muted-foreground">{localCardBorderOpacity}%</span>
+                  <span className="text-sm text-muted-foreground">
+                    {localCardBorderOpacity}%
+                  </span>
                 </div>
                 <Slider
                   value={[localCardBorderOpacity]}

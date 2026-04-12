@@ -1,14 +1,14 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './app';
-import { AppErrorBoundary } from './components/ui/app-error-boundary';
-import { isMobileDevice, isPwaStandalone } from './lib/mobile-detect';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./app";
+import { AppErrorBoundary } from "./components/ui/app-error-boundary";
+import { isMobileDevice, isPwaStandalone } from "./lib/mobile-detect";
 
 // Defensive fallback: index.html's inline script already applies data-pwa="standalone"
 // before first paint. This re-applies it in case the inline script failed (e.g.
 // CSP restrictions or unexpected errors). setAttribute is a no-op if already set.
 if (isPwaStandalone) {
-  document.documentElement.setAttribute('data-pwa', 'standalone');
+  document.documentElement.setAttribute("data-pwa", "standalone");
 }
 
 // Register service worker for PWA support (web mode only)
@@ -21,11 +21,14 @@ if (isPwaStandalone) {
 // Note: The SW itself does NOT call skipWaiting() on install, so a newly
 // registered SW won't disrupt a live page — it waits for SKIP_WAITING from the
 // main thread or for all old-SW tabs to close before activating.
-if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')) {
+if (
+  "serviceWorker" in navigator &&
+  !window.location.protocol.startsWith("file")
+) {
   navigator.serviceWorker
-    .register('/sw.js', {
+    .register("/sw.js", {
       // Check for updates on every page load for PWA freshness
-      updateViaCache: 'none',
+      updateViaCache: "none",
     })
     .then((registration) => {
       // Check for service worker updates periodically
@@ -46,19 +49,24 @@ if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')
       //
       // The new SW will naturally activate when all tabs using the old SW are closed.
       // For urgent updates, we send SKIP_WAITING on fresh page loads (see below).
-      registration.addEventListener('updatefound', () => {
+      registration.addEventListener("updatefound", () => {
         const newWorker = registration.installing;
         if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          newWorker.addEventListener("statechange", () => {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
               // A new SW is waiting — show an update banner so long-lived
               // sessions can immediately pick up new deployments.
-              console.debug('[SW] New service worker installed and waiting to activate');
+              console.debug(
+                "[SW] New service worker installed and waiting to activate",
+              );
               showUpdateNotification(registration);
             }
-            if (newWorker.state === 'activated') {
+            if (newWorker.state === "activated") {
               // New service worker is active - clean up old immutable cache entries
-              newWorker.postMessage({ type: 'CACHE_CLEANUP' });
+              newWorker.postMessage({ type: "CACHE_CLEANUP" });
             }
           });
         }
@@ -68,7 +76,7 @@ if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')
       // tell it to activate now. This is safe because the page is freshly loaded
       // and won't flash. This ensures updates are picked up within one page visit.
       if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        registration.waiting.postMessage({ type: "SKIP_WAITING" });
       }
 
       // Notify the service worker about mobile mode.
@@ -76,16 +84,16 @@ if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')
       // preventing blank screens caused by failed/slow API fetches on mobile.
       if (isMobileDevice && registration.active) {
         registration.active.postMessage({
-          type: 'SET_MOBILE_MODE',
+          type: "SET_MOBILE_MODE",
           enabled: true,
         });
       }
 
       // Also listen for the SW becoming active (in case it wasn't ready above)
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (isMobileDevice && navigator.serviceWorker.controller) {
           navigator.serviceWorker.controller.postMessage({
-            type: 'SET_MOBILE_MODE',
+            type: "SET_MOBILE_MODE",
             enabled: true,
           });
         }
@@ -106,7 +114,9 @@ if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')
           .persist()
           .then((granted) => {
             if (granted) {
-              console.debug('[SW] Persistent storage granted — caches protected from eviction');
+              console.debug(
+                "[SW] Persistent storage granted — caches protected from eviction",
+              );
             }
           })
           .catch(() => {
@@ -127,24 +137,28 @@ if ('serviceWorker' in navigator && !window.location.protocol.startsWith('file')
  */
 function showUpdateNotification(registration: ServiceWorkerRegistration): void {
   // Create a simple DOM-based notification (avoids depending on React rendering)
-  const banner = document.createElement('div');
-  banner.setAttribute('role', 'alert');
+  const banner = document.createElement("div");
+  banner.setAttribute("role", "alert");
 
   // Read theme-aware colors from CSS custom properties with sensible fallbacks
   // so the banner matches the current dark/light theme.
   const rootStyle = getComputedStyle(document.documentElement);
-  const bgColor = rootStyle.getPropertyValue('--background').trim() || '#1a1a2e';
-  const fgColor = rootStyle.getPropertyValue('--foreground').trim() || '#e0e0e0';
-  const accentColor = rootStyle.getPropertyValue('--primary').trim() || '#6366f1';
-  const mutedColor = rootStyle.getPropertyValue('--muted-foreground').trim() || '#888';
+  const bgColor =
+    rootStyle.getPropertyValue("--background").trim() || "#1a1a2e";
+  const fgColor =
+    rootStyle.getPropertyValue("--foreground").trim() || "#e0e0e0";
+  const accentColor =
+    rootStyle.getPropertyValue("--primary").trim() || "#6366f1";
+  const mutedColor =
+    rootStyle.getPropertyValue("--muted-foreground").trim() || "#888";
 
   banner.style.cssText =
-    'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;' +
+    "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;" +
     `background:hsl(${bgColor});color:hsl(${fgColor});padding:12px 20px;border-radius:10px;` +
-    'display:flex;align-items:center;gap:12px;font-size:14px;' +
-    'box-shadow:0 4px 24px rgba(0,0,0,0.3);font-family:system-ui,sans-serif;';
+    "display:flex;align-items:center;gap:12px;font-size:14px;" +
+    "box-shadow:0 4px 24px rgba(0,0,0,0.3);font-family:system-ui,sans-serif;";
   banner.innerHTML =
-    '<span>A new version is available.</span>' +
+    "<span>A new version is available.</span>" +
     `<button id="sw-update-btn" style="background:hsl(${accentColor});color:hsl(${bgColor});border:none;` +
     'padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">Reload</button>' +
     `<button id="sw-dismiss-btn" style="background:transparent;color:hsl(${mutedColor});border:none;` +
@@ -157,25 +171,36 @@ function showUpdateNotification(registration: ServiceWorkerRegistration): void {
   const onControllerChange = () => {
     if (!reloading) {
       reloading = true;
-      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      navigator.serviceWorker.removeEventListener(
+        "controllerchange",
+        onControllerChange,
+      );
       window.location.reload();
     }
   };
-  navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+  navigator.serviceWorker.addEventListener(
+    "controllerchange",
+    onControllerChange,
+  );
 
-  banner.querySelector('#sw-update-btn')?.addEventListener('click', () => {
+  banner.querySelector("#sw-update-btn")?.addEventListener("click", () => {
     // Send SKIP_WAITING to the waiting SW — it will call skipWaiting() and
     // the controllerchange listener above will reload the page.
-    registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-    const btn = banner.querySelector('#sw-update-btn') as HTMLButtonElement | null;
+    registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+    const btn = banner.querySelector(
+      "#sw-update-btn",
+    ) as HTMLButtonElement | null;
     if (btn) {
-      btn.textContent = 'Updating…';
+      btn.textContent = "Updating…";
       btn.disabled = true;
     }
   });
 
-  banner.querySelector('#sw-dismiss-btn')?.addEventListener('click', () => {
-    navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+  banner.querySelector("#sw-dismiss-btn")?.addEventListener("click", () => {
+    navigator.serviceWorker.removeEventListener(
+      "controllerchange",
+      onControllerChange,
+    );
     banner.remove();
   });
 }
@@ -193,7 +218,7 @@ function showUpdateNotification(registration: ServiceWorkerRegistration): void {
  */
 function warmAssetCache(registration: ServiceWorkerRegistration): void {
   const idleCallback =
-    typeof requestIdleCallback !== 'undefined'
+    typeof requestIdleCallback !== "undefined"
       ? requestIdleCallback
       : (cb: () => void) => setTimeout(cb, 2000);
 
@@ -216,14 +241,16 @@ function warmAssetCache(registration: ServiceWorkerRegistration): void {
     // 2. prefetch links (deferred chunks: icons, reactflow, xterm, codemirror, markdown)
     // 3. stylesheet links (main CSS bundle)
     // 4. script tags with asset paths (entry point JS)
-    document.querySelectorAll('link[rel="modulepreload"], link[rel="prefetch"]').forEach((link) => {
-      const href = (link as HTMLLinkElement).href;
-      if (href && href.includes('/assets/')) assetUrls.push(href);
-    });
+    document
+      .querySelectorAll('link[rel="modulepreload"], link[rel="prefetch"]')
+      .forEach((link) => {
+        const href = (link as HTMLLinkElement).href;
+        if (href && href.includes("/assets/")) assetUrls.push(href);
+      });
 
     document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
       const href = (link as HTMLLinkElement).href;
-      if (href && href.includes('/assets/')) assetUrls.push(href);
+      if (href && href.includes("/assets/")) assetUrls.push(href);
     });
 
     document.querySelectorAll('script[src*="/assets/"]').forEach((script) => {
@@ -238,10 +265,11 @@ function warmAssetCache(registration: ServiceWorkerRegistration): void {
     // Target the active SW if available; otherwise fall back to the installing/waiting
     // SW. On first visit, the SW may still be in 'installing' state when this runs,
     // but it can still receive messages and process them once it activates.
-    const target = registration.active || registration.waiting || registration.installing;
+    const target =
+      registration.active || registration.waiting || registration.installing;
     if (assetUrls.length > 0 && target) {
       target.postMessage({
-        type: 'PRECACHE_ASSETS',
+        type: "PRECACHE_ASSETS",
         urls: assetUrls,
       });
     }
@@ -253,10 +281,10 @@ function warmAssetCache(registration: ServiceWorkerRegistration): void {
 // Render the app - prioritize First Contentful Paint
 // AppErrorBoundary catches uncaught React errors and shows a friendly error screen
 // instead of TanStack Router's default "Something went wrong!" overlay.
-createRoot(document.getElementById('app')!).render(
+createRoot(document.getElementById("app")!).render(
   <StrictMode>
     <AppErrorBoundary>
       <App />
     </AppErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

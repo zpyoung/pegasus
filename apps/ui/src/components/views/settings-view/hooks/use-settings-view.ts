@@ -1,37 +1,39 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export type SettingsViewId =
-  | 'api-keys'
-  | 'claude'
-  | 'providers'
-  | 'claude-provider'
-  | 'cursor-provider'
-  | 'codex-provider'
-  | 'opencode-provider'
-  | 'gemini-provider'
-  | 'copilot-provider'
-  | 'mcp-servers'
-  | 'prompts'
-  | 'templates'
-  | 'model-defaults'
-  | 'appearance'
-  | 'editor'
-  | 'terminal'
-  | 'keyboard'
-  | 'audio'
-  | 'event-hooks'
-  | 'defaults'
-  | 'worktrees'
-  | 'account'
-  | 'security'
-  | 'developer'
-  | 'danger';
+  | "api-keys"
+  | "claude"
+  | "providers"
+  | "claude-provider"
+  | "cursor-provider"
+  | "codex-provider"
+  | "opencode-provider"
+  | "gemini-provider"
+  | "copilot-provider"
+  | "mcp-servers"
+  | "prompts"
+  | "templates"
+  | "model-defaults"
+  | "appearance"
+  | "editor"
+  | "terminal"
+  | "keyboard"
+  | "audio"
+  | "event-hooks"
+  | "defaults"
+  | "worktrees"
+  | "account"
+  | "security"
+  | "developer"
+  | "danger";
 
 interface UseSettingsViewOptions {
   initialView?: SettingsViewId;
 }
 
-export function useSettingsView({ initialView = 'model-defaults' }: UseSettingsViewOptions = {}) {
+export function useSettingsView({
+  initialView = "model-defaults",
+}: UseSettingsViewOptions = {}) {
   const [activeView, setActiveView] = useState<SettingsViewId>(initialView);
 
   const navigateTo = useCallback((viewId: SettingsViewId) => {

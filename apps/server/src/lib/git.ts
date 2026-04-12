@@ -6,32 +6,36 @@
  * import from here rather than defining their own copy.
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import { spawnProcess } from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
+import fs from "fs/promises";
+import path from "path";
+import { spawnProcess } from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
 
-const logger = createLogger('GitLib');
+const logger = createLogger("GitLib");
 
 // Extended PATH so git is found when the process does not inherit a full shell PATH
 // (e.g. Electron, some CI, or IDE-launched processes).
-const pathSeparator = process.platform === 'win32' ? ';' : ':';
+const pathSeparator = process.platform === "win32" ? ";" : ":";
 const extraPaths: string[] =
-  process.platform === 'win32'
+  process.platform === "win32"
     ? ([
-        process.env.LOCALAPPDATA && `${process.env.LOCALAPPDATA}\\Programs\\Git\\cmd`,
+        process.env.LOCALAPPDATA &&
+          `${process.env.LOCALAPPDATA}\\Programs\\Git\\cmd`,
         process.env.PROGRAMFILES && `${process.env.PROGRAMFILES}\\Git\\cmd`,
-        process.env['ProgramFiles(x86)'] && `${process.env['ProgramFiles(x86)']}\\Git\\cmd`,
+        process.env["ProgramFiles(x86)"] &&
+          `${process.env["ProgramFiles(x86)"]}\\Git\\cmd`,
       ].filter(Boolean) as string[])
     : [
-        '/opt/homebrew/bin',
-        '/usr/local/bin',
-        '/usr/bin',
-        '/home/linuxbrew/.linuxbrew/bin',
-        process.env.HOME ? `${process.env.HOME}/.local/bin` : '',
+        "/opt/homebrew/bin",
+        "/usr/local/bin",
+        "/usr/bin",
+        "/home/linuxbrew/.linuxbrew/bin",
+        process.env.HOME ? `${process.env.HOME}/.local/bin` : "",
       ].filter(Boolean);
 
-const extendedPath = [process.env.PATH, ...extraPaths].filter(Boolean).join(pathSeparator);
+const extendedPath = [process.env.PATH, ...extraPaths]
+  .filter(Boolean)
+  .join(pathSeparator);
 const gitEnv = { ...process.env, PATH: extendedPath };
 
 // ============================================================================
@@ -80,10 +84,10 @@ export async function execGitCommand(
   args: string[],
   cwd: string,
   env?: Record<string, string>,
-  abortController?: AbortController
+  abortController?: AbortController,
 ): Promise<string> {
   const result = await spawnProcess({
-    command: 'git',
+    command: "git",
     args,
     cwd,
     env:
@@ -102,7 +106,9 @@ export async function execGitCommand(
     return result.stdout;
   } else {
     const errorMessage =
-      result.stderr || result.stdout || `Git command failed with code ${result.exitCode}`;
+      result.stderr ||
+      result.stdout ||
+      `Git command failed with code ${result.exitCode}`;
     throw Object.assign(new Error(errorMessage), {
       stdout: result.stdout,
       stderr: result.stderr,
@@ -124,7 +130,10 @@ export async function execGitCommand(
  * @returns The current branch name (trimmed)
  */
 export async function getCurrentBranch(worktreePath: string): Promise<string> {
-  const branchOutput = await execGitCommand(['rev-parse', '--abbrev-ref', 'HEAD'], worktreePath);
+  const branchOutput = await execGitCommand(
+    ["rev-parse", "--abbrev-ref", "HEAD"],
+    worktreePath,
+  );
   return branchOutput.trim();
 }
 
@@ -145,9 +154,9 @@ export async function getCurrentBranch(worktreePath: string): Promise<string> {
 export function isIndexLockError(errorMessage: string): boolean {
   const lower = errorMessage.toLowerCase();
   return (
-    lower.includes('could not write index') ||
-    (lower.includes('unable to create') && lower.includes('index.lock')) ||
-    lower.includes('index.lock')
+    lower.includes("could not write index") ||
+    (lower.includes("unable to create") && lower.includes("index.lock")) ||
+    lower.includes("index.lock")
   );
 }
 
@@ -160,12 +169,17 @@ export function isIndexLockError(errorMessage: string): boolean {
  * @param worktreePath - Path to the git worktree (or main repo)
  * @returns true if a lock file was found and removed, false otherwise
  */
-export async function removeStaleIndexLock(worktreePath: string): Promise<boolean> {
+export async function removeStaleIndexLock(
+  worktreePath: string,
+): Promise<boolean> {
   try {
     // Resolve the .git directory (handles worktrees correctly)
-    const gitDirRaw = await execGitCommand(['rev-parse', '--git-dir'], worktreePath);
+    const gitDirRaw = await execGitCommand(
+      ["rev-parse", "--git-dir"],
+      worktreePath,
+    );
     const gitDir = path.resolve(worktreePath, gitDirRaw.trim());
-    const lockFilePath = path.join(gitDir, 'index.lock');
+    const lockFilePath = path.join(gitDir, "index.lock");
 
     // Check if the lock file exists
     try {
@@ -177,10 +191,13 @@ export async function removeStaleIndexLock(worktreePath: string): Promise<boolea
 
     // Remove the stale lock file
     await fs.unlink(lockFilePath);
-    logger.info('Removed stale index.lock file', { worktreePath, lockFilePath });
+    logger.info("Removed stale index.lock file", {
+      worktreePath,
+      lockFilePath,
+    });
     return true;
   } catch (err) {
-    logger.warn('Failed to remove stale index.lock file', {
+    logger.warn("Failed to remove stale index.lock file", {
       worktreePath,
       error: err instanceof Error ? err.message : String(err),
     });
@@ -207,22 +224,25 @@ export async function removeStaleIndexLock(worktreePath: string): Promise<boolea
 export async function execGitCommandWithLockRetry(
   args: string[],
   cwd: string,
-  env?: Record<string, string>
+  env?: Record<string, string>,
 ): Promise<string> {
   try {
     return await execGitCommand(args, cwd, env);
   } catch (error: unknown) {
     const err = error as { message?: string; stderr?: string };
-    const errorMessage = err.stderr || err.message || '';
+    const errorMessage = err.stderr || err.message || "";
 
     if (!isIndexLockError(errorMessage)) {
       throw error;
     }
 
-    logger.info('Git command failed due to index lock, attempting cleanup and retry', {
-      cwd,
-      args: args.join(' '),
-    });
+    logger.info(
+      "Git command failed due to index lock, attempting cleanup and retry",
+      {
+        cwd,
+        args: args.join(" "),
+      },
+    );
 
     const removed = await removeStaleIndexLock(cwd);
     if (!removed) {

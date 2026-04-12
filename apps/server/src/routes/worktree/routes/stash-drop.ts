@@ -11,10 +11,10 @@
  * the requireGitRepoOnly middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import type { EventEmitter } from '../../../lib/events.js';
-import { getErrorMessage, logError } from '../common.js';
-import { dropStash } from '../../../services/stash-service.js';
+import type { Request, Response } from "express";
+import type { EventEmitter } from "../../../lib/events.js";
+import { getErrorMessage, logError } from "../common.js";
+import { dropStash } from "../../../services/stash-service.js";
 
 export function createStashDropHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -27,7 +27,7 @@ export function createStashDropHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath required',
+          error: "worktreePath required",
         });
         return;
       }
@@ -35,27 +35,27 @@ export function createStashDropHandler(events: EventEmitter) {
       if (!Number.isInteger(stashIndex) || stashIndex < 0) {
         res.status(400).json({
           success: false,
-          error: 'stashIndex required',
+          error: "stashIndex required",
         });
         return;
       }
 
       // Emit start event so the frontend can observe progress
-      events.emit('stash:start', {
+      events.emit("stash:start", {
         worktreePath,
         stashIndex,
         stashRef: `stash@{${stashIndex}}`,
-        operation: 'drop',
+        operation: "drop",
       });
 
       // Delegate all Git work to the service
       const result = await dropStash(worktreePath, stashIndex);
 
       // Emit success event
-      events.emit('stash:success', {
+      events.emit("stash:success", {
         worktreePath,
         stashIndex,
-        operation: 'drop',
+        operation: "drop",
         dropped: result.dropped,
       });
 
@@ -69,14 +69,14 @@ export function createStashDropHandler(events: EventEmitter) {
       });
     } catch (error) {
       // Emit error event so the frontend can react
-      events.emit('stash:failure', {
+      events.emit("stash:failure", {
         worktreePath: req.body?.worktreePath,
         stashIndex: req.body?.stashIndex,
-        operation: 'drop',
+        operation: "drop",
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Stash drop failed');
+      logError(error, "Stash drop failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

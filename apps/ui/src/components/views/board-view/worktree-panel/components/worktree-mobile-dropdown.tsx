@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,11 +6,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { GitBranch, ChevronDown, CircleDot, Check, Globe } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import type { WorktreeInfo, DevServerInfo } from '../types';
+} from "@/components/ui/dropdown-menu";
+import { GitBranch, ChevronDown, CircleDot, Check, Globe } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import type { WorktreeInfo, DevServerInfo } from "../types";
 
 interface WorktreeMobileDropdownProps {
   worktrees: WorktreeInfo[];
@@ -37,7 +37,7 @@ export function WorktreeMobileDropdown({
 }: WorktreeMobileDropdownProps) {
   // Find the currently selected worktree to display in the trigger
   const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w));
-  const displayBranch = selectedWorktree?.branch || 'Select branch';
+  const displayBranch = selectedWorktree?.branch || "Select branch";
 
   return (
     <DropdownMenu>
@@ -57,7 +57,10 @@ export function WorktreeMobileDropdown({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto">
+      <DropdownMenuContent
+        align="start"
+        className="w-64 max-h-80 overflow-y-auto"
+      >
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
           Branches & Worktrees
         </DropdownMenuLabel>
@@ -76,7 +79,10 @@ export function WorktreeMobileDropdown({
             <DropdownMenuItem
               key={worktree.path}
               onClick={() => onSelectWorktree(worktree)}
-              className={cn('flex items-center gap-2 cursor-pointer', isSelected && 'bg-accent')}
+              className={cn(
+                "flex items-center gap-2 cursor-pointer",
+                isSelected && "bg-accent",
+              )}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 {isSelected ? (
@@ -85,7 +91,12 @@ export function WorktreeMobileDropdown({
                   <div className="w-3.5 h-3.5 shrink-0" />
                 )}
                 {isRunning && <Spinner size="xs" className="shrink-0" />}
-                <span className={cn('font-mono text-xs truncate', isSelected && 'font-medium')}>
+                <span
+                  className={cn(
+                    "font-mono text-xs truncate",
+                    isSelected && "font-medium",
+                  )}
+                >
                   {worktree.branch}
                 </span>
                 {worktree.isMain && (
@@ -103,13 +114,13 @@ export function WorktreeMobileDropdown({
                 {hasChanges && (
                   <span
                     className={cn(
-                      'inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border',
-                      'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                      "inline-flex items-center justify-center h-4 min-w-[1rem] px-1 text-[10px] font-medium rounded border",
+                      "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30",
                     )}
-                    title={`${changedFilesCount ?? 'Some'} uncommitted file${changedFilesCount !== 1 ? 's' : ''}`}
+                    title={`${changedFilesCount ?? "Some"} uncommitted file${changedFilesCount !== 1 ? "s" : ""}`}
                   >
                     <CircleDot className="w-2.5 h-2.5 mr-0.5" />
-                    {changedFilesCount ?? '!'}
+                    {changedFilesCount ?? "!"}
                   </span>
                 )}
                 {devServerRunning && devServerInfo?.urlDetected === true && (

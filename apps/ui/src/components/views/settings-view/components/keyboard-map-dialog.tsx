@@ -1,19 +1,25 @@
-import { Keyboard } from 'lucide-react';
+import { Keyboard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { KeyboardMap, ShortcutReferencePanel } from '@/components/ui/keyboard-map';
+} from "@/components/ui/dialog";
+import {
+  KeyboardMap,
+  ShortcutReferencePanel,
+} from "@/components/ui/keyboard-map";
 
 interface KeyboardMapDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function KeyboardMapDialog({ open, onOpenChange }: KeyboardMapDialogProps) {
+export function KeyboardMapDialog({
+  open,
+  onOpenChange,
+}: KeyboardMapDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-popover border-border max-w-[calc(100%-2rem)] sm:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -23,8 +29,8 @@ export function KeyboardMapDialog({ open, onOpenChange }: KeyboardMapDialogProps
             Keyboard Shortcut Map
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Visual overview of all keyboard shortcuts. Keys in color are bound to shortcuts. Click
-            on any shortcut below to edit it.
+            Visual overview of all keyboard shortcuts. Keys in color are bound
+            to shortcuts. Click on any shortcut below to edit it.
           </DialogDescription>
         </DialogHeader>
 

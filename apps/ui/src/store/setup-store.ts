@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { GeminiAuthStatus } from '@pegasus/types';
+import { create } from "zustand";
+import type { GeminiAuthStatus } from "@pegasus/types";
 // Note: persist middleware removed - settings now sync via API (use-settings-sync.ts)
 
 // CLI Installation Status
@@ -98,10 +98,10 @@ export interface CopilotCliStatus {
 
 // Codex Auth Method
 export type CodexAuthMethod =
-  | 'api_key_env' // OPENAI_API_KEY environment variable
-  | 'api_key' // Manually stored API key
-  | 'cli_authenticated' // Codex CLI is installed and authenticated
-  | 'none';
+  | "api_key_env" // OPENAI_API_KEY environment variable
+  | "api_key" // Manually stored API key
+  | "cli_authenticated" // Codex CLI is installed and authenticated
+  | "none";
 
 // Codex Auth Status
 export interface CodexAuthStatus {
@@ -115,9 +115,9 @@ export interface CodexAuthStatus {
 
 // z.ai Auth Method
 export type ZaiAuthMethod =
-  | 'api_key_env' // Z_AI_API_KEY environment variable
-  | 'api_key' // Manually stored API key
-  | 'none';
+  | "api_key_env" // Z_AI_API_KEY environment variable
+  | "api_key" // Manually stored API key
+  | "none";
 
 // z.ai Auth Status
 export interface ZaiAuthStatus {
@@ -133,13 +133,13 @@ export type { GeminiAuthStatus };
 
 // Claude Auth Method - all possible authentication sources
 export type ClaudeAuthMethod =
-  | 'oauth_token_env'
-  | 'oauth_token' // Stored OAuth token from claude login
-  | 'api_key_env' // ANTHROPIC_API_KEY environment variable
-  | 'api_key' // Manually stored API key
-  | 'credentials_file' // Generic credentials file detection
-  | 'cli_authenticated' // Claude CLI is installed and has active sessions/activity
-  | 'none';
+  | "oauth_token_env"
+  | "oauth_token" // Stored OAuth token from claude login
+  | "api_key_env" // ANTHROPIC_API_KEY environment variable
+  | "api_key" // Manually stored API key
+  | "credentials_file" // Generic credentials file detection
+  | "cli_authenticated" // Claude CLI is installed and has active sessions/activity
+  | "none";
 
 // Claude Auth Status
 export interface ClaudeAuthStatus {
@@ -163,18 +163,18 @@ export interface InstallProgress {
 }
 
 export type SetupStep =
-  | 'welcome'
-  | 'theme'
-  | 'providers'
-  | 'claude_detect'
-  | 'claude_auth'
-  | 'cursor'
-  | 'codex'
-  | 'opencode'
-  | 'gemini'
-  | 'copilot'
-  | 'github'
-  | 'complete';
+  | "welcome"
+  | "theme"
+  | "providers"
+  | "claude_detect"
+  | "claude_auth"
+  | "cursor"
+  | "codex"
+  | "opencode"
+  | "gemini"
+  | "copilot"
+  | "github"
+  | "complete";
 
 export interface SetupState {
   // Setup wizard state
@@ -262,13 +262,13 @@ export interface SetupActions {
 
 const initialInstallProgress: InstallProgress = {
   isInstalling: false,
-  currentStep: '',
+  currentStep: "",
   progress: 0,
   output: [],
 };
 
 // Check if setup should be skipped (for E2E testing)
-const shouldSkipSetup = import.meta.env.VITE_SKIP_SETUP === 'true';
+const shouldSkipSetup = import.meta.env.VITE_SKIP_SETUP === "true";
 
 /**
  * Pre-flight check: read setupComplete from localStorage settings cache so that
@@ -286,7 +286,7 @@ const shouldSkipSetup = import.meta.env.VITE_SKIP_SETUP === 'true';
 function getInitialSetupComplete(): boolean {
   if (shouldSkipSetup) return true;
   try {
-    const raw = localStorage.getItem('pegasus-settings-cache');
+    const raw = localStorage.getItem("pegasus-settings-cache");
     if (raw) {
       const parsed = JSON.parse(raw) as { setupComplete?: boolean };
       if (parsed?.setupComplete === true) return true;
@@ -302,7 +302,7 @@ const initialSetupComplete = getInitialSetupComplete();
 const initialState: SetupState = {
   isFirstRun: !shouldSkipSetup && !initialSetupComplete,
   setupComplete: initialSetupComplete,
-  currentStep: initialSetupComplete ? 'complete' : 'welcome',
+  currentStep: initialSetupComplete ? "complete" : "welcome",
 
   claudeCliStatus: null,
   claudeAuthStatus: null,
@@ -328,89 +328,92 @@ const initialState: SetupState = {
   skipClaudeSetup: shouldSkipSetup,
 };
 
-export const useSetupStore = create<SetupState & SetupActions>()((set, get) => ({
-  ...initialState,
+export const useSetupStore = create<SetupState & SetupActions>()(
+  (set, get) => ({
+    ...initialState,
 
-  // Setup flow
-  setCurrentStep: (step) => set({ currentStep: step }),
+    // Setup flow
+    setCurrentStep: (step) => set({ currentStep: step }),
 
-  setSetupComplete: (complete) =>
-    set({
-      setupComplete: complete,
-      currentStep: complete ? 'complete' : 'welcome',
-    }),
+    setSetupComplete: (complete) =>
+      set({
+        setupComplete: complete,
+        currentStep: complete ? "complete" : "welcome",
+      }),
 
-  completeSetup: () => set({ setupComplete: true, currentStep: 'complete' }),
+    completeSetup: () => set({ setupComplete: true, currentStep: "complete" }),
 
-  resetSetup: () =>
-    set({
-      ...initialState,
-      // Explicitly override runtime-critical fields that may be stale in the
-      // module-level initialState (captured at import time from localStorage).
-      setupComplete: false,
-      currentStep: 'welcome',
-      isFirstRun: false, // Don't reset first run flag — user has visited before
-    }),
+    resetSetup: () =>
+      set({
+        ...initialState,
+        // Explicitly override runtime-critical fields that may be stale in the
+        // module-level initialState (captured at import time from localStorage).
+        setupComplete: false,
+        currentStep: "welcome",
+        isFirstRun: false, // Don't reset first run flag — user has visited before
+      }),
 
-  setIsFirstRun: (isFirstRun) => set({ isFirstRun }),
+    setIsFirstRun: (isFirstRun) => set({ isFirstRun }),
 
-  // Claude CLI
-  setClaudeCliStatus: (status) => set({ claudeCliStatus: status }),
+    // Claude CLI
+    setClaudeCliStatus: (status) => set({ claudeCliStatus: status }),
 
-  setClaudeAuthStatus: (status) => set({ claudeAuthStatus: status }),
+    setClaudeAuthStatus: (status) => set({ claudeAuthStatus: status }),
 
-  setClaudeInstallProgress: (progress) =>
-    set({
-      claudeInstallProgress: {
-        ...get().claudeInstallProgress,
-        ...progress,
-      },
-    }),
+    setClaudeInstallProgress: (progress) =>
+      set({
+        claudeInstallProgress: {
+          ...get().claudeInstallProgress,
+          ...progress,
+        },
+      }),
 
-  resetClaudeInstallProgress: () =>
-    set({
-      claudeInstallProgress: { ...initialInstallProgress },
-    }),
+    resetClaudeInstallProgress: () =>
+      set({
+        claudeInstallProgress: { ...initialInstallProgress },
+      }),
 
-  setClaudeIsVerifying: (isVerifying) => set({ claudeIsVerifying: isVerifying }),
+    setClaudeIsVerifying: (isVerifying) =>
+      set({ claudeIsVerifying: isVerifying }),
 
-  // GitHub CLI
-  setGhCliStatus: (status) => set({ ghCliStatus: status }),
+    // GitHub CLI
+    setGhCliStatus: (status) => set({ ghCliStatus: status }),
 
-  // Cursor CLI
-  setCursorCliStatus: (status) => set({ cursorCliStatus: status }),
+    // Cursor CLI
+    setCursorCliStatus: (status) => set({ cursorCliStatus: status }),
 
-  // Codex CLI
-  setCodexCliStatus: (status) => set({ codexCliStatus: status }),
+    // Codex CLI
+    setCodexCliStatus: (status) => set({ codexCliStatus: status }),
 
-  setCodexAuthStatus: (status) => set({ codexAuthStatus: status }),
+    setCodexAuthStatus: (status) => set({ codexAuthStatus: status }),
 
-  setCodexInstallProgress: (progress) =>
-    set({
-      codexInstallProgress: {
-        ...get().codexInstallProgress,
-        ...progress,
-      },
-    }),
+    setCodexInstallProgress: (progress) =>
+      set({
+        codexInstallProgress: {
+          ...get().codexInstallProgress,
+          ...progress,
+        },
+      }),
 
-  resetCodexInstallProgress: () =>
-    set({
-      codexInstallProgress: { ...initialInstallProgress },
-    }),
+    resetCodexInstallProgress: () =>
+      set({
+        codexInstallProgress: { ...initialInstallProgress },
+      }),
 
-  // OpenCode CLI
-  setOpencodeCliStatus: (status) => set({ opencodeCliStatus: status }),
+    // OpenCode CLI
+    setOpencodeCliStatus: (status) => set({ opencodeCliStatus: status }),
 
-  // Gemini CLI
-  setGeminiCliStatus: (status) => set({ geminiCliStatus: status }),
-  setGeminiAuthStatus: (status) => set({ geminiAuthStatus: status }),
+    // Gemini CLI
+    setGeminiCliStatus: (status) => set({ geminiCliStatus: status }),
+    setGeminiAuthStatus: (status) => set({ geminiAuthStatus: status }),
 
-  // Copilot SDK
-  setCopilotCliStatus: (status) => set({ copilotCliStatus: status }),
+    // Copilot SDK
+    setCopilotCliStatus: (status) => set({ copilotCliStatus: status }),
 
-  // z.ai API
-  setZaiAuthStatus: (status) => set({ zaiAuthStatus: status }),
+    // z.ai API
+    setZaiAuthStatus: (status) => set({ zaiAuthStatus: status }),
 
-  // Preferences
-  setSkipClaudeSetup: (skip) => set({ skipClaudeSetup: skip }),
-}));
+    // Preferences
+    setSkipClaudeSetup: (skip) => set({ skipClaudeSetup: skip }),
+  }),
+);

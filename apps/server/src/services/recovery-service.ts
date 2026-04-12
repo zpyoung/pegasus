@@ -2,29 +2,32 @@
  * RecoveryService - Crash recovery and feature resumption
  */
 
-import path from 'path';
-import type { Feature, FeatureStatusWithPipeline } from '@pegasus/types';
-import { DEFAULT_MAX_CONCURRENCY } from '@pegasus/types';
+import path from "path";
+import type { Feature, FeatureStatusWithPipeline } from "@pegasus/types";
+import { DEFAULT_MAX_CONCURRENCY } from "@pegasus/types";
 import {
   createLogger,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
-} from '@pegasus/utils';
+} from "@pegasus/utils";
 import {
   getFeatureDir,
   getFeaturesDir,
   getExecutionStatePath,
   ensurePegasusDir,
-} from '@pegasus/platform';
-import * as secureFs from '../lib/secure-fs.js';
-import { getPromptCustomization } from '../lib/settings-helpers.js';
-import type { TypedEventBus } from './typed-event-bus.js';
-import type { ConcurrencyManager, RunningFeature } from './concurrency-manager.js';
-import type { SettingsService } from './settings-service.js';
-import type { PipelineStatusInfo } from './pipeline-orchestrator.js';
+} from "@pegasus/platform";
+import * as secureFs from "../lib/secure-fs.js";
+import { getPromptCustomization } from "../lib/settings-helpers.js";
+import type { TypedEventBus } from "./typed-event-bus.js";
+import type {
+  ConcurrencyManager,
+  RunningFeature,
+} from "./concurrency-manager.js";
+import type { SettingsService } from "./settings-service.js";
+import type { PipelineStatusInfo } from "./pipeline-orchestrator.js";
 
-const logger = createLogger('RecoveryService');
+const logger = createLogger("RecoveryService");
 
 export interface ExecutionState {
   version: 1;
@@ -40,10 +43,10 @@ export const DEFAULT_EXECUTION_STATE: ExecutionState = {
   version: 1,
   autoLoopWasRunning: false,
   maxConcurrency: DEFAULT_MAX_CONCURRENCY,
-  projectPath: '',
+  projectPath: "",
   branchName: null,
   runningFeatureIds: [],
-  savedAt: '',
+  savedAt: "",
 };
 
 export type ExecuteFeatureFn = (
@@ -52,19 +55,22 @@ export type ExecuteFeatureFn = (
   useWorktrees: boolean,
   isAutoMode: boolean,
   providedWorktreePath?: string,
-  options?: { continuationPrompt?: string; _calledInternally?: boolean }
+  options?: { continuationPrompt?: string; _calledInternally?: boolean },
 ) => Promise<void>;
-export type LoadFeatureFn = (projectPath: string, featureId: string) => Promise<Feature | null>;
+export type LoadFeatureFn = (
+  projectPath: string,
+  featureId: string,
+) => Promise<Feature | null>;
 export type DetectPipelineStatusFn = (
   projectPath: string,
   featureId: string,
-  status: FeatureStatusWithPipeline
+  status: FeatureStatusWithPipeline,
 ) => Promise<PipelineStatusInfo>;
 export type ResumePipelineFn = (
   projectPath: string,
   feature: Feature,
   useWorktrees: boolean,
-  pipelineInfo: PipelineStatusInfo
+  pipelineInfo: PipelineStatusInfo,
 ) => Promise<void>;
 export type IsFeatureRunningFn = (featureId: string) => boolean;
 export type AcquireRunningFeatureFn = (options: {
@@ -86,13 +92,13 @@ export class RecoveryService {
     private resumePipelineFn: ResumePipelineFn,
     private isFeatureRunningFn: IsFeatureRunningFn,
     private acquireRunningFeatureFn: AcquireRunningFeatureFn,
-    private releaseRunningFeatureFn: ReleaseRunningFeatureFn
+    private releaseRunningFeatureFn: ReleaseRunningFeatureFn,
   ) {}
 
   async saveExecutionStateForProject(
     projectPath: string,
     branchName: string | null,
-    maxConcurrency: number
+    maxConcurrency: number,
   ): Promise<void> {
     try {
       await ensurePegasusDir(projectPath);
@@ -112,7 +118,7 @@ export class RecoveryService {
       await secureFs.writeFile(
         getExecutionStatePath(projectPath),
         JSON.stringify(state, null, 2),
-        'utf-8'
+        "utf-8",
       );
     } catch {
       /* ignore */
@@ -122,7 +128,7 @@ export class RecoveryService {
   async saveExecutionState(
     projectPath: string,
     autoLoopWasRunning = false,
-    maxConcurrency = DEFAULT_MAX_CONCURRENCY
+    maxConcurrency = DEFAULT_MAX_CONCURRENCY,
   ): Promise<void> {
     try {
       await ensurePegasusDir(projectPath);
@@ -132,13 +138,15 @@ export class RecoveryService {
         maxConcurrency,
         projectPath,
         branchName: null,
-        runningFeatureIds: this.concurrencyManager.getAllRunning().map((rf) => rf.featureId),
+        runningFeatureIds: this.concurrencyManager
+          .getAllRunning()
+          .map((rf) => rf.featureId),
         savedAt: new Date().toISOString(),
       };
       await secureFs.writeFile(
         getExecutionStatePath(projectPath),
         JSON.stringify(state, null, 2),
-        'utf-8'
+        "utf-8",
       );
     } catch {
       /* ignore */
@@ -149,7 +157,7 @@ export class RecoveryService {
     try {
       const content = (await secureFs.readFile(
         getExecutionStatePath(projectPath),
-        'utf-8'
+        "utf-8",
       )) as string;
       return JSON.parse(content) as ExecutionState;
     } catch {
@@ -157,7 +165,10 @@ export class RecoveryService {
     }
   }
 
-  async clearExecutionState(projectPath: string, _branchName: string | null = null): Promise<void> {
+  async clearExecutionState(
+    projectPath: string,
+    _branchName: string | null = null,
+  ): Promise<void> {
     try {
       await secureFs.unlink(getExecutionStatePath(projectPath));
     } catch {
@@ -165,9 +176,14 @@ export class RecoveryService {
     }
   }
 
-  async contextExists(projectPath: string, featureId: string): Promise<boolean> {
+  async contextExists(
+    projectPath: string,
+    featureId: string,
+  ): Promise<boolean> {
     try {
-      await secureFs.access(path.join(getFeatureDir(projectPath, featureId), 'agent-output.md'));
+      await secureFs.access(
+        path.join(getFeatureDir(projectPath, featureId), "agent-output.md"),
+      );
       return true;
     } catch {
       return false;
@@ -178,27 +194,37 @@ export class RecoveryService {
     projectPath: string,
     featureId: string,
     context: string,
-    useWorktrees: boolean
+    useWorktrees: boolean,
   ): Promise<void> {
     const feature = await this.loadFeatureFn(projectPath, featureId);
     if (!feature) throw new Error(`Feature ${featureId} not found`);
-    const prompts = await getPromptCustomization(this.settingsService, '[RecoveryService]');
-    const featurePrompt = `## Feature Implementation Task\n\n**Feature ID:** ${feature.id}\n**Title:** ${feature.title || 'Untitled Feature'}\n**Description:** ${feature.description}\n`;
+    const prompts = await getPromptCustomization(
+      this.settingsService,
+      "[RecoveryService]",
+    );
+    const featurePrompt = `## Feature Implementation Task\n\n**Feature ID:** ${feature.id}\n**Title:** ${feature.title || "Untitled Feature"}\n**Description:** ${feature.description}\n`;
     let prompt = prompts.taskExecution.resumeFeatureTemplate;
     prompt = prompt
       .replace(/\{\{featurePrompt\}\}/g, featurePrompt)
       .replace(/\{\{previousContext\}\}/g, context);
-    return this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
-      continuationPrompt: prompt,
-      _calledInternally: true,
-    });
+    return this.executeFeatureFn(
+      projectPath,
+      featureId,
+      useWorktrees,
+      false,
+      undefined,
+      {
+        continuationPrompt: prompt,
+        _calledInternally: true,
+      },
+    );
   }
 
   async resumeFeature(
     projectPath: string,
     featureId: string,
     useWorktrees = false,
-    _calledInternally = false
+    _calledInternally = false,
   ): Promise<void> {
     if (!_calledInternally && this.isFeatureRunningFn(featureId)) return;
     this.acquireRunningFeatureFn({
@@ -213,35 +239,52 @@ export class RecoveryService {
       const pipelineInfo = await this.detectPipelineStatusFn(
         projectPath,
         featureId,
-        (feature.status || '') as FeatureStatusWithPipeline
+        (feature.status || "") as FeatureStatusWithPipeline,
       );
       if (pipelineInfo.isPipeline)
-        return await this.resumePipelineFn(projectPath, feature, useWorktrees, pipelineInfo);
+        return await this.resumePipelineFn(
+          projectPath,
+          feature,
+          useWorktrees,
+          pipelineInfo,
+        );
       const hasContext = await this.contextExists(projectPath, featureId);
       if (hasContext) {
         const context = (await secureFs.readFile(
-          path.join(getFeatureDir(projectPath, featureId), 'agent-output.md'),
-          'utf-8'
+          path.join(getFeatureDir(projectPath, featureId), "agent-output.md"),
+          "utf-8",
         )) as string;
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_resuming', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_resuming", {
           featureId,
           featureName: feature.title,
           projectPath,
           hasContext: true,
           message: `Resuming feature "${feature.title}" from saved context`,
         });
-        return await this.executeFeatureWithContext(projectPath, featureId, context, useWorktrees);
+        return await this.executeFeatureWithContext(
+          projectPath,
+          featureId,
+          context,
+          useWorktrees,
+        );
       }
-      this.eventBus.emitAutoModeEvent('auto_mode_feature_resuming', {
+      this.eventBus.emitAutoModeEvent("auto_mode_feature_resuming", {
         featureId,
         featureName: feature.title,
         projectPath,
         hasContext: false,
         message: `Starting fresh execution for interrupted feature "${feature.title}"`,
       });
-      return await this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
-        _calledInternally: true,
-      });
+      return await this.executeFeatureFn(
+        projectPath,
+        featureId,
+        useWorktrees,
+        false,
+        undefined,
+        {
+          _calledInternally: true,
+        },
+      );
     } finally {
       this.releaseRunningFeatureFn(featureId);
     }
@@ -256,17 +299,21 @@ export class RecoveryService {
       // BEFORE the UI connects and calls this method. Without checking execution state,
       // we would find no features to resume since their statuses have already been reset.
       const executionState = await this.loadExecutionState(projectPath);
-      const previouslyRunningIds = new Set(executionState.runningFeatureIds ?? []);
+      const previouslyRunningIds = new Set(
+        executionState.runningFeatureIds ?? [],
+      );
 
-      const entries = await secureFs.readdir(featuresDir, { withFileTypes: true });
+      const entries = await secureFs.readdir(featuresDir, {
+        withFileTypes: true,
+      });
       const featuresWithContext: Feature[] = [];
       const featuresWithoutContext: Feature[] = [];
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const result = await readJsonWithRecovery<Feature | null>(
-            path.join(featuresDir, entry.name, 'feature.json'),
+            path.join(featuresDir, entry.name, "feature.json"),
             null,
-            { maxBackups: DEFAULT_BACKUP_COUNT, autoRestore: true }
+            { maxBackups: DEFAULT_BACKUP_COUNT, autoRestore: true },
           );
           logRecoveryWarning(result, `Feature ${entry.name}`, logger);
           const feature = result.data;
@@ -278,12 +325,12 @@ export class RecoveryService {
           // 3. Features that were previously running (from execution state) and are now
           //    in ready/backlog due to reconciliation resetting their status
           const isActiveState =
-            feature.status === 'in_progress' ||
-            feature.status === 'interrupted' ||
-            (feature.status && feature.status.startsWith('pipeline_'));
+            feature.status === "in_progress" ||
+            feature.status === "interrupted" ||
+            (feature.status && feature.status.startsWith("pipeline_"));
           const wasReconciledFromRunning =
             previouslyRunningIds.has(feature.id) &&
-            (feature.status === 'ready' || feature.status === 'backlog');
+            (feature.status === "ready" || feature.status === "backlog");
 
           if (isActiveState || wasReconciledFromRunning) {
             if (await this.contextExists(projectPath, feature.id)) {
@@ -294,15 +341,18 @@ export class RecoveryService {
           }
         }
       }
-      const allInterruptedFeatures = [...featuresWithContext, ...featuresWithoutContext];
+      const allInterruptedFeatures = [
+        ...featuresWithContext,
+        ...featuresWithoutContext,
+      ];
       if (allInterruptedFeatures.length === 0) return;
 
       logger.info(
         `[resumeInterruptedFeatures] Found ${allInterruptedFeatures.length} feature(s) to resume ` +
-          `(${previouslyRunningIds.size} from execution state, statuses: ${allInterruptedFeatures.map((f) => `${f.id}=${f.status}`).join(', ')})`
+          `(${previouslyRunningIds.size} from execution state, statuses: ${allInterruptedFeatures.map((f) => `${f.id}=${f.status}`).join(", ")})`,
       );
 
-      this.eventBus.emitAutoModeEvent('auto_mode_resuming_features', {
+      this.eventBus.emitAutoModeEvent("auto_mode_resuming_features", {
         message: `Resuming ${allInterruptedFeatures.length} interrupted feature(s)`,
         projectPath,
         featureIds: allInterruptedFeatures.map((f) => f.id),

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 interface UseSidebarAutoCollapseProps {
   sidebarOpen: boolean;
@@ -13,7 +13,7 @@ export function useSidebarAutoCollapse({
 
   // Auto-collapse sidebar on small screens
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 1024px)'); // lg breakpoint
+    const mediaQuery = window.matchMedia("(max-width: 1024px)"); // lg breakpoint
 
     const handleResize = () => {
       if (mediaQuery.matches && sidebarOpen) {
@@ -29,8 +29,8 @@ export function useSidebarAutoCollapse({
     }
 
     // Listen for changes
-    mediaQuery.addEventListener('change', handleResize);
-    return () => mediaQuery.removeEventListener('change', handleResize);
+    mediaQuery.addEventListener("change", handleResize);
+    return () => mediaQuery.removeEventListener("change", handleResize);
   }, [sidebarOpen, toggleSidebar]);
 
   // Update Electron window minWidth when sidebar state changes

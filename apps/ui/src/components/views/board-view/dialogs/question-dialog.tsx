@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,18 +8,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Feature } from '@/store/app-store';
-import type { AgentQuestion } from '@pegasus/types';
-import { MessageSquare, Bot } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { QuestionHelperPanel } from './question-helper-panel';
-import { getHttpApiClient } from '@/lib/http-api-client';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Feature } from "@/store/app-store";
+import type { AgentQuestion } from "@pegasus/types";
+import { MessageSquare, Bot } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { QuestionHelperPanel } from "./question-helper-panel";
+import { getHttpApiClient } from "@/lib/http-api-client";
 
 /**
  * Sentinel value used internally to track that the user picked the synthetic
@@ -30,22 +30,22 @@ import { getHttpApiClient } from '@/lib/http-api-client';
  * labels coming from the SDK are short ("1-5 words", per AskUserQuestionInput
  * docs) and a sentinel that contains a comma would defeat the purpose.
  */
-export const OTHER_OPTION_SENTINEL = '__OTHER__';
+export const OTHER_OPTION_SENTINEL = "__OTHER__";
 
 /** Display label for the synthetic "Other" option. */
-const OTHER_OPTION_LABEL = 'Other';
+const OTHER_OPTION_LABEL = "Other";
 
 /**
  * Split a multi-select answer string into the array of selected option labels.
  * Inverse of `joinMultiSelectAnswer`.
  */
 function splitMultiSelectAnswer(answer: string): string[] {
-  return answer ? answer.split(', ').filter(Boolean) : [];
+  return answer ? answer.split(", ").filter(Boolean) : [];
 }
 
 /** Join an array of selected option labels back into the canonical answer string. */
 function joinMultiSelectAnswer(labels: string[]): string {
-  return labels.join(', ');
+  return labels.join(", ");
 }
 
 /**
@@ -74,9 +74,11 @@ function QuestionItem({
   autoFocus?: boolean;
 }) {
   const multiSelectSelected = splitMultiSelectAnswer(answer);
-  const isSingleSelectOther = question.type === 'single-select' && answer === OTHER_OPTION_SENTINEL;
+  const isSingleSelectOther =
+    question.type === "single-select" && answer === OTHER_OPTION_SENTINEL;
   const isMultiSelectOther =
-    question.type === 'multi-select' && multiSelectSelected.includes(OTHER_OPTION_SENTINEL);
+    question.type === "multi-select" &&
+    multiSelectSelected.includes(OTHER_OPTION_SENTINEL);
 
   const handleMultiSelectChange = (optionValue: string, checked: boolean) => {
     const updated = checked
@@ -105,9 +107,11 @@ function QuestionItem({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium leading-relaxed">{question.question}</Label>
+      <Label className="text-sm font-medium leading-relaxed">
+        {question.question}
+      </Label>
 
-      {question.type === 'free-text' && (
+      {question.type === "free-text" && (
         <Textarea
           value={answer}
           onChange={(e) => onChange(e.target.value)}
@@ -118,8 +122,12 @@ function QuestionItem({
         />
       )}
 
-      {question.type === 'single-select' && question.options && (
-        <RadioGroup value={answer} onValueChange={onChange} className="space-y-1">
+      {question.type === "single-select" && question.options && (
+        <RadioGroup
+          value={answer}
+          onValueChange={onChange}
+          className="space-y-1"
+        >
           {question.options.map((option) => (
             <div key={option.label} className="flex items-start space-x-3">
               <RadioGroupItem
@@ -133,7 +141,9 @@ function QuestionItem({
               >
                 <span className="font-medium">{option.label}</span>
                 {option.description && (
-                  <span className="block text-xs text-muted-foreground">{option.description}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
                 )}
               </Label>
             </div>
@@ -160,14 +170,16 @@ function QuestionItem({
         </RadioGroup>
       )}
 
-      {question.type === 'multi-select' && question.options && (
+      {question.type === "multi-select" && question.options && (
         <div className="space-y-1">
           {question.options.map((option) => (
             <div key={option.label} className="flex items-start space-x-3">
               <Checkbox
                 id={`option-${question.id}-${option.label}`}
                 checked={multiSelectSelected.includes(option.label)}
-                onCheckedChange={(checked) => handleMultiSelectChange(option.label, !!checked)}
+                onCheckedChange={(checked) =>
+                  handleMultiSelectChange(option.label, !!checked)
+                }
                 disabled={disabled}
               />
               <Label
@@ -176,7 +188,9 @@ function QuestionItem({
               >
                 <span className="font-medium">{option.label}</span>
                 {option.description && (
-                  <span className="block text-xs text-muted-foreground">{option.description}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
                 )}
               </Label>
             </div>
@@ -217,25 +231,25 @@ function QuestionItem({
 export function buildFinalAnswer(
   question: AgentQuestion,
   rawAnswer: string,
-  otherText: string
+  otherText: string,
 ): string {
   const trimmedOther = otherText.trim();
 
-  if (question.type === 'single-select') {
+  if (question.type === "single-select") {
     if (rawAnswer === OTHER_OPTION_SENTINEL) {
       return trimmedOther;
     }
     return rawAnswer.trim();
   }
 
-  if (question.type === 'multi-select') {
+  if (question.type === "multi-select") {
     const labels = splitMultiSelectAnswer(rawAnswer);
     const substituted = labels.map((label) =>
-      label === OTHER_OPTION_SENTINEL ? trimmedOther : label
+      label === OTHER_OPTION_SENTINEL ? trimmedOther : label,
     );
     // Drop any empty entries (e.g. if Other was checked but no text was entered —
     // validation should prevent this from being submitted, but defend anyway)
-    return substituted.filter((s) => s.length > 0).join(', ');
+    return substituted.filter((s) => s.length > 0).join(", ");
   }
 
   // free-text
@@ -249,13 +263,13 @@ export function buildFinalAnswer(
 export function isQuestionAnswered(
   question: AgentQuestion,
   rawAnswer: string,
-  otherText: string
+  otherText: string,
 ): boolean {
-  if (question.type === 'free-text') {
+  if (question.type === "free-text") {
     return rawAnswer.trim().length > 0;
   }
 
-  if (question.type === 'single-select') {
+  if (question.type === "single-select") {
     if (!rawAnswer) return false;
     if (rawAnswer === OTHER_OPTION_SENTINEL) {
       return otherText.trim().length > 0;
@@ -263,7 +277,7 @@ export function isQuestionAnswered(
     return true;
   }
 
-  if (question.type === 'multi-select') {
+  if (question.type === "multi-select") {
     const labels = splitMultiSelectAnswer(rawAnswer);
     if (labels.length === 0) return false;
     if (labels.includes(OTHER_OPTION_SENTINEL)) {
@@ -281,7 +295,9 @@ interface QuestionDialogProps {
   feature: Feature | null;
   questions: AgentQuestion[];
   /** Called with all answers at once when the user submits */
-  onSubmitAllAnswers: (answers: Array<{ questionId: string; answer: string }>) => Promise<void>;
+  onSubmitAllAnswers: (
+    answers: Array<{ questionId: string; answer: string }>,
+  ) => Promise<void>;
   isLoading?: boolean;
   /** Project path for the helper sub-agent (enables read-only codebase chat) */
   projectPath?: string;
@@ -305,7 +321,7 @@ export function QuestionDialog({
   const [submitting, setSubmitting] = useState(false);
   // FR-007: visible by default on ≥1024px, hidden by default on narrower viewports.
   const [showHelper, setShowHelper] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth >= 1024
+    () => typeof window !== "undefined" && window.innerWidth >= 1024,
   );
 
   const helperFeatureId = feature?.id ?? null;
@@ -330,7 +346,7 @@ export function QuestionDialog({
     }
   }, [open, questions]);
 
-  const pendingQuestions = questions.filter((q) => q.status === 'pending');
+  const pendingQuestions = questions.filter((q) => q.status === "pending");
 
   // All pending questions must have a non-empty answer to enable submit.
   // For select-type questions where "Other" is picked, the textarea must
@@ -338,7 +354,7 @@ export function QuestionDialog({
   const allAnswered =
     pendingQuestions.length > 0 &&
     pendingQuestions.every((q) =>
-      isQuestionAnswered(q, answers[q.id] ?? '', otherTexts[q.id] ?? '')
+      isQuestionAnswered(q, answers[q.id] ?? "", otherTexts[q.id] ?? ""),
     );
 
   const isSubmitDisabled = !allAnswered || submitting || isLoading;
@@ -358,7 +374,7 @@ export function QuestionDialog({
     // before, so no API or storage changes are needed.
     const payload = pendingQuestions.map((q) => ({
       questionId: q.id,
-      answer: buildFinalAnswer(q, answers[q.id] ?? '', otherTexts[q.id] ?? ''),
+      answer: buildFinalAnswer(q, answers[q.id] ?? "", otherTexts[q.id] ?? ""),
     }));
     setSubmitting(true);
     try {
@@ -381,13 +397,13 @@ export function QuestionDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className={`w-full max-h-[85vh] flex flex-col ${showHelperPanel ? 'max-w-[min(95vw,1500px)]' : 'max-w-5xl'}`}
+        className={`w-full max-h-[85vh] flex flex-col ${showHelperPanel ? "max-w-[min(95vw,1500px)]" : "max-w-5xl"}`}
         data-testid="question-dialog"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-amber-500" />
-            Agent Question{pendingQuestions.length > 1 ? 's' : ''}
+            Agent Question{pendingQuestions.length > 1 ? "s" : ""}
             {feature?.title && (
               <span className="font-normal text-muted-foreground text-sm">
                 — {feature.title}
@@ -401,17 +417,17 @@ export function QuestionDialog({
                 // (positioned at right-4 top-4) so the two controls don't overlap.
                 className="ml-auto mr-8 h-7 px-2 text-xs text-muted-foreground"
                 onClick={() => setShowHelper((v) => !v)}
-                title={showHelper ? 'Hide code helper' : 'Show code helper'}
+                title={showHelper ? "Hide code helper" : "Show code helper"}
               >
                 <Bot className="h-4 w-4 mr-1" />
-                {showHelper ? 'Hide helper' : 'Ask about codebase'}
+                {showHelper ? "Hide helper" : "Ask about codebase"}
               </Button>
             )}
           </DialogTitle>
           <DialogDescription>
             {pendingQuestions.length > 1
               ? `The agent needs your input on ${pendingQuestions.length} questions before continuing.`
-              : 'The agent needs your input before continuing. Answer the question below to resume execution.'}
+              : "The agent needs your input before continuing. Answer the question below to resume execution."}
           </DialogDescription>
         </DialogHeader>
 
@@ -430,10 +446,12 @@ export function QuestionDialog({
                   )}
                   <QuestionItem
                     question={question}
-                    answer={answers[question.id] ?? ''}
+                    answer={answers[question.id] ?? ""}
                     onChange={(value) => handleChange(question.id, value)}
-                    otherText={otherTexts[question.id] ?? ''}
-                    onOtherTextChange={(value) => handleOtherTextChange(question.id, value)}
+                    otherText={otherTexts[question.id] ?? ""}
+                    onOtherTextChange={(value) =>
+                      handleOtherTextChange(question.id, value)
+                    }
                     disabled={submitting || isLoading}
                     autoFocus={index === 0}
                   />
@@ -448,7 +466,10 @@ export function QuestionDialog({
           {/* Helper panel column (conditional) */}
           {showHelperPanel && helperFeatureId && projectPath && (
             <div className="w-[380px] shrink-0 border-l pl-4 flex flex-col overflow-hidden min-h-0">
-              <QuestionHelperPanel featureId={helperFeatureId} projectPath={projectPath} />
+              <QuestionHelperPanel
+                featureId={helperFeatureId}
+                projectPath={projectPath}
+              />
             </div>
           )}
         </div>
@@ -468,9 +489,9 @@ export function QuestionDialog({
                 Submitting...
               </>
             ) : pendingQuestions.length > 1 ? (
-              'Submit All Answers'
+              "Submit All Answers"
             ) : (
-              'Submit Answer'
+              "Submit Answer"
             )}
           </Button>
         </DialogFooter>

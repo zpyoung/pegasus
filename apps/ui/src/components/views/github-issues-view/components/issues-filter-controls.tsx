@@ -1,12 +1,12 @@
-import { ChevronDown, Tag, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronDown, Tag, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -14,11 +14,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import type { IssuesStateFilter } from '../types';
-import { ISSUES_STATE_FILTER_OPTIONS } from '../types';
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import type { IssuesStateFilter } from "../types";
+import { ISSUES_STATE_FILTER_OPTIONS } from "../types";
 
 /** Maximum number of labels to display before showing "+N more" in normal layout */
 const VISIBLE_LABELS_LIMIT = 3;
@@ -46,9 +46,9 @@ interface IssuesFilterControlsProps {
 
 /** Human-readable labels for state filter options */
 const STATE_FILTER_LABELS: Record<IssuesStateFilter, string> = {
-  open: 'Open',
-  closed: 'Closed',
-  all: 'All',
+  open: "Open",
+  closed: "Closed",
+  all: "All",
 };
 
 export function IssuesFilterControls({
@@ -85,16 +85,20 @@ export function IssuesFilterControls({
   const hasAvailableLabels = availableLabels.length > 0;
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn("flex flex-col gap-2", className)}>
       {/* Filter Controls Row */}
       <div className="flex items-center gap-2">
         {/* State Filter Select */}
         <Select
           value={stateFilter}
-          onValueChange={(value) => onStateFilterChange(value as IssuesStateFilter)}
+          onValueChange={(value) =>
+            onStateFilterChange(value as IssuesStateFilter)
+          }
           disabled={disabled}
         >
-          <SelectTrigger className={cn('h-8 text-sm', compact ? 'w-[90px]' : 'w-[110px]')}>
+          <SelectTrigger
+            className={cn("h-8 text-sm", compact ? "w-[90px]" : "w-[110px]")}
+          >
             <SelectValue placeholder="State" />
           </SelectTrigger>
           <SelectContent>
@@ -108,24 +112,37 @@ export function IssuesFilterControls({
 
         {/* Labels Filter Dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={disabled || !hasAvailableLabels}>
+          <DropdownMenuTrigger
+            asChild
+            disabled={disabled || !hasAvailableLabels}
+          >
             <Button
               variant="outline"
               size="sm"
-              className={cn('h-8 gap-1.5', hasSelectedLabels && 'border-primary/50 bg-primary/5')}
+              className={cn(
+                "h-8 gap-1.5",
+                hasSelectedLabels && "border-primary/50 bg-primary/5",
+              )}
               disabled={disabled || !hasAvailableLabels}
             >
               <Tag className="h-3.5 w-3.5" />
               <span>Labels</span>
               {hasSelectedLabels && (
-                <Badge variant="secondary" size="sm" className="ml-1 px-1.5 py-0">
+                <Badge
+                  variant="secondary"
+                  size="sm"
+                  className="ml-1 px-1.5 py-0"
+                >
                   {selectedLabels.length}
                 </Badge>
               )}
               <ChevronDown className="h-3.5 w-3.5 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56 max-h-64 overflow-y-auto">
+          <DropdownMenuContent
+            align="start"
+            className="w-56 max-h-64 overflow-y-auto"
+          >
             <DropdownMenuLabel className="flex items-center justify-between">
               <span>Filter by label</span>
               {hasSelectedLabels && (
@@ -152,7 +169,9 @@ export function IssuesFilterControls({
               </DropdownMenuCheckboxItem>
             ))}
             {!hasAvailableLabels && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">No labels available</div>
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                No labels available
+              </div>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -162,7 +181,10 @@ export function IssuesFilterControls({
       {hasSelectedLabels && (
         <div className="flex items-center gap-1 flex-wrap">
           {selectedLabels
-            .slice(0, compact ? VISIBLE_LABELS_LIMIT_COMPACT : VISIBLE_LABELS_LIMIT)
+            .slice(
+              0,
+              compact ? VISIBLE_LABELS_LIMIT_COMPACT : VISIBLE_LABELS_LIMIT,
+            )
             .map((label) => (
               <Badge
                 key={label}
@@ -180,7 +202,9 @@ export function IssuesFilterControls({
             <Badge variant="muted" size="sm">
               +
               {selectedLabels.length -
-                (compact ? VISIBLE_LABELS_LIMIT_COMPACT : VISIBLE_LABELS_LIMIT)}{' '}
+                (compact
+                  ? VISIBLE_LABELS_LIMIT_COMPACT
+                  : VISIBLE_LABELS_LIMIT)}{" "}
               more
             </Badge>
           )}

@@ -1,7 +1,7 @@
 // @ts-nocheck - optional callback prop typing with feature status narrowing
-import { memo } from 'react';
-import { Feature } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
+import { memo } from "react";
+import { Feature } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
 import {
   Edit,
   PlayCircle,
@@ -14,7 +14,7 @@ import {
   Archive,
   MessageSquare,
   GitCommit,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface CardActionsProps {
   feature: Feature;
@@ -72,7 +72,7 @@ export const CardActions = memo(function CardActions({
       {isCurrentAutoTask && (
         <>
           {/* Approve Plan button - PRIORITY: shows even when agent is "running" (paused for approval) */}
-          {feature.planSpec?.status === 'generated' && onApprovePlan && (
+          {feature.planSpec?.status === "generated" && onApprovePlan && (
             <Button
               variant="default"
               size="sm"
@@ -130,7 +130,7 @@ export const CardActions = memo(function CardActions({
         </>
       )}
       {/* Answer Question button — feature is paused waiting for user input */}
-      {feature.status === 'waiting_question' && onAnswerQuestion && (
+      {feature.status === "waiting_question" && onAnswerQuestion && (
         <Button
           variant="default"
           size="sm"
@@ -147,8 +147,9 @@ export const CardActions = memo(function CardActions({
         </Button>
       )}
       {!isCurrentAutoTask &&
-        (feature.status === 'in_progress' ||
-          (typeof feature.status === 'string' && feature.status.startsWith('pipeline_'))) && (
+        (feature.status === "in_progress" ||
+          (typeof feature.status === "string" &&
+            feature.status.startsWith("pipeline_"))) && (
           <>
             {/* When feature is in_progress with no error and onForceStop is available,
                 it means the agent is starting/running but hasn't been added to runningAutoTasks yet.
@@ -196,7 +197,7 @@ export const CardActions = memo(function CardActions({
             ) : (
               <>
                 {/* Approve Plan button - shows when plan is generated and waiting for approval */}
-                {feature.planSpec?.status === 'generated' && onApprovePlan && (
+                {feature.planSpec?.status === "generated" && onApprovePlan && (
                   <Button
                     variant="default"
                     size="sm"
@@ -277,7 +278,7 @@ export const CardActions = memo(function CardActions({
             )}
           </>
         )}
-      {!isCurrentAutoTask && feature.status === 'verified' && (
+      {!isCurrentAutoTask && feature.status === "verified" && (
         <>
           {/* Logs button */}
           {onViewOutput && (
@@ -332,7 +333,7 @@ export const CardActions = memo(function CardActions({
           )}
         </>
       )}
-      {!isCurrentAutoTask && feature.status === 'waiting_approval' && (
+      {!isCurrentAutoTask && feature.status === "waiting_approval" && (
         <>
           {/* Refine prompt button */}
           {onFollowUp && (
@@ -406,10 +407,10 @@ export const CardActions = memo(function CardActions({
           Show Logs/Stop controls instead of Make to avoid confusing UI. */}
       {!isCurrentAutoTask &&
         isRunningTask &&
-        (feature.status === 'backlog' ||
-          feature.status === 'merge_conflict' ||
-          feature.status === 'interrupted' ||
-          feature.status === 'ready') && (
+        (feature.status === "backlog" ||
+          feature.status === "merge_conflict" ||
+          feature.status === "interrupted" ||
+          feature.status === "ready") && (
           <>
             {onViewOutput && (
               <Button
@@ -454,10 +455,10 @@ export const CardActions = memo(function CardActions({
         )}
       {!isCurrentAutoTask &&
         !isRunningTask &&
-        (feature.status === 'backlog' ||
-          feature.status === 'merge_conflict' ||
-          feature.status === 'interrupted' ||
-          feature.status === 'ready') && (
+        (feature.status === "backlog" ||
+          feature.status === "merge_conflict" ||
+          feature.status === "interrupted" ||
+          feature.status === "ready") && (
           <>
             <Button
               variant="secondary"
@@ -517,12 +518,12 @@ export const CardActions = memo(function CardActions({
                 onPointerDown={(e) => e.stopPropagation()}
                 data-testid={`make-${feature.id}`}
               >
-                {feature.status === 'merge_conflict' ? (
+                {feature.status === "merge_conflict" ? (
                   <RotateCcw className="w-3 h-3 mr-1" />
                 ) : (
                   <PlayCircle className="w-3 h-3 mr-1" />
                 )}
-                {feature.status === 'merge_conflict' ? 'Restart' : 'Make'}
+                {feature.status === "merge_conflict" ? "Restart" : "Make"}
               </Button>
             )}
           </>

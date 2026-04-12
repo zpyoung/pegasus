@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import {
   History,
   RefreshCw,
@@ -13,13 +13,17 @@ import {
   XCircle,
   Clock,
   AlertCircle,
-} from 'lucide-react';
-import { useAppStore } from '@/store/app-store';
-import type { StoredEventSummary, StoredEvent, EventHookTrigger } from '@pegasus/types';
-import { EVENT_HOOK_TRIGGER_LABELS } from '@pegasus/types';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { useAppStore } from "@/store/app-store";
+import type {
+  StoredEventSummary,
+  StoredEvent,
+  EventHookTrigger,
+} from "@pegasus/types";
+import { EVENT_HOOK_TRIGGER_LABELS } from "@pegasus/types";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 export function EventHistoryView() {
   const currentProject = useAppStore((state) => state.currentProject);
@@ -27,7 +31,8 @@ export function EventHistoryView() {
   const [events, setEvents] = useState<StoredEventSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-  const [expandedEventData, setExpandedEventData] = useState<StoredEvent | null>(null);
+  const [expandedEventData, setExpandedEventData] =
+    useState<StoredEvent | null>(null);
   const [replayingEvent, setReplayingEvent] = useState<string | null>(null);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
@@ -42,7 +47,7 @@ export function EventHistoryView() {
         setEvents(result.events);
       }
     } catch (error) {
-      console.error('Failed to load events:', error);
+      console.error("Failed to load events:", error);
     } finally {
       setLoading(false);
     }
@@ -69,7 +74,7 @@ export function EventHistoryView() {
         setExpandedEventData(result.event);
       }
     } catch (error) {
-      console.error('Failed to load event details:', error);
+      console.error("Failed to load event details:", error);
     }
   };
 
@@ -86,18 +91,18 @@ export function EventHistoryView() {
         const failCount = hookResults.filter((r) => !r.success).length;
 
         if (hooksTriggered === 0) {
-          toast.info('No matching hooks found for this event trigger.');
+          toast.info("No matching hooks found for this event trigger.");
         } else if (failCount === 0) {
           toast.success(`Successfully ran ${successCount} hook(s).`);
         } else {
           toast.warning(
-            `Ran ${hooksTriggered} hook(s): ${successCount} succeeded, ${failCount} failed.`
+            `Ran ${hooksTriggered} hook(s): ${successCount} succeeded, ${failCount} failed.`,
           );
         }
       }
     } catch (error) {
-      console.error('Failed to replay event:', error);
-      toast.error('Failed to replay event. Check console for details.');
+      console.error("Failed to replay event:", error);
+      toast.error("Failed to replay event. Check console for details.");
     } finally {
       setReplayingEvent(null);
     }
@@ -117,7 +122,7 @@ export function EventHistoryView() {
         }
       }
     } catch (error) {
-      console.error('Failed to delete event:', error);
+      console.error("Failed to delete event:", error);
     }
   };
 
@@ -133,22 +138,22 @@ export function EventHistoryView() {
         setExpandedEventData(null);
       }
     } catch (error) {
-      console.error('Failed to clear events:', error);
+      console.error("Failed to clear events:", error);
     }
     setClearDialogOpen(false);
   };
 
   const getTriggerIcon = (trigger: EventHookTrigger) => {
     switch (trigger) {
-      case 'feature_created':
+      case "feature_created":
         return <Clock className="w-4 h-4 text-blue-500" />;
-      case 'feature_success':
+      case "feature_success":
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'feature_error':
+      case "feature_error":
         return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'auto_mode_complete':
+      case "auto_mode_complete":
         return <CheckCircle className="w-4 h-4 text-purple-500" />;
-      case 'auto_mode_error':
+      case "auto_mode_error":
         return <AlertCircle className="w-4 h-4 text-orange-500" />;
       default:
         return <History className="w-4 h-4 text-muted-foreground" />;
@@ -163,7 +168,7 @@ export function EventHistoryView() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
@@ -184,10 +189,15 @@ export function EventHistoryView() {
       {/* Header with actions */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {events.length} event{events.length !== 1 ? 's' : ''} recorded
+          {events.length} event{events.length !== 1 ? "s" : ""} recorded
         </p>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadEvents} disabled={loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadEvents}
+            disabled={loading}
+          >
             {loading ? (
               <Spinner size="sm" className="mr-2" />
             ) : (
@@ -224,8 +234,8 @@ export function EventHistoryView() {
             <div
               key={event.id}
               className={cn(
-                'rounded-lg border bg-background/50',
-                expandedEvent === event.id && 'ring-1 ring-brand-500/30'
+                "rounded-lg border bg-background/50",
+                expandedEvent === event.id && "ring-1 ring-brand-500/30",
               )}
             >
               {/* Event header */}
@@ -248,7 +258,9 @@ export function EventHistoryView() {
                     {EVENT_HOOK_TRIGGER_LABELS[event.trigger]}
                   </p>
                   {event.featureName && (
-                    <p className="text-xs text-muted-foreground truncate">{event.featureName}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {event.featureName}
+                    </p>
                   )}
                 </div>
 
@@ -257,7 +269,10 @@ export function EventHistoryView() {
                 </span>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button
                     variant="ghost"
                     size="icon"
@@ -267,7 +282,10 @@ export function EventHistoryView() {
                     title="Replay event (trigger matching hooks)"
                   >
                     <Play
-                      className={cn('w-3.5 h-3.5', replayingEvent === event.id && 'animate-pulse')}
+                      className={cn(
+                        "w-3.5 h-3.5",
+                        replayingEvent === event.id && "animate-pulse",
+                      )}
                     />
                   </Button>
                   <Button
@@ -289,15 +307,25 @@ export function EventHistoryView() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <span className="text-muted-foreground">Event ID:</span>
-                        <p className="font-mono text-[10px] truncate">{expandedEventData.id}</p>
+                        <p className="font-mono text-[10px] truncate">
+                          {expandedEventData.id}
+                        </p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Timestamp:</span>
-                        <p>{new Date(expandedEventData.timestamp).toLocaleString()}</p>
+                        <span className="text-muted-foreground">
+                          Timestamp:
+                        </span>
+                        <p>
+                          {new Date(
+                            expandedEventData.timestamp,
+                          ).toLocaleString()}
+                        </p>
                       </div>
                       {expandedEventData.featureId && (
                         <div>
-                          <span className="text-muted-foreground">Feature ID:</span>
+                          <span className="text-muted-foreground">
+                            Feature ID:
+                          </span>
                           <p className="font-mono text-[10px] truncate">
                             {expandedEventData.featureId}
                           </p>
@@ -306,7 +334,7 @@ export function EventHistoryView() {
                       {expandedEventData.passes !== undefined && (
                         <div>
                           <span className="text-muted-foreground">Passed:</span>
-                          <p>{expandedEventData.passes ? 'Yes' : 'No'}</p>
+                          <p>{expandedEventData.passes ? "Yes" : "No"}</p>
                         </div>
                       )}
                     </div>

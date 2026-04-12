@@ -7,28 +7,37 @@
  * - Additional types for facade method signatures
  */
 
-import type { EventEmitter } from '../../lib/events.js';
-import type { Feature, ModelProvider } from '@pegasus/types';
-import type { SettingsService } from '../settings-service.js';
-import type { FeatureLoader } from '../feature-loader.js';
-import type { ConcurrencyManager } from '../concurrency-manager.js';
-import type { AutoLoopCoordinator } from '../auto-loop-coordinator.js';
-import type { WorktreeResolver } from '../worktree-resolver.js';
-import type { TypedEventBus } from '../typed-event-bus.js';
-import type { ClaudeUsageService } from '../claude-usage-service.js';
+import type { EventEmitter } from "../../lib/events.js";
+import type { Feature, ModelProvider } from "@pegasus/types";
+import type { SettingsService } from "../settings-service.js";
+import type { FeatureLoader } from "../feature-loader.js";
+import type { ConcurrencyManager } from "../concurrency-manager.js";
+import type { AutoLoopCoordinator } from "../auto-loop-coordinator.js";
+import type { WorktreeResolver } from "../worktree-resolver.js";
+import type { TypedEventBus } from "../typed-event-bus.js";
+import type { ClaudeUsageService } from "../claude-usage-service.js";
 
 // Re-export types from extracted services for route consumption
-export type { AutoModeConfig, ProjectAutoLoopState } from '../auto-loop-coordinator.js';
+export type {
+  AutoModeConfig,
+  ProjectAutoLoopState,
+} from "../auto-loop-coordinator.js";
 
-export type { RunningFeature, AcquireParams } from '../concurrency-manager.js';
+export type { RunningFeature, AcquireParams } from "../concurrency-manager.js";
 
-export type { WorktreeInfo } from '../worktree-resolver.js';
+export type { WorktreeInfo } from "../worktree-resolver.js";
 
-export type { PipelineContext, PipelineStatusInfo } from '../pipeline-orchestrator.js';
+export type {
+  PipelineContext,
+  PipelineStatusInfo,
+} from "../pipeline-orchestrator.js";
 
-export type { PlanApprovalResult, ResolveApprovalResult } from '../plan-approval-service.js';
+export type {
+  PlanApprovalResult,
+  ResolveApprovalResult,
+} from "../plan-approval-service.js";
 
-export type { ExecutionState } from '../recovery-service.js';
+export type { ExecutionState } from "../recovery-service.js";
 
 /**
  * Shared services that can be passed to facades to enable state sharing
@@ -121,7 +130,7 @@ export interface FacadeError {
   /** The facade method where the error originated */
   method: string;
   /** Classified error type from the error handler */
-  errorType: import('@pegasus/types').ErrorType;
+  errorType: import("@pegasus/types").ErrorType;
   /** Human-readable error message */
   message: string;
   /** Feature ID if the error is associated with a specific feature */
@@ -140,7 +149,10 @@ export interface GlobalAutoModeOperations {
   /** Get all active auto loop projects (unique project paths) */
   getActiveAutoLoopProjects(): string[];
   /** Get all active auto loop worktrees */
-  getActiveAutoLoopWorktrees(): Array<{ projectPath: string; branchName: string | null }>;
+  getActiveAutoLoopWorktrees(): Array<{
+    projectPath: string;
+    branchName: string | null;
+  }>;
   /** Get detailed info about all running agents */
   getRunningAgents(): Promise<RunningAgentInfo[]>;
   /** Mark all running features as interrupted (for graceful shutdown) */

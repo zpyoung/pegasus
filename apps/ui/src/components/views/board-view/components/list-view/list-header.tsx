@@ -1,7 +1,11 @@
-import { memo, useCallback } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { SortColumn, SortConfig, SortDirection } from '../../hooks/use-list-view-state';
+import { memo, useCallback } from "react";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type {
+  SortColumn,
+  SortConfig,
+  SortDirection,
+} from "../../hooks/use-list-view-state";
 
 /**
  * Column definition for the list header
@@ -16,7 +20,7 @@ interface ColumnDef {
   /** Width class for the column */
   width?: string;
   /** Alignment of the column content */
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   /** Additional className for the column */
   className?: string;
 }
@@ -26,20 +30,20 @@ interface ColumnDef {
  */
 export const LIST_COLUMNS: ColumnDef[] = [
   {
-    id: 'title',
-    label: 'Title',
+    id: "title",
+    label: "Title",
     sortable: true,
-    width: 'flex-1',
-    minWidth: 'min-w-0',
-    align: 'left',
+    width: "flex-1",
+    minWidth: "min-w-0",
+    align: "left",
   },
   {
-    id: 'priority',
-    label: 'Priority',
+    id: "priority",
+    label: "Priority",
     sortable: true,
-    width: 'w-20',
-    minWidth: 'min-w-[60px]',
-    align: 'center',
+    width: "w-20",
+    minWidth: "min-w-[60px]",
+    align: "center",
   },
 ];
 
@@ -65,7 +69,13 @@ export interface ListHeaderProps {
 /**
  * SortIcon displays the current sort state for a column
  */
-function SortIcon({ column, sortConfig }: { column: SortColumn; sortConfig: SortConfig }) {
+function SortIcon({
+  column,
+  sortConfig,
+}: {
+  column: SortColumn;
+  sortConfig: SortConfig;
+}) {
   if (sortConfig.column !== column) {
     // Not sorted by this column - show neutral indicator
     return (
@@ -74,7 +84,7 @@ function SortIcon({ column, sortConfig }: { column: SortColumn; sortConfig: Sort
   }
 
   // Currently sorted by this column
-  if (sortConfig.direction === 'asc') {
+  if (sortConfig.direction === "asc") {
     return <ChevronUp className="w-3.5 h-3.5 text-foreground" />;
   }
 
@@ -99,36 +109,44 @@ const SortableColumnHeader = memo(function SortableColumnHeader({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onSortChange(column.id);
       }
     },
-    [column.id, onSortChange]
+    [column.id, onSortChange],
   );
 
   const isSorted = sortConfig.column === column.id;
-  const sortDirection: SortDirection | undefined = isSorted ? sortConfig.direction : undefined;
+  const sortDirection: SortDirection | undefined = isSorted
+    ? sortConfig.direction
+    : undefined;
 
   return (
     <div
       role="columnheader"
-      aria-sort={isSorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+      aria-sort={
+        isSorted
+          ? sortDirection === "asc"
+            ? "ascending"
+            : "descending"
+          : "none"
+      }
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'group flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground',
-        'cursor-pointer select-none transition-colors duration-200',
-        'hover:text-foreground hover:bg-accent/50 rounded-md',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+        "group flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground",
+        "cursor-pointer select-none transition-colors duration-200",
+        "hover:text-foreground hover:bg-accent/50 rounded-md",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         column.width,
         column.minWidth,
-        column.width !== 'flex-1' && 'shrink-0',
-        column.align === 'center' && 'justify-center',
-        column.align === 'right' && 'justify-end',
-        isSorted && 'text-foreground',
-        column.className
+        column.width !== "flex-1" && "shrink-0",
+        column.align === "center" && "justify-center",
+        column.align === "right" && "justify-end",
+        isSorted && "text-foreground",
+        column.className,
       )}
       data-testid={`list-header-${column.id}`}
     >
@@ -141,18 +159,22 @@ const SortableColumnHeader = memo(function SortableColumnHeader({
 /**
  * StaticColumnHeader renders a non-sortable header cell
  */
-const StaticColumnHeader = memo(function StaticColumnHeader({ column }: { column: ColumnDef }) {
+const StaticColumnHeader = memo(function StaticColumnHeader({
+  column,
+}: {
+  column: ColumnDef;
+}) {
   return (
     <div
       role="columnheader"
       className={cn(
-        'flex items-center px-3 py-2 text-xs font-medium text-muted-foreground',
+        "flex items-center px-3 py-2 text-xs font-medium text-muted-foreground",
         column.width,
         column.minWidth,
-        column.width !== 'flex-1' && 'shrink-0',
-        column.align === 'center' && 'justify-center',
-        column.align === 'right' && 'justify-end',
-        column.className
+        column.width !== "flex-1" && "shrink-0",
+        column.align === "center" && "justify-center",
+        column.align === "right" && "justify-end",
+        column.className,
       )}
       data-testid={`list-header-${column.id}`}
     >
@@ -209,9 +231,9 @@ export const ListHeader = memo(function ListHeader({
     <div
       role="row"
       className={cn(
-        'flex items-center w-full border-b border-border bg-muted/30',
-        'sticky top-0 z-10 backdrop-blur-sm',
-        className
+        "flex items-center w-full border-b border-border bg-muted/30",
+        "sticky top-0 z-10 backdrop-blur-sm",
+        className,
       )}
       data-testid="list-header"
     >
@@ -231,10 +253,10 @@ export const ListHeader = memo(function ListHeader({
             }}
             onChange={onSelectAll}
             className={cn(
-              'h-4 w-4 rounded border-border text-primary cursor-pointer',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1'
+              "h-4 w-4 rounded border-border text-primary cursor-pointer",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
             )}
-            aria-label={allSelected ? 'Deselect all' : 'Select all'}
+            aria-label={allSelected ? "Deselect all" : "Select all"}
             data-testid="list-header-select-all"
           />
         </div>
@@ -251,7 +273,7 @@ export const ListHeader = memo(function ListHeader({
           />
         ) : (
           <StaticColumnHeader key={column.id} column={column} />
-        )
+        ),
       )}
 
       {/* Actions column (placeholder for row action buttons) */}
@@ -287,7 +309,7 @@ export function getColumnWidth(columnId: SortColumn): string {
  */
 export function getColumnAlign(columnId: SortColumn): string {
   const column = getColumnById(columnId);
-  if (column?.align === 'center') return 'justify-center text-center';
-  if (column?.align === 'right') return 'justify-end text-right';
-  return '';
+  if (column?.align === "center") return "justify-center text-center";
+  if (column?.align === "right") return "justify-end text-right";
+  return "";
 }

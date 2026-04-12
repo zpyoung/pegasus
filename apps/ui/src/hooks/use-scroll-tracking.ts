@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface ScrollTrackingItem {
   id: string;
@@ -26,7 +26,9 @@ export function useScrollTracking<T extends ScrollTrackingItem>({
   initialSection,
   scrollOffset = 24,
 }: UseScrollTrackingOptions<T>) {
-  const [activeSection, setActiveSection] = useState(initialSection || items[0]?.id || '');
+  const [activeSection, setActiveSection] = useState(
+    initialSection || items[0]?.id || "",
+  );
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Track scroll position to highlight active nav item
@@ -70,8 +72,8 @@ export function useScrollTracking<T extends ScrollTrackingItem>({
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [items, filterFn]);
 
   // Scroll to a specific section with smooth animation
@@ -82,15 +84,16 @@ export function useScrollTracking<T extends ScrollTrackingItem>({
         const container = scrollContainerRef.current;
         const containerRect = container.getBoundingClientRect();
         const elementRect = element.getBoundingClientRect();
-        const relativeTop = elementRect.top - containerRect.top + container.scrollTop;
+        const relativeTop =
+          elementRect.top - containerRect.top + container.scrollTop;
 
         container.scrollTo({
           top: relativeTop - scrollOffset,
-          behavior: 'smooth',
+          behavior: "smooth",
         });
       }
     },
-    [scrollOffset]
+    [scrollOffset],
   );
 
   return {

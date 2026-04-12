@@ -7,10 +7,10 @@
  * @see https://docs.ntfy.sh/publish/
  */
 
-import { createLogger } from '@pegasus/utils';
-import type { NtfyEndpointConfig, EventHookContext } from '@pegasus/types';
+import { createLogger } from "@pegasus/utils";
+import type { NtfyEndpointConfig, EventHookContext } from "@pegasus/types";
 
-const logger = createLogger('Ntfy');
+const logger = createLogger("Ntfy");
 
 /** Default timeout for ntfy HTTP requests (10 seconds) */
 const DEFAULT_NTFY_TIMEOUT = 10000;
@@ -41,11 +41,13 @@ export class NtfyService {
       clickUrl?: string;
       priority?: 1 | 2 | 3 | 4 | 5;
     },
-    context: NtfyContext
+    context: NtfyContext,
   ): Promise<{ success: boolean; error?: string }> {
     if (!endpoint.enabled) {
-      logger.warn(`Ntfy endpoint "${endpoint.name}" is disabled, skipping notification`);
-      return { success: false, error: 'Endpoint is disabled' };
+      logger.warn(
+        `Ntfy endpoint "${endpoint.name}" is disabled, skipping notification`,
+      );
+      return { success: false, error: "Endpoint is disabled" };
     }
 
     // Validate endpoint configuration
@@ -56,64 +58,75 @@ export class NtfyService {
     }
 
     // Build URL
-    const serverUrl = endpoint.serverUrl.replace(/\/$/, ''); // Remove trailing slash
+    const serverUrl = endpoint.serverUrl.replace(/\/$/, ""); // Remove trailing slash
     const url = `${serverUrl}/${encodeURIComponent(endpoint.topic)}`;
 
     // Build headers
     const headers: Record<string, string> = {
-      'Content-Type': 'text/plain; charset=utf-8',
+      "Content-Type": "text/plain; charset=utf-8",
     };
 
     // Title (with variable substitution)
-    const title = this.substituteVariables(options.title || this.getDefaultTitle(context), context);
+    const title = this.substituteVariables(
+      options.title || this.getDefaultTitle(context),
+      context,
+    );
     if (title) {
-      headers['Title'] = title;
+      headers["Title"] = title;
     }
 
     // Priority
     const priority = options.priority || 3;
-    headers['Priority'] = String(priority);
+    headers["Priority"] = String(priority);
 
     // Tags and emoji
     const tags = this.buildTags(
       options.tags || endpoint.defaultTags,
-      options.emoji || endpoint.defaultEmoji
+      options.emoji || endpoint.defaultEmoji,
     );
     if (tags) {
-      headers['Tags'] = tags;
+      headers["Tags"] = tags;
     }
 
     // Click action URL
     const clickUrl = this.substituteVariables(
-      options.clickUrl || endpoint.defaultClickUrl || '',
-      context
+      options.clickUrl || endpoint.defaultClickUrl || "",
+      context,
     );
     if (clickUrl) {
-      headers['Click'] = clickUrl;
+      headers["Click"] = clickUrl;
     }
 
     // Authentication
     this.addAuthHeaders(headers, endpoint);
 
     // Message body (with variable substitution)
-    const body = this.substituteVariables(options.body || this.getDefaultBody(context), context);
+    const body = this.substituteVariables(
+      options.body || this.getDefaultBody(context),
+      context,
+    );
 
     logger.info(`Sending ntfy notification to ${endpoint.name}: ${title}`);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_NTFY_TIMEOUT);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      DEFAULT_NTFY_TIMEOUT,
+    );
 
     try {
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers,
         body,
         signal: controller.signal,
       });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        logger.error(`Ntfy notification failed with status ${response.status}: ${errorText}`);
+        const errorText = await response.text().catch(() => "Unknown error");
+        logger.error(
+          `Ntfy notification failed with status ${response.status}: ${errorText}`,
+        );
         return {
           success: false,
           error: `HTTP ${response.status}: ${errorText}`,
@@ -123,12 +136,15 @@ export class NtfyService {
       logger.info(`Ntfy notification sent successfully to ${endpoint.name}`);
       return { success: true };
     } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        logger.error(`Ntfy notification timed out after ${DEFAULT_NTFY_TIMEOUT}ms`);
-        return { success: false, error: 'Request timed out' };
+      if ((error as Error).name === "AbortError") {
+        logger.error(
+          `Ntfy notification timed out after ${DEFAULT_NTFY_TIMEOUT}ms`,
+        );
+        return { success: false, error: "Request timed out" };
       }
 
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       logger.error(`Ntfy notification failed: ${errorMessage}`);
       return { success: false, error: errorMessage };
     } finally {
@@ -142,32 +158,32 @@ export class NtfyService {
   validateEndpoint(endpoint: NtfyEndpointConfig): string | null {
     // Validate server URL
     if (!endpoint.serverUrl) {
-      return 'Server URL is required';
+      return "Server URL is required";
     }
 
     try {
       new URL(endpoint.serverUrl);
     } catch {
-      return 'Invalid server URL format';
+      return "Invalid server URL format";
     }
 
     // Validate topic
     if (!endpoint.topic) {
-      return 'Topic is required';
+      return "Topic is required";
     }
 
-    if (endpoint.topic.includes(' ') || endpoint.topic.includes('\t')) {
-      return 'Topic cannot contain spaces';
+    if (endpoint.topic.includes(" ") || endpoint.topic.includes("\t")) {
+      return "Topic cannot contain spaces";
     }
 
     // Validate authentication
-    if (endpoint.authType === 'basic') {
+    if (endpoint.authType === "basic") {
       if (!endpoint.username || !endpoint.password) {
-        return 'Username and password are required for basic authentication';
+        return "Username and password are required for basic authentication";
       }
-    } else if (endpoint.authType === 'token') {
+    } else if (endpoint.authType === "token") {
       if (!endpoint.token) {
-        return 'Access token is required for token authentication';
+        return "Access token is required for token authentication";
       }
     }
 
@@ -183,7 +199,7 @@ export class NtfyService {
     if (tags) {
       // Split by comma and trim whitespace
       const parsedTags = tags
-        .split(',')
+        .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
       tagList.push(...parsedTags);
@@ -191,28 +207,35 @@ export class NtfyService {
 
     if (emoji) {
       // Add emoji as first tag if it looks like a shortcode
-      if (emoji.startsWith(':') && emoji.endsWith(':')) {
+      if (emoji.startsWith(":") && emoji.endsWith(":")) {
         tagList.unshift(emoji.slice(1, -1));
-      } else if (!emoji.includes(' ')) {
+      } else if (!emoji.includes(" ")) {
         // If it's a single emoji or shortcode without colons, add as-is
         tagList.unshift(emoji);
       }
     }
 
-    return tagList.join(',');
+    return tagList.join(",");
   }
 
   /**
    * Add authentication headers based on auth type
    */
-  private addAuthHeaders(headers: Record<string, string>, endpoint: NtfyEndpointConfig): void {
-    if (endpoint.authType === 'basic' && endpoint.username && endpoint.password) {
-      const credentials = Buffer.from(`${endpoint.username}:${endpoint.password}`).toString(
-        'base64'
-      );
-      headers['Authorization'] = `Basic ${credentials}`;
-    } else if (endpoint.authType === 'token' && endpoint.token) {
-      headers['Authorization'] = `Bearer ${endpoint.token}`;
+  private addAuthHeaders(
+    headers: Record<string, string>,
+    endpoint: NtfyEndpointConfig,
+  ): void {
+    if (
+      endpoint.authType === "basic" &&
+      endpoint.username &&
+      endpoint.password
+    ) {
+      const credentials = Buffer.from(
+        `${endpoint.username}:${endpoint.password}`,
+      ).toString("base64");
+      headers["Authorization"] = `Basic ${credentials}`;
+    } else if (endpoint.authType === "token" && endpoint.token) {
+      headers["Authorization"] = `Bearer ${endpoint.token}`;
     }
   }
 
@@ -247,7 +270,7 @@ export class NtfyService {
     }
     lines.push(`Time: ${context.timestamp}`);
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   /**
@@ -255,11 +278,11 @@ export class NtfyService {
    */
   private formatEventName(eventType: string): string {
     const eventNames: Record<string, string> = {
-      feature_created: 'Feature Created',
-      feature_success: 'Feature Completed',
-      feature_error: 'Feature Failed',
-      auto_mode_complete: 'Auto Mode Complete',
-      auto_mode_error: 'Auto Mode Error',
+      feature_created: "Feature Created",
+      feature_success: "Feature Completed",
+      feature_error: "Feature Failed",
+      auto_mode_complete: "Auto Mode Complete",
+      auto_mode_error: "Auto Mode Error",
     };
     return eventNames[eventType] || eventType;
   }
@@ -271,7 +294,7 @@ export class NtfyService {
     return template.replace(/\{\{(\w+)\}\}/g, (match, variable) => {
       const value = context[variable as keyof NtfyContext];
       if (value === undefined || value === null) {
-        return '';
+        return "";
       }
       return String(value);
     });

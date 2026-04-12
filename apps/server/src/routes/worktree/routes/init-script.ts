@@ -7,18 +7,18 @@
  * POST /run-init-script - Run the init script for a worktree
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import * as secureFs from '../../../lib/secure-fs.js';
-import { getErrorMessage, logError, isValidBranchName } from '../common.js';
-import { createLogger } from '@pegasus/utils';
-import type { EventEmitter } from '../../../lib/events.js';
-import { forceRunInitScript } from '../../../services/init-script-service.js';
+import type { Request, Response } from "express";
+import path from "path";
+import * as secureFs from "../../../lib/secure-fs.js";
+import { getErrorMessage, logError, isValidBranchName } from "../common.js";
+import { createLogger } from "@pegasus/utils";
+import type { EventEmitter } from "../../../lib/events.js";
+import { forceRunInitScript } from "../../../services/init-script-service.js";
 
-const logger = createLogger('InitScript');
+const logger = createLogger("InitScript");
 
 /** Fixed path for init script within .pegasus directory */
-const INIT_SCRIPT_FILENAME = 'worktree-init.sh';
+const INIT_SCRIPT_FILENAME = "worktree-init.sh";
 
 /** Maximum allowed size for init scripts (1MB) */
 const MAX_SCRIPT_SIZE_BYTES = 1024 * 1024;
@@ -27,7 +27,7 @@ const MAX_SCRIPT_SIZE_BYTES = 1024 * 1024;
  * Get the full path to the init script for a project
  */
 function getInitScriptPath(projectPath: string): string {
-  return path.join(projectPath, '.pegasus', INIT_SCRIPT_FILENAME);
+  return path.join(projectPath, ".pegasus", INIT_SCRIPT_FILENAME);
 }
 
 /**
@@ -39,10 +39,10 @@ export function createGetInitScriptHandler() {
       const rawProjectPath = req.query.projectPath;
 
       // Validate projectPath is a non-empty string (not an array or undefined)
-      if (!rawProjectPath || typeof rawProjectPath !== 'string') {
+      if (!rawProjectPath || typeof rawProjectPath !== "string") {
         res.status(400).json({
           success: false,
-          error: 'projectPath query parameter is required',
+          error: "projectPath query parameter is required",
         });
         return;
       }
@@ -51,7 +51,7 @@ export function createGetInitScriptHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath cannot be empty',
+          error: "projectPath cannot be empty",
         });
         return;
       }
@@ -59,7 +59,7 @@ export function createGetInitScriptHandler() {
       const scriptPath = getInitScriptPath(projectPath);
 
       try {
-        const content = await secureFs.readFile(scriptPath, 'utf-8');
+        const content = await secureFs.readFile(scriptPath, "utf-8");
         res.json({
           success: true,
           exists: true,
@@ -71,12 +71,12 @@ export function createGetInitScriptHandler() {
         res.json({
           success: true,
           exists: false,
-          content: '',
+          content: "",
           path: scriptPath,
         });
       }
     } catch (error) {
-      logError(error, 'Read init script failed');
+      logError(error, "Read init script failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -99,21 +99,21 @@ export function createPutInitScriptHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
 
-      if (typeof content !== 'string') {
+      if (typeof content !== "string") {
         res.status(400).json({
           success: false,
-          error: 'content must be a string',
+          error: "content must be a string",
         });
         return;
       }
 
       // Validate script size to prevent disk exhaustion
-      const sizeBytes = Buffer.byteLength(content, 'utf-8');
+      const sizeBytes = Buffer.byteLength(content, "utf-8");
       if (sizeBytes > MAX_SCRIPT_SIZE_BYTES) {
         res.status(400).json({
           success: false,
@@ -132,7 +132,7 @@ export function createPutInitScriptHandler() {
       for (const pattern of dangerousPatterns) {
         if (pattern.test(content)) {
           logger.warn(
-            `Init script contains potentially dangerous pattern: ${pattern.source}. User responsibility to verify script safety.`
+            `Init script contains potentially dangerous pattern: ${pattern.source}. User responsibility to verify script safety.`,
           );
         }
       }
@@ -144,7 +144,7 @@ export function createPutInitScriptHandler() {
       await secureFs.mkdir(pegasusDir, { recursive: true });
 
       // Write the script content
-      await secureFs.writeFile(scriptPath, content, 'utf-8');
+      await secureFs.writeFile(scriptPath, content, "utf-8");
 
       logger.info(`Wrote init script to ${scriptPath}`);
 
@@ -153,7 +153,7 @@ export function createPutInitScriptHandler() {
         path: scriptPath,
       });
     } catch (error) {
-      logError(error, 'Write init script failed');
+      logError(error, "Write init script failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -173,7 +173,7 @@ export function createDeleteInitScriptHandler() {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -186,7 +186,7 @@ export function createDeleteInitScriptHandler() {
         success: true,
       });
     } catch (error) {
-      logError(error, 'Delete init script failed');
+      logError(error, "Delete init script failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),
@@ -210,7 +210,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       if (!projectPath) {
         res.status(400).json({
           success: false,
-          error: 'projectPath is required',
+          error: "projectPath is required",
         });
         return;
       }
@@ -218,7 +218,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -226,7 +226,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       if (!branch) {
         res.status(400).json({
           success: false,
-          error: 'branch is required',
+          error: "branch is required",
         });
         return;
       }
@@ -236,7 +236,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
         res.status(400).json({
           success: false,
           error:
-            'Invalid branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.',
+            "Invalid branch name. Branch names must contain only letters, numbers, dots, hyphens, underscores, and forward slashes.",
         });
         return;
       }
@@ -249,7 +249,7 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       } catch {
         res.status(404).json({
           success: false,
-          error: 'No init script found. Create one in Settings > Worktrees.',
+          error: "No init script found. Create one in Settings > Worktrees.",
         });
         return;
       }
@@ -267,10 +267,10 @@ export function createRunInitScriptHandler(events: EventEmitter) {
       // Return immediately - progress will be streamed via WebSocket events
       res.json({
         success: true,
-        message: 'Init script started',
+        message: "Init script started",
       });
     } catch (error) {
-      logError(error, 'Run init script failed');
+      logError(error, "Run init script failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

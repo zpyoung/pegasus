@@ -5,10 +5,10 @@
  * If no testCommand is configured, returns an error.
  */
 
-import type { Request, Response } from 'express';
-import type { SettingsService } from '../../../services/settings-service.js';
-import { getTestRunnerService } from '../../../services/test-runner-service.js';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import type { SettingsService } from "../../../services/settings-service.js";
+import { getTestRunnerService } from "../../../services/test-runner-service.js";
+import { getErrorMessage, logError } from "../common.js";
 
 export function createStartTestsHandler(settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -16,22 +16,25 @@ export function createStartTestsHandler(settingsService?: SettingsService) {
       const body = req.body;
 
       // Validate request body
-      if (!body || typeof body !== 'object') {
+      if (!body || typeof body !== "object") {
         res.status(400).json({
           success: false,
-          error: 'Request body must be an object',
+          error: "Request body must be an object",
         });
         return;
       }
 
-      const worktreePath = typeof body.worktreePath === 'string' ? body.worktreePath : undefined;
-      const projectPath = typeof body.projectPath === 'string' ? body.projectPath : undefined;
-      const testFile = typeof body.testFile === 'string' ? body.testFile : undefined;
+      const worktreePath =
+        typeof body.worktreePath === "string" ? body.worktreePath : undefined;
+      const projectPath =
+        typeof body.projectPath === "string" ? body.projectPath : undefined;
+      const testFile =
+        typeof body.testFile === "string" ? body.testFile : undefined;
 
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required and must be a string',
+          error: "worktreePath is required and must be a string",
         });
         return;
       }
@@ -43,19 +46,20 @@ export function createStartTestsHandler(settingsService?: SettingsService) {
       if (!settingsService) {
         res.status(500).json({
           success: false,
-          error: 'Settings service not available',
+          error: "Settings service not available",
         });
         return;
       }
 
-      const projectSettings = await settingsService.getProjectSettings(settingsPath);
+      const projectSettings =
+        await settingsService.getProjectSettings(settingsPath);
       const testCommand = projectSettings?.testCommand;
 
       if (!testCommand) {
         res.status(400).json({
           success: false,
           error:
-            'No test command configured. Please configure a test command in Project Settings > Testing Configuration.',
+            "No test command configured. Please configure a test command in Project Settings > Testing Configuration.",
         });
         return;
       }
@@ -81,11 +85,11 @@ export function createStartTestsHandler(settingsService?: SettingsService) {
       } else {
         res.status(400).json({
           success: false,
-          error: result.error || 'Failed to start tests',
+          error: result.error || "Failed to start tests",
         });
       }
     } catch (error) {
-      logError(error, 'Start tests failed');
+      logError(error, "Start tests failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

@@ -5,11 +5,15 @@
  * Read-only view - agents are managed by editing .md files directly.
  */
 
-import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Markdown } from '@/components/ui/markdown';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Markdown } from "@/components/ui/markdown";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import {
   Globe,
   FolderOpen,
@@ -19,8 +23,8 @@ import {
   Cpu,
   Wrench,
   FileCode,
-} from 'lucide-react';
-import type { SubagentWithScope } from './hooks/use-subagents';
+} from "lucide-react";
+import type { SubagentWithScope } from "./hooks/use-subagents";
 
 interface SubagentCardProps {
   agent: SubagentWithScope;
@@ -30,32 +34,35 @@ export function SubagentCard({ agent }: SubagentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { name, definition, scope, filePath } = agent;
 
-  const toolCount = definition.tools?.length ?? 'all';
+  const toolCount = definition.tools?.length ?? "all";
   const modelDisplay =
-    definition.model === 'inherit' || !definition.model
-      ? 'Inherit'
+    definition.model === "inherit" || !definition.model
+      ? "Inherit"
       : definition.model.charAt(0).toUpperCase() + definition.model.slice(1);
 
   // Scope icon and label
-  const ScopeIcon = scope === 'global' ? Globe : FolderOpen;
-  const scopeLabel = scope === 'global' ? 'User' : 'Project';
+  const ScopeIcon = scope === "global" ? Globe : FolderOpen;
+  const scopeLabel = scope === "global" ? "User" : "Project";
 
   // Model color based on type
   const getModelColor = () => {
     const model = definition.model?.toLowerCase();
-    if (model === 'opus') return 'text-violet-500 bg-violet-500/10 border-violet-500/30';
-    if (model === 'sonnet') return 'text-blue-500 bg-blue-500/10 border-blue-500/30';
-    if (model === 'haiku') return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30';
-    return 'text-muted-foreground bg-muted/50 border-border/50';
+    if (model === "opus")
+      return "text-violet-500 bg-violet-500/10 border-violet-500/30";
+    if (model === "sonnet")
+      return "text-blue-500 bg-blue-500/10 border-blue-500/30";
+    if (model === "haiku")
+      return "text-emerald-500 bg-emerald-500/10 border-emerald-500/30";
+    return "text-muted-foreground bg-muted/50 border-border/50";
   };
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div
         className={cn(
-          'rounded-xl border transition-all duration-200',
-          'border-border/50 bg-accent/20',
-          'hover:bg-accent/30 hover:border-border/70'
+          "rounded-xl border transition-all duration-200",
+          "border-border/50 bg-accent/20",
+          "hover:bg-accent/30 hover:border-border/70",
         )}
       >
         {/* Main Card Content */}
@@ -73,16 +80,24 @@ export function SubagentCard({ agent }: SubagentCardProps) {
               <Badge
                 variant="outline"
                 size="sm"
-                className={cn('flex items-center gap-1', getModelColor())}
+                className={cn("flex items-center gap-1", getModelColor())}
               >
                 <Cpu className="h-3 w-3" />
                 {modelDisplay}
               </Badge>
-              <Badge variant="muted" size="sm" className="flex items-center gap-1">
+              <Badge
+                variant="muted"
+                size="sm"
+                className="flex items-center gap-1"
+              >
                 <Wrench className="h-3 w-3" />
-                {toolCount === 'all' ? 'All' : toolCount} tools
+                {toolCount === "all" ? "All" : toolCount} tools
               </Badge>
-              <Badge variant="muted" size="sm" className="flex items-center gap-1">
+              <Badge
+                variant="muted"
+                size="sm"
+                className="flex items-center gap-1"
+              >
                 <ScopeIcon className="h-3 w-3" />
                 {scopeLabel}
               </Badge>
@@ -106,11 +121,11 @@ export function SubagentCard({ agent }: SubagentCardProps) {
           <CollapsibleTrigger asChild>
             <button
               className={cn(
-                'p-1.5 rounded-md transition-colors shrink-0',
-                'hover:bg-muted/50 text-muted-foreground hover:text-foreground',
-                'cursor-pointer'
+                "p-1.5 rounded-md transition-colors shrink-0",
+                "hover:bg-muted/50 text-muted-foreground hover:text-foreground",
+                "cursor-pointer",
               )}
-              title={isExpanded ? 'Hide prompt' : 'View prompt'}
+              title={isExpanded ? "Hide prompt" : "View prompt"}
             >
               {isExpanded ? (
                 <ChevronDown className="w-4 h-4" />
@@ -128,7 +143,9 @@ export function SubagentCard({ agent }: SubagentCardProps) {
               <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
                 System Prompt
               </div>
-              <Markdown className="text-xs prose-sm">{definition.prompt}</Markdown>
+              <Markdown className="text-xs prose-sm">
+                {definition.prompt}
+              </Markdown>
             </div>
           </div>
         </CollapsibleContent>

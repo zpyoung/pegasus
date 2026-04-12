@@ -1,10 +1,13 @@
-import { useMemo, useCallback, type ReactNode } from 'react';
-import { Feature, useAppStore } from '@/store/app-store';
-import { GraphCanvas } from './graph-canvas';
-import { useBoardBackground } from '../board-view/hooks';
-import { NodeActionCallbacks } from './hooks';
-import { wouldCreateCircularDependency, dependencyExists } from '@pegasus/dependency-resolver';
-import { toast } from 'sonner';
+import { useMemo, useCallback, type ReactNode } from "react";
+import { Feature, useAppStore } from "@/store/app-store";
+import { GraphCanvas } from "./graph-canvas";
+import { useBoardBackground } from "../board-view/hooks";
+import { NodeActionCallbacks } from "./hooks";
+import {
+  wouldCreateCircularDependency,
+  dependencyExists,
+} from "@pegasus/dependency-resolver";
+import { toast } from "sonner";
 
 interface GraphViewProps {
   features: Feature[];
@@ -56,7 +59,9 @@ export function GraphView({
   const currentProject = useAppStore((state) => state.currentProject);
 
   // Use the same background hook as the board view
-  const { backgroundImageStyle, backgroundSettings } = useBoardBackground({ currentProject });
+  const { backgroundImageStyle, backgroundSettings } = useBoardBackground({
+    currentProject,
+  });
 
   // Filter features by current worktree (same logic as board view)
   const filteredFeatures = useMemo(() => {
@@ -71,7 +76,9 @@ export function GraphView({
       } else if (effectiveBranch === null) {
         // Viewing main but branch not initialized
         return projectPath
-          ? useAppStore.getState().isPrimaryWorktreeBranch(projectPath, featureBranch)
+          ? useAppStore
+              .getState()
+              .isPrimaryWorktreeBranch(projectPath, featureBranch)
           : false;
       } else {
         // Match by branch name
@@ -88,7 +95,7 @@ export function GraphView({
         onEditFeature(feature);
       }
     },
-    [features, onEditFeature]
+    [features, onEditFeature],
   );
 
   // Handle creating a dependency via edge connection
@@ -98,44 +105,49 @@ export function GraphView({
 
       // Prevent self-dependency
       if (sourceId === targetId) {
-        toast.error('A task cannot depend on itself');
+        toast.error("A task cannot depend on itself");
         return false;
       }
 
       // Check if dependency already exists
       if (dependencyExists(features, sourceId, targetId)) {
-        toast.info('Dependency already exists');
+        toast.info("Dependency already exists");
         return false;
       }
 
       // Check for circular dependency
       // This checks: if we make targetId depend on sourceId, would it create a cycle?
       // A cycle would occur if sourceId already depends on targetId (transitively)
-      const wouldCycle = wouldCreateCircularDependency(features, sourceId, targetId);
+      const wouldCycle = wouldCreateCircularDependency(
+        features,
+        sourceId,
+        targetId,
+      );
       if (wouldCycle) {
-        toast.error('Cannot create circular dependency', {
-          description: 'This would create a dependency cycle',
+        toast.error("Cannot create circular dependency", {
+          description: "This would create a dependency cycle",
         });
         return false;
       }
 
       // Get target feature and update its dependencies
       if (!targetFeature) {
-        toast.error('Target task not found');
+        toast.error("Target task not found");
         return false;
       }
 
-      const currentDeps = (targetFeature.dependencies as string[] | undefined) || [];
+      const currentDeps =
+        (targetFeature.dependencies as string[] | undefined) || [];
 
       // Add the dependency
       onUpdateFeature?.(targetId, {
         dependencies: [...currentDeps, sourceId],
       });
 
-      toast.success('Dependency created');
+      toast.success("Dependency created");
       return true;
     },
-    [features, onUpdateFeature]
+    [features, onUpdateFeature],
   );
 
   // Node action callbacks for dropdown menu
@@ -185,28 +197,29 @@ export function GraphView({
       },
       onDeleteDependency: (sourceId: string, targetId: string) => {
         // Find the target feature and remove the source from its dependencies
-        console.log('onDeleteDependency called', { sourceId, targetId });
+        console.log("onDeleteDependency called", { sourceId, targetId });
         const targetFeature = features.find((f) => f.id === targetId);
         if (!targetFeature) {
-          console.error('Target feature not found:', targetId);
+          console.error("Target feature not found:", targetId);
           return;
         }
 
-        const currentDeps = (targetFeature.dependencies as string[] | undefined) || [];
-        console.log('Current dependencies:', currentDeps);
+        const currentDeps =
+          (targetFeature.dependencies as string[] | undefined) || [];
+        console.log("Current dependencies:", currentDeps);
         const newDeps = currentDeps.filter((depId) => depId !== sourceId);
-        console.log('New dependencies:', newDeps);
+        console.log("New dependencies:", newDeps);
 
         if (onUpdateFeature) {
-          console.log('Calling onUpdateFeature');
+          console.log("Calling onUpdateFeature");
           onUpdateFeature(targetId, {
             dependencies: newDeps,
           });
         } else {
-          console.error('onUpdateFeature is not defined!');
+          console.error("onUpdateFeature is not defined!");
         }
 
-        toast.success('Dependency removed');
+        toast.success("Dependency removed");
       },
     }),
     [
@@ -219,7 +232,7 @@ export function GraphView({
       onSpawnTask,
       onDeleteTask,
       onUpdateFeature,
-    ]
+    ],
   );
 
   return (
@@ -236,7 +249,9 @@ export function GraphView({
         onOpenPlanDialog={onOpenPlanDialog}
         hasPendingPlan={hasPendingPlan}
         planUseSelectedWorktreeBranch={planUseSelectedWorktreeBranch}
-        onPlanUseSelectedWorktreeBranchChange={onPlanUseSelectedWorktreeBranchChange}
+        onPlanUseSelectedWorktreeBranchChange={
+          onPlanUseSelectedWorktreeBranchChange
+        }
         worktreeSelector={worktreeSelector}
         backgroundStyle={backgroundImageStyle}
         backgroundSettings={backgroundSettings}

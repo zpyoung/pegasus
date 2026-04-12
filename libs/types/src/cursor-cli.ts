@@ -1,4 +1,4 @@
-import type { CursorModelId } from './cursor-models.js';
+import type { CursorModelId } from "./cursor-models.js";
 
 /**
  * Cursor CLI configuration file schema
@@ -69,7 +69,7 @@ export interface CursorCliConfigFile {
 /**
  * Predefined permission profiles for different use cases
  */
-export type CursorPermissionProfile = 'strict' | 'development' | 'custom';
+export type CursorPermissionProfile = "strict" | "development" | "custom";
 
 /**
  * Permission profile definitions
@@ -86,20 +86,21 @@ export interface CursorPermissionProfileConfig {
  * Denies all shell commands and writes
  */
 export const CURSOR_STRICT_PROFILE: CursorPermissionProfileConfig = {
-  id: 'strict',
-  name: 'Strict (Read-Only)',
-  description: 'Denies all shell commands and file writes. Safe for analysis tasks.',
+  id: "strict",
+  name: "Strict (Read-Only)",
+  description:
+    "Denies all shell commands and file writes. Safe for analysis tasks.",
   permissions: {
     allow: [
-      'Read(**/*)', // Allow reading all files
+      "Read(**/*)", // Allow reading all files
     ],
     deny: [
-      'Shell(*)', // Deny all shell commands
-      'Write(**/*)', // Deny all file writes
-      'Read(.env*)', // Deny reading env files
-      'Read(**/*.pem)', // Deny reading private keys
-      'Read(**/*.key)', // Deny reading key files
-      'Read(**/credentials*)', // Deny reading credentials
+      "Shell(*)", // Deny all shell commands
+      "Write(**/*)", // Deny all file writes
+      "Read(.env*)", // Deny reading env files
+      "Read(**/*.pem)", // Deny reading private keys
+      "Read(**/*.key)", // Deny reading key files
+      "Read(**/credentials*)", // Deny reading credentials
     ],
   },
 };
@@ -109,95 +110,96 @@ export const CURSOR_STRICT_PROFILE: CursorPermissionProfileConfig = {
  * Allows safe operations, blocks destructive ones
  */
 export const CURSOR_DEVELOPMENT_PROFILE: CursorPermissionProfileConfig = {
-  id: 'development',
-  name: 'Development',
-  description: 'Allows file edits and safe shell commands. Blocks destructive operations.',
+  id: "development",
+  name: "Development",
+  description:
+    "Allows file edits and safe shell commands. Blocks destructive operations.",
   permissions: {
     allow: [
-      'Read(**/*)', // Allow reading all files
-      'Write(**/*)', // Allow writing files
-      'Shell(npm)', // npm install, run, test
-      'Shell(pnpm)', // pnpm install, run, test
-      'Shell(yarn)', // yarn install, run, test
-      'Shell(bun)', // bun install, run, test
-      'Shell(node)', // node scripts
-      'Shell(npx)', // npx commands
-      'Shell(git)', // git operations (except push)
-      'Shell(tsc)', // TypeScript compiler
-      'Shell(eslint)', // Linting
-      'Shell(prettier)', // Formatting
-      'Shell(jest)', // Testing
-      'Shell(vitest)', // Testing
-      'Shell(cargo)', // Rust
-      'Shell(go)', // Go
-      'Shell(python)', // Python
-      'Shell(pip)', // Python packages
-      'Shell(poetry)', // Python packages
-      'Shell(make)', // Makefiles
-      'Shell(docker)', // Docker (build, not run with --rm)
-      'Shell(ls)', // List files
-      'Shell(cat)', // Read files
-      'Shell(echo)', // Echo
-      'Shell(mkdir)', // Create directories
-      'Shell(cp)', // Copy files
-      'Shell(mv)', // Move files
-      'Shell(touch)', // Create files
-      'Shell(pwd)', // Print working directory
-      'Shell(which)', // Find executables
-      'Shell(head)', // Read file head
-      'Shell(tail)', // Read file tail
-      'Shell(grep)', // Search
-      'Shell(find)', // Find files
-      'Shell(wc)', // Word count
-      'Shell(sort)', // Sort
-      'Shell(uniq)', // Unique lines
-      'Shell(diff)', // Diff files
-      'Shell(curl)', // HTTP requests (read-only fetching)
-      'Shell(wget)', // Downloads
+      "Read(**/*)", // Allow reading all files
+      "Write(**/*)", // Allow writing files
+      "Shell(npm)", // npm install, run, test
+      "Shell(pnpm)", // pnpm install, run, test
+      "Shell(yarn)", // yarn install, run, test
+      "Shell(bun)", // bun install, run, test
+      "Shell(node)", // node scripts
+      "Shell(npx)", // npx commands
+      "Shell(git)", // git operations (except push)
+      "Shell(tsc)", // TypeScript compiler
+      "Shell(eslint)", // Linting
+      "Shell(prettier)", // Formatting
+      "Shell(jest)", // Testing
+      "Shell(vitest)", // Testing
+      "Shell(cargo)", // Rust
+      "Shell(go)", // Go
+      "Shell(python)", // Python
+      "Shell(pip)", // Python packages
+      "Shell(poetry)", // Python packages
+      "Shell(make)", // Makefiles
+      "Shell(docker)", // Docker (build, not run with --rm)
+      "Shell(ls)", // List files
+      "Shell(cat)", // Read files
+      "Shell(echo)", // Echo
+      "Shell(mkdir)", // Create directories
+      "Shell(cp)", // Copy files
+      "Shell(mv)", // Move files
+      "Shell(touch)", // Create files
+      "Shell(pwd)", // Print working directory
+      "Shell(which)", // Find executables
+      "Shell(head)", // Read file head
+      "Shell(tail)", // Read file tail
+      "Shell(grep)", // Search
+      "Shell(find)", // Find files
+      "Shell(wc)", // Word count
+      "Shell(sort)", // Sort
+      "Shell(uniq)", // Unique lines
+      "Shell(diff)", // Diff files
+      "Shell(curl)", // HTTP requests (read-only fetching)
+      "Shell(wget)", // Downloads
     ],
     deny: [
       // Destructive file operations
-      'Shell(rm)', // No file deletion
-      'Shell(rmdir)', // No directory deletion
-      'Shell(shred)', // No secure delete
+      "Shell(rm)", // No file deletion
+      "Shell(rmdir)", // No directory deletion
+      "Shell(shred)", // No secure delete
 
       // Dangerous git operations
-      'Shell(git push)', // No pushing (user should review)
-      'Shell(git push --force)', // Definitely no force push
-      'Shell(git reset --hard)', // No hard reset
+      "Shell(git push)", // No pushing (user should review)
+      "Shell(git push --force)", // Definitely no force push
+      "Shell(git reset --hard)", // No hard reset
 
       // Package publishing
-      'Shell(npm publish)', // No publishing packages
-      'Shell(pnpm publish)', // No publishing packages
-      'Shell(yarn publish)', // No publishing packages
+      "Shell(npm publish)", // No publishing packages
+      "Shell(pnpm publish)", // No publishing packages
+      "Shell(yarn publish)", // No publishing packages
 
       // System/network operations
-      'Shell(sudo)', // No sudo
-      'Shell(su)', // No su
-      'Shell(chmod)', // No permission changes
-      'Shell(chown)', // No ownership changes
-      'Shell(kill)', // No process killing
-      'Shell(pkill)', // No process killing
-      'Shell(killall)', // No process killing
-      'Shell(shutdown)', // No shutdown
-      'Shell(reboot)', // No reboot
-      'Shell(systemctl)', // No systemd
-      'Shell(service)', // No services
-      'Shell(iptables)', // No firewall
-      'Shell(ssh)', // No SSH
-      'Shell(scp)', // No SCP
+      "Shell(sudo)", // No sudo
+      "Shell(su)", // No su
+      "Shell(chmod)", // No permission changes
+      "Shell(chown)", // No ownership changes
+      "Shell(kill)", // No process killing
+      "Shell(pkill)", // No process killing
+      "Shell(killall)", // No process killing
+      "Shell(shutdown)", // No shutdown
+      "Shell(reboot)", // No reboot
+      "Shell(systemctl)", // No systemd
+      "Shell(service)", // No services
+      "Shell(iptables)", // No firewall
+      "Shell(ssh)", // No SSH
+      "Shell(scp)", // No SCP
 
       // Sensitive file access
-      'Read(.env*)', // No reading env files
-      'Read(**/*.pem)', // No reading private keys
-      'Read(**/*.key)', // No reading key files
-      'Read(**/credentials*)', // No reading credentials
-      'Read(**/.git/config)', // No reading git config (may have tokens)
-      'Read(**/id_rsa*)', // No reading SSH keys
-      'Read(**/id_ed25519*)', // No reading SSH keys
-      'Write(.env*)', // No writing env files
-      'Write(**/*.pem)', // No writing keys
-      'Write(**/*.key)', // No writing keys
+      "Read(.env*)", // No reading env files
+      "Read(**/*.pem)", // No reading private keys
+      "Read(**/*.key)", // No reading key files
+      "Read(**/credentials*)", // No reading credentials
+      "Read(**/.git/config)", // No reading git config (may have tokens)
+      "Read(**/id_rsa*)", // No reading SSH keys
+      "Read(**/id_ed25519*)", // No reading SSH keys
+      "Write(.env*)", // No writing env files
+      "Write(**/*.pem)", // No writing keys
+      "Write(**/*.key)", // No writing keys
     ],
   },
 };
@@ -215,7 +217,7 @@ export const CURSOR_PERMISSION_PROFILES: CursorPermissionProfileConfig[] = [
  */
 export interface CursorAuthStatus {
   authenticated: boolean;
-  method: 'login' | 'api_key' | 'none';
+  method: "login" | "api_key" | "none";
   hasCredentialsFile?: boolean;
   error?: string;
 }
@@ -232,9 +234,9 @@ export interface CursorAuthStatus {
  * Cursor stream-json event types (from CLI output)
  */
 export interface CursorSystemEvent {
-  type: 'system';
-  subtype: 'init';
-  apiKeySource: 'env' | 'flag' | 'login';
+  type: "system";
+  subtype: "init";
+  apiKeySource: "env" | "flag" | "login";
   cwd: string;
   session_id: string;
   model: string;
@@ -242,26 +244,26 @@ export interface CursorSystemEvent {
 }
 
 export interface CursorUserEvent {
-  type: 'user';
+  type: "user";
   message: {
-    role: 'user';
-    content: Array<{ type: 'text'; text: string }>;
+    role: "user";
+    content: Array<{ type: "text"; text: string }>;
   };
   session_id: string;
 }
 
 export interface CursorAssistantEvent {
-  type: 'assistant';
+  type: "assistant";
   message: {
-    role: 'assistant';
-    content: Array<{ type: 'text'; text: string }>;
+    role: "assistant";
+    content: Array<{ type: "text"; text: string }>;
   };
   session_id: string;
 }
 
 export interface CursorToolCallEvent {
-  type: 'tool_call';
-  subtype: 'started' | 'completed';
+  type: "tool_call";
+  subtype: "started" | "completed";
   call_id: string;
   tool_call: {
     readToolCall?: {
@@ -340,7 +342,11 @@ export interface CursorToolCallEvent {
       };
     };
     semSearchToolCall?: {
-      args: { query: string; targetDirectories?: string[]; explanation?: string };
+      args: {
+        query: string;
+        targetDirectories?: string[];
+        explanation?: string;
+      };
       result?: {
         success?: {
           results: string;
@@ -379,8 +385,8 @@ export interface CursorToolCallEvent {
 }
 
 export interface CursorResultEvent {
-  type: 'result';
-  subtype: 'success' | 'error';
+  type: "result";
+  subtype: "success" | "error";
   duration_ms: number;
   duration_api_ms: number;
   is_error: boolean;

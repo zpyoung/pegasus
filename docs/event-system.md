@@ -59,22 +59,22 @@ One shared `EventEmitter` instance is created at server startup in `apps/server/
 
 `EventType` is a string union that covers every event the system can emit. Groups include:
 
-| Prefix | What it covers |
-|---|---|
-| `agent:` | AI agent streaming output |
-| `auto-mode:` | Auto-mode lifecycle (started, stopped, idle, error) and sub-events |
-| `feature:` | Feature lifecycle (created, started, completed, stopped, error, progress, tool-use, committed, …) |
-| `project:` | Project analysis progress |
-| `spec-regeneration:` | Spec regeneration events |
-| `issue-validation:` | GitHub issue validation |
-| `ideation:` | Ideation session and idea events |
-| `worktree:` | Worktree copy/symlink/init progress |
-| `dev-server:` | Dev server start, output, URL detection, stop |
-| `test-runner:` | Test suite progress and results |
-| `cherry-pick:`, `rebase:`, `stash:`, `merge:`, `conflict:` | Git operation events |
-| `commitLog:`, `branchCommitLog:`, `switch:` | Git log and branch-switch events |
-| `notification:` | In-app notification created |
-| `helper_chat_event` | Helper chat streaming |
+| Prefix                                                     | What it covers                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `agent:`                                                   | AI agent streaming output                                                                         |
+| `auto-mode:`                                               | Auto-mode lifecycle (started, stopped, idle, error) and sub-events                                |
+| `feature:`                                                 | Feature lifecycle (created, started, completed, stopped, error, progress, tool-use, committed, …) |
+| `project:`                                                 | Project analysis progress                                                                         |
+| `spec-regeneration:`                                       | Spec regeneration events                                                                          |
+| `issue-validation:`                                        | GitHub issue validation                                                                           |
+| `ideation:`                                                | Ideation session and idea events                                                                  |
+| `worktree:`                                                | Worktree copy/symlink/init progress                                                               |
+| `dev-server:`                                              | Dev server start, output, URL detection, stop                                                     |
+| `test-runner:`                                             | Test suite progress and results                                                                   |
+| `cherry-pick:`, `rebase:`, `stash:`, `merge:`, `conflict:` | Git operation events                                                                              |
+| `commitLog:`, `branchCommitLog:`, `switch:`                | Git log and branch-switch events                                                                  |
+| `notification:`                                            | In-app notification created                                                                       |
+| `helper_chat_event`                                        | Helper chat streaming                                                                             |
 
 `EventCallback` is `(type: EventType, payload: unknown) => void`.
 
@@ -89,19 +89,19 @@ One shared `EventEmitter` instance is created at server startup in `apps/server/
 All auto-mode sub-events are sent as a single `auto-mode:event` wire message. The actual event type is embedded in the payload so the frontend can dispatch on it without needing a new `EventType` entry for every auto-mode state.
 
 ```ts
-bus.emitAutoModeEvent('auto_mode_feature_complete', {
+bus.emitAutoModeEvent("auto_mode_feature_complete", {
   featureId,
   projectPath,
   passes: true,
-  executionMode: 'auto',
+  executionMode: "auto",
 });
 // Equivalent to:
-events.emit('auto-mode:event', {
-  type: 'auto_mode_feature_complete',
+events.emit("auto-mode:event", {
+  type: "auto_mode_feature_complete",
   featureId,
   projectPath,
   passes: true,
-  executionMode: 'auto',
+  executionMode: "auto",
 });
 ```
 
@@ -130,10 +130,10 @@ Use `emit` for non-auto-mode events that have their own `EventType` entry (e.g.,
 
 The server runs **two** WebSocket servers in `noServer` mode, sharing a single HTTP server:
 
-| Path | Purpose |
-|---|---|
-| `/api/events` | General event stream (all system events) |
-| `/api/terminal/ws` | Terminal I/O (xterm.js) |
+| Path               | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| `/api/events`      | General event stream (all system events) |
+| `/api/terminal/ws` | Terminal I/O (xterm.js)                  |
 
 HTTP upgrade requests are routed in the `server.on('upgrade', ...)` handler based on the URL path.
 
@@ -153,15 +153,15 @@ Connections that fail authentication receive `HTTP/1.1 401 Unauthorized` and are
 When a client connects to `/api/events`, the server subscribes to the shared `EventEmitter` and forwards every event as a JSON-serialized message:
 
 ```ts
-wss.on('connection', (ws) => {
+wss.on("connection", (ws) => {
   const unsubscribe = events.subscribe((type, payload) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type, payload }));
     }
   });
 
-  ws.on('close', () => unsubscribe());
-  ws.on('error', () => unsubscribe());
+  ws.on("close", () => unsubscribe());
+  ws.on("error", () => unsubscribe());
 });
 ```
 
@@ -196,7 +196,7 @@ On disconnect, the client retries with exponential backoff: immediate → 500 ms
 
 ```ts
 this.ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);    // { type, payload }
+  const data = JSON.parse(event.data); // { type, payload }
   const callbacks = this.eventCallbacks.get(data.type);
   callbacks?.forEach((cb) => cb(data.payload));
 };
@@ -234,21 +234,21 @@ return unsubscribe;
 
 Key invalidation triggers:
 
-| Event | Queries invalidated |
-|---|---|
-| `auto_mode_feature_start`, `auto_mode_feature_complete`, `feature_status_changed`, `features_reconciled` | `features.all(projectPath)` |
-| `auto_mode_task_status`, `auto_mode_phase_complete`, `auto_mode_summary` | `features.single(projectPath, featureId)` |
-| `auto_mode_progress` (debounced 150 ms, max 2 s) | `features.agentOutput(projectPath, featureId)` |
-| `auto_mode_feature_complete` | `worktrees.all(projectPath)`, `worktrees.single(...)` |
-| `auto_mode_feature_start/complete/error` | `runningAgents.all()` |
-| `spec_regeneration_complete` | `features.all`, `specRegeneration.status` |
+| Event                                                                                                    | Queries invalidated                                   |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `auto_mode_feature_start`, `auto_mode_feature_complete`, `feature_status_changed`, `features_reconciled` | `features.all(projectPath)`                           |
+| `auto_mode_task_status`, `auto_mode_phase_complete`, `auto_mode_summary`                                 | `features.single(projectPath, featureId)`             |
+| `auto_mode_progress` (debounced 150 ms, max 2 s)                                                         | `features.agentOutput(projectPath, featureId)`        |
+| `auto_mode_feature_complete`                                                                             | `worktrees.all(projectPath)`, `worktrees.single(...)` |
+| `auto_mode_feature_start/complete/error`                                                                 | `runningAgents.all()`                                 |
+| `spec_regeneration_complete`                                                                             | `features.all`, `specRegeneration.status`             |
 
 ### Event recency / smart polling (`apps/ui/src/hooks/use-event-recency.ts`)
 
 `useEventRecencyStore` (Zustand) tracks when the last WebSocket event was received. Queries use this to disable polling while events are flowing:
 
 ```ts
-refetchInterval: createSmartPollingInterval(5000)
+refetchInterval: createSmartPollingInterval(5000);
 // Returns `false` (no polling) within 5 s of a WebSocket event.
 // On mobile the threshold extends to 10 s and intervals are multiplied.
 ```
@@ -298,13 +298,13 @@ When the index exceeds 1000 entries, the oldest entries are removed from the ind
 
 All endpoints accept `projectPath` in the request body.
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/event-history/list` | List events. Accepts `filter` (trigger, featureId, since, until, limit, offset). Returns `{ events: StoredEventSummary[], total }`. |
-| `POST` | `/api/event-history/get` | Get full event by `eventId`. |
-| `POST` | `/api/event-history/delete` | Delete a single event. |
-| `POST` | `/api/event-history/clear` | Delete all events for a project. |
-| `POST` | `/api/event-history/replay` | Re-execute hooks for a stored event. Optionally filter to specific `hookIds`. Returns `EventReplayResult`. |
+| Method | Path                        | Description                                                                                                                         |
+| ------ | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/api/event-history/list`   | List events. Accepts `filter` (trigger, featureId, since, until, limit, offset). Returns `{ events: StoredEventSummary[], total }`. |
+| `POST` | `/api/event-history/get`    | Get full event by `eventId`.                                                                                                        |
+| `POST` | `/api/event-history/delete` | Delete a single event.                                                                                                              |
+| `POST` | `/api/event-history/clear`  | Delete all events for a project.                                                                                                    |
+| `POST` | `/api/event-history/replay` | Re-execute hooks for a stored event. Optionally filter to specific `hookIds`. Returns `EventReplayResult`.                          |
 
 ---
 
@@ -316,13 +316,13 @@ Event hooks let users run custom side effects when specific events occur. They a
 
 `EventHookTrigger` is a subset of application events that users can act on:
 
-| Trigger | When it fires |
-|---|---|
-| `feature_created` | A new feature is created on the board |
-| `feature_success` | A feature completes with passing tests |
-| `feature_error` | A feature fails or errors |
+| Trigger              | When it fires                                              |
+| -------------------- | ---------------------------------------------------------- |
+| `feature_created`    | A new feature is created on the board                      |
+| `feature_success`    | A feature completes with passing tests                     |
+| `feature_error`      | A feature fails or errors                                  |
 | `auto_mode_complete` | Auto mode reaches idle state after processing all features |
-| `auto_mode_error` | Auto mode pauses due to a critical error |
+| `auto_mode_error`    | Auto mode pauses due to a critical error                   |
 
 ### Hook action types
 
@@ -364,16 +364,16 @@ Event hooks let users run custom side effects when specific events occur. They a
 
 All string fields in hook actions support `{{variableName}}` placeholders. Available variables:
 
-| Variable | Value |
-|---|---|
-| `{{featureId}}` | Feature ID |
-| `{{featureName}}` | Feature title |
-| `{{projectPath}}` | Absolute path to the project |
-| `{{projectName}}` | Last segment of the project path |
-| `{{error}}` | Error message (error events only) |
-| `{{errorType}}` | Error classification (error events only) |
-| `{{timestamp}}` | ISO 8601 timestamp |
-| `{{eventType}}` | The trigger that fired |
+| Variable          | Value                                    |
+| ----------------- | ---------------------------------------- |
+| `{{featureId}}`   | Feature ID                               |
+| `{{featureName}}` | Feature title                            |
+| `{{projectPath}}` | Absolute path to the project             |
+| `{{projectName}}` | Last segment of the project path         |
+| `{{error}}`       | Error message (error events only)        |
+| `{{errorType}}`   | Error classification (error events only) |
+| `{{timestamp}}`   | ISO 8601 timestamp                       |
+| `{{eventType}}`   | The trigger that fired                   |
 
 ### Deduplication
 
@@ -394,7 +394,7 @@ Open `libs/types/src/event.ts` and add your new type to the union:
 ```ts
 export type EventType =
   // ...existing types...
-  | 'my-feature:my-event';
+  "my-feature:my-event";
 ```
 
 ### 2. Emit from server code
@@ -402,14 +402,14 @@ export type EventType =
 Inject the shared `EventEmitter` into your service and call `emit`:
 
 ```ts
-import type { EventEmitter } from '../lib/events.js';
+import type { EventEmitter } from "../lib/events.js";
 
 class MyService {
   constructor(private events: EventEmitter) {}
 
   doSomething() {
     // ... business logic ...
-    this.events.emit('my-feature:my-event', {
+    this.events.emit("my-feature:my-event", {
       someField: value,
       projectPath,
     });
@@ -422,18 +422,19 @@ class MyService {
 Register a callback through `getElectronAPI()`:
 
 ```ts
-import { getElectronAPI } from '@/lib/electron';
-import type { EventType } from '@pegasus/types';
+import { getElectronAPI } from "@/lib/electron";
+import type { EventType } from "@pegasus/types";
 
 // Inside a React useEffect:
 useEffect(() => {
   const api = getElectronAPI();
   // The API surface exposes typed subscription methods by feature area.
   // For new low-level events you can subscribe at the HttpApiClient level:
-  const unsubscribe = (api as unknown as { subscribeToEvent: Function })
-    .subscribeToEvent('my-feature:my-event', (payload: unknown) => {
-      // handle payload
-    });
+  const unsubscribe = (
+    api as unknown as { subscribeToEvent: Function }
+  ).subscribeToEvent("my-feature:my-event", (payload: unknown) => {
+    // handle payload
+  });
   return unsubscribe;
 }, []);
 ```
@@ -457,19 +458,19 @@ The terminal uses a separate WebSocket at `/api/terminal/ws?sessionId=<id>&token
 
 ### Message protocol (server → client)
 
-| `type` | Payload | Meaning |
-|---|---|---|
-| `connected` | `{ sessionId, shell, cwd }` | Connection accepted |
-| `scrollback` | `{ data: string }` | Historical terminal output buffer |
-| `data` | `{ data: string }` | Live terminal output |
-| `exit` | `{ exitCode }` | Terminal process exited |
-| `error` | `{ message }` | Protocol error |
+| `type`       | Payload                     | Meaning                           |
+| ------------ | --------------------------- | --------------------------------- |
+| `connected`  | `{ sessionId, shell, cwd }` | Connection accepted               |
+| `scrollback` | `{ data: string }`          | Historical terminal output buffer |
+| `data`       | `{ data: string }`          | Live terminal output              |
+| `exit`       | `{ exitCode }`              | Terminal process exited           |
+| `error`      | `{ message }`               | Protocol error                    |
 
 ### Message protocol (client → server)
 
-| `type` | Fields | Meaning |
-|---|---|---|
-| `input` | `{ data: string }` | User keystroke(s) to write to pty |
+| `type`   | Fields                           | Meaning                                  |
+| -------- | -------------------------------- | ---------------------------------------- |
+| `input`  | `{ data: string }`               | User keystroke(s) to write to pty        |
 | `resize` | `{ cols: number, rows: number }` | Terminal resize (rate-limited to 100 ms) |
 
 Resize operations are deduplicated (same dimensions ignored) and rate-limited (min 100 ms between resizes) to prevent resize storms when the user drags a panel splitter.

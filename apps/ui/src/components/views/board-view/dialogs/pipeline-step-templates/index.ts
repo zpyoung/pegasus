@@ -1,10 +1,10 @@
-import { codeReviewTemplate } from './code-review';
-import { securityReviewTemplate } from './security-review';
-import { uxReviewTemplate } from './ux-review';
-import { testingTemplate } from './testing';
-import { documentationTemplate } from './documentation';
-import { optimizationTemplate } from './optimization';
-import { commitTemplate } from './commit';
+import { codeReviewTemplate } from "./code-review";
+import { securityReviewTemplate } from "./security-review";
+import { uxReviewTemplate } from "./ux-review";
+import { testingTemplate } from "./testing";
+import { documentationTemplate } from "./documentation";
+import { optimizationTemplate } from "./optimization";
+import { commitTemplate } from "./commit";
 
 export interface PipelineStepTemplate {
   id: string;
@@ -26,5 +26,5 @@ export const STEP_TEMPLATES: PipelineStepTemplate[] = [
 // Helper to get template color class
 export const getTemplateColorClass = (templateId: string): string => {
   const template = STEP_TEMPLATES.find((t) => t.id === templateId);
-  return template?.colorClass || 'bg-blue-500/20';
+  return template?.colorClass || "bg-blue-500/20";
 };

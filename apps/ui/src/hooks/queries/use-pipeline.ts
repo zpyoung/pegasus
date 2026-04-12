@@ -4,11 +4,11 @@
  * React Query hooks for fetching pipeline configuration.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { queryKeys } from '@/lib/query-keys';
-import { STALE_TIMES } from '@/lib/query-client';
-import type { PipelineConfig, DiscoveredPipeline } from '@pegasus/types';
+import { useQuery } from "@tanstack/react-query";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { queryKeys } from "@/lib/query-keys";
+import { STALE_TIMES } from "@/lib/query-client";
+import type { PipelineConfig, DiscoveredPipeline } from "@pegasus/types";
 
 /**
  * Fetch pipeline config for a project
@@ -23,13 +23,13 @@ import type { PipelineConfig, DiscoveredPipeline } from '@pegasus/types';
  */
 export function usePipelineConfig(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.pipeline.config(projectPath ?? ''),
+    queryKey: queryKeys.pipeline.config(projectPath ?? ""),
     queryFn: async (): Promise<PipelineConfig | null> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getHttpApiClient();
       const result = await api.pipeline.getConfig(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch pipeline config');
+        throw new Error(result.error || "Failed to fetch pipeline config");
       }
       return result.config ?? null;
     },
@@ -54,13 +54,13 @@ export function usePipelineConfig(projectPath: string | undefined) {
  */
 export function useDiscoverPipelines(projectPath: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.pipeline.discover(projectPath ?? ''),
+    queryKey: queryKeys.pipeline.discover(projectPath ?? ""),
     queryFn: async (): Promise<DiscoveredPipeline[]> => {
-      if (!projectPath) throw new Error('No project path');
+      if (!projectPath) throw new Error("No project path");
       const api = getHttpApiClient();
       const result = await api.pipeline.discoverPipelines(projectPath);
       if (!result.success) {
-        throw new Error(result.error || 'Failed to discover pipelines');
+        throw new Error(result.error || "Failed to discover pipelines");
       }
       return (result.pipelines as DiscoveredPipeline[]) ?? [];
     },

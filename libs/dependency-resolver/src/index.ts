@@ -16,4 +16,4 @@ export {
   type DependencyResolutionResult,
   type DependencySatisfactionOptions,
   type AncestorContext,
-} from './resolver.js';
+} from "./resolver.js";

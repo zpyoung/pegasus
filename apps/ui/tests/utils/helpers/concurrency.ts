@@ -1,9 +1,11 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator } from "@playwright/test";
 
 /**
  * Get the concurrency slider container
  */
-export async function getConcurrencySliderContainer(page: Page): Promise<Locator> {
+export async function getConcurrencySliderContainer(
+  page: Page,
+): Promise<Locator> {
   return page.locator('[data-testid="concurrency-slider-container"]');
 }
 
@@ -29,13 +31,13 @@ export async function setConcurrencyValue(
   page: Page,
   targetValue: number,
   min: number = 1,
-  max: number = 10
+  max: number = 10,
 ): Promise<void> {
   const slider = page.locator('[data-testid="concurrency-slider"]');
   const sliderBounds = await slider.boundingBox();
 
   if (!sliderBounds) {
-    throw new Error('Concurrency slider not found or not visible');
+    throw new Error("Concurrency slider not found or not visible");
   }
 
   // Calculate position for target value

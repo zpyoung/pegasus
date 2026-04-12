@@ -26,7 +26,7 @@ services:
     container_name: pegasus-dev-server
     restart: unless-stopped
     ports:
-      - '3008:3008'
+      - "3008:3008"
     environment:
       # Optional - Anthropic API key
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -89,7 +89,7 @@ services:
         echo 'Starting server in development mode...' &&
         exec gosu pegasus pnpm _dev:server
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3008/api/health']
+      test: ["CMD", "curl", "-f", "http://localhost:3008/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -106,7 +106,7 @@ services:
     container_name: pegasus-dev-ui
     restart: unless-stopped
     ports:
-      - '3007:3007'
+      - "3007:3007"
     environment:
       - NODE_ENV=development
       - VITE_SERVER_URL=http://localhost:3008

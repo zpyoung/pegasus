@@ -12,14 +12,14 @@ export function parseGitLogOutput(output: string): CommitFields[] {
   const commits: CommitFields[] = [];
 
   // Split by NUL character to separate commits
-  const commitBlocks = output.split('\0').filter((block) => block.trim());
+  const commitBlocks = output.split("\0").filter((block) => block.trim());
 
   for (const block of commitBlocks) {
-    const allLines = block.split('\n');
+    const allLines = block.split("\n");
 
     // Skip leading empty lines that may appear at block boundaries
     let startIndex = 0;
-    while (startIndex < allLines.length && allLines[startIndex].trim() === '') {
+    while (startIndex < allLines.length && allLines[startIndex].trim() === "") {
       startIndex++;
     }
     const fields = allLines.slice(startIndex);
@@ -36,7 +36,7 @@ export function parseGitLogOutput(output: string): CommitFields[] {
       authorEmail: fields[3].trim(),
       date: fields[4].trim(),
       subject: fields[5].trim(),
-      body: fields.slice(6).join('\n').trim(),
+      body: fields.slice(6).join("\n").trim(),
     };
 
     commits.push(commit);

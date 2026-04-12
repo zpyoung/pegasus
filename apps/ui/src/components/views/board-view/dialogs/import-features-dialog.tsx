@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,15 +6,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { CategoryAutocomplete } from '@/components/ui/category-autocomplete';
-import { Upload, AlertTriangle, CheckCircle2, XCircle, FileJson, FileText } from 'lucide-react';
-import { toast } from 'sonner';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CategoryAutocomplete } from "@/components/ui/category-autocomplete";
+import {
+  Upload,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  FileJson,
+  FileText,
+} from "lucide-react";
+import { toast } from "sonner";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { cn } from "@/lib/utils";
 
 interface ConflictInfo {
   featureId: string;
@@ -40,7 +47,7 @@ interface ImportFeaturesDialogProps {
   onImportComplete?: () => void;
 }
 
-type ImportStep = 'upload' | 'review' | 'result';
+type ImportStep = "upload" | "review" | "result";
 
 export function ImportFeaturesDialog({
   open,
@@ -51,14 +58,14 @@ export function ImportFeaturesDialog({
 }: ImportFeaturesDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<ImportStep>('upload');
-  const [fileData, setFileData] = useState<string>('');
-  const [fileName, setFileName] = useState<string>('');
-  const [fileFormat, setFileFormat] = useState<'json' | 'yaml' | null>(null);
+  const [step, setStep] = useState<ImportStep>("upload");
+  const [fileData, setFileData] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
+  const [fileFormat, setFileFormat] = useState<"json" | "yaml" | null>(null);
 
   // Options
   const [overwrite, setOverwrite] = useState(false);
-  const [targetCategory, setTargetCategory] = useState('');
+  const [targetCategory, setTargetCategory] = useState("");
 
   // Conflict check results
   const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
@@ -69,31 +76,33 @@ export function ImportFeaturesDialog({
   const [isImporting, setIsImporting] = useState(false);
 
   // Parse error
-  const [parseError, setParseError] = useState<string>('');
+  const [parseError, setParseError] = useState<string>("");
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      setStep('upload');
-      setFileData('');
-      setFileName('');
+      setStep("upload");
+      setFileData("");
+      setFileName("");
       setFileFormat(null);
       setOverwrite(false);
-      setTargetCategory('');
+      setTargetCategory("");
       setConflicts([]);
       setImportResults([]);
-      setParseError('');
+      setParseError("");
     }
   }, [open]);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Check file extension
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'json' && ext !== 'yaml' && ext !== 'yml') {
-      setParseError('Please select a JSON or YAML file');
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "json" && ext !== "yaml" && ext !== "yml") {
+      setParseError("Please select a JSON or YAML file");
       return;
     }
 
@@ -101,18 +110,18 @@ export function ImportFeaturesDialog({
       const content = await file.text();
       setFileData(content);
       setFileName(file.name);
-      setFileFormat(ext === 'yml' ? 'yaml' : (ext as 'json' | 'yaml'));
-      setParseError('');
+      setFileFormat(ext === "yml" ? "yaml" : (ext as "json" | "yaml"));
+      setParseError("");
 
       // Check for conflicts
       await checkConflicts(content);
     } catch {
-      setParseError('Failed to read file');
+      setParseError("Failed to read file");
     }
 
     // Reset input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -123,15 +132,17 @@ export function ImportFeaturesDialog({
       const result = await api.features.checkConflicts(projectPath, data);
 
       if (!result.success) {
-        setParseError(result.error || 'Failed to parse import file');
+        setParseError(result.error || "Failed to parse import file");
         setConflicts([]);
         return;
       }
 
       setConflicts(result.conflicts || []);
-      setStep('review');
+      setStep("review");
     } catch (error) {
-      setParseError(error instanceof Error ? error.message : 'Failed to check conflicts');
+      setParseError(
+        error instanceof Error ? error.message : "Failed to check conflicts",
+      );
     } finally {
       setIsCheckingConflicts(false);
     }
@@ -147,12 +158,12 @@ export function ImportFeaturesDialog({
       });
 
       if (!result.success && result.failedCount === result.results?.length) {
-        toast.error(result.error || 'Failed to import features');
+        toast.error(result.error || "Failed to import features");
         return;
       }
 
       setImportResults(result.results || []);
-      setStep('result');
+      setStep("result");
 
       const successCount = result.importedCount || 0;
       const failCount = result.failedCount || 0;
@@ -160,14 +171,18 @@ export function ImportFeaturesDialog({
       if (failCount === 0) {
         toast.success(`Successfully imported ${successCount} feature(s)`);
       } else if (successCount > 0) {
-        toast.warning(`Imported ${successCount} feature(s), ${failCount} failed`);
+        toast.warning(
+          `Imported ${successCount} feature(s), ${failCount} failed`,
+        );
       } else {
         toast.error(`Failed to import features`);
       }
 
       onImportComplete?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to import features');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import features",
+      );
     } finally {
       setIsImporting(false);
     }
@@ -180,9 +195,9 @@ export function ImportFeaturesDialog({
     const file = event.dataTransfer.files[0];
     if (!file) return;
 
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext !== 'json' && ext !== 'yaml' && ext !== 'yml') {
-      setParseError('Please drop a JSON or YAML file');
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "json" && ext !== "yaml" && ext !== "yml") {
+      setParseError("Please drop a JSON or YAML file");
       return;
     }
 
@@ -190,12 +205,12 @@ export function ImportFeaturesDialog({
       const content = await file.text();
       setFileData(content);
       setFileName(file.name);
-      setFileFormat(ext === 'yml' ? 'yaml' : (ext as 'json' | 'yaml'));
-      setParseError('');
+      setFileFormat(ext === "yml" ? "yaml" : (ext as "json" | "yaml"));
+      setParseError("");
 
       await checkConflicts(content);
     } catch {
-      setParseError('Failed to read file');
+      setParseError("Failed to read file");
     }
   };
 
@@ -214,9 +229,9 @@ export function ImportFeaturesDialog({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         className={cn(
-          'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
-          'hover:border-primary/50 hover:bg-muted/30',
-          parseError ? 'border-destructive/50' : 'border-border'
+          "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+          "hover:border-primary/50 hover:bg-muted/30",
+          parseError ? "border-destructive/50" : "border-border",
         )}
         onClick={() => fileInputRef.current?.click()}
         data-testid="import-drop-zone"
@@ -252,7 +267,9 @@ export function ImportFeaturesDialog({
       )}
 
       {isCheckingConflicts && (
-        <div className="text-sm text-muted-foreground text-center">Analyzing file...</div>
+        <div className="text-sm text-muted-foreground text-center">
+          Analyzing file...
+        </div>
       )}
     </div>
   );
@@ -261,7 +278,7 @@ export function ImportFeaturesDialog({
     <div className="py-4 space-y-4">
       {/* File Info */}
       <div className="flex items-center gap-2 p-3 rounded-md border border-border/50 bg-muted/30">
-        {fileFormat === 'json' ? (
+        {fileFormat === "json" ? (
           <FileJson className="w-5 h-5 text-muted-foreground" />
         ) : (
           <FileText className="w-5 h-5 text-muted-foreground" />
@@ -308,7 +325,10 @@ export function ImportFeaturesDialog({
               onCheckedChange={(checked) => setOverwrite(!!checked)}
               data-testid="import-overwrite"
             />
-            <Label htmlFor="overwrite" className="text-sm font-normal cursor-pointer">
+            <Label
+              htmlFor="overwrite"
+              className="text-sm font-normal cursor-pointer"
+            >
               Overwrite existing features with same ID
             </Label>
           </div>
@@ -336,8 +356,10 @@ export function ImportFeaturesDialog({
             <div
               key={c.featureId}
               className={cn(
-                'py-1 px-2 flex items-center gap-2',
-                c.hasConflict && !overwrite ? 'text-warning' : 'text-muted-foreground'
+                "py-1 px-2 flex items-center gap-2",
+                c.hasConflict && !overwrite
+                  ? "text-warning"
+                  : "text-muted-foreground",
               )}
             >
               {c.hasConflict ? (
@@ -371,7 +393,9 @@ export function ImportFeaturesDialog({
           {successResults.length > 0 && (
             <div className="flex items-center gap-2 text-primary">
               <CheckCircle2 className="w-5 h-5" />
-              <span className="font-medium">{successResults.length} imported</span>
+              <span className="font-medium">
+                {successResults.length} imported
+              </span>
             </div>
           )}
           {failedResults.length > 0 && (
@@ -388,8 +412,10 @@ export function ImportFeaturesDialog({
             <div
               key={idx}
               className={cn(
-                'py-1.5 px-2 rounded',
-                result.success ? 'text-foreground' : 'text-destructive bg-destructive/10'
+                "py-1.5 px-2 rounded",
+                result.success
+                  ? "text-foreground"
+                  : "text-destructive bg-destructive/10",
               )}
             >
               <div className="flex items-center gap-2">
@@ -398,9 +424,13 @@ export function ImportFeaturesDialog({
                 ) : (
                   <XCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
                 )}
-                <span className="truncate">{result.featureId || `Feature ${idx + 1}`}</span>
+                <span className="truncate">
+                  {result.featureId || `Feature ${idx + 1}`}
+                </span>
                 {result.wasOverwritten && (
-                  <span className="text-xs text-muted-foreground">(overwritten)</span>
+                  <span className="text-xs text-muted-foreground">
+                    (overwritten)
+                  </span>
                 )}
               </div>
               {result.warnings && result.warnings.length > 0 && (
@@ -433,37 +463,45 @@ export function ImportFeaturesDialog({
             Import Features
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Import features from a JSON or YAML export file.'}
-            {step === 'review' && 'Review and configure import options.'}
-            {step === 'result' && 'Import completed.'}
+            {step === "upload" &&
+              "Import features from a JSON or YAML export file."}
+            {step === "review" && "Review and configure import options."}
+            {step === "result" && "Import completed."}
           </DialogDescription>
         </DialogHeader>
 
-        {step === 'upload' && renderUploadStep()}
-        {step === 'review' && renderReviewStep()}
-        {step === 'result' && renderResultStep()}
+        {step === "upload" && renderUploadStep()}
+        {step === "review" && renderReviewStep()}
+        {step === "result" && renderResultStep()}
 
         <DialogFooter>
-          {step === 'upload' && (
+          {step === "upload" && (
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
           )}
-          {step === 'review' && (
+          {step === "review" && (
             <>
-              <Button variant="ghost" onClick={() => setStep('upload')}>
+              <Button variant="ghost" onClick={() => setStep("upload")}>
                 Back
               </Button>
-              <Button onClick={handleImport} disabled={isImporting} data-testid="confirm-import">
+              <Button
+                onClick={handleImport}
+                disabled={isImporting}
+                data-testid="confirm-import"
+              >
                 <Upload className="w-4 h-4 mr-2" />
                 {isImporting
-                  ? 'Importing...'
+                  ? "Importing..."
                   : `Import ${hasConflicts && !overwrite ? conflicts.filter((c) => !c.hasConflict).length : conflicts.length} Feature(s)`}
               </Button>
             </>
           )}
-          {step === 'result' && (
-            <Button onClick={() => onOpenChange(false)} data-testid="close-import">
+          {step === "result" && (
+            <Button
+              onClick={() => onOpenChange(false)}
+              data-testid="close-import"
+            >
               Done
             </Button>
           )}

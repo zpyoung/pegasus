@@ -2,14 +2,14 @@
  * POST /stop endpoint - Stop the current backlog plan generation
  */
 
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 import {
   getAbortController,
   setRunningState,
   setRunningDetails,
   getErrorMessage,
   logError,
-} from '../common.js';
+} from "../common.js";
 
 export function createStopHandler() {
   return async (_req: Request, res: Response): Promise<void> => {
@@ -22,7 +22,7 @@ export function createStopHandler() {
       }
       res.json({ success: true });
     } catch (error) {
-      logError(error, 'Stop backlog plan failed');
+      logError(error, "Stop backlog plan failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

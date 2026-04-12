@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createLogger } from '@pegasus/utils/logger';
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createLogger } from "@pegasus/utils/logger";
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -20,19 +24,25 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from '@/components/ui/command';
-import { getElectronAPI } from '@/lib/electron';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { toast } from 'sonner';
-import { Check, ChevronsUpDown, GitBranchPlus, Globe, RefreshCw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/command";
+import { getElectronAPI } from "@/lib/electron";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { toast } from "sonner";
+import {
+  Check,
+  ChevronsUpDown,
+  GitBranchPlus,
+  Globe,
+  RefreshCw,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import {
   StashConfirmDialog,
   type UncommittedChangesInfo,
   type StashConfirmAction,
-} from './stash-confirm-dialog';
-import { type BranchInfo } from '../worktree-panel/types';
+} from "./stash-confirm-dialog";
+import { type BranchInfo } from "../worktree-panel/types";
 
 interface WorktreeInfo {
   path: string;
@@ -42,7 +52,7 @@ interface WorktreeInfo {
   changedFilesCount?: number;
 }
 
-const logger = createLogger('CreateBranchDialog');
+const logger = createLogger("CreateBranchDialog");
 
 interface CreateBranchDialogProps {
   open: boolean;
@@ -57,8 +67,8 @@ export function CreateBranchDialog({
   worktree,
   onCreated,
 }: CreateBranchDialogProps) {
-  const [branchName, setBranchName] = useState('');
-  const [baseBranch, setBaseBranch] = useState('');
+  const [branchName, setBranchName] = useState("");
+  const [baseBranch, setBaseBranch] = useState("");
   const [branches, setBranches] = useState<BranchInfo[]>([]);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -66,11 +76,13 @@ export function CreateBranchDialog({
   const [error, setError] = useState<string | null>(null);
   const [baseBranchPopoverOpen, setBaseBranchPopoverOpen] = useState(false);
   const baseBranchTriggerRef = useRef<HTMLButtonElement>(null);
-  const [baseBranchTriggerWidth, setBaseBranchTriggerWidth] = useState<number>(0);
+  const [baseBranchTriggerWidth, setBaseBranchTriggerWidth] =
+    useState<number>(0);
 
   // Stash confirmation state
   const [showStashConfirm, setShowStashConfirm] = useState(false);
-  const [uncommittedChanges, setUncommittedChanges] = useState<UncommittedChangesInfo | null>(null);
+  const [uncommittedChanges, setUncommittedChanges] =
+    useState<UncommittedChangesInfo | null>(null);
 
   // Keep a ref in sync with baseBranch so fetchBranches can read the latest value
   // without needing it in its dependency array (which would cause re-fetch loops)
@@ -92,7 +104,9 @@ export function CreateBranchDialog({
         setBranches(result.result.branches);
         // Only set the default base branch if no branch is currently selected,
         // or if the currently selected branch is no longer present in the fetched list
-        const branchNames = result.result.branches.map((b: BranchInfo) => b.name);
+        const branchNames = result.result.branches.map(
+          (b: BranchInfo) => b.name,
+        );
         const currentBaseBranch = baseBranchRef.current;
         if (!currentBaseBranch || !branchNames.includes(currentBaseBranch)) {
           if (result.result.currentBranch) {
@@ -101,7 +115,7 @@ export function CreateBranchDialog({
         }
       }
     } catch (err) {
-      logger.error('Failed to fetch branches:', err);
+      logger.error("Failed to fetch branches:", err);
     } finally {
       setIsLoadingBranches(false);
     }
@@ -110,11 +124,11 @@ export function CreateBranchDialog({
   // Reset state and fetch branches when dialog opens
   useEffect(() => {
     if (open) {
-      setBranchName('');
-      setBaseBranch('');
+      setBranchName("");
+      setBaseBranch("");
       // Update the ref synchronously so fetchBranches() sees the cleared value
       // immediately, rather than the stale value from the previous open.
-      baseBranchRef.current = '';
+      baseBranchRef.current = "";
       setError(null);
       setBranches([]);
       setBaseBranchPopoverOpen(false);
@@ -150,7 +164,7 @@ export function CreateBranchDialog({
       try {
         const api = getElectronAPI();
         if (!api?.worktree?.checkoutBranch) {
-          toast.error('Branch API not available');
+          toast.error("Branch API not available");
           setIsCreating(false);
           return;
         }
@@ -161,36 +175,36 @@ export function CreateBranchDialog({
           branchName.trim(),
           selectedBase,
           stashChanges,
-          true // includeUntracked
+          true, // includeUntracked
         );
 
         if (result.success && result.result) {
           // Check if there were conflicts from stash reapply
           if (result.result.hasConflicts) {
-            toast.warning('Branch created with conflicts', {
+            toast.warning("Branch created with conflicts", {
               description: result.result.message,
               duration: 8000,
             });
           } else {
             const desc = result.result.stashedChanges
-              ? 'Local changes were stashed and reapplied'
+              ? "Local changes were stashed and reapplied"
               : undefined;
             toast.success(result.result.message, { description: desc });
           }
           onCreated();
           onOpenChange(false);
         } else {
-          setError(result.error || 'Failed to create branch');
+          setError(result.error || "Failed to create branch");
         }
       } catch (err) {
-        logger.error('Create branch failed:', err);
-        setError('Failed to create branch');
+        logger.error("Create branch failed:", err);
+        setError("Failed to create branch");
       } finally {
         setIsCreating(false);
         setShowStashConfirm(false);
       }
     },
-    [worktree, branchName, baseBranch, onCreated, onOpenChange]
+    [worktree, branchName, baseBranch, onCreated, onOpenChange],
   );
 
   /**
@@ -205,7 +219,7 @@ export function CreateBranchDialog({
     // Basic validation
     const invalidChars = /[\s~^:?*[\]\\]/;
     if (invalidChars.test(branchName)) {
-      setError('Branch name contains invalid characters');
+      setError("Branch name contains invalid characters");
       return;
     }
 
@@ -231,7 +245,10 @@ export function CreateBranchDialog({
       }
     } catch (err) {
       // If we can't check for changes, proceed without stashing
-      logger.warn('Failed to check for uncommitted changes, proceeding without stash:', err);
+      logger.warn(
+        "Failed to check for uncommitted changes, proceeding without stash:",
+        err,
+      );
     }
 
     setIsChecking(false);
@@ -246,23 +263,29 @@ export function CreateBranchDialog({
   const handleStashConfirmAction = useCallback(
     (action: StashConfirmAction) => {
       switch (action) {
-        case 'stash-and-proceed':
+        case "stash-and-proceed":
           doCreate(true);
           break;
-        case 'proceed-without-stash':
+        case "proceed-without-stash":
           doCreate(false);
           break;
-        case 'cancel':
+        case "cancel":
           setShowStashConfirm(false);
           break;
       }
     },
-    [doCreate]
+    [doCreate],
   );
 
   // Separate local and remote branches
-  const localBranches = useMemo(() => branches.filter((b) => !b.isRemote), [branches]);
-  const remoteBranches = useMemo(() => branches.filter((b) => b.isRemote), [branches]);
+  const localBranches = useMemo(
+    () => branches.filter((b) => !b.isRemote),
+    [branches],
+  );
+  const remoteBranches = useMemo(
+    () => branches.filter((b) => b.isRemote),
+    [branches],
+  );
 
   // Display label for the selected base branch
   const baseBranchDisplayLabel = useMemo(() => {
@@ -281,7 +304,9 @@ export function CreateBranchDialog({
               <GitBranchPlus className="w-5 h-5" />
               Create New Branch
             </DialogTitle>
-            <DialogDescription>Create a new branch from a base branch</DialogDescription>
+            <DialogDescription>
+              Create a new branch from a base branch
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -296,7 +321,12 @@ export function CreateBranchDialog({
                   setError(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && branchName.trim() && !isCreating && !isChecking) {
+                  if (
+                    e.key === "Enter" &&
+                    branchName.trim() &&
+                    !isCreating &&
+                    !isChecking
+                  ) {
                     handleCreate();
                   }
                 }}
@@ -326,10 +356,15 @@ export function CreateBranchDialog({
               {isLoadingBranches && branches.length === 0 ? (
                 <div className="flex items-center justify-center py-3 border rounded-md border-input">
                   <Spinner size="sm" className="mr-2" />
-                  <span className="text-sm text-muted-foreground">Loading branches...</span>
+                  <span className="text-sm text-muted-foreground">
+                    Loading branches...
+                  </span>
                 </div>
               ) : (
-                <Popover open={baseBranchPopoverOpen} onOpenChange={setBaseBranchPopoverOpen}>
+                <Popover
+                  open={baseBranchPopoverOpen}
+                  onOpenChange={setBaseBranchPopoverOpen}
+                >
                   <PopoverTrigger asChild>
                     <Button
                       id="base-branch"
@@ -342,7 +377,9 @@ export function CreateBranchDialog({
                     >
                       <span className="truncate text-sm">
                         {baseBranchDisplayLabel ?? (
-                          <span className="text-muted-foreground">Select base branch</span>
+                          <span className="text-muted-foreground">
+                            Select base branch
+                          </span>
                         )}
                       </span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -355,7 +392,10 @@ export function CreateBranchDialog({
                     onTouchMove={(e) => e.stopPropagation()}
                   >
                     <Command shouldFilter={true}>
-                      <CommandInput placeholder="Filter branches..." className="h-9" />
+                      <CommandInput
+                        placeholder="Filter branches..."
+                        className="h-9"
+                      />
                       <CommandList>
                         <CommandEmpty>No matching branches</CommandEmpty>
                         {localBranches.length > 0 && (
@@ -371,11 +411,18 @@ export function CreateBranchDialog({
                               >
                                 <Check
                                   className={cn(
-                                    'mr-2 h-4 w-4 shrink-0',
-                                    baseBranch === branch.name ? 'opacity-100' : 'opacity-0'
+                                    "mr-2 h-4 w-4 shrink-0",
+                                    baseBranch === branch.name
+                                      ? "opacity-100"
+                                      : "opacity-0",
                                   )}
                                 />
-                                <span className={cn('truncate', branch.isCurrent && 'font-medium')}>
+                                <span
+                                  className={cn(
+                                    "truncate",
+                                    branch.isCurrent && "font-medium",
+                                  )}
+                                >
                                   {branch.name}
                                 </span>
                                 {branch.isCurrent && (
@@ -402,12 +449,16 @@ export function CreateBranchDialog({
                                 >
                                   <Check
                                     className={cn(
-                                      'mr-2 h-4 w-4 shrink-0',
-                                      baseBranch === branch.name ? 'opacity-100' : 'opacity-0'
+                                      "mr-2 h-4 w-4 shrink-0",
+                                      baseBranch === branch.name
+                                        ? "opacity-100"
+                                        : "opacity-0",
                                     )}
                                   />
                                   <Globe className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                  <span className="truncate">{branch.name}</span>
+                                  <span className="truncate">
+                                    {branch.name}
+                                  </span>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -446,7 +497,7 @@ export function CreateBranchDialog({
                   Checking...
                 </>
               ) : (
-                'Create Branch'
+                "Create Branch"
               )}
             </Button>
           </DialogFooter>

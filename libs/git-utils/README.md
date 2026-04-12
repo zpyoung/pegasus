@@ -19,11 +19,11 @@ pnpm add @pegasus/git-utils
 Check if a path is a git repository.
 
 ```typescript
-import { isGitRepo } from '@pegasus/git-utils';
+import { isGitRepo } from "@pegasus/git-utils";
 
-const isRepo = await isGitRepo('/project/path');
+const isRepo = await isGitRepo("/project/path");
 if (isRepo) {
-  console.log('This is a git repository');
+  console.log("This is a git repository");
 }
 ```
 
@@ -32,10 +32,10 @@ if (isRepo) {
 Parse git status output into structured data.
 
 ```typescript
-import { parseGitStatus } from '@pegasus/git-utils';
-import type { FileStatus } from '@pegasus/git-utils';
+import { parseGitStatus } from "@pegasus/git-utils";
+import type { FileStatus } from "@pegasus/git-utils";
 
-const statusOutput = await execAsync('git status --porcelain');
+const statusOutput = await execAsync("git status --porcelain");
 const files: FileStatus[] = parseGitStatus(statusOutput.stdout);
 
 files.forEach((file) => {
@@ -54,13 +54,16 @@ import {
   generateSyntheticDiffForNewFile,
   appendUntrackedFileDiffs,
   getGitRepositoryDiffs,
-} from '@pegasus/git-utils';
+} from "@pegasus/git-utils";
 
 // Generate diff for single untracked file
-const diff = await generateSyntheticDiffForNewFile('/project/path', 'src/new-file.ts');
+const diff = await generateSyntheticDiffForNewFile(
+  "/project/path",
+  "src/new-file.ts",
+);
 
 // Get complete repository diffs (tracked + untracked)
-const result = await getGitRepositoryDiffs('/project/path');
+const result = await getGitRepositoryDiffs("/project/path");
 console.log(result.diff); // Combined diff string
 console.log(result.files); // Array of FileStatus
 console.log(result.hasChanges); // Boolean
@@ -71,13 +74,16 @@ console.log(result.hasChanges); // Boolean
 Handle non-git directories by treating all files as new.
 
 ```typescript
-import { listAllFilesInDirectory, generateDiffsForNonGitDirectory } from '@pegasus/git-utils';
+import {
+  listAllFilesInDirectory,
+  generateDiffsForNonGitDirectory,
+} from "@pegasus/git-utils";
 
 // List all files (excluding build artifacts)
-const files = await listAllFilesInDirectory('/project/path');
+const files = await listAllFilesInDirectory("/project/path");
 
 // Generate diffs for non-git directory
-const result = await generateDiffsForNonGitDirectory('/project/path');
+const result = await generateDiffsForNonGitDirectory("/project/path");
 console.log(result.diff); // Synthetic diffs for all files
 console.log(result.files); // All files as "New" status
 ```
@@ -118,19 +124,23 @@ interface FileStatus {
 ## Usage Example
 
 ```typescript
-import { isGitRepo, getGitRepositoryDiffs, parseGitStatus } from '@pegasus/git-utils';
+import {
+  isGitRepo,
+  getGitRepositoryDiffs,
+  parseGitStatus,
+} from "@pegasus/git-utils";
 
 async function getProjectChanges(projectPath: string) {
   const isRepo = await isGitRepo(projectPath);
 
   if (!isRepo) {
-    console.log('Not a git repository, analyzing all files...');
+    console.log("Not a git repository, analyzing all files...");
   }
 
   const result = await getGitRepositoryDiffs(projectPath);
 
   if (!result.hasChanges) {
-    console.log('No changes detected');
+    console.log("No changes detected");
     return;
   }
 
@@ -143,7 +153,7 @@ async function getProjectChanges(projectPath: string) {
       acc[file.statusText].push(file.path);
       return acc;
     },
-    {} as Record<string, string[]>
+    {} as Record<string, string[]>,
   );
 
   Object.entries(byStatus).forEach(([status, paths]) => {
@@ -207,14 +217,14 @@ Git operations can fail for various reasons. This package provides graceful erro
 **1. Repository Not Found**
 
 ```typescript
-const isRepo = await isGitRepo('/path/does/not/exist');
+const isRepo = await isGitRepo("/path/does/not/exist");
 // Returns: false (no exception thrown)
 ```
 
 **2. Not a Git Repository**
 
 ```typescript
-const result = await getGitRepositoryDiffs('/not/a/git/repo');
+const result = await getGitRepositoryDiffs("/not/a/git/repo");
 // Fallback behavior: treats all files as "new"
 // Returns synthetic diffs for all files in directory
 ```
@@ -224,11 +234,11 @@ const result = await getGitRepositoryDiffs('/not/a/git/repo');
 ```typescript
 // Permission errors, corrupted repos, or git not installed
 try {
-  const result = await getGitRepositoryDiffs('/project');
+  const result = await getGitRepositoryDiffs("/project");
 } catch (error) {
   // Handle errors from git commands
   // Errors are logged via @pegasus/utils logger
-  console.error('Git operation failed:', error);
+  console.error("Git operation failed:", error);
 }
 ```
 
@@ -236,7 +246,7 @@ try {
 
 ```typescript
 // When generating synthetic diffs for inaccessible files
-const diff = await generateSyntheticDiffForNewFile('/path', 'locked-file.txt');
+const diff = await generateSyntheticDiffForNewFile("/path", "locked-file.txt");
 // Returns placeholder: "[Unable to read file content]"
 // Error is logged but doesn't throw
 ```

@@ -12,18 +12,18 @@
  * Mounted at /api/settings in the main server.
  */
 
-import { Router } from 'express';
-import type { SettingsService } from '../../services/settings-service.js';
-import { validatePathParams } from '../../middleware/validate-paths.js';
-import { createGetGlobalHandler } from './routes/get-global.js';
-import { createUpdateGlobalHandler } from './routes/update-global.js';
-import { createGetCredentialsHandler } from './routes/get-credentials.js';
-import { createUpdateCredentialsHandler } from './routes/update-credentials.js';
-import { createGetProjectHandler } from './routes/get-project.js';
-import { createUpdateProjectHandler } from './routes/update-project.js';
-import { createMigrateHandler } from './routes/migrate.js';
-import { createStatusHandler } from './routes/status.js';
-import { createDiscoverAgentsHandler } from './routes/discover-agents.js';
+import { Router } from "express";
+import type { SettingsService } from "../../services/settings-service.js";
+import { validatePathParams } from "../../middleware/validate-paths.js";
+import { createGetGlobalHandler } from "./routes/get-global.js";
+import { createUpdateGlobalHandler } from "./routes/update-global.js";
+import { createGetCredentialsHandler } from "./routes/get-credentials.js";
+import { createUpdateCredentialsHandler } from "./routes/update-credentials.js";
+import { createGetProjectHandler } from "./routes/get-project.js";
+import { createUpdateProjectHandler } from "./routes/update-project.js";
+import { createMigrateHandler } from "./routes/migrate.js";
+import { createStatusHandler } from "./routes/status.js";
+import { createDiscoverAgentsHandler } from "./routes/discover-agents.js";
 
 /**
  * Create settings router with all endpoints
@@ -49,33 +49,33 @@ export function createSettingsRoutes(settingsService: SettingsService): Router {
   const router = Router();
 
   // Status endpoint (check if migration needed)
-  router.get('/status', createStatusHandler(settingsService));
+  router.get("/status", createStatusHandler(settingsService));
 
   // Global settings
-  router.get('/global', createGetGlobalHandler(settingsService));
-  router.put('/global', createUpdateGlobalHandler(settingsService));
+  router.get("/global", createGetGlobalHandler(settingsService));
+  router.put("/global", createUpdateGlobalHandler(settingsService));
 
   // Credentials (separate for security)
-  router.get('/credentials', createGetCredentialsHandler(settingsService));
-  router.put('/credentials', createUpdateCredentialsHandler(settingsService));
+  router.get("/credentials", createGetCredentialsHandler(settingsService));
+  router.put("/credentials", createUpdateCredentialsHandler(settingsService));
 
   // Project settings
   router.post(
-    '/project',
-    validatePathParams('projectPath'),
-    createGetProjectHandler(settingsService)
+    "/project",
+    validatePathParams("projectPath"),
+    createGetProjectHandler(settingsService),
   );
   router.put(
-    '/project',
-    validatePathParams('projectPath'),
-    createUpdateProjectHandler(settingsService)
+    "/project",
+    validatePathParams("projectPath"),
+    createUpdateProjectHandler(settingsService),
   );
 
   // Migration from localStorage
-  router.post('/migrate', createMigrateHandler(settingsService));
+  router.post("/migrate", createMigrateHandler(settingsService));
 
   // Filesystem agents discovery (read-only)
-  router.post('/agents/discover', createDiscoverAgentsHandler());
+  router.post("/agents/discover", createDiscoverAgentsHandler());
 
   return router;
 }

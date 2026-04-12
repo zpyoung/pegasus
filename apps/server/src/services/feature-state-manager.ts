@@ -13,37 +13,42 @@
  * - markInterrupted preserves pipeline_* statuses
  */
 
-import path from 'path';
-import type { Feature, FeatureStatusWithPipeline, ParsedTask, PlanSpec } from '@pegasus/types';
-import { isPipelineStatus } from '@pegasus/types';
+import path from "path";
+import type {
+  Feature,
+  FeatureStatusWithPipeline,
+  ParsedTask,
+  PlanSpec,
+} from "@pegasus/types";
+import { isPipelineStatus } from "@pegasus/types";
 import {
   atomicWriteJson,
   readJsonWithRecovery,
   logRecoveryWarning,
   DEFAULT_BACKUP_COUNT,
   createLogger,
-} from '@pegasus/utils';
-import { getFeatureDir, getFeaturesDir } from '@pegasus/platform';
-import * as secureFs from '../lib/secure-fs.js';
-import type { EventEmitter } from '../lib/events.js';
-import type { AutoModeEventType } from './typed-event-bus.js';
-import { getNotificationService } from './notification-service.js';
-import { FeatureLoader } from './feature-loader.js';
-import { pipelineService } from './pipeline-service.js';
+} from "@pegasus/utils";
+import { getFeatureDir, getFeaturesDir } from "@pegasus/platform";
+import * as secureFs from "../lib/secure-fs.js";
+import type { EventEmitter } from "../lib/events.js";
+import type { AutoModeEventType } from "./typed-event-bus.js";
+import { getNotificationService } from "./notification-service.js";
+import { FeatureLoader } from "./feature-loader.js";
+import { pipelineService } from "./pipeline-service.js";
 
-const logger = createLogger('FeatureStateManager');
+const logger = createLogger("FeatureStateManager");
 
 // Notification type constants
-const NOTIFICATION_TYPE_WAITING_APPROVAL = 'feature_waiting_approval';
-const NOTIFICATION_TYPE_VERIFIED = 'feature_verified';
-const NOTIFICATION_TYPE_FEATURE_ERROR = 'feature_error';
-const NOTIFICATION_TYPE_AUTO_MODE_ERROR = 'auto_mode_error';
+const NOTIFICATION_TYPE_WAITING_APPROVAL = "feature_waiting_approval";
+const NOTIFICATION_TYPE_VERIFIED = "feature_verified";
+const NOTIFICATION_TYPE_FEATURE_ERROR = "feature_error";
+const NOTIFICATION_TYPE_AUTO_MODE_ERROR = "auto_mode_error";
 
 // Notification title constants
-const NOTIFICATION_TITLE_WAITING_APPROVAL = 'Feature Ready for Review';
-const NOTIFICATION_TITLE_VERIFIED = 'Feature Verified';
-const NOTIFICATION_TITLE_FEATURE_ERROR = 'Feature Failed';
-const NOTIFICATION_TITLE_AUTO_MODE_ERROR = 'Auto Mode Error';
+const NOTIFICATION_TITLE_WAITING_APPROVAL = "Feature Ready for Review";
+const NOTIFICATION_TITLE_VERIFIED = "Feature Verified";
+const NOTIFICATION_TITLE_FEATURE_ERROR = "Feature Failed";
+const NOTIFICATION_TITLE_AUTO_MODE_ERROR = "Auto Mode Error";
 
 /**
  * Auto-mode event payload structure
@@ -54,7 +59,7 @@ interface AutoModeEventPayload {
   featureId?: string;
   featureName?: string;
   passes?: boolean;
-  executionMode?: 'auto' | 'manual';
+  executionMode?: "auto" | "manual";
   message?: string;
   error?: string;
   errorType?: string;
@@ -83,7 +88,7 @@ export class FeatureStateManager {
 
     // Subscribe to error events to create notifications
     this.unsubscribe = events.subscribe((type, payload) => {
-      if (type === 'auto-mode:event') {
+      if (type === "auto-mode:event") {
         this.handleAutoModeEventError(payload as AutoModeEventPayload);
       }
     });
@@ -106,15 +111,22 @@ export class FeatureStateManager {
    * @param featureId - ID of the feature to load
    * @returns The feature data, or null if not found/recoverable
    */
-  async loadFeature(projectPath: string, featureId: string): Promise<Feature | null> {
+  async loadFeature(
+    projectPath: string,
+    featureId: string,
+  ): Promise<Feature | null> {
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, 'feature.json');
+    const featurePath = path.join(featureDir, "feature.json");
 
     try {
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
       logRecoveryWarning(result, `Feature ${featureId}`, logger);
       return result.data;
     } catch {
@@ -132,16 +144,24 @@ export class FeatureStateManager {
    * @param featureId - ID of the feature to update
    * @param status - New status value
    */
-  async updateFeatureStatus(projectPath: string, featureId: string, status: string): Promise<void> {
+  async updateFeatureStatus(
+    projectPath: string,
+    featureId: string,
+    status: string,
+  ): Promise<void> {
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, 'feature.json');
+    const featurePath = path.join(featureDir, "feature.json");
 
     try {
       // Use recovery-enabled read for corrupted file handling
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
 
       logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -155,8 +175,8 @@ export class FeatureStateManager {
       feature.updatedAt = new Date().toISOString();
 
       // Handle justFinishedAt timestamp based on status
-      const shouldSetJustFinishedAt = status === 'waiting_approval';
-      const shouldClearJustFinishedAt = status !== 'waiting_approval';
+      const shouldSetJustFinishedAt = status === "waiting_approval";
+      const shouldClearJustFinishedAt = status !== "waiting_approval";
       if (shouldSetJustFinishedAt) {
         feature.justFinishedAt = new Date().toISOString();
       } else if (shouldClearJustFinishedAt) {
@@ -164,15 +184,17 @@ export class FeatureStateManager {
       }
 
       // Finalize in-progress tasks when reaching terminal states (waiting_approval or verified)
-      if (status === 'waiting_approval' || status === 'verified') {
+      if (status === "waiting_approval" || status === "verified") {
         this.finalizeInProgressTasks(feature, featureId, status);
       }
 
       // PERSIST BEFORE EMIT (Pitfall 2)
-      await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+      await atomicWriteJson(featurePath, feature, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+      });
 
       // Emit status change event so UI can react without polling
-      this.emitAutoModeEvent('feature_status_changed', {
+      this.emitAutoModeEvent("feature_status_changed", {
         featureId,
         projectPath,
         status,
@@ -184,7 +206,7 @@ export class FeatureStateManager {
         const notificationService = getNotificationService();
         const displayName = this.getFeatureDisplayName(feature, featureId);
 
-        if (status === 'waiting_approval') {
+        if (status === "waiting_approval") {
           await notificationService.createNotification({
             type: NOTIFICATION_TYPE_WAITING_APPROVAL,
             title: displayName,
@@ -192,7 +214,7 @@ export class FeatureStateManager {
             featureId,
             projectPath,
           });
-        } else if (status === 'verified') {
+        } else if (status === "verified") {
           await notificationService.createNotification({
             type: NOTIFICATION_TYPE_VERIFIED,
             title: displayName,
@@ -202,16 +224,22 @@ export class FeatureStateManager {
           });
         }
       } catch (notificationError) {
-        logger.warn(`Failed to create notification for feature ${featureId}:`, notificationError);
+        logger.warn(
+          `Failed to create notification for feature ${featureId}:`,
+          notificationError,
+        );
       }
 
       // Sync completed/verified features to app_spec.txt
-      if (status === 'verified' || status === 'completed') {
+      if (status === "verified" || status === "completed") {
         try {
           await this.featureLoader.syncFeatureToAppSpec(projectPath, feature);
         } catch (syncError) {
           // Log but don't fail the status update if sync fails
-          logger.warn(`Failed to sync feature ${featureId} to app_spec.txt:`, syncError);
+          logger.warn(
+            `Failed to sync feature ${featureId} to app_spec.txt:`,
+            syncError,
+          );
         }
       }
     } catch (error) {
@@ -238,7 +266,7 @@ export class FeatureStateManager {
   async markFeatureInterrupted(
     projectPath: string,
     featureId: string,
-    reason?: string
+    reason?: string,
   ): Promise<void> {
     // Load the feature to check its current status
     const feature = await this.loadFeature(projectPath, featureId);
@@ -247,7 +275,7 @@ export class FeatureStateManager {
     // Preserve pipeline_* statuses so resumePipelineFeature can resume from the correct step
     if (isPipelineStatus(currentStatus)) {
       logger.info(
-        `Feature ${featureId} was in ${currentStatus}; preserving pipeline status for resume`
+        `Feature ${featureId} was in ${currentStatus}; preserving pipeline status for resume`,
       );
       return;
     }
@@ -258,7 +286,7 @@ export class FeatureStateManager {
       logger.info(`Marking feature ${featureId} as interrupted`);
     }
 
-    await this.updateFeatureStatus(projectPath, featureId, 'interrupted');
+    await this.updateFeatureStatus(projectPath, featureId, "interrupted");
   }
 
   /**
@@ -276,7 +304,7 @@ export class FeatureStateManager {
    */
   private async scanAndResetFeatures(
     projectPath: string,
-    callerLabel: string
+    callerLabel: string,
   ): Promise<{
     reconciledFeatures: Array<{
       id: string;
@@ -298,17 +326,23 @@ export class FeatureStateManager {
     }> = [];
 
     try {
-      const entries = await secureFs.readdir(featuresDir, { withFileTypes: true });
+      const entries = await secureFs.readdir(featuresDir, {
+        withFileTypes: true,
+      });
 
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
         scanned++;
-        const featurePath = path.join(featuresDir, entry.name, 'feature.json');
-        const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-          maxBackups: DEFAULT_BACKUP_COUNT,
-          autoRestore: true,
-        });
+        const featurePath = path.join(featuresDir, entry.name, "feature.json");
+        const result = await readJsonWithRecovery<Feature | null>(
+          featurePath,
+          null,
+          {
+            maxBackups: DEFAULT_BACKUP_COUNT,
+            autoRestore: true,
+          },
+        );
 
         const feature = result.data;
         if (!feature) continue;
@@ -318,14 +352,15 @@ export class FeatureStateManager {
 
         // Reset features in active execution states back to a resting state
         // After a server restart, no processes are actually running
-        const isActiveState = originalStatus === 'in_progress' || originalStatus === 'interrupted';
+        const isActiveState =
+          originalStatus === "in_progress" || originalStatus === "interrupted";
 
         if (isActiveState) {
-          const hasApprovedPlan = feature.planSpec?.status === 'approved';
-          feature.status = hasApprovedPlan ? 'ready' : 'backlog';
+          const hasApprovedPlan = feature.planSpec?.status === "approved";
+          feature.status = hasApprovedPlan ? "ready" : "backlog";
           needsUpdate = true;
           logger.info(
-            `[${callerLabel}] Reset feature ${feature.id} from ${originalStatus} to ${feature.status}`
+            `[${callerLabel}] Reset feature ${feature.id} from ${originalStatus} to ${feature.status}`,
           );
         }
 
@@ -336,33 +371,33 @@ export class FeatureStateManager {
           // if they were stuck in transient generation/execution modes.
           // No feature.status change here.
           logger.debug(
-            `[${callerLabel}] Preserving pipeline status for feature ${feature.id}: ${originalStatus}`
+            `[${callerLabel}] Preserving pipeline status for feature ${feature.id}: ${originalStatus}`,
           );
         }
 
         // Reset generating planSpec status back to pending (spec generation was interrupted)
-        if (feature.planSpec?.status === 'generating') {
-          feature.planSpec.status = 'pending';
+        if (feature.planSpec?.status === "generating") {
+          feature.planSpec.status = "pending";
           needsUpdate = true;
           logger.info(
-            `[${callerLabel}] Reset feature ${feature.id} planSpec status from generating to pending`
+            `[${callerLabel}] Reset feature ${feature.id} planSpec status from generating to pending`,
           );
         }
 
         // Reset any in_progress tasks back to pending (task execution was interrupted)
         if (feature.planSpec?.tasks) {
           for (const task of feature.planSpec.tasks) {
-            if (task.status === 'in_progress') {
-              task.status = 'pending';
+            if (task.status === "in_progress") {
+              task.status = "pending";
               needsUpdate = true;
               logger.info(
-                `[${callerLabel}] Reset task ${task.id} for feature ${feature.id} from in_progress to pending`
+                `[${callerLabel}] Reset task ${task.id} for feature ${feature.id} from in_progress to pending`,
               );
               // Clear currentTaskId if it points to this reverted task
               if (feature.planSpec?.currentTaskId === task.id) {
                 feature.planSpec.currentTaskId = undefined;
                 logger.info(
-                  `[${callerLabel}] Cleared planSpec.currentTaskId for feature ${feature.id} (was pointing to reverted task ${task.id})`
+                  `[${callerLabel}] Cleared planSpec.currentTaskId for feature ${feature.id} (was pointing to reverted task ${task.id})`,
                 );
               }
             }
@@ -371,7 +406,9 @@ export class FeatureStateManager {
 
         if (needsUpdate) {
           feature.updatedAt = new Date().toISOString();
-          await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+          await atomicWriteJson(featurePath, feature, {
+            backupCount: DEFAULT_BACKUP_COUNT,
+          });
           reconciledCount++;
           reconciledFeatureIds.push(feature.id);
           reconciledFeatures.push({
@@ -383,12 +420,20 @@ export class FeatureStateManager {
       }
     } catch (error) {
       // If features directory doesn't exist, that's fine
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error(`[${callerLabel}] Error resetting features for ${projectPath}:`, error);
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        logger.error(
+          `[${callerLabel}] Error resetting features for ${projectPath}:`,
+          error,
+        );
       }
     }
 
-    return { reconciledFeatures, reconciledFeatureIds, reconciledCount, scanned };
+    return {
+      reconciledFeatures,
+      reconciledFeatureIds,
+      reconciledCount,
+      scanned,
+    };
   }
 
   /**
@@ -409,11 +454,11 @@ export class FeatureStateManager {
   async resetStuckFeatures(projectPath: string): Promise<void> {
     const { reconciledCount, scanned } = await this.scanAndResetFeatures(
       projectPath,
-      'resetStuckFeatures'
+      "resetStuckFeatures",
     );
 
     logger.info(
-      `[resetStuckFeatures] Scanned ${scanned} features, reset ${reconciledCount} features for ${projectPath}`
+      `[resetStuckFeatures] Scanned ${scanned} features, reset ${reconciledCount} features for ${projectPath}`,
     );
   }
 
@@ -431,25 +476,34 @@ export class FeatureStateManager {
    * @returns The number of features that were reconciled
    */
   async reconcileAllFeatureStates(projectPath: string): Promise<number> {
-    logger.info(`[reconcileAllFeatureStates] Starting reconciliation for ${projectPath}`);
+    logger.info(
+      `[reconcileAllFeatureStates] Starting reconciliation for ${projectPath}`,
+    );
 
-    const { reconciledFeatures, reconciledFeatureIds, reconciledCount, scanned } =
-      await this.scanAndResetFeatures(projectPath, 'reconcileAllFeatureStates');
+    const {
+      reconciledFeatures,
+      reconciledFeatureIds,
+      reconciledCount,
+      scanned,
+    } = await this.scanAndResetFeatures(
+      projectPath,
+      "reconcileAllFeatureStates",
+    );
 
     // Emit per-feature status change events so UI invalidates its cache
     for (const { id, previousStatus, newStatus } of reconciledFeatures) {
-      this.emitAutoModeEvent('feature_status_changed', {
+      this.emitAutoModeEvent("feature_status_changed", {
         featureId: id,
         projectPath,
         status: newStatus,
         previousStatus,
-        reason: 'server_restart_reconciliation',
+        reason: "server_restart_reconciliation",
       });
     }
 
     // Emit a bulk reconciliation event for the UI
     if (reconciledCount > 0) {
-      this.emitAutoModeEvent('features_reconciled', {
+      this.emitAutoModeEvent("features_reconciled", {
         projectPath,
         reconciledCount,
         reconciledFeatureIds,
@@ -458,7 +512,7 @@ export class FeatureStateManager {
     }
 
     logger.info(
-      `[reconcileAllFeatureStates] Scanned ${scanned} features, reconciled ${reconciledCount} for ${projectPath}`
+      `[reconcileAllFeatureStates] Scanned ${scanned} features, reconciled ${reconciledCount} for ${projectPath}`,
     );
 
     return reconciledCount;
@@ -474,16 +528,20 @@ export class FeatureStateManager {
   async updateFeaturePlanSpec(
     projectPath: string,
     featureId: string,
-    updates: Partial<PlanSpec>
+    updates: Partial<PlanSpec>,
   ): Promise<void> {
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, 'feature.json');
+    const featurePath = path.join(featureDir, "feature.json");
 
     try {
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
 
       logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -496,7 +554,7 @@ export class FeatureStateManager {
       // Initialize planSpec if it doesn't exist
       if (!feature.planSpec) {
         feature.planSpec = {
-          status: 'pending',
+          status: "pending",
           version: 1,
           reviewedByUser: false,
         };
@@ -516,10 +574,12 @@ export class FeatureStateManager {
       feature.updatedAt = new Date().toISOString();
 
       // PERSIST BEFORE EMIT
-      await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+      await atomicWriteJson(featurePath, feature, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+      });
 
       // Emit event for UI update
-      this.emitAutoModeEvent('plan_spec_updated', {
+      this.emitAutoModeEvent("plan_spec_updated", {
         featureId,
         projectPath,
         planSpec: feature.planSpec,
@@ -542,16 +602,24 @@ export class FeatureStateManager {
    * @param featureId - The feature ID
    * @param summary - The summary text to save
    */
-  async saveFeatureSummary(projectPath: string, featureId: string, summary: string): Promise<void> {
+  async saveFeatureSummary(
+    projectPath: string,
+    featureId: string,
+    summary: string,
+  ): Promise<void> {
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, 'feature.json');
+    const featurePath = path.join(featureDir, "feature.json");
     const normalizedSummary = summary.trim();
 
     try {
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
 
       logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -563,7 +631,7 @@ export class FeatureStateManager {
 
       if (!normalizedSummary) {
         logger.debug(
-          `[saveFeatureSummary] Skipping empty summary for feature ${featureId} (status="${feature.status}")`
+          `[saveFeatureSummary] Skipping empty summary for feature ${featureId} (status="${feature.status}")`,
         );
         return;
       }
@@ -573,19 +641,25 @@ export class FeatureStateManager {
         // If we already have a non-phase summary (typically the initial implementation
         // summary from in_progress), normalize it into a named phase before appending
         // pipeline step summaries. This keeps the format consistent for UI phase parsing.
-        const implementationHeader = '### Implementation';
-        if (feature.summary && !feature.summary.trimStart().startsWith('### ')) {
+        const implementationHeader = "### Implementation";
+        if (
+          feature.summary &&
+          !feature.summary.trimStart().startsWith("### ")
+        ) {
           feature.summary = `${implementationHeader}\n\n${feature.summary.trim()}`;
         }
 
-        const stepName = await this.getPipelineStepName(projectPath, feature.status);
+        const stepName = await this.getPipelineStepName(
+          projectPath,
+          feature.status,
+        );
         const stepHeader = `### ${stepName}`;
         const stepSection = `${stepHeader}\n\n${normalizedSummary}`;
 
         if (feature.summary) {
           // Check if this step already exists in the summary (e.g., if retried)
           // Use section splitting to only match real section boundaries, not text in body content
-          const separator = '\n\n---\n\n';
+          const separator = "\n\n---\n\n";
           const sections = feature.summary.split(separator);
           let replaced = false;
           const updatedSections = sections.map((section) => {
@@ -599,19 +673,19 @@ export class FeatureStateManager {
           if (replaced) {
             feature.summary = updatedSections.join(separator);
             logger.info(
-              `[saveFeatureSummary] Updated existing pipeline step summary for feature ${featureId}: step="${stepName}"`
+              `[saveFeatureSummary] Updated existing pipeline step summary for feature ${featureId}: step="${stepName}"`,
             );
           } else {
             // Append as a new section
             feature.summary = `${feature.summary}${separator}${stepSection}`;
             logger.info(
-              `[saveFeatureSummary] Appended new pipeline step summary for feature ${featureId}: step="${stepName}"`
+              `[saveFeatureSummary] Appended new pipeline step summary for feature ${featureId}: step="${stepName}"`,
             );
           }
         } else {
           feature.summary = stepSection;
           logger.info(
-            `[saveFeatureSummary] Initialized pipeline summary for feature ${featureId}: step="${stepName}"`
+            `[saveFeatureSummary] Initialized pipeline summary for feature ${featureId}: step="${stepName}"`,
           );
         }
       } else {
@@ -621,10 +695,12 @@ export class FeatureStateManager {
       feature.updatedAt = new Date().toISOString();
 
       // PERSIST BEFORE EMIT
-      await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+      await atomicWriteJson(featurePath, feature, {
+        backupCount: DEFAULT_BACKUP_COUNT,
+      });
 
       // Emit event for UI update
-      this.emitAutoModeEvent('auto_mode_summary', {
+      this.emitAutoModeEvent("auto_mode_summary", {
         featureId,
         projectPath,
         summary: feature.summary,
@@ -641,9 +717,14 @@ export class FeatureStateManager {
    * @param status - The current pipeline status (e.g., 'pipeline_abc123')
    * @returns The step name, or a fallback based on the step ID
    */
-  private async getPipelineStepName(projectPath: string, status: string): Promise<string> {
+  private async getPipelineStepName(
+    projectPath: string,
+    status: string,
+  ): Promise<string> {
     try {
-      const stepId = pipelineService.getStepIdFromStatus(status as FeatureStatusWithPipeline);
+      const stepId = pipelineService.getStepIdFromStatus(
+        status as FeatureStatusWithPipeline,
+      );
       if (stepId) {
         const step = await pipelineService.getStep(projectPath, stepId);
         if (step) return step.name;
@@ -651,16 +732,16 @@ export class FeatureStateManager {
     } catch (error) {
       logger.debug(
         `[getPipelineStepName] Failed to look up step name for status "${status}", using fallback:`,
-        error
+        error,
       );
     }
     // Fallback: derive a human-readable name from the status suffix
     // e.g., 'pipeline_code_review' → 'Code Review'
-    const suffix = status.replace('pipeline_', '');
+    const suffix = status.replace("pipeline_", "");
     return suffix
-      .split('_')
+      .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .join(" ");
   }
 
   /**
@@ -675,17 +756,21 @@ export class FeatureStateManager {
     projectPath: string,
     featureId: string,
     taskId: string,
-    status: ParsedTask['status'],
-    summary?: string
+    status: ParsedTask["status"],
+    summary?: string,
   ): Promise<void> {
     const featureDir = getFeatureDir(projectPath, featureId);
-    const featurePath = path.join(featureDir, 'feature.json');
+    const featurePath = path.join(featureDir, "feature.json");
 
     try {
-      const result = await readJsonWithRecovery<Feature | null>(featurePath, null, {
-        maxBackups: DEFAULT_BACKUP_COUNT,
-        autoRestore: true,
-      });
+      const result = await readJsonWithRecovery<Feature | null>(
+        featurePath,
+        null,
+        {
+          maxBackups: DEFAULT_BACKUP_COUNT,
+          autoRestore: true,
+        },
+      );
 
       logRecoveryWarning(result, `Feature ${featureId}`, logger);
 
@@ -705,10 +790,12 @@ export class FeatureStateManager {
         feature.updatedAt = new Date().toISOString();
 
         // PERSIST BEFORE EMIT
-        await atomicWriteJson(featurePath, feature, { backupCount: DEFAULT_BACKUP_COUNT });
+        await atomicWriteJson(featurePath, feature, {
+          backupCount: DEFAULT_BACKUP_COUNT,
+        });
 
         // Emit event for UI update
-        this.emitAutoModeEvent('auto_mode_task_status', {
+        this.emitAutoModeEvent("auto_mode_task_status", {
           featureId,
           projectPath,
           taskId,
@@ -717,13 +804,16 @@ export class FeatureStateManager {
           tasks: feature.planSpec.tasks,
         });
       } else {
-        const availableIds = feature.planSpec.tasks.map((t) => t.id).join(', ');
+        const availableIds = feature.planSpec.tasks.map((t) => t.id).join(", ");
         logger.warn(
-          `[updateTaskStatus] Task ${taskId} not found in feature ${featureId} (${projectPath}). Available task IDs: [${availableIds}]`
+          `[updateTaskStatus] Task ${taskId} not found in feature ${featureId} (${projectPath}). Available task IDs: [${availableIds}]`,
         );
       }
     } catch (error) {
-      logger.error(`Failed to update task ${taskId} status for ${featureId}:`, error);
+      logger.error(
+        `Failed to update task ${taskId} status for ${featureId}:`,
+        error,
+      );
     }
   }
 
@@ -744,16 +834,24 @@ export class FeatureStateManager {
    * Handle auto-mode events to create error notifications.
    * This listens for error events and creates notifications to alert users.
    */
-  private async handleAutoModeEventError(payload: AutoModeEventPayload): Promise<void> {
+  private async handleAutoModeEventError(
+    payload: AutoModeEventPayload,
+  ): Promise<void> {
     if (!payload.type) return;
 
     // Only handle error events
-    if (payload.type !== 'auto_mode_error' && payload.type !== 'auto_mode_feature_complete') {
+    if (
+      payload.type !== "auto_mode_error" &&
+      payload.type !== "auto_mode_feature_complete"
+    ) {
       return;
     }
 
     // For auto_mode_feature_complete, only notify on failures (passes === false)
-    if (payload.type === 'auto_mode_feature_complete' && payload.passes !== false) {
+    if (
+      payload.type === "auto_mode_feature_complete" &&
+      payload.passes !== false
+    ) {
       return;
     }
 
@@ -766,7 +864,7 @@ export class FeatureStateManager {
 
       // Determine notification type and title based on event type
       // Only auto_mode_feature_complete events should create feature_error notifications
-      const isFeatureError = payload.type === 'auto_mode_feature_complete';
+      const isFeatureError = payload.type === "auto_mode_feature_complete";
       const notificationType = isFeatureError
         ? NOTIFICATION_TYPE_FEATURE_ERROR
         : NOTIFICATION_TYPE_AUTO_MODE_ERROR;
@@ -775,7 +873,7 @@ export class FeatureStateManager {
         : NOTIFICATION_TITLE_AUTO_MODE_ERROR;
 
       // Build error message
-      let errorMessage = payload.message || 'An error occurred';
+      let errorMessage = payload.message || "An error occurred";
       if (payload.error) {
         errorMessage = payload.error;
       }
@@ -783,7 +881,10 @@ export class FeatureStateManager {
       // Use feature title as notification title when available, fall back to gesture name
       let title = notificationTitle;
       if (payload.featureId) {
-        const displayName = await this.getFeatureDisplayNameById(projectPath, payload.featureId);
+        const displayName = await this.getFeatureDisplayNameById(
+          projectPath,
+          payload.featureId,
+        );
         if (displayName) {
           title = displayName;
           errorMessage = `${notificationTitle}: ${errorMessage}`;
@@ -807,7 +908,7 @@ export class FeatureStateManager {
    */
   private async getFeatureDisplayNameById(
     projectPath: string,
-    featureId: string
+    featureId: string,
   ): Promise<string | null> {
     const feature = await this.loadFeature(projectPath, featureId);
     if (!feature) return null;
@@ -822,7 +923,11 @@ export class FeatureStateManager {
    * @param featureId - The feature ID for logging
    * @param targetStatus - The status the feature is transitioning to
    */
-  private finalizeInProgressTasks(feature: Feature, featureId: string, targetStatus: string): void {
+  private finalizeInProgressTasks(
+    feature: Feature,
+    featureId: string,
+    targetStatus: string,
+  ): void {
     if (!feature.planSpec?.tasks) {
       return;
     }
@@ -831,29 +936,29 @@ export class FeatureStateManager {
     let tasksPending = 0;
 
     for (const task of feature.planSpec.tasks) {
-      if (task.status === 'in_progress') {
-        task.status = 'completed';
+      if (task.status === "in_progress") {
+        task.status = "completed";
         tasksFinalized++;
-      } else if (task.status === 'pending') {
+      } else if (task.status === "pending") {
         tasksPending++;
       }
     }
 
     // Update tasksCompleted count to reflect actual completed tasks
     feature.planSpec.tasksCompleted = feature.planSpec.tasks.filter(
-      (t) => t.status === 'completed'
+      (t) => t.status === "completed",
     ).length;
     feature.planSpec.currentTaskId = undefined;
 
     if (tasksFinalized > 0) {
       logger.info(
-        `[updateFeatureStatus] Finalized ${tasksFinalized} in_progress tasks for feature ${featureId} moving to ${targetStatus}`
+        `[updateFeatureStatus] Finalized ${tasksFinalized} in_progress tasks for feature ${featureId} moving to ${targetStatus}`,
       );
     }
 
     if (tasksPending > 0) {
       logger.warn(
-        `[updateFeatureStatus] Feature ${featureId} moving to ${targetStatus} with ${tasksPending} pending (never started) tasks out of ${feature.planSpec.tasks.length} total`
+        `[updateFeatureStatus] Feature ${featureId} moving to ${targetStatus} with ${tasksPending} pending (never started) tasks out of ${feature.planSpec.tasks.length} total`,
       );
     }
   }
@@ -864,9 +969,12 @@ export class FeatureStateManager {
    * @param eventType - The event type (e.g., 'auto_mode_summary')
    * @param data - The event payload
    */
-  private emitAutoModeEvent(eventType: AutoModeEventType, data: Record<string, unknown>): void {
+  private emitAutoModeEvent(
+    eventType: AutoModeEventType,
+    data: Record<string, unknown>,
+  ): void {
     // Wrap the event in auto-mode:event format expected by the client
-    this.events.emit('auto-mode:event', {
+    this.events.emit("auto-mode:event", {
       type: eventType,
       ...data,
     });

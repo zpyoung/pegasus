@@ -9,13 +9,16 @@
  * Cached data is treated as stale on restore and silently refetched.
  */
 
-import { get, set, del } from 'idb-keyval';
-import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
-import { createLogger } from '@pegasus/utils/logger';
+import { get, set, del } from "idb-keyval";
+import type {
+  PersistedClient,
+  Persister,
+} from "@tanstack/react-query-persist-client";
+import { createLogger } from "@pegasus/utils/logger";
 
-const logger = createLogger('QueryPersist');
+const logger = createLogger("QueryPersist");
 
-const IDB_KEY = 'pegasus-react-query-cache';
+const IDB_KEY = "pegasus-react-query-cache";
 
 /**
  * Maximum age of persisted cache before it's discarded (24 hours).
@@ -33,7 +36,7 @@ export const PERSIST_THROTTLE_MS = 2000;
  * Query key prefixes that should NOT be persisted.
  * Auth-related and volatile data should always be fetched fresh.
  */
-const EXCLUDED_QUERY_KEY_PREFIXES = ['auth', 'health', 'wsToken', 'sandbox'];
+const EXCLUDED_QUERY_KEY_PREFIXES = ["auth", "health", "wsToken", "sandbox"];
 
 /**
  * Check if a query key should be excluded from persistence
@@ -41,7 +44,9 @@ const EXCLUDED_QUERY_KEY_PREFIXES = ['auth', 'health', 'wsToken', 'sandbox'];
 function shouldExcludeQuery(queryKey: readonly unknown[]): boolean {
   if (queryKey.length === 0) return false;
   const firstKey = String(queryKey[0]);
-  return EXCLUDED_QUERY_KEY_PREFIXES.some((prefix) => firstKey.startsWith(prefix));
+  return EXCLUDED_QUERY_KEY_PREFIXES.some((prefix) =>
+    firstKey.startsWith(prefix),
+  );
 }
 
 /**
@@ -62,7 +67,7 @@ function shouldExcludeQuery(queryKey: readonly unknown[]): boolean {
  */
 export async function hasWarmIDBCache(
   currentBuster: string,
-  maxAgeMs = PERSIST_MAX_AGE_MS
+  maxAgeMs = PERSIST_MAX_AGE_MS,
 ): Promise<boolean> {
   try {
     const client = await get<PersistedClient>(IDB_KEY);
@@ -97,7 +102,7 @@ export function createIDBPersister(): Persister {
           clientState: {
             ...client.clientState,
             queries: client.clientState.queries.filter(
-              (query) => !shouldExcludeQuery(query.queryKey)
+              (query) => !shouldExcludeQuery(query.queryKey),
             ),
             // Don't persist mutations (they should be re-triggered, not replayed)
             mutations: [],
@@ -105,7 +110,7 @@ export function createIDBPersister(): Persister {
         };
         await set(IDB_KEY, filteredClient);
       } catch (error) {
-        logger.warn('Failed to persist query cache to IndexedDB:', error);
+        logger.warn("Failed to persist query cache to IndexedDB:", error);
       }
     },
 
@@ -113,11 +118,11 @@ export function createIDBPersister(): Persister {
       try {
         const client = await get<PersistedClient>(IDB_KEY);
         if (client) {
-          logger.info('Restored React Query cache from IndexedDB');
+          logger.info("Restored React Query cache from IndexedDB");
         }
         return client ?? undefined;
       } catch (error) {
-        logger.warn('Failed to restore query cache from IndexedDB:', error);
+        logger.warn("Failed to restore query cache from IndexedDB:", error);
         return undefined;
       }
     },
@@ -126,7 +131,7 @@ export function createIDBPersister(): Persister {
       try {
         await del(IDB_KEY);
       } catch (error) {
-        logger.warn('Failed to remove query cache from IndexedDB:', error);
+        logger.warn("Failed to remove query cache from IndexedDB:", error);
       }
     },
   };

@@ -6,38 +6,38 @@
  * scattering .startsWith() checks throughout the codebase.
  */
 
-import type { ModelProvider } from './settings.js';
-import { LEGACY_CURSOR_MODEL_MAP } from './cursor-models.js';
-import { CLAUDE_MODEL_MAP, CODEX_MODEL_MAP } from './model.js';
+import type { ModelProvider } from "./settings.js";
+import { LEGACY_CURSOR_MODEL_MAP } from "./cursor-models.js";
+import { CLAUDE_MODEL_MAP, CODEX_MODEL_MAP } from "./model.js";
 import {
   OPENCODE_MODEL_CONFIG_MAP,
   LEGACY_OPENCODE_MODEL_MAP,
   RETIRED_OPENCODE_MODEL_MAP,
-} from './opencode-models.js';
-import { GEMINI_MODEL_MAP } from './gemini-models.js';
-import { COPILOT_MODEL_MAP } from './copilot-models.js';
-import { PROVIDER_FOR_MODEL } from './model-registry.gen.js';
+} from "./opencode-models.js";
+import { GEMINI_MODEL_MAP } from "./gemini-models.js";
+import { COPILOT_MODEL_MAP } from "./copilot-models.js";
+import { PROVIDER_FOR_MODEL } from "./model-registry.gen.js";
 
 /**
  * Maps registry provider names to ModelProvider values.
  * Registry uses canonical provider names; ModelProvider uses display names.
  */
 const REGISTRY_TO_MODEL_PROVIDER: Record<string, ModelProvider> = {
-  anthropic: 'claude',
-  openai: 'codex',
-  google: 'gemini',
-  copilot: 'copilot',
-  cursor: 'cursor',
-  opencode: 'opencode',
+  anthropic: "claude",
+  openai: "codex",
+  google: "gemini",
+  copilot: "copilot",
+  cursor: "cursor",
+  opencode: "opencode",
 };
 
 /** Provider prefix constants */
 export const PROVIDER_PREFIXES = {
-  cursor: 'cursor-',
-  codex: 'codex-',
-  opencode: 'opencode-',
-  gemini: 'gemini-',
-  copilot: 'copilot-',
+  cursor: "cursor-",
+  codex: "codex-",
+  opencode: "opencode-",
+  gemini: "gemini-",
+  copilot: "copilot-",
 } as const;
 
 /**
@@ -57,7 +57,7 @@ export const PROVIDER_PREFIXES = {
 export const PROVIDER_PREFIX_EXCEPTIONS: Partial<
   Record<ModelProvider, readonly (keyof typeof PROVIDER_PREFIXES)[]>
 > = {
-  cursor: ['gemini'],
+  cursor: ["gemini"],
 };
 
 /**
@@ -70,7 +70,7 @@ export const PROVIDER_PREFIX_EXCEPTIONS: Partial<
  * @returns true if the model is a Cursor model
  */
 export function isCursorModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Canonical format: all Cursor models have cursor- prefix
   if (model.startsWith(PROVIDER_PREFIXES.cursor)) {
@@ -93,7 +93,7 @@ export function isCursorModel(model: string | undefined | null): boolean {
  * @returns true if the model is a Claude model
  */
 export function isClaudeModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Check if it's a Claude model alias (haiku, sonnet, opus)
   if (model in CLAUDE_MODEL_MAP) {
@@ -101,7 +101,7 @@ export function isClaudeModel(model: string | undefined | null): boolean {
   }
 
   // Check if it contains 'claude-' in the string (full model ID)
-  return model.includes('claude-');
+  return model.includes("claude-");
 }
 
 /**
@@ -111,7 +111,7 @@ export function isClaudeModel(model: string | undefined | null): boolean {
  * @returns true if the model is a Codex model
  */
 export function isCodexModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Check for explicit codex- prefix
   if (model.startsWith(PROVIDER_PREFIXES.codex)) {
@@ -119,7 +119,7 @@ export function isCodexModel(model: string | undefined | null): boolean {
   }
 
   // Check if it's a gpt- model (bare gpt models go to Codex, not Cursor)
-  if (model.startsWith('gpt-')) {
+  if (model.startsWith("gpt-")) {
     return true;
   }
 
@@ -139,7 +139,7 @@ export function isCodexModel(model: string | undefined | null): boolean {
  * @returns true if the model is a Gemini model
  */
 export function isGeminiModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Canonical format: gemini- prefix (e.g., "gemini-2.5-flash")
   if (model.startsWith(PROVIDER_PREFIXES.gemini)) {
@@ -161,7 +161,7 @@ export function isGeminiModel(model: string | undefined | null): boolean {
  * @returns true if the model is a Copilot model
  */
 export function isCopilotModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Canonical format: copilot- prefix (e.g., "copilot-gpt-4o")
   if (model.startsWith(PROVIDER_PREFIXES.copilot)) {
@@ -192,7 +192,7 @@ export function isCopilotModel(model: string | undefined | null): boolean {
  * @returns true if the model is an OpenCode model
  */
 export function isOpencodeModel(model: string | undefined | null): boolean {
-  if (!model || typeof model !== 'string') return false;
+  if (!model || typeof model !== "string") return false;
 
   // Canonical format: opencode- prefix for static models
   if (model.startsWith(PROVIDER_PREFIXES.opencode)) {
@@ -206,7 +206,7 @@ export function isOpencodeModel(model: string | undefined | null): boolean {
 
   // Legacy format: opencode/ prefix (will be migrated to opencode-)
   // Also supports amazon-bedrock/ for AWS Bedrock models
-  if (model.startsWith('opencode/') || model.startsWith('amazon-bedrock/')) {
+  if (model.startsWith("opencode/") || model.startsWith("amazon-bedrock/")) {
     return true;
   }
 
@@ -217,8 +217,8 @@ export function isOpencodeModel(model: string | undefined | null): boolean {
   // - xai/grok-3
   // - openrouter/qwen/qwen3-14b:free (model names can contain / or :)
   // Pattern: provider-id/model-name (at least one /, not a URL)
-  if (model.includes('/') && !model.includes('://')) {
-    const slashIndex = model.indexOf('/');
+  if (model.includes("/") && !model.includes("://")) {
+    const slashIndex = model.indexOf("/");
     const providerId = model.substring(0, slashIndex);
     const modelName = model.substring(slashIndex + 1);
     // Valid dynamic model format: provider-id/model-name (both parts non-empty)
@@ -243,9 +243,13 @@ export function isOpencodeModel(model: string | undefined | null): boolean {
  * @returns The provider type
  * @throws Error for unknown/unregistered model IDs (ADR-3)
  */
-export function getModelProvider(model: string | undefined | null): ModelProvider {
-  if (!model || typeof model !== 'string') {
-    throw new Error(`[getModelProvider] Invalid model: ${JSON.stringify(model)}`);
+export function getModelProvider(
+  model: string | undefined | null,
+): ModelProvider {
+  if (!model || typeof model !== "string") {
+    throw new Error(
+      `[getModelProvider] Invalid model: ${JSON.stringify(model)}`,
+    );
   }
 
   // 1. Registry lookup (most accurate — covers all registered canonical IDs)
@@ -257,20 +261,20 @@ export function getModelProvider(model: string | undefined | null): ModelProvide
 
   // 2. Prefix-based checks (handles dynamic OpenCode models like provider/model format,
   //    legacy IDs, and any models not yet in the registry)
-  if (isCopilotModel(model)) return 'copilot';
-  if (isGeminiModel(model)) return 'gemini';
-  if (isOpencodeModel(model)) return 'opencode';
+  if (isCopilotModel(model)) return "copilot";
+  if (isGeminiModel(model)) return "gemini";
+  if (isOpencodeModel(model)) return "opencode";
   // Check Codex before Cursor: bare gpt-* routes to Codex, not Cursor
-  if (isCodexModel(model)) return 'codex';
-  if (isCursorModel(model)) return 'cursor';
+  if (isCodexModel(model)) return "codex";
+  if (isCursorModel(model)) return "cursor";
 
   // 3. Claude aliases and full model strings (haiku/sonnet/opus, claude- prefix)
-  if (isClaudeModel(model)) return 'claude';
+  if (isClaudeModel(model)) return "claude";
 
   // 4. Fail-closed: throw for unknown models (ADR-3)
   throw new Error(
     `[getModelProvider] Unknown model ID: "${model}". ` +
-      `Run "pnpm sync-models" to update the registry, or check the model ID is correct.`
+      `Run "pnpm sync-models" to update the registry, or check the model ID is correct.`,
   );
 }
 
@@ -285,7 +289,7 @@ export function getModelProvider(model: string | undefined | null): ModelProvide
  * stripProviderPrefix('sonnet') // 'sonnet'
  */
 export function stripProviderPrefix(model: string): string {
-  if (!model || typeof model !== 'string') return model;
+  if (!model || typeof model !== "string") return model;
 
   for (const prefix of Object.values(PROVIDER_PREFIXES)) {
     if (model.startsWith(prefix)) {
@@ -309,26 +313,29 @@ export function stripProviderPrefix(model: string): string {
  * addProviderPrefix('sonnet', 'claude') // 'sonnet' (Claude doesn't use prefix)
  * addProviderPrefix('2.5-flash', 'gemini') // 'gemini-2.5-flash'
  */
-export function addProviderPrefix(model: string, provider: ModelProvider): string {
-  if (!model || typeof model !== 'string') return model;
+export function addProviderPrefix(
+  model: string,
+  provider: ModelProvider,
+): string {
+  if (!model || typeof model !== "string") return model;
 
-  if (provider === 'cursor') {
+  if (provider === "cursor") {
     if (!model.startsWith(PROVIDER_PREFIXES.cursor)) {
       return `${PROVIDER_PREFIXES.cursor}${model}`;
     }
-  } else if (provider === 'codex') {
+  } else if (provider === "codex") {
     if (!model.startsWith(PROVIDER_PREFIXES.codex)) {
       return `${PROVIDER_PREFIXES.codex}${model}`;
     }
-  } else if (provider === 'opencode') {
+  } else if (provider === "opencode") {
     if (!model.startsWith(PROVIDER_PREFIXES.opencode)) {
       return `${PROVIDER_PREFIXES.opencode}${model}`;
     }
-  } else if (provider === 'gemini') {
+  } else if (provider === "gemini") {
     if (!model.startsWith(PROVIDER_PREFIXES.gemini)) {
       return `${PROVIDER_PREFIXES.gemini}${model}`;
     }
-  } else if (provider === 'copilot') {
+  } else if (provider === "copilot") {
     if (!model.startsWith(PROVIDER_PREFIXES.copilot)) {
       return `${PROVIDER_PREFIXES.copilot}${model}`;
     }
@@ -360,10 +367,13 @@ export function getBareModelId(model: string): string {
  * @returns Normalized model string
  */
 export function normalizeModelString(model: string | undefined | null): string {
-  if (!model || typeof model !== 'string') return 'claude-sonnet'; // Default to canonical
+  if (!model || typeof model !== "string") return "claude-sonnet"; // Default to canonical
 
   // Already has a canonical prefix - return as-is (but check for retired opencode models first)
-  if (model.startsWith(PROVIDER_PREFIXES.opencode) && model in RETIRED_OPENCODE_MODEL_MAP) {
+  if (
+    model.startsWith(PROVIDER_PREFIXES.opencode) &&
+    model in RETIRED_OPENCODE_MODEL_MAP
+  ) {
     return RETIRED_OPENCODE_MODEL_MAP[model];
   }
   if (
@@ -372,19 +382,23 @@ export function normalizeModelString(model: string | undefined | null): string {
     model.startsWith(PROVIDER_PREFIXES.opencode) ||
     model.startsWith(PROVIDER_PREFIXES.gemini) ||
     model.startsWith(PROVIDER_PREFIXES.copilot) ||
-    model.startsWith('claude-')
+    model.startsWith("claude-")
   ) {
     return model;
   }
 
   // Check if it's a legacy Cursor model ID
   if (model in LEGACY_CURSOR_MODEL_MAP) {
-    return LEGACY_CURSOR_MODEL_MAP[model as keyof typeof LEGACY_CURSOR_MODEL_MAP];
+    return LEGACY_CURSOR_MODEL_MAP[
+      model as keyof typeof LEGACY_CURSOR_MODEL_MAP
+    ];
   }
 
   // Check if it's a legacy OpenCode model ID
   if (model in LEGACY_OPENCODE_MODEL_MAP) {
-    return LEGACY_OPENCODE_MODEL_MAP[model as keyof typeof LEGACY_OPENCODE_MODEL_MAP];
+    return LEGACY_OPENCODE_MODEL_MAP[
+      model as keyof typeof LEGACY_OPENCODE_MODEL_MAP
+    ];
   }
 
   // Legacy Claude aliases
@@ -393,7 +407,7 @@ export function normalizeModelString(model: string | undefined | null): string {
   }
 
   // For Codex, bare gpt-* and o-series models need codex- prefix
-  if (model.startsWith('gpt-') || /^o\d/.test(model)) {
+  if (model.startsWith("gpt-") || /^o\d/.test(model)) {
     return `${PROVIDER_PREFIXES.codex}${model}`;
   }
 
@@ -424,7 +438,9 @@ export function normalizeModelString(model: string | undefined | null): string {
  * supportsStructuredOutput('cursor-auto') // false
  * supportsStructuredOutput('gemini-2.5-pro') // false
  */
-export function supportsStructuredOutput(model: string | undefined | null): boolean {
+export function supportsStructuredOutput(
+  model: string | undefined | null,
+): boolean {
   // Exclude proxy providers first - they may have Claude/Codex in the model name
   // but route through different APIs that don't support structured output
   if (
@@ -466,17 +482,24 @@ export function supportsStructuredOutput(model: string | undefined | null): bool
 export function validateBareModelId(
   model: string,
   providerName: string,
-  expectedProvider?: ModelProvider
+  expectedProvider?: ModelProvider,
 ): void {
-  if (!model || typeof model !== 'string') {
-    throw new Error(`[${providerName}] Invalid model ID: expected string, got ${typeof model}`);
+  if (!model || typeof model !== "string") {
+    throw new Error(
+      `[${providerName}] Invalid model ID: expected string, got ${typeof model}`,
+    );
   }
 
-  for (const provider of Object.keys(PROVIDER_PREFIXES) as Array<keyof typeof PROVIDER_PREFIXES>) {
+  for (const provider of Object.keys(PROVIDER_PREFIXES) as Array<
+    keyof typeof PROVIDER_PREFIXES
+  >) {
     const prefix = PROVIDER_PREFIXES[provider];
     // Skip validation for configured provider prefix exceptions
     // (e.g., Cursor provider can receive models with "gemini-" prefix for Cursor Gemini models)
-    if (expectedProvider && PROVIDER_PREFIX_EXCEPTIONS[expectedProvider]?.includes(provider)) {
+    if (
+      expectedProvider &&
+      PROVIDER_PREFIX_EXCEPTIONS[expectedProvider]?.includes(provider)
+    ) {
       continue;
     }
 
@@ -491,7 +514,7 @@ export function validateBareModelId(
         `[${providerName}] Model ID should not contain provider prefix '${prefix}'. ` +
           `Got: '${model}'. ` +
           `This is likely a bug in ProviderFactory - it should strip the '${provider}' prefix ` +
-          `before passing the model to the provider.`
+          `before passing the model to the provider.`,
       );
     }
   }

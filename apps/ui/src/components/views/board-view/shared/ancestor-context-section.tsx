@@ -1,11 +1,15 @@
-import { useState } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Users, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { AncestorContext } from '@pegasus/dependency-resolver';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Users, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { AncestorContext } from "@pegasus/dependency-resolver";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface ParentFeatureContext {
   id: string;
@@ -61,7 +65,10 @@ export function AncestorContextSection({
 
   // Combine parent and ancestors into a single list
   const allAncestorItems: Array<
-    (AncestorContext | ParentFeatureContext) & { isParent: boolean; depth: number }
+    (AncestorContext | ParentFeatureContext) & {
+      isParent: boolean;
+      depth: number;
+    }
   > = [
     { ...parentFeature, depth: -1, isParent: true },
     ...ancestors.map((a) => ({ ...a, isParent: false })),
@@ -102,8 +109,9 @@ export function AncestorContextSection({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        The parent task context will be included to help the AI understand the background.
-        Additional ancestors can optionally be included for more context.
+        The parent task context will be included to help the AI understand the
+        background. Additional ancestors can optionally be included for more
+        context.
       </p>
 
       <div className="space-y-1 max-h-[200px] overflow-y-auto border rounded-lg p-2 bg-muted/20">
@@ -112,26 +120,29 @@ export function AncestorContextSection({
           const isExpanded = expandedIds.has(item.id);
           const hasContent =
             item.description ||
-            ('spec' in item && item.spec) ||
-            ('summary' in item && item.summary);
+            ("spec" in item && item.spec) ||
+            ("summary" in item && item.summary);
           const displayTitle =
             item.title ||
-            item.description.slice(0, 50) + (item.description.length > 50 ? '...' : '');
+            item.description.slice(0, 50) +
+              (item.description.length > 50 ? "..." : "");
 
           return (
             <Collapsible key={item.id} open={isExpanded}>
               <div
                 className={cn(
-                  'flex items-start gap-2 p-2 rounded-md transition-colors',
+                  "flex items-start gap-2 p-2 rounded-md transition-colors",
                   item.isParent
                     ? isSelected
-                      ? 'bg-[var(--status-success-bg)] border border-[var(--status-success)]/30'
-                      : 'bg-muted/30 border border-border hover:bg-muted/50'
+                      ? "bg-[var(--status-success-bg)] border border-[var(--status-success)]/30"
+                      : "bg-muted/30 border border-border hover:bg-muted/50"
                     : isSelected
-                      ? 'bg-primary/10'
-                      : 'hover:bg-muted/50'
+                      ? "bg-primary/10"
+                      : "hover:bg-muted/50",
                 )}
-                style={{ marginLeft: item.isParent ? 0 : `${item.depth * 12}px` }}
+                style={{
+                  marginLeft: item.isParent ? 0 : `${item.depth * 12}px`,
+                }}
               >
                 <Checkbox
                   id={`ancestor-${item.id}`}
@@ -176,19 +187,27 @@ export function AncestorContextSection({
                     <div className="mt-2 space-y-2 text-xs text-muted-foreground pl-5">
                       {item.description && (
                         <div>
-                          <span className="font-medium text-foreground">Description:</span>
-                          <p className="mt-0.5 line-clamp-3">{item.description}</p>
+                          <span className="font-medium text-foreground">
+                            Description:
+                          </span>
+                          <p className="mt-0.5 line-clamp-3">
+                            {item.description}
+                          </p>
                         </div>
                       )}
-                      {'spec' in item && item.spec && (
+                      {"spec" in item && item.spec && (
                         <div>
-                          <span className="font-medium text-foreground">Specification:</span>
+                          <span className="font-medium text-foreground">
+                            Specification:
+                          </span>
                           <p className="mt-0.5 line-clamp-3">{item.spec}</p>
                         </div>
                       )}
-                      {'summary' in item && item.summary && (
+                      {"summary" in item && item.summary && (
                         <div>
-                          <span className="font-medium text-foreground">Summary:</span>
+                          <span className="font-medium text-foreground">
+                            Summary:
+                          </span>
                           <p className="mt-0.5 line-clamp-3">{item.summary}</p>
                         </div>
                       )}

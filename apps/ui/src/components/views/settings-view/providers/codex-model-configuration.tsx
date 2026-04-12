@@ -1,16 +1,16 @@
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import { supportsReasoningEffort, type CodexModelId } from '@pegasus/types';
-import { OpenAIIcon } from '@/components/ui/provider-icon';
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { supportsReasoningEffort, type CodexModelId } from "@pegasus/types";
+import { OpenAIIcon } from "@/components/ui/provider-icon";
 
 interface CodexModelConfigurationProps {
   enabledCodexModels: CodexModelId[];
@@ -27,60 +27,61 @@ interface CodexModelInfo {
 }
 
 const CODEX_MODEL_INFO: Record<CodexModelId, CodexModelInfo> = {
-  'codex-gpt-5.3-codex': {
-    id: 'codex-gpt-5.3-codex',
-    label: 'GPT-5.3-Codex',
-    description: 'Latest frontier agentic coding model',
+  "codex-gpt-5.3-codex": {
+    id: "codex-gpt-5.3-codex",
+    label: "GPT-5.3-Codex",
+    description: "Latest frontier agentic coding model",
   },
-  'codex-gpt-5.3-codex-spark': {
-    id: 'codex-gpt-5.3-codex-spark',
-    label: 'GPT-5.3-Codex-Spark',
-    description: 'Near-instant real-time coding model, 1000+ tokens/sec',
+  "codex-gpt-5.3-codex-spark": {
+    id: "codex-gpt-5.3-codex-spark",
+    label: "GPT-5.3-Codex-Spark",
+    description: "Near-instant real-time coding model, 1000+ tokens/sec",
   },
-  'codex-gpt-5.2-codex': {
-    id: 'codex-gpt-5.2-codex',
-    label: 'GPT-5.2-Codex',
-    description: 'Frontier agentic coding model',
+  "codex-gpt-5.2-codex": {
+    id: "codex-gpt-5.2-codex",
+    label: "GPT-5.2-Codex",
+    description: "Frontier agentic coding model",
   },
-  'codex-gpt-5.1-codex-max': {
-    id: 'codex-gpt-5.1-codex-max',
-    label: 'GPT-5.1-Codex-Max',
-    description: 'Codex-optimized flagship for deep and fast reasoning',
+  "codex-gpt-5.1-codex-max": {
+    id: "codex-gpt-5.1-codex-max",
+    label: "GPT-5.1-Codex-Max",
+    description: "Codex-optimized flagship for deep and fast reasoning",
   },
-  'codex-gpt-5.1-codex-mini': {
-    id: 'codex-gpt-5.1-codex-mini',
-    label: 'GPT-5.1-Codex-Mini',
-    description: 'Optimized for codex. Cheaper, faster, but less capable',
+  "codex-gpt-5.1-codex-mini": {
+    id: "codex-gpt-5.1-codex-mini",
+    label: "GPT-5.1-Codex-Mini",
+    description: "Optimized for codex. Cheaper, faster, but less capable",
   },
-  'codex-gpt-5.1-codex': {
-    id: 'codex-gpt-5.1-codex',
-    label: 'GPT-5.1-Codex',
-    description: 'Original GPT-5.1 Codex agentic coding model',
+  "codex-gpt-5.1-codex": {
+    id: "codex-gpt-5.1-codex",
+    label: "GPT-5.1-Codex",
+    description: "Original GPT-5.1 Codex agentic coding model",
   },
-  'codex-gpt-5-codex': {
-    id: 'codex-gpt-5-codex',
-    label: 'GPT-5-Codex',
-    description: 'Original GPT-5 Codex model',
+  "codex-gpt-5-codex": {
+    id: "codex-gpt-5-codex",
+    label: "GPT-5-Codex",
+    description: "Original GPT-5 Codex model",
   },
-  'codex-gpt-5-codex-mini': {
-    id: 'codex-gpt-5-codex-mini',
-    label: 'GPT-5-Codex-Mini',
-    description: 'Smaller, cheaper GPT-5 Codex variant',
+  "codex-gpt-5-codex-mini": {
+    id: "codex-gpt-5-codex-mini",
+    label: "GPT-5-Codex-Mini",
+    description: "Smaller, cheaper GPT-5 Codex variant",
   },
-  'codex-gpt-5.2': {
-    id: 'codex-gpt-5.2',
-    label: 'GPT-5.2',
-    description: 'Latest frontier model with improvements across knowledge, reasoning and coding',
+  "codex-gpt-5.2": {
+    id: "codex-gpt-5.2",
+    label: "GPT-5.2",
+    description:
+      "Latest frontier model with improvements across knowledge, reasoning and coding",
   },
-  'codex-gpt-5.1': {
-    id: 'codex-gpt-5.1',
-    label: 'GPT-5.1',
-    description: 'Great for coding and agentic tasks across domains',
+  "codex-gpt-5.1": {
+    id: "codex-gpt-5.1",
+    label: "GPT-5.1",
+    description: "Great for coding and agentic tasks across domains",
   },
-  'codex-gpt-5': {
-    id: 'codex-gpt-5',
-    label: 'GPT-5',
-    description: 'Base GPT-5 model via Codex',
+  "codex-gpt-5": {
+    id: "codex-gpt-5",
+    label: "GPT-5",
+    description: "Base GPT-5 model via Codex",
   },
 };
 
@@ -96,10 +97,10 @@ export function CodexModelConfiguration({
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       <div className="p-6 border-b border-border/50 bg-gradient-to-r from-transparent via-accent/5 to-transparent">
@@ -158,12 +159,16 @@ export function CodexModelConfiguration({
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={isEnabled}
-                      onCheckedChange={(checked) => onModelToggle(model.id, !!checked)}
+                      onCheckedChange={(checked) =>
+                        onModelToggle(model.id, !!checked)
+                      }
                       disabled={isSaving || isDefault}
                     />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{model.label}</span>
+                        <span className="text-sm font-medium">
+                          {model.label}
+                        </span>
                         {supportsReasoningEffort(model.id) && (
                           <Badge variant="outline" className="text-xs">
                             Thinking
@@ -175,7 +180,9 @@ export function CodexModelConfiguration({
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{model.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {model.description}
+                      </p>
                     </div>
                   </div>
                 </div>

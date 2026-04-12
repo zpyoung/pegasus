@@ -11,41 +11,43 @@
  * so it doesn't depend on Claude's filesystem tool access or working directory restrictions.
  */
 
-import type { Request, Response } from 'express';
-import { createLogger, readImageAsBase64 } from '@pegasus/utils';
-import { isCursorModel } from '@pegasus/types';
-import { resolvePhaseModel } from '@pegasus/model-resolver';
-import { simpleQuery } from '../../../providers/simple-query-service.js';
-import * as secureFs from '../../../lib/secure-fs.js';
-import * as path from 'path';
-import type { SettingsService } from '../../../services/settings-service.js';
+import type { Request, Response } from "express";
+import { createLogger, readImageAsBase64 } from "@pegasus/utils";
+import { isCursorModel } from "@pegasus/types";
+import { resolvePhaseModel } from "@pegasus/model-resolver";
+import { simpleQuery } from "../../../providers/simple-query-service.js";
+import * as secureFs from "../../../lib/secure-fs.js";
+import * as path from "path";
+import type { SettingsService } from "../../../services/settings-service.js";
 import {
   getAutoLoadClaudeMdSetting,
   getPromptCustomization,
   getPhaseModelWithOverrides,
-} from '../../../lib/settings-helpers.js';
+} from "../../../lib/settings-helpers.js";
 
-const logger = createLogger('DescribeImage');
+const logger = createLogger("DescribeImage");
 
 /**
  * Allowlist of safe headers to log
  * All other headers are excluded to prevent leaking sensitive values
  */
 const SAFE_HEADERS_ALLOWLIST = new Set([
-  'content-type',
-  'accept',
-  'user-agent',
-  'host',
-  'referer',
-  'content-length',
-  'origin',
-  'x-request-id',
+  "content-type",
+  "accept",
+  "user-agent",
+  "host",
+  "referer",
+  "content-length",
+  "origin",
+  "x-request-id",
 ]);
 
 /**
  * Filter request headers to only include safe, non-sensitive values
  */
-function filterSafeHeaders(headers: Record<string, unknown>): Record<string, unknown> {
+function filterSafeHeaders(
+  headers: Record<string, unknown>,
+): Record<string, unknown> {
   const filtered: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(headers)) {
     if (SAFE_HEADERS_ALLOWLIST.has(key.toLowerCase())) {
@@ -67,7 +69,7 @@ function findActualFilePath(requestedPath: string): string | null {
   }
 
   // Try with Unicode normalization
-  const normalizedPath = requestedPath.normalize('NFC');
+  const normalizedPath = requestedPath.normalize("NFC");
   if (secureFs.existsSync(normalizedPath)) {
     return normalizedPath;
   }
@@ -86,13 +88,16 @@ function findActualFilePath(requestedPath: string): string | null {
 
     // Normalize the requested basename for comparison
     // Replace various space-like characters with regular space for comparison
-    const normalizeSpaces = (s: string): string => s.replace(/[\u00A0\u202F\u2009\u200A]/g, ' ');
+    const normalizeSpaces = (s: string): string =>
+      s.replace(/[\u00A0\u202F\u2009\u200A]/g, " ");
 
     const normalizedBaseName = normalizeSpaces(baseName);
 
     for (const file of files) {
       if (normalizeSpaces(file) === normalizedBaseName) {
-        logger.info(`Found matching file with different space encoding: ${file}`);
+        logger.info(
+          `Found matching file with different space encoding: ${file}`,
+        );
         return path.join(dir, file);
       }
     }
@@ -137,14 +142,14 @@ function mapDescribeImageError(rawMessage: string | undefined): {
 } {
   const baseResponse = {
     statusCode: 500,
-    userMessage: 'Failed to generate an image description. Please try again.',
+    userMessage: "Failed to generate an image description. Please try again.",
   };
 
   if (!rawMessage) return baseResponse;
 
   if (
-    rawMessage.includes('Claude Code process exited') ||
-    rawMessage.includes('Claude Code process terminated by signal')
+    rawMessage.includes("Claude Code process exited") ||
+    rawMessage.includes("Claude Code process terminated by signal")
   ) {
     const exitCodeMatch = rawMessage.match(/exited with code (\d+)/);
     const signalMatch = rawMessage.match(/terminated by signal (\w+)/);
@@ -152,12 +157,14 @@ function mapDescribeImageError(rawMessage: string | undefined): {
       ? ` (exit code: ${exitCodeMatch[1]})`
       : signalMatch
         ? ` (signal: ${signalMatch[1]})`
-        : '';
+        : "";
 
     // Crash/OS-kill signals suggest a process crash, not an auth failure —
     // omit auth recovery advice and suggest retry/reporting instead.
-    const crashSignals = ['SIGSEGV', 'SIGABRT', 'SIGKILL', 'SIGBUS', 'SIGTRAP'];
-    const isCrashSignal = signalMatch ? crashSignals.includes(signalMatch[1]) : false;
+    const crashSignals = ["SIGSEGV", "SIGABRT", "SIGKILL", "SIGBUS", "SIGTRAP"];
+    const isCrashSignal = signalMatch
+      ? crashSignals.includes(signalMatch[1])
+      : false;
 
     if (isCrashSignal) {
       return {
@@ -173,29 +180,36 @@ function mapDescribeImageError(rawMessage: string | undefined): {
   }
 
   if (
-    rawMessage.includes('Failed to spawn Claude Code process') ||
-    rawMessage.includes('Claude Code executable not found') ||
-    rawMessage.includes('Claude Code native binary not found')
+    rawMessage.includes("Failed to spawn Claude Code process") ||
+    rawMessage.includes("Claude Code executable not found") ||
+    rawMessage.includes("Claude Code native binary not found")
   ) {
     return {
       statusCode: 503,
       userMessage:
-        'Claude CLI could not be launched. Make sure the Claude CLI is installed and available in PATH, then try again.',
+        "Claude CLI could not be launched. Make sure the Claude CLI is installed and available in PATH, then try again.",
     };
   }
 
-  if (rawMessage.toLowerCase().includes('rate limit') || rawMessage.includes('429')) {
+  if (
+    rawMessage.toLowerCase().includes("rate limit") ||
+    rawMessage.includes("429")
+  ) {
     return {
       statusCode: 429,
-      userMessage: 'Rate limited while describing the image. Please wait a moment and try again.',
+      userMessage:
+        "Rate limited while describing the image. Please wait a moment and try again.",
     };
   }
 
-  if (rawMessage.toLowerCase().includes('payload too large') || rawMessage.includes('413')) {
+  if (
+    rawMessage.toLowerCase().includes("payload too large") ||
+    rawMessage.includes("413")
+  ) {
     return {
       statusCode: 413,
       userMessage:
-        'The image is too large to send for description. Please resize/compress it and try again.',
+        "The image is too large to send for description. Please resize/compress it and try again.",
     };
   }
 
@@ -212,7 +226,7 @@ function mapDescribeImageError(rawMessage: string | undefined): {
  * @returns Express request handler for image description
  */
 export function createDescribeImageHandler(
-  settingsService?: SettingsService
+  settingsService?: SettingsService,
 ): (req: Request, res: Response) => Promise<void> {
   return async (req: Request, res: Response): Promise<void> => {
     const requestId = `describe-image-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -221,31 +235,35 @@ export function createDescribeImageHandler(
     // Request envelope logs (high value when correlating failures)
     // Only log safe headers to prevent leaking sensitive values (auth tokens, cookies, etc.)
     logger.info(`[${requestId}] ===== POST /api/context/describe-image =====`);
-    logger.info(`[${requestId}] headers=${JSON.stringify(filterSafeHeaders(req.headers))}`);
+    logger.info(
+      `[${requestId}] headers=${JSON.stringify(filterSafeHeaders(req.headers))}`,
+    );
     logger.info(`[${requestId}] body=${JSON.stringify(req.body)}`);
 
     try {
       const { imagePath } = req.body as DescribeImageRequestBody;
 
       // Validate required fields
-      if (!imagePath || typeof imagePath !== 'string') {
+      if (!imagePath || typeof imagePath !== "string") {
         const response: DescribeImageErrorResponse = {
           success: false,
-          error: 'imagePath is required and must be a string',
+          error: "imagePath is required and must be a string",
           requestId,
         };
         res.status(400).json(response);
         return;
       }
 
-      logger.info(`[${requestId}] imagePath="${imagePath}" type=${typeof imagePath}`);
+      logger.info(
+        `[${requestId}] imagePath="${imagePath}" type=${typeof imagePath}`,
+      );
 
       // Find the actual file path (handles Unicode space character variations)
       const actualPath = findActualFilePath(imagePath);
       if (!actualPath) {
         logger.error(`[${requestId}] File not found: ${imagePath}`);
         // Log hex representation of the path for debugging
-        const hexPath = Buffer.from(imagePath).toString('hex');
+        const hexPath = Buffer.from(imagePath).toString("hex");
         logger.error(`[${requestId}] imagePath hex: ${hexPath}`);
         const response: DescribeImageErrorResponse = {
           success: false,
@@ -265,11 +283,11 @@ export function createDescribeImageHandler(
       try {
         stat = secureFs.statSync(actualPath);
         logger.info(
-          `[${requestId}] fileStats size=${stat.size} bytes mtime=${stat.mtime.toISOString()}`
+          `[${requestId}] fileStats size=${stat.size} bytes mtime=${stat.mtime.toISOString()}`,
         );
       } catch (statErr) {
         logger.warn(
-          `[${requestId}] Unable to stat image file (continuing to read base64): ${String(statErr)}`
+          `[${requestId}] Unable to stat image file (continuing to read base64): ${String(statErr)}`,
         );
       }
 
@@ -283,7 +301,7 @@ export function createDescribeImageHandler(
       const estimatedBytes = Math.ceil((base64Length * 3) / 4);
       logger.info(`[${requestId}] imageReadMs=${imageReadMs}`);
       logger.info(
-        `[${requestId}] image meta filename=${imageData.filename} mime=${imageData.mimeType} base64Len=${base64Length} estBytes=${estimatedBytes}`
+        `[${requestId}] image meta filename=${imageData.filename} mime=${imageData.mimeType} base64Len=${base64Length} estBytes=${estimatedBytes}`,
       );
 
       const cwd = path.dirname(actualPath);
@@ -293,7 +311,7 @@ export function createDescribeImageHandler(
       const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
         cwd,
         settingsService,
-        '[DescribeImage]'
+        "[DescribeImage]",
       );
 
       // Get model from phase settings with provider info
@@ -302,27 +320,32 @@ export function createDescribeImageHandler(
         provider,
         credentials,
       } = await getPhaseModelWithOverrides(
-        'imageDescriptionModel',
+        "imageDescriptionModel",
         settingsService,
         cwd,
-        '[DescribeImage]'
+        "[DescribeImage]",
       );
       const { model, thinkingLevel } = resolvePhaseModel(phaseModelEntry);
 
       logger.info(
         `[${requestId}] Using model: ${model}`,
-        provider ? `via provider: ${provider.name}` : 'direct API'
+        provider ? `via provider: ${provider.name}` : "direct API",
       );
 
       // Get customized prompts from settings
-      const prompts = await getPromptCustomization(settingsService, '[DescribeImage]');
+      const prompts = await getPromptCustomization(
+        settingsService,
+        "[DescribeImage]",
+      );
 
       // Build the instruction text from centralized prompts
       const instructionText = prompts.contextDescription.describeImagePrompt;
 
       // Build prompt based on provider capability
       // Some providers (like Cursor) may not support image content blocks
-      let prompt: string | Array<{ type: string; text?: string; source?: object }>;
+      let prompt:
+        | string
+        | Array<{ type: string; text?: string; source?: object }>;
 
       if (isCursorModel(model)) {
         // Cursor may not support base64 image blocks directly
@@ -333,11 +356,11 @@ export function createDescribeImageHandler(
         // Claude and other vision-capable models support multi-part prompts with images
         logger.info(`[${requestId}] Using multi-part prompt with image block`);
         prompt = [
-          { type: 'text', text: instructionText },
+          { type: "text", text: instructionText },
           {
-            type: 'image',
+            type: "image",
             source: {
-              type: 'base64',
+              type: "base64",
               media_type: imageData.mimeType,
               data: imageData.base64,
             },
@@ -354,15 +377,19 @@ export function createDescribeImageHandler(
         model,
         cwd,
         maxTurns: 1,
-        allowedTools: isCursorModel(model) ? ['Read'] : [], // Allow Read for Cursor to read image if needed
+        allowedTools: isCursorModel(model) ? ["Read"] : [], // Allow Read for Cursor to read image if needed
         thinkingLevel,
         readOnly: true, // Image description only reads, doesn't write
-        settingSources: autoLoadClaudeMd ? ['user', 'project', 'local'] : undefined,
+        settingSources: autoLoadClaudeMd
+          ? ["user", "project", "local"]
+          : undefined,
         claudeCompatibleProvider: provider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       });
 
-      logger.info(`[${requestId}] simpleQuery completed in ${Date.now() - queryStart}ms`);
+      logger.info(
+        `[${requestId}] simpleQuery completed in ${Date.now() - queryStart}ms`,
+      );
 
       const description = result.text;
 
@@ -370,7 +397,7 @@ export function createDescribeImageHandler(
         logger.warn(`[${requestId}] Received empty response from AI`);
         const response: DescribeImageErrorResponse = {
           success: false,
-          error: 'Failed to generate description - empty response',
+          error: "Failed to generate description - empty response",
           requestId,
         };
         res.status(500).json(response);
@@ -378,7 +405,9 @@ export function createDescribeImageHandler(
       }
 
       const totalMs = Date.now() - startedAt;
-      logger.info(`[${requestId}] Success descriptionLen=${description.length} totalMs=${totalMs}`);
+      logger.info(
+        `[${requestId}] Success descriptionLen=${description.length} totalMs=${totalMs}`,
+      );
 
       const response: DescribeImageSuccessResponse = {
         success: true,
@@ -389,7 +418,7 @@ export function createDescribeImageHandler(
       const totalMs = Date.now() - startedAt;
       const err = error as unknown;
       const errMessage = err instanceof Error ? err.message : String(err);
-      const errName = err instanceof Error ? err.name : 'UnknownError';
+      const errName = err instanceof Error ? err.name : "UnknownError";
       const errStack = err instanceof Error ? err.stack : undefined;
 
       logger.error(`[${requestId}] FAILED totalMs=${totalMs}`);
@@ -399,16 +428,19 @@ export function createDescribeImageHandler(
 
       // Dump all enumerable + non-enumerable props (this is where stderr/stdout/exitCode often live)
       try {
-        const props = err && typeof err === 'object' ? Object.getOwnPropertyNames(err) : [];
+        const props =
+          err && typeof err === "object" ? Object.getOwnPropertyNames(err) : [];
         logger.error(`[${requestId}] errorProps=${JSON.stringify(props)}`);
-        if (err && typeof err === 'object') {
+        if (err && typeof err === "object") {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const anyErr = err as any;
           const details = JSON.stringify(anyErr, props as unknown as string[]);
           logger.error(`[${requestId}] errorDetails=${details}`);
         }
       } catch (stringifyErr) {
-        logger.error(`[${requestId}] Failed to serialize error object: ${String(stringifyErr)}`);
+        logger.error(
+          `[${requestId}] Failed to serialize error object: ${String(stringifyErr)}`,
+        );
       }
 
       const { statusCode, userMessage } = mapDescribeImageError(errMessage);

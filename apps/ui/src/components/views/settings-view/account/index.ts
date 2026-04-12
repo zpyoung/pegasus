@@ -1,1 +1,1 @@
-export { AccountSection } from './account-section';
+export { AccountSection } from "./account-section";

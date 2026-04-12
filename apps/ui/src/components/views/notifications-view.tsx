@@ -2,18 +2,33 @@
  * Notifications View - Full page view for all notifications
  */
 
-import { useCallback } from 'react';
-import { useAppStore } from '@/store/app-store';
-import { useNotificationsStore } from '@/store/notifications-store';
-import { useLoadNotifications, useNotificationEvents } from '@/hooks/use-notification-events';
-import { getHttpApiClient } from '@/lib/http-api-client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
-import { Bell, Check, CheckCheck, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { useNavigate } from '@tanstack/react-router';
-import type { Notification } from '@pegasus/types';
-import { formatRelativeTime } from '@/lib/utils';
+import { useCallback } from "react";
+import { useAppStore } from "@/store/app-store";
+import { useNotificationsStore } from "@/store/notifications-store";
+import {
+  useLoadNotifications,
+  useNotificationEvents,
+} from "@/hooks/use-notification-events";
+import { getHttpApiClient } from "@/lib/http-api-client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  Trash2,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { useNavigate } from "@tanstack/react-router";
+import type { Notification } from "@pegasus/types";
+import { formatRelativeTime } from "@/lib/utils";
 
 export function NotificationsView() {
   const { currentProject } = useAppStore();
@@ -48,7 +63,7 @@ export function NotificationsView() {
       const api = getHttpApiClient();
       await api.notifications.markAsRead(projectPath, notificationId);
     },
-    [projectPath, markAsRead]
+    [projectPath, markAsRead],
   );
 
   const handleDismiss = useCallback(
@@ -62,7 +77,7 @@ export function NotificationsView() {
       const api = getHttpApiClient();
       await api.notifications.dismiss(projectPath, notificationId);
     },
-    [projectPath, dismissNotification]
+    [projectPath, dismissNotification],
   );
 
   const handleMarkAllAsRead = useCallback(async () => {
@@ -96,7 +111,7 @@ export function NotificationsView() {
       if (notification.featureId) {
         // Navigate to board view with feature ID and project path to show output
         navigate({
-          to: '/board',
+          to: "/board",
           search: {
             featureId: notification.featureId,
             projectPath: notification.projectPath || undefined,
@@ -104,22 +119,22 @@ export function NotificationsView() {
         });
       }
     },
-    [handleMarkAsRead, navigate]
+    [handleMarkAsRead, navigate],
   );
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'feature_waiting_approval':
+      case "feature_waiting_approval":
         return <Bell className="h-5 w-5 text-yellow-500" />;
-      case 'feature_verified':
+      case "feature_verified":
         return <Check className="h-5 w-5 text-green-500" />;
-      case 'spec_regeneration_complete':
+      case "spec_regeneration_complete":
         return <Check className="h-5 w-5 text-blue-500" />;
-      case 'agent_complete':
+      case "agent_complete":
         return <Check className="h-5 w-5 text-purple-500" />;
-      case 'feature_error':
+      case "feature_error":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'auto_mode_error':
+      case "auto_mode_error":
         return <AlertCircle className="h-5 w-5 text-red-500" />;
       default:
         return <Bell className="h-5 w-5" />;
@@ -130,7 +145,9 @@ export function NotificationsView() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-8">
         <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Select a project to view notifications</p>
+        <p className="text-muted-foreground">
+          Select a project to view notifications
+        </p>
       </div>
     );
   }
@@ -158,7 +175,7 @@ export function NotificationsView() {
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
+            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
           </p>
         </div>
         {notifications.length > 0 && (
@@ -186,8 +203,8 @@ export function NotificationsView() {
             <Bell className="h-12 w-12 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground text-lg">No notifications</p>
             <p className="text-muted-foreground text-sm mt-2">
-              Notifications will appear here when features are ready for review or operations
-              complete.
+              Notifications will appear here when features are ready for review
+              or operations complete.
             </p>
           </CardContent>
         </Card>
@@ -197,20 +214,26 @@ export function NotificationsView() {
             <Card
               key={notification.id}
               className={`transition-colors cursor-pointer hover:bg-accent/50 ${
-                !notification.read ? 'border-primary/50 bg-primary/5' : ''
+                !notification.read ? "border-primary/50 bg-primary/5" : ""
               }`}
               onClick={() => handleNotificationClick(notification)}
             >
               <CardContent className="flex items-start gap-4 p-4">
-                <div className="flex-shrink-0 mt-1">{getNotificationIcon(notification.type)}</div>
+                <div className="flex-shrink-0 mt-1">
+                  {getNotificationIcon(notification.type)}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <CardTitle className="text-base">{notification.title}</CardTitle>
+                    <CardTitle className="text-base">
+                      {notification.title}
+                    </CardTitle>
                     {!notification.read && (
                       <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                     )}
                   </div>
-                  <CardDescription className="mt-1">{notification.message}</CardDescription>
+                  <CardDescription className="mt-1">
+                    {notification.message}
+                  </CardDescription>
                   <p className="text-xs text-muted-foreground mt-2">
                     {formatRelativeTime(new Date(notification.createdAt))}
                   </p>

@@ -5,19 +5,19 @@
  * Uses a marker file to track the disconnected state.
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { createLogger } from '@pegasus/utils';
-import { COPILOT_DISCONNECTED_MARKER_FILE } from '../routes/setup/common.js';
+import * as fs from "fs/promises";
+import * as path from "path";
+import { createLogger } from "@pegasus/utils";
+import { COPILOT_DISCONNECTED_MARKER_FILE } from "../routes/setup/common.js";
 
-const logger = createLogger('CopilotConnectionService');
+const logger = createLogger("CopilotConnectionService");
 
 /**
  * Get the path to the disconnected marker file
  */
 function getMarkerPath(projectRoot?: string): string {
   const root = projectRoot || process.cwd();
-  const pegasusDir = path.join(root, '.pegasus');
+  const pegasusDir = path.join(root, ".pegasus");
   return path.join(pegasusDir, COPILOT_DISCONNECTED_MARKER_FILE);
 }
 
@@ -32,14 +32,14 @@ export async function connectCopilot(projectRoot?: string): Promise<void> {
 
   try {
     await fs.unlink(markerPath);
-    logger.info('Copilot CLI connected to app (marker removed)');
+    logger.info("Copilot CLI connected to app (marker removed)");
   } catch (error) {
     // File doesn't exist - that's fine, Copilot is already connected
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      logger.error('Failed to remove disconnected marker:', error);
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      logger.error("Failed to remove disconnected marker:", error);
       throw error;
     }
-    logger.debug('Copilot already connected (no marker file found)');
+    logger.debug("Copilot already connected (no marker file found)");
   }
 }
 
@@ -51,15 +51,15 @@ export async function connectCopilot(projectRoot?: string): Promise<void> {
  */
 export async function disconnectCopilot(projectRoot?: string): Promise<void> {
   const root = projectRoot || process.cwd();
-  const pegasusDir = path.join(root, '.pegasus');
+  const pegasusDir = path.join(root, ".pegasus");
   const markerPath = path.join(pegasusDir, COPILOT_DISCONNECTED_MARKER_FILE);
 
   // Ensure .pegasus directory exists
   await fs.mkdir(pegasusDir, { recursive: true });
 
   // Create the disconnection marker
-  await fs.writeFile(markerPath, 'Copilot CLI disconnected from app');
-  logger.info('Copilot CLI disconnected from app (marker created)');
+  await fs.writeFile(markerPath, "Copilot CLI disconnected from app");
+  logger.info("Copilot CLI disconnected from app (marker created)");
 }
 
 /**
@@ -68,7 +68,9 @@ export async function disconnectCopilot(projectRoot?: string): Promise<void> {
  * @param projectRoot - Optional project root directory (defaults to cwd)
  * @returns Promise that resolves to true if connected, false if disconnected
  */
-export async function isCopilotConnected(projectRoot?: string): Promise<boolean> {
+export async function isCopilotConnected(
+  projectRoot?: string,
+): Promise<boolean> {
   const markerPath = getMarkerPath(projectRoot);
 
   try {

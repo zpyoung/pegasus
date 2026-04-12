@@ -1,6 +1,6 @@
-import type { MCPToolDisplay } from './mcp-tools-list';
+import type { MCPToolDisplay } from "./mcp-tools-list";
 
-export type ServerType = 'stdio' | 'sse' | 'http';
+export type ServerType = "stdio" | "sse" | "http";
 
 export interface ServerFormData {
   name: string;
@@ -14,18 +14,18 @@ export interface ServerFormData {
 }
 
 export const defaultFormData: ServerFormData = {
-  name: '',
-  description: '',
-  type: 'stdio',
-  command: '',
-  args: '',
-  url: '',
-  headers: '',
-  env: '',
+  name: "",
+  description: "",
+  type: "stdio",
+  command: "",
+  args: "",
+  url: "",
+  headers: "",
+  env: "",
 };
 
 export interface ServerTestState {
-  status: 'idle' | 'testing' | 'success' | 'error';
+  status: "idle" | "testing" | "success" | "error";
   tools?: MCPToolDisplay[];
   error?: string;
   connectionTime?: number;

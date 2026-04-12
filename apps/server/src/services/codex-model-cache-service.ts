@@ -1,10 +1,10 @@
-import path from 'path';
-import { secureFs } from '@pegasus/platform';
-import { createLogger } from '@pegasus/utils';
-import type { AppServerModel } from '@pegasus/types';
-import type { CodexAppServerService } from './codex-app-server-service.js';
+import path from "path";
+import { secureFs } from "@pegasus/platform";
+import { createLogger } from "@pegasus/utils";
+import type { AppServerModel } from "@pegasus/types";
+import type { CodexAppServerService } from "./codex-app-server-service.js";
 
-const logger = createLogger('CodexModelCache');
+const logger = createLogger("CodexModelCache");
 
 /**
  * Codex model with UI-compatible format
@@ -15,7 +15,7 @@ export interface CodexModel {
   description: string;
   hasThinking: boolean;
   supportsVision: boolean;
-  tier: 'premium' | 'standard' | 'basic';
+  tier: "premium" | "standard" | "basic";
   isDefault: boolean;
 }
 
@@ -49,9 +49,9 @@ export class CodexModelCacheService {
   constructor(
     dataDir: string,
     appServerService: CodexAppServerService,
-    ttl: number = 3600000 // 1 hour default
+    ttl: number = 3600000, // 1 hour default
   ) {
-    this.cacheFilePath = path.join(dataDir, 'codex-models-cache.json');
+    this.cacheFilePath = path.join(dataDir, "codex-models-cache.json");
     this.ttl = ttl;
     this.appServerService = appServerService;
   }
@@ -76,7 +76,7 @@ export class CodexModelCacheService {
 
       if (!isStale) {
         logger.info(
-          `[getModels] ✓ Using cached models (${cached.models.length} models, age: ${Math.round(age / 60000)}min)`
+          `[getModels] ✓ Using cached models (${cached.models.length} models, age: ${Math.round(age / 60000)}min)`,
         );
         return cached.models;
       }
@@ -93,7 +93,7 @@ export class CodexModelCacheService {
    * @returns Object containing models and cache timestamp
    */
   async getModelsWithMetadata(
-    forceRefresh = false
+    forceRefresh = false,
   ): Promise<{ models: CodexModel[]; cachedAt: number }> {
     const models = await this.getModels(forceRefresh);
 
@@ -130,14 +130,14 @@ export class CodexModelCacheService {
    * Clear the cache file
    */
   async clearCache(): Promise<void> {
-    logger.info('[clearCache] Clearing cache...');
+    logger.info("[clearCache] Clearing cache...");
 
     try {
       await secureFs.unlink(this.cacheFilePath);
-      logger.info('[clearCache] Cache cleared');
+      logger.info("[clearCache] Cache cleared");
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error('[clearCache] Failed to clear cache:', error);
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        logger.error("[clearCache] Failed to clear cache:", error);
       }
     }
   }
@@ -165,11 +165,13 @@ export class CodexModelCacheService {
       // Save to cache
       await this.saveToCache(models);
 
-      logger.info(`[refreshModels] ✓ Fetched fresh models (${models.length} models)`);
+      logger.info(
+        `[refreshModels] ✓ Fetched fresh models (${models.length} models)`,
+      );
 
       return models;
     } catch (error) {
-      logger.error('[doRefresh] Refresh failed:', error);
+      logger.error("[doRefresh] Refresh failed:", error);
       return [];
     }
   }
@@ -192,18 +194,18 @@ export class CodexModelCacheService {
   /**
    * Infer tier from model ID
    */
-  private inferTier(modelId: string): 'premium' | 'standard' | 'basic' {
+  private inferTier(modelId: string): "premium" | "standard" | "basic" {
     if (
-      modelId.includes('max') ||
-      modelId.includes('gpt-5.2-codex') ||
-      modelId.includes('gpt-5.3-codex')
+      modelId.includes("max") ||
+      modelId.includes("gpt-5.2-codex") ||
+      modelId.includes("gpt-5.3-codex")
     ) {
-      return 'premium';
+      return "premium";
     }
-    if (modelId.includes('mini')) {
-      return 'basic';
+    if (modelId.includes("mini")) {
+      return "basic";
     }
-    return 'standard';
+    return "standard";
   }
 
   /**
@@ -211,19 +213,19 @@ export class CodexModelCacheService {
    */
   private async loadFromCache(): Promise<CodexModelCache | null> {
     try {
-      const content = await secureFs.readFile(this.cacheFilePath, 'utf-8');
+      const content = await secureFs.readFile(this.cacheFilePath, "utf-8");
       const cache = JSON.parse(content.toString()) as CodexModelCache;
 
       // Validate cache structure
-      if (!Array.isArray(cache.models) || typeof cache.cachedAt !== 'number') {
-        logger.warn('[loadFromCache] Invalid cache structure, ignoring');
+      if (!Array.isArray(cache.models) || typeof cache.cachedAt !== "number") {
+        logger.warn("[loadFromCache] Invalid cache structure, ignoring");
         return null;
       }
 
       return cache;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.warn('[loadFromCache] Failed to read cache:', error);
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        logger.warn("[loadFromCache] Failed to read cache:", error);
       }
       return null;
     }
@@ -244,12 +246,12 @@ export class CodexModelCacheService {
     try {
       // Write to temp file
       const content = JSON.stringify(cache, null, 2);
-      await secureFs.writeFile(tempPath, content, 'utf-8');
+      await secureFs.writeFile(tempPath, content, "utf-8");
 
       // Atomic rename
       await secureFs.rename(tempPath, this.cacheFilePath);
     } catch (error) {
-      logger.error('[saveToCache] Failed to save cache:', error);
+      logger.error("[saveToCache] Failed to save cache:", error);
 
       // Clean up temp file
       try {

@@ -83,7 +83,12 @@
 }
 
 .nordlight .animated-outline-gradient {
-  background: conic-gradient(from 90deg at 50% 50%, #5e81ac 0%, #81a1c1 50%, #5e81ac 100%);
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #5e81ac 0%,
+    #81a1c1 50%,
+    #5e81ac 100%
+  );
 }
 
 .nordlight .animated-outline-inner {

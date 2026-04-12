@@ -5,10 +5,10 @@
  * including version checking and regeneration logic.
  */
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import { createHash } from 'node:crypto';
-import type { ThemeMode } from '@pegasus/types';
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { createHash } from "node:crypto";
+import type { ThemeMode } from "@pegasus/types";
 import {
   generateBashrc,
   generateZshrc,
@@ -16,41 +16,44 @@ import {
   generateThemeColors,
   type TerminalConfig,
   type TerminalTheme,
-} from './rc-generator.js';
+} from "./rc-generator.js";
 
 /**
  * Current RC file format version
  */
 export const RC_FILE_VERSION = 11;
 
-const RC_SIGNATURE_FILENAME = 'config.sha256';
+const RC_SIGNATURE_FILENAME = "config.sha256";
 
 /**
  * Get the terminal directory path
  */
 export function getTerminalDir(projectPath: string): string {
-  return path.join(projectPath, '.pegasus', 'terminal');
+  return path.join(projectPath, ".pegasus", "terminal");
 }
 
 /**
  * Get the themes directory path
  */
 export function getThemesDir(projectPath: string): string {
-  return path.join(getTerminalDir(projectPath), 'themes');
+  return path.join(getTerminalDir(projectPath), "themes");
 }
 
 /**
  * Get RC file path for specific shell
  */
-export function getRcFilePath(projectPath: string, shell: 'bash' | 'zsh' | 'sh'): string {
+export function getRcFilePath(
+  projectPath: string,
+  shell: "bash" | "zsh" | "sh",
+): string {
   const terminalDir = getTerminalDir(projectPath);
   switch (shell) {
-    case 'bash':
-      return path.join(terminalDir, 'bashrc.sh');
-    case 'zsh':
-      return path.join(terminalDir, '.zshrc'); // Zsh looks for .zshrc in ZDOTDIR
-    case 'sh':
-      return path.join(terminalDir, 'common.sh');
+    case "bash":
+      return path.join(terminalDir, "bashrc.sh");
+    case "zsh":
+      return path.join(terminalDir, ".zshrc"); // Zsh looks for .zshrc in ZDOTDIR
+    case "sh":
+      return path.join(terminalDir, "common.sh");
   }
 }
 
@@ -71,10 +74,10 @@ export async function ensureTerminalDir(projectPath: string): Promise<void> {
 async function atomicWriteFile(
   filePath: string,
   content: string,
-  mode: number = 0o644
+  mode: number = 0o644,
 ): Promise<void> {
   const tempPath = `${filePath}.tmp`;
-  await fs.writeFile(tempPath, content, { encoding: 'utf8', mode });
+  await fs.writeFile(tempPath, content, { encoding: "utf8", mode });
   await fs.rename(tempPath, filePath);
 }
 
@@ -83,7 +86,7 @@ function sortObjectKeys(value: unknown): unknown {
     return value.map((item) => sortObjectKeys(item));
   }
 
-  if (value && typeof value === 'object') {
+  if (value && typeof value === "object") {
     const sortedEntries = Object.entries(value as Record<string, unknown>)
       .filter(([, entryValue]) => entryValue !== undefined)
       .sort(([left], [right]) => left.localeCompare(right));
@@ -98,34 +101,48 @@ function sortObjectKeys(value: unknown): unknown {
   return value;
 }
 
-function buildConfigSignature(theme: ThemeMode, config: TerminalConfig): string {
+function buildConfigSignature(
+  theme: ThemeMode,
+  config: TerminalConfig,
+): string {
   const payload = { theme, config: sortObjectKeys(config) };
   const serializedPayload = JSON.stringify(payload);
-  return createHash('sha256').update(serializedPayload).digest('hex');
+  return createHash("sha256").update(serializedPayload).digest("hex");
 }
 
 async function readSignatureFile(projectPath: string): Promise<string | null> {
-  const signaturePath = path.join(getTerminalDir(projectPath), RC_SIGNATURE_FILENAME);
+  const signaturePath = path.join(
+    getTerminalDir(projectPath),
+    RC_SIGNATURE_FILENAME,
+  );
   try {
-    const signature = await fs.readFile(signaturePath, 'utf8');
+    const signature = await fs.readFile(signaturePath, "utf8");
     return signature.trim() || null;
   } catch {
     return null;
   }
 }
 
-async function writeSignatureFile(projectPath: string, signature: string): Promise<void> {
-  const signaturePath = path.join(getTerminalDir(projectPath), RC_SIGNATURE_FILENAME);
+async function writeSignatureFile(
+  projectPath: string,
+  signature: string,
+): Promise<void> {
+  const signaturePath = path.join(
+    getTerminalDir(projectPath),
+    RC_SIGNATURE_FILENAME,
+  );
   await atomicWriteFile(signaturePath, `${signature}\n`, 0o644);
 }
 
 /**
  * Check current RC file version
  */
-export async function checkRcFileVersion(projectPath: string): Promise<number | null> {
-  const versionPath = path.join(getTerminalDir(projectPath), 'version.txt');
+export async function checkRcFileVersion(
+  projectPath: string,
+): Promise<number | null> {
+  const versionPath = path.join(getTerminalDir(projectPath), "version.txt");
   try {
-    const content = await fs.readFile(versionPath, 'utf8');
+    const content = await fs.readFile(versionPath, "utf8");
     const version = parseInt(content.trim(), 10);
     return isNaN(version) ? null : version;
   } catch (error) {
@@ -136,8 +153,11 @@ export async function checkRcFileVersion(projectPath: string): Promise<number | 
 /**
  * Write version file
  */
-async function writeVersionFile(projectPath: string, version: number): Promise<void> {
-  const versionPath = path.join(getTerminalDir(projectPath), 'version.txt');
+async function writeVersionFile(
+  projectPath: string,
+  version: number,
+): Promise<void> {
+  const versionPath = path.join(getTerminalDir(projectPath), "version.txt");
   await atomicWriteFile(versionPath, `${version}\n`, 0o644);
 }
 
@@ -147,7 +167,7 @@ async function writeVersionFile(projectPath: string, version: number): Promise<v
 export async function needsRegeneration(
   projectPath: string,
   theme: ThemeMode,
-  config: TerminalConfig
+  config: TerminalConfig,
 ): Promise<boolean> {
   const currentVersion = await checkRcFileVersion(projectPath);
 
@@ -163,9 +183,9 @@ export async function needsRegeneration(
   }
 
   // Check if critical files exist
-  const bashrcPath = getRcFilePath(projectPath, 'bash');
-  const zshrcPath = getRcFilePath(projectPath, 'zsh');
-  const commonPath = path.join(getTerminalDir(projectPath), 'common.sh');
+  const bashrcPath = getRcFilePath(projectPath, "bash");
+  const zshrcPath = getRcFilePath(projectPath, "zsh");
+  const commonPath = path.join(getTerminalDir(projectPath), "common.sh");
   const themeFilePath = path.join(getThemesDir(projectPath), `${theme}.sh`);
 
   try {
@@ -186,7 +206,7 @@ export async function needsRegeneration(
  */
 export async function writeAllThemeFiles(
   projectPath: string,
-  terminalThemes: Record<ThemeMode, TerminalTheme>
+  terminalThemes: Record<ThemeMode, TerminalTheme>,
 ): Promise<void> {
   const themesDir = getThemesDir(projectPath);
   await fs.mkdir(themesDir, { recursive: true, mode: 0o755 });
@@ -197,7 +217,7 @@ export async function writeAllThemeFiles(
       const themeFilePath = path.join(themesDir, `${themeName}.sh`);
       const content = generateThemeColors(theme);
       await atomicWriteFile(themeFilePath, content, 0o644);
-    })
+    }),
   );
 }
 
@@ -207,7 +227,7 @@ export async function writeAllThemeFiles(
 export async function writeThemeFile(
   projectPath: string,
   theme: ThemeMode,
-  themeColors: TerminalTheme
+  themeColors: TerminalTheme,
 ): Promise<void> {
   const themesDir = getThemesDir(projectPath);
   await fs.mkdir(themesDir, { recursive: true, mode: 0o755 });
@@ -225,22 +245,22 @@ export async function writeRcFiles(
   theme: ThemeMode,
   config: TerminalConfig,
   themeColors: TerminalTheme,
-  allThemes: Record<ThemeMode, TerminalTheme>
+  allThemes: Record<ThemeMode, TerminalTheme>,
 ): Promise<void> {
   await ensureTerminalDir(projectPath);
 
   // Write common functions file
-  const commonPath = path.join(getTerminalDir(projectPath), 'common.sh');
+  const commonPath = path.join(getTerminalDir(projectPath), "common.sh");
   const commonContent = generateCommonFunctions(config);
   await atomicWriteFile(commonPath, commonContent, 0o644);
 
   // Write bashrc
-  const bashrcPath = getRcFilePath(projectPath, 'bash');
+  const bashrcPath = getRcFilePath(projectPath, "bash");
   const bashrcContent = generateBashrc(themeColors, config);
   await atomicWriteFile(bashrcPath, bashrcContent, 0o644);
 
   // Write zshrc
-  const zshrcPath = getRcFilePath(projectPath, 'zsh');
+  const zshrcPath = getRcFilePath(projectPath, "zsh");
   const zshrcContent = generateZshrc(themeColors, config);
   await atomicWriteFile(zshrcPath, zshrcContent, 0o644);
 
@@ -263,7 +283,7 @@ export async function ensureRcFilesUpToDate(
   theme: ThemeMode,
   config: TerminalConfig,
   themeColors: TerminalTheme,
-  allThemes: Record<ThemeMode, TerminalTheme>
+  allThemes: Record<ThemeMode, TerminalTheme>,
 ): Promise<void> {
   const needsRegen = await needsRegeneration(projectPath, theme, config);
   if (needsRegen) {
@@ -287,7 +307,10 @@ export async function deleteTerminalDir(projectPath: string): Promise<void> {
  * Create user-custom.sh placeholder if it doesn't exist
  */
 export async function ensureUserCustomFile(projectPath: string): Promise<void> {
-  const userCustomPath = path.join(getTerminalDir(projectPath), 'user-custom.sh');
+  const userCustomPath = path.join(
+    getTerminalDir(projectPath),
+    "user-custom.sh",
+  );
   try {
     await fs.access(userCustomPath);
   } catch {

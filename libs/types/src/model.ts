@@ -1,26 +1,32 @@
 /**
  * Model alias mapping for Claude models
  */
-import type { CursorModelId } from './cursor-models.js';
-import type { OpencodeModelId } from './opencode-models.js';
-import type { GeminiModelId } from './gemini-models.js';
-import { REASONING_CAPABLE_MODEL_IDS } from './model-capabilities.gen.js';
-import { PROVIDER_MODEL_MAP, DEFAULT_MODELS_REGISTRY } from './model-registry.gen.js';
+import type { CursorModelId } from "./cursor-models.js";
+import type { OpencodeModelId } from "./opencode-models.js";
+import type { GeminiModelId } from "./gemini-models.js";
+import { REASONING_CAPABLE_MODEL_IDS } from "./model-capabilities.gen.js";
+import {
+  PROVIDER_MODEL_MAP,
+  DEFAULT_MODELS_REGISTRY,
+} from "./model-registry.gen.js";
 
 /**
  * Canonical Claude model IDs with provider prefix
  * Used for internal storage and consistent provider routing.
  */
-export type ClaudeCanonicalId = 'claude-haiku' | 'claude-sonnet' | 'claude-opus';
+export type ClaudeCanonicalId =
+  | "claude-haiku"
+  | "claude-sonnet"
+  | "claude-opus";
 
 /**
  * Canonical Claude model map - maps prefixed IDs to full model strings
  * Use these IDs for internal storage and routing.
  */
 export const CLAUDE_CANONICAL_MAP: Record<ClaudeCanonicalId, string> = {
-  'claude-haiku': 'claude-haiku-4-5-20251001',
-  'claude-sonnet': 'claude-sonnet-4-6',
-  'claude-opus': 'claude-opus-4-6',
+  "claude-haiku": "claude-haiku-4-5-20251001",
+  "claude-sonnet": "claude-sonnet-4-6",
+  "claude-opus": "claude-opus-4-6",
 } as const;
 
 /**
@@ -29,18 +35,18 @@ export const CLAUDE_CANONICAL_MAP: Record<ClaudeCanonicalId, string> = {
  * @deprecated Use CLAUDE_CANONICAL_MAP for new code
  */
 export const CLAUDE_MODEL_MAP: Record<string, string> = {
-  haiku: 'claude-haiku-4-5-20251001',
-  sonnet: 'claude-sonnet-4-6',
-  opus: 'claude-opus-4-6',
+  haiku: "claude-haiku-4-5-20251001",
+  sonnet: "claude-sonnet-4-6",
+  opus: "claude-opus-4-6",
 } as const;
 
 /**
  * Map from legacy aliases to canonical IDs
  */
 export const LEGACY_CLAUDE_ALIAS_MAP: Record<string, ClaudeCanonicalId> = {
-  haiku: 'claude-haiku',
-  sonnet: 'claude-sonnet',
-  opus: 'claude-opus',
+  haiku: "claude-haiku",
+  sonnet: "claude-sonnet",
+  opus: "claude-opus",
 } as const;
 
 /**
@@ -53,29 +59,29 @@ export const LEGACY_CLAUDE_ALIAS_MAP: Record<string, ClaudeCanonicalId> = {
 export const CODEX_MODEL_MAP = {
   // Recommended Codex-specific models
   /** Latest frontier agentic coding model */
-  gpt53Codex: 'codex-gpt-5.3-codex',
+  gpt53Codex: "codex-gpt-5.3-codex",
   /** Smaller, near-instant version of GPT-5.3-Codex for real-time coding */
-  gpt53CodexSpark: 'codex-gpt-5.3-codex-spark',
+  gpt53CodexSpark: "codex-gpt-5.3-codex-spark",
   /** Frontier agentic coding model */
-  gpt52Codex: 'codex-gpt-5.2-codex',
+  gpt52Codex: "codex-gpt-5.2-codex",
   /** Codex-optimized flagship for deep and fast reasoning */
-  gpt51CodexMax: 'codex-gpt-5.1-codex-max',
+  gpt51CodexMax: "codex-gpt-5.1-codex-max",
   /** Optimized for codex. Cheaper, faster, but less capable */
-  gpt51CodexMini: 'codex-gpt-5.1-codex-mini',
+  gpt51CodexMini: "codex-gpt-5.1-codex-mini",
   /** Original GPT-5.1 Codex model */
-  gpt51Codex: 'codex-gpt-5.1-codex',
+  gpt51Codex: "codex-gpt-5.1-codex",
   /** Original GPT-5 Codex model */
-  gpt5Codex: 'codex-gpt-5-codex',
+  gpt5Codex: "codex-gpt-5-codex",
   /** Smaller, cheaper GPT-5 Codex variant */
-  gpt5CodexMini: 'codex-gpt-5-codex-mini',
+  gpt5CodexMini: "codex-gpt-5-codex-mini",
 
   // General-purpose GPT models (also available in Codex)
   /** Latest frontier model with improvements across knowledge, reasoning and coding */
-  gpt52: 'codex-gpt-5.2',
+  gpt52: "codex-gpt-5.2",
   /** Great for coding and agentic tasks across domains */
-  gpt51: 'codex-gpt-5.1',
+  gpt51: "codex-gpt-5.1",
   /** Base GPT-5 model */
-  gpt5: 'codex-gpt-5',
+  gpt5: "codex-gpt-5",
 } as const;
 
 /**
@@ -104,12 +110,12 @@ export function supportsReasoningEffort(modelId: string): boolean {
  */
 export function normalizeReasoningEffortForModel(
   model: string,
-  reasoningEffort: import('./provider.js').ReasoningEffort | undefined
-): import('./provider.js').ReasoningEffort {
+  reasoningEffort: import("./provider.js").ReasoningEffort | undefined,
+): import("./provider.js").ReasoningEffort {
   if (!supportsReasoningEffort(model)) {
-    return 'none';
+    return "none";
   }
-  return reasoningEffort || 'none';
+  return reasoningEffort || "none";
 }
 
 /**
@@ -131,7 +137,8 @@ export const DEFAULT_MODELS = {
 } as const;
 
 export type ModelAlias = keyof typeof CLAUDE_MODEL_MAP;
-export type CodexModelId = (typeof CODEX_MODEL_MAP)[keyof typeof CODEX_MODEL_MAP];
+export type CodexModelId =
+  (typeof CODEX_MODEL_MAP)[keyof typeof CODEX_MODEL_MAP];
 
 /**
  * AgentModel - Alias for ModelAlias for backward compatibility

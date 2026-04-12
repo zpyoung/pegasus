@@ -4,20 +4,25 @@
  * Handles creating the main BrowserWindow and its event handlers.
  */
 
-import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
-import { createLogger } from '@pegasus/utils/logger';
-import { MIN_WIDTH_COLLAPSED, MIN_HEIGHT, DEFAULT_WIDTH, DEFAULT_HEIGHT } from '../constants';
-import { state } from '../state';
-import { getIconPath } from '../utils/icon-manager';
+import path from "path";
+import { app, BrowserWindow, shell } from "electron";
+import { createLogger } from "@pegasus/utils/logger";
+import {
+  MIN_WIDTH_COLLAPSED,
+  MIN_HEIGHT,
+  DEFAULT_WIDTH,
+  DEFAULT_HEIGHT,
+} from "../constants";
+import { state } from "../state";
+import { getIconPath } from "../utils/icon-manager";
 import {
   loadWindowBounds,
   saveWindowBounds,
   validateBounds,
   scheduleSaveWindowBounds,
-} from './window-bounds';
+} from "./window-bounds";
 
-const logger = createLogger('MainWindow');
+const logger = createLogger("MainWindow");
 
 // Development environment
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
@@ -42,7 +47,7 @@ export function createWindow(): void {
     minHeight: MIN_HEIGHT,
     webPreferences: {
       // __dirname is apps/ui/dist-electron (Vite bundles all into single file)
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -50,8 +55,10 @@ export function createWindow(): void {
     // It still appears on Alt-press so keyboard-only users aren't locked out.
     autoHideMenuBar: true,
     // titleBarStyle is macOS-only; use hiddenInset for native look on macOS
-    ...(process.platform === 'darwin' && { titleBarStyle: 'hiddenInset' as const }),
-    backgroundColor: '#0a0a0a',
+    ...(process.platform === "darwin" && {
+      titleBarStyle: "hiddenInset" as const,
+    }),
+    backgroundColor: "#0a0a0a",
   };
 
   if (iconPath) {
@@ -75,12 +82,12 @@ export function createWindow(): void {
     state.mainWindow.loadURL(`http://localhost:${state.staticPort}`);
   }
 
-  if (isDev && process.env.OPEN_DEVTOOLS === 'true') {
+  if (isDev && process.env.OPEN_DEVTOOLS === "true") {
     state.mainWindow.webContents.openDevTools();
   }
 
   // Save window bounds on close, resize, and move
-  state.mainWindow.on('close', () => {
+  state.mainWindow.on("close", () => {
     // Save immediately before closing (not debounced)
     if (state.mainWindow && !state.mainWindow.isDestroyed()) {
       const isMaximized = state.mainWindow.isMaximized();
@@ -98,22 +105,22 @@ export function createWindow(): void {
     }
   });
 
-  state.mainWindow.on('closed', () => {
+  state.mainWindow.on("closed", () => {
     state.mainWindow = null;
   });
 
-  state.mainWindow.on('resized', () => {
+  state.mainWindow.on("resized", () => {
     scheduleSaveWindowBounds();
   });
 
-  state.mainWindow.on('moved', () => {
+  state.mainWindow.on("moved", () => {
     scheduleSaveWindowBounds();
   });
 
   state.mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 
-  logger.info('Main window created');
+  logger.info("Main window created");
 }

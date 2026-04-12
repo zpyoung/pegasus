@@ -7,9 +7,9 @@
  * Uses centralized system-paths module for all file system access.
  */
 
-import { execSync } from 'child_process';
-import path from 'path';
-import os from 'os';
+import { execSync } from "child_process";
+import path from "path";
+import os from "os";
 import {
   systemPathExists,
   systemPathIsExecutable,
@@ -21,7 +21,7 @@ import {
   getScoopNodePath,
   getChocolateyNodePath,
   getWslVersionPath,
-} from './system-paths.js';
+} from "./system-paths.js";
 
 /** Pattern to match version directories (e.g., "v18.17.0", "18.17.0", "v18") */
 const VERSION_DIR_PATTERN = /^v?\d+/;
@@ -35,17 +35,17 @@ export interface NodeFinderResult {
   nodePath: string;
   /** How Node.js was found */
   source:
-    | 'homebrew'
-    | 'system'
-    | 'nvm'
-    | 'fnm'
-    | 'nvm-windows'
-    | 'program-files'
-    | 'scoop'
-    | 'chocolatey'
-    | 'which'
-    | 'where'
-    | 'fallback';
+    | "homebrew"
+    | "system"
+    | "nvm"
+    | "fnm"
+    | "nvm-windows"
+    | "program-files"
+    | "scoop"
+    | "chocolatey"
+    | "which"
+    | "where"
+    | "fallback";
 }
 
 /** Options for finding Node.js */
@@ -75,7 +75,7 @@ function isExecutable(filePath: string): boolean {
  */
 function findNodeFromVersionManager(
   basePath: string,
-  binSubpath: string = 'bin/node'
+  binSubpath: string = "bin/node",
 ): string | null {
   try {
     if (!systemPathExists(basePath)) return null;
@@ -87,11 +87,17 @@ function findNodeFromVersionManager(
     const allVersions = systemPathReaddirSync(basePath)
       .filter((v) => VERSION_DIR_PATTERN.test(v))
       // Semantic version sort - newest first using localeCompare with numeric option
-      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+      .sort((a, b) =>
+        b.localeCompare(a, undefined, { numeric: true, sensitivity: "base" }),
+      );
 
     // Separate stable and pre-release versions, preferring stable
-    const stableVersions = allVersions.filter((v) => !PRE_RELEASE_PATTERN.test(v));
-    const preReleaseVersions = allVersions.filter((v) => PRE_RELEASE_PATTERN.test(v));
+    const stableVersions = allVersions.filter(
+      (v) => !PRE_RELEASE_PATTERN.test(v),
+    );
+    const preReleaseVersions = allVersions.filter((v) =>
+      PRE_RELEASE_PATTERN.test(v),
+    );
 
     // Try stable versions first, then fall back to pre-release
     for (const version of [...stableVersions, ...preReleaseVersions]) {
@@ -116,10 +122,10 @@ function findNodeMacOS(_homeDir: string): NodeFinderResult | null {
   for (const nodePath of systemPaths) {
     if (isExecutable(nodePath)) {
       // Determine source based on path
-      if (nodePath.includes('homebrew') || nodePath === '/usr/local/bin/node') {
-        return { nodePath, source: 'homebrew' };
+      if (nodePath.includes("homebrew") || nodePath === "/usr/local/bin/node") {
+        return { nodePath, source: "homebrew" };
       }
-      return { nodePath, source: 'system' };
+      return { nodePath, source: "system" };
     }
   }
 
@@ -128,7 +134,7 @@ function findNodeMacOS(_homeDir: string): NodeFinderResult | null {
   for (const nvmPath of nvmPaths) {
     const nvmNode = findNodeFromVersionManager(nvmPath);
     if (nvmNode) {
-      return { nodePath: nvmNode, source: 'nvm' };
+      return { nodePath: nvmNode, source: "nvm" };
     }
   }
 
@@ -137,7 +143,7 @@ function findNodeMacOS(_homeDir: string): NodeFinderResult | null {
   for (const fnmBasePath of fnmPaths) {
     const fnmNode = findNodeFromVersionManager(fnmBasePath);
     if (fnmNode) {
-      return { nodePath: fnmNode, source: 'fnm' };
+      return { nodePath: fnmNode, source: "fnm" };
     }
   }
 
@@ -152,7 +158,7 @@ function findNodeLinux(_homeDir: string): NodeFinderResult | null {
   const systemPaths = getNodeSystemPaths();
   for (const nodePath of systemPaths) {
     if (isExecutable(nodePath)) {
-      return { nodePath, source: 'system' };
+      return { nodePath, source: "system" };
     }
   }
 
@@ -161,7 +167,7 @@ function findNodeLinux(_homeDir: string): NodeFinderResult | null {
   for (const nvmPath of nvmPaths) {
     const nvmNode = findNodeFromVersionManager(nvmPath);
     if (nvmNode) {
-      return { nodePath: nvmNode, source: 'nvm' };
+      return { nodePath: nvmNode, source: "nvm" };
     }
   }
 
@@ -170,7 +176,7 @@ function findNodeLinux(_homeDir: string): NodeFinderResult | null {
   for (const fnmBasePath of fnmPaths) {
     const fnmNode = findNodeFromVersionManager(fnmBasePath);
     if (fnmNode) {
-      return { nodePath: fnmNode, source: 'fnm' };
+      return { nodePath: fnmNode, source: "fnm" };
     }
   }
 
@@ -185,38 +191,38 @@ function findNodeWindows(_homeDir: string): NodeFinderResult | null {
   const systemPaths = getNodeSystemPaths();
   for (const nodePath of systemPaths) {
     if (isExecutable(nodePath)) {
-      return { nodePath, source: 'program-files' };
+      return { nodePath, source: "program-files" };
     }
   }
 
   // NVM for Windows
   const nvmPaths = getNvmPaths();
   for (const nvmPath of nvmPaths) {
-    const nvmNode = findNodeFromVersionManager(nvmPath, 'node.exe');
+    const nvmNode = findNodeFromVersionManager(nvmPath, "node.exe");
     if (nvmNode) {
-      return { nodePath: nvmNode, source: 'nvm-windows' };
+      return { nodePath: nvmNode, source: "nvm-windows" };
     }
   }
 
   // fnm on Windows
   const fnmPaths = getFnmPaths();
   for (const fnmBasePath of fnmPaths) {
-    const fnmNode = findNodeFromVersionManager(fnmBasePath, 'node.exe');
+    const fnmNode = findNodeFromVersionManager(fnmBasePath, "node.exe");
     if (fnmNode) {
-      return { nodePath: fnmNode, source: 'fnm' };
+      return { nodePath: fnmNode, source: "fnm" };
     }
   }
 
   // Scoop installation
   const scoopPath = getScoopNodePath();
   if (isExecutable(scoopPath)) {
-    return { nodePath: scoopPath, source: 'scoop' };
+    return { nodePath: scoopPath, source: "scoop" };
   }
 
   // Chocolatey installation
   const chocoPath = getChocolateyNodePath();
   if (isExecutable(chocoPath)) {
-    return { nodePath: chocoPath, source: 'chocolatey' };
+    return { nodePath: chocoPath, source: "chocolatey" };
   }
 
   return null;
@@ -227,28 +233,30 @@ function findNodeWindows(_homeDir: string): NodeFinderResult | null {
  */
 function findNodeViaShell(
   platform: NodeJS.Platform,
-  logger: (message: string) => void = () => {}
+  logger: (message: string) => void = () => {},
 ): NodeFinderResult | null {
   try {
-    const command = platform === 'win32' ? 'where node' : 'which node';
+    const command = platform === "win32" ? "where node" : "which node";
     const result = execSync(command, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
 
     // 'where' on Windows can return multiple lines, take the first
     const nodePath = result.split(/\r?\n/)[0];
 
     // Validate path: check for null bytes (security) and executable permission
-    if (nodePath && !nodePath.includes('\x00') && isExecutable(nodePath)) {
+    if (nodePath && !nodePath.includes("\x00") && isExecutable(nodePath)) {
       return {
         nodePath,
-        source: platform === 'win32' ? 'where' : 'which',
+        source: platform === "win32" ? "where" : "which",
       };
     }
   } catch {
     // Shell command failed (likely when launched from desktop without PATH)
-    logger('Shell command failed to find Node.js (expected when launched from desktop)');
+    logger(
+      "Shell command failed to find Node.js (expected when launched from desktop)",
+    );
   }
 
   return null;
@@ -272,12 +280,14 @@ function findNodeViaShell(
  * spawn(result.nodePath, ['script.js']);
  * ```
  */
-export function findNodeExecutable(options: NodeFinderOptions = {}): NodeFinderResult {
+export function findNodeExecutable(
+  options: NodeFinderOptions = {},
+): NodeFinderResult {
   const { skipSearch = false, logger = () => {} } = options;
 
   // Skip search if requested (e.g., in development mode)
   if (skipSearch) {
-    return { nodePath: 'node', source: 'fallback' };
+    return { nodePath: "node", source: "fallback" };
   }
 
   const platform = process.platform;
@@ -287,13 +297,13 @@ export function findNodeExecutable(options: NodeFinderOptions = {}): NodeFinderR
   let result: NodeFinderResult | null = null;
 
   switch (platform) {
-    case 'darwin':
+    case "darwin":
       result = findNodeMacOS(homeDir);
       break;
-    case 'linux':
+    case "linux":
       result = findNodeLinux(homeDir);
       break;
-    case 'win32':
+    case "win32":
       result = findNodeWindows(homeDir);
       break;
   }
@@ -312,7 +322,7 @@ export function findNodeExecutable(options: NodeFinderOptions = {}): NodeFinderR
 
   // Ultimate fallback
   logger('Could not find Node.js, falling back to "node"');
-  return { nodePath: 'node', source: 'fallback' };
+  return { nodePath: "node", source: "fallback" };
 }
 
 /**
@@ -335,9 +345,12 @@ export function findNodeExecutable(options: NodeFinderOptions = {}): NodeFinderR
  * });
  * ```
  */
-export function buildEnhancedPath(nodePath: string, currentPath: string = ''): string {
+export function buildEnhancedPath(
+  nodePath: string,
+  currentPath: string = "",
+): string {
   // If using fallback 'node', don't modify PATH
-  if (nodePath === 'node') {
+  if (nodePath === "node") {
     return currentPath;
   }
 
@@ -347,8 +360,10 @@ export function buildEnhancedPath(nodePath: string, currentPath: string = ''): s
   // Use path segment matching to avoid false positives (e.g., /opt/node vs /opt/node-v18)
   // Normalize paths for comparison to handle mixed separators on Windows
   const normalizedNodeDir = path.normalize(nodeDir);
-  const pathSegments = currentPath.split(path.delimiter).map((s) => path.normalize(s));
-  if (normalizedNodeDir === '.' || pathSegments.includes(normalizedNodeDir)) {
+  const pathSegments = currentPath
+    .split(path.delimiter)
+    .map((s) => path.normalize(s));
+  if (normalizedNodeDir === "." || pathSegments.includes(normalizedNodeDir)) {
     return currentPath;
   }
 

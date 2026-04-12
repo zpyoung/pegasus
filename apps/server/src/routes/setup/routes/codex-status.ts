@@ -2,18 +2,22 @@
  * GET /codex-status endpoint - Get Codex CLI installation and auth status
  */
 
-import type { Request, Response } from 'express';
-import { CodexProvider } from '../../../providers/codex-provider.js';
-import { getErrorMessage, logError } from '../common.js';
-import * as fs from 'fs';
-import * as path from 'path';
+import type { Request, Response } from "express";
+import { CodexProvider } from "../../../providers/codex-provider.js";
+import { getErrorMessage, logError } from "../common.js";
+import * as fs from "fs";
+import * as path from "path";
 
-const DISCONNECTED_MARKER_FILE = '.codex-disconnected';
+const DISCONNECTED_MARKER_FILE = ".codex-disconnected";
 
 function isCodexDisconnectedFromApp(): boolean {
   try {
     const projectRoot = process.cwd();
-    const markerPath = path.join(projectRoot, '.pegasus', DISCONNECTED_MARKER_FILE);
+    const markerPath = path.join(
+      projectRoot,
+      ".pegasus",
+      DISCONNECTED_MARKER_FILE,
+    );
     return fs.existsSync(markerPath);
   } catch {
     return false;
@@ -25,8 +29,8 @@ function isCodexDisconnectedFromApp(): boolean {
  * Returns Codex CLI installation and authentication status
  */
 export function createCodexStatusHandler() {
-  const installCommand = 'pnpm add -g @openai/codex';
-  const loginCommand = 'codex login';
+  const installCommand = "pnpm add -g @openai/codex";
+  const loginCommand = "codex login";
 
   return async (_req: Request, res: Response): Promise<void> => {
     try {
@@ -39,7 +43,7 @@ export function createCodexStatusHandler() {
           path: null,
           auth: {
             authenticated: false,
-            method: 'none',
+            method: "none",
             hasApiKey: false,
           },
           installCommand,
@@ -52,9 +56,9 @@ export function createCodexStatusHandler() {
       const status = await provider.detectInstallation();
 
       // Derive auth method from authenticated status and API key presence
-      let authMethod = 'none';
+      let authMethod = "none";
       if (status.authenticated) {
-        authMethod = status.hasApiKey ? 'api_key_env' : 'cli_authenticated';
+        authMethod = status.hasApiKey ? "api_key_env" : "cli_authenticated";
       }
 
       res.json({
@@ -71,7 +75,7 @@ export function createCodexStatusHandler() {
         loginCommand,
       });
     } catch (error) {
-      logError(error, 'Get Codex status failed');
+      logError(error, "Get Codex status failed");
       res.status(500).json({
         success: false,
         error: getErrorMessage(error),

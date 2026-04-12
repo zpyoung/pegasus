@@ -14,11 +14,14 @@
  * the requireValidWorktree middleware in index.ts
  */
 
-import type { Request, Response } from 'express';
-import path from 'path';
-import { getErrorMessage, logError } from '../common.js';
-import type { EventEmitter } from '../../../lib/events.js';
-import { verifyCommits, runCherryPick } from '../../../services/cherry-pick-service.js';
+import type { Request, Response } from "express";
+import path from "path";
+import { getErrorMessage, logError } from "../common.js";
+import type { EventEmitter } from "../../../lib/events.js";
+import {
+  verifyCommits,
+  runCherryPick,
+} from "../../../services/cherry-pick-service.js";
 
 export function createCherryPickHandler(events: EventEmitter) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -34,7 +37,7 @@ export function createCherryPickHandler(events: EventEmitter) {
       if (!worktreePath) {
         res.status(400).json({
           success: false,
-          error: 'worktreePath is required',
+          error: "worktreePath is required",
         });
         return;
       }
@@ -42,10 +45,15 @@ export function createCherryPickHandler(events: EventEmitter) {
       // Normalize the path to prevent path traversal and ensure consistent paths
       const resolvedWorktreePath = path.resolve(worktreePath);
 
-      if (!commitHashes || !Array.isArray(commitHashes) || commitHashes.length === 0) {
+      if (
+        !commitHashes ||
+        !Array.isArray(commitHashes) ||
+        commitHashes.length === 0
+      ) {
         res.status(400).json({
           success: false,
-          error: 'commitHashes array is required and must contain at least one commit hash',
+          error:
+            "commitHashes array is required and must contain at least one commit hash",
         });
         return;
       }
@@ -62,7 +70,11 @@ export function createCherryPickHandler(events: EventEmitter) {
       }
 
       // Verify each commit exists via the service; emits cherry-pick:verify-failed if any hash is missing
-      const invalidHash = await verifyCommits(resolvedWorktreePath, commitHashes, events);
+      const invalidHash = await verifyCommits(
+        resolvedWorktreePath,
+        commitHashes,
+        events,
+      );
       if (invalidHash !== null) {
         res.status(400).json({
           success: false,
@@ -74,7 +86,12 @@ export function createCherryPickHandler(events: EventEmitter) {
       // Execute the cherry-pick via the service.
       // The service emits: cherry-pick:started, cherry-pick:success, cherry-pick:conflict,
       // and cherry-pick:abort at the appropriate lifecycle points.
-      const result = await runCherryPick(resolvedWorktreePath, commitHashes, options, events);
+      const result = await runCherryPick(
+        resolvedWorktreePath,
+        commitHashes,
+        options,
+        events,
+      );
 
       if (result.success) {
         res.json({
@@ -96,11 +113,11 @@ export function createCherryPickHandler(events: EventEmitter) {
       }
     } catch (error) {
       // Emit failure event for unexpected (non-conflict) errors
-      events.emit('cherry-pick:failure', {
+      events.emit("cherry-pick:failure", {
         error: getErrorMessage(error),
       });
 
-      logError(error, 'Cherry-pick failed');
+      logError(error, "Cherry-pick failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

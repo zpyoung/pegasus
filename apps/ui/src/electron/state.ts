@@ -5,10 +5,10 @@
  * All modules access shared state through this object.
  */
 
-import { BrowserWindow } from 'electron';
-import { ChildProcess } from 'child_process';
-import { Server } from 'http';
-import { DEFAULT_SERVER_PORT, DEFAULT_STATIC_PORT } from './constants';
+import { BrowserWindow } from "electron";
+import { ChildProcess } from "child_process";
+import { Server } from "http";
+import { DEFAULT_SERVER_PORT, DEFAULT_STATIC_PORT } from "./constants";
 
 export interface ElectronState {
   mainWindow: BrowserWindow | null;

@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,11 +8,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu';
-import { GitBranch, GitBranchPlus, Check, Search, Globe } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
-import type { WorktreeInfo, BranchInfo } from '../types';
+} from "@/components/ui/dropdown-menu";
+import { GitBranch, GitBranchPlus, Check, Search, Globe } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import type { WorktreeInfo, BranchInfo } from "../types";
 
 interface BranchSwitchDropdownProps {
   worktree: WorktreeInfo;
@@ -50,7 +50,7 @@ export function BranchSwitchDropdown({
     for (const branch of filteredBranches) {
       if (branch.isRemote) {
         // Skip bare remote refs without a branch name (e.g. "origin" by itself)
-        if (!branch.name.includes('/')) continue;
+        if (!branch.name.includes("/")) continue;
         remote.push(branch);
       } else {
         local.push(branch);
@@ -84,18 +84,18 @@ export function BranchSwitchDropdown({
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={standalone ? 'outline' : isSelected ? 'default' : 'outline'}
+          variant={standalone ? "outline" : isSelected ? "default" : "outline"}
           size="sm"
           className={cn(
-            'h-7 w-7 p-0',
-            !standalone && 'rounded-none border-r-0',
-            standalone && 'h-8 w-8 shrink-0',
-            !standalone && isSelected && 'bg-primary text-primary-foreground',
-            !standalone && !isSelected && 'bg-secondary/50 hover:bg-secondary'
+            "h-7 w-7 p-0",
+            !standalone && "rounded-none border-r-0",
+            standalone && "h-8 w-8 shrink-0",
+            !standalone && isSelected && "bg-primary text-primary-foreground",
+            !standalone && !isSelected && "bg-secondary/50 hover:bg-secondary",
           )}
           title="Switch branch"
         >
-          <GitBranch className={standalone ? 'w-3.5 h-3.5' : 'w-3 h-3'} />
+          <GitBranch className={standalone ? "w-3.5 h-3.5" : "w-3 h-3"} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
@@ -125,7 +125,7 @@ export function BranchSwitchDropdown({
             </DropdownMenuItem>
           ) : filteredBranches.length === 0 ? (
             <DropdownMenuItem disabled className="text-xs">
-              {branchFilter ? 'No matching branches' : 'No branches found'}
+              {branchFilter ? "No matching branches" : "No branches found"}
             </DropdownMenuItem>
           ) : (
             <>
@@ -153,7 +153,10 @@ export function BranchSwitchDropdown({
           )}
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onCreateBranch(worktree)} className="text-xs">
+        <DropdownMenuItem
+          onClick={() => onCreateBranch(worktree)}
+          className="text-xs"
+        >
           <GitBranchPlus className="w-3.5 h-3.5 mr-2" />
           Create New Branch...
         </DropdownMenuItem>

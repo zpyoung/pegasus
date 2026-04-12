@@ -50,7 +50,7 @@ export interface YamlStageConfig {
   question?: string;
   /** Pre-stage question metadata (type, options) */
   question_meta?: {
-    type?: import('./feature.js').QuestionType;
+    type?: import("./feature.js").QuestionType;
     /** Shorthand: array of option label strings */
     options?: string[];
   };
@@ -81,7 +81,7 @@ export interface YamlStageConfig {
  */
 export interface YamlPipelineInput {
   /** The data type for this input field */
-  type: 'string' | 'number' | 'boolean';
+  type: "string" | "number" | "boolean";
   /** Whether this input must be provided before the pipeline can run */
   required?: boolean;
   /** Default value applied when the user leaves the field empty */
@@ -97,7 +97,7 @@ export interface YamlPipelineInput {
  */
 export interface YamlExecutionConfig {
   /** Execution mode - currently only "session" is supported */
-  mode: 'session';
+  mode: "session";
 }
 
 /**
@@ -197,7 +197,7 @@ export interface ResolvedStage {
   question?: string;
   /** Metadata for the pre-stage question (type and options) */
   question_meta?: {
-    type?: import('./feature.js').QuestionType;
+    type?: import("./feature.js").QuestionType;
     options?: string[];
   };
 }
@@ -215,7 +215,7 @@ export interface StageContext {
   /** ID of the feature being processed */
   featureId: string;
   /** The feature object being processed */
-  feature: import('./feature.js').Feature;
+  feature: import("./feature.js").Feature;
   /** The resolved stage being executed */
   stage: ResolvedStage;
   /** Zero-based index of the current stage in the pipeline */
@@ -239,7 +239,7 @@ export interface StageContext {
 }
 
 /** Source location where a pipeline was discovered */
-export type PipelineSource = 'project' | 'user';
+export type PipelineSource = "project" | "user";
 
 /**
  * Represents a pipeline YAML file discovered from project or user-level directories.
@@ -317,7 +317,10 @@ export interface StageCompilationContext {
    * Access via `{{stages.<stageId>.question_response}}` (single) or
    * `{{stages.<stageId>.question_responses}}` (formatted multi-question Q&A block).
    */
-  stages?: Record<string, { question_response?: string; question_responses?: string }>;
+  stages?: Record<
+    string,
+    { question_response?: string; question_responses?: string }
+  >;
 }
 
 /**

@@ -1,5 +1,12 @@
-import { Bot, PanelLeftClose, PanelLeft, Wrench, Trash2, GitBranch } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Bot,
+  PanelLeftClose,
+  PanelLeft,
+  Wrench,
+  Trash2,
+  GitBranch,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AgentHeaderProps {
   projectName: string;
@@ -37,12 +44,14 @@ export function AgentHeader({
           <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
             <span className="truncate">
               {projectName}
-              {currentSessionId && !isConnected && ' - Connecting...'}
+              {currentSessionId && !isConnected && " - Connecting..."}
             </span>
             {worktreeBranch && (
               <span className="inline-flex items-center gap-1 text-xs bg-muted/50 px-2 py-0.5 rounded-full border border-border shrink-0">
                 <GitBranch className="w-3 h-3 shrink-0" />
-                <span className="max-w-[100px] sm:max-w-[180px] truncate">{worktreeBranch}</span>
+                <span className="max-w-[100px] sm:max-w-[180px] truncate">
+                  {worktreeBranch}
+                </span>
               </span>
             )}
           </div>
@@ -75,7 +84,9 @@ export function AgentHeader({
           size="sm"
           onClick={onToggleSessionManager}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-          aria-label={showSessionManager ? 'Hide sessions panel' : 'Show sessions panel'}
+          aria-label={
+            showSessionManager ? "Hide sessions panel" : "Show sessions panel"
+          }
         >
           {showSessionManager ? (
             <PanelLeftClose className="w-4 h-4" />

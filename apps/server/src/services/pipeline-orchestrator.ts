@@ -2,34 +2,37 @@
  * PipelineOrchestrator - Pipeline step execution and coordination
  */
 
-import path from 'path';
+import path from "path";
 import type {
   Feature,
   PipelineStep,
   PipelineConfig,
   FeatureStatusWithPipeline,
-} from '@pegasus/types';
-import { createLogger, loadContextFiles, classifyError } from '@pegasus/utils';
-import { getFeatureDir } from '@pegasus/platform';
-import { resolveModelString, DEFAULT_MODELS } from '@pegasus/model-resolver';
-import * as secureFs from '../lib/secure-fs.js';
+} from "@pegasus/types";
+import { createLogger, loadContextFiles, classifyError } from "@pegasus/utils";
+import { getFeatureDir } from "@pegasus/platform";
+import { resolveModelString, DEFAULT_MODELS } from "@pegasus/model-resolver";
+import * as secureFs from "../lib/secure-fs.js";
 import {
   getPromptCustomization,
   getAutoLoadClaudeMdSetting,
   getUseClaudeCodeSystemPromptSetting,
   filterClaudeMdFromContext,
-} from '../lib/settings-helpers.js';
-import { validateWorkingDirectory } from '../lib/sdk-options.js';
-import { PauseExecutionError } from './pause-execution-error.js';
-import type { TypedEventBus } from './typed-event-bus.js';
-import type { FeatureStateManager } from './feature-state-manager.js';
-import type { AgentExecutor } from './agent-executor.js';
-import type { WorktreeResolver } from './worktree-resolver.js';
-import type { SettingsService } from './settings-service.js';
-import type { ConcurrencyManager } from './concurrency-manager.js';
-import { pipelineService } from './pipeline-service.js';
-import type { TestRunnerService, TestRunStatus } from './test-runner-service.js';
-import { performMerge } from './merge-service.js';
+} from "../lib/settings-helpers.js";
+import { validateWorkingDirectory } from "../lib/sdk-options.js";
+import { PauseExecutionError } from "./pause-execution-error.js";
+import type { TypedEventBus } from "./typed-event-bus.js";
+import type { FeatureStateManager } from "./feature-state-manager.js";
+import type { AgentExecutor } from "./agent-executor.js";
+import type { WorktreeResolver } from "./worktree-resolver.js";
+import type { SettingsService } from "./settings-service.js";
+import type { ConcurrencyManager } from "./concurrency-manager.js";
+import { pipelineService } from "./pipeline-service.js";
+import type {
+  TestRunnerService,
+  TestRunStatus,
+} from "./test-runner-service.js";
+import { performMerge } from "./merge-service.js";
 import type {
   PipelineContext,
   PipelineStatusInfo,
@@ -39,7 +42,7 @@ import type {
   BuildFeaturePromptFn,
   ExecuteFeatureFn,
   RunAgentFn,
-} from './pipeline-types.js';
+} from "./pipeline-types.js";
 
 // Re-export types for backward compatibility
 export type {
@@ -51,9 +54,9 @@ export type {
   BuildFeaturePromptFn,
   ExecuteFeatureFn,
   RunAgentFn,
-} from './pipeline-types.js';
+} from "./pipeline-types.js";
 
-const logger = createLogger('PipelineOrchestrator');
+const logger = createLogger("PipelineOrchestrator");
 
 export class PipelineOrchestrator {
   constructor(
@@ -68,7 +71,7 @@ export class PipelineOrchestrator {
     private loadContextFilesFn: typeof loadContextFiles,
     private buildFeaturePromptFn: BuildFeaturePromptFn,
     private executeFeatureFn: ExecuteFeatureFn,
-    private runAgentFn: RunAgentFn
+    private runAgentFn: RunAgentFn,
   ) {}
 
   async executePipeline(ctx: PipelineContext): Promise<void> {
@@ -82,32 +85,52 @@ export class PipelineOrchestrator {
       autoLoadClaudeMd,
       useClaudeCodeSystemPrompt,
     } = ctx;
-    const prompts = await getPromptCustomization(this.settingsService, '[AutoMode]');
+    const prompts = await getPromptCustomization(
+      this.settingsService,
+      "[AutoMode]",
+    );
     const contextResult = await this.loadContextFilesFn({
       projectPath,
-      fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
-      taskContext: { title: feature.title ?? '', description: feature.description ?? '' },
+      fsModule: secureFs as Parameters<typeof loadContextFiles>[0]["fsModule"],
+      taskContext: {
+        title: feature.title ?? "",
+        description: feature.description ?? "",
+      },
     });
-    const contextFilesPrompt = filterClaudeMdFromContext(contextResult, autoLoadClaudeMd);
-    const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
-    let previousContext = '';
+    const contextFilesPrompt = filterClaudeMdFromContext(
+      contextResult,
+      autoLoadClaudeMd,
+    );
+    const contextPath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "agent-output.md",
+    );
+    let previousContext = "";
     try {
-      previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+      previousContext = (await secureFs.readFile(
+        contextPath,
+        "utf-8",
+      )) as string;
     } catch {
       /* */
     }
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      if (abortController.signal.aborted) throw new Error('Pipeline execution aborted');
-      await this.updateFeatureStatusFn(projectPath, featureId, `pipeline_${step.id}`);
-      this.eventBus.emitAutoModeEvent('auto_mode_progress', {
+      if (abortController.signal.aborted)
+        throw new Error("Pipeline execution aborted");
+      await this.updateFeatureStatusFn(
+        projectPath,
+        featureId,
+        `pipeline_${step.id}`,
+      );
+      this.eventBus.emitAutoModeEvent("auto_mode_progress", {
         featureId,
         branchName: feature.branchName ?? null,
         content: `Starting pipeline step ${i + 1}/${steps.length}: ${step.name}`,
         projectPath,
       });
-      this.eventBus.emitAutoModeEvent('pipeline_step_started', {
+      this.eventBus.emitAutoModeEvent("pipeline_step_started", {
         featureId,
         stepId: step.id,
         stepName: step.name,
@@ -120,14 +143,19 @@ export class PipelineOrchestrator {
       await this.runAgentFn(
         workDir,
         featureId,
-        this.buildPipelineStepPrompt(step, feature, previousContext, prompts.taskExecution),
+        this.buildPipelineStepPrompt(
+          step,
+          feature,
+          previousContext,
+          prompts.taskExecution,
+        ),
         abortController,
         projectPath,
         undefined,
         model,
         {
           projectPath,
-          planningMode: 'skip',
+          planningMode: "skip",
           requirePlanApproval: false,
           previousContent: previousContext,
           systemPrompt: contextFilesPrompt || undefined,
@@ -137,14 +165,17 @@ export class PipelineOrchestrator {
           reasoningEffort: feature.reasoningEffort,
           status: currentStatus,
           providerId: feature.providerId,
-        }
+        },
       );
       try {
-        previousContext = (await secureFs.readFile(contextPath, 'utf-8')) as string;
+        previousContext = (await secureFs.readFile(
+          contextPath,
+          "utf-8",
+        )) as string;
       } catch {
         /* */
       }
-      this.eventBus.emitAutoModeEvent('pipeline_step_complete', {
+      this.eventBus.emitAutoModeEvent("pipeline_step_complete", {
         featureId,
         stepId: step.id,
         stepName: step.name,
@@ -163,7 +194,10 @@ export class PipelineOrchestrator {
     step: PipelineStep,
     feature: Feature,
     previousContext: string,
-    taskPrompts: { implementationInstructions: string; playwrightVerificationInstructions: string }
+    taskPrompts: {
+      implementationInstructions: string;
+      playwrightVerificationInstructions: string;
+    },
   ): string {
     let prompt = `## Pipeline Step: ${step.name}\n\nThis is an automated pipeline step.\n\n### Feature Context\n${this.buildFeaturePromptFn(feature, taskPrompts)}\n\n`;
     if (previousContext) prompt += `### Previous Work\n${previousContext}\n\n`;
@@ -187,7 +221,7 @@ export class PipelineOrchestrator {
   async detectPipelineStatus(
     projectPath: string,
     featureId: string,
-    currentStatus: FeatureStatusWithPipeline
+    currentStatus: FeatureStatusWithPipeline,
   ): Promise<PipelineStatusInfo> {
     const isPipeline = pipelineService.isPipelineStatus(currentStatus);
     if (!isPipeline)
@@ -211,7 +245,14 @@ export class PipelineOrchestrator {
       };
     const config = await pipelineService.getPipelineConfig(projectPath);
     if (!config || config.steps.length === 0)
-      return { isPipeline: true, stepId, stepIndex: -1, totalSteps: 0, step: null, config: null };
+      return {
+        isPipeline: true,
+        stepId,
+        stepIndex: -1,
+        totalSteps: 0,
+        step: null,
+        config: null,
+      };
     const sortedSteps = [...config.steps].sort((a, b) => a.order - b.order);
     const stepIndex = sortedSteps.findIndex((s) => s.id === stepId);
     return {
@@ -228,10 +269,13 @@ export class PipelineOrchestrator {
     projectPath: string,
     feature: Feature,
     useWorktrees: boolean,
-    pipelineInfo: PipelineStatusInfo
+    pipelineInfo: PipelineStatusInfo,
   ): Promise<void> {
     const featureId = feature.id;
-    const contextPath = path.join(getFeatureDir(projectPath, featureId), 'agent-output.md');
+    const contextPath = path.join(
+      getFeatureDir(projectPath, featureId),
+      "agent-output.md",
+    );
     let hasContext = false;
     try {
       await secureFs.access(contextPath);
@@ -242,38 +286,49 @@ export class PipelineOrchestrator {
 
     if (!hasContext) {
       logger.warn(`No context for feature ${featureId}, restarting pipeline`);
-      await this.updateFeatureStatusFn(projectPath, featureId, 'in_progress');
-      return this.executeFeatureFn(projectPath, featureId, useWorktrees, false, undefined, {
-        _calledInternally: true,
-      });
+      await this.updateFeatureStatusFn(projectPath, featureId, "in_progress");
+      return this.executeFeatureFn(
+        projectPath,
+        featureId,
+        useWorktrees,
+        false,
+        undefined,
+        {
+          _calledInternally: true,
+        },
+      );
     }
 
     if (pipelineInfo.stepIndex === -1) {
-      logger.warn(`Step ${pipelineInfo.stepId} no longer exists, completing feature`);
-      const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
+      logger.warn(
+        `Step ${pipelineInfo.stepId} no longer exists, completing feature`,
+      );
+      const finalStatus = feature.skipTests ? "waiting_approval" : "verified";
       await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
-      const runningEntryForStep = this.concurrencyManager.getRunningFeature(featureId);
+      const runningEntryForStep =
+        this.concurrencyManager.getRunningFeature(featureId);
       if (runningEntryForStep?.isAutoMode) {
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           featureName: feature.title,
           branchName: feature.branchName ?? null,
-          executionMode: 'auto',
+          executionMode: "auto",
           passes: true,
-          message: 'Pipeline step no longer exists',
+          message: "Pipeline step no longer exists",
           projectPath,
         });
       }
       return;
     }
 
-    if (!pipelineInfo.config) throw new Error('Pipeline config is null but stepIndex is valid');
+    if (!pipelineInfo.config)
+      throw new Error("Pipeline config is null but stepIndex is valid");
     return this.resumeFromStep(
       projectPath,
       feature,
       useWorktrees,
       pipelineInfo.stepIndex,
-      pipelineInfo.config
+      pipelineInfo.config,
     );
   }
 
@@ -283,10 +338,12 @@ export class PipelineOrchestrator {
     feature: Feature,
     useWorktrees: boolean,
     startFromStepIndex: number,
-    pipelineConfig: PipelineConfig
+    pipelineConfig: PipelineConfig,
   ): Promise<void> {
     const featureId = feature.id;
-    const allSortedSteps = [...pipelineConfig.steps].sort((a, b) => a.order - b.order);
+    const allSortedSteps = [...pipelineConfig.steps].sort(
+      (a, b) => a.order - b.order,
+    );
     if (startFromStepIndex < 0 || startFromStepIndex >= allSortedSteps.length)
       throw new Error(`Invalid step index: ${startFromStepIndex}`);
 
@@ -298,27 +355,31 @@ export class PipelineOrchestrator {
         `pipeline_${currentStep.id}`,
         pipelineConfig,
         feature.skipTests ?? false,
-        feature.excludedPipelineSteps
+        feature.excludedPipelineSteps,
       );
       if (!pipelineService.isPipelineStatus(nextStatus)) {
         await this.updateFeatureStatusFn(projectPath, featureId, nextStatus);
-        const runningEntryForExcluded = this.concurrencyManager.getRunningFeature(featureId);
+        const runningEntryForExcluded =
+          this.concurrencyManager.getRunningFeature(featureId);
         if (runningEntryForExcluded?.isAutoMode) {
-          this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+          this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
             featureId,
             featureName: feature.title,
             branchName: feature.branchName ?? null,
-            executionMode: 'auto',
+            executionMode: "auto",
             passes: true,
-            message: 'Pipeline completed (remaining steps excluded)',
+            message: "Pipeline completed (remaining steps excluded)",
             projectPath,
           });
         }
         return;
       }
       const nextStepId = pipelineService.getStepIdFromStatus(nextStatus);
-      const nextStepIndex = allSortedSteps.findIndex((s) => s.id === nextStepId);
-      if (nextStepIndex === -1) throw new Error(`Next step ${nextStepId} not found`);
+      const nextStepIndex = allSortedSteps.findIndex(
+        (s) => s.id === nextStepId,
+      );
+      if (nextStepIndex === -1)
+        throw new Error(`Next step ${nextStepId} not found`);
       startFromStepIndex = nextStepIndex;
     }
 
@@ -326,17 +387,18 @@ export class PipelineOrchestrator {
       .slice(startFromStepIndex)
       .filter((step) => !excludedStepIds.has(step.id));
     if (stepsToExecute.length === 0) {
-      const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
+      const finalStatus = feature.skipTests ? "waiting_approval" : "verified";
       await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
-      const runningEntryForAllExcluded = this.concurrencyManager.getRunningFeature(featureId);
+      const runningEntryForAllExcluded =
+        this.concurrencyManager.getRunningFeature(featureId);
       if (runningEntryForAllExcluded?.isAutoMode) {
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           featureName: feature.title,
           branchName: feature.branchName ?? null,
-          executionMode: 'auto',
+          executionMode: "auto",
           passes: true,
-          message: 'Pipeline completed (all steps excluded)',
+          message: "Pipeline completed (all steps excluded)",
           projectPath,
         });
       }
@@ -359,22 +421,30 @@ export class PipelineOrchestrator {
       const branchName = feature.branchName;
 
       if (useWorktrees && branchName) {
-        worktreePath = await this.worktreeResolver.findWorktreeForBranch(projectPath, branchName);
-        if (worktreePath) logger.info(`Using worktree for branch "${branchName}": ${worktreePath}`);
+        worktreePath = await this.worktreeResolver.findWorktreeForBranch(
+          projectPath,
+          branchName,
+        );
+        if (worktreePath)
+          logger.info(
+            `Using worktree for branch "${branchName}": ${worktreePath}`,
+          );
       }
 
-      const workDir = worktreePath ? path.resolve(worktreePath) : path.resolve(projectPath);
+      const workDir = worktreePath
+        ? path.resolve(worktreePath)
+        : path.resolve(projectPath);
       validateWorkingDirectory(workDir);
       runningEntry.worktreePath = worktreePath;
       runningEntry.branchName = branchName ?? null;
 
-      this.eventBus.emitAutoModeEvent('auto_mode_feature_start', {
+      this.eventBus.emitAutoModeEvent("auto_mode_feature_start", {
         featureId,
         projectPath,
         branchName: branchName ?? null,
         feature: {
           id: featureId,
-          title: feature.title || 'Resuming Pipeline',
+          title: feature.title || "Resuming Pipeline",
           description: feature.description,
         },
       });
@@ -382,13 +452,14 @@ export class PipelineOrchestrator {
       const autoLoadClaudeMd = await getAutoLoadClaudeMdSetting(
         projectPath,
         this.settingsService,
-        '[AutoMode]'
+        "[AutoMode]",
       );
-      const useClaudeCodeSystemPrompt = await getUseClaudeCodeSystemPromptSetting(
-        projectPath,
-        this.settingsService,
-        '[AutoMode]'
-      );
+      const useClaudeCodeSystemPrompt =
+        await getUseClaudeCodeSystemPromptSetting(
+          projectPath,
+          this.settingsService,
+          "[AutoMode]",
+        );
       const context: PipelineContext = {
         projectPath,
         featureId,
@@ -408,22 +479,25 @@ export class PipelineOrchestrator {
       pipelineCompleted = true;
 
       // Re-fetch feature to check if executePipeline set a terminal status (e.g., merge_conflict)
-      const reloadedFeature = await this.featureStateManager.loadFeature(projectPath, featureId);
-      const finalStatus = feature.skipTests ? 'waiting_approval' : 'verified';
+      const reloadedFeature = await this.featureStateManager.loadFeature(
+        projectPath,
+        featureId,
+      );
+      const finalStatus = feature.skipTests ? "waiting_approval" : "verified";
 
       // Only update status if not already in a terminal state
-      if (reloadedFeature && reloadedFeature.status !== 'merge_conflict') {
+      if (reloadedFeature && reloadedFeature.status !== "merge_conflict") {
         await this.updateFeatureStatusFn(projectPath, featureId, finalStatus);
       }
       logger.info(`Pipeline resume completed for feature ${featureId}`);
       if (runningEntry.isAutoMode) {
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           featureName: feature.title,
           branchName: feature.branchName ?? null,
-          executionMode: 'auto',
+          executionMode: "auto",
           passes: true,
-          message: 'Pipeline resumed successfully',
+          message: "Pipeline resumed successfully",
           projectPath,
         });
       }
@@ -442,33 +516,42 @@ export class PipelineOrchestrator {
       const errorInfo = classifyError(error);
       if (errorInfo.isAbort) {
         if (runningEntry.isAutoMode) {
-          this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+          this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
             featureId,
             featureName: feature.title,
             branchName: feature.branchName ?? null,
-            executionMode: 'auto',
+            executionMode: "auto",
             passes: false,
-            message: 'Pipeline stopped by user',
+            message: "Pipeline stopped by user",
             projectPath,
           });
         }
       } else {
         // If pipeline steps completed successfully, don't send the feature back to backlog.
         // The pipeline work is done — set to waiting_approval so the user can review.
-        const fallbackStatus = pipelineCompleted ? 'waiting_approval' : 'backlog';
+        const fallbackStatus = pipelineCompleted
+          ? "waiting_approval"
+          : "backlog";
         if (pipelineCompleted) {
           logger.info(
             `[resumeFromStep] Feature ${featureId} failed after pipeline completed. ` +
-              `Setting status to waiting_approval instead of backlog to preserve pipeline work.`
+              `Setting status to waiting_approval instead of backlog to preserve pipeline work.`,
           );
         }
         logger.error(`Pipeline resume failed for ${featureId}:`, error);
         // Don't overwrite terminal states like 'merge_conflict' that were set during pipeline execution
-        const currentFeature = await this.featureStateManager.loadFeature(projectPath, featureId);
-        if (currentFeature?.status !== 'merge_conflict') {
-          await this.updateFeatureStatusFn(projectPath, featureId, fallbackStatus);
+        const currentFeature = await this.featureStateManager.loadFeature(
+          projectPath,
+          featureId,
+        );
+        if (currentFeature?.status !== "merge_conflict") {
+          await this.updateFeatureStatusFn(
+            projectPath,
+            featureId,
+            fallbackStatus,
+          );
         }
-        this.eventBus.emitAutoModeEvent('auto_mode_error', {
+        this.eventBus.emitAutoModeEvent("auto_mode_error", {
           featureId,
           featureName: feature.title,
           branchName: feature.branchName ?? null,
@@ -483,31 +566,47 @@ export class PipelineOrchestrator {
   }
 
   /** Execute test step with agent fix loop (REQ-F07) */
-  async executeTestStep(context: PipelineContext, testCommand: string): Promise<StepResult> {
-    const { featureId, projectPath, workDir, abortController, maxTestAttempts } = context;
+  async executeTestStep(
+    context: PipelineContext,
+    testCommand: string,
+  ): Promise<StepResult> {
+    const {
+      featureId,
+      projectPath,
+      workDir,
+      abortController,
+      maxTestAttempts,
+    } = context;
 
     for (let attempt = 1; attempt <= maxTestAttempts; attempt++) {
       if (abortController.signal.aborted)
-        return { success: false, message: 'Test execution aborted' };
-      logger.info(`Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`);
+        return { success: false, message: "Test execution aborted" };
+      logger.info(
+        `Running tests for ${featureId} (attempt ${attempt}/${maxTestAttempts})`,
+      );
 
-      const testResult = await this.testRunnerService.startTests(workDir, { command: testCommand });
+      const testResult = await this.testRunnerService.startTests(workDir, {
+        command: testCommand,
+      });
       if (!testResult.success || !testResult.result?.sessionId)
         return {
           success: false,
           testsPassed: false,
-          message: testResult.error || 'Failed to start tests',
+          message: testResult.error || "Failed to start tests",
         };
 
       const completionResult = await this.waitForTestCompletion(
         testResult.result.sessionId,
-        abortController.signal
+        abortController.signal,
       );
-      if (completionResult.status === 'passed') return { success: true, testsPassed: true };
+      if (completionResult.status === "passed")
+        return { success: true, testsPassed: true };
 
-      const sessionOutput = this.testRunnerService.getSessionOutput(testResult.result.sessionId);
-      const scrollback = sessionOutput.result?.output || '';
-      this.eventBus.emitAutoModeEvent('pipeline_test_failed', {
+      const sessionOutput = this.testRunnerService.getSessionOutput(
+        testResult.result.sessionId,
+      );
+      const scrollback = sessionOutput.result?.output || "";
+      this.eventBus.emitAutoModeEvent("pipeline_test_failed", {
         featureId,
         attempt,
         maxAttempts: maxTestAttempts,
@@ -527,7 +626,7 @@ export class PipelineOrchestrator {
           undefined,
           {
             projectPath,
-            planningMode: 'skip',
+            planningMode: "skip",
             requirePlanApproval: false,
             useClaudeCodeSystemPrompt: context.useClaudeCodeSystemPrompt,
             autoLoadClaudeMd: context.autoLoadClaudeMd,
@@ -535,7 +634,7 @@ export class PipelineOrchestrator {
             reasoningEffort: context.feature.reasoningEffort,
             status: context.feature.status,
             providerId: context.feature.providerId,
-          }
+          },
         );
       }
     }
@@ -549,20 +648,28 @@ export class PipelineOrchestrator {
   /** Wait for test completion */
   private async waitForTestCompletion(
     sessionId: string,
-    signal: AbortSignal
-  ): Promise<{ status: TestRunStatus; exitCode: number | null; duration: number }> {
+    signal: AbortSignal,
+  ): Promise<{
+    status: TestRunStatus;
+    exitCode: number | null;
+    duration: number;
+  }> {
     return new Promise((resolve) => {
       const checkInterval = setInterval(() => {
         // Check for abort
         if (signal.aborted) {
           clearInterval(checkInterval);
           clearTimeout(timeoutId);
-          resolve({ status: 'failed', exitCode: null, duration: 0 });
+          resolve({ status: "failed", exitCode: null, duration: 0 });
           return;
         }
 
         const session = this.testRunnerService.getSession(sessionId);
-        if (session && session.status !== 'running' && session.status !== 'pending') {
+        if (
+          session &&
+          session.status !== "running" &&
+          session.status !== "pending"
+        ) {
           clearInterval(checkInterval);
           clearTimeout(timeoutId);
           resolve({
@@ -578,60 +685,74 @@ export class PipelineOrchestrator {
         // Check for abort before timeout resolution
         if (signal.aborted) {
           clearInterval(checkInterval);
-          resolve({ status: 'failed', exitCode: null, duration: 0 });
+          resolve({ status: "failed", exitCode: null, duration: 0 });
           return;
         }
         clearInterval(checkInterval);
-        resolve({ status: 'failed', exitCode: null, duration: 600000 });
+        resolve({ status: "failed", exitCode: null, duration: 600000 });
       }, 600000);
     });
   }
 
   /** Attempt to merge feature branch (REQ-F05) */
   async attemptMerge(context: PipelineContext): Promise<MergeResult> {
-    const { projectPath, featureId, branchName, worktreePath, feature } = context;
-    if (!branchName) return { success: false, error: 'No branch name for merge' };
+    const { projectPath, featureId, branchName, worktreePath, feature } =
+      context;
+    if (!branchName)
+      return { success: false, error: "No branch name for merge" };
 
-    logger.info(`Attempting auto-merge for feature ${featureId} (branch: ${branchName})`);
+    logger.info(
+      `Attempting auto-merge for feature ${featureId} (branch: ${branchName})`,
+    );
     try {
       // Get the primary branch dynamically instead of hardcoding 'main'
-      const targetBranch = await this.worktreeResolver.getCurrentBranch(projectPath);
+      const targetBranch =
+        await this.worktreeResolver.getCurrentBranch(projectPath);
 
       // Call merge service directly instead of HTTP fetch
       const result = await performMerge(
         projectPath,
         branchName,
         worktreePath || projectPath,
-        targetBranch || 'main',
+        targetBranch || "main",
         {
           deleteWorktreeAndBranch: false,
         },
-        this.eventBus.getUnderlyingEmitter()
+        this.eventBus.getUnderlyingEmitter(),
       );
 
       if (!result.success) {
         if (result.hasConflicts) {
-          await this.updateFeatureStatusFn(projectPath, featureId, 'merge_conflict');
-          this.eventBus.emitAutoModeEvent('pipeline_merge_conflict', {
+          await this.updateFeatureStatusFn(
+            projectPath,
+            featureId,
+            "merge_conflict",
+          );
+          this.eventBus.emitAutoModeEvent("pipeline_merge_conflict", {
             featureId,
             branchName,
             projectPath,
           });
-          return { success: false, hasConflicts: true, needsAgentResolution: true };
+          return {
+            success: false,
+            hasConflicts: true,
+            needsAgentResolution: true,
+          };
         }
         return { success: false, error: result.error };
       }
 
       logger.info(`Auto-merge successful for feature ${featureId}`);
-      const runningEntryForMerge = this.concurrencyManager.getRunningFeature(featureId);
+      const runningEntryForMerge =
+        this.concurrencyManager.getRunningFeature(featureId);
       if (runningEntryForMerge?.isAutoMode) {
-        this.eventBus.emitAutoModeEvent('auto_mode_feature_complete', {
+        this.eventBus.emitAutoModeEvent("auto_mode_feature_complete", {
           featureId,
           featureName: feature.title,
           branchName,
-          executionMode: 'auto',
+          executionMode: "auto",
           passes: true,
-          message: 'Pipeline completed and merged',
+          message: "Pipeline completed and merged",
           projectPath,
         });
       }
@@ -648,7 +769,7 @@ export class PipelineOrchestrator {
     passCount: number;
     failCount: number;
   } {
-    const lines = scrollback.split('\n');
+    const lines = scrollback.split("\n");
     const failedTests: string[] = [];
     let passCount = 0;
     let failCount = 0;
@@ -656,30 +777,32 @@ export class PipelineOrchestrator {
     let inFailureContext = false;
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.includes('FAIL') || trimmed.includes('FAILED')) {
+      if (trimmed.includes("FAIL") || trimmed.includes("FAILED")) {
         const match = trimmed.match(/(?:FAIL|FAILED)\s+(.+)/);
         if (match) failedTests.push(match[1].trim());
         failCount++;
         inFailureContext = true;
-      } else if (trimmed.includes('PASS') || trimmed.includes('PASSED')) {
+      } else if (trimmed.includes("PASS") || trimmed.includes("PASSED")) {
         passCount++;
         inFailureContext = false;
       }
       if (trimmed.match(/^>\s+.*\.(test|spec)\./)) {
-        failedTests.push(trimmed.replace(/^>\s+/, ''));
+        failedTests.push(trimmed.replace(/^>\s+/, ""));
       }
       // Only capture assertion details when they appear in failure context
       // or match explicit assertion error / expect patterns
-      if (trimmed.includes('AssertionError')) {
+      if (trimmed.includes("AssertionError")) {
         failedTests.push(trimmed);
       } else if (
         inFailureContext &&
-        /expect\(.+\)\.(toBe|toEqual|toMatch|toThrow|toContain)\s*\(/.test(trimmed)
+        /expect\(.+\)\.(toBe|toEqual|toMatch|toThrow|toContain)\s*\(/.test(
+          trimmed,
+        )
       ) {
         failedTests.push(trimmed);
       } else if (
         inFailureContext &&
-        (trimmed.startsWith('Expected') || trimmed.startsWith('Received'))
+        (trimmed.startsWith("Expected") || trimmed.startsWith("Received"))
       ) {
         failedTests.push(trimmed);
       }
@@ -690,9 +813,10 @@ export class PipelineOrchestrator {
 
   /** Build a concise test failure summary for the agent */
   buildTestFailureSummary(scrollback: string): string {
-    const { failedTests, passCount, failCount } = this.parseTestLines(scrollback);
+    const { failedTests, passCount, failCount } =
+      this.parseTestLines(scrollback);
     const unique = [...new Set(failedTests)].slice(0, 10);
-    return `Test Results: ${passCount} passed, ${failCount} failed.\n\nFailed tests:\n${unique.map((t) => `- ${t}`).join('\n')}\n\nOutput (last 2000 chars):\n${scrollback.slice(-2000)}`;
+    return `Test Results: ${passCount} passed, ${failCount} failed.\n\nFailed tests:\n${unique.map((t) => `- ${t}`).join("\n")}\n\nOutput (last 2000 chars):\n${scrollback.slice(-2000)}`;
   }
 
   /** Extract failed test names from scrollback */

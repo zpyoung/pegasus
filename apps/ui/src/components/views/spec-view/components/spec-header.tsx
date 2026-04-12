@@ -1,11 +1,18 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   HeaderActionsPanel,
   HeaderActionsPanelTrigger,
-} from '@/components/ui/header-actions-panel';
-import { Save, Sparkles, FileText, AlertCircle, ListPlus, RefreshCcw } from 'lucide-react';
-import { Spinner } from '@/components/ui/spinner';
-import { PHASE_LABELS } from '../constants';
+} from "@/components/ui/header-actions-panel";
+import {
+  Save,
+  Sparkles,
+  FileText,
+  AlertCircle,
+  ListPlus,
+  RefreshCcw,
+} from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { PHASE_LABELS } from "../constants";
 
 interface SpecHeaderProps {
   projectPath: string;
@@ -45,7 +52,8 @@ export function SpecHeader({
   onToggleActionsPanel,
   showSaveButton,
 }: SpecHeaderProps) {
-  const isProcessing = isRegenerating || isCreating || isGeneratingFeatures || isSyncing;
+  const isProcessing =
+    isRegenerating || isCreating || isGeneratingFeatures || isSyncing;
   const phaseLabel = PHASE_LABELS[currentPhase] || currentPhase;
 
   return (
@@ -55,7 +63,9 @@ export function SpecHeader({
           <FileText className="w-5 h-5 text-muted-foreground" />
           <div>
             <h1 className="text-xl font-bold">App Specification</h1>
-            <p className="text-sm text-muted-foreground">{projectPath}/.pegasus/app_spec.txt</p>
+            <p className="text-sm text-muted-foreground">
+              {projectPath}/.pegasus/app_spec.txt
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -69,12 +79,12 @@ export function SpecHeader({
               <div className="flex flex-col gap-1 min-w-0">
                 <span className="text-sm font-semibold text-primary leading-tight tracking-tight">
                   {isSyncing
-                    ? 'Syncing Specification'
+                    ? "Syncing Specification"
                     : isGeneratingFeatures
-                      ? 'Generating Features'
+                      ? "Generating Features"
                       : isCreating
-                        ? 'Generating Specification'
-                        : 'Regenerating Specification'}
+                        ? "Generating Specification"
+                        : "Regenerating Specification"}
                 </span>
                 {currentPhase && (
                   <span className="text-xs text-muted-foreground/90 leading-tight font-medium">
@@ -88,7 +98,9 @@ export function SpecHeader({
           {isProcessing && (
             <div className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
               <Spinner size="sm" />
-              <span className="text-xs font-medium text-primary">Processing...</span>
+              <span className="text-xs font-medium text-primary">
+                Processing...
+              </span>
             </div>
           )}
           {errorMessage && (
@@ -108,13 +120,20 @@ export function SpecHeader({
           {errorMessage && (
             <div className="lg:hidden flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
               <AlertCircle className="w-4 h-4 text-destructive" />
-              <span className="text-xs font-medium text-destructive">Error</span>
+              <span className="text-xs font-medium text-destructive">
+                Error
+              </span>
             </div>
           )}
           {/* Desktop: show actions inline - hidden when processing since status card shows progress */}
           {!isProcessing && (
             <div className="hidden lg:flex gap-2">
-              <Button size="sm" variant="outline" onClick={onSyncClick} data-testid="sync-spec">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onSyncClick}
+                data-testid="sync-spec"
+              >
                 <RefreshCcw className="w-4 h-4 mr-2" />
                 Sync
               </Button>
@@ -144,13 +163,20 @@ export function SpecHeader({
                   data-testid="save-spec"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
+                  {isSaving
+                    ? "Saving..."
+                    : hasChanges
+                      ? "Save Changes"
+                      : "Saved"}
                 </Button>
               )}
             </div>
           )}
           {/* Tablet/Mobile: show trigger for actions panel */}
-          <HeaderActionsPanelTrigger isOpen={showActionsPanel} onToggle={onToggleActionsPanel} />
+          <HeaderActionsPanelTrigger
+            isOpen={showActionsPanel}
+            onToggle={onToggleActionsPanel}
+          />
         </div>
       </div>
 
@@ -167,14 +193,18 @@ export function SpecHeader({
             <div className="flex flex-col gap-0.5 min-w-0">
               <span className="text-sm font-medium text-primary">
                 {isSyncing
-                  ? 'Syncing Specification'
+                  ? "Syncing Specification"
                   : isGeneratingFeatures
-                    ? 'Generating Features'
+                    ? "Generating Features"
                     : isCreating
-                      ? 'Generating Specification'
-                      : 'Regenerating Specification'}
+                      ? "Generating Specification"
+                      : "Regenerating Specification"}
               </span>
-              {currentPhase && <span className="text-xs text-muted-foreground">{phaseLabel}</span>}
+              {currentPhase && (
+                <span className="text-xs text-muted-foreground">
+                  {phaseLabel}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -182,8 +212,12 @@ export function SpecHeader({
           <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-sm font-medium text-destructive">Error</span>
-              <span className="text-xs text-destructive/80">{errorMessage}</span>
+              <span className="text-sm font-medium text-destructive">
+                Error
+              </span>
+              <span className="text-xs text-destructive/80">
+                {errorMessage}
+              </span>
             </div>
           </div>
         )}
@@ -225,7 +259,7 @@ export function SpecHeader({
                 data-testid="save-spec-mobile"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving...' : hasChanges ? 'Save Changes' : 'Saved'}
+                {isSaving ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
               </Button>
             )}
           </>

@@ -1,16 +1,20 @@
-import { useState } from 'react';
-import { Workflow, RotateCcw, Replace, Brain } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import { Button } from '@/components/ui/button';
-import { PhaseModelSelector } from './phase-model-selector';
-import { BulkReplaceDialog } from './bulk-replace-dialog';
-import type { PhaseModelKey, PhaseModelEntry, ThinkingLevel } from '@pegasus/types';
+import { useState } from "react";
+import { Workflow, RotateCcw, Replace, Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import { Button } from "@/components/ui/button";
+import { PhaseModelSelector } from "./phase-model-selector";
+import { BulkReplaceDialog } from "./bulk-replace-dialog";
+import type {
+  PhaseModelKey,
+  PhaseModelEntry,
+  ThinkingLevel,
+} from "@pegasus/types";
 import {
   DEFAULT_PHASE_MODELS,
   DEFAULT_GLOBAL_SETTINGS,
   REASONING_EFFORT_LEVELS,
-} from '@pegasus/types';
+} from "@pegasus/types";
 
 interface PhaseConfig {
   key: PhaseModelKey;
@@ -20,68 +24,68 @@ interface PhaseConfig {
 
 const QUICK_TASKS: PhaseConfig[] = [
   {
-    key: 'enhancementModel',
-    label: 'Feature Enhancement',
-    description: 'Improves feature names and descriptions',
+    key: "enhancementModel",
+    label: "Feature Enhancement",
+    description: "Improves feature names and descriptions",
   },
   {
-    key: 'fileDescriptionModel',
-    label: 'File Descriptions',
-    description: 'Generates descriptions for context files',
+    key: "fileDescriptionModel",
+    label: "File Descriptions",
+    description: "Generates descriptions for context files",
   },
   {
-    key: 'imageDescriptionModel',
-    label: 'Image Descriptions',
-    description: 'Analyzes and describes context images',
+    key: "imageDescriptionModel",
+    label: "Image Descriptions",
+    description: "Analyzes and describes context images",
   },
   {
-    key: 'commitMessageModel',
-    label: 'Commit Messages',
-    description: 'Generates git commit messages from diffs',
+    key: "commitMessageModel",
+    label: "Commit Messages",
+    description: "Generates git commit messages from diffs",
   },
 ];
 
 const VALIDATION_TASKS: PhaseConfig[] = [
   {
-    key: 'validationModel',
-    label: 'GitHub Issue Validation',
-    description: 'Validates and improves GitHub issues',
+    key: "validationModel",
+    label: "GitHub Issue Validation",
+    description: "Validates and improves GitHub issues",
   },
 ];
 
 const GENERATION_TASKS: PhaseConfig[] = [
   {
-    key: 'specGenerationModel',
-    label: 'App Specification',
-    description: 'Generates full application specifications',
+    key: "specGenerationModel",
+    label: "App Specification",
+    description: "Generates full application specifications",
   },
   {
-    key: 'featureGenerationModel',
-    label: 'Feature Generation',
-    description: 'Creates features from specifications',
+    key: "featureGenerationModel",
+    label: "Feature Generation",
+    description: "Creates features from specifications",
   },
   {
-    key: 'backlogPlanningModel',
-    label: 'Backlog Planning',
-    description: 'Reorganizes and prioritizes backlog',
+    key: "backlogPlanningModel",
+    label: "Backlog Planning",
+    description: "Reorganizes and prioritizes backlog",
   },
   {
-    key: 'projectAnalysisModel',
-    label: 'Project Analysis',
-    description: 'Analyzes project structure for suggestions',
+    key: "projectAnalysisModel",
+    label: "Project Analysis",
+    description: "Analyzes project structure for suggestions",
   },
   {
-    key: 'ideationModel',
-    label: 'Ideation',
-    description: 'Model for ideation view (generating AI suggestions)',
+    key: "ideationModel",
+    label: "Ideation",
+    description: "Model for ideation view (generating AI suggestions)",
   },
 ];
 
 const MEMORY_TASKS: PhaseConfig[] = [
   {
-    key: 'memoryExtractionModel',
-    label: 'Memory Extraction',
-    description: 'Extracts learnings from completed agent sessions',
+    key: "memoryExtractionModel",
+    label: "Memory Extraction",
+    description: "Extracts learnings from completed agent sessions",
   },
 ];
 
@@ -129,7 +133,9 @@ function FeatureDefaultModelSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Feature Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">
+          Feature Defaults
+        </h3>
         <p className="text-xs text-muted-foreground">
           Default model for new feature cards when created
         </p>
@@ -148,13 +154,29 @@ function FeatureDefaultModelSection() {
 }
 
 // Thinking level options with descriptions for the settings UI
-const THINKING_LEVEL_OPTIONS: { id: ThinkingLevel; label: string; description: string }[] = [
-  { id: 'none', label: 'None', description: 'No extended thinking' },
-  { id: 'low', label: 'Low', description: 'Light reasoning (1k tokens)' },
-  { id: 'medium', label: 'Medium', description: 'Moderate reasoning (10k tokens)' },
-  { id: 'high', label: 'High', description: 'Deep reasoning (16k tokens)' },
-  { id: 'ultrathink', label: 'Ultra', description: 'Maximum reasoning (32k tokens)' },
-  { id: 'adaptive', label: 'Adaptive', description: 'Model decides reasoning depth' },
+const THINKING_LEVEL_OPTIONS: {
+  id: ThinkingLevel;
+  label: string;
+  description: string;
+}[] = [
+  { id: "none", label: "None", description: "No extended thinking" },
+  { id: "low", label: "Low", description: "Light reasoning (1k tokens)" },
+  {
+    id: "medium",
+    label: "Medium",
+    description: "Moderate reasoning (10k tokens)",
+  },
+  { id: "high", label: "High", description: "Deep reasoning (16k tokens)" },
+  {
+    id: "ultrathink",
+    label: "Ultra",
+    description: "Maximum reasoning (32k tokens)",
+  },
+  {
+    id: "adaptive",
+    label: "Adaptive",
+    description: "Model decides reasoning depth",
+  },
 ];
 
 /**
@@ -173,19 +195,21 @@ function DefaultThinkingLevelSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-medium text-foreground">Quick-Select Defaults</h3>
+        <h3 className="text-sm font-medium text-foreground">
+          Quick-Select Defaults
+        </h3>
         <p className="text-xs text-muted-foreground">
-          Thinking/reasoning level applied when quick-selecting a model from the dropdown. You can
-          always fine-tune per model via the expand arrow.
+          Thinking/reasoning level applied when quick-selecting a model from the
+          dropdown. You can always fine-tune per model via the expand arrow.
         </p>
       </div>
       <div className="space-y-3">
         {/* Default Thinking Level (Claude models) */}
         <div
           className={cn(
-            'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl',
-            'bg-accent/20 border border-border/30',
-            'hover:bg-accent/30 transition-colors'
+            "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl",
+            "bg-accent/20 border border-border/30",
+            "hover:bg-accent/30 transition-colors",
           )}
         >
           <div className="flex items-center gap-3 flex-1">
@@ -193,7 +217,9 @@ function DefaultThinkingLevelSection() {
               <Brain className="w-4 h-4 text-purple-500" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-medium text-foreground">Default Thinking Level</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                Default Thinking Level
+              </h4>
               <p className="text-xs text-muted-foreground truncate">
                 Applied to Claude models when quick-selected
               </p>
@@ -205,11 +231,11 @@ function DefaultThinkingLevelSection() {
                 key={option.id}
                 onClick={() => setDefaultThinkingLevel(option.id)}
                 className={cn(
-                  'px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-all',
-                  'border whitespace-nowrap',
+                  "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-all",
+                  "border whitespace-nowrap",
                   defaultThinkingLevel === option.id
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
                 title={option.description}
               >
@@ -222,9 +248,9 @@ function DefaultThinkingLevelSection() {
         {/* Default Reasoning Effort (Codex models) */}
         <div
           className={cn(
-            'flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl',
-            'bg-accent/20 border border-border/30',
-            'hover:bg-accent/30 transition-colors'
+            "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl",
+            "bg-accent/20 border border-border/30",
+            "hover:bg-accent/30 transition-colors",
           )}
         >
           <div className="flex items-center gap-3 flex-1">
@@ -232,7 +258,9 @@ function DefaultThinkingLevelSection() {
               <Brain className="w-4 h-4 text-blue-500" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-medium text-foreground">Default Reasoning Effort</h4>
+              <h4 className="text-sm font-medium text-foreground">
+                Default Reasoning Effort
+              </h4>
               <p className="text-xs text-muted-foreground truncate">
                 Applied to Codex/OpenAI models when quick-selected
               </p>
@@ -244,11 +272,11 @@ function DefaultThinkingLevelSection() {
                 key={option.id}
                 onClick={() => setDefaultReasoningEffort(option.id)}
                 className={cn(
-                  'px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-all',
-                  'border whitespace-nowrap',
+                  "px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-medium transition-all",
+                  "border whitespace-nowrap",
                   defaultReasoningEffort === option.id
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground'
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background border-border/50 text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
                 title={option.description}
               >
@@ -268,15 +296,16 @@ export function ModelDefaultsSection() {
 
   // Check if there are any enabled ClaudeCompatibleProviders
   const hasEnabledProviders =
-    claudeCompatibleProviders && claudeCompatibleProviders.some((p) => p.enabled !== false);
+    claudeCompatibleProviders &&
+    claudeCompatibleProviders.some((p) => p.enabled !== false);
 
   return (
     <div
       className={cn(
-        'rounded-2xl overflow-hidden',
-        'border border-border/50',
-        'bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl',
-        'shadow-sm shadow-black/5'
+        "rounded-2xl overflow-hidden",
+        "border border-border/50",
+        "bg-gradient-to-br from-card/90 via-card/70 to-card/80 backdrop-blur-xl",
+        "shadow-sm shadow-black/5",
       )}
     >
       {/* Header */}
@@ -307,7 +336,12 @@ export function ModelDefaultsSection() {
                 Bulk Replace
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={resetPhaseModels} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetPhaseModels}
+              className="gap-2"
+            >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset to Defaults
             </Button>
@@ -316,7 +350,10 @@ export function ModelDefaultsSection() {
       </div>
 
       {/* Bulk Replace Dialog */}
-      <BulkReplaceDialog open={showBulkReplace} onOpenChange={setShowBulkReplace} />
+      <BulkReplaceDialog
+        open={showBulkReplace}
+        onOpenChange={setShowBulkReplace}
+      />
 
       {/* Content */}
       <div className="p-6 space-y-8">

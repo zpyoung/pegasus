@@ -1,9 +1,24 @@
-import { useEffect, Fragment, FocusEvent, KeyboardEvent, MouseEvent } from 'react';
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { Home, ArrowLeft, Pencil, ArrowRight, Search, Folder, File, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Kbd } from '@/components/ui/kbd';
+import {
+  useEffect,
+  Fragment,
+  FocusEvent,
+  KeyboardEvent,
+  MouseEvent,
+} from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
+import {
+  Home,
+  ArrowLeft,
+  Pencil,
+  ArrowRight,
+  Search,
+  Folder,
+  File,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Kbd } from "@/components/ui/kbd";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -11,7 +26,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+} from "@/components/ui/breadcrumb";
 import {
   Command,
   CommandInput,
@@ -19,8 +34,8 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from '@/components/ui/command';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface BreadcrumbSegment {
   name: string;
@@ -32,12 +47,12 @@ function parseBreadcrumbs(path: string): BreadcrumbSegment[] {
   if (!path) return [];
 
   // Handle root path on Unix-like systems
-  if (path === '/') {
-    return [{ name: '/', path: '/', isLast: true }];
+  if (path === "/") {
+    return [{ name: "/", path: "/", isLast: true }];
   }
 
   const segments = path.split(/[/\\]/).filter(Boolean);
-  const isWindows = segments[0]?.includes(':');
+  const isWindows = segments[0]?.includes(":");
 
   return segments.map((segment, index) => {
     let fullPath: string;
@@ -47,10 +62,10 @@ function parseBreadcrumbs(path: string): BreadcrumbSegment[] {
       if (index === 0) {
         fullPath = `${pathParts[0]}\\`;
       } else {
-        fullPath = pathParts.join('\\');
+        fullPath = pathParts.join("\\");
       }
     } else {
-      fullPath = '/' + segments.slice(0, index + 1).join('/');
+      fullPath = "/" + segments.slice(0, index + 1).join("/");
     }
 
     return {
@@ -97,8 +112,8 @@ function PathInput({
   parentPath,
   loading = false,
   error,
-  placeholder = 'Paste or type a full path (e.g., /home/user/projects/myapp)',
-  searchPlaceholder = 'Search...',
+  placeholder = "Paste or type a full path (e.g., /home/user/projects/myapp)",
+  searchPlaceholder = "Search...",
   onNavigate,
   onHome,
   className,
@@ -138,7 +153,7 @@ function PathInput({
     (path: string) => {
       onNavigate(path);
     },
-    [onNavigate]
+    [onNavigate],
   );
 
   const handleStartEditing = useCallback(() => {
@@ -156,7 +171,7 @@ function PathInput({
       }
       setIsEditing(false);
     },
-    [pathInput, currentPath]
+    [pathInput, currentPath],
   );
 
   const handleGoToPath = useCallback(() => {
@@ -169,17 +184,17 @@ function PathInput({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         e.preventDefault();
         handleGoToPath();
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         e.preventDefault();
         setPathInput(currentPath);
         setIsEditing(false);
         inputRef.current?.blur();
       }
     },
-    [handleGoToPath, currentPath]
+    [handleGoToPath, currentPath],
   );
 
   // Handle click on the path container to start editing
@@ -189,14 +204,14 @@ function PathInput({
       if (
         isEditing ||
         isSearchOpen ||
-        (e.target as HTMLElement).closest('button') ||
-        (e.target as HTMLElement).closest('a')
+        (e.target as HTMLElement).closest("button") ||
+        (e.target as HTMLElement).closest("a")
       ) {
         return;
       }
       setIsEditing(true);
     },
-    [isEditing, isSearchOpen]
+    [isEditing, isSearchOpen],
   );
 
   const handleSelectEntry = useCallback(
@@ -206,7 +221,7 @@ function PathInput({
       }
       setIsSearchOpen(false);
     },
-    [onSelectEntry]
+    [onSelectEntry],
   );
 
   // Global keyboard shortcut to activate search (/)
@@ -214,17 +229,19 @@ function PathInput({
     const handleGlobalKeyDown = (e: globalThis.KeyboardEvent) => {
       // Activate search with '/' key (unless in an input field or contenteditable)
       if (
-        e.key === '/' &&
+        e.key === "/" &&
         !isEditing &&
         !isSearchOpen &&
         entries.length > 0 &&
-        !(e.target as HTMLElement).matches('input, textarea, [contenteditable="true"]')
+        !(e.target as HTMLElement).matches(
+          'input, textarea, [contenteditable="true"]',
+        )
       ) {
         e.preventDefault();
         setIsSearchOpen(true);
       }
       // Close search with Escape key
-      if (e.key === 'Escape' && isSearchOpen) {
+      if (e.key === "Escape" && isSearchOpen) {
         e.preventDefault();
         e.stopPropagation(); // Stop propagation so parent modal doesn't close
         setIsSearchOpen(false);
@@ -233,8 +250,9 @@ function PathInput({
 
     // Use capture phase to intercept ESC before parent modal handlers
     // This allows us to close search first, then let ESC bubble to close modal on second press
-    window.addEventListener('keydown', handleGlobalKeyDown, true);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown, true);
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    return () =>
+      window.removeEventListener("keydown", handleGlobalKeyDown, true);
   }, [isEditing, isSearchOpen, entries.length]);
 
   // Close search when clicking outside
@@ -248,25 +266,34 @@ function PathInput({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSearchOpen]);
 
-  const breadcrumbs = useMemo(() => parseBreadcrumbs(currentPath), [currentPath]);
+  const breadcrumbs = useMemo(
+    () => parseBreadcrumbs(currentPath),
+    [currentPath],
+  );
 
   const entryItems = useMemo(
     () =>
       entries.map((entry) => (
-        <CommandItem key={entry.path} value={entry.name} onSelect={() => handleSelectEntry(entry)}>
+        <CommandItem
+          key={entry.path}
+          value={entry.name}
+          onSelect={() => handleSelectEntry(entry)}
+        >
           {entry.isDirectory ? (
             <Folder className="w-3.5 h-3.5 text-brand-500 mr-2" />
           ) : (
             <File className="w-3.5 h-3.5 text-muted-foreground mr-2" />
           )}
-          <span className="flex-1 truncate font-mono text-xs">{entry.name}</span>
+          <span className="flex-1 truncate font-mono text-xs">
+            {entry.name}
+          </span>
         </CommandItem>
       )),
-    [entries, handleSelectEntry]
+    [entries, handleSelectEntry],
   );
 
   const showBreadcrumbs = currentPath && !isEditing && !loading && !error;
@@ -274,7 +301,7 @@ function PathInput({
   return (
     <div
       ref={containerRef}
-      className={cn('flex items-center gap-2', className)}
+      className={cn("flex items-center gap-2", className)}
       role="navigation"
       aria-label="Path navigation"
     >
@@ -343,11 +370,11 @@ function PathInput({
         <div
           onClick={handleContainerClick}
           className={cn(
-            'flex items-center gap-2 min-w-0 h-8 px-3 rounded-md border bg-background/50 transition-colors',
+            "flex items-center gap-2 min-w-0 h-8 px-3 rounded-md border bg-background/50 transition-colors",
             error
-              ? 'border-destructive focus-within:border-destructive'
-              : 'border-input focus-within:border-ring focus-within:ring-1 focus-within:ring-ring',
-            !isEditing && !error && 'cursor-text hover:border-ring/50'
+              ? "border-destructive focus-within:border-destructive"
+              : "border-input focus-within:border-ring focus-within:ring-1 focus-within:ring-ring",
+            !isEditing && !error && "cursor-text hover:border-ring/50",
           )}
         >
           {showBreadcrumbs ? (

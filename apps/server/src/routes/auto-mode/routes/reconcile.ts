@@ -11,11 +11,11 @@
  * - An admin wants to force-reset stuck features
  */
 
-import type { Request, Response } from 'express';
-import { createLogger } from '@pegasus/utils';
-import type { AutoModeServiceCompat } from '../../../services/auto-mode/index.js';
+import type { Request, Response } from "express";
+import { createLogger } from "@pegasus/utils";
+import type { AutoModeServiceCompat } from "../../../services/auto-mode/index.js";
 
-const logger = createLogger('ReconcileFeatures');
+const logger = createLogger("ReconcileFeatures");
 
 interface ReconcileRequest {
   projectPath: string;
@@ -26,14 +26,15 @@ export function createReconcileHandler(autoModeService: AutoModeServiceCompat) {
     const { projectPath } = req.body as ReconcileRequest;
 
     if (!projectPath) {
-      res.status(400).json({ error: 'Project path is required' });
+      res.status(400).json({ error: "Project path is required" });
       return;
     }
 
     logger.info(`Reconciling feature states for ${projectPath}`);
 
     try {
-      const reconciledCount = await autoModeService.reconcileFeatureStates(projectPath);
+      const reconciledCount =
+        await autoModeService.reconcileFeatureStates(projectPath);
 
       res.json({
         success: true,
@@ -41,12 +42,12 @@ export function createReconcileHandler(autoModeService: AutoModeServiceCompat) {
         message:
           reconciledCount > 0
             ? `Reconciled ${reconciledCount} feature(s)`
-            : 'No features needed reconciliation',
+            : "No features needed reconciliation",
       });
     } catch (error) {
-      logger.error('Error reconciling feature states:', error);
+      logger.error("Error reconciling feature states:", error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   };

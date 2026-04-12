@@ -5,13 +5,13 @@
  * ensuring data integrity even during crashes or power failures.
  */
 
-import { secureFs } from '@pegasus/platform';
-import path from 'path';
-import crypto from 'crypto';
-import { createLogger } from './logger.js';
-import { mkdirSafe } from './fs-utils.js';
+import { secureFs } from "@pegasus/platform";
+import path from "path";
+import crypto from "crypto";
+import { createLogger } from "./logger.js";
+import { mkdirSafe } from "./fs-utils.js";
 
-const logger = createLogger('AtomicWriter');
+const logger = createLogger("AtomicWriter");
 
 /** Default maximum number of backup files to keep for crash recovery */
 export const DEFAULT_BACKUP_COUNT = 3;
@@ -37,7 +37,7 @@ export interface AtomicWriteOptions {
  */
 export async function rotateBackups(
   filePath: string,
-  maxBackups: number = DEFAULT_BACKUP_COUNT
+  maxBackups: number = DEFAULT_BACKUP_COUNT,
 ): Promise<void> {
   // Check if the source file exists before attempting backup
   try {
@@ -96,12 +96,12 @@ export async function rotateBackups(
 export async function atomicWriteJson<T>(
   filePath: string,
   data: T,
-  options: AtomicWriteOptions = {}
+  options: AtomicWriteOptions = {},
 ): Promise<void> {
   const { indent = 2, backupCount = 0 } = options;
   const resolvedPath = path.resolve(filePath);
   // Use timestamp + random suffix to ensure uniqueness even for concurrent writes
-  const uniqueSuffix = `${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+  const uniqueSuffix = `${Date.now()}.${crypto.randomBytes(4).toString("hex")}`;
   const tempPath = `${resolvedPath}.tmp.${uniqueSuffix}`;
 
   // Always ensure parent directories exist before writing the temp file
@@ -116,7 +116,7 @@ export async function atomicWriteJson<T>(
       await rotateBackups(resolvedPath, backupCount);
     }
 
-    await secureFs.writeFile(tempPath, content, 'utf-8');
+    await secureFs.writeFile(tempPath, content, "utf-8");
     await secureFs.rename(tempPath, resolvedPath);
   } catch (error) {
     // Clean up temp file if it exists
@@ -146,15 +146,18 @@ export async function atomicWriteJson<T>(
  * const config = await readJsonFile('/path/to/config.json', { version: 1 });
  * ```
  */
-export async function readJsonFile<T>(filePath: string, defaultValue: T): Promise<T> {
+export async function readJsonFile<T>(
+  filePath: string,
+  defaultValue: T,
+): Promise<T> {
   const resolvedPath = path.resolve(filePath);
 
   try {
-    const content = (await secureFs.readFile(resolvedPath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(resolvedPath, "utf-8")) as string;
     return JSON.parse(content) as T;
   } catch (error) {
     const nodeError = error as NodeJS.ErrnoException;
-    if (nodeError.code === 'ENOENT') {
+    if (nodeError.code === "ENOENT") {
       return defaultValue;
     }
     logger.error(`Error reading JSON from ${resolvedPath}:`, error);
@@ -188,7 +191,7 @@ export async function updateJsonAtomically<T>(
   filePath: string,
   defaultValue: T,
   updater: (current: T) => T | Promise<T>,
-  options: AtomicWriteOptions = {}
+  options: AtomicWriteOptions = {},
 ): Promise<void> {
   const current = await readJsonFile(filePath, defaultValue);
   const updated = await updater(current);
@@ -204,7 +207,7 @@ export interface ReadJsonRecoveryResult<T> {
   /** Whether recovery was needed (main file was corrupted or missing) */
   recovered: boolean;
   /** Source of the data: 'main', 'backup', 'temp', or 'default' */
-  source: 'main' | 'backup' | 'temp' | 'default';
+  source: "main" | "backup" | "temp" | "default";
   /** Error message if the main file had an issue */
   error?: string;
 }
@@ -237,10 +240,12 @@ export interface ReadJsonRecoveryOptions {
 export function logRecoveryWarning<T>(
   result: ReadJsonRecoveryResult<T>,
   identifier: string,
-  loggerInstance: { warn: (msg: string, ...args: unknown[]) => void } = logger
+  loggerInstance: { warn: (msg: string, ...args: unknown[]) => void } = logger,
 ): void {
-  if (result.recovered && result.source !== 'default') {
-    loggerInstance.warn(`${identifier} was recovered from ${result.source}: ${result.error}`);
+  if (result.recovered && result.source !== "default") {
+    loggerInstance.warn(
+      `${identifier} was recovered from ${result.source}: ${result.error}`,
+    );
   }
 }
 
@@ -272,7 +277,7 @@ export function logRecoveryWarning<T>(
 export async function readJsonWithRecovery<T>(
   filePath: string,
   defaultValue: T,
-  options: ReadJsonRecoveryOptions = {}
+  options: ReadJsonRecoveryOptions = {},
 ): Promise<ReadJsonRecoveryResult<T>> {
   const { maxBackups = 3, autoRestore = true } = options;
   const resolvedPath = path.resolve(filePath);
@@ -281,14 +286,14 @@ export async function readJsonWithRecovery<T>(
 
   // Try to read the main file first
   try {
-    const content = (await secureFs.readFile(resolvedPath, 'utf-8')) as string;
+    const content = (await secureFs.readFile(resolvedPath, "utf-8")) as string;
     const data = JSON.parse(content) as T;
-    return { data, recovered: false, source: 'main' };
+    return { data, recovered: false, source: "main" };
   } catch (mainError) {
     const nodeError = mainError as NodeJS.ErrnoException;
     const errorMessage =
-      nodeError.code === 'ENOENT'
-        ? 'File does not exist'
+      nodeError.code === "ENOENT"
+        ? "File does not exist"
         : `Failed to parse: ${mainError instanceof Error ? mainError.message : String(mainError)}`;
 
     // If file doesn't exist, check for temp files or backups
@@ -305,7 +310,10 @@ export async function readJsonWithRecovery<T>(
       for (const tempFile of tempFiles) {
         const tempPath = path.join(dirPath, tempFile);
         try {
-          const content = (await secureFs.readFile(tempPath, 'utf-8')) as string;
+          const content = (await secureFs.readFile(
+            tempPath,
+            "utf-8",
+          )) as string;
           const data = JSON.parse(content) as T;
 
           logger.info(`Recovered data from temp file: ${tempPath}`);
@@ -316,11 +324,13 @@ export async function readJsonWithRecovery<T>(
               await secureFs.rename(tempPath, resolvedPath);
               logger.info(`Restored main file from temp: ${tempPath}`);
             } catch (restoreError) {
-              logger.warn(`Failed to restore main file from temp: ${restoreError}`);
+              logger.warn(
+                `Failed to restore main file from temp: ${restoreError}`,
+              );
             }
           }
 
-          return { data, recovered: true, source: 'temp', error: errorMessage };
+          return { data, recovered: true, source: "temp", error: errorMessage };
         } catch {
           // This temp file is also corrupted, try next
           continue;
@@ -334,7 +344,10 @@ export async function readJsonWithRecovery<T>(
     for (let i = 1; i <= maxBackups; i++) {
       const backupPath = `${resolvedPath}.bak${i}`;
       try {
-        const content = (await secureFs.readFile(backupPath, 'utf-8')) as string;
+        const content = (await secureFs.readFile(
+          backupPath,
+          "utf-8",
+        )) as string;
         const data = JSON.parse(content) as T;
 
         logger.info(`Recovered data from backup: ${backupPath}`);
@@ -345,11 +358,13 @@ export async function readJsonWithRecovery<T>(
             await secureFs.copyFile(backupPath, resolvedPath);
             logger.info(`Restored main file from backup: ${backupPath}`);
           } catch (restoreError) {
-            logger.warn(`Failed to restore main file from backup: ${restoreError}`);
+            logger.warn(
+              `Failed to restore main file from backup: ${restoreError}`,
+            );
           }
         }
 
-        return { data, recovered: true, source: 'backup', error: errorMessage };
+        return { data, recovered: true, source: "backup", error: errorMessage };
       } catch {
         // This backup doesn't exist or is corrupted, try next
         continue;
@@ -357,7 +372,14 @@ export async function readJsonWithRecovery<T>(
     }
 
     // All recovery attempts failed, return default
-    logger.warn(`All recovery attempts failed for ${resolvedPath}, using default value`);
-    return { data: defaultValue, recovered: true, source: 'default', error: errorMessage };
+    logger.warn(
+      `All recovery attempts failed for ${resolvedPath}, using default value`,
+    );
+    return {
+      data: defaultValue,
+      recovered: true,
+      source: "default",
+      error: errorMessage,
+    };
   }
 }

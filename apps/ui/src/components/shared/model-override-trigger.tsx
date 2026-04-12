@@ -1,13 +1,18 @@
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
-import type { ModelAlias, CursorModelId, PhaseModelKey, PhaseModelEntry } from '@pegasus/types';
-import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
+import type {
+  ModelAlias,
+  CursorModelId,
+  PhaseModelKey,
+  PhaseModelEntry,
+} from "@pegasus/types";
+import { PhaseModelSelector } from "@/components/views/settings-view/model-defaults/phase-model-selector";
 
 /**
  * Normalize PhaseModelEntry or string to PhaseModelEntry
  */
 function normalizeEntry(entry: PhaseModelEntry | string): PhaseModelEntry {
-  if (typeof entry === 'string') {
+  if (typeof entry === "string") {
     return { model: entry as ModelAlias | CursorModelId };
   }
   return entry;
@@ -21,9 +26,9 @@ export interface ModelOverrideTriggerProps {
   /** Optional: which phase this is for (shows global default) */
   phase?: PhaseModelKey;
   /** Size variants for different contexts */
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   /** Show as icon-only or with label */
-  variant?: 'icon' | 'button' | 'inline';
+  variant?: "icon" | "button" | "inline";
   /** Whether the model is currently overridden from global */
   isOverridden?: boolean;
   /** Optional class name */
@@ -34,8 +39,8 @@ export function ModelOverrideTrigger({
   currentModelEntry,
   onModelChange,
   phase,
-  size = 'sm',
-  variant = 'icon',
+  size = "sm",
+  variant = "icon",
   isOverridden = false,
   className,
 }: ModelOverrideTriggerProps) {
@@ -51,7 +56,8 @@ export function ModelOverrideTrigger({
       // Compare models, thinking levels, and provider IDs
       const modelsMatch = entry.model === normalizedGlobal.model;
       const thinkingMatch =
-        (entry.thinkingLevel || 'none') === (normalizedGlobal.thinkingLevel || 'none');
+        (entry.thinkingLevel || "none") ===
+        (normalizedGlobal.thinkingLevel || "none");
       const providerMatch = entry.providerId === normalizedGlobal.providerId;
 
       if (modelsMatch && thinkingMatch && providerMatch) {
@@ -66,27 +72,27 @@ export function ModelOverrideTrigger({
 
   // Size classes for icon variant
   const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-8 w-8',
-    lg: 'h-10 w-10',
+    sm: "h-6 w-6",
+    md: "h-8 w-8",
+    lg: "h-10 w-10",
   };
 
   // For icon variant, wrap PhaseModelSelector and hide text/chevron with CSS
-  if (variant === 'icon') {
+  if (variant === "icon") {
     return (
-      <div className={cn('relative inline-block', className)}>
+      <div className={cn("relative inline-block", className)}>
         <div className="relative [&_button>span]:hidden [&_button>svg:last-child]:hidden [&_button]:p-0 [&_button]:min-w-0 [&_button]:w-auto [&_button]:h-auto [&_button]:border-0 [&_button]:bg-transparent">
           <PhaseModelSelector
             value={currentModelEntry}
             onChange={handleChange}
             compact
             triggerClassName={cn(
-              'relative rounded-md',
-              'transition-colors duration-150',
-              'text-muted-foreground hover:text-foreground',
-              'hover:bg-accent/50',
+              "relative rounded-md",
+              "transition-colors duration-150",
+              "text-muted-foreground hover:text-foreground",
+              "hover:bg-accent/50",
               sizeClasses[size],
-              className
+              className,
             )}
             disabled={false}
             align="end"
@@ -101,12 +107,12 @@ export function ModelOverrideTrigger({
 
   // For button and inline variants, use PhaseModelSelector in compact mode
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn("relative", className)}>
       <PhaseModelSelector
         value={currentModelEntry}
         onChange={handleChange}
         compact
-        triggerClassName={variant === 'button' ? className : undefined}
+        triggerClassName={variant === "button" ? className : undefined}
         disabled={false}
       />
       {isOverridden && (

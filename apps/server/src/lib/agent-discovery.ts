@@ -8,18 +8,18 @@
  * Similar to Skills, but for custom subagents defined in AGENT.md files.
  */
 
-import path from 'path';
-import os from 'os';
-import { createLogger } from '@pegasus/utils';
-import { secureFs, systemPaths } from '@pegasus/platform';
-import type { AgentDefinition } from '@pegasus/types';
+import path from "path";
+import os from "os";
+import { createLogger } from "@pegasus/utils";
+import { secureFs, systemPaths } from "@pegasus/platform";
+import type { AgentDefinition } from "@pegasus/types";
 
-const logger = createLogger('AgentDiscovery');
+const logger = createLogger("AgentDiscovery");
 
 export interface FilesystemAgent {
   name: string; // Directory name (e.g., 'code-reviewer')
   definition: AgentDefinition;
-  source: 'user' | 'project';
+  source: "user" | "project";
   filePath: string; // Full path to AGENT.md
 }
 
@@ -34,7 +34,10 @@ export interface FilesystemAgent {
  * ---
  * System prompt content here...
  */
-function parseAgentContent(content: string, filePath: string): AgentDefinition | null {
+function parseAgentContent(
+  content: string,
+  filePath: string,
+): AgentDefinition | null {
   // Extract frontmatter
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!frontmatterMatch) {
@@ -57,21 +60,22 @@ function parseAgentContent(content: string, filePath: string): AgentDefinition |
     ? toolsMatch[1]
         .split(/[,\s]+/) // Split by comma or whitespace
         .map((t) => t.trim())
-        .filter((t) => t && t !== '')
+        .filter((t) => t && t !== "")
     : undefined;
 
   // Parse model (optional) - validate against allowed values
   const modelMatch = frontmatter.match(/model:\s*(\w+)/);
   const modelValue = modelMatch?.[1]?.trim();
-  const validModels = ['sonnet', 'opus', 'haiku', 'inherit'] as const;
+  const validModels = ["sonnet", "opus", "haiku", "inherit"] as const;
   const model =
-    modelValue && validModels.includes(modelValue as (typeof validModels)[number])
-      ? (modelValue as 'sonnet' | 'opus' | 'haiku' | 'inherit')
+    modelValue &&
+    validModels.includes(modelValue as (typeof validModels)[number])
+      ? (modelValue as "sonnet" | "opus" | "haiku" | "inherit")
       : undefined;
 
   if (modelValue && !model) {
     logger.warn(
-      `Invalid model "${modelValue}" in agent file: ${filePath}. Expected one of: ${validModels.join(', ')}`
+      `Invalid model "${modelValue}" in agent file: ${filePath}. Expected one of: ${validModels.join(", ")}`,
     );
   }
 
@@ -106,7 +110,8 @@ interface FsAdapter {
  */
 function createSystemPathAdapter(): FsAdapter {
   return {
-    exists: (filePath) => Promise.resolve(systemPaths.systemPathExists(filePath)),
+    exists: (filePath) =>
+      Promise.resolve(systemPaths.systemPathExists(filePath)),
     readdir: async (dirPath) => {
       const entryNames = await systemPaths.systemPathReaddir(dirPath);
       const entries: DirEntry[] = [];
@@ -120,7 +125,8 @@ function createSystemPathAdapter(): FsAdapter {
       }
       return entries;
     },
-    readFile: (filePath) => systemPaths.systemPathReadFile(filePath, 'utf-8') as Promise<string>,
+    readFile: (filePath) =>
+      systemPaths.systemPathReadFile(filePath, "utf-8") as Promise<string>,
   };
 }
 
@@ -142,7 +148,8 @@ function createSecureFsAdapter(): FsAdapter {
         isDirectory: entry.isDirectory(),
       }));
     },
-    readFile: (filePath) => secureFs.readFile(filePath, 'utf-8') as Promise<string>,
+    readFile: (filePath) =>
+      secureFs.readFile(filePath, "utf-8") as Promise<string>,
   };
 }
 
@@ -151,7 +158,7 @@ function createSecureFsAdapter(): FsAdapter {
  */
 async function parseAgentFileWithAdapter(
   filePath: string,
-  fsAdapter: FsAdapter
+  fsAdapter: FsAdapter,
 ): Promise<AgentDefinition | null> {
   try {
     const content = await fsAdapter.readFile(filePath);
@@ -170,10 +177,11 @@ async function parseAgentFileWithAdapter(
  */
 async function scanAgentsDirectory(
   baseDir: string,
-  source: 'user' | 'project'
+  source: "user" | "project",
 ): Promise<FilesystemAgent[]> {
   const agents: FilesystemAgent[] = [];
-  const fsAdapter = source === 'user' ? createSystemPathAdapter() : createSecureFsAdapter();
+  const fsAdapter =
+    source === "user" ? createSystemPathAdapter() : createSecureFsAdapter();
 
   try {
     // Check if directory exists
@@ -188,10 +196,13 @@ async function scanAgentsDirectory(
 
     for (const entry of entries) {
       // Check for flat .md file format (agent-name.md)
-      if (entry.isFile && entry.name.endsWith('.md')) {
+      if (entry.isFile && entry.name.endsWith(".md")) {
         const agentName = entry.name.slice(0, -3); // Remove .md extension
         const agentFilePath = path.join(baseDir, entry.name);
-        const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter);
+        const definition = await parseAgentFileWithAdapter(
+          agentFilePath,
+          fsAdapter,
+        );
         if (definition) {
           agents.push({
             name: agentName,
@@ -204,11 +215,14 @@ async function scanAgentsDirectory(
       }
       // Check for subdirectory format (agent-name/AGENT.md)
       else if (entry.isDirectory) {
-        const agentFilePath = path.join(baseDir, entry.name, 'AGENT.md');
+        const agentFilePath = path.join(baseDir, entry.name, "AGENT.md");
         const agentFileExists = await fsAdapter.exists(agentFilePath);
 
         if (agentFileExists) {
-          const definition = await parseAgentFileWithAdapter(agentFilePath, fsAdapter);
+          const definition = await parseAgentFileWithAdapter(
+            agentFilePath,
+            fsAdapter,
+          );
           if (definition) {
             agents.push({
               name: entry.name,
@@ -216,7 +230,9 @@ async function scanAgentsDirectory(
               source,
               filePath: agentFilePath,
             });
-            logger.debug(`Discovered ${source} agent (subdirectory): ${entry.name}`);
+            logger.debug(
+              `Discovered ${source} agent (subdirectory): ${entry.name}`,
+            );
           }
         }
       }
@@ -233,24 +249,31 @@ async function scanAgentsDirectory(
  */
 export async function discoverFilesystemAgents(
   projectPath?: string,
-  sources: Array<'user' | 'project'> = ['user', 'project']
+  sources: Array<"user" | "project"> = ["user", "project"],
 ): Promise<FilesystemAgent[]> {
   const agents: FilesystemAgent[] = [];
 
   // Discover user-level agents from ~/.claude/agents/
-  if (sources.includes('user')) {
-    const userAgentsDir = path.join(os.homedir(), '.claude', 'agents');
-    const userAgents = await scanAgentsDirectory(userAgentsDir, 'user');
+  if (sources.includes("user")) {
+    const userAgentsDir = path.join(os.homedir(), ".claude", "agents");
+    const userAgents = await scanAgentsDirectory(userAgentsDir, "user");
     agents.push(...userAgents);
-    logger.info(`Discovered ${userAgents.length} user-level agents from ${userAgentsDir}`);
+    logger.info(
+      `Discovered ${userAgents.length} user-level agents from ${userAgentsDir}`,
+    );
   }
 
   // Discover project-level agents from .claude/agents/
-  if (sources.includes('project') && projectPath) {
-    const projectAgentsDir = path.join(projectPath, '.claude', 'agents');
-    const projectAgents = await scanAgentsDirectory(projectAgentsDir, 'project');
+  if (sources.includes("project") && projectPath) {
+    const projectAgentsDir = path.join(projectPath, ".claude", "agents");
+    const projectAgents = await scanAgentsDirectory(
+      projectAgentsDir,
+      "project",
+    );
     agents.push(...projectAgents);
-    logger.info(`Discovered ${projectAgents.length} project-level agents from ${projectAgentsDir}`);
+    logger.info(
+      `Discovered ${projectAgents.length} project-level agents from ${projectAgentsDir}`,
+    );
   }
 
   return agents;

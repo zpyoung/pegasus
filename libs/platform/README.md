@@ -31,22 +31,22 @@ import {
   getAppSpecPath,
   getBranchTrackingPath,
   ensurePegasusDir,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 
 // Get Pegasus directory: /project/.pegasus
-const pegasusDir = getPegasusDir('/project/path');
+const pegasusDir = getPegasusDir("/project/path");
 
 // Get features directory: /project/.pegasus/features
-const featuresDir = getFeaturesDir('/project/path');
+const featuresDir = getFeaturesDir("/project/path");
 
 // Get specific feature directory: /project/.pegasus/features/feature-id
-const featureDir = getFeatureDir('/project/path', 'feature-id');
+const featureDir = getFeatureDir("/project/path", "feature-id");
 
 // Get feature images: /project/.pegasus/features/feature-id/images
-const imagesDir = getFeatureImagesDir('/project/path', 'feature-id');
+const imagesDir = getFeatureImagesDir("/project/path", "feature-id");
 
 // Ensure .pegasus directory exists
-await ensurePegasusDir('/project/path');
+await ensurePegasusDir("/project/path");
 ```
 
 ### Subprocess Management
@@ -54,22 +54,22 @@ await ensurePegasusDir('/project/path');
 Spawn and manage subprocesses with JSON-lines output.
 
 ```typescript
-import { spawnJSONLProcess, spawnProcess } from '@pegasus/platform';
+import { spawnJSONLProcess, spawnProcess } from "@pegasus/platform";
 
 // Spawn process with JSONL output parsing
 const result = await spawnJSONLProcess({
-  command: 'claude-agent',
-  args: ['--output', 'jsonl'],
-  cwd: '/project/path',
-  onLine: (data) => console.log('Received:', data),
-  onError: (error) => console.error('Error:', error),
+  command: "claude-agent",
+  args: ["--output", "jsonl"],
+  cwd: "/project/path",
+  onLine: (data) => console.log("Received:", data),
+  onError: (error) => console.error("Error:", error),
 });
 
 // Spawn regular process
 const output = await spawnProcess({
-  command: 'git',
-  args: ['status'],
-  cwd: '/project/path',
+  command: "git",
+  args: ["status"],
+  cwd: "/project/path",
 });
 ```
 
@@ -86,23 +86,23 @@ import {
   getAllowedRootDirectory,
   getDataDirectory,
   PathNotAllowedError,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 
 // Initialize allowed paths from environment
 // Reads ALLOWED_ROOT_DIRECTORY and DATA_DIR environment variables
 initAllowedPaths();
 
 // Check if path is allowed
-if (isPathAllowed('/project/path')) {
-  console.log('Path is allowed');
+if (isPathAllowed("/project/path")) {
+  console.log("Path is allowed");
 }
 
 // Validate and normalize path (throws PathNotAllowedError if not allowed)
 try {
-  const safePath = validatePath('/requested/path');
+  const safePath = validatePath("/requested/path");
 } catch (error) {
   if (error instanceof PathNotAllowedError) {
-    console.error('Access denied:', error.message);
+    console.error("Access denied:", error.message);
   }
 }
 
@@ -120,7 +120,7 @@ import {
   ensurePegasusDir,
   spawnJSONLProcess,
   validatePath,
-} from '@pegasus/platform';
+} from "@pegasus/platform";
 
 async function executeFeature(projectPath: string, featureId: string) {
   // Validate project path
@@ -134,12 +134,12 @@ async function executeFeature(projectPath: string, featureId: string) {
 
   // Execute agent in feature directory
   const result = await spawnJSONLProcess({
-    command: 'claude-agent',
-    args: ['execute'],
+    command: "claude-agent",
+    args: ["execute"],
     cwd: featureDir,
     onLine: (data) => {
-      if (data.type === 'progress') {
-        console.log('Progress:', data.progress);
+      if (data.type === "progress") {
+        console.log("Progress:", data.progress);
       }
     },
   });
@@ -181,12 +181,12 @@ DATA_DIR=/app/data
 The `secureFs` module wraps Node.js `fs` operations with path validation:
 
 ```typescript
-import { secureFs } from '@pegasus/platform';
+import { secureFs } from "@pegasus/platform";
 
 // All operations validate paths before execution
-await secureFs.readFile('/workspace/project/file.txt');
-await secureFs.writeFile('/workspace/project/output.txt', data);
-await secureFs.mkdir('/workspace/project/new-dir', { recursive: true });
+await secureFs.readFile("/workspace/project/file.txt");
+await secureFs.writeFile("/workspace/project/output.txt", data);
+await secureFs.mkdir("/workspace/project/new-dir", { recursive: true });
 ```
 
 ## Directory Structure

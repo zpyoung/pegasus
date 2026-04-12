@@ -13,40 +13,40 @@
  * - Security: prevents path traversal outside project root
  */
 
-import type { Request, Response } from 'express';
-import * as secureFs from '../../../lib/secure-fs.js';
-import path from 'path';
-import { PathNotAllowedError } from '@pegasus/platform';
-import { getErrorMessage, logError } from '../common.js';
+import type { Request, Response } from "express";
+import * as secureFs from "../../../lib/secure-fs.js";
+import path from "path";
+import { PathNotAllowedError } from "@pegasus/platform";
+import { getErrorMessage, logError } from "../common.js";
 
 // Directories to hide from the listing (build artifacts, caches, etc.)
 const HIDDEN_DIRECTORIES = new Set([
-  '.git',
-  '.worktrees',
-  'node_modules',
-  '.pegasus',
-  '__pycache__',
-  '.cache',
-  '.next',
-  '.nuxt',
-  '.svelte-kit',
-  '.turbo',
-  '.vercel',
-  '.output',
-  'coverage',
-  '.nyc_output',
-  'dist',
-  'build',
-  'out',
-  '.tmp',
-  'tmp',
-  '.venv',
-  'venv',
-  'target',
-  'vendor',
-  '.gradle',
-  '.idea',
-  '.vscode',
+  ".git",
+  ".worktrees",
+  "node_modules",
+  ".pegasus",
+  "__pycache__",
+  ".cache",
+  ".next",
+  ".nuxt",
+  ".svelte-kit",
+  ".turbo",
+  ".vercel",
+  ".output",
+  "coverage",
+  ".nyc_output",
+  "dist",
+  "build",
+  "out",
+  ".tmp",
+  "tmp",
+  ".venv",
+  "venv",
+  "target",
+  "vendor",
+  ".gradle",
+  ".idea",
+  ".vscode",
 ]);
 
 interface ProjectFileEntry {
@@ -65,7 +65,9 @@ export function createBrowseProjectFilesHandler() {
       };
 
       if (!projectPath) {
-        res.status(400).json({ success: false, error: 'projectPath is required' });
+        res
+          .status(400)
+          .json({ success: false, error: "projectPath is required" });
         return;
       }
 
@@ -73,15 +75,16 @@ export function createBrowseProjectFilesHandler() {
 
       // Determine the target directory to browse
       let targetPath = resolvedProjectPath;
-      let currentRelativePath = '';
+      let currentRelativePath = "";
 
       if (relativePath) {
         // Security: normalize and validate the relative path
         const normalized = path.normalize(relativePath);
-        if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+        if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
           res.status(400).json({
             success: false,
-            error: 'Invalid relative path - must be within the project directory',
+            error:
+              "Invalid relative path - must be within the project directory",
           });
           return;
         }
@@ -95,10 +98,13 @@ export function createBrowseProjectFilesHandler() {
         const projectPrefix = resolvedProjectPath.endsWith(path.sep)
           ? resolvedProjectPath
           : resolvedProjectPath + path.sep;
-        if (!resolvedTarget.startsWith(projectPrefix) && resolvedTarget !== resolvedProjectPath) {
+        if (
+          !resolvedTarget.startsWith(projectPrefix) &&
+          resolvedTarget !== resolvedProjectPath
+        ) {
           res.status(400).json({
             success: false,
-            error: 'Path traversal detected',
+            error: "Path traversal detected",
           });
           return;
         }
@@ -108,19 +114,23 @@ export function createBrowseProjectFilesHandler() {
       let parentRelativePath: string | null = null;
       if (currentRelativePath) {
         const parent = path.dirname(currentRelativePath);
-        parentRelativePath = parent === '.' ? '' : parent;
+        parentRelativePath = parent === "." ? "" : parent;
       }
 
       try {
         const stat = await secureFs.stat(targetPath);
 
         if (!stat.isDirectory()) {
-          res.status(400).json({ success: false, error: 'Path is not a directory' });
+          res
+            .status(400)
+            .json({ success: false, error: "Path is not a directory" });
           return;
         }
 
         // Read directory contents
-        const dirEntries = await secureFs.readdir(targetPath, { withFileTypes: true });
+        const dirEntries = await secureFs.readdir(targetPath, {
+          withFileTypes: true,
+        });
 
         // Filter and map entries
         const entries: ProjectFileEntry[] = dirEntries
@@ -135,7 +145,10 @@ export function createBrowseProjectFilesHandler() {
           })
           .map((entry) => {
             const entryRelativePath = currentRelativePath
-              ? path.posix.join(currentRelativePath.replace(/\\/g, '/'), entry.name)
+              ? path.posix.join(
+                  currentRelativePath.replace(/\\/g, "/"),
+                  entry.name,
+                )
               : entry.name;
 
             return {
@@ -160,8 +173,10 @@ export function createBrowseProjectFilesHandler() {
           entries,
         });
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to read directory';
-        const isPermissionError = errorMessage.includes('EPERM') || errorMessage.includes('EACCES');
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to read directory";
+        const isPermissionError =
+          errorMessage.includes("EPERM") || errorMessage.includes("EACCES");
 
         if (isPermissionError) {
           res.json({
@@ -169,7 +184,7 @@ export function createBrowseProjectFilesHandler() {
             currentRelativePath,
             parentRelativePath,
             entries: [],
-            warning: 'Permission denied - unable to read this directory',
+            warning: "Permission denied - unable to read this directory",
           });
         } else {
           res.status(400).json({
@@ -184,7 +199,7 @@ export function createBrowseProjectFilesHandler() {
         return;
       }
 
-      logError(error, 'Browse project files failed');
+      logError(error, "Browse project files failed");
       res.status(500).json({ success: false, error: getErrorMessage(error) });
     }
   };

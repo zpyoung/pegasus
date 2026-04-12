@@ -4,11 +4,14 @@
  * Provides logger and error handling utilities shared across all notification endpoints.
  */
 
-import { createLogger } from '@pegasus/utils';
-import { getErrorMessage as getErrorMessageShared, createLogError } from '../common.js';
+import { createLogger } from "@pegasus/utils";
+import {
+  getErrorMessage as getErrorMessageShared,
+  createLogError,
+} from "../common.js";
 
 /** Logger instance for notification-related operations */
-export const logger = createLogger('Notifications');
+export const logger = createLogger("Notifications");
 
 /**
  * Extract user-friendly error message from error objects

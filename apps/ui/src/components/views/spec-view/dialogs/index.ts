@@ -1,2 +1,2 @@
-export { CreateSpecDialog } from './create-spec-dialog';
-export { RegenerateSpecDialog } from './regenerate-spec-dialog';
+export { CreateSpecDialog } from "./create-spec-dialog";
+export { RegenerateSpecDialog } from "./regenerate-spec-dialog";

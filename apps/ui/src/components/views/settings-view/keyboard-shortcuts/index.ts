@@ -1,1 +1,1 @@
-export { KeyboardShortcutsSection } from './keyboard-shortcuts-section';
+export { KeyboardShortcutsSection } from "./keyboard-shortcuts-section";

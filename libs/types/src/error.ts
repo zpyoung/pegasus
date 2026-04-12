@@ -2,15 +2,15 @@
  * Error type classification
  */
 export type ErrorType =
-  | 'authentication'
-  | 'cancellation'
-  | 'abort'
-  | 'execution'
-  | 'rate_limit'
-  | 'quota_exhausted'
-  | 'model_not_found'
-  | 'stream_disconnected'
-  | 'unknown';
+  | "authentication"
+  | "cancellation"
+  | "abort"
+  | "execution"
+  | "rate_limit"
+  | "quota_exhausted"
+  | "model_not_found"
+  | "stream_disconnected"
+  | "unknown";
 
 /**
  * Classified error information

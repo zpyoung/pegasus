@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useSetupStore } from '@/store/setup-store';
-import { getHttpApiClient } from '@/lib/http-api-client';
+import { useEffect, useRef } from "react";
+import { useSetupStore } from "@/store/setup-store";
+import { getHttpApiClient } from "@/lib/http-api-client";
 
 /**
  * Hook to initialize Cursor CLI status on app startup.
@@ -39,14 +39,17 @@ export function useCursorStatusInit() {
             auth: statusResult.auth?.authenticated
               ? {
                   authenticated: true,
-                  method: statusResult.auth.method || 'unknown',
+                  method: statusResult.auth.method || "unknown",
                 }
               : undefined,
           });
         }
       } catch (error) {
         // Silently fail - cursor is optional
-        console.debug('[CursorStatusInit] Failed to check cursor status:', error);
+        console.debug(
+          "[CursorStatusInit] Failed to check cursor status:",
+          error,
+        );
       }
     };
 
