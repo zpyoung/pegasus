@@ -46,13 +46,17 @@ This guide helps Claude generate properly structured Pegasus features from a Pro
   "descriptionHistory": [],
   "skipTests": false,
   "model": "claude-sonnet | claude-opus | claude-haiku",
-  "thinkingLevel": "none | low | medium | high | ultrathink",
+  "thinkingLevel": "none | low | medium | high | ultrathink | adaptive",
   "reasoningEffort": "none | low | medium | high",
   "imagePaths": [],
   "textFilePaths": [],
-  "planningMode": "none | spec | full",
+  "planningMode": "skip | lite | spec | full",
   "requirePlanApproval": false,
-  "workMode": "auto | custom"
+  "pipeline": "feature | bug-fix | ...",
+  "pipelineInputs": {},
+  "excludedPipelineSteps": [],
+  "providerId": "anthropic | ...",
+  "workMode": "current | auto | custom"
 }
 ```
 
@@ -81,10 +85,14 @@ This guide helps Claude generate properly structured Pegasus features from a Pro
 | `dependencies`        | string[] | []       | Array of feature IDs that must complete first                                          |
 | `skipTests`           | boolean  | false    | Skip test execution during verification                                                |
 | `model`               | string   | -        | AI model: `claude-sonnet` (balanced), `claude-opus` (complex), `claude-haiku` (simple) |
-| `thinkingLevel`       | string   | none     | Extended thinking: `none`, `low`, `medium`, `high`, `ultrathink`                       |
-| `planningMode`        | string   | none     | `none` (direct), `spec` (generate spec first), `full` (spec + tool exploration)        |
-| `requirePlanApproval` | boolean  | false    | Pause for human approval before execution                                              |
-| `workMode`            | string   | auto     | `auto` (continuous), `custom` (step-by-step)                                           |
+| `thinkingLevel`         | string   | adaptive | Extended thinking: `none`, `low`, `medium`, `high`, `ultrathink`, `adaptive`          |
+| `planningMode`          | string   | skip     | `skip` (direct), `lite` (lightweight), `spec` (generate spec first), `full` (spec + tool exploration) |
+| `requirePlanApproval`   | boolean  | false    | Pause for human approval before execution                                              |
+| `workMode`              | string   | current  | `current` (use current worktree), `auto` (create new worktree), `custom` (specify branch) |
+| `pipeline`              | string   | -        | Pipeline slug to use (e.g., `feature`, `bug-fix`)                                     |
+| `pipelineInputs`        | object   | {}       | User-provided input values for pipeline declared inputs                                |
+| `excludedPipelineSteps` | string[] | []       | Array of pipeline step IDs to skip for this feature                                   |
+| `providerId`            | string   | -        | AI provider ID override (e.g., `anthropic`)                                            |
 
 ---
 
@@ -201,7 +209,7 @@ The system should support session management and secure token storage.
   "complexity": "simple",
   "dependencies": [],
   "model": "claude-sonnet",
-  "planningMode": "none"
+  "planningMode": "skip"
 }
 ```
 
@@ -293,7 +301,7 @@ Features with dependencies won't start until all dependencies are completed.
 
 | Complexity            | Recommended Model             | Thinking Level | Planning Mode |
 | --------------------- | ----------------------------- | -------------- | ------------- |
-| Simple (< 1 hour)     | claude-haiku or claude-sonnet | none           | none          |
+| Simple (< 1 hour)     | claude-haiku or claude-sonnet | none           | skip          |
 | Moderate (1-4 hours)  | claude-sonnet                 | none or low    | spec          |
 | Complex (> 4 hours)   | claude-opus                   | medium or high | spec or full  |
 | Critical/Architecture | claude-opus                   | ultrathink     | full          |
@@ -398,7 +406,8 @@ Before running features, verify:
 ```
 backlog → pending → running → completed → verified
                            ↘ failed
-                           ↘ waiting_approval → completed
+                           ↘ waiting_approval → running → completed
+                           ↘ waiting_question  → running → completed
 ```
 
 **Important:** Features must start in `backlog` status to be executable by Pegasus. The system moves them through the pipeline automatically.
@@ -426,6 +435,6 @@ Copy and customize:
   "model": "claude-sonnet",
   "planningMode": "spec",
   "skipTests": false,
-  "workMode": "auto"
+  "workMode": "current"
 }
 ```

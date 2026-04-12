@@ -53,14 +53,16 @@ routes/
 routes/
   └── app-spec/
       ├── index.ts                    # createSpecRegenerationRoutes()
-      ├── common.ts                   # Shared state, logging utilities
+      ├── common.ts                   # Shared state (project-scoped Maps), logging utilities
       ├── generate-spec.ts            # generateSpec() function
       ├── generate-features-from-spec.ts  # generateFeaturesFromSpec() function
       ├── parse-and-create-features.ts   # parseAndCreateFeatures() function
+      ├── sync-spec.ts                # syncSpec() function
       └── routes/
           ├── create.ts               # POST /create handler
           ├── generate.ts             # POST /generate handler
           ├── generate-features.ts    # POST /generate-features handler
+          ├── sync.ts                 # POST /sync handler
           ├── status.ts               # GET /status handler
           └── stop.ts                 # POST /stop handler
 ```
@@ -118,7 +120,7 @@ import type { EventEmitter } from "../../lib/events.js";
 import { createCreateHandler } from "./routes/create.js";
 import { createGenerateHandler } from "./routes/generate.js";
 
-export function create{Module}Routes(events: EventEmitter): Router {
+export function create{Module}Routes(events: EventEmitter, settingsService?: SettingsService): Router {
   const router = Router();
 
   router.post("/create", createCreateHandler(events));
@@ -143,28 +145,39 @@ export function create{Module}Routes(events: EventEmitter): Router {
 
 **Common Contents**:
 
-- Module-level state (e.g., `isRunning`, `currentAbortController`)
-- State management functions (e.g., `setRunningState()`)
+- Module-level state, typically scoped by project path using `Map` objects (e.g., `runningProjects`, `abortControllers`)
+- State management functions (e.g., `setRunningState(projectPath, running, controller?)`)
+- Status query functions (e.g., `getSpecRegenerationStatus(projectPath?)`)
 - Logging utilities (e.g., `logAuthStatus()`, `logError()`)
-- Error handling utilities (e.g., `getErrorMessage()`)
+- Error handling utilities (e.g., `getErrorMessage()` — re-exported from `routes/common.ts`)
 - Shared constants
 - Shared types/interfaces
 
 **Pattern**:
 
 ```typescript
-import { createLogger } from '../../lib/logger.js';
+import { createLogger } from '@pegasus/utils';
 
 const logger = createLogger('{ModuleName}');
 
-// Shared state
-export let isRunning = false;
-export let currentAbortController: AbortController | null = null;
+// Shared state — scoped by project path to support concurrent projects
+const runningProjects = new Map<string, { isRunning: boolean; type: string; startedAt: string }>();
+const abortControllers = new Map<string, AbortController>();
 
 // State management
-export function setRunningState(running: boolean, controller: AbortController | null = null): void {
-  isRunning = running;
-  currentAbortController = controller;
+export function setRunningState(
+  projectPath: string,
+  running: boolean,
+  controller: AbortController | null = null,
+  type: string = 'default'
+): void {
+  if (running) {
+    runningProjects.set(projectPath, { isRunning: true, type, startedAt: new Date().toISOString() });
+    if (controller) abortControllers.set(projectPath, controller);
+  } else {
+    runningProjects.delete(projectPath);
+    abortControllers.delete(projectPath);
+  }
 }
 
 // Utility functions
@@ -172,17 +185,18 @@ export function logError(error: unknown, context: string): void {
   logger.error(`❌ ${context}:`, error);
 }
 
-export function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unknown error';
-}
+// getErrorMessage is re-exported from routes/common.ts
+import { getErrorMessage as getErrorMessageShared } from '../common.js';
+export { getErrorMessageShared as getErrorMessage };
 ```
 
 **Key Points**:
 
-- Export shared state as `let` variables (mutable state)
+- Module-level state uses `Map` objects keyed by `projectPath` (not simple `let` variables) to support concurrent projects
 - Provide setter functions for state management
 - Keep utilities focused and reusable
 - Use consistent logging patterns
+- `getErrorMessage` is re-exported from `routes/common.ts`, not defined inline
 
 ---
 
@@ -203,18 +217,19 @@ export function getErrorMessage(error: unknown): string {
 ```typescript
 import type { Request, Response } from "express";
 import type { EventEmitter } from "../../../lib/events.js";
-import { createLogger } from "../../../lib/logger.js";
+import { createLogger } from "@pegasus/utils";
 import {
-  isRunning,
+  getSpecRegenerationStatus,
   setRunningState,
   logError,
   getErrorMessage,
 } from "../common.js";
 import { businessLogicFunction } from "../business-logic.js";
+import type { SettingsService } from "../../../services/settings-service.js";
 
 const logger = createLogger("{ModuleName}");
 
-export function create{Action}Handler(events: EventEmitter) {
+export function create{Action}Handler(events: EventEmitter, settingsService?: SettingsService) {
   return async (req: Request, res: Response): Promise<void> => {
     logger.info("========== /{endpoint} endpoint called ==========");
 
@@ -228,6 +243,7 @@ export function create{Action}Handler(events: EventEmitter) {
       }
 
       // 2. Check preconditions
+      const { isRunning } = getSpecRegenerationStatus(projectPath);
       if (isRunning) {
         res.json({ success: false, error: "Operation already running" });
         return;
@@ -235,7 +251,7 @@ export function create{Action}Handler(events: EventEmitter) {
 
       // 3. Set up state
       const abortController = new AbortController();
-      setRunningState(true, abortController);
+      setRunningState(projectPath, true, abortController);
 
       // 4. Call business logic (background if async)
       businessLogicFunction(param1, param2, events, abortController)
@@ -244,7 +260,7 @@ export function create{Action}Handler(events: EventEmitter) {
           events.emit("module:event", { type: "error", error: getErrorMessage(error) });
         })
         .finally(() => {
-          setRunningState(false, null);
+          setRunningState(projectPath, false, null);
         });
 
       // 5. Return immediate response
@@ -288,7 +304,7 @@ export function create{Action}Handler(events: EventEmitter) {
 
 import { query, type Options } from '@anthropic-ai/claude-agent-sdk';
 import type { EventEmitter } from '../../lib/events.js';
-import { createLogger } from '../../lib/logger.js';
+import { createLogger } from '@pegasus/utils';
 import { logAuthStatus } from './common.js';
 import { anotherBusinessFunction } from './another-business-function.js';
 
@@ -386,17 +402,18 @@ The `app-spec` module demonstrates this pattern:
 
 ### File Breakdown
 
-**`index.ts`** (24 lines)
+**`index.ts`** (29 lines)
 
 - Creates router
-- Registers 5 endpoints
-- Exports `createSpecRegenerationRoutes()`
+- Registers 6 endpoints: `/create`, `/generate`, `/generate-features`, `/sync`, `/stop`, `/status`
+- Exports `createSpecRegenerationRoutes(events, settingsService?)`
 
-**`common.ts`** (74 lines)
+**`common.ts`** (141 lines)
 
-- Shared state: `isRunning`, `currentAbortController`
-- State management: `setRunningState()`
-- Utilities: `logAuthStatus()`, `logError()`, `getErrorMessage()`
+- Shared state: project-scoped `Map` objects (`runningProjects`, `abortControllers`) instead of simple module-level variables
+- State management: `setRunningState(projectPath, running, controller?, type?)`
+- Status queries: `getSpecRegenerationStatus(projectPath?)`, `getRunningProjectPath()`, `getAllRunningGenerations()`
+- Utilities: `logAuthStatus()`, `logError()`, `getErrorMessage()` (re-exported from `routes/common.ts`)
 
 **`generate-spec.ts`** (204 lines)
 
@@ -513,10 +530,12 @@ router.post('/generate', async (req, res) => {
 
 ```typescript
 // routes/app-spec/index.ts
-export function createSpecRegenerationRoutes(events) {
+export function createSpecRegenerationRoutes(events, settingsService?) {
   const router = Router();
   router.post("/create", createCreateHandler(events));
-  router.post("/generate", createGenerateHandler(events));
+  router.post("/generate", createGenerateHandler(events, settingsService));
+  router.post("/sync", createSyncHandler(events, settingsService));
+  // ...
   return router;
 }
 

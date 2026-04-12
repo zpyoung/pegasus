@@ -62,23 +62,38 @@ components/views/
 └── board-view/
     ├── components/
     │   ├── index.ts
-    │   ├── kanban-card.tsx
-    │   └── kanban-column.tsx
+    │   ├── kanban-card/                     # Folder (not a flat file)
+    │   ├── kanban-column.tsx
+    │   ├── add-feature-button.tsx
+    │   ├── empty-state-card.tsx
+    │   ├── list-view/
+    │   ├── selection-action-bar.tsx
+    │   ├── task-id-copy.tsx
+    │   └── view-toggle.tsx
     ├── dialogs/
     │   ├── index.ts
     │   ├── add-feature-dialog.tsx
     │   ├── edit-feature-dialog.tsx
     │   ├── follow-up-dialog.tsx
+    │   ├── archive-all-verified-dialog.tsx
     │   ├── delete-all-verified-dialog.tsx
     │   ├── delete-completed-feature-dialog.tsx
     │   ├── completed-features-modal.tsx
     │   ├── agent-output-modal.tsx
-    │   └── feature-suggestions-dialog.tsx
+    │   └── ... (many more dialogs)
     ├── hooks/
     │   ├── index.ts
     │   ├── use-board-actions.ts
+    │   ├── use-board-background.ts
+    │   ├── use-board-column-features.ts
+    │   ├── use-board-drag-drop.ts
+    │   ├── use-board-effects.ts
     │   ├── use-board-features.ts
-    │   └── use-board-drag-drop.ts
+    │   ├── use-board-keyboard-shortcuts.ts
+    │   ├── use-board-persistence.ts
+    │   ├── use-follow-up-state.ts
+    │   ├── use-list-view-state.ts
+    │   └── use-selection-mode.ts
     ├── shared/
     │   ├── index.ts
     │   ├── model-constants.ts
@@ -102,7 +117,7 @@ Code that is used across **multiple views**:
 Code that is **only used within a single view**:
 
 - `board-view/hooks/use-board-actions.ts` - Only used by board-view
-- `board-view/components/kanban-card.tsx` - Only used by board-view
+- `board-view/components/kanban-card/` - Only used by board-view
 
 ## Barrel Exports
 

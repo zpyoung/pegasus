@@ -18,18 +18,27 @@ Claude Compatible Providers allow Pegasus to work with third-party API endpoints
 #### ClaudeCompatibleProvider
 
 ```typescript
+// ClaudeCompatibleProviderType union — determines UI screen and default settings
+type ClaudeCompatibleProviderType =
+  | 'anthropic' // Direct Anthropic API (built-in)
+  | 'glm'       // z.AI GLM
+  | 'minimax'   // MiniMax
+  | 'openrouter'// OpenRouter proxy
+  | 'custom';   // User-defined custom provider
+
 export interface ClaudeCompatibleProvider {
-  id: string; // Unique identifier (UUID)
-  name: string; // Display name (e.g., "z.AI GLM")
-  baseUrl: string; // API endpoint URL
-  providerType?: string; // Provider type for icon/grouping (e.g., 'glm', 'minimax', 'openrouter')
-  apiKeySource?: ApiKeySource; // 'inline' | 'env' | 'credentials'
-  apiKey?: string; // API key (when apiKeySource = 'inline')
-  useAuthToken?: boolean; // Use ANTHROPIC_AUTH_TOKEN header
-  timeoutMs?: number; // Request timeout in milliseconds
-  disableNonessentialTraffic?: boolean; // Minimize non-essential API calls
-  enabled?: boolean; // Whether provider is active (default: true)
-  models?: ProviderModel[]; // Models exposed by this provider
+  id: string;                              // Unique identifier (UUID) — REQUIRED
+  name: string;                            // Display name (e.g., "z.AI GLM") — REQUIRED
+  providerType: ClaudeCompatibleProviderType; // Provider type for icon/grouping — REQUIRED
+  models: ProviderModel[];                 // Models exposed by this provider — REQUIRED
+  baseUrl?: string;                        // API endpoint URL
+  apiKeySource?: ApiKeySource;             // 'inline' | 'env' | 'credentials'
+  apiKey?: string;                         // API key (when apiKeySource = 'inline')
+  useAuthToken?: boolean;                  // Use ANTHROPIC_AUTH_TOKEN header
+  timeoutMs?: number;                      // Request timeout in milliseconds
+  disableNonessentialTraffic?: boolean;    // Minimize non-essential API calls
+  enabled?: boolean;                       // Whether provider is active (default: true)
+  providerSettings?: Record<string, unknown>; // Provider-specific settings
 }
 ```
 
@@ -79,7 +88,8 @@ Each provider model specifies which Claude model tier it maps to via `mapsToClau
 **z.AI GLM:**
 
 - `GLM-4.5-Air` → haiku
-- `GLM-4.7` → sonnet, opus
+- `GLM-4.7` → sonnet
+- `GLM-5` → opus
 
 **MiniMax:**
 
@@ -132,9 +142,10 @@ export async function getProviderByModelId(
   settingsService: SettingsService,
   logPrefix?: string
 ): Promise<{
-  provider?: ClaudeCompatibleProvider;
-  resolvedModel?: string;
-  credentials?: Credentials;
+  provider: ClaudeCompatibleProvider | undefined;
+  modelConfig: ProviderModel | undefined;
+  credentials: Credentials | undefined;
+  resolvedModel: string | undefined;
 }>;
 ```
 
@@ -150,16 +161,15 @@ The `getPhaseModelWithOverrides()` helper gets effective phase model config:
 
 ```typescript
 export async function getPhaseModelWithOverrides(
-  phaseKey: PhaseModelKey,
-  settingsService: SettingsService,
+  phase: PhaseModelKey,
+  settingsService?: SettingsService | null,
   projectPath?: string,
   logPrefix?: string
 ): Promise<{
-  model: string;
-  thinkingLevel?: ThinkingLevel;
-  providerId?: string;
-  providerConfig?: ClaudeCompatibleProvider;
-  credentials?: Credentials;
+  phaseModel: PhaseModelEntry;
+  isProjectOverride: boolean;
+  provider: ClaudeCompatibleProvider | undefined;
+  credentials: Credentials | undefined;
 }>;
 ```
 
@@ -183,12 +193,14 @@ Phase model selectors (`PhaseModelSelector`) display:
 
 ### Provider Icons
 
-Icons are determined by `providerType`:
+Icons are determined by `providerType` in `phase-model-selector.tsx`:
 
-- `glm` → Z logo
-- `minimax` → MiniMax logo
-- `openrouter` → OpenRouter logo
-- Generic → OpenRouter as fallback
+- `glm` → GlmIcon (Z logo)
+- `minimax` → MiniMaxIcon
+- `openrouter` → OpenRouterIcon
+- `custom` / unknown → `getProviderIconForModel(modelId)` with `AnthropicIcon` as final fallback
+
+The global `getIconForModel()` in `provider-icon.tsx` also returns `AnthropicIcon` for unknown providers.
 
 ### Bulk Replace
 
@@ -285,13 +297,13 @@ The migration is automatic and preserves existing provider configurations.
 
 ### UI
 
-| File                                               | Changes                                   |
-| -------------------------------------------------- | ----------------------------------------- |
-| `apps/ui/src/.../phase-model-selector.tsx`         | Provider model rendering, thinking levels |
-| `apps/ui/src/.../bulk-replace-dialog.tsx`          | Bulk replace feature                      |
-| `apps/ui/src/.../api-profiles-section.tsx`         | Provider management UI                    |
-| `apps/ui/src/components/ui/provider-icon.tsx`      | Provider-specific icons                   |
-| `apps/ui/src/hooks/use-project-settings-loader.ts` | Load phaseModelOverrides                  |
+| File                                                                                              | Changes                                   |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `apps/ui/src/components/views/settings-view/model-defaults/phase-model-selector.tsx`             | Provider model rendering, thinking levels |
+| `apps/ui/src/components/views/settings-view/model-defaults/bulk-replace-dialog.tsx`              | Bulk replace feature                      |
+| `apps/ui/src/components/views/settings-view/providers/claude-settings-tab/api-profiles-section.tsx` | Provider management UI                 |
+| `apps/ui/src/components/ui/provider-icon.tsx`                                                    | Provider-specific icons                   |
+| `apps/ui/src/hooks/use-project-settings-loader.ts`                                               | Load phaseModelOverrides                  |
 
 ## Testing
 

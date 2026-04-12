@@ -4,19 +4,25 @@ This document describes how context files work in Pegasus and how to use them in
 
 ## Overview
 
-Context files are user-defined documents stored in `.pegasus/context/` that provide project-specific rules, conventions, and guidelines for AI agents. They are automatically loaded and prepended to agent prompts.
+Context files are user-defined documents stored in `.pegasus/context/` that provide project-specific rules, conventions, and guidelines for AI agents. Memory files in `.pegasus/memory/` capture learnings from past agent work. Both are automatically loaded and prepended to agent prompts.
 
 ## Directory Structure
 
 ```
-{projectPath}/.pegasus/context/
-├── CLAUDE.md              # Project rules and conventions
-├── CODE_QUALITY.md        # Code quality guidelines
-├── context-metadata.json  # File descriptions
-└── ... (any .md or .txt files)
+{projectPath}/.pegasus/
+├── context/
+│   ├── CLAUDE.md              # Project rules and conventions
+│   ├── CODE_QUALITY.md        # Code quality guidelines
+│   ├── context-metadata.json  # File descriptions
+│   └── ... (any .md or .txt files)
+└── memory/
+    ├── _index.md              # Memory index (auto-managed)
+    ├── gotchas.md             # Always-loaded pitfalls and warnings
+    ├── decisions.md           # Past architectural decisions
+    └── ... (any .md files)
 ```
 
-## Metadata
+## Context Metadata
 
 File descriptions are stored in `context-metadata.json`:
 
@@ -33,37 +39,85 @@ File descriptions are stored in `context-metadata.json`:
 }
 ```
 
+## Memory Files
+
+Memory files in `.pegasus/memory/` contain learnings from past agent work (decisions, gotchas, patterns). They use YAML front matter for metadata-driven smart selection:
+
+```markdown
+---
+summary: Short description of what this file covers
+tags: [authentication, jwt, sessions]
+relevantTo: [auth-service, login-flow]
+importance: 0.9
+usageStats:
+  loaded: 12
+  cited: 4
+---
+
+## Content here
+```
+
+`gotchas.md` is always loaded (if it exists). Other files are ranked by relevance to the current task context plus importance score.
+
 ## Shared Utility
 
-The `loadContextFiles` function from `@pegasus/utils` provides a unified way to load context files:
+The `loadContextFiles` function from `@pegasus/utils` provides a unified way to load context files and memory files:
 
 ```typescript
 import { loadContextFiles } from '@pegasus/utils';
 
-// Load context files from a project
-const { formattedPrompt, files } = await loadContextFiles({
+// Load context and memory files from a project
+const { formattedPrompt, files, memoryFiles } = await loadContextFiles({
   projectPath: '/path/to/project',
-  // Optional: inject custom fs module for secure operations
-  fsModule: secureFs,
 });
 
-// formattedPrompt contains the formatted system prompt
-// files contains metadata about each loaded file
+// formattedPrompt contains the combined formatted system prompt
+// files contains metadata about each loaded context file
+// memoryFiles contains metadata about each loaded memory file
+```
+
+### Options
+
+```typescript
+interface LoadContextFilesOptions {
+  /** Project path to load context from */
+  projectPath: string;
+  /** Optional custom secure fs module (for dependency injection) */
+  fsModule?: ContextFsModule;
+  /** Whether to include context files from .pegasus/context/ (default: true) */
+  includeContextFiles?: boolean;
+  /** Whether to include memory files from .pegasus/memory/ (default: true) */
+  includeMemory?: boolean;
+  /** Whether to initialize memory folder if it doesn't exist (default: true) */
+  initializeMemory?: boolean;
+  /** Task context for smart memory selection - if not provided, only loads high-importance files */
+  taskContext?: TaskContext;
+  /** Maximum number of memory files to load (default: 5) */
+  maxMemoryFiles?: number;
+}
 ```
 
 ### Return Value
 
 ```typescript
 interface ContextFilesResult {
-  files: ContextFileInfo[]; // Individual file info
-  formattedPrompt: string; // Formatted prompt ready to use
+  files: ContextFileInfo[];       // Individual context file info
+  memoryFiles: MemoryFileInfo[];  // Individual memory file info
+  formattedPrompt: string;        // Combined formatted prompt ready to use
 }
 
 interface ContextFileInfo {
-  name: string; // File name (e.g., "CLAUDE.md")
-  path: string; // Full path to file
-  content: string; // File contents
+  name: string;         // File name (e.g., "CLAUDE.md")
+  path: string;         // Full path to file
+  content: string;      // File contents
   description?: string; // From metadata (explains when/why to use)
+}
+
+interface MemoryFileInfo {
+  name: string;     // File name (e.g., "gotchas.md")
+  path: string;     // Full path to file
+  content: string;  // File body (front matter stripped)
+  category: string; // Derived from filename without extension
 }
 ```
 
@@ -71,14 +125,17 @@ interface ContextFileInfo {
 
 ### Auto-Mode Service (Feature Execution)
 
+The auto-mode service is implemented in `apps/server/src/services/auto-mode/facade.ts` and `apps/server/src/services/execution-service.ts`:
+
 ```typescript
 import { loadContextFiles } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
+import { secureFs } from '@pegasus/platform';
 
 // In executeFeature() or followUpFeature()
 const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
   projectPath,
   fsModule: secureFs as Parameters<typeof loadContextFiles>[0]['fsModule'],
+  taskContext: { title: feature.title ?? '', description: feature.description },
 });
 
 // Pass as system prompt
@@ -92,7 +149,7 @@ await this.runAgent(workDir, featureId, prompt, abortController, projectPath, im
 
 ```typescript
 import { loadContextFiles } from '@pegasus/utils';
-import * as secureFs from '../lib/secure-fs.js';
+import { secureFs } from '@pegasus/platform';
 
 // In sendMessage()
 const { formattedPrompt: contextFilesPrompt } = await loadContextFiles({
@@ -166,5 +223,5 @@ If you need more details about a context file, you can read the full file at the
 ## File Locations
 
 - **Shared Utility**: `libs/utils/src/context-loader.ts`
-- **Auto-Mode Service**: `apps/server/src/services/auto-mode-service.ts`
+- **Auto-Mode Service**: `apps/server/src/services/auto-mode/facade.ts`, `apps/server/src/services/execution-service.ts`
 - **Agent Service**: `apps/server/src/services/agent-service.ts`

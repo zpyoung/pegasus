@@ -101,15 +101,49 @@ The UI (`apps/ui/src/`) uses:
 
 ```
 .pegasus/
-├── features/              # Feature JSON files and images
+├── features/                    # Feature JSON files, outputs, and images
 │   └── {featureId}/
-│       ├── feature.json
-│       ├── agent-output.md
-│       └── images/
-├── context/               # Context files for AI agents (CLAUDE.md, etc.)
-├── settings.json          # Project-specific settings
-├── spec.md               # Project specification
-└── analysis.json         # Project structure analysis
+│       ├── feature.json         # Feature metadata and status
+│       ├── agent-output.md      # Agent execution log
+│       ├── pipeline-state.json  # Pipeline stage completion state (for resume)
+│       ├── stage-outputs/       # Per-stage output snapshots for debugging/recovery
+│       │   └── {stageId}.md
+│       └── images/              # Feature-related screenshots and diagrams
+├── ideation/                    # Ideation (idea board) data
+│   ├── ideas/                   # Individual ideas, keyed by ideaId
+│   │   └── {ideaId}/
+│   │       ├── idea.json
+│   │       └── attachments/     # Images and other attachments for the idea
+│   ├── sessions/                # Ideation conversation histories
+│   │   └── {sessionId}.json
+│   ├── drafts/                  # Unsaved ideation conversation drafts
+│   └── analysis.json            # Cached project analysis for idea generation
+├── pipelines/                   # Project-level pipeline YAML definitions
+│   └── {pipelineSlug}.yaml      # e.g., feature.yaml, bug-fix.yaml
+├── worktrees/                   # Git worktree metadata (per-feature)
+├── board/                       # Board customization data (background images, etc.)
+├── images/                      # Project-level shared images and assets
+├── context/                     # Context files for AI agents (CLAUDE.md, etc.)
+├── memory/                      # Project memory files (*.md, loaded into agent prompts)
+├── validations/                 # GitHub issue validation results
+│   └── {issueNumber}/
+│       └── validation.json      # Verdict, analysis, and metadata
+├── events/                      # Event history for debugging and replay
+│   ├── index.json               # Event index for quick listing
+│   └── {eventId}.json
+├── settings.json                # Project-specific settings
+├── app_spec.txt                 # Application specification (XML format)
+├── active-branches.json         # Active git branches and worktrees metadata
+├── notifications.json           # Feature status change notifications
+└── execution-state.json         # Auto-mode execution state (for recovery on restart)
+```
+
+### User-Level Data (`~/.pegasus/`)
+
+```
+~/.pegasus/
+└── pipelines/                   # User-level pipeline YAML definitions (shared across all projects)
+    └── {pipelineSlug}.yaml      # Defaults; overridden by project-level pipelines with same slug
 ```
 
 ### Global Data (`DATA_DIR`, default `./data`)
@@ -173,6 +207,10 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `ALLOWED_ROOT_DIRECTORY` - Restrict file operations to specific directory
 - `ENABLE_REQUEST_LOGGING` - HTTP request logging (default: true, set `false` to disable)
 - `TERMINAL_MAX_SESSIONS` - Max terminal sessions (default: 1000)
+- `TERMINAL_ENABLED` - Enable/disable the terminal feature (default: true, set `false` to disable)
+- `TERMINAL_PASSWORD` - Password required to access the terminal (unset = no password required)
+- `IS_CONTAINERIZED` - Set `true` when running in a container; suppresses sandbox risk warnings in UI
+- `PEGASUS_SKIP_SANDBOX_WARNING` - Set `true` to suppress sandbox risk warnings regardless of container status
 
 ### Frontend
 - `PEGASUS_WEB_PORT` - Vite dev server port (default: 3007)
@@ -184,10 +222,26 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `ANTHROPIC_BASE_URL` - Custom Anthropic API base URL
 - `CLAUDE_CODE_OAUTH_TOKEN` - Claude Code OAuth token
 - `GEMINI_API_KEY` - Google Gemini API key
+- `GOOGLE_APPLICATION_CREDENTIALS` - Path to Google service account JSON (for Vertex AI / Gemini ADC auth)
+- `GOOGLE_CLOUD_PROJECT` - Google Cloud project ID (for Vertex AI / Gemini ADC auth)
+- `OPENAI_API_KEY` - OpenAI API key (used by the Codex provider)
+- `OPENCODE_API_KEY` - OpenCode CLI API key (checked to determine if OpenCode is pre-authenticated)
 - `CURSOR_API_KEY` - Cursor API key
+- `CURSOR_CONFIG_DIR` - Override path to Cursor CLI config directory (default: `~/.cursor`)
 - `GITHUB_TOKEN` - GitHub token (for Copilot provider)
 - `Z_AI_API_KEY` - Z.AI API key
 - `Z_AI_API_HOST` - Z.AI API host override
+- `PEGASUS_API_KEY` - Fixed API key for server authentication (auto-generated if unset; Electron passes this automatically)
+- `PEGASUS_HIDE_API_KEY` - Set `true` to suppress the API key banner in server logs (used in Electron/production)
+- `PEGASUS_DISABLE_AUTH` - Set `true` to disable API authentication entirely (for trusted local/network deployments)
+
+### Model Overrides
+- `PEGASUS_MODEL_DEFAULT` - Fallback model for all operations when no use-case-specific override is set
+- `PEGASUS_MODEL_AUTO` - Model used for autonomous kanban card implementation (default: opus)
+- `PEGASUS_MODEL_SPEC` - Model used for app spec generation (default: haiku)
+- `PEGASUS_MODEL_FEATURES` - Model used for feature generation from specs (default: haiku)
+- `PEGASUS_MODEL_SUGGESTIONS` - Model used for feature suggestions (default: haiku)
+- `PEGASUS_MODEL_CHAT` - Model used for chat interactions (default: haiku)
 
 ### Debug & Development
 - `PEGASUS_AUTO_LOGIN=true` - Skip login prompt (disabled when NODE_ENV=production)
