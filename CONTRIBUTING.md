@@ -88,7 +88,7 @@ Before contributing to Pegasus, ensure you have the following installed on your 
 ### Fork and Clone
 
 1. **Fork the repository** on GitHub
-   - Navigate to [https://github.com/Pegasus-Org/pegasus](https://github.com/Pegasus-Org/pegasus)
+   - Navigate to [https://github.com/zpyoung/pegasus](https://github.com/zpyoung/pegasus)
    - Click the "Fork" button in the top-right corner
    - This creates your own copy of the repository
 
@@ -102,7 +102,7 @@ Before contributing to Pegasus, ensure you have the following installed on your 
 3. **Add the upstream remote** to keep your fork in sync
 
    ```bash
-   git remote add upstream https://github.com/Pegasus-Org/pegasus.git
+   git remote add upstream https://github.com/zpyoung/pegasus.git
    ```
 
 4. **Verify remotes**
@@ -111,8 +111,8 @@ Before contributing to Pegasus, ensure you have the following installed on your 
    # Should show:
    # origin    https://github.com/YOUR_USERNAME/pegasus.git (fetch)
    # origin    https://github.com/YOUR_USERNAME/pegasus.git (push)
-   # upstream  https://github.com/Pegasus-Org/pegasus.git (fetch)
-   # upstream  https://github.com/Pegasus-Org/pegasus.git (push)
+   # upstream  https://github.com/zpyoung/pegasus.git (fetch)
+   # upstream  https://github.com/zpyoung/pegasus.git (push)
    ```
 
 ### Development Setup
@@ -354,7 +354,7 @@ git push origin feature/your-feature-name
 
 1. Go to your fork on GitHub
 2. Click "Compare & pull request" for your branch
-3. **Important:** Set the base repository to `Pegasus-Org/pegasus` and the base branch to `main`
+3. **Important:** Set the base repository to `zpyoung/pegasus` and the base branch to `main`
 4. Fill out the PR template completely
 
 #### PR Requirements Checklist

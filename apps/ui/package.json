@@ -2,10 +2,10 @@
   "name": "@pegasus/ui",
   "version": "1.0.0",
   "description": "An autonomous AI development studio that helps you build software faster using AI-powered agents",
-  "homepage": "https://github.com/Pegasus-Org/pegasus",
+  "homepage": "https://github.com/zpyoung/pegasus",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Pegasus-Org/pegasus.git"
+    "url": "https://github.com/zpyoung/pegasus.git"
   },
   "author": "Pegasus Team",
   "license": "SEE LICENSE IN LICENSE",

@@ -53,10 +53,10 @@ export function SidebarFooter({
   const handleFeedbackClick = useCallback(() => {
     try {
       const api = getElectronAPI();
-      api.openExternalLink('https://github.com/Pegasus-Org/pegasus/issues');
+      api.openExternalLink('https://github.com/zpyoung/pegasus/issues');
     } catch {
       // Fallback for non-Electron environments (SSR, web browser)
-      window.open('https://github.com/Pegasus-Org/pegasus/issues', '_blank');
+      window.open('https://github.com/zpyoung/pegasus/issues', '_blank');
     }
   }, []);
 

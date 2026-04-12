@@ -79,20 +79,42 @@ Parse the current version as `MAJOR.MINOR.PATCH`:
 
 ### Step 6: Categorize commits for the changelog
 
-Group commits into Keep a Changelog sections:
+Group commits into Keep a Changelog sections, each with an emoji header and per-bullet emojis:
 
-| Commit type | Section |
+**Section headers:**
+
+| Section | Header |
 |---|---|
-| `feat:`, `feat!:` | **Added** |
-| `fix:`, `fix!:`, `perf:` | **Fixed** |
-| `refactor:`, `build:`, `ci:`, `chore:`, `docs:`, `style:`, `test:` | **Changed** |
+| Added | `### ✨ Added` |
+| Fixed | `### 🐛 Fixed` |
+| Changed | `### 🔄 Changed` |
+| Breaking Changes | `### 💥 Breaking Changes` (only if breaking commits exist; placed first) |
+
+**Per-bullet emoji by commit type:**
+
+| Commit type | Emoji | Section |
+|---|---|---|
+| `feat:` | ✨ | Added |
+| `feat!:` / breaking | 💥 | Breaking Changes |
+| `fix:` | 🐛 | Fixed |
+| `perf:` | ⚡ | Fixed |
+| `refactor:` | 🔧 | Changed |
+| `docs:` | 📝 | Changed |
+| `build:`, `ci:` | 🏗️ | Changed |
+| `style:` | 🎨 | Changed |
+| `test:` | 🧪 | Changed |
+| `chore:` | ⚙️ | Changed |
+
+**Emoji fallback for non-conventional commits:** If a commit subject doesn't match a conventional-commit prefix, check for a leading emoji in the subject itself (e.g. `✨ Add feature`, `🐛 Fix bug`). Use that emoji and infer the section from the emoji mapping above. If there's no prefix and no emoji, default to ⚙️ Changed.
 
 For each commit, write a user-facing bullet:
 
-1. Strip the `<type>[(scope)]!?:` prefix.
-2. Capitalize the first letter of the remainder.
-3. Read the commit body with `git show --format='%b' --no-patch <sha>` only if the subject is too terse to stand alone — then expand the bullet into 1–2 sentences.
-4. Omit cryptic internal artifacts (e.g. `loop: iteration N complete`) that wouldn't be meaningful to an external reader — log that you skipped them in the final report.
+1. Strip the `<type>[(scope)]!?:` prefix (or leading emoji if using fallback).
+2. Prefix the bullet with the appropriate emoji from the table above.
+3. Capitalize the first letter of the remainder.
+4. Append the short commit SHA in parentheses: `(abc1234)`.
+5. Read the commit body with `git show --format='%b' --no-patch <sha>` only if the subject is too terse to stand alone — then expand the bullet into 1–2 sentences.
+6. Omit cryptic internal artifacts (e.g. `loop: iteration N complete`) that wouldn't be meaningful to an external reader — log that you skipped them in the final report.
 
 Omit a section entirely if it would be empty.
 
@@ -103,14 +125,17 @@ Insert the new version block **above** the most recent `## [x.y.z]` heading (and
 ```markdown
 ## [NEW_VERSION] — YYYY-MM-DD
 
-### Added
-- ...
+### 💥 Breaking Changes
+- 💥 ... (abc1234)
 
-### Fixed
-- ...
+### ✨ Added
+- ✨ ... (def5678)
 
-### Changed
-- ...
+### 🐛 Fixed
+- 🐛 ... (ghi9012)
+
+### 🔄 Changed
+- 🔧 ... (jkl3456)
 
 ---
 ```
@@ -138,9 +163,9 @@ Print a summary in this exact format:
 📦 Release prepared: v<OLD> → v<NEW> (<BUMP_TYPE>)
 
 Commits analyzed: <N>
-  Added:   <X> feat(s)
-  Fixed:   <Y> fix(es)
-  Changed: <Z> other
+  ✨ Added:   <X> feat(s)
+  🐛 Fixed:   <Y> fix(es)
+  🔄 Changed: <Z> other
 
 Skipped (not user-facing):
   - <sha> <subject>   [only shown if any were skipped]
@@ -199,18 +224,33 @@ ghi9012 docs: update CHANGELOG for v1.0.0 release
 1. Current version: `1.0.0`, latest tag: `v1.0.0`
 2. Classification: 1 feat, 1 fix, 1 docs → **minor bump**
 3. Next version: `1.1.0`
-4. Insert `## [1.1.0] — 2026-04-11` in CHANGELOG with Added/Fixed/Changed sections
+4. Insert `## [1.1.0] — 2026-04-12` in CHANGELOG with emoji sections
 5. Update `package.json` and `apps/ui/package.json` to `1.1.0`
 
-**Expected output**:
+**Expected CHANGELOG section**:
+
+```markdown
+## [1.1.0] — 2026-04-12
+
+### ✨ Added
+- ✨ Add telemetry opt-out flag (`abc1234`)
+
+### 🐛 Fixed
+- 🐛 Resolve race condition in worktree creation (`def5678`)
+
+### 🔄 Changed
+- 📝 Update CHANGELOG for v1.0.0 release (`ghi9012`)
+```
+
+**Expected report**:
 
 ```
 📦 Release prepared: v1.0.0 → v1.1.0 (minor)
 
 Commits analyzed: 3
-  Added:   1 feat(s)
-  Fixed:   1 fix(es)
-  Changed: 1 other
+  ✨ Added:   1 feat(s)
+  🐛 Fixed:   1 fix(es)
+  🔄 Changed: 1 other
 
 Files modified:
   ✓ CHANGELOG.md       (new [1.1.0] section + link reference)

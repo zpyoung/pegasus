@@ -205,7 +205,7 @@ pnpm build:electron:linux   # Linux (AppImage + DEB + RPM, x64)
 
 ```bash
 # Download the RPM package
-wget https://github.com/Pegasus-Org/pegasus/releases/latest/download/Pegasus-<version>-x86_64.rpm
+wget https://github.com/zpyoung/pegasus/releases/latest/download/Pegasus-<version>-x86_64.rpm
 
 # Install with dnf (Fedora)
 sudo dnf install ./Pegasus-<version>-x86_64.rpm

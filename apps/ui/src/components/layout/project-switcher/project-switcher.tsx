@@ -141,7 +141,7 @@ export function ProjectSwitcher() {
 
   const handleBugReportClick = useCallback(() => {
     const api = getElectronAPI();
-    api.openExternalLink('https://github.com/Pegasus-Org/pegasus/issues');
+    api.openExternalLink('https://github.com/zpyoung/pegasus/issues');
   }, []);
 
   const handleWikiClick = useCallback(() => {

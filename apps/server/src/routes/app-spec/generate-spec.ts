@@ -205,7 +205,7 @@ Your entire response should be valid JSON starting with { and ending with }. No 
   } else {
     // Fallback: Extract XML content from response text
     // Claude might include conversational text before/after
-    // See: https://github.com/Pegasus-Org/pegasus/issues/149
+    // See: https://github.com/zpyoung/pegasus/issues/149
     logger.warn('⚠️ No structured output, falling back to text parsing');
     logger.info('========== FINAL RESPONSE TEXT ==========');
     logger.info(responseText || '(empty)');

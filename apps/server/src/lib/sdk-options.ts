@@ -440,7 +440,7 @@ export function createSpecGenerationOptions(config: CreateSdkOptionsConfig): Opt
     ...getBaseOptions(),
     // Override permissionMode - spec generation only needs read-only tools
     // Using "acceptEdits" can cause Claude to write files to unexpected locations
-    // See: https://github.com/Pegasus-Org/pegasus/issues/149
+    // See: https://github.com/zpyoung/pegasus/issues/149
     permissionMode: 'default',
     model: getModelForUseCase('spec', config.model),
     maxTurns: config.maxTurns ?? MAX_TURNS.maximum,

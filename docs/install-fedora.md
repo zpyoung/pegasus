@@ -25,7 +25,7 @@ See main [README.md authentication section](../README.md#authentication) for det
 
 ### Option 1: Download and Install from GitHub
 
-1. Visit [GitHub Releases](https://github.com/Pegasus-Org/pegasus/releases)
+1. Visit [GitHub Releases](https://github.com/zpyoung/pegasus/releases)
 2. Find the latest release and download the `.rpm` file:
    - Download: `Pegasus-<version>-x86_64.rpm`
 
@@ -43,20 +43,20 @@ See main [README.md authentication section](../README.md#authentication) for det
 
 ### Option 2: Install Directly from URL
 
-Install from GitHub releases URL without downloading first. Visit [releases page](https://github.com/Pegasus-Org/pegasus/releases) to find the latest version.
+Install from GitHub releases URL without downloading first. Visit [releases page](https://github.com/zpyoung/pegasus/releases) to find the latest version.
 
 **Fedora:**
 
 ```bash
 # Replace v0.11.0 with the actual latest version
-sudo dnf install https://github.com/Pegasus-Org/pegasus/releases/download/v0.11.0/Pegasus-0.11.0-x86_64.rpm
+sudo dnf install https://github.com/zpyoung/pegasus/releases/download/v0.11.0/Pegasus-0.11.0-x86_64.rpm
 ```
 
 **RHEL/CentOS:**
 
 ```bash
 # Replace v0.11.0 with the actual latest version
-sudo yum install https://github.com/Pegasus-Org/pegasus/releases/download/v0.11.0/Pegasus-0.11.0-x86_64.rpm
+sudo yum install https://github.com/zpyoung/pegasus/releases/download/v0.11.0/Pegasus-0.11.0-x86_64.rpm
 ```
 
 ## Running Pegasus
@@ -220,7 +220,7 @@ sudo setenforce 1
 ```
 
 **Permanent fix (not recommended for production):**
-Create custom SELinux policy based on ausearch output. For support, see [GitHub Issues](https://github.com/Pegasus-Org/pegasus/issues).
+Create custom SELinux policy based on ausearch output. For support, see [GitHub Issues](https://github.com/zpyoung/pegasus/issues).
 
 ### Port Conflicts
 
@@ -352,7 +352,7 @@ sudo dnf install nodejs npm git
 
 ```bash
 # Clone repository
-git clone https://github.com/Pegasus-Org/pegasus.git
+git clone https://github.com/zpyoung/pegasus.git
 cd pegasus
 
 # Install dependencies
@@ -388,7 +388,7 @@ sudo yum update pegasus
 sudo dnf remove pegasus
 
 # Download the latest .rpm from releases page
-# https://github.com/Pegasus-Org/pegasus/releases
+# https://github.com/zpyoung/pegasus/releases
 # Then reinstall with:
 # sudo dnf install ./Pegasus-<VERSION>-x86_64.rpm
 ```
@@ -399,8 +399,8 @@ sudo dnf remove pegasus
 
 - [Main README](../README.md) - Project overview
 - [CONTRIBUTING.md](../CONTRIBUTING.md) - Contributing guide
-- [GitHub Issues](https://github.com/Pegasus-Org/pegasus/issues) - Bug reports & feature requests
-- [Discussions](https://github.com/Pegasus-Org/pegasus/discussions) - Questions & community
+- [GitHub Issues](https://github.com/zpyoung/pegasus/issues) - Bug reports & feature requests
+- [Discussions](https://github.com/zpyoung/pegasus/discussions) - Questions & community
 
 ### Reporting Issues
 

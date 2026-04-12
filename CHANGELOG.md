@@ -10,9 +10,9 @@ baseline.
 
 ## [1.0.0] — 2026-04-10
 
-### Added
+### ✨ Added
 
-#### Multi-provider AI support
+#### 🔌 Multi-provider AI support
 - Pluggable provider adapters for **Anthropic**, **GitHub Copilot**, **Cursor**,
   **Google Gemini**, **OpenAI**, and **OpenCode**, each with their own
   model-resolution and authentication paths.
@@ -24,7 +24,7 @@ baseline.
     lines through normalization.
 - Unified credential storage and per-project model selection UI.
 
-#### YAML pipeline execution
+#### ⚙️ YAML pipeline execution
 - New `StageRunner` executes multi-stage YAML pipelines end-to-end (see
   `libs/types/src/yaml-pipeline.ts`, ~6,800 lines added across the feature).
 - When a pipeline is selected for a task, the legacy planning section is hidden.
@@ -35,7 +35,7 @@ baseline.
 - Default branch selection in the merge dialog uses the current branch.
 - **Pipeline optimizations** for large runs.
 
-#### Idea Board (ADR-003)
+#### 💡 Idea Board (ADR-003)
 - Ideation dashboard replaced with a 3-column kanban board built on the shared
   `KanbanColumn` infrastructure.
 - AI suggestions now create raw ideas (not features). Only ideas with
@@ -44,7 +44,7 @@ baseline.
 - Global **Shift+I** shortcut navigates to the Idea Board and focuses the
   quick-add input from any page.
 
-#### Agent workflow improvements
+#### 🤖 Agent workflow improvements
 - **Plan revisions with file-hash tracking** — uses `git hash-object` per file
   for accurate before/after diffing instead of path-presence sets.
 - **Per-task commits** — agent-modified files are tracked per task and
@@ -54,7 +54,7 @@ baseline.
 - **Commit changes action** added directly to task cards.
 - **Generation jobs indicator** and prompt-command popover surfaced in the UI.
 
-#### Worktree enhancements
+#### 🌳 Worktree enhancements
 - **Symlink support** for worktree files, so shared config can be mirrored
   across feature worktrees.
 - **"All worktrees" view** — see tasks from every worktree even when the
@@ -65,7 +65,7 @@ baseline.
   initialization.
 - Formatted worktree-init script output.
 
-#### Distribution & auto-update
+#### 📦 Distribution & auto-update
 - **Electron auto-updater** wired to GitHub Releases.
 - **1-click update flow** for unsigned macOS builds: opens the GitHub release
   page in the browser when a new version is detected (Squirrel.Mac doesn't
@@ -82,7 +82,7 @@ baseline.
 - After-pack hook rebuilds native modules (`node-pty`) for the target
   architecture.
 
-#### Dev & build infrastructure
+#### 🏗️ Dev & build infrastructure
 - **Migration to pnpm workspaces** from npm, with `apps/*` and `libs/*` layout.
 - **Rebranded** all package scopes, env vars, directories, and docs from
   `automaker` / `AUTOMAKER_*` / `.automaker` to `pegasus` / `PEGASUS_*` /
@@ -94,11 +94,11 @@ baseline.
   local development.
 - **`.vite/` build cache** added to `.gitignore`.
 
-#### Persistence
+#### 💾 Persistence
 - **Last-used phase overrides** are now remembered across sessions.
 - **Last-selected model** persists and is restored on project reopen.
 
-### Fixed
+### 🐛 Fixed
 
 - Resolved pnpm phantom dependencies and broken test infrastructure after the
   workspace migration.
@@ -110,11 +110,11 @@ baseline.
   Express 5 routes.
 - Removed stale `package-lock.json`; the project is pnpm-only.
 
-### Changed
+### 🔄 Changed
 
 - `.automaker/` → `.pegasus/` directory convention, with `.pegasus/` data
   always living in the main worktree (never in staging or feature worktrees).
-- GitHub org URLs updated throughout (`AutoMaker-Org` → `Pegasus-Org`).
+- GitHub org URLs updated throughout (`AutoMaker-Org` → `zpyoung`).
 - `optionalDependencies` pruned in `package.json` / `pnpm-lock.yaml`.
 - Start script logo/ASCII art updated.
 
