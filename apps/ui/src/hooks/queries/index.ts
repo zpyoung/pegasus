@@ -100,3 +100,7 @@ export type { CursorPermissionsData } from "./use-cursor-permissions";
 
 // Workspace
 export { useWorkspaceDirectories } from "./use-workspace";
+
+// Runtime
+export { useRuntimeInstance } from "./use-runtime-instance";
+export type { RuntimeInstanceInfo } from "./use-runtime-instance";

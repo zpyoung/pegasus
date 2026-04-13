@@ -10,12 +10,14 @@ import {
   useCallback,
   useDeferredValue,
   useRef,
+  type ReactNode,
 } from "react";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { createLogger } from "@pegasus/utils/logger";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ProjectSwitcher } from "@/components/layout/project-switcher";
+import { RuntimeInstanceBanner } from "@/components/layout/runtime-instance-banner";
 import {
   FileBrowserProvider,
   useFileBrowser,
@@ -1184,6 +1186,20 @@ function RootLayoutContent() {
     return <SandboxRejectionScreen />;
   }
 
+  const renderAppMain = (
+    content: ReactNode,
+    className: string,
+    includeToaster = false
+  ): ReactNode => (
+    <div className="flex h-full flex-col" data-testid="app-container">
+      <RuntimeInstanceBanner />
+      <main className={`min-h-0 flex-1 ${className}`}>
+        {content}
+        {includeToaster ? <Toaster richColors position="bottom-right" /> : null}
+      </main>
+    </div>
+  );
+
   // Show sandbox risk dialog if not containerized and user hasn't confirmed
   // The dialog is rendered as an overlay while the main content is blocked
   const showSandboxDialog = sandboxStatus === "needs-confirmation";
@@ -1191,22 +1207,15 @@ function RootLayoutContent() {
   // Show login page (full screen, no sidebar)
   // Note: No sandbox dialog here - it only shows after login and setup complete
   if (isLoginRoute || isLoggedOutRoute) {
-    return (
-      <main className="h-full overflow-hidden" data-testid="app-container">
-        <Outlet />
-      </main>
-    );
+    return renderAppMain(<Outlet />, "h-full overflow-hidden");
   }
 
   // Wait for auth check before rendering protected routes (ALL modes - unified flow).
   // The visual here intentionally matches the inline HTML app shell (index.html)
   // so the transition from HTML → React is seamless — no layout shift, no flash.
   if (!authChecked) {
-    return (
-      <main
-        className="flex h-full flex-col items-center justify-center gap-6"
-        data-testid="app-container"
-      >
+    return renderAppMain(
+      <>
         <svg
           className="h-14 w-14 opacity-90"
           viewBox="0 0 256 256"
@@ -1240,62 +1249,44 @@ function RootLayoutContent() {
           aria-label="Loading"
           className="h-4 w-4 animate-spin rounded-full border-2 border-foreground/10 border-t-foreground/50"
         />
-      </main>
+      </>,
+      "flex h-full flex-col items-center justify-center gap-6"
     );
   }
 
   // Redirect to logged-out if not authenticated (ALL modes - unified flow)
   // Show loading state while navigation is in progress
   if (!isAuthenticated) {
-    return (
-      <main
-        className="flex h-full items-center justify-center"
-        data-testid="app-container"
-      >
-        <LoadingState message="Redirecting..." />
-      </main>
+    return renderAppMain(
+      <LoadingState message="Redirecting..." />,
+      "flex h-full items-center justify-center"
     );
   }
 
   if (shouldBlockForSettings) {
-    return (
-      <main
-        className="flex h-full items-center justify-center"
-        data-testid="app-container"
-      >
-        <LoadingState message="Loading settings..." />
-      </main>
+    return renderAppMain(
+      <LoadingState message="Loading settings..." />,
+      "flex h-full items-center justify-center"
     );
   }
 
   if (shouldAutoOpen) {
-    return (
-      <main
-        className="flex h-full items-center justify-center"
-        data-testid="app-container"
-      >
-        <LoadingState message="Opening project..." />
-      </main>
+    return renderAppMain(
+      <LoadingState message="Opening project..." />,
+      "flex h-full items-center justify-center"
     );
   }
 
   // Show setup page (full screen, no sidebar) - authenticated only
   if (isSetupRoute) {
-    return (
-      <main className="h-full overflow-hidden" data-testid="app-container">
-        <Outlet />
-      </main>
-    );
+    return renderAppMain(<Outlet />, "h-full overflow-hidden");
   }
 
   // Show dashboard page (full screen, no sidebar) - authenticated only
   if (isDashboardRoute) {
     return (
       <>
-        <main className="h-full overflow-hidden" data-testid="app-container">
-          <Outlet />
-          <Toaster richColors position="bottom-right" />
-        </main>
+        {renderAppMain(<Outlet />, "h-full overflow-hidden", true)}
         <SandboxRiskDialog
           open={showSandboxDialog}
           onConfirm={handleSandboxConfirm}
@@ -1307,32 +1298,35 @@ function RootLayoutContent() {
 
   return (
     <>
-      <main className="flex h-full overflow-hidden" data-testid="app-container">
-        {/* Full-width titlebar drag region for Electron window dragging */}
-        {isElectron() && (
+      {renderAppMain(
+        <>
+          {/* Full-width titlebar drag region for Electron window dragging */}
+          {isElectron() && (
+            <div
+              className={`fixed top-0 left-0 right-0 h-6 titlebar-drag-region z-40 pointer-events-none ${isMac ? "pl-20" : ""}`}
+              aria-hidden="true"
+            />
+          )}
+          {/* Discord-style layout: narrow project switcher + expandable sidebar */}
+          {sidebarStyle === "discord" && <ProjectSwitcher />}
+          <Sidebar />
           <div
-            className={`fixed top-0 left-0 right-0 h-6 titlebar-drag-region z-40 pointer-events-none ${isMac ? "pl-20" : ""}`}
-            aria-hidden="true"
-          />
-        )}
-        {/* Discord-style layout: narrow project switcher + expandable sidebar */}
-        {sidebarStyle === "discord" && <ProjectSwitcher />}
-        <Sidebar />
-        <div
-          className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
-          style={{ marginRight: streamerPanelOpen ? "250px" : "0" }}
-        >
-          <Outlet />
-        </div>
+            className="flex-1 flex flex-col overflow-hidden transition-all duration-300"
+            style={{ marginRight: streamerPanelOpen ? "250px" : "0" }}
+          >
+            <Outlet />
+          </div>
 
-        {/* Hidden streamer panel - opens with "\" key, pushes content */}
-        <div
-          className={`fixed top-0 right-0 h-full w-[250px] bg-background border-l border-border transition-transform duration-300 ${
-            streamerPanelOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-        />
-        <Toaster richColors position="bottom-right" />
-      </main>
+          {/* Hidden streamer panel - opens with "\" key, pushes content */}
+          <div
+            className={`fixed top-0 right-0 h-full w-[250px] bg-background border-l border-border transition-transform duration-300 ${
+              streamerPanelOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+          />
+        </>,
+        "flex h-full overflow-hidden",
+        true
+      )}
       <SandboxRiskDialog
         open={showSandboxDialog}
         onConfirm={handleSandboxConfirm}

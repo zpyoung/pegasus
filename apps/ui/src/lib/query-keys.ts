@@ -220,6 +220,14 @@ export const queryKeys = {
   },
 
   // ============================================
+  // Runtime
+  // ============================================
+  runtime: {
+    /** Pegasus runtime instance metadata */
+    instance: () => ['runtime', 'instance'] as const,
+  },
+
+  // ============================================
   // MCP (Model Context Protocol)
   // ============================================
   mcp: {

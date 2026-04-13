@@ -15,6 +15,7 @@ import {
 } from "@pegasus/platform";
 import { findCommand } from "../lib/cli-detection.js";
 import type { EventEmitter } from "../lib/events.js";
+import { getRuntimeInstanceMetadata } from "../lib/version.js";
 import {
   readWorktreeMetadata,
   writeWorktreeMetadata,
@@ -188,6 +189,8 @@ export class InitScriptService {
     );
     logger.debug(`Using shell: ${shellCmd.shell}`);
 
+    const runtimeMetadata = getRuntimeInstanceMetadata();
+
     // Update metadata to mark as running
     const existingMetadata = await readWorktreeMetadata(projectPath, branch);
     await writeWorktreeMetadata(projectPath, branch, {
@@ -212,6 +215,10 @@ export class InitScriptService {
       PEGASUS_PROJECT_PATH: projectPath,
       PEGASUS_WORKTREE_PATH: worktreePath,
       PEGASUS_BRANCH: branch,
+      PEGASUS_RUNTIME_VERSION: runtimeMetadata.bannerVersion,
+      PEGASUS_RUNTIME_BRANCH: runtimeMetadata.bannerBranch,
+      PEGASUS_RUNTIME_CHANNEL: runtimeMetadata.runtimeChannel,
+      PEGASUS_RUNTIME_PACKAGED: runtimeMetadata.isPackagedRelease ? 'true' : 'false',
 
       // Essential system variables
       PATH: process.env.PATH || "",

@@ -1206,6 +1206,19 @@ export class HttpApiClient implements ElectronAPI {
     return result.status === "ok" ? "pong" : "error";
   }
 
+  async getRuntimeInstance(): Promise<{
+    status: string;
+    version: string;
+    runtime?: {
+      bannerVersion: string;
+      bannerBranch: string;
+      runtimeChannel: "development" | "packaged";
+      isPackagedRelease: boolean;
+    };
+  }> {
+    return this.get("/api/health");
+  }
+
   async openExternalLink(
     url: string,
   ): Promise<{ success: boolean; error?: string }> {
