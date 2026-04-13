@@ -64,6 +64,9 @@ data/
 test-results/
 test/
 
+# Performance benchmark results
+perf/
+
 # Playwright
 .playwright-cli/
 playwright-report/

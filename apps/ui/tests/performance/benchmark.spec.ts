@@ -17,8 +17,8 @@
  *   PERF_STREAMS=5 pnpm --filter @pegasus/ui test:perf
  *   PERF_COMPARE=perf-baseline.json pnpm --filter @pegasus/ui test:perf
  *
- * Output: perf-baseline.json  (written to apps/ui/)
- *         perf-comparison.json (written to apps/ui/ when --compare is used)
+ * Output: perf/perf-baseline.json  (written to project root perf/)
+ *         perf/perf-comparison.json (when --compare is used)
  *
  * Gate thresholds (from design doc):
  *   - avgFPS  > 20 fps
@@ -38,6 +38,7 @@ import * as path from "path";
 import {
   setupProjectWithFixture,
   getFixturePath,
+  getWorkspaceRoot,
   navigateToBoard,
   authenticateForTests,
   API_BASE_URL,
@@ -95,7 +96,7 @@ interface CdpMetricMap {
   [key: string]: number;
 }
 
-/** One second snapshot of CDP Performance metrics */
+/** One second snapshot of CDP Performance metrics + rAF frame count */
 interface BenchmarkSample {
   timestamp: number;
   frames: number;
@@ -104,7 +105,7 @@ interface BenchmarkSample {
   scriptDurationSeconds: number;
 }
 
-/** Final report written to perf-baseline.json */
+/** Final report written to perf/perf-baseline.json */
 interface BenchmarkReport {
   timestamp: string;
   wave: "baseline";
@@ -136,12 +137,25 @@ function parseMetrics(
   return Object.fromEntries(rawMetrics.map((m) => [m.name, m.value]));
 }
 
-async function collectSample(cdp: CDPSession): Promise<BenchmarkSample> {
+async function collectSample(
+  cdp: CDPSession,
+  page: import("@playwright/test").Page,
+): Promise<BenchmarkSample> {
   const { metrics } = await cdp.send("Performance.getMetrics");
   const m = parseMetrics(metrics);
+
+  // Read frame count from our injected rAF counter (falls back to CDP Frames)
+  const rafFrames = await page
+    .evaluate(
+      () =>
+        (window as unknown as { __perfFrameCount?: number }).__perfFrameCount ??
+        0,
+    )
+    .catch(() => 0);
+
   return {
     timestamp: m["Timestamp"] ?? 0,
-    frames: m["Frames"] ?? 0,
+    frames: rafFrames || (m["Frames"] ?? 0),
     jsHeapUsedBytes: m["JSHeapUsedSize"] ?? 0,
     taskDurationSeconds: m["TaskDuration"] ?? 0,
     scriptDurationSeconds: m["ScriptDuration"] ?? 0,
@@ -212,7 +226,9 @@ test.describe("Performance Baseline", () => {
               thinkingLevel: "none",
               createdAt: new Date().toISOString(),
               startedAt: new Date().toISOString(),
-              branchName: `perf-stream-${i}`,
+              // No branchName — unassigned features show on the primary worktree.
+              // Using branchName: "perf-stream-N" caused features to be filtered
+              // out because the board views the "main" worktree.
               priority: 2,
             },
           },
@@ -230,29 +246,63 @@ test.describe("Performance Baseline", () => {
       }
     }
 
-    // Give the board time to receive the new features via WebSocket and
-    // render them before starting metric collection.
-    await page.waitForTimeout(3_000);
+    // Re-navigate to the board so the features query runs fresh and picks
+    // up the newly created features from the server.
+    await navigateToBoard(page);
+    await page.waitForTimeout(2_000);
+
+    // Verify features are visible (check for kanban cards with our IDs)
+    const inProgressCount = await page
+      .locator('[data-testid^="kanban-card-perf-stream-"]')
+      .count()
+      .catch(() => 0);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[perf] ${featureIds.length} features created, ${inProgressCount} visible on board`,
+    );
 
     // -----------------------------------------------------------------------
-    // 3. Attach CDP session and enable Performance domain
+    // 3. Attach CDP session, enable Performance domain, start rAF counter
     // -----------------------------------------------------------------------
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Performance.enable", { timeDomain: "timeTicks" });
+
+    // Inject a requestAnimationFrame counter to accurately measure FPS.
+    // CDP's Frames metric only counts compositor frames and stays flat for
+    // idle React apps; rAF counting tracks actual paint opportunities.
+    await page.evaluate(() => {
+      const win = window as unknown as {
+        __perfFrameCount: number;
+        __perfRafId: number;
+      };
+      win.__perfFrameCount = 0;
+      function tick() {
+        win.__perfFrameCount++;
+        win.__perfRafId = requestAnimationFrame(tick);
+      }
+      win.__perfRafId = requestAnimationFrame(tick);
+    });
 
     // -----------------------------------------------------------------------
     // 4. Collect per-second samples for SAMPLE_DURATION_MS
     // -----------------------------------------------------------------------
     const samples: BenchmarkSample[] = [];
-    const baselineSample = await collectSample(cdp);
+    const baselineSample = await collectSample(cdp, page);
     samples.push(baselineSample);
 
     const endTime = Date.now() + SAMPLE_DURATION_MS;
     while (Date.now() < endTime) {
       await page.waitForTimeout(SAMPLE_INTERVAL_MS);
-      samples.push(await collectSample(cdp));
+      samples.push(await collectSample(cdp, page));
     }
 
+    // Stop rAF counter and detach CDP
+    await page
+      .evaluate(() => {
+        const win = window as unknown as { __perfRafId?: number };
+        if (win.__perfRafId) cancelAnimationFrame(win.__perfRafId);
+      })
+      .catch(() => {});
     await cdp.detach();
 
     // -----------------------------------------------------------------------
@@ -322,7 +372,11 @@ test.describe("Performance Baseline", () => {
       samples,
     };
 
-    const reportPath = path.join(__dirname, "..", "..", "perf-baseline.json");
+    const perfDir = path.join(getWorkspaceRoot(), "perf");
+    if (!fs.existsSync(perfDir)) {
+      fs.mkdirSync(perfDir, { recursive: true });
+    }
+    const reportPath = path.join(perfDir, "perf-baseline.json");
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
     // eslint-disable-next-line no-console
@@ -380,12 +434,7 @@ test.describe("Performance Baseline", () => {
         console.log(fmtRow("cpuPercent", prev.cpuPercent, curr.cpuPercent));
 
         // Write the side-by-side comparison artifact
-        const comparisonPath = path.join(
-          __dirname,
-          "..",
-          "..",
-          "perf-comparison.json",
-        );
+        const comparisonPath = path.join(perfDir, "perf-comparison.json");
         fs.writeFileSync(
           comparisonPath,
           JSON.stringify({ previous: prevReport, current: report }, null, 2),
