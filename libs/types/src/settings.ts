@@ -1834,6 +1834,14 @@ export interface ProjectSettings {
    */
   defaultFeatureModel?: PhaseModelEntry;
 
+  // Feature Templates Override (per-project)
+  /**
+   * Project-specific feature templates for quick task creation from the Add Feature dropdown.
+   * When specified, these templates are used instead of (or merged with) global feature templates.
+   * Built-in templates are protected from deletion but can be disabled.
+   */
+  featureTemplates?: FeatureTemplate[];
+
   // Terminal Quick Scripts (per-project)
   /**
    * Quick-access terminal scripts shown in the terminal header dropdown.

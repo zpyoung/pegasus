@@ -11,28 +11,30 @@
  *  - "No prompts found." shown when search matches nothing
  *  - "Loading prompts…" shown when isLoading is true
  *  - Selecting a prompt calls addGenerationJob + mutation.mutate with correct args
- *  - Does not call handlers when projectPath is empty
+ *  - Popover closes and search resets after selection
+ *  - Does not call handlers when projectPath prop is empty
+ *  - ICON_MAP contains all 9 server icon strings as valid Lucide components
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { PromptCommandPopover } from "../../../src/components/views/ideation-view/prompt-command-popover";
+import {
+  PromptCommandPopover,
+  ICON_MAP,
+} from "../../../src/components/views/ideation-view/prompt-command-popover";
 import { useIdeationStore } from "@/store/ideation-store";
-import { useAppStore } from "@/store/app-store";
 import { useGuidedPrompts } from "@/hooks/use-guided-prompts";
 import { useGenerateIdeationSuggestions } from "@/hooks/mutations/use-ideation-mutations";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock("@/store/ideation-store");
-vi.mock("@/store/app-store");
 vi.mock("@/hooks/use-guided-prompts");
 vi.mock("@/hooks/mutations/use-ideation-mutations");
 
 const mockUseIdeationStore = useIdeationStore as unknown as ReturnType<
   typeof vi.fn
 >;
-const mockUseAppStore = useAppStore as unknown as ReturnType<typeof vi.fn>;
 const mockUseGuidedPrompts = useGuidedPrompts as ReturnType<typeof vi.fn>;
 const mockUseGenerateIdeationSuggestions =
   useGenerateIdeationSuggestions as ReturnType<typeof vi.fn>;
@@ -45,13 +47,8 @@ const mockAddGenerationJob = vi.fn().mockReturnValue("job-123");
 const mockMutate = vi.fn();
 
 const mockCategories = [
-  {
-    id: "feature",
-    name: "Feature",
-    icon: "lightbulb",
-    description: "Feature prompts",
-  },
-  { id: "ux-ui", name: "UX/UI", icon: "palette", description: "UX/UI prompts" },
+  { id: "feature", name: "Feature", icon: "Zap", description: "Feature prompts" },
+  { id: "ux-ui", name: "UX/UI", icon: "Palette", description: "UX/UI prompts" },
 ];
 
 const mockPrompts = [
@@ -81,15 +78,13 @@ const mockPrompts = [
 // ─── Setup Helpers ────────────────────────────────────────────────────────────
 
 /**
- * Re-establish the ResizeObserver mock before each test.
+ * Re-establish browser API mocks before each test.
  *
- * vitest's `mockReset: true` config resets ALL vi.fn() implementations after
- * every test — including `globalThis.ResizeObserver` from setup.ts.
- * cmdk uses `new ResizeObserver(...)` internally when it mounts, so it needs
- * a proper constructor (class) that survives vitest's mock resets.
+ * vitest's `mockReset: true` resets ALL vi.fn() between tests, including
+ * `globalThis.ResizeObserver`. cmdk uses `new ResizeObserver()` when mounting,
+ * so it needs a proper constructor (class) each test run.
  */
 function resetBrowserAPIs() {
-  // ResizeObserver — must be a class (proper constructor) because cmdk calls `new ResizeObserver()`
   class MockResizeObserver {
     observe() {}
     unobserve() {}
@@ -105,10 +100,6 @@ function resetBrowserAPIs() {
 function setupDefaultMocks() {
   // Re-establish return values after vitest's mockReset clears them between tests
   mockAddGenerationJob.mockReturnValue("job-123");
-
-  mockUseAppStore.mockImplementation((selector: (s: object) => unknown) =>
-    selector({ currentProject: { path: TEST_PROJECT } }),
-  );
 
   mockUseIdeationStore.mockImplementation((selector: (s: object) => unknown) =>
     selector({ addGenerationJob: mockAddGenerationJob }),
@@ -149,18 +140,51 @@ describe("PromptCommandPopover", () => {
     setupDefaultMocks();
   });
 
+  // ─── Static icon map ─────────────────────────────────────────────────────────
+
+  describe("ICON_MAP", () => {
+    const SERVER_ICON_STRINGS = [
+      "Zap",
+      "Palette",
+      "Code",
+      "TrendingUp",
+      "Cpu",
+      "Shield",
+      "Gauge",
+      "Accessibility",
+      "BarChart",
+    ];
+
+    it("contains all 9 server icon strings as valid Lucide components", () => {
+      SERVER_ICON_STRINGS.forEach((iconName) => {
+        const component = ICON_MAP[iconName];
+        expect(component, `ICON_MAP["${iconName}"] should be defined`).toBeDefined();
+        // Lucide icons are forwardRef components (objects) or function components.
+        // Accept either — just not null/undefined/primitive.
+        expect(
+          typeof component === "function" || (typeof component === "object" && component !== null),
+          `ICON_MAP["${iconName}"] should be a React component (function or forwardRef object)`,
+        ).toBe(true);
+      });
+    });
+
+    it("covers all 9 expected entries — no missing icons", () => {
+      expect(Object.keys(ICON_MAP)).toHaveLength(SERVER_ICON_STRINGS.length);
+    });
+  });
+
   // ─── Trigger button ──────────────────────────────────────────────────────────
 
   describe("trigger button", () => {
     it('renders the "Generate Ideas" button', () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       expect(
         screen.getByRole("button", { name: /Generate Ideas/ }),
       ).toBeInTheDocument();
     });
 
     it("does not show the command input before the button is clicked", () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       expect(
         screen.queryByPlaceholderText("Search prompts…"),
       ).not.toBeInTheDocument();
@@ -171,7 +195,7 @@ describe("PromptCommandPopover", () => {
 
   describe("popover open state", () => {
     it("shows the search input when trigger button is clicked", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
       expect(
         screen.getByPlaceholderText("Search prompts…"),
@@ -179,7 +203,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("shows all prompt titles when opened with no search query", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
       expect(screen.getByText("Add dark mode")).toBeInTheDocument();
       expect(screen.getByText("Improve onboarding")).toBeInTheDocument();
@@ -187,7 +211,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("shows prompt descriptions when opened", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
       expect(
         screen.getByText("Add a dark mode toggle to settings"),
@@ -195,7 +219,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("shows category group headings when prompts are available", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
       expect(screen.getByText("Feature")).toBeInTheDocument();
       expect(screen.getByText("UX/UI")).toBeInTheDocument();
@@ -217,7 +241,7 @@ describe("PromptCommandPopover", () => {
         getCategoryById: vi.fn(),
       });
 
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       expect(screen.getByText("Loading prompts…")).toBeInTheDocument();
@@ -235,7 +259,7 @@ describe("PromptCommandPopover", () => {
         getCategoryById: vi.fn(),
       });
 
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       expect(screen.getByText("No prompts found.")).toBeInTheDocument();
@@ -246,7 +270,7 @@ describe("PromptCommandPopover", () => {
 
   describe("search filtering", () => {
     it("filters prompts by title when the user types in the search input", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.change(screen.getByPlaceholderText("Search prompts…"), {
@@ -265,7 +289,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("filters prompts by description when the search term matches description text", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.change(screen.getByPlaceholderText("Search prompts…"), {
@@ -282,7 +306,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("is case-insensitive", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.change(screen.getByPlaceholderText("Search prompts…"), {
@@ -295,7 +319,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("hides a category group when search filters out all its prompts", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       // "dark mode" only matches the feature category
@@ -310,7 +334,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it('shows "No prompts found." when no prompts match the search query', async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.change(screen.getByPlaceholderText("Search prompts…"), {
@@ -323,7 +347,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("shows all prompts again when search is cleared", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       // Filter down
@@ -351,7 +375,7 @@ describe("PromptCommandPopover", () => {
 
   describe("prompt selection", () => {
     it("calls addGenerationJob with the project path and the selected prompt", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.click(screen.getByText("Add dark mode"));
@@ -370,7 +394,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("calls mutation.mutate with the correct payload after selection", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.click(screen.getByText("Add dark mode"));
@@ -389,7 +413,7 @@ describe("PromptCommandPopover", () => {
     it("uses the job ID returned by addGenerationJob in the mutation call", async () => {
       mockAddGenerationJob.mockReturnValueOnce("custom-job-id-xyz");
 
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.click(screen.getByText("Add dark mode"));
@@ -401,12 +425,43 @@ describe("PromptCommandPopover", () => {
       });
     });
 
-    it("does not call addGenerationJob or mutate when projectPath is empty", async () => {
-      mockUseAppStore.mockImplementation((selector: (s: object) => unknown) =>
-        selector({ currentProject: null }),
+    it("closes the popover after a prompt is selected", async () => {
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
+      await openPopover();
+
+      fireEvent.click(screen.getByText("Add dark mode"));
+
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText("Search prompts…")).not.toBeInTheDocument();
+      });
+    });
+
+    it("resets the search input to empty after selection", async () => {
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
+      await openPopover();
+
+      // Type a search query before selecting
+      fireEvent.change(screen.getByPlaceholderText("Search prompts…"), {
+        target: { value: "dark" },
+      });
+      await waitFor(() =>
+        expect(screen.queryByText("Improve onboarding")).not.toBeInTheDocument(),
       );
 
-      render(<PromptCommandPopover />);
+      // Select a prompt — this closes the popover and resets search
+      fireEvent.click(screen.getByText("Add dark mode"));
+      await waitFor(() =>
+        expect(screen.queryByPlaceholderText("Search prompts…")).not.toBeInTheDocument(),
+      );
+
+      // Re-open the popover — all prompts should be visible (search was cleared)
+      await openPopover();
+      expect(screen.getByText("Improve onboarding")).toBeInTheDocument();
+      expect(screen.getByText("Accessibility audit")).toBeInTheDocument();
+    });
+
+    it("does not call addGenerationJob or mutate when projectPath prop is empty", async () => {
+      render(<PromptCommandPopover projectPath="" />);
       await openPopover();
 
       fireEvent.click(screen.getByText("Add dark mode"));
@@ -419,7 +474,7 @@ describe("PromptCommandPopover", () => {
     });
 
     it("can select prompts from different categories independently", async () => {
-      render(<PromptCommandPopover />);
+      render(<PromptCommandPopover projectPath={TEST_PROJECT} />);
       await openPopover();
 
       fireEvent.click(screen.getByText("Accessibility audit"));

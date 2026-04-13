@@ -8,6 +8,7 @@ export type ProjectSettingsViewId =
   | "scripts"
   | "commands-scripts"
   | "claude"
+  | "templates"
   | "data"
   | "orphaned"
   | "danger";

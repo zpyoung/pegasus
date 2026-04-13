@@ -1,9 +1,11 @@
 import { useIdeationStore } from "@/store/ideation-store";
-import { useAppStore } from "@/store/app-store";
 import { Spinner } from "@/components/ui/spinner";
 
-export function GenerationJobsIndicator() {
-  const projectPath = useAppStore((s) => s.currentProject?.path ?? "");
+interface GenerationJobsIndicatorProps {
+  projectPath: string;
+}
+
+export function GenerationJobsIndicator({ projectPath }: GenerationJobsIndicatorProps) {
   const generationJobs = useIdeationStore((s) => s.generationJobs);
 
   const activeCount = generationJobs.filter(

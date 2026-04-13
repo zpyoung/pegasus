@@ -8,6 +8,7 @@ import {
   Database,
   Terminal,
   Unlink,
+  LayoutTemplate,
 } from "lucide-react";
 import type { ProjectSettingsViewId } from "../hooks/use-project-settings-view";
 
@@ -21,6 +22,7 @@ export const PROJECT_SETTINGS_NAV_ITEMS: ProjectNavigationItem[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "worktrees", label: "Worktrees", icon: GitBranch },
   { id: "commands-scripts", label: "Commands & Scripts", icon: Terminal },
+  { id: "templates", label: "Templates", icon: LayoutTemplate },
   { id: "theme", label: "Theme", icon: Palette },
   { id: "claude", label: "Models", icon: Workflow },
   { id: "data", label: "Data", icon: Database },

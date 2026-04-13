@@ -314,8 +314,8 @@ export function IdeaBoard() {
           {ideas.length} idea{ideas.length !== 1 ? "s" : ""}
         </span>
         <div className="ml-auto flex items-center gap-2">
-          <GenerationJobsIndicator />
-          <PromptCommandPopover />
+          <GenerationJobsIndicator projectPath={projectPath} />
+          <PromptCommandPopover projectPath={projectPath} />
         </div>
       </div>
 

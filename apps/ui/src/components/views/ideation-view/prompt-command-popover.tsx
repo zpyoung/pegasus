@@ -2,17 +2,17 @@ import { useState } from "react";
 import {
   Sparkles,
   Lightbulb,
-  Palette,
-  Code2,
-  TrendingUp,
-  Wrench,
-  Shield,
   Zap,
-  Eye,
-  BarChart3,
+  Palette,
+  Code,
+  TrendingUp,
+  Cpu,
+  Shield,
+  Gauge,
+  Accessibility,
+  BarChart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { IdeaCategory } from "@pegasus/types";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -30,25 +30,28 @@ import {
 import { useGuidedPrompts } from "@/hooks/use-guided-prompts";
 import { useGenerateIdeationSuggestions } from "@/hooks/mutations/use-ideation-mutations";
 import { useIdeationStore } from "@/store/ideation-store";
-import { useAppStore } from "@/store/app-store";
 
-const CATEGORY_ICONS: Record<IdeaCategory, LucideIcon> = {
-  feature: Lightbulb,
-  "ux-ui": Palette,
-  dx: Code2,
-  growth: TrendingUp,
-  technical: Wrench,
-  security: Shield,
-  performance: Zap,
-  accessibility: Eye,
-  analytics: BarChart3,
+/** Maps the icon string returned by the server (PromptCategory.icon) to a Lucide component. */
+export const ICON_MAP: Record<string, LucideIcon> = {
+  Zap,
+  Palette,
+  Code,
+  TrendingUp,
+  Cpu,
+  Shield,
+  Gauge,
+  Accessibility,
+  BarChart,
 };
 
-export function PromptCommandPopover() {
+interface PromptCommandPopoverProps {
+  projectPath: string;
+}
+
+export function PromptCommandPopover({ projectPath }: PromptCommandPopoverProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  const projectPath = useAppStore((s) => s.currentProject?.path ?? "");
   const addGenerationJob = useIdeationStore((s) => s.addGenerationJob);
   const { categories, prompts, isLoading } = useGuidedPrompts();
   const generateMutation = useGenerateIdeationSuggestions(projectPath);
@@ -103,7 +106,7 @@ export function PromptCommandPopover() {
               {isLoading ? "Loading prompts…" : "No prompts found."}
             </CommandEmpty>
             {filteredCategories.map((cat) => {
-              const Icon = CATEGORY_ICONS[cat.id] ?? Lightbulb;
+              const Icon = ICON_MAP[cat.icon] ?? Lightbulb;
               return (
                 <CommandGroup
                   key={cat.id}
