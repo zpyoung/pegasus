@@ -8,6 +8,23 @@ This project was bootstrapped from an open-source upstream and has diverged
 substantially. The entries below describe changes relative to that upstream
 baseline.
 
+## [1.2.0] — 2026-04-13
+
+### ✨ Added
+
+- ✨ Add project templates UI with board integration — templates section in project settings, template mutation hooks, and template selection in the add-feature flow (`3624ca4`)
+- ✨ Add project-level feature templates with UI separation (`5d8cc66`)
+- ✨ Enhance runtime instance metadata handling and UI integration (`b1b0bf9`)
+- ✨ Enhance release process to include commit, tag, push, and publish steps (`dcc8a77`)
+- ✨ Add user-level config path for Pegasus in allowed system directories (`a62c2f7`)
+
+### 🐛 Fixed
+
+- 🐛 Improve process termination handling for dev servers by killing entire process tree (`c0144a2`)
+- 🐛 Prevent dev server port detection from matching "port in use" lines — added negative lookahead to skip "Port in use" output, and export port env vars from launcher (`d3edc86`)
+
+---
+
 ## [1.1.0] — 2026-04-12
 
 ### ✨ Added
@@ -154,5 +171,6 @@ baseline.
 
 ---
 
+[1.2.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.2.0
 [1.1.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.1.0
 [1.0.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.0.0
