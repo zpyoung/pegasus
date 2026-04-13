@@ -941,11 +941,14 @@ class DevServerService {
         TERM: "xterm-256color",
       };
 
+      // Spawn in a new process group (detached: true) so we can kill the entire
+      // tree on stop — dev scripts like start-pegasus.sh spawn background children
+      // (Express server, Vite) that would otherwise survive a single-PID SIGTERM.
       const devProcess = spawn(devCommand.cmd, devCommand.args, {
         cwd: worktreePath,
         env,
         stdio: ["ignore", "pipe", "pipe"],
-        detached: false,
+        detached: true,
       });
 
       // Track if process failed early using object to work around TypeScript narrowing
@@ -1198,11 +1201,30 @@ class DevServerService {
       });
     }
 
-    // Kill the process; persisted/re-attached entries may not have a process handle.
-    if (server.process && !server.process.killed) {
-      server.process.kill("SIGTERM");
+    // Kill the entire process tree. Dev servers like start-pegasus.sh spawn
+    // background children (Express, Vite) that survive a single-PID signal.
+    // Since we spawn with detached: true, the child is a process group leader
+    // and we can kill the whole group with -pid (negative PID).
+    if (server.process && server.process.pid && !server.process.killed) {
+      try {
+        // Kill the process group (negative PID) to reach all children
+        process.kill(-server.process.pid, "SIGTERM");
+      } catch {
+        // Process group may have already exited; fall back to direct kill
+        try {
+          server.process.kill("SIGTERM");
+        } catch {
+          // Already dead
+        }
+      }
     } else {
       this.killProcessOnPort(server.port);
+    }
+
+    // Also kill processes on the allocated port if it differs from the detected
+    // port (e.g. Pegasus uses two ports: web + server)
+    if (server.allocatedPort !== server.port) {
+      this.killProcessOnPort(server.allocatedPort);
     }
 
     // Free the originally-reserved port slot (allocatedPort is immutable and always
