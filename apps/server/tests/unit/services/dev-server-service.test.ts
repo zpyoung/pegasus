@@ -1049,6 +1049,55 @@ describe("dev-server-service.ts", () => {
       expect(serverInfo?.urlDetected).toBe(true);
     });
 
+    it('should not detect port from "port in use" lines before auto-selected line', async () => {
+      vi.mocked(secureFs.access).mockResolvedValue(undefined);
+
+      const mockProcess = createMockProcess();
+      vi.mocked(spawn).mockReturnValue(mockProcess as any);
+
+      const { getDevServerService } =
+        await import("@/services/dev-server-service.js");
+      const service = getDevServerService();
+
+      await service.startDevServer(testDir, testDir);
+
+      // Realistic start-pegasus.sh output when ports are in use:
+      // The "Port XXXX in use" lines arrive BEFORE the auto-selected line
+      mockProcess.stdout.emit(
+        "data",
+        Buffer.from(
+          "Port 3007 in use (PID: 810 4038 92891), finding alternative...\n",
+        ),
+      );
+      mockProcess.stdout.emit(
+        "data",
+        Buffer.from(
+          "Port 3008 in use (PID: 810 4038 4052), finding alternative...\n",
+        ),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Should NOT have detected port 3007 from the "in use" line
+      const serverInfoBefore = service.getServerInfo(testDir);
+      expect(serverInfoBefore?.urlDetected).toBe(false);
+
+      // Now the auto-selected line arrives
+      mockProcess.stdout.emit(
+        "data",
+        Buffer.from(
+          "✓ Auto-selected available ports: Web=3011, Server=3012\n",
+        ),
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Should detect port 3011 from the auto-selected line
+      const serverInfo = service.getServerInfo(testDir);
+      expect(serverInfo?.url).toBe("http://localhost:3011");
+      expect(serverInfo?.urlDetected).toBe(true);
+    });
+
     it("should detect Pegasus custom port format", async () => {
       vi.mocked(secureFs.access).mockResolvedValue(undefined);
 

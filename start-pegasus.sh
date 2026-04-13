@@ -1200,6 +1200,8 @@ case $MODE in
         export TEST_SERVER_PORT="$TEST_SERVER_PORT"
         export VITE_SERVER_URL="http://${APP_HOST}:$SERVER_PORT"
         export PORT="$SERVER_PORT"
+        export PEGASUS_WEB_PORT="$WEB_PORT"
+        export PEGASUS_SERVER_PORT="$SERVER_PORT"
         export DATA_DIR="$SCRIPT_DIR/data"
         # Always include localhost and 127.0.0.1 for local dev, plus custom hostname if different
         CORS_ORIGINS="http://localhost:$WEB_PORT,http://127.0.0.1:$WEB_PORT"
@@ -1291,6 +1293,8 @@ case $MODE in
         export TEST_PORT="$TEST_WEB_PORT"
         export TEST_SERVER_PORT="$TEST_SERVER_PORT"
         export PORT="$SERVER_PORT"
+        export PEGASUS_WEB_PORT="$WEB_PORT"
+        export PEGASUS_SERVER_PORT="$SERVER_PORT"
         export VITE_SERVER_URL="http://localhost:$SERVER_PORT"
         export CORS_ORIGIN="http://localhost:$WEB_PORT,http://127.0.0.1:$WEB_PORT"
         export VITE_APP_MODE="2"

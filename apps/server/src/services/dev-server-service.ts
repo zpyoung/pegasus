@@ -93,8 +93,10 @@ const PORT_PATTERNS: Array<{ pattern: RegExp; description: string }> = [
     description: '"listening on port" format',
   },
   // "Port: 3000", "port 3000" (at start of line or after whitespace)
+  // Excludes lines where the port is mentioned as unavailable:
+  //   "Port 3007 in use", "port 3000 is taken/busy/occupied/unavailable"
   {
-    pattern: /(?:^|\s)port[:\s]+(\d{4,5})(?:\s|$|[.,;])/im,
+    pattern: /(?:^|\s)port[:\s]+(\d{4,5})(?!\s+(?:in use|is\s+(?:taken|busy|occupied|unavailable)))(?:\s|$|[.,;])/im,
     description: '"port:" format',
   },
 ];
