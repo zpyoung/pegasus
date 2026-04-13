@@ -9,6 +9,7 @@ import { CommandsAndScriptsSection } from "./commands-and-scripts-section";
 import { ProjectModelsSection } from "./project-models-section";
 import { DataManagementSection } from "./data-management-section";
 import { OrphanedFeaturesSection } from "./orphaned-features-section";
+import { ProjectTemplatesSection } from "./project-templates-section";
 import { DangerZoneSection } from "../settings-view/danger-zone/danger-zone-section";
 import { DeleteProjectDialog } from "../settings-view/components/delete-project-dialog";
 import { RemoveFromPegasusDialog } from "../settings-view/components/remove-from-pegasus-dialog";
@@ -113,6 +114,8 @@ export function ProjectSettingsView() {
         return <CommandsAndScriptsSection project={currentProject} />;
       case "claude":
         return <ProjectModelsSection project={currentProject} />;
+      case "templates":
+        return <ProjectTemplatesSection project={currentProject} />;
       case "data":
         return <DataManagementSection project={currentProject} />;
       case "orphaned":

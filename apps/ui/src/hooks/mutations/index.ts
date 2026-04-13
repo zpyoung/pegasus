@@ -83,3 +83,11 @@ export {
   useApplyCursorProfile,
   useCopyCursorConfig,
 } from "./use-cursor-permissions-mutations";
+
+// Project Template mutations
+export {
+  useAddProjectTemplate,
+  useUpdateProjectTemplate,
+  useDeleteProjectTemplate,
+  useReorderProjectTemplates,
+} from "./use-project-template-mutations";

@@ -121,7 +121,7 @@ import type { BranchConflictData } from "./board-view/dialogs";
 import { InitScriptIndicator } from "./board-view/init-script-indicator";
 import { RunningDevServersIndicator } from "./board-view/running-dev-servers-indicator";
 import { useInitScriptEvents } from "@/hooks/use-init-script-events";
-import { usePipelineConfig } from "@/hooks/queries";
+import { usePipelineConfig, useProjectSettings } from "@/hooks/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { useAutoModeQueryInvalidation } from "@/hooks/use-query-invalidation";
@@ -194,6 +194,9 @@ export function BoardView({
   const keyboardShortcuts = useAppStore((state) => state.keyboardShortcuts);
   // Fetch pipeline config via React Query
   const { data: pipelineConfig } = usePipelineConfig(currentProject?.path);
+  // Fetch project-level settings to get project-specific feature templates
+  const { data: projectSettings } = useProjectSettings(currentProject?.path);
+  const projectFeatureTemplates = (projectSettings?.featureTemplates ?? []) as FeatureTemplate[];
   const queryClient = useQueryClient();
 
   // Subscribe to auto mode events for React Query cache invalidation
@@ -2383,6 +2386,7 @@ export function BoardView({
                 onQuickAdd={() => setShowQuickAddDialog(true)}
                 onTemplateSelect={handleTemplateSelect}
                 templates={featureTemplates}
+                projectTemplates={projectFeatureTemplates}
                 isSelectionMode={isSelectionMode}
                 selectedFeatureIds={selectedFeatureIds}
                 onToggleFeatureSelection={toggleFeatureSelection}
@@ -2444,6 +2448,7 @@ export function BoardView({
                 onQuickAdd={() => setShowQuickAddDialog(true)}
                 onTemplateSelect={handleTemplateSelect}
                 templates={featureTemplates}
+                projectTemplates={projectFeatureTemplates}
                 addFeatureShortcut={keyboardShortcuts.addFeature}
                 onShowCompletedModal={() => setShowCompletedModal(true)}
                 completedCount={completedFeatures.length}

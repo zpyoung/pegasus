@@ -4,6 +4,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, ChevronDown, Zap, FileText } from "lucide-react";
@@ -17,8 +19,10 @@ interface AddFeatureButtonProps {
   onQuickAdd: () => void;
   /** Handler for template selection */
   onTemplateSelect: (template: FeatureTemplate) => void;
-  /** Available templates (filtered to enabled ones) */
+  /** Global (app-level) templates */
   templates: FeatureTemplate[];
+  /** Project-level templates (shown above global templates with a separator) */
+  projectTemplates?: FeatureTemplate[];
   /** Whether to show as a small icon button or full button */
   compact?: boolean;
   /** Whether the button should take full width */
@@ -36,6 +40,7 @@ export function AddFeatureButton({
   onQuickAdd,
   onTemplateSelect,
   templates,
+  projectTemplates,
   compact = false,
   fullWidth = false,
   className,
@@ -48,6 +53,16 @@ export function AddFeatureButton({
   const enabledTemplates = templates
     .filter((t) => t.enabled !== false)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  // Filter project-level templates
+  const enabledProjectTemplates = (projectTemplates ?? [])
+    .filter((t) => t.enabled !== false)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const hasProjectTemplates = enabledProjectTemplates.length > 0;
+  const hasGlobalTemplates = enabledTemplates.length > 0;
+  const showSeparator = hasProjectTemplates && hasGlobalTemplates;
+  const hasAnyTemplates = hasProjectTemplates || hasGlobalTemplates;
 
   const handleTemplateClick = (template: FeatureTemplate) => {
     setDropdownOpen(false);
@@ -81,7 +96,7 @@ export function AddFeatureButton({
           <Zap className="w-3 h-3" />
         </Button>
         {/* Segment 3: Templates dropdown */}
-        {enabledTemplates.length > 0 && (
+        {hasAnyTemplates && (
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
@@ -95,18 +110,49 @@ export function AddFeatureButton({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" sideOffset={4}>
-              {enabledTemplates.map((template) => (
-                <DropdownMenuItem
-                  key={template.id}
-                  onClick={() => handleTemplateClick(template)}
-                  data-testid={`template-menu-item-${template.id}`}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  <span className="truncate max-w-[200px]">
-                    {template.name}
-                  </span>
-                </DropdownMenuItem>
-              ))}
+              {hasProjectTemplates && (
+                <>
+                  {showSeparator && (
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Project
+                    </DropdownMenuLabel>
+                  )}
+                  {enabledProjectTemplates.map((template) => (
+                    <DropdownMenuItem
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      data-testid={`template-menu-item-${template.id}`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="truncate max-w-[200px]">
+                        {template.name}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              {showSeparator && <DropdownMenuSeparator />}
+              {hasGlobalTemplates && (
+                <>
+                  {showSeparator && (
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Global
+                    </DropdownMenuLabel>
+                  )}
+                  {enabledTemplates.map((template) => (
+                    <DropdownMenuItem
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      data-testid={`template-menu-item-${template.id}`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="truncate max-w-[200px]">
+                        {template.name}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -157,7 +203,7 @@ export function AddFeatureButton({
             size="sm"
             className={cn(
               "h-8 rounded-l-none border-l border-primary-foreground/20",
-              enabledTemplates.length > 0 ? "px-1.5" : "w-7 p-0",
+              hasAnyTemplates ? "px-1.5" : "w-7 p-0",
               fullWidth && "flex-shrink-0",
             )}
             aria-label="Templates"
@@ -169,17 +215,48 @@ export function AddFeatureButton({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={4}>
-          {enabledTemplates.length > 0 ? (
-            enabledTemplates.map((template) => (
-              <DropdownMenuItem
-                key={template.id}
-                onClick={() => handleTemplateClick(template)}
-                data-testid={`template-menu-item-${template.id}`}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                <span className="truncate max-w-[200px]">{template.name}</span>
-              </DropdownMenuItem>
-            ))
+          {hasAnyTemplates ? (
+            <>
+              {hasProjectTemplates && (
+                <>
+                  {showSeparator && (
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Project
+                    </DropdownMenuLabel>
+                  )}
+                  {enabledProjectTemplates.map((template) => (
+                    <DropdownMenuItem
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      data-testid={`template-menu-item-${template.id}`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="truncate max-w-[200px]">{template.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+              {showSeparator && <DropdownMenuSeparator />}
+              {hasGlobalTemplates && (
+                <>
+                  {showSeparator && (
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Global
+                    </DropdownMenuLabel>
+                  )}
+                  {enabledTemplates.map((template) => (
+                    <DropdownMenuItem
+                      key={template.id}
+                      onClick={() => handleTemplateClick(template)}
+                      data-testid={`template-menu-item-${template.id}`}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      <span className="truncate max-w-[200px]">{template.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
+            </>
           ) : (
             <DropdownMenuItem disabled className="text-muted-foreground">
               No templates configured

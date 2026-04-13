@@ -75,6 +75,7 @@ interface KanbanBoardProps {
   onQuickAdd: () => void;
   onTemplateSelect: (template: FeatureTemplate) => void;
   templates: FeatureTemplate[];
+  projectTemplates?: FeatureTemplate[];
   addFeatureShortcut?: string;
   onShowCompletedModal: () => void;
   completedCount: number;
@@ -340,6 +341,7 @@ export const KanbanBoard = memo(function KanbanBoard({
   onQuickAdd,
   onTemplateSelect,
   templates,
+  projectTemplates,
   addFeatureShortcut: addFeatureShortcutProp,
   onShowCompletedModal,
   completedCount,
@@ -566,6 +568,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                         onQuickAdd={onQuickAdd}
                         onTemplateSelect={onTemplateSelect}
                         templates={templates}
+                        projectTemplates={projectTemplates}
                         fullWidth
                         shortcut={formatShortcut(addFeatureShortcut, true)}
                       />

@@ -78,8 +78,10 @@ export interface ListViewProps {
   onQuickAdd?: () => void;
   /** Callback for template selection */
   onTemplateSelect?: (template: FeatureTemplate) => void;
-  /** Available feature templates */
+  /** Available global feature templates */
   templates?: FeatureTemplate[];
+  /** Project-level feature templates (shown above global templates with a separator) */
+  projectTemplates?: FeatureTemplate[];
   /** Whether selection mode is enabled */
   isSelectionMode?: boolean;
   /** Set of selected feature IDs */
@@ -151,12 +153,14 @@ const EmptyState = memo(function EmptyState({
   onQuickAdd,
   onTemplateSelect,
   templates,
+  projectTemplates,
   shortcut,
 }: {
   onAddFeature?: () => void;
   onQuickAdd?: () => void;
   onTemplateSelect?: (template: FeatureTemplate) => void;
   templates?: FeatureTemplate[];
+  projectTemplates?: FeatureTemplate[];
   shortcut?: string;
 }) {
   // Only show AddFeatureButton if all required handlers are provided
@@ -177,6 +181,7 @@ const EmptyState = memo(function EmptyState({
           onQuickAdd={onQuickAdd}
           onTemplateSelect={onTemplateSelect}
           templates={templates || []}
+          projectTemplates={projectTemplates}
           shortcut={shortcut}
           testIdPrefix="list-view-empty-add-feature"
         />
@@ -238,6 +243,7 @@ export const ListView = memo(function ListView({
   onQuickAdd,
   onTemplateSelect,
   templates = [],
+  projectTemplates,
   isSelectionMode = false,
   selectedFeatureIds = EMPTY_SET,
   onToggleFeatureSelection,
@@ -482,6 +488,7 @@ export const ListView = memo(function ListView({
           onQuickAdd={onQuickAdd}
           onTemplateSelect={onTemplateSelect}
           templates={templates}
+          projectTemplates={projectTemplates}
           shortcut={formatShortcut(addFeatureShortcut, true)}
         />
       </div>
@@ -556,6 +563,7 @@ export const ListView = memo(function ListView({
             onQuickAdd={onQuickAdd}
             onTemplateSelect={onTemplateSelect}
             templates={templates}
+            projectTemplates={projectTemplates}
             fullWidth
             shortcut={formatShortcut(addFeatureShortcut, true)}
             testIdPrefix="list-view-add-feature"
