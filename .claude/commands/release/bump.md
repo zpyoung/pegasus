@@ -7,14 +7,21 @@ allowed-tools:
   - Bash(git show:*)
   - Bash(git describe:*)
   - Bash(git status:*)
+  - Bash(git diff:*)
+  - Bash(git add:*)
+  - Bash(git commit:*)
+  - Bash(git push:*)
   - Bash(date:*)
-description: Prepare the next release — auto-detect semver bump from commits since the last tag, update CHANGELOG.md and package.json versions. Does not commit or tag.
+  - Bash(GH_TOKEN=* pnpm build:electron:publish:*)
+  - Bash(pnpm build:electron:publish:*)
+  - AskUserQuestion
+description: "Complete end-to-end release — detect semver bump, update CHANGELOG.md and package.json versions, commit, tag, push, and publish the Electron app."
 argument-hint: "[major|minor|patch]  (optional override)"
 ---
 
 # /release:bump
 
-You are a release manager preparing the next version of this project. Analyze commits since the last git tag, determine the correct semver bump, and update `CHANGELOG.md` plus the `version` field in `package.json` and `apps/ui/package.json`. **Do not commit, push, or tag** — leave the working tree dirty so the user can review the diff before running `pnpm build:electron:publish`.
+You are a release manager completing an end-to-end release of this project. Analyze commits since the last git tag, determine the correct semver bump, update `CHANGELOG.md` and version fields, commit, tag, push, and build+publish the Electron app.
 
 ## Arguments
 
@@ -159,9 +166,11 @@ Use `Edit` (not `Write`) to update these files, changing only the `"version"` fi
 
 Do **not** touch `libs/*/package.json` — those are internal workspace packages and their versions are irrelevant to the electron-updater flow.
 
-### Step 9: Report
+### Step 9: Review gate
 
-Print a summary in this exact format:
+Show the user a summary of all changes and the diff, then ask for confirmation before proceeding to the irreversible steps (commit, tag, push, publish).
+
+Print:
 
 ```
 📦 Release prepared: v<OLD> → v<NEW> (<BUMP_TYPE>)
@@ -178,11 +187,74 @@ Files modified:
   ✓ CHANGELOG.md       (new [<NEW>] section + link reference)
   ✓ package.json       (version: <OLD> → <NEW>)
   ✓ apps/ui/package.json (version: <OLD> → <NEW>)
+```
 
-Next steps:
-  1. Review:  git diff CHANGELOG.md package.json apps/ui/package.json
-  2. Commit:  git commit -am "chore: release v<NEW>"
-  3. Publish: GH_TOKEN="$GITHUB_TOKEN" pnpm build:electron:publish
+Then show the diff:
+
+```bash
+git diff CHANGELOG.md package.json apps/ui/package.json
+```
+
+Ask the user: `Ready to commit, tag, push, and publish v<NEW>? (yes/no)`
+
+On anything other than `yes` / `y`:
+
+1. Revert all file changes with `git checkout -- CHANGELOG.md package.json apps/ui/package.json`
+2. Print `Aborted, all files reverted.` and exit.
+
+### Step 10: Commit and tag
+
+Stage the modified files and create the release commit and tag:
+
+```bash
+git add CHANGELOG.md package.json apps/ui/package.json
+git commit -m "chore: release v<NEW>"
+git tag v<NEW>
+```
+
+### Step 11: Push
+
+Push the commit and tag to origin:
+
+```bash
+git push origin main
+git push origin v<NEW>
+```
+
+### Step 12: Build and publish
+
+Run the electron build+publish pipeline. This will:
+
+- Preflight-check that the version isn't already published on GitHub
+- Build packages, then the Vite app, then the Electron app
+- Upload artifacts to a GitHub draft release via electron-builder
+- Promote the draft release to published
+
+```bash
+GH_TOKEN="$GITHUB_TOKEN" pnpm build:electron:publish
+```
+
+If `GITHUB_TOKEN` is not set, check for `GH_TOKEN`. If neither is set, ask the user to provide one before proceeding.
+
+**This step may take several minutes.** Monitor the output for errors. If the build fails:
+
+1. Print the error clearly.
+2. Note that the commit and tag have already been pushed — the user may need to delete the tag and force-push to retry.
+3. Do NOT automatically attempt cleanup — let the user decide.
+
+### Step 13: Final report
+
+Print:
+
+```
+✅ Release v<NEW> complete!
+
+  📝 Commit:  <short-sha> chore: release v<NEW>
+  🏷️  Tag:     v<NEW>
+  🚀 Push:    origin/main + origin/v<NEW>
+  📦 Publish: GitHub Release published
+
+  Release URL: https://github.com/zpyoung/pegasus/releases/tag/v<NEW>
 ```
 
 </instructions>
@@ -190,14 +262,15 @@ Next steps:
 ## Requirements
 
 <requirements>
-- MUST NOT commit, push, stash, or create tags
-- MUST NOT run the build or publish pipeline
+- MUST confirm with the user before committing, pushing, and publishing (Step 9 review gate)
 - MUST confirm before a major bump unless `$ARGUMENTS` is `major`
 - MUST match the existing CHANGELOG.md format (Keep a Changelog, em-dash date separator, `---` section divider)
 - MUST update both `package.json` (root) and `apps/ui/package.json` to the same version
-- MUST abort cleanly on user rejection, leaving all files unmodified
+- MUST abort cleanly on user rejection, reverting all file modifications
 - MUST NOT modify `libs/*/package.json`
 - MUST use `Edit` (targeted edits), never `Write` (overwrite) on existing files
+- MUST verify GH_TOKEN or GITHUB_TOKEN is available before attempting publish
+- MUST NOT automatically clean up pushed tags/commits on build failure — inform the user and let them decide
 </requirements>
 
 ## Error handling
@@ -209,7 +282,11 @@ Next steps:
 - **CHANGELOG.md missing** → abort, suggest running the project's doc scaffold
 - **Commit subjects not in conventional-commit format** → default unknown types to `patch`, and note the ambiguity in the final report
 - **User rejects a major bump** → print "Aborted, no files modified." and exit
+- **User rejects at review gate** → revert all modified files, print "Aborted, all files reverted." and exit
 - **`$ARGUMENTS` contains an unexpected value** → abort with: `Unknown argument '<value>'. Expected: major | minor | patch`
+- **No GH_TOKEN/GITHUB_TOKEN** → ask the user to provide one before proceeding with publish
+- **Build/publish fails** → report the error, note that commit+tag are already pushed, let user decide next steps
+- **Push fails** → report the error, note the local commit+tag exist, suggest the user resolve manually
   </error_handling>
 
 ## Example
@@ -231,6 +308,12 @@ ghi9012 docs: update CHANGELOG for v1.0.0 release
 3. Next version: `1.1.0`
 4. Insert `## [1.1.0] — 2026-04-12` in CHANGELOG with emoji sections
 5. Update `package.json` and `apps/ui/package.json` to `1.1.0`
+6. Show diff + ask user to confirm
+7. Commit: `chore: release v1.1.0`
+8. Tag: `v1.1.0`
+9. Push to origin
+10. Run `pnpm build:electron:publish`
+11. Report success with release URL
 
 **Expected CHANGELOG section**:
 
@@ -250,25 +333,17 @@ ghi9012 docs: update CHANGELOG for v1.0.0 release
 - 📝 Update CHANGELOG for v1.0.0 release (`ghi9012`)
 ```
 
-**Expected report**:
+**Expected final report**:
 
 ```
-📦 Release prepared: v1.0.0 → v1.1.0 (minor)
+✅ Release v1.1.0 complete!
 
-Commits analyzed: 3
-  ✨ Added:   1 feat(s)
-  🐛 Fixed:   1 fix(es)
-  🔄 Changed: 1 other
+  📝 Commit:  mno3456 chore: release v1.1.0
+  🏷️  Tag:     v1.1.0
+  🚀 Push:    origin/main + origin/v1.1.0
+  📦 Publish: GitHub Release published
 
-Files modified:
-  ✓ CHANGELOG.md       (new [1.1.0] section + link reference)
-  ✓ package.json       (version: 1.0.0 → 1.1.0)
-  ✓ apps/ui/package.json (version: 1.0.0 → 1.1.0)
-
-Next steps:
-  1. Review:  git diff CHANGELOG.md package.json apps/ui/package.json
-  2. Commit:  git commit -am "chore: release v1.1.0"
-  3. Publish: GH_TOKEN="$GITHUB_TOKEN" pnpm build:electron:publish
+  Release URL: https://github.com/zpyoung/pegasus/releases/tag/v1.1.0
 ```
 
 </example>
