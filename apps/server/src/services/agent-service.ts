@@ -494,6 +494,13 @@ export class AgentService {
         "[AgentService]",
       );
 
+      const { getPreferredClaudeAuthSetting } =
+        await import("../lib/settings-helpers.js");
+      const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
+        this.settingsService,
+        "[AgentService]",
+      );
+
       const sdkOptions = createChatOptions({
         cwd: effectiveWorkDir,
         model: modelForSdk,
@@ -610,6 +617,7 @@ export class AgentService {
         mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined, // Pass MCP servers configuration
         agents: customSubagents, // Pass custom subagents for task delegation
         thinkingLevel: effectiveThinkingLevel, // Pass thinking level for Claude models
+        preferredClaudeAuth, // Pass auth preference for direct Anthropic API
         reasoningEffort: effectiveReasoningEffort, // Pass reasoning effort for Codex models
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration (GLM, MiniMax, etc.)

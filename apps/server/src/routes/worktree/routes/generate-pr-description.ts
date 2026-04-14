@@ -400,6 +400,13 @@ export function createGeneratePRDescriptionHandler(
 
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
+      const { getPreferredClaudeAuthSetting } =
+        await import("../../../lib/settings-helpers.js");
+      const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
+        settingsService,
+        "[GeneratePRDescription]",
+      );
+
       let responseText = "";
       const stream = aiProvider.executeQuery({
         prompt: effectivePrompt,
@@ -410,6 +417,7 @@ export function createGeneratePRDescriptionHandler(
         allowedTools: [],
         readOnly: true,
         thinkingLevel,
+        preferredClaudeAuth, // Pass auth preference for direct Anthropic API
         claudeCompatibleProvider,
         credentials,
       });

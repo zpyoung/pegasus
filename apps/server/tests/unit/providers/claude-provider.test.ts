@@ -142,6 +142,57 @@ describe("claude-provider.ts", () => {
       });
     });
 
+    it("should respect preferredClaudeAuth='cli' by omitting API keys from env", async () => {
+      vi.mocked(sdk.query).mockReturnValue(
+        (async function* () {
+          yield { type: "text", text: "test" };
+        })(),
+      );
+
+      process.env.ANTHROPIC_API_KEY = "env-api-key";
+
+      const generator = provider.executeQuery({
+        prompt: "Test",
+        model: "claude-opus-4-6",
+        cwd: "/test",
+        preferredClaudeAuth: "cli",
+      });
+
+      await collectAsyncGenerator(generator);
+
+      const queryCall = (vi.mocked(sdk.query).mock.calls[0] as any)[0];
+      const env = queryCall.options.env;
+      expect(env).not.toHaveProperty("ANTHROPIC_API_KEY");
+      expect(env).not.toHaveProperty("ANTHROPIC_AUTH_TOKEN");
+    });
+
+    it("should respect preferredClaudeAuth='api_key' by using credentials if available", async () => {
+      vi.mocked(sdk.query).mockReturnValue(
+        (async function* () {
+          yield { type: "text", text: "test" };
+        })(),
+      );
+
+      const credentials = {
+        version: 1,
+        apiKeys: { anthropic: "cred-api-key", google: "", openai: "", zai: "" },
+      } as any;
+
+      const generator = provider.executeQuery({
+        prompt: "Test",
+        model: "claude-opus-4-6",
+        cwd: "/test",
+        preferredClaudeAuth: "api_key",
+        credentials,
+      });
+
+      await collectAsyncGenerator(generator);
+
+      const queryCall = (vi.mocked(sdk.query).mock.calls[0] as any)[0];
+      const env = queryCall.options.env;
+      expect(env.ANTHROPIC_API_KEY).toBe("cred-api-key");
+    });
+
     it("should handle conversation history with sdkSessionId using resume option", async () => {
       vi.mocked(sdk.query).mockReturnValue(
         (async function* () {

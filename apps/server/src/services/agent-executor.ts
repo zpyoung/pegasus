@@ -143,6 +143,7 @@ export class AgentExecutor {
           ? (mcpServers as Record<string, { command: string }>)
           : undefined,
       thinkingLevel: options.thinkingLevel,
+      preferredClaudeAuth: options.preferredClaudeAuth,
       reasoningEffort: options.reasoningEffort,
       credentials,
       claudeCompatibleProvider,

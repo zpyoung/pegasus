@@ -158,6 +158,7 @@ export type {
   SidebarStyle,
   PlanningMode,
   ThinkingLevel,
+  ClaudeAuthPreference,
   ServerLogLevel,
   ModelProvider,
   PhaseModelEntry,

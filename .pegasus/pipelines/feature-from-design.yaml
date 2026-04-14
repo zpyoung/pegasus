@@ -1,5 +1,5 @@
 name: Feature from Design
-description: Read a design document and implement it
+description: Deep-analyze a design document, explore the codebase, implement with requirement tracking, and verify compliance
 
 execution:
   mode: session
@@ -15,64 +15,254 @@ inputs:
     description: Path to the design document to implement (e.g. .ai_tasks/feature-x.design.md)
 
 stages:
-  - id: read-design
-    name: Read Design Document
+  - id: analyze-and-explore
+    name: Analyze Design & Explore Codebase
     prompt: |
-      Read the design document at `{{inputs.design_doc_path}}` and create a detailed implementation plan.
+      You are preparing to implement a design document. Your job is to deeply understand
+      BOTH the design AND the existing codebase before any code is written.
 
       Task: {{task.description}}
 
-      Steps:
-      1. Read `{{inputs.design_doc_path}}`.
-      2. Extract all requirements (FR-### and NFR-###), architecture decisions, components, and testing strategy.
-      3. Create a step-by-step implementation plan that maps each requirement to concrete code changes.
-      4. List every file to create or modify, in dependency order.
-      5. Note any ambiguities or gaps in the design that need assumptions.
+      ## Phase 1: Read the Design Document
+
+      Read `{{inputs.design_doc_path}}` completely. Extract:
+      1. **Every requirement** (FR-### and NFR-###) with its acceptance criteria
+      2. **Architecture decisions** — component structure, data flow, interfaces
+      3. **Dependencies** between components (what must be built first)
+      4. **Testing strategy** — which requirements need unit/integration/e2e tests
+      5. **Any assumptions or open questions** noted in the design
+
+      ## Phase 2: Explore the Existing Codebase
+
+      Use Grep, Glob, and Read tools extensively to understand:
+      1. **File structure** — Where do similar components live? What's the naming convention?
+      2. **Import patterns** — What utilities, types, and shared code already exists that the implementation should reuse?
+      3. **Code style** — Read 2-3 existing files similar to what you'll create. Note patterns for error handling, logging, state management, and API design.
+      4. **Test patterns** — Read existing test files to understand the testing style, setup patterns, and assertion conventions.
+      5. **Type definitions** — Find and read relevant type files. Identify types you'll extend or create.
+
+      ## Phase 3: Validate Design Against Codebase
+
+      Cross-reference the design with what you found:
+      1. Do the files/modules the design references actually exist?
+      2. Are the interfaces and types the design assumes correct, or have they changed?
+      3. Are there existing utilities the design doesn't mention that should be reused?
+      4. Are there naming conflicts or structural contradictions?
+
+      ## Phase 4: Produce Implementation Checklist
+
+      Output a structured implementation checklist in this exact format:
+
+      ```
+      ## Implementation Checklist
+
+      ### File Changes (Dependency Order)
+      1. [path/to/file] — [CREATE|MODIFY] — [what changes and why] — [FR-### it satisfies]
+      2. ...
+
+      ### Existing Code to Reuse
+      - [path:function/type] — [how it will be used]
+
+      ### Patterns to Follow
+      - [pattern name] — [example file that demonstrates it]
+
+      ### Risks & Complexity Hotspots
+      - [risk description] — [mitigation approach]
+
+      ### Requirement → Code Mapping
+      | Requirement | File(s) | Test Method | Notes |
+      |------------|---------|-------------|-------|
+      | FR-001     | ...     | unit        | ...   |
+      ```
+
+      Be thorough. Every requirement must appear in the mapping. Every file must have a clear purpose.
     claude_flags:
       model: opus
       permission_mode: plan
-    requires_approval: false
+      max_turns: 15
+    requires_approval: true
 
   - id: implement
     name: Implement from Design
     prompt: |
-      Implement the design according to the plan from the previous stage.
-      Follow the architecture, components, and interfaces specified in the design document exactly.
-      Follow the existing code style and patterns in the project.
-      Implement in dependency order — shared types and utilities first, then core logic, then integration points.
+      Implement the design from `{{inputs.design_doc_path}}` using the implementation
+      checklist from the previous analysis stage.
+
+      Task: {{task.description}}
+
+      ## Implementation Rules
+
+      1. **Read before writing** — Before modifying ANY file, read it first. Understand its current
+         state, imports, and patterns before making changes.
+
+      2. **Dependency order** — Follow the file change order from the checklist. Build foundations
+         (types, utilities, shared code) before consumers (components, routes, services).
+
+      3. **Reuse existing code** — Use the utilities, types, and patterns identified in the analysis.
+         Do NOT recreate functionality that already exists in the codebase.
+
+      4. **Match existing style** — Follow the code style, naming conventions, error handling patterns,
+         and import organization you see in surrounding files. Do not introduce new patterns.
+
+      5. **Track requirements** — As you implement each requirement, note it. After completing a
+         logical group of changes, output which FR-### and NFR-### requirements are now addressed.
+
+      6. **Handle edge cases** — The design document specifies error handling and edge cases.
+         Implement them. Don't defer error handling to a later stage.
+
+      7. **Keep changes minimal** — Implement exactly what the design specifies. Don't add features,
+         refactor adjacent code, or make "improvements" beyond scope.
+
+      ## When Stuck
+
+      - If the design is ambiguous about an implementation detail, check how similar features
+        are implemented elsewhere in the codebase and follow that pattern.
+      - If you discover that the design's assumptions about the codebase are wrong (a file doesn't
+        exist, an interface has changed), adapt the implementation to reality while preserving the
+        design's intent. Note the deviation in your output.
+
+      ## Output
+
+      After implementation, list:
+      1. Every requirement addressed (FR-### / NFR-###)
+      2. Every file created or modified
+      3. Any deviations from the design and why
+      4. Any requirements NOT yet addressed and why
     claude_flags:
       model: sonnet
       permission_mode: acceptEdits
-    requires_approval: false
+      max_turns: 30
+
+  - id: build-verify
+    name: Build & Lint Verification
+    prompt: |
+      Verify the implementation compiles and passes static analysis before testing.
+
+      ## Steps
+
+      1. **Type check** — Run the TypeScript compiler or equivalent type checker.
+         If this is a TypeScript project, run `pnpm tsc --noEmit` or the project's build command.
+         Fix any type errors, missing imports, or interface mismatches.
+
+      2. **Lint** — Run the project's linter.
+         {{#if project.lint_command}}Use: `{{project.lint_command}}`{{/if}}
+         Fix lint errors. Do not disable rules — fix the underlying issue.
+
+      3. **Build** — Attempt a production build to catch any bundling or compilation issues.
+         Fix any build errors.
+
+      4. **Import verification** — Grep for any imports from files that don't exist.
+         Verify all new exports are properly re-exported from barrel files if the project uses them.
+
+      If everything passes cleanly, say so. If you had to fix issues, list every fix
+      with the file, line, and what was wrong.
+    claude_flags:
+      model: sonnet
+      permission_mode: acceptEdits
+      max_turns: 15
 
   - id: test
-    name: Write Tests
+    name: Write & Run Tests
     prompt: |
-      Write tests for the implementation following the testing strategy from the design document.
-      Cover the test methods specified in the requirements mapping table (unit, integration, e2e as applicable).
-      Run the tests and fix any failures.
-      Use: {{project.test_command}}
+      Write tests for the implementation and verify they pass.
+
+      Task: {{task.description}}
+
+      ## Before Writing Tests
+
+      1. **Re-read the design document** at `{{inputs.design_doc_path}}` — find the Testing Strategy
+         section and the requirements mapping table. Each requirement specifies its test method
+         (unit, integration, e2e).
+
+      2. **Read existing test files** for similar features in the codebase. Match the testing style:
+         - How are tests organized (describe/it blocks, file naming)?
+         - What test utilities, fixtures, and helpers exist?
+         - How is mocking handled?
+         - What assertion patterns are used?
+
+      ## Writing Tests
+
+      For each requirement in the design:
+      1. Write the test type specified (unit, integration, or e2e)
+      2. Cover the happy path AND the error/edge cases specified in the requirement's acceptance criteria
+      3. Use descriptive test names that reference the requirement ID: `"FR-001: should ..."``
+      4. Follow the existing test patterns you observed — don't introduce new testing paradigms
+
+      ## Running Tests
+
+      {{#if project.test_command}}Run: `{{project.test_command}}`{{else}}Find and run the project's test command.{{/if}}
+
+      If tests fail:
+      1. Read the failure output carefully
+      2. Determine if the test is wrong or the implementation is wrong
+      3. Fix the root cause (prefer fixing implementation bugs over loosening test assertions)
+      4. Re-run until all tests pass
+
+      ## Output
+
+      List:
+      - Every test file created/modified
+      - Requirement coverage: which FR-### / NFR-### requirements have test coverage
+      - Any requirements that could NOT be tested and why
     claude_flags:
       model: sonnet
       permission_mode: acceptEdits
-    requires_approval: false
+      max_turns: 20
 
-  - id: review
-    name: Design Compliance Review
+  - id: compliance-review
+    name: Design Compliance Review & Polish
     prompt: |
-      Review the implementation against the original design document.
-      For each requirement (FR-### and NFR-###), verify it is correctly implemented and tested.
-      Check that the architecture matches the design — correct components, interfaces, and data flow.
-      Flag any deviations, missing requirements, or untested code paths.
-      Use pal clink codex to assist with the review.
-    claude_flags:
-      permission_mode: acceptEdits
+      You are the final quality gate. Your job is to verify every requirement from the design
+      is correctly implemented and tested, then fix any gaps you find.
 
-  - id: apply_fixes
-    name: Apply Fixes
-    prompt: |
-      Given the review feedback, apply necessary fixes to ensure compliance with the design document.
-      Address any missing requirements, architectural deviations, or testing gaps identified in the review.
-      Use pal clink codex to assist with the fixes.
+      Task: {{task.description}}
+
+      ## Phase 1: Requirement-by-Requirement Verification
+
+      Re-read the design document at `{{inputs.design_doc_path}}`.
+
+      For EVERY requirement (FR-### and NFR-###):
+      1. **Find the implementation** — Use Grep and Read to locate where this requirement is implemented.
+         Cite specific file:line references.
+      2. **Verify correctness** — Does the implementation match the requirement's specification and
+         acceptance criteria? Check data flow, error handling, edge cases.
+      3. **Verify test coverage** — Is there a test that validates this requirement? Does the test
+         actually assert the right behavior?
+      4. **Verdict** — PASS, PARTIAL (specify what's missing), or FAIL (specify what's wrong)
+
+      Output a structured verification table:
+      ```
+      | Requirement | Status  | Implementation | Test Coverage | Notes |
+      |------------|---------|----------------|---------------|-------|
+      | FR-001     | PASS    | src/foo.ts:42  | tests/foo.test.ts:15 | — |
+      | FR-002     | PARTIAL | src/bar.ts:88  | MISSING       | No error case test |
+      ```
+
+      ## Phase 2: Architecture Compliance
+
+      Verify the implementation matches the design's architecture:
+      1. Component structure — Are all specified components present with correct boundaries?
+      2. Data flow — Does data move between components as the design specifies?
+      3. Interfaces — Do the actual interfaces match the design's API contracts?
+      4. Integration points — Are external dependencies wired up correctly?
+
+      ## Phase 3: Fix Everything
+
+      For any PARTIAL or FAIL results:
+      1. Fix the implementation gap or bug
+      2. Add missing test coverage
+      3. Re-run tests to verify fixes: {{#if project.test_command}}`{{project.test_command}}`{{/if}}
+
+      Do not just flag issues — fix them. You have full edit access.
+
+      ## Phase 4: Final Output
+
+      Produce a final compliance report:
+      1. Updated verification table (should be all PASS after fixes)
+      2. List of fixes applied
+      3. Any requirements that genuinely cannot be satisfied and why
+      4. Overall assessment: is the implementation ready for human review?
     claude_flags:
+      model: opus
       permission_mode: acceptEdits
+      max_turns: 25

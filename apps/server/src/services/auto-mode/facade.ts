@@ -333,8 +333,14 @@ export class AutoModeServiceFacade {
           // MCP servers are optional - continue without them
         }
 
-        // Read user-configured max turns from settings
+        // Read user-configured max turns and auth preference from settings
+        const { getDefaultMaxTurnsSetting, getPreferredClaudeAuthSetting } =
+          await import("../../lib/settings-helpers.js");
         const userMaxTurns = await getDefaultMaxTurnsSetting(
+          settingsService,
+          "[AutoModeFacade]",
+        );
+        const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
           settingsService,
           "[AutoModeFacade]",
         );
@@ -383,6 +389,7 @@ export class AutoModeServiceFacade {
             autoLoadClaudeMd: opts?.autoLoadClaudeMd as boolean | undefined,
             useClaudeCodeSystemPrompt,
             thinkingLevel: opts?.thinkingLevel as ThinkingLevel | undefined,
+            preferredClaudeAuth,
             reasoningEffort: opts?.reasoningEffort as
               | ReasoningEffort
               | undefined,

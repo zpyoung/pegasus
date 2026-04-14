@@ -9,6 +9,7 @@ import type {
   MCPServerConfig,
   McpServerConfig,
   PromptCustomization,
+  ClaudeAuthPreference,
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   PhaseModelKey,
@@ -138,7 +139,36 @@ export async function getUseClaudeCodeSystemPromptSetting(
 }
 
 /**
- * Get the default max turns setting from global settings.
+ * Get the preferredClaudeAuth setting from global settings.
+ * Defaults to 'auto' when unset or if settings service is not available.
+ *
+ * @param settingsService - Optional settings service instance
+ * @param logPrefix - Prefix for log messages
+ * @returns Promise resolving to the preferredClaudeAuth setting value
+ */
+export async function getPreferredClaudeAuthSetting(
+  settingsService?: SettingsService | null,
+  logPrefix = "[SettingsHelper]",
+): Promise<ClaudeAuthPreference> {
+  if (!settingsService) {
+    return "auto";
+  }
+
+  try {
+    const globalSettings = await settingsService.getGlobalSettings();
+    return globalSettings.preferredClaudeAuth ?? "auto";
+  } catch (error) {
+    logger.error(
+      `${logPrefix} Failed to load preferredClaudeAuth setting:`,
+      error,
+    );
+    return "auto";
+  }
+}
+
+/**
+  * Get the default maximum turns setting from global settings.
+
  *
  * Reads the user's configured `defaultMaxTurns` setting, which controls the maximum
  * number of agent turns (tool-call round-trips) for feature execution.

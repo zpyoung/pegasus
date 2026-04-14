@@ -268,6 +268,14 @@ export class IdeationService {
       // Strip provider prefix - providers need bare model IDs
       const bareModel = stripProviderPrefix(modelId);
 
+      // Resolve provider-specific settings (timeout, etc.)
+      const { getPreferredClaudeAuthSetting } =
+        await import("../lib/settings-helpers.js");
+      const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
+        this.settingsService,
+        "[IdeationService]",
+      );
+
       const executeOptions: ExecuteOptions = {
         prompt: message,
         model: bareModel,
@@ -278,6 +286,7 @@ export class IdeationService {
         abortController: activeSession.abortController!,
         conversationHistory:
           conversationHistory.length > 0 ? conversationHistory : undefined,
+        preferredClaudeAuth, // Pass auth preference for direct Anthropic API
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       };

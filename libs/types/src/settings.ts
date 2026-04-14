@@ -399,6 +399,15 @@ export function getDefaultThinkingLevel(model: string): ThinkingLevel {
   return "none";
 }
 
+/**
+ * ClaudeAuthPreference - User preference for Claude authentication
+ *
+ * - 'auto': Use existing priority (credentials file -> env var -> CLI OAuth)
+ * - 'api_key': Force use of API key from credentials or env vars
+ * - 'cli': Force use of Claude CLI OAuth, ignoring any API keys in env vars
+ */
+export type ClaudeAuthPreference = "auto" | "api_key" | "cli";
+
 /** ModelProvider - AI model provider for credentials and API key management */
 export type ModelProvider =
   | "claude"
@@ -1384,6 +1393,12 @@ export interface GlobalSettings {
   /** Phase-specific AI model configuration */
   phaseModels: PhaseModelConfig;
 
+  /**
+   * Preferred authentication method for direct Anthropic API (Claude CLI)
+   * Defaults to 'auto' for backward compatibility.
+   */
+  preferredClaudeAuth: ClaudeAuthPreference;
+
   /** Default thinking level applied when selecting a model via the primary button
    * in the two-stage model selector. Users can still adjust per-model via the expand arrow.
    * Defaults to 'none' (no extended thinking). */
@@ -1926,7 +1941,7 @@ export const DEFAULT_PHASE_MODELS: PhaseModelConfig = {
 };
 
 /** Current version of the global settings schema */
-export const SETTINGS_VERSION = 6;
+export const SETTINGS_VERSION = 7;
 /** Current version of the credentials schema */
 export const CREDENTIALS_VERSION = 1;
 /** Current version of the project settings schema (bumped for terminalScripts field) */
@@ -1987,6 +2002,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   showQueryDevtools: true,
   enableAiCommitMessages: true,
   phaseModels: DEFAULT_PHASE_MODELS,
+  preferredClaudeAuth: "auto",
   defaultThinkingLevel: "adaptive",
   defaultReasoningEffort: "none",
   defaultMaxTurns: 10000,

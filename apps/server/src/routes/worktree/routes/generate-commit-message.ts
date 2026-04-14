@@ -233,6 +233,13 @@ export function createGenerateCommitMessageHandler(
 
       logger.info(`Using ${aiProvider.getName()} provider for model: ${model}`);
 
+      const { getPreferredClaudeAuthSetting } =
+        await import("../../../lib/settings-helpers.js");
+      const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
+        settingsService,
+        "[GenerateCommitMessage]",
+      );
+
       let responseText = "";
       const stream = aiProvider.executeQuery({
         prompt: effectivePrompt,
@@ -243,6 +250,7 @@ export function createGenerateCommitMessageHandler(
         allowedTools: [],
         readOnly: true,
         thinkingLevel, // Pass thinking level for extended thinking support
+        preferredClaudeAuth, // Pass auth preference for direct Anthropic API
         claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
         credentials, // Pass credentials for resolving 'credentials' apiKeySource
       });

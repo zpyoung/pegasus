@@ -257,6 +257,14 @@ export class SettingsService {
       needsSave = true;
     }
 
+    // Migration v6 -> v7: Add preferredClaudeAuth field (default 'auto')
+    if (storedVersion < 7) {
+      if (result.preferredClaudeAuth === undefined) {
+        result.preferredClaudeAuth = "auto";
+      }
+      needsSave = true;
+    }
+
     // Update version if any migration occurred
     if (needsSave) {
       result.version = SETTINGS_VERSION;

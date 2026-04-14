@@ -36,6 +36,7 @@ import {
   getPromptCustomization,
   getPhaseModelWithOverrides,
   getProviderByModelId,
+  getPreferredClaudeAuthSetting,
 } from "../../lib/settings-helpers.js";
 
 /** Maximum number of retry attempts for transient CLI failures */
@@ -361,6 +362,11 @@ ${userPrompt}`;
       finalSettingSources = ["user", "project"];
     }
 
+    const preferredClaudeAuth = await getPreferredClaudeAuthSetting(
+      settingsService,
+      "[BacklogPlan]",
+    );
+
     // Execute the query with retry logic for transient CLI failures
     const queryOptions = {
       prompt: finalPrompt,
@@ -372,6 +378,7 @@ ${userPrompt}`;
       abortController,
       settingSources: finalSettingSources,
       thinkingLevel, // Pass thinking level for extended thinking
+      preferredClaudeAuth, // Pass auth preference for direct Anthropic API
       claudeCompatibleProvider, // Pass provider for alternative endpoint configuration
       credentials, // Pass credentials for resolving 'credentials' apiKeySource
     };

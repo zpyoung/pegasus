@@ -20,6 +20,7 @@ import { getClaudeAuthIndicators } from "@pegasus/platform";
 import {
   getThinkingTokenBudget,
   validateBareModelId,
+  type ClaudeAuthPreference,
   type ClaudeApiProfile,
   type ClaudeCompatibleProvider,
   type Credentials,
@@ -80,10 +81,12 @@ function isClaudeCompatibleProvider(
  *
  * @param providerConfig - Optional provider configuration for alternative endpoint
  * @param credentials - Optional credentials object for resolving 'credentials' apiKeySource
+ * @param preferredAuth - Optional user preference for Claude authentication strategy
  */
 function buildEnv(
   providerConfig?: ProviderConfig,
   credentials?: Credentials,
+  preferredAuth: ClaudeAuthPreference = "auto",
 ): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
 
@@ -169,17 +172,31 @@ function buildEnv(
     // Priority: credentials file (UI settings) -> environment variable
     // Note: Only auth and endpoint vars are passed. Model mappings and traffic
     // control are NOT passed (those require a profile for explicit configuration).
-    if (credentials?.apiKeys?.anthropic) {
-      env["ANTHROPIC_API_KEY"] = credentials.apiKeys.anthropic;
-    } else if (process.env.ANTHROPIC_API_KEY) {
-      env["ANTHROPIC_API_KEY"] = process.env.ANTHROPIC_API_KEY;
+
+    // If user explicitly chose CLI OAuth, we skip setting any API keys
+    // which forces the SDK to use its internal CLI auth detection.
+    if (preferredAuth === "cli") {
+      logger.debug(
+        "[buildEnv] preferredAuth='cli', skipping API keys to force CLI OAuth",
+      );
+    } else {
+      // Priority for 'auto' or 'api_key':
+      // 1. credentials file (UI settings)
+      // 2. environment variable
+      if (credentials?.apiKeys?.anthropic) {
+        env["ANTHROPIC_API_KEY"] = credentials.apiKeys.anthropic;
+      } else if (process.env.ANTHROPIC_API_KEY) {
+        env["ANTHROPIC_API_KEY"] = process.env.ANTHROPIC_API_KEY;
+      }
+
+      // If using Claude Max plan via CLI auth, the SDK handles auth automatically
+      // when no API key is provided. We don't set ANTHROPIC_AUTH_TOKEN here
+      // unless it was explicitly set in process.env (rare edge case).
+      if (process.env.ANTHROPIC_AUTH_TOKEN) {
+        env["ANTHROPIC_AUTH_TOKEN"] = process.env.ANTHROPIC_AUTH_TOKEN;
+      }
     }
-    // If using Claude Max plan via CLI auth, the SDK handles auth automatically
-    // when no API key is provided. We don't set ANTHROPIC_AUTH_TOKEN here
-    // unless it was explicitly set in process.env (rare edge case).
-    if (process.env.ANTHROPIC_AUTH_TOKEN) {
-      env["ANTHROPIC_AUTH_TOKEN"] = process.env.ANTHROPIC_AUTH_TOKEN;
-    }
+
     // Pass through ANTHROPIC_BASE_URL if set in environment (backward compatibility)
     if (process.env.ANTHROPIC_BASE_URL) {
       env["ANTHROPIC_BASE_URL"] = process.env.ANTHROPIC_BASE_URL;
@@ -223,6 +240,7 @@ export class ClaudeProvider extends BaseProvider {
       conversationHistory,
       sdkSessionId,
       thinkingLevel,
+      preferredClaudeAuth,
       claudeApiProfile,
       claudeCompatibleProvider,
       credentials,
@@ -249,7 +267,7 @@ export class ClaudeProvider extends BaseProvider {
       // Pass only explicitly allowed environment variables to SDK
       // When a provider is active, uses provider settings (clean switch)
       // When no provider, uses direct Anthropic API (from process.env or CLI OAuth)
-      env: buildEnv(providerConfig, credentials),
+      env: buildEnv(providerConfig, credentials, preferredClaudeAuth),
       // Pass through allowedTools if provided by caller (decided by sdk-options.ts)
       ...(allowedTools && { allowedTools }),
       // Restrict available built-in tools if specified (tools: [] disables all tools)

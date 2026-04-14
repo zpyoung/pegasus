@@ -4,6 +4,7 @@
 
 import type {
   ThinkingLevel,
+  ClaudeAuthPreference,
   ClaudeApiProfile,
   ClaudeCompatibleProvider,
   Credentials,
@@ -200,6 +201,11 @@ export interface ExecuteOptions {
    * Only applies to Claude models; Cursor models handle thinking internally.
    */
   thinkingLevel?: ThinkingLevel;
+  /**
+   * Preferred authentication method for direct Anthropic API (Claude CLI)
+   * Only applies when no custom provider is set.
+   */
+  preferredClaudeAuth?: ClaudeAuthPreference;
   /**
    * Custom subagents for specialized task delegation
    * Key: agent name, Value: agent definition
