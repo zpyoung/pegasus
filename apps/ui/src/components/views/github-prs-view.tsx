@@ -39,7 +39,10 @@ import {
 export function GitHubPRsView() {
   const [selectedPR, setSelectedPR] = useState<GitHubPR | null>(null);
   const [commentDialogPR, setCommentDialogPR] = useState<GitHubPR | null>(null);
-  const { currentProject, getEffectiveUseWorktrees } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const getEffectiveUseWorktrees = useAppStore(
+    (s) => s.getEffectiveUseWorktrees,
+  );
   const isMobile = useIsMobile();
 
   const {

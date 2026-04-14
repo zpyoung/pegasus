@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,11 +29,14 @@ import {
   type PhaseSummaryEntry,
 } from "@/lib/log-parser";
 import { getFirstNonEmptySummary } from "@/lib/summary-selection";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAgentOutput, useFeature } from "@/hooks/queries";
 import { cn } from "@/lib/utils";
 import { MODAL_CONSTANTS } from "@/components/views/board-view/dialogs/agent-output-modal.constants";
 import type { AutoModeEvent } from "@/types/electron";
 import type { BacklogPlanEvent } from "@pegasus/types";
+import { useAgentStreamStore } from "@/store/agent-stream-store";
+import { queryKeys } from "@/lib/query-keys";
 
 interface AgentOutputModalProps {
   open: boolean;
@@ -181,7 +184,19 @@ export function AgentOutputModal({
 
   // Track view mode state
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
-  const [streamedContent, setStreamedContent] = useState<string>("");
+
+  // Streaming state — managed by AgentStreamStore, not local React state
+  const queryClient = useQueryClient();
+  const appendChunk = useAgentStreamStore((s) => s.appendChunk);
+  const markComplete = useAgentStreamStore((s) => s.markComplete);
+  const clearStream = useAgentStreamStore((s) => s.clearStream);
+  const streamedContent = useAgentStreamStore(
+    useCallback((s) => s.getOutput(featureId), [featureId]),
+  );
+
+  // Buffer refs for 50ms chunk batching (reduces store writes during rapid streaming)
+  const streamBufferRef = useRef<string[]>([]);
+  const streamTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use React Query for initial output loading
   const {
@@ -208,12 +223,17 @@ export function AgentOutputModal({
   const resolvedStatus = feature?.status ?? featureStatus;
   const resolvedBranchName = feature?.branchName ?? branchName;
 
-  // Reset streamed content when modal opens or featureId changes
+  // Reset stream when modal opens or featureId changes
   useEffect(() => {
     if (open) {
-      setStreamedContent("");
+      streamBufferRef.current = [];
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
+      clearStream(featureId);
     }
-  }, [open, featureId]);
+  }, [open, featureId, clearStream]);
 
   // Combine initial output from query with streamed content from WebSocket
   const output = initialOutput + streamedContent;
@@ -495,15 +515,62 @@ export function AgentOutputModal({
       }
 
       if (newContent) {
-        // Append new content from WebSocket to streamed content
-        setStreamedContent((prev) => prev + newContent);
+        // Buffer chunk for batched flush to the stream store (50ms window)
+        streamBufferRef.current.push(newContent);
+        if (!streamTimerRef.current) {
+          streamTimerRef.current = setTimeout(() => {
+            if (streamBufferRef.current.length > 0) {
+              appendChunk(featureId, streamBufferRef.current.join(""));
+              streamBufferRef.current = [];
+            }
+            streamTimerRef.current = null;
+          }, 50);
+        }
+      }
+
+      // On feature completion: flush buffer, write to RQ cache, clear stream
+      if (event.type === "auto_mode_feature_complete") {
+        if (streamTimerRef.current) {
+          clearTimeout(streamTimerRef.current);
+          streamTimerRef.current = null;
+        }
+        if (streamBufferRef.current.length > 0) {
+          appendChunk(featureId, streamBufferRef.current.join(""));
+          streamBufferRef.current = [];
+        }
+        markComplete(featureId);
+        const finalStreamed = useAgentStreamStore
+          .getState()
+          .getOutput(featureId);
+        if (resolvedProjectPath) {
+          queryClient.setQueryData(
+            queryKeys.features.agentOutput(resolvedProjectPath, featureId),
+            initialOutput + finalStreamed,
+          );
+        }
+        clearStream(featureId);
       }
     });
 
     return () => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
       unsubscribe();
     };
-  }, [open, featureId, isBacklogPlan, onClose]);
+  }, [
+    open,
+    featureId,
+    isBacklogPlan,
+    onClose,
+    appendChunk,
+    markComplete,
+    clearStream,
+    queryClient,
+    resolvedProjectPath,
+    initialOutput,
+  ]);
 
   // Listen to backlog plan events and update output
   useEffect(() => {
@@ -533,14 +600,28 @@ export function AgentOutputModal({
       }
 
       if (newContent) {
-        setStreamedContent((prev) => prev + newContent);
+        // Buffer chunk for batched flush to the stream store
+        streamBufferRef.current.push(newContent);
+        if (!streamTimerRef.current) {
+          streamTimerRef.current = setTimeout(() => {
+            if (streamBufferRef.current.length > 0) {
+              appendChunk(featureId, streamBufferRef.current.join(""));
+              streamBufferRef.current = [];
+            }
+            streamTimerRef.current = null;
+          }, 50);
+        }
       }
     });
 
     return () => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
       unsubscribe();
     };
-  }, [open, isBacklogPlan]);
+  }, [open, isBacklogPlan, featureId, appendChunk]);
 
   // Handle scroll to detect if user scrolled up
   const handleScroll = () => {

@@ -589,6 +589,11 @@ export interface FeaturesAPI {
     }>;
     error?: string;
   }>;
+  getBulkStatus: (projectPath: string | undefined) => Promise<{
+    success: boolean;
+    statuses?: Array<{ id: string; status?: string; title?: string }>;
+    error?: string;
+  }>;
 }
 
 export interface AutoModeAPI {
@@ -4216,6 +4221,20 @@ function createMockFeaturesAPI(): FeaturesAPI {
       _targetBranch?: string | null,
     ) => {
       return { success: false, error: "Not supported in mock mode" };
+    },
+    getBulkStatus: async (projectPath: string | undefined) => {
+      if (!projectPath)
+        return { success: false, error: "projectPath is required" };
+      const allResult = await createMockFeaturesAPI().getAll(projectPath);
+      if (!allResult.success || !allResult.features) {
+        return { success: false, error: allResult.error };
+      }
+      const statuses = allResult.features.map((f) => ({
+        id: f.id,
+        status: f.status,
+        title: f.title,
+      }));
+      return { success: true, statuses };
     },
   };
 }

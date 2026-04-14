@@ -197,6 +197,17 @@ Use `resolveModelString()` from `@pegasus/model-resolver` to convert model alias
 - `sonnet` → `claude-sonnet-4-20250514`
 - `opus` → `claude-opus-4-6`
 
+### Streaming & Query Performance
+
+Learned from Wave 2 benchmark (FPS 43 → 113, script time −69%, heap −69%):
+
+- **Don't reparse growing buffers.** When parsing accumulates output on every chunk (logs, markdown, diffs), use the incremental stable-prefix pattern: a "stable entries" array + "unstable tail" string, advanced via boundary detection. See `apps/ui/src/lib/incremental-log-parser.ts` for the reusable shape. Reparsing the full string per chunk is O(n²) and will dominate any other cost.
+- **React Query is a snapshot cache, not a stream buffer.** For in-flight streaming content, use a Zustand store (see `AgentStreamStore` in `apps/ui/src/store/agent-stream-store.ts`) and only write to the RQ cache on completion. Invalidating RQ at <500ms during streaming triggers refetch→render cascades across every subscriber.
+- **Bound every streaming buffer.** The `AgentStreamStore` caps at 50MB per feature and drops oldest chunks; pick a ceiling before shipping. Unbounded `prev + newContent` accumulation was the main heap leak.
+- **Collapse per-component polls into one shared query.** When N card/panel instances each poll the same uniform data, replace with a single bulk query (see `useBulkFeatureStatus` + `POST /api/features/bulk-status`). React Query dedups across consumers automatically.
+- **Query invalidation debounce should straddle event arrival rate, not round numbers.** Progress events arrive at 10-20 Hz; use 500ms (`PROGRESS_DEBOUNCE_WAIT` in `use-query-invalidation.ts`), and _skip_ invalidation entirely for featureIds with an active stream (`useAgentStreamStore.getState().isStreaming(featureId)`).
+- **Baseline-compare benchmarks before starting each wave.** `perf/perf-comparison.json` (previous vs current at 10 streams × 60s) is the gate; if measured gains already exceed the design's target bands, _skip subsequent waves_ rather than optimizing further.
+
 ## Environment Variables
 
 ### Server

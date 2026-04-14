@@ -149,7 +149,8 @@ export function CliSetupStep({
   onBack,
   onSkip,
 }: CliSetupStepProps) {
-  const { apiKeys, setApiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
   const {
     cliStatus,
     authStatus,

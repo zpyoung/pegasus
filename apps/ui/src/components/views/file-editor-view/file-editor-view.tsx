@@ -128,12 +128,15 @@ interface FileEditorViewProps {
 }
 
 export function FileEditorView({ initialPath }: FileEditorViewProps) {
-  const {
-    currentProject,
-    defaultSkipTests,
-    getCurrentWorktree,
-    worktreesByProject,
-  } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const defaultSkipTests = useAppStore((s) => s.defaultSkipTests);
+  const getCurrentWorktree = useAppStore((s) => s.getCurrentWorktree);
+  // Narrow selector: subscribe only to the current project's worktrees, not the entire map
+  const projectWorktrees = useAppStore((s) =>
+    currentProject?.path
+      ? (s.worktreesByProject[currentProject.path] ?? [])
+      : [],
+  );
   const currentWorktree = useAppStore((s) =>
     currentProject?.path
       ? (s.currentWorktreeByProject[currentProject.path] ?? null)
@@ -698,20 +701,21 @@ export function FileEditorView({ initialPath }: FileEditorViewProps) {
   const currentBranch = useMemo(() => {
     if (!currentProject?.path) return "";
     const currentWorktreeInfo = getCurrentWorktree(currentProject.path);
-    const worktrees = worktreesByProject[currentProject.path] ?? [];
     const currentWorktreePath = currentWorktreeInfo?.path ?? null;
 
     const selectedWorktree =
       currentWorktreePath === null
-        ? worktrees.find((w) => w.isMain)
-        : worktrees.find(
+        ? projectWorktrees.find((w) => w.isMain)
+        : projectWorktrees.find(
             (w) => !w.isMain && pathsEqual(w.path, currentWorktreePath),
           );
 
     return (
-      selectedWorktree?.branch || worktrees.find((w) => w.isMain)?.branch || ""
+      selectedWorktree?.branch ||
+      projectWorktrees.find((w) => w.isMain)?.branch ||
+      ""
     );
-  }, [currentProject?.path, getCurrentWorktree, worktreesByProject]);
+  }, [currentProject?.path, getCurrentWorktree, projectWorktrees]);
 
   // ─── Create Feature from Selection ─────────────────────────
   const handleCreateFeatureFromSelection = useCallback(() => {

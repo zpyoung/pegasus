@@ -62,7 +62,7 @@ interface MemoryFile {
 }
 
 export function MemoryView() {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
   const [memoryFiles, setMemoryFiles] = useState<MemoryFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MemoryFile | null>(null);
   const [isLoading, setIsLoading] = useState(true);

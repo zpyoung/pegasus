@@ -27,7 +27,8 @@ import { CreateSpecDialog, RegenerateSpecDialog } from "./spec-view/dialogs";
 import type { SpecViewMode as SpecViewModeType } from "./spec-view/types";
 
 export function SpecView() {
-  const { currentProject, appSpec } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const appSpec = useAppStore((s) => s.appSpec);
 
   // View mode state - default to 'view'
   const [mode, setMode] = useState<SpecViewModeType>("view");

@@ -646,48 +646,29 @@ export const KanbanBoard = memo(function KanbanBoard({
                                   >
                                     <KanbanCard
                                       feature={feature}
-                                      onEdit={() => onEdit(feature)}
-                                      onDelete={() => onDelete(feature.id)}
-                                      onViewOutput={() => onViewOutput(feature)}
-                                      onVerify={() => onVerify(feature)}
-                                      onResume={() => onResume(feature)}
-                                      onForceStop={() => onForceStop(feature)}
-                                      onManualVerify={() =>
-                                        onManualVerify(feature)
+                                      onEdit={onEdit}
+                                      onDelete={onDelete}
+                                      onViewOutput={onViewOutput}
+                                      onVerify={onVerify}
+                                      onResume={onResume}
+                                      onForceStop={onForceStop}
+                                      onManualVerify={onManualVerify}
+                                      onMoveBackToInProgress={
+                                        onMoveBackToInProgress
                                       }
-                                      onMoveBackToInProgress={() =>
-                                        onMoveBackToInProgress(feature)
-                                      }
-                                      onFollowUp={() => onFollowUp(feature)}
-                                      onComplete={() => onComplete(feature)}
-                                      onImplement={() => onImplement(feature)}
-                                      onViewPlan={() => onViewPlan(feature)}
-                                      onApprovePlan={() =>
-                                        onApprovePlan(feature)
-                                      }
-                                      onAnswerQuestion={
-                                        onAnswerQuestion
-                                          ? () => onAnswerQuestion(feature)
-                                          : undefined
-                                      }
-                                      onSpawnTask={() => onSpawnTask?.(feature)}
-                                      onDuplicate={() => onDuplicate?.(feature)}
-                                      onDuplicateAsChild={() =>
-                                        onDuplicateAsChild?.(feature)
-                                      }
+                                      onFollowUp={onFollowUp}
+                                      onComplete={onComplete}
+                                      onImplement={onImplement}
+                                      onViewPlan={onViewPlan}
+                                      onApprovePlan={onApprovePlan}
+                                      onAnswerQuestion={onAnswerQuestion}
+                                      onSpawnTask={onSpawnTask}
+                                      onDuplicate={onDuplicate}
+                                      onDuplicateAsChild={onDuplicateAsChild}
                                       onDuplicateAsChildMultiple={
                                         onDuplicateAsChildMultiple
-                                          ? () =>
-                                              onDuplicateAsChildMultiple(
-                                                feature,
-                                              )
-                                          : undefined
                                       }
-                                      onCommitChanges={
-                                        onCommitChanges
-                                          ? () => onCommitChanges(feature)
-                                          : undefined
-                                      }
+                                      onCommitChanges={onCommitChanges}
                                       hasContext={featuresWithContext.has(
                                         feature.id,
                                       )}
@@ -709,9 +690,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                                       isSelected={selectedFeatureIds.has(
                                         feature.id,
                                       )}
-                                      onToggleSelect={() =>
-                                        onToggleFeatureSelection?.(feature.id)
-                                      }
+                                      onToggleSelect={onToggleFeatureSelection}
                                     />
                                   </div>
                                 );
@@ -729,41 +708,27 @@ export const KanbanBoard = memo(function KanbanBoard({
                               <KanbanCard
                                 key={feature.id}
                                 feature={feature}
-                                onEdit={() => onEdit(feature)}
-                                onDelete={() => onDelete(feature.id)}
-                                onViewOutput={() => onViewOutput(feature)}
-                                onVerify={() => onVerify(feature)}
-                                onResume={() => onResume(feature)}
-                                onForceStop={() => onForceStop(feature)}
-                                onManualVerify={() => onManualVerify(feature)}
-                                onMoveBackToInProgress={() =>
-                                  onMoveBackToInProgress(feature)
-                                }
-                                onFollowUp={() => onFollowUp(feature)}
-                                onComplete={() => onComplete(feature)}
-                                onImplement={() => onImplement(feature)}
-                                onViewPlan={() => onViewPlan(feature)}
-                                onApprovePlan={() => onApprovePlan(feature)}
-                                onAnswerQuestion={
-                                  onAnswerQuestion
-                                    ? () => onAnswerQuestion(feature)
-                                    : undefined
-                                }
-                                onSpawnTask={() => onSpawnTask?.(feature)}
-                                onDuplicate={() => onDuplicate?.(feature)}
-                                onDuplicateAsChild={() =>
-                                  onDuplicateAsChild?.(feature)
-                                }
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onViewOutput={onViewOutput}
+                                onVerify={onVerify}
+                                onResume={onResume}
+                                onForceStop={onForceStop}
+                                onManualVerify={onManualVerify}
+                                onMoveBackToInProgress={onMoveBackToInProgress}
+                                onFollowUp={onFollowUp}
+                                onComplete={onComplete}
+                                onImplement={onImplement}
+                                onViewPlan={onViewPlan}
+                                onApprovePlan={onApprovePlan}
+                                onAnswerQuestion={onAnswerQuestion}
+                                onSpawnTask={onSpawnTask}
+                                onDuplicate={onDuplicate}
+                                onDuplicateAsChild={onDuplicateAsChild}
                                 onDuplicateAsChildMultiple={
                                   onDuplicateAsChildMultiple
-                                    ? () => onDuplicateAsChildMultiple(feature)
-                                    : undefined
                                 }
-                                onCommitChanges={
-                                  onCommitChanges
-                                    ? () => onCommitChanges(feature)
-                                    : undefined
-                                }
+                                onCommitChanges={onCommitChanges}
                                 hasContext={featuresWithContext.has(feature.id)}
                                 isCurrentAutoTask={runningAutoTasks.includes(
                                   feature.id,
@@ -781,9 +746,7 @@ export const KanbanBoard = memo(function KanbanBoard({
                                 isSelectionMode={isSelectionMode}
                                 selectionTarget={selectionTarget}
                                 isSelected={selectedFeatureIds.has(feature.id)}
-                                onToggleSelect={() =>
-                                  onToggleFeatureSelection?.(feature.id)
-                                }
+                                onToggleSelect={onToggleFeatureSelection}
                               />
                             );
                           })

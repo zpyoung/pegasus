@@ -62,7 +62,8 @@ export function ClaudeSetupStep({
     setClaudeAuthStatus,
     setClaudeInstallProgress,
   } = useSetupStore();
-  const { setApiKeys, apiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
 
   const [apiKey, setApiKey] = useState("");
 

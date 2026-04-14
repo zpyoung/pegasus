@@ -37,7 +37,8 @@ function formatFeatureId(featureId: string): string {
 
 export function RunningAgentsView() {
   const [selectedAgent, setSelectedAgent] = useState<RunningAgent | null>(null);
-  const { setCurrentProject, projects } = useAppStore();
+  const setCurrentProject = useAppStore((s) => s.setCurrentProject);
+  const projects = useAppStore((s) => s.projects);
   const navigate = useNavigate();
 
   const logger = createLogger("RunningAgentsView");

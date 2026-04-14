@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { Settings, FolderOpen, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectIdentitySection } from "./project-identity-section";
@@ -33,7 +34,13 @@ interface SettingsProject {
 }
 
 export function ProjectSettingsView() {
-  const { currentProject, moveProjectToTrash, removeProject } = useAppStore();
+  const { currentProject, moveProjectToTrash, removeProject } = useAppStore(
+    useShallow((s) => ({
+      currentProject: s.currentProject,
+      moveProjectToTrash: s.moveProjectToTrash,
+      removeProject: s.removeProject,
+    })),
+  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveFromPegasusDialog, setShowRemoveFromPegasusDialog] =
     useState(false);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import {
   Workflow,
@@ -101,7 +102,13 @@ function FeatureDefaultModelOverrideSection({ project }: { project: Project }) {
     defaultFeatureModel: globalDefaultFeatureModel,
     setProjectDefaultFeatureModel,
     claudeCompatibleProviders,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      defaultFeatureModel: s.defaultFeatureModel,
+      setProjectDefaultFeatureModel: s.setProjectDefaultFeatureModel,
+      claudeCompatibleProviders: s.claudeCompatibleProviders,
+    })),
+  );
 
   const globalValue: PhaseModelEntry =
     globalDefaultFeatureModel ?? DEFAULT_GLOBAL_SETTINGS.defaultFeatureModel;
@@ -246,8 +253,12 @@ function PhaseOverrideItem({
   globalValue: PhaseModelEntry;
   projectOverride?: PhaseModelEntry;
 }) {
-  const { setProjectPhaseModelOverride, claudeCompatibleProviders } =
-    useAppStore();
+  const setProjectPhaseModelOverride = useAppStore(
+    (s) => s.setProjectPhaseModelOverride,
+  );
+  const claudeCompatibleProviders = useAppStore(
+    (s) => s.claudeCompatibleProviders,
+  );
 
   const hasOverride = !!projectOverride;
   const effectiveValue = projectOverride || globalValue;
@@ -368,7 +379,7 @@ function PhaseGroup({
   phases: PhaseConfig[];
   project: Project;
 }) {
-  const { phaseModels } = useAppStore();
+  const phaseModels = useAppStore((s) => s.phaseModels);
   const projectOverrides = project.phaseModelOverrides || {};
 
   return (
@@ -398,8 +409,12 @@ function PhaseGroup({
  * Renders the per-project model overrides UI for all phase models.
  */
 export function ProjectModelsSection({ project }: ProjectModelsSectionProps) {
-  const { clearAllProjectPhaseModelOverrides, claudeCompatibleProviders } =
-    useAppStore();
+  const clearAllProjectPhaseModelOverrides = useAppStore(
+    (s) => s.clearAllProjectPhaseModelOverrides,
+  );
+  const claudeCompatibleProviders = useAppStore(
+    (s) => s.claudeCompatibleProviders,
+  );
   const [showBulkReplace, setShowBulkReplace] = useState(false);
 
   // Count how many overrides are set (including defaultFeatureModel)

@@ -3,7 +3,9 @@ import { useAppStore } from "@/store/app-store";
 import { useSaveSpec } from "@/hooks/mutations";
 
 export function useSpecSave() {
-  const { currentProject, appSpec, setAppSpec } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const appSpec = useAppStore((s) => s.appSpec);
+  const setAppSpec = useAppStore((s) => s.setAppSpec);
   const [hasChanges, setHasChanges] = useState(false);
 
   // React Query mutation

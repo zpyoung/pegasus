@@ -42,25 +42,25 @@ function getCursorClass(
 
 interface KanbanCardProps {
   feature: Feature;
-  onEdit: () => void;
-  onDelete: () => void;
-  onViewOutput?: () => void;
-  onVerify?: () => void;
-  onResume?: () => void;
-  onForceStop?: () => void;
-  onManualVerify?: () => void;
-  onMoveBackToInProgress?: () => void;
-  onFollowUp?: () => void;
-  onImplement?: () => void;
-  onComplete?: () => void;
-  onViewPlan?: () => void;
-  onApprovePlan?: () => void;
-  onAnswerQuestion?: () => void;
-  onSpawnTask?: () => void;
-  onDuplicate?: () => void;
-  onDuplicateAsChild?: () => void;
-  onDuplicateAsChildMultiple?: () => void;
-  onCommitChanges?: () => void;
+  onEdit: (feature: Feature) => void;
+  onDelete: (featureId: string) => void;
+  onViewOutput?: (feature: Feature) => void;
+  onVerify?: (feature: Feature) => void;
+  onResume?: (feature: Feature) => void;
+  onForceStop?: (feature: Feature) => void;
+  onManualVerify?: (feature: Feature) => void;
+  onMoveBackToInProgress?: (feature: Feature) => void;
+  onFollowUp?: (feature: Feature) => void;
+  onImplement?: (feature: Feature) => void;
+  onComplete?: (feature: Feature) => void;
+  onViewPlan?: (feature: Feature) => void;
+  onApprovePlan?: (feature: Feature) => void;
+  onAnswerQuestion?: (feature: Feature) => void;
+  onSpawnTask?: (feature: Feature) => void;
+  onDuplicate?: (feature: Feature) => void;
+  onDuplicateAsChild?: (feature: Feature) => void;
+  onDuplicateAsChildMultiple?: (feature: Feature) => void;
+  onCommitChanges?: (feature: Feature) => void;
   hasContext?: boolean;
   isCurrentAutoTask?: boolean;
   shortcutKey?: string;
@@ -75,7 +75,7 @@ interface KanbanCardProps {
   // Selection mode props
   isSelectionMode?: boolean;
   isSelected?: boolean;
-  onToggleSelect?: () => void;
+  onToggleSelect?: (featureId: string) => void;
   selectionTarget?: "backlog" | "waiting_approval" | null;
 }
 
@@ -116,27 +116,32 @@ export const KanbanCard = memo(function KanbanCard({
   onToggleSelect,
   selectionTarget = null,
 }: KanbanCardProps) {
+  // Use project-scoped primitives instead of the full ByProject maps to prevent
+  // unnecessary re-renders of every card when a DIFFERENT project's settings change.
+  // useShallow compares each property with Object.is; returning boolean primitives
+  // means the card only re-renders when the actual value for THIS project changes.
   const {
     useWorktrees,
     currentProject,
-    showAllWorktreesByProject,
-    worktreePanelVisibleByProject,
+    rawShowAllWorktrees,
+    isWorktreePanelVisible,
     getPrimaryWorktreeBranch,
   } = useAppStore(
-    useShallow((state) => ({
-      useWorktrees: state.useWorktrees,
-      currentProject: state.currentProject,
-      showAllWorktreesByProject: state.showAllWorktreesByProject,
-      worktreePanelVisibleByProject: state.worktreePanelVisibleByProject,
-      getPrimaryWorktreeBranch: state.getPrimaryWorktreeBranch,
-    })),
+    useShallow((state) => {
+      const path = state.currentProject?.path;
+      return {
+        useWorktrees: state.useWorktrees,
+        currentProject: state.currentProject,
+        rawShowAllWorktrees: path
+          ? (state.showAllWorktreesByProject[path] ?? false)
+          : false,
+        isWorktreePanelVisible: path
+          ? (state.worktreePanelVisibleByProject[path] ?? true)
+          : true,
+        getPrimaryWorktreeBranch: state.getPrimaryWorktreeBranch,
+      };
+    }),
   );
-  const rawShowAllWorktrees = currentProject?.path
-    ? (showAllWorktreesByProject[currentProject.path] ?? false)
-    : false;
-  const isWorktreePanelVisible = currentProject?.path
-    ? (worktreePanelVisibleByProject[currentProject.path] ?? true)
-    : true;
   const showAllWorktrees = rawShowAllWorktrees || !isWorktreePanelVisible;
   const mainBranch = currentProject?.path
     ? getPrimaryWorktreeBranch(currentProject.path)
@@ -244,6 +249,84 @@ export const KanbanCard = memo(function KanbanCard({
     [setDraggableRef, setDroppableRef],
   );
 
+  // Bind stable callbacks so sub-components (CardActions, CardHeaderSection) receive
+  // stable () => void references. KanbanCard re-renders when `feature` changes, so
+  // these are correct — they capture the latest feature without requiring inline arrows
+  // in the parent (kanban-board), which would break React.memo on every board render.
+  const handleEdit = useCallback(() => onEdit(feature), [onEdit, feature]);
+  const handleDelete = useCallback(
+    () => onDelete(feature.id),
+    [onDelete, feature.id],
+  );
+  const handleViewOutput = useCallback(
+    () => onViewOutput?.(feature),
+    [onViewOutput, feature],
+  );
+  const handleVerify = useCallback(
+    () => onVerify?.(feature),
+    [onVerify, feature],
+  );
+  const handleResume = useCallback(
+    () => onResume?.(feature),
+    [onResume, feature],
+  );
+  const handleForceStop = useCallback(
+    () => onForceStop?.(feature),
+    [onForceStop, feature],
+  );
+  const handleManualVerify = useCallback(
+    () => onManualVerify?.(feature),
+    [onManualVerify, feature],
+  );
+  const handleFollowUp = useCallback(
+    () => onFollowUp?.(feature),
+    [onFollowUp, feature],
+  );
+  const handleImplement = useCallback(
+    () => onImplement?.(feature),
+    [onImplement, feature],
+  );
+  const handleComplete = useCallback(
+    () => onComplete?.(feature),
+    [onComplete, feature],
+  );
+  const handleViewPlan = useCallback(
+    () => onViewPlan?.(feature),
+    [onViewPlan, feature],
+  );
+  const handleApprovePlan = useCallback(
+    () => onApprovePlan?.(feature),
+    [onApprovePlan, feature],
+  );
+  const handleAnswerQuestion = useCallback(
+    () => onAnswerQuestion?.(feature),
+    [onAnswerQuestion, feature],
+  );
+  const handleSpawnTask = useCallback(
+    () => onSpawnTask?.(feature),
+    [onSpawnTask, feature],
+  );
+  const handleDuplicate = useCallback(
+    () => onDuplicate?.(feature),
+    [onDuplicate, feature],
+  );
+  const handleDuplicateAsChild = useCallback(
+    () => onDuplicateAsChild?.(feature),
+    [onDuplicateAsChild, feature],
+  );
+  const handleDuplicateAsChildMultiple = useCallback(
+    () => onDuplicateAsChildMultiple?.(feature),
+    [onDuplicateAsChildMultiple, feature],
+  );
+  const handleCommitChanges = useCallback(
+    () => onCommitChanges?.(feature),
+    [onCommitChanges, feature],
+  );
+  const handleToggleSelect = useCallback(
+    () => onToggleSelect?.(feature.id),
+    [onToggleSelect, feature.id],
+  );
+
   const dndStyle = {
     opacity: isDragging ? 0.5 : undefined,
   };
@@ -293,7 +376,7 @@ export const KanbanCard = memo(function KanbanCard({
     if (isSelectable && onToggleSelect) {
       e.preventDefault();
       e.stopPropagation();
-      onToggleSelect();
+      handleToggleSelect();
     }
   };
 
@@ -301,7 +384,7 @@ export const KanbanCard = memo(function KanbanCard({
     <Card
       style={showRunningVisuals ? undefined : cardStyle}
       className={innerCardClasses}
-      onDoubleClick={isSelectionMode ? undefined : onEdit}
+      onDoubleClick={isSelectionMode ? undefined : handleEdit}
       onClick={handleCardClick}
     >
       {/* Background overlay with opacity */}
@@ -323,7 +406,7 @@ export const KanbanCard = memo(function KanbanCard({
         {isSelectable && !isOverlay && (
           <Checkbox
             checked={isSelected}
-            onCheckedChange={() => onToggleSelect?.()}
+            onCheckedChange={() => handleToggleSelect()}
             className="h-4 w-4 border-2 data-[state=checked]:bg-brand-500 data-[state=checked]:border-brand-500 shrink-0"
             onClick={(e) => e.stopPropagation()}
           />
@@ -343,13 +426,13 @@ export const KanbanCard = memo(function KanbanCard({
         isCurrentAutoTask={isActivelyRunning}
         isSelectionMode={isSelectionMode}
         hasContext={hasContext}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onViewOutput={onViewOutput}
-        onSpawnTask={onSpawnTask}
-        onDuplicate={onDuplicate}
-        onDuplicateAsChild={onDuplicateAsChild}
-        onDuplicateAsChildMultiple={onDuplicateAsChildMultiple}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onViewOutput={handleViewOutput}
+        onSpawnTask={handleSpawnTask}
+        onDuplicate={handleDuplicate}
+        onDuplicateAsChild={handleDuplicateAsChild}
+        onDuplicateAsChildMultiple={handleDuplicateAsChildMultiple}
         dragHandleListeners={isDraggable ? listeners : undefined}
         dragHandleAttributes={isDraggable ? attributes : undefined}
       />
@@ -381,19 +464,19 @@ export const KanbanCard = memo(function KanbanCard({
           hasContext={hasContext}
           shortcutKey={shortcutKey}
           isSelectionMode={isSelectionMode}
-          onEdit={onEdit}
-          onViewOutput={onViewOutput}
-          onVerify={onVerify}
-          onResume={onResume}
-          onForceStop={onForceStop}
-          onManualVerify={onManualVerify}
-          onFollowUp={onFollowUp}
-          onImplement={onImplement}
-          onComplete={onComplete}
-          onViewPlan={onViewPlan}
-          onApprovePlan={onApprovePlan}
-          onAnswerQuestion={onAnswerQuestion}
-          onCommitChanges={onCommitChanges}
+          onEdit={handleEdit}
+          onViewOutput={handleViewOutput}
+          onVerify={handleVerify}
+          onResume={handleResume}
+          onForceStop={handleForceStop}
+          onManualVerify={handleManualVerify}
+          onFollowUp={handleFollowUp}
+          onImplement={handleImplement}
+          onComplete={handleComplete}
+          onViewPlan={handleViewPlan}
+          onApprovePlan={handleApprovePlan}
+          onAnswerQuestion={handleAnswerQuestion}
+          onCommitChanges={handleCommitChanges}
         />
       </CardContent>
     </Card>

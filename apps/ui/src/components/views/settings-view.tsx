@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 
 import { useSettingsView, type SettingsViewId } from "./settings-view/hooks";
 import { NAV_ITEMS } from "./settings-view/config/navigation";
@@ -71,7 +72,42 @@ export function SettingsView() {
     updateFeatureTemplate,
     deleteFeatureTemplate,
     reorderFeatureTemplates,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      theme: s.theme,
+      setTheme: s.setTheme,
+      defaultSkipTests: s.defaultSkipTests,
+      setDefaultSkipTests: s.setDefaultSkipTests,
+      enableDependencyBlocking: s.enableDependencyBlocking,
+      setEnableDependencyBlocking: s.setEnableDependencyBlocking,
+      skipVerificationInAutoMode: s.skipVerificationInAutoMode,
+      setSkipVerificationInAutoMode: s.setSkipVerificationInAutoMode,
+      enableAiCommitMessages: s.enableAiCommitMessages,
+      setEnableAiCommitMessages: s.setEnableAiCommitMessages,
+      useWorktrees: s.useWorktrees,
+      setUseWorktrees: s.setUseWorktrees,
+      muteDoneSound: s.muteDoneSound,
+      setMuteDoneSound: s.setMuteDoneSound,
+      currentProject: s.currentProject,
+      defaultPlanningMode: s.defaultPlanningMode,
+      setDefaultPlanningMode: s.setDefaultPlanningMode,
+      defaultRequirePlanApproval: s.defaultRequirePlanApproval,
+      setDefaultRequirePlanApproval: s.setDefaultRequirePlanApproval,
+      defaultFeatureModel: s.defaultFeatureModel,
+      setDefaultFeatureModel: s.setDefaultFeatureModel,
+      promptCustomization: s.promptCustomization,
+      setPromptCustomization: s.setPromptCustomization,
+      skipSandboxWarning: s.skipSandboxWarning,
+      setSkipSandboxWarning: s.setSkipSandboxWarning,
+      defaultMaxTurns: s.defaultMaxTurns,
+      setDefaultMaxTurns: s.setDefaultMaxTurns,
+      featureTemplates: s.featureTemplates,
+      addFeatureTemplate: s.addFeatureTemplate,
+      updateFeatureTemplate: s.updateFeatureTemplate,
+      deleteFeatureTemplate: s.deleteFeatureTemplate,
+      reorderFeatureTemplates: s.reorderFeatureTemplates,
+    })),
+  );
 
   // Global theme (project-specific themes are managed in Project Settings)
   const globalTheme = theme as Theme;

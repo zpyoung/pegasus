@@ -13,6 +13,7 @@ import {
   waitFor,
   act,
 } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AgentOutputModal } from "../../../src/components/views/board-view/dialogs/agent-output-modal";
 import { useAppStore } from "@pegasus/ui/store/app-store";
 import {
@@ -22,11 +23,25 @@ import {
   useGitDiffs,
 } from "@pegasus/ui/hooks/queries";
 import { getElectronAPI } from "@pegasus/ui/lib/electron";
+import { useAgentStreamStore } from "../../../src/store/agent-stream-store";
+import type { ReactNode } from "react";
 
 // Mock dependencies
 vi.mock("@pegasus/ui/hooks/queries");
 vi.mock("@pegasus/ui/lib/electron");
 vi.mock("@pegasus/ui/store/app-store");
+vi.mock("../../../src/store/agent-stream-store");
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 const mockUseAppStore = vi.mocked(useAppStore);
 const mockUseAgentOutput = vi.mocked(useAgentOutput);
@@ -34,6 +49,7 @@ const mockUseFeature = vi.mocked(useFeature);
 const mockGetElectronAPI = vi.mocked(getElectronAPI);
 const mockUseWorktreeDiffs = vi.mocked(useWorktreeDiffs);
 const mockUseGitDiffs = vi.mocked(useGitDiffs);
+const mockUseAgentStreamStore = useAgentStreamStore as ReturnType<typeof vi.fn>;
 
 describe("AgentOutputModal Integration Tests", () => {
   const defaultProps = {
@@ -101,6 +117,21 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
     // Mock electron API
     mockGetElectronAPI.mockReturnValue(null);
+
+    // Mock AgentStreamStore (added in Wave 2 Task 2)
+    mockUseAgentStreamStore.mockImplementation(
+      (selector: (s: Record<string, unknown>) => unknown) => {
+        const state = {
+          appendChunk: vi.fn(),
+          markComplete: vi.fn(),
+          clearStream: vi.fn(),
+          getOutput: vi.fn().mockReturnValue(""),
+          isStreaming: vi.fn().mockReturnValue(false),
+          streams: {},
+        };
+        return typeof selector === "function" ? selector(state) : state;
+      },
+    );
   });
 
   afterEach(() => {
@@ -109,19 +140,25 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
   describe("Modal Opening and Closing", () => {
     it("should render modal when open is true", () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
       expect(screen.getByTestId("agent-output-modal")).toBeInTheDocument();
     });
 
     it("should not render modal when open is false", () => {
-      render(<AgentOutputModal {...defaultProps} open={false} />);
+      render(<AgentOutputModal {...defaultProps} open={false} />, {
+        wrapper: createWrapper(),
+      });
       expect(
         screen.queryByTestId("agent-output-modal"),
       ).not.toBeInTheDocument();
     });
 
     it("should have onClose callback available", () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
       // Verify the onClose function is provided
       expect(defaultProps.onClose).toBeDefined();
     });
@@ -134,7 +171,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should render all view mode buttons", () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       // All view mode buttons should be present
       expect(screen.getByTestId("view-mode-parsed")).toBeInTheDocument();
@@ -143,7 +182,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should switch to logs view when logs button is clicked", async () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const logsButton = screen.getByTestId("view-mode-parsed");
       fireEvent.click(logsButton);
@@ -155,7 +196,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should switch to raw view when raw button is clicked", async () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const rawButton = screen.getByTestId("view-mode-raw");
       fireEvent.click(rawButton);
@@ -169,7 +212,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
   describe("Content Display", () => {
     it("should display feature description", () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const description = screen.getByTestId("agent-output-description");
       expect(description).toHaveTextContent(
@@ -185,7 +230,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
         refetch: vi.fn(),
       } as ReturnType<typeof useAgentOutput>);
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("Loading output...")).toBeInTheDocument();
     });
@@ -198,7 +245,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
         refetch: vi.fn(),
       } as ReturnType<typeof useAgentOutput>);
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.getByText(
@@ -208,7 +257,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should display parsed output in LogViewer", () => {
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       // The button text is "Logs" (case-sensitive)
       expect(screen.getByText("Logs")).toBeInTheDocument();
@@ -217,7 +268,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
   describe("Spinner Display", () => {
     it("should not show spinner when status is verified", () => {
-      render(<AgentOutputModal {...defaultProps} featureStatus="verified" />);
+      render(<AgentOutputModal {...defaultProps} featureStatus="verified" />, {
+        wrapper: createWrapper(),
+      });
 
       // Spinner should NOT be present when status is verified
       expect(screen.queryByTestId("spinner")).not.toBeInTheDocument();
@@ -226,6 +279,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     it("should not show spinner when status is waiting_approval", () => {
       render(
         <AgentOutputModal {...defaultProps} featureStatus="waiting_approval" />,
+        { wrapper: createWrapper() },
       );
 
       // Spinner should NOT be present when status is waiting_approval
@@ -233,7 +287,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should show spinner when status is running", () => {
-      render(<AgentOutputModal {...defaultProps} featureStatus="running" />);
+      render(<AgentOutputModal {...defaultProps} featureStatus="running" />, {
+        wrapper: createWrapper(),
+      });
 
       // Spinner should be present and visible when status is running
       expect(screen.getByTestId("spinner")).toBeInTheDocument();
@@ -248,6 +304,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
           {...defaultProps}
           onNumberKeyPress={mockOnNumberKeyPress}
         />,
+        { wrapper: createWrapper() },
       );
 
       // Simulate number key press
@@ -268,6 +325,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
           {...defaultProps}
           onNumberKeyPress={mockOnNumberKeyPress}
         />,
+        { wrapper: createWrapper() },
       );
 
       // Simulate Ctrl+1 (should be ignored)
@@ -301,6 +359,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
           open={false}
           onNumberKeyPress={mockOnNumberKeyPress}
         />,
+        { wrapper: createWrapper() },
       );
 
       fireEvent.keyDown(window, {
@@ -316,7 +375,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
 
   describe("Auto-scrolling", () => {
     it("should auto-scroll to bottom when output changes", async () => {
-      const { rerender } = render(<AgentOutputModal {...defaultProps} />);
+      const { rerender } = render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       // Find the scroll container - the div with overflow-y-auto that contains the log output
       const modal = screen.getByTestId("agent-output-modal");
@@ -354,7 +415,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     });
 
     it("should update scrollTop when output is appended", async () => {
-      const { rerender } = render(<AgentOutputModal {...defaultProps} />);
+      const { rerender } = render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const modal = screen.getByTestId("agent-output-modal");
       const scrollContainer = modal.querySelector(
@@ -403,7 +466,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
         featureId: "backlog-plan:project-123",
       };
 
-      render(<AgentOutputModal {...backlogProps} />);
+      render(<AgentOutputModal {...backlogProps} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByText("Agent Output")).toBeInTheDocument();
     });
@@ -412,7 +477,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
   describe("Project Path Resolution", () => {
     it("should use projectPath prop when provided", () => {
       const projectPath = "/custom/project/path";
-      render(<AgentOutputModal {...defaultProps} projectPath={projectPath} />);
+      render(<AgentOutputModal {...defaultProps} projectPath={projectPath} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.getByText("Implement a responsive navigation menu"),
@@ -423,7 +490,9 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
       const previousProject = window.__currentProject;
       try {
         window.__currentProject = { path: "/fallback/project" };
-        render(<AgentOutputModal {...defaultProps} />);
+        render(<AgentOutputModal {...defaultProps} />, {
+          wrapper: createWrapper(),
+        });
         expect(
           screen.getByText("Implement a responsive navigation menu"),
         ).toBeInTheDocument();
@@ -437,6 +506,7 @@ Successfully implemented a responsive navigation menu with hamburger menu for mo
     it("should display changes view when branchName is provided", async () => {
       render(
         <AgentOutputModal {...defaultProps} branchName="feature/test-branch" />,
+        { wrapper: createWrapper() },
       );
 
       // Switch to changes view

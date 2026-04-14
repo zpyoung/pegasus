@@ -60,12 +60,15 @@ export function GitHubIssuesView() {
     DEFAULT_ISSUES_FILTER_STATE,
   );
 
-  const {
-    currentProject,
-    getCurrentWorktree,
-    worktreesByProject,
-    defaultSkipTests,
-  } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const getCurrentWorktree = useAppStore((s) => s.getCurrentWorktree);
+  const defaultSkipTests = useAppStore((s) => s.defaultSkipTests);
+  // Narrow selector: subscribe only to the current project's worktrees, not the entire map
+  const projectWorktrees = useAppStore((s) =>
+    currentProject?.path
+      ? (s.worktreesByProject[currentProject.path] ?? [])
+      : [],
+  );
   const queryClient = useQueryClient();
 
   // Model override for validation
@@ -139,20 +142,21 @@ export function GitHubIssuesView() {
   const currentBranch = useMemo(() => {
     if (!currentProject?.path) return "";
     const currentWorktreeInfo = getCurrentWorktree(currentProject.path);
-    const worktrees = worktreesByProject[currentProject.path] ?? [];
     const currentWorktreePath = currentWorktreeInfo?.path ?? null;
 
     const selectedWorktree =
       currentWorktreePath === null
-        ? worktrees.find((w) => w.isMain)
-        : worktrees.find(
+        ? projectWorktrees.find((w) => w.isMain)
+        : projectWorktrees.find(
             (w) => !w.isMain && pathsEqual(w.path, currentWorktreePath),
           );
 
     return (
-      selectedWorktree?.branch || worktrees.find((w) => w.isMain)?.branch || ""
+      selectedWorktree?.branch ||
+      projectWorktrees.find((w) => w.isMain)?.branch ||
+      ""
     );
-  }, [currentProject?.path, getCurrentWorktree, worktreesByProject]);
+  }, [currentProject?.path, getCurrentWorktree, projectWorktrees]);
 
   const handleOpenInGitHub = useCallback((url: string) => {
     const api = getElectronAPI();

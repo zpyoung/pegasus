@@ -14,6 +14,7 @@ import { createCreateHandler } from "./routes/create.js";
 import { createUpdateHandler } from "./routes/update.js";
 import { createBulkUpdateHandler } from "./routes/bulk-update.js";
 import { createBulkDeleteHandler } from "./routes/bulk-delete.js";
+import { createBulkStatusHandler } from "./routes/bulk-status.js";
 import { createDeleteHandler } from "./routes/delete.js";
 import {
   createAgentOutputHandler,
@@ -73,6 +74,11 @@ export function createFeaturesRoutes(
     "/bulk-delete",
     validatePathParams("projectPath"),
     createBulkDeleteHandler(featureLoader),
+  );
+  router.post(
+    "/bulk-status",
+    validatePathParams("projectPath"),
+    createBulkStatusHandler(featureLoader),
   );
   router.post(
     "/delete",

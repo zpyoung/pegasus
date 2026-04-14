@@ -2297,6 +2297,8 @@ export class HttpApiClient implements ElectronAPI {
         action,
         targetBranch,
       }),
+    getBulkStatus: (projectPath: string | undefined) =>
+      this.post("/api/features/bulk-status", { projectPath }),
   };
 
   // Auto Mode API

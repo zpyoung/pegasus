@@ -10,7 +10,10 @@ import { useIsCompact } from "@/hooks/use-media-query";
  */
 export function MobileSidebarToggle() {
   const isCompact = useIsCompact();
-  const { mobileSidebarHidden, toggleMobileSidebarHidden } = useAppStore();
+  const mobileSidebarHidden = useAppStore((s) => s.mobileSidebarHidden);
+  const toggleMobileSidebarHidden = useAppStore(
+    (s) => s.toggleMobileSidebarHidden,
+  );
 
   // Only show on compact screens when sidebar is hidden
   if (!isCompact || !mobileSidebarHidden) {

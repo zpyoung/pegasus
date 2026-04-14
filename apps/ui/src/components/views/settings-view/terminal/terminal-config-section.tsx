@@ -42,7 +42,7 @@ export function TerminalConfigSection() {
   const ENV_VAR_UPDATE_DEBOUNCE_MS = 400;
   const ENV_VAR_ID_PREFIX = "env";
   const TERMINAL_RC_FILE_VERSION = 11;
-  const { theme } = useAppStore();
+  const theme = useAppStore((s) => s.theme);
   const { data: globalSettings } = useGlobalSettings();
   const updateGlobalSettings = useUpdateGlobalSettings({
     showSuccessToast: false,

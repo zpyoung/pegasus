@@ -9,17 +9,19 @@ interface UseBoardBackgroundProps {
 export function useBoardBackground({
   currentProject,
 }: UseBoardBackgroundProps) {
-  const boardBackgroundByProject = useAppStore(
-    (state) => state.boardBackgroundByProject,
+  // Subscribe to the per-project background settings object directly rather than
+  // the full boardBackgroundByProject map. This prevents re-renders when a DIFFERENT
+  // project's background settings change — the selector returns null/undefined when
+  // no project is loaded, which is referentially stable.
+  const perProjectSettings = useAppStore((state) =>
+    currentProject ? state.boardBackgroundByProject[currentProject.path] : null,
   );
 
   // Get background settings for current project
-  const backgroundSettings = useMemo(() => {
-    const perProjectSettings = currentProject
-      ? boardBackgroundByProject[currentProject.path]
-      : null;
-    return perProjectSettings || defaultBackgroundSettings;
-  }, [currentProject, boardBackgroundByProject]);
+  const backgroundSettings = useMemo(
+    () => perProjectSettings || defaultBackgroundSettings,
+    [perProjectSettings],
+  );
 
   // Build background image style if image exists
   const backgroundImageStyle = useMemo(() => {

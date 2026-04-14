@@ -18,13 +18,16 @@ import type { IssueValidationEvent } from "@pegasus/types";
 import { debounce, type DebouncedFunction } from "@pegasus/utils/debounce";
 import { useEventRecencyStore } from "./use-event-recency";
 import { isAnyFeatureTransitioning } from "@/lib/feature-transition-state";
+import { useAgentStreamStore } from "@/store/agent-stream-store";
 
 /**
  * Debounce configuration for auto_mode_progress invalidations
- * - wait: 150ms delay to batch rapid consecutive progress events
+ * - wait: 500ms delay to batch rapid consecutive progress events
+ *   (increased from 150ms — progress ticks don't need sub-200ms cache freshness;
+ *    status transitions use FEATURE_LIST_INVALIDATION_EVENTS which are immediate)
  * - maxWait: 2000ms ensures UI updates at least every 2 seconds during streaming
  */
-const PROGRESS_DEBOUNCE_WAIT = 150;
+const PROGRESS_DEBOUNCE_WAIT = 500;
 const PROGRESS_DEBOUNCE_MAX_WAIT = 2000;
 
 /**
@@ -231,10 +234,18 @@ export function useAutoModeQueryInvalidation(projectPath: string | undefined) {
       }
 
       // Invalidate agent output during progress updates (DEBOUNCED)
-      // Uses per-feature debouncing to batch rapid progress events during streaming
+      // Skip when AgentStreamStore has an active stream — the store already delivers
+      // output to the UI in real-time, so no React Query invalidation is needed.
       if (event.type === "auto_mode_progress" && hasFeatureId(event)) {
-        const debouncedInvalidation = getDebouncedInvalidation(event.featureId);
-        debouncedInvalidation();
+        const isStreaming = useAgentStreamStore
+          .getState()
+          .isStreaming(event.featureId);
+        if (!isStreaming) {
+          const debouncedInvalidation = getDebouncedInvalidation(
+            event.featureId,
+          );
+          debouncedInvalidation();
+        }
       }
 
       // Clean up debounced functions when feature completes or errors

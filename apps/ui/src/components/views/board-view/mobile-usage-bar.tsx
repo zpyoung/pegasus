@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { getElectronAPI } from "@/lib/electron";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import {
   AnthropicIcon,
   OpenAIIcon,
@@ -215,10 +216,39 @@ export function MobileUsageBar({
   showZaiUsage = false,
   showGeminiUsage = false,
 }: MobileUsageBarProps) {
-  const { claudeUsage, claudeUsageLastUpdated, setClaudeUsage } = useAppStore();
-  const { codexUsage, codexUsageLastUpdated, setCodexUsage } = useAppStore();
-  const { zaiUsage, zaiUsageLastUpdated, setZaiUsage } = useAppStore();
-  const { geminiUsage, geminiUsageLastUpdated, setGeminiUsage } = useAppStore();
+  // Consolidate all usage-related state into a single shallow subscription to avoid
+  // 4 separate full-store subscriptions that each re-render on every Zustand mutation.
+  // useShallow compares each property with Object.is, so this only re-renders when
+  // a usage value or timestamp actually changes.
+  const {
+    claudeUsage,
+    claudeUsageLastUpdated,
+    setClaudeUsage,
+    codexUsage,
+    codexUsageLastUpdated,
+    setCodexUsage,
+    zaiUsage,
+    zaiUsageLastUpdated,
+    setZaiUsage,
+    geminiUsage,
+    geminiUsageLastUpdated,
+    setGeminiUsage,
+  } = useAppStore(
+    useShallow((state) => ({
+      claudeUsage: state.claudeUsage,
+      claudeUsageLastUpdated: state.claudeUsageLastUpdated,
+      setClaudeUsage: state.setClaudeUsage,
+      codexUsage: state.codexUsage,
+      codexUsageLastUpdated: state.codexUsageLastUpdated,
+      setCodexUsage: state.setCodexUsage,
+      zaiUsage: state.zaiUsage,
+      zaiUsageLastUpdated: state.zaiUsageLastUpdated,
+      setZaiUsage: state.setZaiUsage,
+      geminiUsage: state.geminiUsage,
+      geminiUsageLastUpdated: state.geminiUsageLastUpdated,
+      setGeminiUsage: state.setGeminiUsage,
+    })),
+  );
   const [isClaudeLoading, setIsClaudeLoading] = useState(false);
   const [isCodexLoading, setIsCodexLoading] = useState(false);
   const [isZaiLoading, setIsZaiLoading] = useState(false);

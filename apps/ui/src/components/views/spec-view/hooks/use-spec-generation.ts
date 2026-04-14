@@ -21,7 +21,7 @@ interface UseSpecGenerationOptions {
 }
 
 export function useSpecGeneration({ loadSpec }: UseSpecGenerationOptions) {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
 
   // React Query mutations
   const createSpecMutation = useCreateSpec(currentProject?.path ?? "");

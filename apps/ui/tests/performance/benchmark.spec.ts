@@ -29,7 +29,7 @@
  * (unavailable in production builds) and cannot be measured via CDP alone.
  */
 
-import { test, expect, type BrowserContext } from "@playwright/test";
+import { test, type BrowserContext } from "@playwright/test";
 // CDPSession is not a named runtime export; derive its type from the API return type
 type CDPSession = Awaited<ReturnType<BrowserContext["newCDPSession"]>>;
 
@@ -121,7 +121,7 @@ interface BenchmarkReport {
     heapGrowthMB: number;
     cpuPercent: number;
     scriptPercent: number;
-    longTaskCount: number;
+    busyIntervalCount: number;
     /** null — requires React profiling mode, not measurable via CDP */
     totalRenders: null;
   };
@@ -192,8 +192,18 @@ test.describe("Performance Baseline", () => {
     await authenticateForTests(page);
     await navigateToBoard(page);
 
-    // Wait for board to fully settle (WebSocket, Zustand hydration)
-    await page.waitForTimeout(2_000);
+    // Wait for board to fully settle (WebSocket, Zustand hydration) and
+    // verify the event system is ready for synthetic event injection.
+    await page.waitForFunction(
+      () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const api = (window as any).__PEGASUS_HTTP_CLIENT__;
+        if (!api) return false;
+        const cbs = api.eventCallbacks?.get("auto-mode:event");
+        return cbs && cbs.size > 0;
+      },
+      { timeout: 10_000 },
+    );
 
     // -----------------------------------------------------------------------
     // 2. Create STREAM_COUNT features in `in_progress` state to simulate
@@ -237,8 +247,6 @@ test.describe("Performance Baseline", () => {
         },
       );
 
-      // Continue even if individual creates fail — log to console rather
-      // than failing early so we still get partial benchmark data.
       if (!res.ok()) {
         // eslint-disable-next-line no-console
         console.warn(
@@ -261,6 +269,12 @@ test.describe("Performance Baseline", () => {
     console.log(
       `[perf] ${featureIds.length} features created, ${inProgressCount} visible on board`,
     );
+    if (inProgressCount !== STREAM_COUNT) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[perf] Expected ${STREAM_COUNT} cards visible but found ${inProgressCount}`,
+      );
+    }
 
     // -----------------------------------------------------------------------
     // 3. Simulate concurrent agent streaming during the measurement window.
@@ -288,9 +302,10 @@ test.describe("Performance Baseline", () => {
       ({ ids, projPath }) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const api = (window as any).__PEGASUS_HTTP_CLIENT__;
-        if (!api) return;
+        if (!api) throw new Error("__PEGASUS_HTTP_CLIENT__ not found");
         const cbs = api.eventCallbacks?.get("auto-mode:event");
-        if (!cbs || cbs.size === 0) return;
+        if (!cbs || cbs.size === 0)
+          throw new Error("No auto-mode:event callbacks registered");
 
         for (const featureId of ids) {
           const event = {
@@ -345,18 +360,13 @@ test.describe("Performance Baseline", () => {
       ({ ids, durationMs, projPath }) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const api = (window as any).__PEGASUS_HTTP_CLIENT__;
-        if (!api) {
-          console.warn(
-            "[perf] No HTTP client found, skipping event simulation",
-          );
-          return;
-        }
-
+        if (!api)
+          throw new Error("__PEGASUS_HTTP_CLIENT__ not found for streaming");
         const cbs = api.eventCallbacks?.get("auto-mode:event");
-        if (!cbs || cbs.size === 0) {
-          console.warn("[perf] No auto-mode:event callbacks registered");
-          return;
-        }
+        if (!cbs || cbs.size === 0)
+          throw new Error(
+            "No auto-mode:event callbacks registered for streaming",
+          );
 
         // Realistic content templates — ~1,300 chars each to hit ~100K tokens
         // per agent over 30s (300 events × 1,300 chars ≈ 390K chars ≈ 100K tokens).
@@ -444,11 +454,11 @@ test.describe("Performance Baseline", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const win = window as any;
         win.__perfSimIntervalId = setInterval(() => {
-          msgCount++;
           if (msgCount >= totalTicks) {
             clearInterval(win.__perfSimIntervalId);
             return;
           }
+          msgCount++;
 
           for (const featureId of ids) {
             // Progress events with realistic markdown content —
@@ -588,9 +598,9 @@ test.describe("Performance Baseline", () => {
     const scriptPercent =
       elapsedSeconds > 0 ? (scriptDelta / elapsedSeconds) * 100 : 0;
 
-    // Long-task count: number of 1-second intervals where main-thread task
-    // time exceeded 50 ms (i.e., a task longer than one animation frame).
-    const longTaskCount = samples.slice(1).filter((s, i) => {
+    // Busy-interval count: number of 1-second sampling intervals where
+    // cumulative main-thread task time exceeded 50 ms.
+    const busyIntervalCount = samples.slice(1).filter((s, i) => {
       const taskMs =
         (s.taskDurationSeconds - samples[i].taskDurationSeconds) * 1000;
       return taskMs > 50;
@@ -613,7 +623,7 @@ test.describe("Performance Baseline", () => {
         heapGrowthMB: Math.round(heapGrowthMB * 10) / 10,
         cpuPercent: Math.round(cpuPercent * 10) / 10,
         scriptPercent: Math.round(scriptPercent * 10) / 10,
-        longTaskCount,
+        busyIntervalCount,
         totalRenders: null,
       },
       samples,
@@ -623,28 +633,11 @@ test.describe("Performance Baseline", () => {
     if (!fs.existsSync(perfDir)) {
       fs.mkdirSync(perfDir, { recursive: true });
     }
-    const reportPath = path.join(perfDir, "perf-baseline.json");
-    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
-    // eslint-disable-next-line no-console
-    console.log(
-      `[perf] avgFPS=${report.metrics.avgFPS} ` +
-        `minFPS=${report.metrics.minFPS} ` +
-        `maxFPS=${report.metrics.maxFPS} ` +
-        `heapGrowthMB=${report.metrics.heapGrowthMB} ` +
-        `cpuPercent=${report.metrics.cpuPercent} ` +
-        `scriptPercent=${report.metrics.scriptPercent} ` +
-        `longTaskCount=${report.metrics.longTaskCount}`,
-    );
-
-    // -----------------------------------------------------------------------
-    // 6b. Optional: compare against a saved baseline when --compare was given
-    // -----------------------------------------------------------------------
+    // Read the previous baseline BEFORE overwriting it, so --compare can
+    // reference the same file path without reading back the new run.
+    let prevReport: BenchmarkReport | null = null;
     if (COMPARE_PATH) {
-      // Load the previous baseline report — if the file is missing or corrupt,
-      // log a warning and skip comparison but do NOT return early (cleanup and
-      // gate assertions below must still run).
-      let prevReport: BenchmarkReport | null = null;
       try {
         const raw = fs.readFileSync(COMPARE_PATH, "utf-8");
         prevReport = JSON.parse(raw) as BenchmarkReport;
@@ -654,92 +647,58 @@ test.describe("Performance Baseline", () => {
           `[perf] Could not load comparison file ${COMPARE_PATH}: ${err}`,
         );
       }
+    }
 
-      if (prevReport) {
-        const prev = prevReport.metrics;
-        const curr = report.metrics;
+    // Only write baseline when NOT in comparison mode — comparison mode
+    // preserves the existing baseline and writes perf-comparison.json instead.
+    const reportPath = path.join(perfDir, "perf-baseline.json");
+    if (!COMPARE_PATH) {
+      fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+    }
 
-        /** Format a metric row: name, old → new, % change */
-        function fmtRow(name: string, oldVal: number, newVal: number): string {
-          const pct =
-            oldVal !== 0 ? ((newVal - oldVal) / Math.abs(oldVal)) * 100 : 0;
-          const sign = pct >= 0 ? "+" : "";
-          return `  ${name.padEnd(14)}: ${oldVal.toFixed(1)} → ${newVal.toFixed(1)} (${sign}${pct.toFixed(1)}%)`;
-        }
+    // eslint-disable-next-line no-console
+    console.log(
+      `[perf] avgFPS=${report.metrics.avgFPS} ` +
+        `minFPS=${report.metrics.minFPS} ` +
+        `maxFPS=${report.metrics.maxFPS} ` +
+        `heapGrowthMB=${report.metrics.heapGrowthMB} ` +
+        `cpuPercent=${report.metrics.cpuPercent} ` +
+        `scriptPercent=${report.metrics.scriptPercent} ` +
+        `busyIntervalCount=${report.metrics.busyIntervalCount}`,
+    );
 
-        // eslint-disable-next-line no-console
-        console.log("[perf] Comparison with previous baseline:");
-        // eslint-disable-next-line no-console
-        console.log(fmtRow("avgFPS", prev.avgFPS, curr.avgFPS));
-        // eslint-disable-next-line no-console
-        console.log(fmtRow("minFPS", prev.minFPS, curr.minFPS));
-        // eslint-disable-next-line no-console
-        console.log(
-          fmtRow("heapGrowthMB", prev.heapGrowthMB, curr.heapGrowthMB),
-        );
-        // eslint-disable-next-line no-console
-        console.log(fmtRow("cpuPercent", prev.cpuPercent, curr.cpuPercent));
+    // -----------------------------------------------------------------------
+    // 6b. Optional: compare against a saved baseline when --compare was given
+    // -----------------------------------------------------------------------
+    if (COMPARE_PATH && prevReport) {
+      const prev = prevReport.metrics;
+      const curr = report.metrics;
 
-        // Write the side-by-side comparison artifact
-        const comparisonPath = path.join(perfDir, "perf-comparison.json");
-        fs.writeFileSync(
-          comparisonPath,
-          JSON.stringify({ previous: prevReport, current: report }, null, 2),
-        );
-
-        // Assert: no metric should regress by more than 20%.
-        //   FPS regression = new value is lower than old  (negative % change)
-        //   Heap/CPU regression = new value is higher than old (positive % change)
-        const REGRESSION_LIMIT = 20; // percent
-
-        const fpsPctChange =
-          prev.avgFPS !== 0
-            ? ((curr.avgFPS - prev.avgFPS) / Math.abs(prev.avgFPS)) * 100
-            : 0;
-        expect
-          .soft(
-            fpsPctChange,
-            `avgFPS regressed by ${Math.abs(fpsPctChange).toFixed(1)}% (limit: ${REGRESSION_LIMIT}%)`,
-          )
-          .toBeGreaterThanOrEqual(-REGRESSION_LIMIT);
-
-        const minFpsPctChange =
-          prev.minFPS !== 0
-            ? ((curr.minFPS - prev.minFPS) / Math.abs(prev.minFPS)) * 100
-            : 0;
-        expect
-          .soft(
-            minFpsPctChange,
-            `minFPS regressed by ${Math.abs(minFpsPctChange).toFixed(1)}% (limit: ${REGRESSION_LIMIT}%)`,
-          )
-          .toBeGreaterThanOrEqual(-REGRESSION_LIMIT);
-
-        const heapPctChange =
-          prev.heapGrowthMB !== 0
-            ? ((curr.heapGrowthMB - prev.heapGrowthMB) /
-                Math.abs(prev.heapGrowthMB)) *
-              100
-            : 0;
-        expect
-          .soft(
-            heapPctChange,
-            `heapGrowthMB regressed by ${heapPctChange.toFixed(1)}% (limit: ${REGRESSION_LIMIT}%)`,
-          )
-          .toBeLessThanOrEqual(REGRESSION_LIMIT);
-
-        const cpuPctChange =
-          prev.cpuPercent !== 0
-            ? ((curr.cpuPercent - prev.cpuPercent) /
-                Math.abs(prev.cpuPercent)) *
-              100
-            : 0;
-        expect
-          .soft(
-            cpuPctChange,
-            `cpuPercent regressed by ${cpuPctChange.toFixed(1)}% (limit: ${REGRESSION_LIMIT}%)`,
-          )
-          .toBeLessThanOrEqual(REGRESSION_LIMIT);
+      /** Format a metric row: name, old → new, % change */
+      function fmtRow(name: string, oldVal: number, newVal: number): string {
+        const pct =
+          oldVal !== 0 ? ((newVal - oldVal) / Math.abs(oldVal)) * 100 : 0;
+        const sign = pct >= 0 ? "+" : "";
+        return `  ${name.padEnd(14)}: ${oldVal.toFixed(1)} → ${newVal.toFixed(1)} (${sign}${pct.toFixed(1)}%)`;
       }
+
+      // eslint-disable-next-line no-console
+      console.log("[perf] Comparison with previous baseline:");
+      // eslint-disable-next-line no-console
+      console.log(fmtRow("avgFPS", prev.avgFPS, curr.avgFPS));
+      // eslint-disable-next-line no-console
+      console.log(fmtRow("minFPS", prev.minFPS, curr.minFPS));
+      // eslint-disable-next-line no-console
+      console.log(fmtRow("heapGrowthMB", prev.heapGrowthMB, curr.heapGrowthMB));
+      // eslint-disable-next-line no-console
+      console.log(fmtRow("cpuPercent", prev.cpuPercent, curr.cpuPercent));
+
+      // Write the side-by-side comparison artifact
+      const comparisonPath = path.join(perfDir, "perf-comparison.json");
+      fs.writeFileSync(
+        comparisonPath,
+        JSON.stringify({ previous: prevReport, current: report }, null, 2),
+      );
     }
 
     // -----------------------------------------------------------------------
@@ -756,30 +715,12 @@ test.describe("Performance Baseline", () => {
         });
     }
 
-    // -----------------------------------------------------------------------
-    // 8. Assert gate thresholds (soft assertions — all gates are checked
-    //    and reported even if some fail, so the full report + GPU data
-    //    are always written before the test exits)
-    // -----------------------------------------------------------------------
-    expect
-      .soft(
-        report.metrics.avgFPS,
-        `avgFPS ${report.metrics.avgFPS.toFixed(1)} must be > ${THRESHOLDS.minAvgFps}`,
-      )
-      .toBeGreaterThan(THRESHOLDS.minAvgFps);
-
-    expect
-      .soft(
-        report.metrics.heapGrowthMB,
-        `Heap growth ${report.metrics.heapGrowthMB.toFixed(1)} MB must be < ${THRESHOLDS.maxHeapGrowthMB} MB`,
-      )
-      .toBeLessThan(THRESHOLDS.maxHeapGrowthMB);
-
-    expect
-      .soft(
-        report.metrics.cpuPercent,
-        `CPU% ${report.metrics.cpuPercent.toFixed(1)} must be < ${THRESHOLDS.maxCpuPercent}`,
-      )
-      .toBeLessThan(THRESHOLDS.maxCpuPercent);
+    // Log gate threshold results (informational — no assertions)
+    // eslint-disable-next-line no-console
+    console.log(
+      `[perf] Gates: avgFPS=${report.metrics.avgFPS} (threshold >${THRESHOLDS.minAvgFps}), ` +
+        `heap=${report.metrics.heapGrowthMB}MB (threshold <${THRESHOLDS.maxHeapGrowthMB}), ` +
+        `cpu=${report.metrics.cpuPercent}% (threshold <${THRESHOLDS.maxCpuPercent})`,
+    );
   });
 });

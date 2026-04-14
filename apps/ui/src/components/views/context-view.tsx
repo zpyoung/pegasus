@@ -84,7 +84,7 @@ interface ContextMetadata {
 }
 
 export function ContextView() {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
   const shortcuts = useKeyboardShortcutsConfig();
   const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<ContextFile | null>(null);

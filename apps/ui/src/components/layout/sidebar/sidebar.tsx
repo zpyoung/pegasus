@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "@tanstack/react-router";
 import { PanelLeftClose, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { useNotificationsStore } from "@/store/notifications-store";
 import {
   useKeyboardShortcuts,
@@ -77,7 +78,30 @@ export function Sidebar() {
     specCreatingForProject,
     setSpecCreatingForProject,
     setCurrentProject,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      projects: s.projects,
+      trashedProjects: s.trashedProjects,
+      currentProject: s.currentProject,
+      sidebarOpen: s.sidebarOpen,
+      sidebarStyle: s.sidebarStyle,
+      mobileSidebarHidden: s.mobileSidebarHidden,
+      projectHistory: s.projectHistory,
+      upsertAndSetCurrentProject: s.upsertAndSetCurrentProject,
+      toggleSidebar: s.toggleSidebar,
+      toggleMobileSidebarHidden: s.toggleMobileSidebarHidden,
+      restoreTrashedProject: s.restoreTrashedProject,
+      deleteTrashedProject: s.deleteTrashedProject,
+      emptyTrash: s.emptyTrash,
+      cyclePrevProject: s.cyclePrevProject,
+      cycleNextProject: s.cycleNextProject,
+      moveProjectToTrash: s.moveProjectToTrash,
+      removeProject: s.removeProject,
+      specCreatingForProject: s.specCreatingForProject,
+      setSpecCreatingForProject: s.setSpecCreatingForProject,
+      setCurrentProject: s.setCurrentProject,
+    })),
+  );
 
   const isCompact = useIsCompact();
 

@@ -43,7 +43,9 @@ const logger = createLogger("OverviewView");
 export function OverviewView() {
   const navigate = useNavigate();
   const { overview, isLoading, error, refresh } = useMultiProjectStatus(15000); // Refresh every 15s
-  const { upsertAndSetCurrentProject } = useAppStore();
+  const upsertAndSetCurrentProject = useAppStore(
+    (s) => s.upsertAndSetCurrentProject,
+  );
 
   // Modal state
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);

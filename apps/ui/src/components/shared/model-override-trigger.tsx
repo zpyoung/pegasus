@@ -44,13 +44,15 @@ export function ModelOverrideTrigger({
   isOverridden = false,
   className,
 }: ModelOverrideTriggerProps) {
-  const { phaseModels } = useAppStore();
+  const phaseModel = useAppStore((s) =>
+    phase ? s.phaseModels[phase] : undefined,
+  );
 
   const handleChange = (entry: PhaseModelEntry) => {
     // If the new entry matches the global default, clear the override
     // Otherwise, set it as override
     if (phase) {
-      const globalDefault = phaseModels[phase];
+      const globalDefault = phaseModel!;
       const normalizedGlobal = normalizeEntry(globalDefault);
 
       // Compare models, thinking levels, and provider IDs

@@ -128,7 +128,9 @@ export function RecentActivityFeed({
   maxItems = 10,
 }: RecentActivityFeedProps) {
   const navigate = useNavigate();
-  const { upsertAndSetCurrentProject } = useAppStore();
+  const upsertAndSetCurrentProject = useAppStore(
+    (s) => s.upsertAndSetCurrentProject,
+  );
 
   const displayActivities = activities.slice(0, maxItems);
 

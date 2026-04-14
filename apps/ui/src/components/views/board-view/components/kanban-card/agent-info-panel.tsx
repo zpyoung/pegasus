@@ -1,5 +1,4 @@
-import { memo, useEffect, useState, useMemo, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { memo, useEffect, useState, useMemo } from "react";
 import {
   Feature,
   ThinkingLevel,
@@ -27,67 +26,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { getElectronAPI } from "@/lib/electron";
 import { SummaryDialog } from "./summary-dialog";
 import { getProviderIconForModel } from "@/components/ui/provider-icon";
-import { useFeature, useAgentOutput } from "@/hooks/queries";
-import { queryKeys } from "@/lib/query-keys";
+import { useBulkFeatureStatus } from "@/hooks/queries";
 import { getFirstNonEmptySummary } from "@/lib/summary-selection";
 import { useAppStore } from "@/store/app-store";
-import { isMobileDevice } from "@/lib/mobile-detect";
-
-// Global concurrency control for mobile mount staggering.
-// When many AgentInfoPanel instances mount simultaneously (e.g., worktree switch
-// with 50+ cards), we spread queries over a wider window and cap how many
-// panels can be querying concurrently to prevent mobile Safari crashes.
-//
-// The mechanism works in two layers:
-// 1. Random delay (0-6s) - spreads mount times so not all panels try to query at once
-// 2. Concurrency slots (max 4) - even after the delay, only N panels can query simultaneously
-//
-// Instance tracking ensures the queue resets if all panels unmount (e.g., navigation).
-const MOBILE_MAX_CONCURRENT_QUERIES = 4;
-const MOBILE_STAGGER_WINDOW_MS = 6000; // 6s window (vs previous 2s)
-let activeMobileQueryCount = 0;
-let pendingMobileQueue: Array<() => void> = [];
-let mountedPanelCount = 0;
-
-function acquireMobileQuerySlot(): Promise<void> {
-  if (!isMobileDevice) return Promise.resolve();
-  if (activeMobileQueryCount < MOBILE_MAX_CONCURRENT_QUERIES) {
-    activeMobileQueryCount++;
-    return Promise.resolve();
-  }
-  return new Promise<void>((resolve) => {
-    pendingMobileQueue.push(() => {
-      activeMobileQueryCount++;
-      resolve();
-    });
-  });
-}
-
-function releaseMobileQuerySlot(): void {
-  if (!isMobileDevice) return;
-  activeMobileQueryCount = Math.max(0, activeMobileQueryCount - 1);
-  const next = pendingMobileQueue.shift();
-  if (next) next();
-}
-
-function trackPanelMount(): void {
-  if (!isMobileDevice) return;
-  mountedPanelCount++;
-}
-
-function trackPanelUnmount(): void {
-  if (!isMobileDevice) return;
-  mountedPanelCount = Math.max(0, mountedPanelCount - 1);
-  // If all panels unmounted (e.g., navigated away from board or worktree switch),
-  // reset the queue to prevent stale state from blocking future mounts.
-  if (mountedPanelCount === 0) {
-    activeMobileQueryCount = 0;
-    // Drain any pending callbacks so their Promises resolve (components already unmounted)
-    const pending = pendingMobileQueue;
-    pendingMobileQueue = [];
-    for (const cb of pending) cb();
-  }
-}
 
 /**
  * Formats thinking level for compact display
@@ -136,15 +77,8 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
   summary,
   isActivelyRunning,
 }: AgentInfoPanelProps) {
-  const queryClient = useQueryClient();
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [isTodosExpanded, setIsTodosExpanded] = useState(false);
-
-  // Track mounted panel count for global queue reset on full unmount
-  useEffect(() => {
-    trackPanelMount();
-    return () => trackPanelUnmount();
-  }, []);
 
   // Get providers from store for provider-aware model name display
   // This allows formatModelName to show provider-specific model names (e.g., "GLM 4.7" instead of "Sonnet 4.5")
@@ -170,201 +104,36 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
   const [taskSummaryMap, setTaskSummaryMap] = useState<
     Map<string, string | null>
   >(new Map());
-  // Track last WebSocket event timestamp to know if we're receiving real-time updates
-  const [lastWsEventTimestamp, setLastWsEventTimestamp] = useState<
-    number | null
-  >(null);
 
-  // Determine if we should poll for updates
-  const shouldFetchData =
-    feature.status !== "backlog" && feature.status !== "merge_conflict";
+  // Single bulk query replaces per-card useFeature() + useAgentOutput() polling.
+  // React Query deduplicates — only one HTTP request fires regardless of how
+  // many AgentInfoPanel instances are mounted across the board.
+  // The feature prop is updated when the board view consumes useBulkFeatureStatus.
+  useBulkFeatureStatus(projectPath);
 
-  // On mobile, stagger initial per-card queries to prevent a mount storm.
-  // When a worktree loads with many cards, all AgentInfoPanel instances mount
-  // simultaneously. Without staggering, each card fires useFeature + useAgentOutput
-  // queries at the same time, creating 60-100+ concurrent API calls that crash
-  // mobile Safari. Actively running cards fetch immediately (priority data);
-  // other cards defer by a random delay AND wait for a concurrency slot.
-  // The stagger window is 6s (vs previous 2s) to spread load for worktrees
-  // with 50+ features. The concurrency limiter caps active queries to 4 at a time,
-  // preventing the burst that overwhelms mobile Safari's connection handling.
-  const [mountReady, setMountReady] = useState(
-    !isMobileDevice || !!isActivelyRunning,
-  );
-  useEffect(() => {
-    if (mountReady) return;
-    let cancelled = false;
-    const delay = Math.random() * MOBILE_STAGGER_WINDOW_MS;
-    const timer = setTimeout(() => {
-      // After the random delay, also wait for a concurrency slot
-      acquireMobileQuerySlot().then(() => {
-        if (!cancelled) {
-          setMountReady(true);
-          // Release the slot after a brief window to let the initial queries fire
-          // and return, preventing all slots from being held indefinitely
-          setTimeout(releaseMobileQuerySlot, 3000);
-        } else {
-          releaseMobileQuerySlot();
-        }
-      });
-    }, delay);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [mountReady]);
-
-  const queryEnabled = shouldFetchData && mountReady;
-
-  // Track whether we're receiving WebSocket events (within threshold)
-  // Use a state to trigger re-renders when the WebSocket connection becomes stale
-  const [isReceivingWsEvents, setIsReceivingWsEvents] = useState(false);
-  const wsEventTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // WebSocket activity threshold in ms - if no events within this time, consider WS inactive
-  const WS_ACTIVITY_THRESHOLD = 10000;
-
-  // Update isReceivingWsEvents when we get new WebSocket events
-  useEffect(() => {
-    if (lastWsEventTimestamp !== null) {
-      // We just received an event, mark as active
-      setIsReceivingWsEvents(true);
-
-      // Clear any existing timeout
-      if (wsEventTimeoutRef.current) {
-        clearTimeout(wsEventTimeoutRef.current);
-      }
-
-      // Set a timeout to mark as inactive if no new events
-      wsEventTimeoutRef.current = setTimeout(() => {
-        setIsReceivingWsEvents(false);
-      }, WS_ACTIVITY_THRESHOLD);
-    }
-
-    return () => {
-      if (wsEventTimeoutRef.current) {
-        clearTimeout(wsEventTimeoutRef.current);
-      }
-    };
-  }, [lastWsEventTimestamp]);
-
-  // Polling interval logic:
-  // - If receiving WebSocket events: use longer interval (10s) as a fallback
-  // - If not receiving WebSocket events but in_progress: use normal interval (3s)
-  // - Otherwise: no polling
-  const pollingInterval = useMemo((): number | false => {
-    if (!(isActivelyRunning || feature.status === "in_progress")) {
-      return false;
-    }
-    // If receiving WebSocket events, use longer polling interval as fallback
-    if (isReceivingWsEvents) {
-      return WS_ACTIVITY_THRESHOLD;
-    }
-    // Default polling interval
-    return 3000;
-  }, [isActivelyRunning, feature.status, isReceivingWsEvents]);
-
-  // Fetch fresh feature data for planSpec (store data can be stale for task progress)
-  const { data: freshFeature } = useFeature(projectPath, feature.id, {
-    enabled: queryEnabled && !contextContent,
-    pollingInterval,
-  });
-
-  // Fetch agent output for parsing
-  const { data: agentOutputContent } = useAgentOutput(projectPath, feature.id, {
-    enabled: queryEnabled && !contextContent,
-    pollingInterval,
-  });
-
-  // On mount, ensure feature and agent output queries are fresh.
-  // This handles the worktree switch scenario where cards unmount when filtered out
-  // and remount when the user switches back. Without this, the React Query cache
-  // may serve stale data for the individual feature query, causing the todo list
-  // to appear empty until the next polling cycle.
-  //
-  // IMPORTANT: Only invalidate if the cached data EXISTS and is STALE.
-  // During worktree switches, ALL cards in the new worktree remount simultaneously.
-  // If every card fires invalidateQueries(), it creates a query storm (40-100+
-  // concurrent invalidations) that overwhelms React's rendering pipeline on mobile
-  // Safari/PWA, causing crashes. The key insight: if a query has NEVER been fetched
-  // (no dataUpdatedAt), there's nothing stale to invalidate — the useFeature/
-  // useAgentOutput hooks will fetch fresh data when their `enabled` flag is true.
-  // We only need to invalidate when cached data exists but is outdated.
-  //
-  // On mobile, skip mount-time invalidation entirely. The staggered useFeature/
-  // useAgentOutput queries already fetch fresh data — invalidation is redundant
-  // and creates the exact query storm we're trying to prevent. The stale threshold
-  // is also higher on mobile (30s vs 10s) to further reduce unnecessary refetches
-  // during the settling period after a worktree switch.
-  useEffect(() => {
-    if (queryEnabled && projectPath && feature.id && !contextContent) {
-      // On mobile, skip mount-time invalidation — the useFeature/useAgentOutput
-      // hooks will handle the initial fetch after the stagger delay.
-      if (isMobileDevice) return;
-
-      const MOUNT_STALE_THRESHOLD = 10_000; // 10s — skip invalidation if data is fresh
-      const now = Date.now();
-
-      const featureQuery = queryClient.getQueryState(
-        queryKeys.features.single(projectPath, feature.id),
-      );
-      const agentOutputQuery = queryClient.getQueryState(
-        queryKeys.features.agentOutput(projectPath, feature.id),
-      );
-
-      // Only invalidate queries that have cached data AND are stale.
-      // Skip if the query has never been fetched (dataUpdatedAt is undefined) —
-      // the useFeature/useAgentOutput hooks will handle the initial fetch.
-      if (
-        featureQuery?.dataUpdatedAt &&
-        now - featureQuery.dataUpdatedAt > MOUNT_STALE_THRESHOLD
-      ) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.features.single(projectPath, feature.id),
-        });
-      }
-      if (
-        agentOutputQuery?.dataUpdatedAt &&
-        now - agentOutputQuery.dataUpdatedAt > MOUNT_STALE_THRESHOLD
-      ) {
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.features.agentOutput(projectPath, feature.id),
-        });
-      }
-    }
-    // Runs when mount staggering completes (queryEnabled becomes true) or on initial mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryEnabled, feature.id, projectPath]);
-
-  // Parse agent output into agentInfo
+  // Parse agent context — only from contextContent when provided
+  // (per-card agentOutput polling removed; output is fetched on-demand when modal opens)
   const agentInfo = useMemo(() => {
     if (contextContent) {
       return parseAgentContext(contextContent);
     }
-    if (agentOutputContent) {
-      return parseAgentContext(agentOutputContent);
-    }
     return null;
-  }, [contextContent, agentOutputContent]);
+  }, [contextContent]);
 
-  // Prefer freshly fetched feature summary over potentially stale list data.
+  // Summary from feature prop (kept fresh by useFeatures list polling + WebSocket invalidation)
   const effectiveSummary =
-    getFirstNonEmptySummary(
-      freshFeature?.summary,
-      feature.summary,
-      summary,
-      agentInfo?.summary,
-    ) ?? undefined;
+    getFirstNonEmptySummary(feature.summary, summary, agentInfo?.summary) ??
+    undefined;
 
-  // Fresh planSpec data from API (more accurate than store data for task progress)
+  // planSpec from feature prop — updated via useFeatures list polling and WebSocket events
   const freshPlanSpec = useMemo(() => {
-    if (!freshFeature?.planSpec) return null;
+    if (!feature.planSpec) return null;
     return {
-      tasks: freshFeature.planSpec.tasks,
-      tasksCompleted: freshFeature.planSpec.tasksCompleted || 0,
-      currentTaskId: freshFeature.planSpec.currentTaskId,
+      tasks: feature.planSpec.tasks,
+      tasksCompleted: feature.planSpec.tasksCompleted || 0,
+      currentTaskId: feature.planSpec.currentTaskId,
     };
-  }, [freshFeature?.planSpec]);
+  }, [feature.planSpec]);
 
   // Derive effective todos from planSpec.tasks when available, fallback to agentInfo.todos
   // Uses freshPlanSpec (from API) for accurate progress, with taskStatusMap for real-time updates
@@ -449,9 +218,7 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
   // Listen to WebSocket events for real-time task status updates
   // This ensures the Kanban card shows the same progress as the Agent Output modal
   // Listen for ANY in-progress feature with planSpec tasks, not just isCurrentAutoTask
-  const hasPlanSpecTasks =
-    (freshPlanSpec?.tasks?.length ?? 0) > 0 ||
-    (feature.planSpec?.tasks?.length ?? 0) > 0;
+  const hasPlanSpecTasks = (freshPlanSpec?.tasks?.length ?? 0) > 0;
   const shouldListenToEvents =
     feature.status === "in_progress" && hasPlanSpecTasks;
 
@@ -464,9 +231,6 @@ export const AgentInfoPanel = memo(function AgentInfoPanel({
     const unsubscribe = api.autoMode.onEvent((event: AutoModeEvent) => {
       // Only handle events for this feature
       if (!("featureId" in event) || event.featureId !== feature.id) return;
-
-      // Update timestamp for any event related to this feature
-      setLastWsEventTimestamp(Date.now());
 
       switch (event.type) {
         case "auto_mode_task_started":

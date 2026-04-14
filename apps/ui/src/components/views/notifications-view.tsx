@@ -31,7 +31,7 @@ import type { Notification } from "@pegasus/types";
 import { formatRelativeTime } from "@/lib/utils";
 
 export function NotificationsView() {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
   const projectPath = currentProject?.path ?? null;
   const navigate = useNavigate();
 

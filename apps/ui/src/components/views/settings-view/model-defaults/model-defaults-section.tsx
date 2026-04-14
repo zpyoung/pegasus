@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Workflow, RotateCcw, Replace, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { PhaseModelSelector } from "./phase-model-selector";
 import { BulkReplaceDialog } from "./bulk-replace-dialog";
@@ -98,7 +99,8 @@ function PhaseGroup({
   subtitle: string;
   phases: PhaseConfig[];
 }) {
-  const { phaseModels, setPhaseModel } = useAppStore();
+  const phaseModels = useAppStore((s) => s.phaseModels);
+  const setPhaseModel = useAppStore((s) => s.setPhaseModel);
 
   return (
     <div className="space-y-4">
@@ -126,7 +128,8 @@ function PhaseGroup({
  * This is separate from phase models but logically belongs with model configuration.
  */
 function FeatureDefaultModelSection() {
-  const { defaultFeatureModel, setDefaultFeatureModel } = useAppStore();
+  const defaultFeatureModel = useAppStore((s) => s.defaultFeatureModel);
+  const setDefaultFeatureModel = useAppStore((s) => s.setDefaultFeatureModel);
   const defaultValue: PhaseModelEntry =
     defaultFeatureModel ?? DEFAULT_GLOBAL_SETTINGS.defaultFeatureModel;
 
@@ -190,7 +193,14 @@ function DefaultThinkingLevelSection() {
     setDefaultThinkingLevel,
     defaultReasoningEffort,
     setDefaultReasoningEffort,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      defaultThinkingLevel: s.defaultThinkingLevel,
+      setDefaultThinkingLevel: s.setDefaultThinkingLevel,
+      defaultReasoningEffort: s.defaultReasoningEffort,
+      setDefaultReasoningEffort: s.setDefaultReasoningEffort,
+    })),
+  );
 
   return (
     <div className="space-y-4">
@@ -291,7 +301,10 @@ function DefaultThinkingLevelSection() {
 }
 
 export function ModelDefaultsSection() {
-  const { resetPhaseModels, claudeCompatibleProviders } = useAppStore();
+  const resetPhaseModels = useAppStore((s) => s.resetPhaseModels);
+  const claudeCompatibleProviders = useAppStore(
+    (s) => s.claudeCompatibleProviders,
+  );
   const [showBulkReplace, setShowBulkReplace] = useState(false);
 
   // Check if there are any enabled ClaudeCompatibleProviders

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { createLogger } from "@pegasus/utils/logger";
 import { useNavigate } from "@tanstack/react-router";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { useOSDetection } from "@/hooks/use-os-detection";
 import { getElectronAPI, isElectron } from "@/lib/electron";
 import { initializeProject } from "@/lib/project-init";
@@ -83,7 +84,16 @@ export function DashboardView() {
     setCurrentProject,
     toggleProjectFavorite,
     moveProjectToTrash,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      projects: s.projects,
+      upsertAndSetCurrentProject: s.upsertAndSetCurrentProject,
+      addProject: s.addProject,
+      setCurrentProject: s.setCurrentProject,
+      toggleProjectFavorite: s.toggleProjectFavorite,
+      moveProjectToTrash: s.moveProjectToTrash,
+    })),
+  );
 
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showWorkspacePicker, setShowWorkspacePicker] = useState(false);

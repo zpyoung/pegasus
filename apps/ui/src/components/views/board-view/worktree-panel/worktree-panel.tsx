@@ -267,6 +267,9 @@ export function WorktreePanel({
 
   // Auto-mode state management using the store
   // Use separate selectors to avoid creating new object references on each render
+  // NOTE: subscribing to the entire autoModeByWorktree map is intentional here.
+  // isAutoModeRunningForWorktree() is called for each visible worktree with a
+  // dynamically-generated key, so we cannot narrow to a single map entry.
   const autoModeByWorktree = useAppStore((state) => state.autoModeByWorktree);
   const currentProject = useAppStore((state) => state.currentProject);
   const setAutoModeRunning = useAppStore((state) => state.setAutoModeRunning);

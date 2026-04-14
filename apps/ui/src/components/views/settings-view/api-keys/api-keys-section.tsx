@@ -13,7 +13,8 @@ import { getElectronAPI } from "@/lib/electron";
 import { toast } from "sonner";
 
 export function ApiKeysSection() {
-  const { apiKeys, setApiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
   const { claudeAuthStatus, setClaudeAuthStatus, setCodexAuthStatus } =
     useSetupStore();
   const [isDeletingAnthropicKey, setIsDeletingAnthropicKey] = useState(false);

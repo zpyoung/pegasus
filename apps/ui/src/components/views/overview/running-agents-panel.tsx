@@ -27,7 +27,9 @@ interface RunningAgent {
 
 export function RunningAgentsPanel({ projects }: RunningAgentsPanelProps) {
   const navigate = useNavigate();
-  const { upsertAndSetCurrentProject } = useAppStore();
+  const upsertAndSetCurrentProject = useAppStore(
+    (s) => s.upsertAndSetCurrentProject,
+  );
 
   // Extract running agents from projects
   const runningAgents: RunningAgent[] = projects

@@ -3,7 +3,8 @@
  * Centralizes WebSocket event logic to reduce duplication
  */
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { getElectronAPI } from "@/lib/electron";
 import { useAgentOutput } from "@/hooks/queries";
 import {
@@ -13,6 +14,11 @@ import {
 import type { AutoModeEvent } from "@/types/electron";
 import type { BacklogPlanEvent } from "@pegasus/types";
 import { MODAL_CONSTANTS } from "@/components/views/board-view/dialogs/agent-output-modal.constants";
+import { useAgentStreamStore } from "@/store/agent-stream-store";
+import { queryKeys } from "@/lib/query-keys";
+
+/** Milliseconds to buffer chunks before flushing to the store */
+const FLUSH_INTERVAL_MS = 50;
 
 interface UseAgentOutputWebSocketProps {
   open: boolean;
@@ -22,6 +28,54 @@ interface UseAgentOutputWebSocketProps {
   onFeatureComplete?: (passes: boolean) => void;
 }
 
+/**
+ * Lightweight hook that buffers incoming WebSocket chunks and flushes them
+ * to AgentStreamStore in batches every FLUSH_INTERVAL_MS.
+ *
+ * @param featureId - Feature ID to write chunks to
+ * @returns `onChunk` callback to call with each new piece of content
+ */
+export function useAgentOutputStream(featureId: string): {
+  onChunk: (chunk: string) => void;
+} {
+  const bufferRef = useRef<string[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appendChunk = useAgentStreamStore((s) => s.appendChunk);
+
+  const flush = useCallback(() => {
+    if (bufferRef.current.length === 0) return;
+    const combined = bufferRef.current.join("");
+    bufferRef.current = [];
+    appendChunk(featureId, combined);
+  }, [featureId, appendChunk]);
+
+  const onChunk = useCallback(
+    (chunk: string) => {
+      bufferRef.current.push(chunk);
+      if (!timerRef.current) {
+        timerRef.current = setTimeout(() => {
+          flush();
+          timerRef.current = null;
+        }, FLUSH_INTERVAL_MS);
+      }
+    },
+    [flush],
+  );
+
+  // Flush remaining buffer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      flush();
+    };
+  }, [flush]);
+
+  return { onChunk };
+}
+
 export function useAgentOutputWebSocket({
   open,
   featureId,
@@ -29,12 +83,20 @@ export function useAgentOutputWebSocket({
   projectPath,
   onFeatureComplete,
 }: UseAgentOutputWebSocketProps) {
-  const [streamedContent, setStreamedContent] = useState("");
+  const queryClient = useQueryClient();
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
 
-  // Use React Query for initial output loading
+  const appendChunk = useAgentStreamStore((s) => s.appendChunk);
+  const markComplete = useAgentStreamStore((s) => s.markComplete);
+  const clearStream = useAgentStreamStore((s) => s.clearStream);
+
+  // Buffer refs for 50ms batching
+  const bufferRef = useRef<string[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Use React Query for initial output loading (historical/completed features)
   const { data: initialOutput = "", isLoading } = useAgentOutput(
     projectPath,
     featureId,
@@ -43,8 +105,20 @@ export function useAgentOutputWebSocket({
     },
   );
 
+  // Subscribe to the store for streamed content
+  const streamedContent = useAgentStreamStore(
+    useCallback((s) => s.getOutput(featureId), [featureId]),
+  );
+
   // Combine initial output with streamed content
   const output = initialOutput + streamedContent;
+
+  const flush = useCallback(() => {
+    if (bufferRef.current.length === 0) return;
+    const combined = bufferRef.current.join("");
+    bufferRef.current = [];
+    appendChunk(featureId, combined);
+  }, [featureId, appendChunk]);
 
   // Handle auto mode events
   const handleAutoModeEvent = useCallback(
@@ -57,37 +131,78 @@ export function useAgentOutputWebSocket({
       const newContent = formatAutoModeEventContent(event);
 
       if (newContent) {
-        setStreamedContent((prev) => prev + newContent);
+        // Buffer the chunk for batched flush to the store
+        bufferRef.current.push(newContent);
+        if (!timerRef.current) {
+          timerRef.current = setTimeout(() => {
+            flush();
+            timerRef.current = null;
+          }, FLUSH_INTERVAL_MS);
+        }
       }
 
       // Handle feature completion
-      if (
-        event.type === "auto_mode_feature_complete" &&
-        event.passes &&
-        onFeatureComplete
-      ) {
-        // Clear any existing timeout first
-        if (closeTimeoutRef.current) {
-          clearTimeout(closeTimeoutRef.current);
+      if (event.type === "auto_mode_feature_complete") {
+        // Flush remaining buffer immediately
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
         }
+        flush();
 
-        // Set timeout to close modal after delay
-        closeTimeoutRef.current = setTimeout(() => {
-          onFeatureComplete(true);
-        }, MODAL_CONSTANTS.MODAL_CLOSE_DELAY_MS);
+        // Mark stream complete and write final output to React Query cache
+        markComplete(featureId);
+        const finalOutput = useAgentStreamStore.getState().getOutput(featureId);
+        if (projectPath) {
+          queryClient.setQueryData(
+            queryKeys.features.agentOutput(projectPath, featureId),
+            initialOutput + finalOutput,
+          );
+        }
+        clearStream(featureId);
+
+        if (event.passes && onFeatureComplete) {
+          // Clear any existing timeout first
+          if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+          }
+
+          // Set timeout to close modal after delay
+          closeTimeoutRef.current = setTimeout(() => {
+            onFeatureComplete(true);
+          }, MODAL_CONSTANTS.MODAL_CLOSE_DELAY_MS);
+        }
       }
     },
-    [featureId, onFeatureComplete],
+    [
+      featureId,
+      projectPath,
+      initialOutput,
+      flush,
+      markComplete,
+      clearStream,
+      queryClient,
+      onFeatureComplete,
+    ],
   );
 
   // Handle backlog plan events
-  const handleBacklogPlanEvent = useCallback((event: BacklogPlanEvent) => {
-    const newContent = formatBacklogPlanEventContent(event);
+  const handleBacklogPlanEvent = useCallback(
+    (event: BacklogPlanEvent) => {
+      const newContent = formatBacklogPlanEventContent(event);
 
-    if (newContent) {
-      setStreamedContent((prev) => prev + newContent);
-    }
-  }, []);
+      if (newContent) {
+        bufferRef.current.push(newContent);
+        if (!timerRef.current) {
+          timerRef.current = setTimeout(() => {
+            flush();
+            timerRef.current = null;
+          }, FLUSH_INTERVAL_MS);
+        }
+      }
+    },
+    [flush],
+  );
 
   // Set up WebSocket event listeners
   useEffect(() => {
@@ -127,6 +242,10 @@ export function useAgentOutputWebSocket({
     }
 
     return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
@@ -140,12 +259,17 @@ export function useAgentOutputWebSocket({
     handleBacklogPlanEvent,
   ]);
 
-  // Reset streamed content when modal opens or featureId changes
+  // Reset stream when modal opens or featureId changes
   useEffect(() => {
     if (open) {
-      setStreamedContent("");
+      bufferRef.current = [];
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      clearStream(featureId);
     }
-  }, [open, featureId]);
+  }, [open, featureId, clearStream]);
 
   return {
     output,

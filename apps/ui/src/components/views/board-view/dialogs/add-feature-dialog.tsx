@@ -33,6 +33,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { cn, normalizeModelEntry } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import type {
   ThinkingLevel,
   PlanningMode,
@@ -344,7 +345,16 @@ export function AddFeatureDialog({
     defaultFeatureModel,
     defaultThinkingLevel,
     currentProject,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      defaultPlanningMode: s.defaultPlanningMode,
+      defaultRequirePlanApproval: s.defaultRequirePlanApproval,
+      useWorktrees: s.useWorktrees,
+      defaultFeatureModel: s.defaultFeatureModel,
+      defaultThinkingLevel: s.defaultThinkingLevel,
+      currentProject: s.currentProject,
+    })),
+  );
 
   // Use project-level default feature model if set, otherwise fall back to global
   const effectiveDefaultFeatureModel =

@@ -69,7 +69,9 @@ export function ProjectStatusCard({
   onProjectClick,
 }: ProjectStatusCardProps) {
   const navigate = useNavigate();
-  const { upsertAndSetCurrentProject } = useAppStore();
+  const upsertAndSetCurrentProject = useAppStore(
+    (s) => s.upsertAndSetCurrentProject,
+  );
 
   const statusConfig = healthStatusConfig[project.healthStatus];
   const StatusIcon = statusConfig.icon;

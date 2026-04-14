@@ -19,7 +19,8 @@ import { AgentInputArea } from "./agent-view/input-area";
 const LG_BREAKPOINT = 1024;
 
 export function AgentView() {
-  const { currentProject, getCurrentWorktree } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const getCurrentWorktree = useAppStore((s) => s.getCurrentWorktree);
   const [input, setInput] = useState("");
   const [currentTool, setCurrentTool] = useState<string | null>(null);
 

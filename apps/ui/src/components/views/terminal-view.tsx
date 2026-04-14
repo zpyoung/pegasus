@@ -28,6 +28,7 @@ import {
   type TerminalTab,
   type PersistedTerminalPanel,
 } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -286,9 +287,46 @@ export function TerminalView({
     setTerminalBackgroundColor,
     setTerminalForegroundColor,
     updateTerminalPanelSizes,
-    currentWorktreeByProject,
-    worktreesByProject,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      terminalState: s.terminalState,
+      setTerminalUnlocked: s.setTerminalUnlocked,
+      addTerminalToLayout: s.addTerminalToLayout,
+      removeTerminalFromLayout: s.removeTerminalFromLayout,
+      setActiveTerminalSession: s.setActiveTerminalSession,
+      swapTerminals: s.swapTerminals,
+      currentProject: s.currentProject,
+      addTerminalTab: s.addTerminalTab,
+      removeTerminalTab: s.removeTerminalTab,
+      setActiveTerminalTab: s.setActiveTerminalTab,
+      renameTerminalTab: s.renameTerminalTab,
+      reorderTerminalTabs: s.reorderTerminalTabs,
+      moveTerminalToTab: s.moveTerminalToTab,
+      setTerminalPanelFontSize: s.setTerminalPanelFontSize,
+      toggleTerminalMaximized: s.toggleTerminalMaximized,
+      saveTerminalLayout: s.saveTerminalLayout,
+      getPersistedTerminalLayout: s.getPersistedTerminalLayout,
+      clearTerminalState: s.clearTerminalState,
+      setTerminalDefaultFontSize: s.setTerminalDefaultFontSize,
+      setTerminalDefaultRunScript: s.setTerminalDefaultRunScript,
+      setTerminalFontFamily: s.setTerminalFontFamily,
+      setTerminalLineHeight: s.setTerminalLineHeight,
+      setTerminalScrollbackLines: s.setTerminalScrollbackLines,
+      setTerminalScreenReaderMode: s.setTerminalScreenReaderMode,
+      setTerminalBackgroundColor: s.setTerminalBackgroundColor,
+      setTerminalForegroundColor: s.setTerminalForegroundColor,
+      updateTerminalPanelSizes: s.updateTerminalPanelSizes,
+    })),
+  );
+
+  const projectWorktreesList = useAppStore((s) =>
+    currentProject ? (s.worktreesByProject[currentProject.path] ?? []) : [],
+  );
+  const currentWorktreeInfo = useAppStore((s) =>
+    currentProject
+      ? (s.currentWorktreeByProject[currentProject.path] ?? null)
+      : null,
+  );
 
   const navigate = useNavigate();
 
@@ -1062,8 +1100,9 @@ export function TerminalView({
     if (!branchName) return {};
 
     // Look up the worktree path for this branch in the project's worktree list
-    const projectWorktrees = worktreesByProject[currentProject.path] ?? [];
-    const worktree = projectWorktrees.find((wt) => wt.branch === branchName);
+    const worktree = projectWorktreesList.find(
+      (wt) => wt.branch === branchName,
+    );
     if (!worktree) return { branchName };
 
     return { cwd: worktree.path, branchName };
@@ -1764,10 +1803,6 @@ export function TerminalView({
 
   // No terminals yet - show welcome screen
   if (terminalState.tabs.length === 0) {
-    // Get the current worktree for this project (if any)
-    const currentWorktreeInfo = currentProject
-      ? (currentWorktreeByProject[currentProject.path] ?? null)
-      : null;
     // Only show worktree button when the current worktree has a specific path set
     // (non-null path means a worktree is selected, as opposed to the main project)
     const currentWorktreePath = currentWorktreeInfo?.path ?? null;
@@ -1924,9 +1959,7 @@ export function TerminalView({
                   </DropdownMenuItem>
                   {/* Worktree options - show when project has worktrees */}
                   {(() => {
-                    const projectWorktrees = currentProject
-                      ? (worktreesByProject[currentProject.path] ?? [])
-                      : [];
+                    const projectWorktrees = projectWorktreesList;
                     if (projectWorktrees.length === 0) return null;
                     const mainWorktree = projectWorktrees.find(
                       (wt) => wt.isMain,

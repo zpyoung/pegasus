@@ -7,6 +7,7 @@ import {
   ProjectAnalysis,
   Feature,
 } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { getElectronAPI } from "@/lib/electron";
 import { queryKeys } from "@/lib/query-keys";
 import {
@@ -76,7 +77,16 @@ export function AnalysisView() {
     setProjectAnalysis,
     setIsAnalyzing,
     clearAnalysis,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      currentProject: s.currentProject,
+      projectAnalysis: s.projectAnalysis,
+      isAnalyzing: s.isAnalyzing,
+      setProjectAnalysis: s.setProjectAnalysis,
+      setIsAnalyzing: s.setIsAnalyzing,
+      clearAnalysis: s.clearAnalysis,
+    })),
+  );
 
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(),

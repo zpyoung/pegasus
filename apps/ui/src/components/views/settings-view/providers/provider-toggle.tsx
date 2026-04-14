@@ -13,7 +13,8 @@ export function ProviderToggle({
   provider,
   providerLabel,
 }: ProviderToggleProps) {
-  const { disabledProviders, toggleProviderDisabled } = useAppStore();
+  const disabledProviders = useAppStore((s) => s.disabledProviders);
+  const toggleProviderDisabled = useAppStore((s) => s.toggleProviderDisabled);
   const isDisabled = disabledProviders.includes(provider);
 
   return (

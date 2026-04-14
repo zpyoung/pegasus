@@ -71,7 +71,9 @@ const INTERVIEW_QUESTIONS = [
 ];
 
 export function InterviewView() {
-  const { addProject, setCurrentProject, setAppSpec } = useAppStore();
+  const addProject = useAppStore((s) => s.addProject);
+  const setCurrentProject = useAppStore((s) => s.setCurrentProject);
+  const setAppSpec = useAppStore((s) => s.setAppSpec);
   const { openFileBrowser } = useFileBrowser();
   const navigate = useNavigate();
   const [input, setInput] = useState("");

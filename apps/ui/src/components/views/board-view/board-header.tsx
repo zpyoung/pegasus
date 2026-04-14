@@ -97,15 +97,15 @@ export function BoardHeader({
   const zaiAuthStatus = useSetupStore((state) => state.zaiAuthStatus);
   const geminiAuthStatus = useSetupStore((state) => state.geminiAuthStatus);
 
-  // Worktree panel visibility (per-project)
-  const worktreePanelVisibleByProject = useAppStore(
-    (state) => state.worktreePanelVisibleByProject,
+  // Worktree panel visibility — subscribe to the per-project boolean directly so
+  // the header only re-renders when THIS project's visibility setting changes, not
+  // whenever any project's worktreePanelVisibleByProject entry is mutated.
+  const isWorktreePanelVisible = useAppStore(
+    (state) => state.worktreePanelVisibleByProject[projectPath] ?? true,
   );
   const setWorktreePanelVisible = useAppStore(
     (state) => state.setWorktreePanelVisible,
   );
-  const isWorktreePanelVisible =
-    worktreePanelVisibleByProject[projectPath] ?? true;
 
   // All-worktrees mode indicator (per-project)
   const showAllWorktrees = useAppStore(

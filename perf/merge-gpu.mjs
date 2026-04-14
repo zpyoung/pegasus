@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 /**
- * Merge GPU metrics from powermetrics output into perf-baseline.json.
+ * Merge GPU metrics from powermetrics output into the latest benchmark report.
  *
  * Usage:
  *   node perf/merge-gpu.mjs <path-to-powermetrics-output.txt>
+ *
+ * Targets perf-comparison.json (the `current` run) when it exists,
+ * otherwise falls back to perf-baseline.json.
  *
  * Parses the text output of:
  *   sudo powermetrics -i 1000 -n N --samplers gpu
  *
  * Extracts per-sample GPU active residency %, frequency, and power,
- * then appends them to the existing perf-baseline.json report.
+ * then appends them to the report.
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -60,57 +63,83 @@ if (validSamples.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Merge into perf-baseline.json
+// Merge into the latest benchmark report
 // ---------------------------------------------------------------------------
 
+const comparisonPath = join(__dirname, "perf-comparison.json");
 const baselinePath = join(__dirname, "perf-baseline.json");
-let report;
-try {
-  report = JSON.parse(readFileSync(baselinePath, "utf-8"));
-} catch {
-  console.error(`[gpu-merge] Could not read ${baselinePath}`);
-  process.exit(1);
+
+function mergeGpuIntoReport(report, aligned) {
+  for (let i = 0; i < aligned.length; i++) {
+    report.samples[i].gpuResidencyPercent = aligned[i].gpuResidencyPercent;
+    report.samples[i].gpuFrequencyMHz = aligned[i].gpuFrequencyMHz;
+    report.samples[i].gpuPowerMW = aligned[i].gpuPowerMW;
+  }
+
+  const residencies = aligned
+    .map((s) => s.gpuResidencyPercent)
+    .filter((v) => v !== null);
+  const powers = aligned.map((s) => s.gpuPowerMW).filter((v) => v !== null);
+
+  report.metrics.gpu = {
+    avgResidencyPercent:
+      Math.round(
+        (residencies.reduce((a, b) => a + b, 0) / residencies.length) * 10,
+      ) / 10,
+    maxResidencyPercent: Math.round(Math.max(...residencies) * 10) / 10,
+    avgPowerMW:
+      powers.length > 0
+        ? Math.round(
+            (powers.reduce((a, b) => a + b, 0) / powers.length) * 10,
+          ) / 10
+        : null,
+    maxPowerMW: powers.length > 0 ? Math.round(Math.max(...powers)) : null,
+    samplesCollected: aligned.length,
+  };
 }
 
-// Align GPU samples with benchmark samples (1:1 by index, trim extras)
-const benchSampleCount = report.samples.length;
-const aligned = validSamples.slice(0, benchSampleCount);
+// Target perf-comparison.json's `current` when it exists, otherwise perf-baseline.json
+if (existsSync(comparisonPath)) {
+  let wrapper;
+  try {
+    wrapper = JSON.parse(readFileSync(comparisonPath, "utf-8"));
+  } catch {
+    console.error(`[gpu-merge] Could not read ${comparisonPath}`);
+    process.exit(1);
+  }
 
-// Attach GPU data to each benchmark sample
-for (let i = 0; i < aligned.length; i++) {
-  report.samples[i].gpuResidencyPercent = aligned[i].gpuResidencyPercent;
-  report.samples[i].gpuFrequencyMHz = aligned[i].gpuFrequencyMHz;
-  report.samples[i].gpuPowerMW = aligned[i].gpuPowerMW;
+  const report = wrapper.current;
+  const aligned = validSamples.slice(0, report.samples.length);
+  mergeGpuIntoReport(report, aligned);
+  writeFileSync(comparisonPath, JSON.stringify(wrapper, null, 2));
+
+  console.log(
+    `[gpu-merge] Merged ${aligned.length} GPU samples into ${comparisonPath} (current run)`,
+  );
+  console.log(
+    `[gpu-merge] GPU: avg=${report.metrics.gpu.avgResidencyPercent}% ` +
+      `max=${report.metrics.gpu.maxResidencyPercent}% ` +
+      `power=${report.metrics.gpu.avgPowerMW ?? "n/a"} mW`,
+  );
+} else {
+  let report;
+  try {
+    report = JSON.parse(readFileSync(baselinePath, "utf-8"));
+  } catch {
+    console.error(`[gpu-merge] Could not read ${baselinePath}`);
+    process.exit(1);
+  }
+
+  const aligned = validSamples.slice(0, report.samples.length);
+  mergeGpuIntoReport(report, aligned);
+  writeFileSync(baselinePath, JSON.stringify(report, null, 2));
+
+  console.log(
+    `[gpu-merge] Merged ${aligned.length} GPU samples into ${baselinePath}`,
+  );
+  console.log(
+    `[gpu-merge] GPU: avg=${report.metrics.gpu.avgResidencyPercent}% ` +
+      `max=${report.metrics.gpu.maxResidencyPercent}% ` +
+      `power=${report.metrics.gpu.avgPowerMW ?? "n/a"} mW`,
+  );
 }
-
-// Add aggregate GPU metrics
-const residencies = aligned
-  .map((s) => s.gpuResidencyPercent)
-  .filter((v) => v !== null);
-const powers = aligned.map((s) => s.gpuPowerMW).filter((v) => v !== null);
-
-report.metrics.gpu = {
-  avgResidencyPercent:
-    Math.round(
-      (residencies.reduce((a, b) => a + b, 0) / residencies.length) * 10,
-    ) / 10,
-  maxResidencyPercent: Math.round(Math.max(...residencies) * 10) / 10,
-  avgPowerMW:
-    powers.length > 0
-      ? Math.round((powers.reduce((a, b) => a + b, 0) / powers.length) * 10) /
-        10
-      : null,
-  maxPowerMW: powers.length > 0 ? Math.round(Math.max(...powers)) : null,
-  samplesCollected: aligned.length,
-};
-
-writeFileSync(baselinePath, JSON.stringify(report, null, 2));
-
-console.log(
-  `[gpu-merge] Merged ${aligned.length} GPU samples into ${baselinePath}`,
-);
-console.log(
-  `[gpu-merge] GPU: avg=${report.metrics.gpu.avgResidencyPercent}% ` +
-    `max=${report.metrics.gpu.maxResidencyPercent}% ` +
-    `power=${report.metrics.gpu.avgPowerMW ?? "n/a"} mW`,
-);

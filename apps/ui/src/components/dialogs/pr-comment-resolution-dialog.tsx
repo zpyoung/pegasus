@@ -595,7 +595,8 @@ export function PRCommentResolutionDialog({
   onOpenChange,
   pr,
 }: PRCommentResolutionDialogProps) {
-  const { currentProject, defaultFeatureModel } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const defaultFeatureModel = useAppStore((s) => s.defaultFeatureModel);
 
   // Use project-level default feature model if set, otherwise fall back to global
   const effectiveDefaultFeatureModel =

@@ -6,6 +6,7 @@ import {
   formatShortcut,
 } from "@/store/app-store";
 import type { KeyboardShortcuts } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -184,7 +185,7 @@ export function KeyboardMap({
   selectedKey,
   className,
 }: KeyboardMapProps) {
-  const { keyboardShortcuts } = useAppStore();
+  const keyboardShortcuts = useAppStore((s) => s.keyboardShortcuts);
 
   // Merge with defaults to ensure new shortcuts are always shown
   const mergedShortcuts = React.useMemo(
@@ -398,7 +399,13 @@ export function ShortcutReferencePanel({
   editable = false,
 }: ShortcutReferencePanelProps) {
   const { keyboardShortcuts, setKeyboardShortcut, resetKeyboardShortcuts } =
-    useAppStore();
+    useAppStore(
+      useShallow((s) => ({
+        keyboardShortcuts: s.keyboardShortcuts,
+        setKeyboardShortcut: s.setKeyboardShortcut,
+        resetKeyboardShortcuts: s.resetKeyboardShortcuts,
+      })),
+    );
   const [editingShortcut, setEditingShortcut] = React.useState<
     keyof KeyboardShortcuts | null
   >(null);

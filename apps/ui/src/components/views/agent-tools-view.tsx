@@ -34,7 +34,7 @@ interface ToolResult {
 }
 
 export function AgentToolsView() {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
   const api = getElectronAPI();
 
   // Read File Tool State

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "@/store/app-store";
 import { useUpdateProjectSettings } from "@/hooks/mutations";
 
@@ -11,7 +12,20 @@ import { useUpdateProjectSettings } from "@/hooks/mutations";
  * - persistSettings directly to save to server on commit
  */
 export function useBoardBackgroundSettings() {
-  const store = useAppStore();
+  const store = useAppStore(
+    useShallow((s) => ({
+      boardBackgroundByProject: s.boardBackgroundByProject,
+      setBoardBackground: s.setBoardBackground,
+      setCardOpacity: s.setCardOpacity,
+      setColumnOpacity: s.setColumnOpacity,
+      setColumnBorderEnabled: s.setColumnBorderEnabled,
+      setCardGlassmorphism: s.setCardGlassmorphism,
+      setCardBorderEnabled: s.setCardBorderEnabled,
+      setCardBorderOpacity: s.setCardBorderOpacity,
+      setHideScrollbar: s.setHideScrollbar,
+      clearBoardBackground: s.clearBoardBackground,
+    })),
+  );
 
   // Get the mutation without a fixed project path - we'll pass it with each call
   const updateProjectSettings = useUpdateProjectSettings();

@@ -7,20 +7,36 @@
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AgentOutputModal } from "../../../src/components/views/board-view/dialogs/agent-output-modal";
 import { useAppStore } from "@pegasus/ui/store/app-store";
 import { useAgentOutput, useFeature } from "@pegasus/ui/hooks/queries";
 import { getElectronAPI } from "@pegasus/ui/lib/electron";
+import { useAgentStreamStore } from "../../../src/store/agent-stream-store";
+import type { ReactNode } from "react";
 
 // Mock dependencies
 vi.mock("@pegasus/ui/hooks/queries");
 vi.mock("@pegasus/ui/lib/electron");
 vi.mock("@pegasus/ui/store/app-store");
+vi.mock("../../../src/store/agent-stream-store");
+
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 const mockUseAppStore = vi.mocked(useAppStore);
 const mockUseAgentOutput = vi.mocked(useAgentOutput);
 const mockUseFeature = vi.mocked(useFeature);
 const mockGetElectronAPI = vi.mocked(getElectronAPI);
+const mockUseAgentStreamStore = useAgentStreamStore as ReturnType<typeof vi.fn>;
 
 describe("AgentOutputModal Responsive Behavior", () => {
   const defaultProps = {
@@ -58,6 +74,21 @@ describe("AgentOutputModal Responsive Behavior", () => {
 
     // Mock electron API
     mockGetElectronAPI.mockReturnValue(null);
+
+    // Mock AgentStreamStore (added in Wave 2 Task 2)
+    mockUseAgentStreamStore.mockImplementation(
+      (selector: (s: Record<string, unknown>) => unknown) => {
+        const state = {
+          appendChunk: vi.fn(),
+          markComplete: vi.fn(),
+          clearStream: vi.fn(),
+          getOutput: vi.fn().mockReturnValue(""),
+          isStreaming: vi.fn().mockReturnValue(false),
+          streams: {},
+        };
+        return typeof selector === "function" ? selector(state) : state;
+      },
+    );
   });
 
   describe("Mobile Screen (< 640px)", () => {
@@ -69,7 +100,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       // Find the DialogContent element
       const dialogContent = screen.getByTestId("agent-output-modal");
@@ -87,7 +120,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       expect(dialogContent).toHaveClass("max-w-[calc(100%-2rem)]");
@@ -102,7 +137,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       // At sm breakpoint, sm:w-[60vw] should be applied (takes precedence over w-full)
@@ -117,7 +154,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       // At sm breakpoint, sm:max-h-[80vh] should be applied
@@ -133,7 +172,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       // sm: classes are present for responsive behavior
@@ -149,7 +190,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       // sm: max-width class is present
@@ -163,7 +206,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       // sm: max-height class is present
@@ -179,7 +224,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} />);
+      render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
 
@@ -203,7 +250,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      render(<AgentOutputModal {...defaultProps} open={false} />);
+      render(<AgentOutputModal {...defaultProps} open={false} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(
         screen.queryByTestId("agent-output-modal"),
@@ -219,7 +268,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
         removeListener: vi.fn(),
       }));
 
-      const { rerender } = render(<AgentOutputModal {...defaultProps} />);
+      const { rerender } = render(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       // Update to tablet size
       (window.matchMedia as ReturnType<typeof vi.fn>).mockImplementation(
@@ -231,7 +282,9 @@ describe("AgentOutputModal Responsive Behavior", () => {
       );
 
       // Simulate resize by re-rendering
-      rerender(<AgentOutputModal {...defaultProps} />);
+      rerender(<AgentOutputModal {...defaultProps} />, {
+        wrapper: createWrapper(),
+      });
 
       const dialogContent = screen.getByTestId("agent-output-modal");
       expect(dialogContent).toHaveClass("sm:w-[60vw]");

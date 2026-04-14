@@ -44,6 +44,12 @@ export interface XtermLogViewerProps {
   onScrollToBottom?: () => void;
 }
 
+// Chromium caps WebGL contexts at 16 per process; we reserve a margin for other
+// page-level GL usage. Once the limit is hit, new viewers fall back to the
+// canvas renderer automatically.
+let activeWebGLContexts = 0;
+const MAX_WEBGL_CONTEXTS = 12;
+
 /**
  * A read-only terminal log viewer using xterm.js for perfect ANSI color rendering.
  * Use this component when you need to display terminal output with ANSI escape codes.
@@ -70,6 +76,9 @@ export const XtermLogViewer = forwardRef<
     const [isReady, setIsReady] = useState(false);
     const autoScrollRef = useRef(autoScroll);
     const pendingContentRef = useRef<string[]>([]);
+    // Tracks whether this instance successfully acquired a WebGL context so
+    // we can decrement the global counter exactly once on cleanup or context loss
+    const hadWebGLRef = useRef(false);
 
     // Get theme and font settings from store
     const getEffectiveTheme = useAppStore((state) => state.getEffectiveTheme);
@@ -152,14 +161,25 @@ export const XtermLogViewer = forwardRef<
 
         terminal.open(containerRef.current);
 
-        // Try to load WebGL addon for better performance
-        try {
-          const { WebglAddon } = await import("@xterm/addon-webgl");
-          const webglAddon = new WebglAddon();
-          webglAddon.onContextLoss(() => webglAddon.dispose());
-          terminal.loadAddon(webglAddon);
-        } catch {
-          // WebGL not available, continue with canvas renderer
+        // Try to load WebGL addon for better performance.
+        // Guard against Chromium's ~16 context limit: fall back to canvas when exceeded.
+        if (activeWebGLContexts < MAX_WEBGL_CONTEXTS) {
+          try {
+            const { WebglAddon } = await import("@xterm/addon-webgl");
+            const webglAddon = new WebglAddon();
+            webglAddon.onContextLoss(() => {
+              if (hadWebGLRef.current) {
+                activeWebGLContexts--;
+                hadWebGLRef.current = false;
+              }
+              webglAddon.dispose();
+            });
+            terminal.loadAddon(webglAddon);
+            activeWebGLContexts++;
+            hadWebGLRef.current = true;
+          } catch {
+            // WebGL not available, continue with canvas renderer
+          }
         }
 
         // Wait for layout to stabilize then fit
@@ -198,6 +218,10 @@ export const XtermLogViewer = forwardRef<
         if (xtermRef.current) {
           xtermRef.current.dispose();
           xtermRef.current = null;
+        }
+        if (hadWebGLRef.current) {
+          activeWebGLContexts--;
+          hadWebGLRef.current = false;
         }
         fitAddonRef.current = null;
         setIsReady(false);

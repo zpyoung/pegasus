@@ -30,7 +30,9 @@ export function useIssueValidation({
   onValidationResultChange,
   onShowValidationDialogChange,
 }: UseIssueValidationOptions) {
-  const { currentProject, phaseModels, muteDoneSound } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const phaseModels = useAppStore((s) => s.phaseModels);
+  const muteDoneSound = useAppStore((s) => s.muteDoneSound);
   const [validatingIssues, setValidatingIssues] = useState<Set<number>>(
     new Set(),
   );

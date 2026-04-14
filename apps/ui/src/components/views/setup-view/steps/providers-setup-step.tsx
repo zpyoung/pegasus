@@ -73,7 +73,8 @@ function ClaudeContent() {
     setClaudeInstallProgress,
     setClaudeIsVerifying,
   } = useSetupStore();
-  const { setApiKeys, apiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
 
   const [apiKey, setApiKey] = useState("");
   const [isChecking, setIsChecking] = useState(false);
@@ -782,7 +783,8 @@ function CodexContent() {
     setCodexCliStatus,
     setCodexAuthStatus,
   } = useSetupStore();
-  const { setApiKeys, apiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
   const [isChecking, setIsChecking] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1399,7 +1401,8 @@ function OpencodeContent() {
 // ============================================================================
 function GeminiContent() {
   const { geminiCliStatus, setGeminiCliStatus } = useSetupStore();
-  const { setApiKeys, apiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
   const [isChecking, setIsChecking] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);

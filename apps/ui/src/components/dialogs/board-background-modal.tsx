@@ -37,7 +37,12 @@ export function BoardBackgroundModal({
   open,
   onOpenChange,
 }: BoardBackgroundModalProps) {
-  const { currentProject, boardBackgroundByProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const boardBackground = useAppStore((s) =>
+    s.currentProject
+      ? s.boardBackgroundByProject[s.currentProject.path]
+      : undefined,
+  );
   const {
     setBoardBackground,
     setCardOpacity,
@@ -57,9 +62,7 @@ export function BoardBackgroundModal({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Get current background settings (live from store)
-  const backgroundSettings =
-    (currentProject && boardBackgroundByProject[currentProject.path]) ||
-    defaultBackgroundSettings;
+  const backgroundSettings = boardBackground || defaultBackgroundSettings;
 
   // Local state for sliders during dragging (avoids store updates during drag)
   const [localCardOpacity, setLocalCardOpacity] = useState(

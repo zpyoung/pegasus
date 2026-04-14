@@ -5,7 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 
 export function useSpecLoading() {
-  const { currentProject, setAppSpec } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
+  const setAppSpec = useAppStore((s) => s.setAppSpec);
   const queryClient = useQueryClient();
   const [specExists, setSpecExists] = useState(true);
 

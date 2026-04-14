@@ -8,7 +8,7 @@ import { useAppStore } from "@/store/app-store";
 import { useGitHubIssues as useGitHubIssuesQuery } from "@/hooks/queries";
 
 export function useGithubIssues() {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
 
   const {
     data,

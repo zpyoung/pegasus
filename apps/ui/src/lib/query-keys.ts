@@ -28,6 +28,9 @@ export const queryKeys = {
     /** Agent output for a feature */
     agentOutput: (projectPath: string, featureId: string) =>
       ["features", projectPath, featureId, "output"] as const,
+    /** Bulk status (id, status, title) for all features in a project */
+    bulkStatus: (projectPath: string) =>
+      ["features", projectPath, "bulk-status"] as const,
   },
 
   // ============================================
@@ -224,7 +227,7 @@ export const queryKeys = {
   // ============================================
   runtime: {
     /** Pegasus runtime instance metadata */
-    instance: () => ['runtime', 'instance'] as const,
+    instance: () => ["runtime", "instance"] as const,
   },
 
   // ============================================

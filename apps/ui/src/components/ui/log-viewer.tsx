@@ -25,13 +25,13 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
-  parseLogOutput,
   getLogTypeColors,
   shouldCollapseByDefault,
   type LogEntry,
   type LogEntryType,
   type ToolCategory,
 } from "@/lib/log-parser";
+import { createIncrementalParser } from "@/lib/incremental-log-parser";
 
 interface LogViewerProps {
   output: string;
@@ -439,9 +439,26 @@ export function LogViewer({ output, className }: LogViewerProps) {
   // Track if user has "Expand All" mode active - new entries will auto-expand when this is true
   const [expandAllMode, setExpandAllMode] = useState(false);
 
-  // Parse entries and compute initial expanded state together
+  // Incremental parser — reused across renders to avoid re-parsing stable prefixes
+  const parserRef = useRef(createIncrementalParser());
+  const lastOutputLenRef = useRef(0);
+
+  // Parse entries incrementally: only process new chunks, not the full output
   const { entries, initialExpandedIds } = useMemo(() => {
-    const parsedEntries = parseLogOutput(output);
+    if (output.length < lastOutputLenRef.current) {
+      // Output shrank (new feature, modal reopen) — reset parser and reparse from scratch
+      parserRef.current.reset();
+      lastOutputLenRef.current = 0;
+    }
+
+    const newChunk = output.slice(lastOutputLenRef.current);
+    lastOutputLenRef.current = output.length;
+
+    const parsedEntries =
+      newChunk.length === 0
+        ? parserRef.current.getEntries()
+        : parserRef.current.append(newChunk);
+
     const toExpand: string[] = [];
 
     parsedEntries.forEach((entry) => {

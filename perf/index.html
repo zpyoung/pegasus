@@ -69,6 +69,24 @@
         font-size: 0.75rem;
         color: var(--muted);
       }
+      .gate-delta {
+        font-size: 0.75rem;
+        margin-top: 2px;
+        font-variant-numeric: tabular-nums;
+      }
+      .gate-prev {
+        font-size: 0.7rem;
+        color: var(--muted);
+      }
+      .delta-better {
+        color: var(--green);
+      }
+      .delta-worse {
+        color: var(--red);
+      }
+      .delta-neutral {
+        color: var(--muted);
+      }
       .pass {
         color: var(--green);
       }
@@ -285,76 +303,113 @@
       }
 
       // --- Gates ---
-      function renderGates(m) {
+      // higherIsBetter: true = higher current value is an improvement (e.g. FPS)
+      //                 false = lower current value is an improvement (e.g. heap, CPU)
+      //                 null = informational, no delta coloring
+      function renderGates(m, prev) {
         const gates = [
           {
             label: "Avg FPS",
             value: m.avgFPS,
+            prev: prev?.avgFPS,
             threshold: `> ${THRESHOLDS.minAvgFps}`,
             pass: m.avgFPS > THRESHOLDS.minAvgFps,
             unit: "",
+            higherIsBetter: true,
           },
           {
             label: "Min FPS",
             value: m.minFPS,
+            prev: prev?.minFPS,
             threshold: "lowest 1s window",
             pass: true,
             unit: "",
+            higherIsBetter: true,
           },
           {
             label: "Heap Growth",
             value: m.heapGrowthMB,
+            prev: prev?.heapGrowthMB,
             threshold: `< ${THRESHOLDS.maxHeapGrowthMB} MB`,
             pass: m.heapGrowthMB < THRESHOLDS.maxHeapGrowthMB,
             unit: " MB",
+            higherIsBetter: false,
           },
           {
             label: "CPU %",
             value: m.cpuPercent,
+            prev: prev?.cpuPercent,
             threshold: `< ${THRESHOLDS.maxCpuPercent}%`,
             pass: m.cpuPercent < THRESHOLDS.maxCpuPercent,
             unit: "%",
+            higherIsBetter: false,
           },
           {
             label: "Script %",
             value: m.scriptPercent,
+            prev: prev?.scriptPercent,
             threshold: "JS execution share",
             pass: true,
             unit: "%",
+            higherIsBetter: false,
           },
           {
-            label: "Long Tasks",
-            value: m.longTaskCount,
-            threshold: "> 50ms intervals",
+            label: "Busy Intervals",
+            value: m.busyIntervalCount,
+            prev: prev?.busyIntervalCount,
+            threshold: "> 50ms task time / sec",
             pass: true,
             unit: "",
+            higherIsBetter: false,
           },
         ];
-        if (m.gpu) {
+        if (m.gpu || prev?.gpu) {
           gates.push(
             {
               label: "GPU Avg",
-              value: m.gpu.avgResidencyPercent,
+              value: m.gpu?.avgResidencyPercent ?? "n/a",
+              prev: prev?.gpu?.avgResidencyPercent,
               threshold: "active residency",
               pass: true,
-              unit: "%",
+              unit: m.gpu ? "%" : "",
+              higherIsBetter: null,
             },
             {
               label: "GPU Peak",
-              value: m.gpu.maxResidencyPercent,
+              value: m.gpu?.maxResidencyPercent ?? "n/a",
+              prev: prev?.gpu?.maxResidencyPercent,
               threshold: "max residency",
               pass: true,
-              unit: "%",
+              unit: m.gpu ? "%" : "",
+              higherIsBetter: null,
             },
             {
               label: "GPU Power",
-              value: m.gpu.avgPowerMW ?? "n/a",
+              value: m.gpu?.avgPowerMW ?? "n/a",
+              prev: prev?.gpu?.avgPowerMW,
               threshold: "avg draw",
               pass: true,
-              unit: m.gpu.avgPowerMW != null ? " mW" : "",
+              unit: m.gpu?.avgPowerMW != null ? " mW" : "",
+              higherIsBetter: false,
             },
           );
         }
+
+        function formatDelta(g) {
+          if (g.prev == null || g.prev === "n/a" || g.value === "n/a")
+            return "";
+          const diff = g.value - g.prev;
+          if (diff === 0) return "";
+          const pct = g.prev !== 0 ? (diff / Math.abs(g.prev)) * 100 : 0;
+          const sign = diff > 0 ? "+" : "";
+          let cls = "delta-neutral";
+          if (g.higherIsBetter === true)
+            cls = diff > 0 ? "delta-better" : "delta-worse";
+          else if (g.higherIsBetter === false)
+            cls = diff < 0 ? "delta-better" : "delta-worse";
+          return `<div class="gate-delta ${cls}">${sign}${pct.toFixed(1)}%</div>`;
+        }
+
         document.getElementById("gates").innerHTML = gates
           .map(
             (g) => `
@@ -364,6 +419,8 @@
         ${g.value}${g.unit}
         ${g.threshold.startsWith(">") || g.threshold.startsWith("<") ? `<span class="badge ${g.pass ? "badge-pass" : "badge-fail"}">${g.pass ? "Pass" : "Fail"}</span>` : ""}
       </div>
+      ${g.prev != null ? `<div class="gate-prev">prev: ${g.prev}${g.unit}</div>` : ""}
+      ${formatDelta(g)}
       <div class="gate-threshold">${g.threshold}</div>
     </div>
   `,
@@ -435,7 +492,7 @@
         document.getElementById("subtitle").textContent =
           `Wave: ${report.wave} · ${report.config.streams} streams · ${report.config.duration_sec}s · ${ts.toLocaleString()}`;
 
-        renderGates(report.metrics);
+        renderGates(report.metrics, compare?.metrics || null);
 
         const d = deriveTimeSeries(report.samples);
         const cmp = compare ? deriveTimeSeries(compare.samples) : null;
@@ -462,8 +519,8 @@
         createOrUpdate("cpuChart", labels, cpuDs, "ms");
         createOrUpdate("scriptChart", labels, scriptDs, "ms");
 
-        // GPU charts (shown only when GPU data is present)
-        const hasGpuData = d.hasGpu;
+        // GPU charts (shown when either report has GPU data)
+        const hasGpuData = d.hasGpu || (cmp && cmp.hasGpu);
         document.getElementById("gpuResidencyCard").style.display = hasGpuData
           ? ""
           : "none";
@@ -471,8 +528,12 @@
           ? ""
           : "none";
         if (hasGpuData) {
-          const gpuResDs = [makeDataset("Current", d.gpuResidency, "#ef4444")];
-          const gpuPowDs = [makeDataset("Current", d.gpuPower, "#f97316")];
+          const gpuResDs = [];
+          const gpuPowDs = [];
+          if (d.hasGpu) {
+            gpuResDs.push(makeDataset("Current", d.gpuResidency, "#ef4444"));
+            gpuPowDs.push(makeDataset("Current", d.gpuPower, "#f97316"));
+          }
           if (cmp && cmp.hasGpu) {
             gpuResDs.push(
               makeDataset("Previous", cmp.gpuResidency, "#8b8fa3", true),
@@ -554,9 +615,39 @@
         dropZone.innerHTML = `<span>Comparing against: <strong>${file.name}</strong> (drop another to replace)</span><input type="file" id="fileInput" accept=".json">`;
       });
 
+      async function loadJson(path) {
+        try {
+          const res = await fetch(path);
+          if (!res.ok) return null;
+          return await res.json();
+        } catch {
+          return null;
+        }
+      }
+
+      // Unwrap a file that could be a plain baseline or a { previous, current } comparison
+      function unwrapReport(json) {
+        if (json && json.current && json.previous) return json;
+        if (json && json.samples) return { plain: json };
+        return null;
+      }
+
       // --- Init ---
-      loadBaseline().then((report) => {
-        if (report) render(report, null);
+      loadBaseline().then(async (baseline) => {
+        if (!baseline) return;
+        const compJson = await loadJson("perf-comparison.json");
+        const comp = compJson ? unwrapReport(compJson) : null;
+
+        if (comp && comp.current) {
+          // comparison file has { previous, current } — matched pair from the same run
+          render(comp.current, comp.previous);
+          dropZone.innerHTML = `<span>Auto-loaded <strong>perf-comparison.json</strong> (drop another to replace)</span><input type="file" id="fileInput" accept=".json">`;
+        } else if (comp && comp.plain) {
+          render(baseline, comp.plain);
+          dropZone.innerHTML = `<span>Auto-loaded <strong>perf-comparison.json</strong> (drop another to replace)</span><input type="file" id="fileInput" accept=".json">`;
+        } else {
+          render(baseline, null);
+        }
       });
     </script>
   </body>

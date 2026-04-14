@@ -17,7 +17,7 @@ interface UseIssueCommentsResult {
 export function useIssueComments(
   issueNumber: number | null,
 ): UseIssueCommentsResult {
-  const { currentProject } = useAppStore();
+  const currentProject = useAppStore((s) => s.currentProject);
 
   // Use React Query infinite query
   const {

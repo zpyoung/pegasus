@@ -52,7 +52,8 @@ interface ApiKeyStatusResponse {
  * Handles input values, visibility toggles, connection testing, and saving
  */
 export function useApiKeyManagement() {
-  const { apiKeys, setApiKeys } = useAppStore();
+  const apiKeys = useAppStore((s) => s.apiKeys);
+  const setApiKeys = useAppStore((s) => s.setApiKeys);
   const { setZaiAuthStatus, zaiAuthStatus } = useSetupStore();
   const queryClient = useQueryClient();
 

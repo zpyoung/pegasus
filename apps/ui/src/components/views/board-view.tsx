@@ -142,6 +142,10 @@ interface BoardViewProps {
   initialProjectPath?: string;
 }
 
+// Stable empty array constant — prevents new array allocation on every selector call
+// when no project is loaded, avoiding unnecessary re-renders due to reference inequality
+const EMPTY_RUNNING_TASKS: string[] = [];
+
 export function BoardView({
   initialFeatureId,
   initialProjectPath,
@@ -196,7 +200,8 @@ export function BoardView({
   const { data: pipelineConfig } = usePipelineConfig(currentProject?.path);
   // Fetch project-level settings to get project-specific feature templates
   const { data: projectSettings } = useProjectSettings(currentProject?.path);
-  const projectFeatureTemplates = (projectSettings?.featureTemplates ?? []) as FeatureTemplate[];
+  const projectFeatureTemplates = (projectSettings?.featureTemplates ??
+    []) as FeatureTemplate[];
   const queryClient = useQueryClient();
 
   // Subscribe to auto mode events for React Query cache invalidation
@@ -946,7 +951,7 @@ export function BoardView({
   // React error #185 (maximum update depth exceeded), crashing the board view.
   const runningAutoTasksAllWorktrees = useAppStore(
     useShallow((state) => {
-      if (!currentProject?.id) return [] as string[];
+      if (!currentProject?.id) return EMPTY_RUNNING_TASKS;
       const prefix = `${currentProject.id}::`;
       const tasks: string[] = [];
       for (const [key, worktreeState] of Object.entries(

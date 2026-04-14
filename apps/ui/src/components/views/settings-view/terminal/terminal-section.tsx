@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { toast } from "sonner";
 import { TERMINAL_FONT_OPTIONS } from "@/config/terminal-themes";
 import { DEFAULT_FONT_VALUE } from "@/config/ui-font-options";
@@ -43,7 +44,22 @@ export function TerminalSection() {
     setOpenTerminalMode,
     setTerminalBackgroundColor,
     setTerminalForegroundColor,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      terminalState: s.terminalState,
+      setTerminalDefaultRunScript: s.setTerminalDefaultRunScript,
+      setTerminalScreenReaderMode: s.setTerminalScreenReaderMode,
+      setTerminalFontFamily: s.setTerminalFontFamily,
+      setTerminalScrollbackLines: s.setTerminalScrollbackLines,
+      setTerminalLineHeight: s.setTerminalLineHeight,
+      setTerminalDefaultFontSize: s.setTerminalDefaultFontSize,
+      defaultTerminalId: s.defaultTerminalId,
+      setDefaultTerminalId: s.setDefaultTerminalId,
+      setOpenTerminalMode: s.setOpenTerminalMode,
+      setTerminalBackgroundColor: s.setTerminalBackgroundColor,
+      setTerminalForegroundColor: s.setTerminalForegroundColor,
+    })),
+  );
 
   const {
     defaultRunScript,

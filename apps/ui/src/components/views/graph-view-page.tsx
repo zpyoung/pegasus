@@ -71,13 +71,10 @@ export function GraphViewPage() {
     projectPath: currentProject?.path ?? "",
   });
 
-  const worktreesByProject = useAppStore((s) => s.worktreesByProject);
-  const worktrees = useMemo(
-    () =>
-      currentProject
-        ? (worktreesByProject[currentProject.path] ?? EMPTY_WORKTREES)
-        : EMPTY_WORKTREES,
-    [currentProject, worktreesByProject],
+  const worktrees = useAppStore((s) =>
+    currentProject
+      ? (s.worktreesByProject[currentProject.path] ?? EMPTY_WORKTREES)
+      : EMPTY_WORKTREES,
   );
 
   // Load features

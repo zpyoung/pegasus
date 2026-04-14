@@ -12,6 +12,8 @@
 
 // Features
 export { useFeatures, useFeature, useAgentOutput } from "./use-features";
+export { useBulkFeatureStatus } from "./use-bulk-feature-status";
+export type { BulkFeatureStatusEntry } from "./use-bulk-feature-status";
 
 // GitHub
 export {

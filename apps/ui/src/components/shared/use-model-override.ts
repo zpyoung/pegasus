@@ -77,12 +77,15 @@ export function useModelOverride({
   phase,
   initialOverride = null,
 }: UseModelOverrideOptions): UseModelOverrideResult {
-  const {
-    phaseModels,
-    lastUsedPhaseOverrides,
-    setLastUsedPhaseOverride,
-    clearLastUsedPhaseOverride,
-  } = useAppStore();
+  // Narrow selectors: subscribe only to the specific phase entry, not the entire map
+  const phaseModel = useAppStore((s) => s.phaseModels[phase]);
+  const lastUsedOverride = useAppStore((s) => s.lastUsedPhaseOverrides[phase]);
+  const setLastUsedPhaseOverride = useAppStore(
+    (s) => s.setLastUsedPhaseOverride,
+  );
+  const clearLastUsedPhaseOverride = useAppStore(
+    (s) => s.clearLastUsedPhaseOverride,
+  );
 
   // Hydrate initial state: prefer explicit initialOverride, then persisted last-used, then null
   const hydratedRef = useRef(false);
@@ -91,7 +94,7 @@ export function useModelOverride({
       return normalizeEntry(initialOverride);
     }
     // Hydrate from persisted last-used override
-    const persisted = lastUsedPhaseOverrides[phase];
+    const persisted = lastUsedOverride;
     if (persisted) {
       hydratedRef.current = true;
       return normalizeEntry(persisted);
@@ -102,7 +105,7 @@ export function useModelOverride({
   // Normalize global default to PhaseModelEntry, with fallback to DEFAULT_PHASE_MODELS
   // This handles cases where settings haven't been migrated to include new phase models
   const globalDefault = normalizeEntry(
-    phaseModels[phase] ?? DEFAULT_PHASE_MODELS[phase],
+    phaseModel ?? DEFAULT_PHASE_MODELS[phase],
   );
 
   const effectiveModelEntry = useMemo(() => {

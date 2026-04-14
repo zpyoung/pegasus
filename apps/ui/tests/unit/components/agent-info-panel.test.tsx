@@ -8,7 +8,11 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AgentInfoPanel } from "../../../src/components/views/board-view/components/kanban-card/agent-info-panel";
 import { useAppStore } from "@pegasus/ui/store/app-store";
-import { useFeature, useAgentOutput } from "@pegasus/ui/hooks/queries";
+import {
+  useBulkFeatureStatus,
+  useAgentOutput,
+  useFeature,
+} from "@pegasus/ui/hooks/queries";
 import { getElectronAPI } from "@pegasus/ui/lib/electron";
 import type { ClaudeCompatibleProvider } from "@pegasus/types";
 import type { ReactNode } from "react";
@@ -19,8 +23,12 @@ vi.mock("@pegasus/ui/hooks/queries");
 vi.mock("@pegasus/ui/lib/electron");
 
 const mockUseAppStore = useAppStore as ReturnType<typeof vi.fn>;
-const mockUseFeature = useFeature as ReturnType<typeof vi.fn>;
+const mockUseBulkFeatureStatus = useBulkFeatureStatus as ReturnType<
+  typeof vi.fn
+>;
+// Sub-components (SummaryDialog etc.) still call these hooks — keep them mocked
 const mockUseAgentOutput = useAgentOutput as ReturnType<typeof vi.fn>;
+const mockUseFeature = useFeature as ReturnType<typeof vi.fn>;
 const mockGetElectronAPI = getElectronAPI as ReturnType<typeof vi.fn>;
 
 // Helper to create wrapper with QueryClient
@@ -79,15 +87,15 @@ describe("AgentInfoPanel", () => {
       },
     );
 
-    mockUseFeature.mockReturnValue({
-      data: null,
+    // useBulkFeatureStatus replaces per-card useFeature + useAgentOutput polling
+    mockUseBulkFeatureStatus.mockReturnValue({
+      data: [],
       isLoading: false,
     });
 
-    mockUseAgentOutput.mockReturnValue({
-      data: null,
-      isLoading: false,
-    });
+    // Sub-components (SummaryDialog etc.) still call these hooks directly
+    mockUseAgentOutput.mockReturnValue({ data: null, isLoading: false });
+    mockUseFeature.mockReturnValue({ data: null, isLoading: false });
 
     mockGetElectronAPI.mockReturnValue(null);
   });
@@ -279,12 +287,7 @@ describe("AgentInfoPanel", () => {
       expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
     });
 
-    it("should show model info for in_progress features with agentInfo", () => {
-      mockUseAgentOutput.mockReturnValue({
-        data: '🔧 Tool: Read\nInput: {"file": "test.ts"}',
-        isLoading: false,
-      });
-
+    it("should show model info for in_progress features", () => {
       const feature = createMockFeature({
         status: "in_progress",
         model: "claude-sonnet-4-5",
@@ -300,6 +303,17 @@ describe("AgentInfoPanel", () => {
       );
 
       expect(screen.getByText("Sonnet 4.5")).toBeInTheDocument();
+    });
+
+    it("uses bulk status hook (deduplicates per-card queries)", () => {
+      const feature = createMockFeature({ status: "backlog" });
+
+      render(<AgentInfoPanel feature={feature} projectPath="/test/project" />, {
+        wrapper: createWrapper(),
+      });
+
+      // useBulkFeatureStatus should have been called with the project path
+      expect(mockUseBulkFeatureStatus).toHaveBeenCalledWith("/test/project");
     });
   });
 });

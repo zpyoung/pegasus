@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/provider-icon";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { useShallow } from "zustand/react/shallow";
 import { useSetupStore } from "@/store/setup-store";
 import { getModelProvider } from "@pegasus/types";
 import type { ModelProvider, CursorModelId } from "@pegasus/types";
@@ -46,7 +47,22 @@ export function ModelSelector({
     enabledDynamicModelIds,
     opencodeModelsLoading,
     fetchOpencodeModels,
-  } = useAppStore();
+  } = useAppStore(
+    useShallow((s) => ({
+      enabledCursorModels: s.enabledCursorModels,
+      cursorDefaultModel: s.cursorDefaultModel,
+      codexModels: s.codexModels,
+      codexModelsLoading: s.codexModelsLoading,
+      codexModelsError: s.codexModelsError,
+      fetchCodexModels: s.fetchCodexModels,
+      disabledProviders: s.disabledProviders,
+      enabledOpencodeModels: s.enabledOpencodeModels,
+      opencodeDefaultModel: s.opencodeDefaultModel,
+      enabledDynamicModelIds: s.enabledDynamicModelIds,
+      opencodeModelsLoading: s.opencodeModelsLoading,
+      fetchOpencodeModels: s.fetchOpencodeModels,
+    })),
+  );
   const { cursorCliStatus, codexCliStatus } = useSetupStore();
 
   // Use React Query for OpenCode models so changes in settings are reflected immediately
