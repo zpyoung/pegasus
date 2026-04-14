@@ -3813,6 +3813,12 @@ let httpApiClientInstance: HttpApiClient | null = null;
 export function getHttpApiClient(): HttpApiClient {
   if (!httpApiClientInstance) {
     httpApiClientInstance = new HttpApiClient();
+    // Expose for performance benchmarking (event injection)
+    if (typeof window !== "undefined") {
+      (
+        window as unknown as { __PEGASUS_HTTP_CLIENT__: HttpApiClient }
+      ).__PEGASUS_HTTP_CLIENT__ = httpApiClientInstance;
+    }
   }
   return httpApiClientInstance;
 }

@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pegasus Performance Baseline</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --border: #2a2d3a;
+        --text: #e1e4ed;
+        --muted: #8b8fa3;
+        --green: #22c55e;
+        --red: #ef4444;
+        --blue: #3b82f6;
+        --amber: #f59e0b;
+        --purple: #a855f7;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 24px;
+        min-height: 100vh;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 24px;
+      }
+      .gates {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .gate {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .gate-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .gate-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 4px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .gate-threshold {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .pass {
+        color: var(--green);
+      }
+      .fail {
+        color: var(--red);
+      }
+      .badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        vertical-align: middle;
+        margin-left: 6px;
+      }
+      .badge-pass {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+      }
+      .badge-fail {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+      }
+      .charts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      @media (max-width: 900px) {
+        .charts {
+          grid-template-columns: 1fr;
+        }
+      }
+      .chart-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .chart-card h3 {
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 12px;
+        color: var(--muted);
+      }
+      .chart-wrap {
+        position: relative;
+        height: 220px;
+      }
+      .meta {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 0.8rem;
+        color: var(--muted);
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .meta span {
+        white-space: nowrap;
+      }
+      .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 32px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 24px;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+        cursor: pointer;
+      }
+      .drop-zone.over {
+        border-color: var(--blue);
+        background: rgba(59, 130, 246, 0.05);
+      }
+      .drop-zone input {
+        display: none;
+      }
+      .compare-legend {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .compare-legend span::before {
+        content: "";
+        display: inline-block;
+        width: 12px;
+        height: 3px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .legend-current::before {
+        background: var(--blue);
+      }
+      .legend-previous::before {
+        background: var(--muted);
+        border: 1px dashed var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pegasus Performance Baseline</h1>
+    <div class="subtitle" id="subtitle">Loading...</div>
+
+    <div class="gates" id="gates"></div>
+
+    <div class="drop-zone" id="dropZone">
+      <span
+        >Drop a <code>perf-baseline.json</code> to compare, or click to
+        browse</span
+      >
+      <input type="file" id="fileInput" accept=".json" />
+    </div>
+    <div class="compare-legend" id="compareLegend" style="display: none">
+      <span class="legend-current">Current</span>
+      <span class="legend-previous">Previous baseline</span>
+    </div>
+
+    <div class="charts" id="charts">
+      <div class="chart-card">
+        <h3>FPS over time</h3>
+        <div class="chart-wrap"><canvas id="fpsChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Heap usage (MB)</h3>
+        <div class="chart-wrap"><canvas id="heapChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>CPU task time (ms/sec)</h3>
+        <div class="chart-wrap"><canvas id="cpuChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Script time (ms/sec)</h3>
+        <div class="chart-wrap"><canvas id="scriptChart"></canvas></div>
+      </div>
+      <div class="chart-card" id="gpuResidencyCard" style="display: none">
+        <h3>GPU active residency (%)</h3>
+        <div class="chart-wrap"><canvas id="gpuResidencyChart"></canvas></div>
+      </div>
+      <div class="chart-card" id="gpuPowerCard" style="display: none">
+        <h3>GPU power (mW)</h3>
+        <div class="chart-wrap"><canvas id="gpuPowerChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="meta" id="meta"></div>
+
+    <script>
+      const THRESHOLDS = {
+        minAvgFps: 20,
+        maxHeapGrowthMB: 150,
+        maxCpuPercent: 67,
+      };
+      const chartInstances = {};
+      let currentReport = null;
+
+      // --- Data derivation ---
+      function deriveTimeSeries(samples) {
+        const labels = [];
+        const fps = [];
+        const heap = [];
+        const cpu = [];
+        const script = [];
+        const gpuResidency = [];
+        const gpuPower = [];
+        let hasGpu = false;
+        for (let i = 1; i < samples.length; i++) {
+          const prev = samples[i - 1];
+          const cur = samples[i];
+          const dt = cur.timestamp - prev.timestamp;
+          const sec = i;
+          labels.push(sec + "s");
+          fps.push(dt > 0 ? (cur.frames - prev.frames) / dt : 0);
+          heap.push(cur.jsHeapUsedBytes / (1024 * 1024));
+          cpu.push(
+            dt > 0
+              ? ((cur.taskDurationSeconds - prev.taskDurationSeconds) / dt) *
+                  1000
+              : 0,
+          );
+          script.push(
+            dt > 0
+              ? ((cur.scriptDurationSeconds - prev.scriptDurationSeconds) /
+                  dt) *
+                  1000
+              : 0,
+          );
+          if (cur.gpuResidencyPercent != null) {
+            hasGpu = true;
+            gpuResidency.push(cur.gpuResidencyPercent);
+            gpuPower.push(cur.gpuPowerMW ?? 0);
+          }
+        }
+        return {
+          labels,
+          fps,
+          heap,
+          cpu,
+          script,
+          gpuResidency,
+          gpuPower,
+          hasGpu,
+        };
+      }
+
+      // --- Gates ---
+      function renderGates(m) {
+        const gates = [
+          {
+            label: "Avg FPS",
+            value: m.avgFPS,
+            threshold: `> ${THRESHOLDS.minAvgFps}`,
+            pass: m.avgFPS > THRESHOLDS.minAvgFps,
+            unit: "",
+          },
+          {
+            label: "Min FPS",
+            value: m.minFPS,
+            threshold: "lowest 1s window",
+            pass: true,
+            unit: "",
+          },
+          {
+            label: "Heap Growth",
+            value: m.heapGrowthMB,
+            threshold: `< ${THRESHOLDS.maxHeapGrowthMB} MB`,
+            pass: m.heapGrowthMB < THRESHOLDS.maxHeapGrowthMB,
+            unit: " MB",
+          },
+          {
+            label: "CPU %",
+            value: m.cpuPercent,
+            threshold: `< ${THRESHOLDS.maxCpuPercent}%`,
+            pass: m.cpuPercent < THRESHOLDS.maxCpuPercent,
+            unit: "%",
+          },
+          {
+            label: "Script %",
+            value: m.scriptPercent,
+            threshold: "JS execution share",
+            pass: true,
+            unit: "%",
+          },
+          {
+            label: "Long Tasks",
+            value: m.longTaskCount,
+            threshold: "> 50ms intervals",
+            pass: true,
+            unit: "",
+          },
+        ];
+        if (m.gpu) {
+          gates.push(
+            {
+              label: "GPU Avg",
+              value: m.gpu.avgResidencyPercent,
+              threshold: "active residency",
+              pass: true,
+              unit: "%",
+            },
+            {
+              label: "GPU Peak",
+              value: m.gpu.maxResidencyPercent,
+              threshold: "max residency",
+              pass: true,
+              unit: "%",
+            },
+            {
+              label: "GPU Power",
+              value: m.gpu.avgPowerMW ?? "n/a",
+              threshold: "avg draw",
+              pass: true,
+              unit: m.gpu.avgPowerMW != null ? " mW" : "",
+            },
+          );
+        }
+        document.getElementById("gates").innerHTML = gates
+          .map(
+            (g) => `
+    <div class="gate">
+      <div class="gate-label">${g.label}</div>
+      <div class="gate-value ${g.pass ? "pass" : "fail"}">
+        ${g.value}${g.unit}
+        ${g.threshold.startsWith(">") || g.threshold.startsWith("<") ? `<span class="badge ${g.pass ? "badge-pass" : "badge-fail"}">${g.pass ? "Pass" : "Fail"}</span>` : ""}
+      </div>
+      <div class="gate-threshold">${g.threshold}</div>
+    </div>
+  `,
+          )
+          .join("");
+      }
+
+      // --- Chart helpers ---
+      const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { color: "rgba(255,255,255,0.04)" },
+            ticks: { color: "#8b8fa3", font: { size: 10 }, maxTicksLimit: 10 },
+          },
+          y: {
+            grid: { color: "rgba(255,255,255,0.04)" },
+            ticks: { color: "#8b8fa3", font: { size: 10 } },
+            beginAtZero: true,
+          },
+        },
+      };
+
+      function makeDataset(label, data, color, dashed) {
+        return {
+          label,
+          data,
+          borderColor: color,
+          backgroundColor: color + "18",
+          borderWidth: dashed ? 1.5 : 2,
+          borderDash: dashed ? [5, 4] : [],
+          pointRadius: 0,
+          tension: 0.3,
+          fill: !dashed,
+        };
+      }
+
+      function createOrUpdate(id, labels, datasets, yLabel) {
+        const ctx = document.getElementById(id);
+        if (chartInstances[id]) chartInstances[id].destroy();
+        const opts = JSON.parse(JSON.stringify(chartDefaults));
+        if (yLabel)
+          opts.scales.y.title = {
+            display: true,
+            text: yLabel,
+            color: "#8b8fa3",
+            font: { size: 10 },
+          };
+        if (datasets.length > 1) {
+          opts.plugins.legend = {
+            display: true,
+            labels: { color: "#8b8fa3", boxWidth: 12, font: { size: 10 } },
+          };
+        }
+        chartInstances[id] = new Chart(ctx, {
+          type: "line",
+          data: { labels, datasets },
+          options: opts,
+        });
+      }
+
+      // --- Render ---
+      function render(report, compare) {
+        currentReport = report;
+        const ts = new Date(report.timestamp);
+        document.getElementById("subtitle").textContent =
+          `Wave: ${report.wave} · ${report.config.streams} streams · ${report.config.duration_sec}s · ${ts.toLocaleString()}`;
+
+        renderGates(report.metrics);
+
+        const d = deriveTimeSeries(report.samples);
+        const cmp = compare ? deriveTimeSeries(compare.samples) : null;
+        const labels =
+          cmp && cmp.labels.length > d.labels.length ? cmp.labels : d.labels;
+
+        const fpsDs = [makeDataset("Current", d.fps, "#3b82f6")];
+        const heapDs = [makeDataset("Current", d.heap, "#a855f7")];
+        const cpuDs = [makeDataset("Current", d.cpu, "#f59e0b")];
+        const scriptDs = [makeDataset("Current", d.script, "#22c55e")];
+
+        if (cmp) {
+          fpsDs.push(makeDataset("Previous", cmp.fps, "#8b8fa3", true));
+          heapDs.push(makeDataset("Previous", cmp.heap, "#8b8fa3", true));
+          cpuDs.push(makeDataset("Previous", cmp.cpu, "#8b8fa3", true));
+          scriptDs.push(makeDataset("Previous", cmp.script, "#8b8fa3", true));
+          document.getElementById("compareLegend").style.display = "flex";
+        } else {
+          document.getElementById("compareLegend").style.display = "none";
+        }
+
+        createOrUpdate("fpsChart", labels, fpsDs, "fps");
+        createOrUpdate("heapChart", labels, heapDs, "MB");
+        createOrUpdate("cpuChart", labels, cpuDs, "ms");
+        createOrUpdate("scriptChart", labels, scriptDs, "ms");
+
+        // GPU charts (shown only when GPU data is present)
+        const hasGpuData = d.hasGpu;
+        document.getElementById("gpuResidencyCard").style.display = hasGpuData
+          ? ""
+          : "none";
+        document.getElementById("gpuPowerCard").style.display = hasGpuData
+          ? ""
+          : "none";
+        if (hasGpuData) {
+          const gpuResDs = [makeDataset("Current", d.gpuResidency, "#ef4444")];
+          const gpuPowDs = [makeDataset("Current", d.gpuPower, "#f97316")];
+          if (cmp && cmp.hasGpu) {
+            gpuResDs.push(
+              makeDataset("Previous", cmp.gpuResidency, "#8b8fa3", true),
+            );
+            gpuPowDs.push(
+              makeDataset("Previous", cmp.gpuPower, "#8b8fa3", true),
+            );
+          }
+          createOrUpdate("gpuResidencyChart", labels, gpuResDs, "%");
+          createOrUpdate("gpuPowerChart", labels, gpuPowDs, "mW");
+        }
+
+        const gpuMeta = report.metrics.gpu
+          ? `<span>GPU Avg: ${report.metrics.gpu.avgResidencyPercent}%</span><span>GPU Power: ${report.metrics.gpu.avgPowerMW ?? "n/a"} mW</span>`
+          : "<span>GPU: not captured (run pnpm test:perf:gpu)</span>";
+        document.getElementById("meta").innerHTML = `
+    <span>Streams: ${report.config.streams}</span>
+    <span>Duration: ${report.config.duration_sec}s</span>
+    <span>Samples: ${report.samples.length}</span>
+    <span>Max FPS: ${report.metrics.maxFPS}</span>
+    ${gpuMeta}
+  `;
+      }
+
+      // --- File loading ---
+      async function loadBaseline() {
+        try {
+          const res = await fetch("perf-baseline.json");
+          if (!res.ok) throw new Error(res.statusText);
+          return await res.json();
+        } catch {
+          document.getElementById("subtitle").textContent =
+            "No perf-baseline.json found. Run the benchmark first, then open this file.";
+          return null;
+        }
+      }
+
+      function loadFileAsJson(file) {
+        return new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => {
+            try {
+              resolve(JSON.parse(r.result));
+            } catch (e) {
+              reject(e);
+            }
+          };
+          r.onerror = reject;
+          r.readAsText(file);
+        });
+      }
+
+      // --- Drop zone ---
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+
+      dropZone.addEventListener("click", () => fileInput.click());
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("over");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("over"),
+      );
+      dropZone.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("over");
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        const compare = await loadFileAsJson(file);
+        render(currentReport, compare);
+        dropZone.innerHTML = `<span>Comparing against: <strong>${file.name}</strong> (drop another to replace)</span><input type="file" id="fileInput" accept=".json">`;
+      });
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const compare = await loadFileAsJson(file);
+        render(currentReport, compare);
+        dropZone.innerHTML = `<span>Comparing against: <strong>${file.name}</strong> (drop another to replace)</span><input type="file" id="fileInput" accept=".json">`;
+      });
+
+      // --- Init ---
+      loadBaseline().then((report) => {
+        if (report) render(report, null);
+      });
+    </script>
+  </body>
+</html>

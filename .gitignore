@@ -64,8 +64,9 @@ data/
 test-results/
 test/
 
-# Performance benchmark results
-perf/
+# Performance benchmark — track tooling, ignore output
+perf/*.json
+perf/*.txt
 
 # Playwright
 .playwright-cli/

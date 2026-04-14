@@ -37,7 +37,7 @@
     "pretest": "node scripts/kill-test-servers.mjs && node scripts/setup-e2e-fixtures.mjs",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:perf": "playwright test tests/performance/ --workers=1",
+    "test:perf": "playwright test tests/performance/ --workers=1 --headed",
     "dev:electron:wsl": "cross-env vite",
     "dev:electron:wsl:gpu": "cross-env MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA vite"
   },
