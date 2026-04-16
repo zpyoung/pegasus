@@ -747,6 +747,7 @@ export class AgentService {
             messageId: currentAssistantMessage?.id,
             content: responseText,
             toolUses,
+            usage: msg.usage ?? undefined,
           });
         } else if (msg.type === "error") {
           // Some providers (like Codex CLI/SaaS or Cursor CLI) surface failures as

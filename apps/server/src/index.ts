@@ -97,6 +97,7 @@ import { getTestRunnerService } from "./services/test-runner-service.js";
 import { createProjectsRoutes } from "./routes/projects/index.js";
 import { QuestionHelperService } from "./services/question-helper-service.js";
 import { createQuestionHelperRoutes } from "./routes/question-helper/index.js";
+import { ProviderFactory } from "./providers/provider-factory.js";
 
 // Load environment variables
 dotenv.config();
@@ -473,6 +474,11 @@ eventHookService.initialize(
       logger.info(
         `HTTP request logging: ${enableRequestLog ? "enabled" : "disabled"}`,
       );
+
+      // Apply Claude backend mode (default 'sdk' if not set)
+      const mode = globalSettings.claudeBackendMode === "cli" ? "cli" : "sdk";
+      ProviderFactory.setClaudeBackendMode(mode);
+      logger.info(`Claude backend mode: ${mode}`);
     } catch {
       logger.warn("Failed to apply logging settings, using defaults");
     }

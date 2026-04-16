@@ -10,21 +10,24 @@ import { queryKeys } from "@/lib/query-keys";
 import { STALE_TIMES } from "@/lib/query-client";
 
 /**
- * Fetch Claude CLI status
+ * Fetch Claude Code CLI (provider subprocess) status.
  *
- * @returns Query result with Claude CLI status
+ * Distinct from the legacy Claude SDK status — calls the /claude-cli-status
+ * route backed by ProviderFactory.getProviderByName('claude-cli'). Returns the
+ * tri-state `authStatus` field (design ADR-3) so the settings UI can render
+ * without transformation logic.
  */
 export function useClaudeCliStatus() {
   return useQuery({
-    queryKey: queryKeys.cli.claude(),
+    queryKey: queryKeys.cli.claudeCli(),
     queryFn: async () => {
       const api = getElectronAPI();
-      if (!api.setup) {
-        throw new Error("Setup API not available");
+      if (!api.setup?.getClaudeCliStatus) {
+        throw new Error("Claude CLI status API not available");
       }
-      const result = await api.setup.getClaudeStatus();
+      const result = await api.setup.getClaudeCliStatus();
       if (!result.success) {
-        throw new Error(result.error || "Failed to fetch Claude status");
+        throw new Error(result.error || "Failed to fetch Claude CLI status");
       }
       return result;
     },

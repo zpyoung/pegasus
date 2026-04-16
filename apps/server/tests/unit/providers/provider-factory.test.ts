@@ -185,9 +185,9 @@ describe("provider-factory.ts", () => {
       expect(hasClaudeProvider).toBe(true);
     });
 
-    it("should return exactly 6 providers", () => {
+    it("should return exactly 7 providers", () => {
       const providers = ProviderFactory.getAllProviders();
-      expect(providers).toHaveLength(6);
+      expect(providers).toHaveLength(7);
     });
 
     it("should include CopilotProvider", () => {
@@ -240,12 +240,13 @@ describe("provider-factory.ts", () => {
       const keys = Object.keys(statuses);
 
       expect(keys).toContain("claude");
+      expect(keys).toContain("claude-cli");
       expect(keys).toContain("cursor");
       expect(keys).toContain("codex");
       expect(keys).toContain("opencode");
       expect(keys).toContain("gemini");
       expect(keys).toContain("copilot");
-      expect(keys).toHaveLength(6);
+      expect(keys).toHaveLength(7);
     });
 
     it("should include cursor status", async () => {

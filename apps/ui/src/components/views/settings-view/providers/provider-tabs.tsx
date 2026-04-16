@@ -18,6 +18,8 @@ import { CopilotSettingsTab } from "./copilot-settings-tab";
 interface ProviderTabsProps {
   defaultTab?:
     | "claude"
+    // 'claude-cli' kept for backwards-compat URL deep-links; routed to 'claude'.
+    | "claude-cli"
     | "cursor"
     | "codex"
     | "opencode"
@@ -26,8 +28,10 @@ interface ProviderTabsProps {
 }
 
 export function ProviderTabs({ defaultTab = "claude" }: ProviderTabsProps) {
+  // Backwards-compat: legacy 'claude-cli' deep-link routes to merged Claude tab.
+  const initialTab = defaultTab === "claude-cli" ? "claude" : defaultTab;
   return (
-    <Tabs defaultValue={defaultTab} className="w-full">
+    <Tabs defaultValue={initialTab} className="w-full">
       <TabsList className="grid w-full grid-cols-6 mb-6">
         <TabsTrigger value="claude" className="flex items-center gap-2">
           <AnthropicIcon className="w-4 h-4" />

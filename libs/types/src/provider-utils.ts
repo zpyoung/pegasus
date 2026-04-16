@@ -38,6 +38,7 @@ export const PROVIDER_PREFIXES = {
   opencode: "opencode-",
   gemini: "gemini-",
   copilot: "copilot-",
+  cli: "cli-",
 } as const;
 
 /**
@@ -177,6 +178,20 @@ export function isCopilotModel(model: string | undefined | null): boolean {
 }
 
 /**
+ * Check if a model string represents a Claude Code CLI model
+ *
+ * Claude CLI models use the 'cli-' prefix (e.g., "cli-opus", "cli-sonnet", "cli-haiku").
+ * This routes to the ClaudeCodeCliProvider which spawns the `claude` CLI subprocess.
+ *
+ * @param model - Model string to check (e.g., "cli-opus", "cli-sonnet")
+ * @returns true if the model is a Claude CLI model
+ */
+export function isClaudeCliModel(model: string | undefined | null): boolean {
+  if (!model || typeof model !== "string") return false;
+  return model.startsWith(PROVIDER_PREFIXES.cli);
+}
+
+/**
  * Check if a model string represents an OpenCode model
  *
  * With canonical model IDs, static OpenCode models use 'opencode-' prefix.
@@ -268,6 +283,9 @@ export function getModelProvider(
   if (isCodexModel(model)) return "codex";
   if (isCursorModel(model)) return "cursor";
 
+  // Check Claude CLI before default Claude — cli- prefix must not silently route to SDK
+  if (isClaudeCliModel(model)) return "claude-cli";
+
   // 3. Claude aliases and full model strings (haiku/sonnet/opus, claude- prefix)
   if (isClaudeModel(model)) return "claude";
 
@@ -339,6 +357,10 @@ export function addProviderPrefix(
     if (!model.startsWith(PROVIDER_PREFIXES.copilot)) {
       return `${PROVIDER_PREFIXES.copilot}${model}`;
     }
+  } else if (provider === "claude-cli") {
+    if (!model.startsWith(PROVIDER_PREFIXES.cli)) {
+      return `${PROVIDER_PREFIXES.cli}${model}`;
+    }
   }
   // Claude models don't use prefixes
   return model;
@@ -382,6 +404,7 @@ export function normalizeModelString(model: string | undefined | null): string {
     model.startsWith(PROVIDER_PREFIXES.opencode) ||
     model.startsWith(PROVIDER_PREFIXES.gemini) ||
     model.startsWith(PROVIDER_PREFIXES.copilot) ||
+    model.startsWith(PROVIDER_PREFIXES.cli) ||
     model.startsWith("claude-")
   ) {
     return model;
@@ -447,7 +470,8 @@ export function supportsStructuredOutput(
     isCursorModel(model) ||
     isGeminiModel(model) ||
     isOpencodeModel(model) ||
-    isCopilotModel(model)
+    isCopilotModel(model) ||
+    isClaudeCliModel(model)
   ) {
     return false;
   }

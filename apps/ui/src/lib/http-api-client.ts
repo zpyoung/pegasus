@@ -1552,6 +1552,24 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.get("/api/setup/claude-status"),
 
+    // Claude Code CLI (provider subprocess) — distinct from legacy claude-status
+    getClaudeCliStatus: (): Promise<{
+      success: boolean;
+      installed?: boolean;
+      version?: string | null;
+      path?: string | null;
+      method?: string;
+      authenticated?: boolean;
+      authStatus?: "authenticated" | "not_authenticated" | "unknown";
+      auth?: {
+        authenticated: boolean;
+        method: string;
+      };
+      installCommand?: string;
+      loginCommand?: string;
+      error?: string;
+    }> => this.get("/api/setup/claude-cli-status"),
+
     installClaude: (): Promise<{
       success: boolean;
       message?: string;

@@ -335,7 +335,11 @@ export function useElectronAgent({
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === event.messageId
-                  ? { ...msg, content: event.content }
+                  ? {
+                      ...msg,
+                      content: event.content,
+                      ...(event.usage ? { usage: event.usage } : {}),
+                    }
                   : msg,
               ),
             );

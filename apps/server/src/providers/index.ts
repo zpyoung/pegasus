@@ -31,6 +31,13 @@ export type {
 // Claude provider
 export { ClaudeProvider } from "./claude-provider.js";
 
+// Claude Code CLI provider
+export {
+  ClaudeCodeCliProvider,
+  ClaudeCliErrorCode,
+} from "./claude-cli-provider.js";
+export type { ClaudeCliError } from "./claude-cli-provider.js";
+
 // Cursor provider
 export {
   CursorProvider,

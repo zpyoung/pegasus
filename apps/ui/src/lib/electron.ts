@@ -1636,6 +1636,23 @@ interface SetupAPI {
     };
     error?: string;
   }>;
+  // Claude Code CLI (provider subprocess) — distinct from legacy getClaudeStatus
+  getClaudeCliStatus?: () => Promise<{
+    success: boolean;
+    installed?: boolean;
+    version?: string | null;
+    path?: string | null;
+    method?: string;
+    authenticated?: boolean;
+    authStatus?: "authenticated" | "not_authenticated" | "unknown";
+    auth?: {
+      authenticated: boolean;
+      method: string;
+    };
+    installCommand?: string;
+    loginCommand?: string;
+    error?: string;
+  }>;
   installClaude: () => Promise<{
     success: boolean;
     message?: string;
@@ -1962,6 +1979,20 @@ function createMockSetupAPI(): SetupAPI {
           hasCliAuth: false,
           hasRecentActivity: false,
         },
+      };
+    },
+
+    getClaudeCliStatus: async () => {
+      console.log("[Mock] Getting Claude CLI status");
+      return {
+        success: true,
+        installed: false,
+        version: null,
+        path: null,
+        method: "cli",
+        authenticated: false,
+        authStatus: "unknown" as const,
+        auth: { authenticated: false, method: "none" },
       };
     },
 

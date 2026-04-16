@@ -408,9 +408,21 @@ export function getDefaultThinkingLevel(model: string): ThinkingLevel {
  */
 export type ClaudeAuthPreference = "auto" | "api_key" | "cli";
 
+/**
+ * Backend used to execute Claude models.
+ * - "sdk" — direct Anthropic SDK (requires ANTHROPIC_API_KEY / OAuth token)
+ * - "cli" — Claude Code CLI subprocess (requires the `claude` CLI installed)
+ *
+ * When "cli", plain claude-* / opus / sonnet / haiku model selections are
+ * routed to ClaudeCodeCliProvider. The `cli-` model prefix remains a hidden
+ * power-user override that always routes to the CLI regardless of this setting.
+ */
+export type ClaudeBackendMode = "sdk" | "cli";
+
 /** ModelProvider - AI model provider for credentials and API key management */
 export type ModelProvider =
   | "claude"
+  | "claude-cli"
   | "cursor"
   | "codex"
   | "opencode"
@@ -1399,6 +1411,13 @@ export interface GlobalSettings {
    */
   preferredClaudeAuth: ClaudeAuthPreference;
 
+  /**
+   * Which backend executes Claude models when a plain `claude-*` / opus /
+   * sonnet / haiku model is selected. See {@link ClaudeBackendMode}.
+   * Defaults to "sdk".
+   */
+  claudeBackendMode?: ClaudeBackendMode;
+
   /** Default thinking level applied when selecting a model via the primary button
    * in the two-stage model selector. Users can still adjust per-model via the expand arrow.
    * Defaults to 'none' (no extended thinking). */
@@ -2003,6 +2022,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   enableAiCommitMessages: true,
   phaseModels: DEFAULT_PHASE_MODELS,
   preferredClaudeAuth: "auto",
+  claudeBackendMode: "sdk",
   defaultThinkingLevel: "adaptive",
   defaultReasoningEffort: "none",
   defaultMaxTurns: 10000,

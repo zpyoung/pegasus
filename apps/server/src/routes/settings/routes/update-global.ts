@@ -15,6 +15,7 @@ import { getErrorMessage, logError, logger } from "../common.js";
 import { setLogLevel, LogLevel } from "@pegasus/utils";
 import { setRequestLoggingEnabled } from "../../../index.js";
 import { getTerminalService } from "../../../services/terminal-service.js";
+import { ProviderFactory } from "../../../providers/provider-factory.js";
 
 /**
  * Map server log level string to LogLevel enum
@@ -111,6 +112,18 @@ export function createUpdateGlobalHandler(settingsService: SettingsService) {
           setLogLevel(level);
           logger.info(`Server log level changed to: ${updates.serverLogLevel}`);
         }
+      }
+
+      // Push Claude backend mode into the provider factory if it changed
+      if (
+        "claudeBackendMode" in updates &&
+        (updates.claudeBackendMode === "sdk" ||
+          updates.claudeBackendMode === "cli")
+      ) {
+        ProviderFactory.setClaudeBackendMode(updates.claudeBackendMode);
+        logger.info(
+          `[SERVER_SETTINGS_UPDATE] Claude backend mode set to ${updates.claudeBackendMode}`,
+        );
       }
 
       // Apply request logging setting if it was updated

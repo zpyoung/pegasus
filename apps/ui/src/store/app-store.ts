@@ -326,6 +326,7 @@ const initialState: AppState = {
   enableDependencyBlocking: true,
   skipVerificationInAutoMode: false,
   enableAiCommitMessages: true,
+  claudeBackendMode: "sdk",
   mergePostAction: null,
   planUseSelectedWorktreeBranch: true,
   addFeatureUseSelectedWorktreeBranch: false,
@@ -1280,6 +1281,15 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
       await httpApi.settings.updateGlobal({ enableAiCommitMessages: enabled });
     } catch (error) {
       logger.error("Failed to sync enableAiCommitMessages:", error);
+    }
+  },
+  setClaudeBackendMode: async (mode) => {
+    set({ claudeBackendMode: mode });
+    try {
+      const httpApi = getHttpApiClient();
+      await httpApi.settings.updateGlobal({ claudeBackendMode: mode });
+    } catch (error) {
+      logger.error("Failed to sync claudeBackendMode:", error);
     }
   },
   setMergePostAction: async (action) => {

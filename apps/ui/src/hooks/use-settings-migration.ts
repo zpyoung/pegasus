@@ -261,6 +261,9 @@ export function parseLocalStorageSettings(): Partial<GlobalSettings> | null {
       enableAiCommitMessages: state.enableAiCommitMessages as
         | boolean
         | undefined,
+      claudeBackendMode: state.claudeBackendMode as
+        | GlobalSettings["claudeBackendMode"]
+        | undefined,
       enableSkills: state.enableSkills as boolean | undefined,
       skillsSources: state.skillsSources as
         | GlobalSettings["skillsSources"]
@@ -890,6 +893,7 @@ export function hydrateStoreFromSettings(settings: GlobalSettings): void {
     knownDynamicModelIds: sanitizedKnownDynamicModelIds,
     disabledProviders: settings.disabledProviders ?? [],
     enableAiCommitMessages: settings.enableAiCommitMessages ?? true,
+    claudeBackendMode: settings.claudeBackendMode === "cli" ? "cli" : "sdk",
     enableSkills: settings.enableSkills ?? true,
     skillsSources: settings.skillsSources ?? ["user", "project"],
     enableSubagents: settings.enableSubagents ?? true,
@@ -1049,6 +1053,7 @@ function buildSettingsUpdateFromStore(): Record<string, unknown> {
     knownDynamicModelIds: state.knownDynamicModelIds,
     disabledProviders: state.disabledProviders,
     enableAiCommitMessages: state.enableAiCommitMessages,
+    claudeBackendMode: state.claudeBackendMode,
     enableSkills: state.enableSkills,
     skillsSources: state.skillsSources,
     enableSubagents: state.enableSubagents,

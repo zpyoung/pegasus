@@ -13,6 +13,7 @@ import type {
   FeatureStatusWithPipeline,
   MergeStateInfo,
   AgentQuestion,
+  ProviderUsageInfo,
 } from "@pegasus/types";
 export type { MergeStateInfo } from "@pegasus/types";
 
@@ -31,6 +32,7 @@ export interface Message {
   timestamp: string;
   isError?: boolean;
   images?: ImageAttachment[];
+  usage?: ProviderUsageInfo;
 }
 
 export interface ToolUse {
@@ -75,6 +77,7 @@ export type StreamEvent =
       messageId?: string;
       content: string;
       toolUses: ToolUse[];
+      usage?: ProviderUsageInfo;
     }
   | {
       type: "error";

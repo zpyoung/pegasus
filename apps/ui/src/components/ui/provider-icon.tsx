@@ -490,6 +490,7 @@ export const PROVIDER_ICON_COMPONENTS: Record<
   ComponentType<{ className?: string }>
 > = {
   claude: AnthropicIcon,
+  "claude-cli": AnthropicIcon,
   cursor: CursorIcon,
   codex: OpenAIIcon,
   opencode: OpenCodeIcon,

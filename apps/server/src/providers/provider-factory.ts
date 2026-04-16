@@ -13,6 +13,7 @@ import {
   isOpencodeModel,
   isGeminiModel,
   isCopilotModel,
+  isClaudeCliModel,
   type ModelProvider,
 } from "@pegasus/types";
 import * as fs from "fs";
@@ -20,6 +21,7 @@ import * as path from "path";
 
 const DISCONNECTED_MARKERS: Record<string, string> = {
   claude: ".claude-disconnected",
+  "claude-cli": ".claude-cli-disconnected",
   codex: ".codex-disconnected",
   cursor: ".cursor-disconnected",
   opencode: ".opencode-disconnected",
@@ -73,6 +75,28 @@ export function registerProvider(
 /** Cached mock provider instance when PEGASUS_MOCK_AGENT is set (E2E/CI). */
 let mockProviderInstance: BaseProvider | null = null;
 
+/**
+ * Backend mode for Claude models. When "cli", plain claude-* / opus / sonnet /
+ * haiku selections route to ClaudeCodeCliProvider instead of ClaudeProvider.
+ * The `cli-` model prefix always routes to the CLI regardless of this value.
+ *
+ * Updated by the settings layer via {@link ProviderFactory.setClaudeBackendMode}
+ * on server boot and whenever global settings change.
+ */
+let claudeBackendMode: "sdk" | "cli" = "sdk";
+
+/**
+ * If the resolved provider is plain "claude" and the user has selected the
+ * CLI backend mode, redirect to "claude-cli". The `cli-` prefix already routes
+ * to "claude-cli" via canHandleModel and is unaffected.
+ */
+function applyClaudeBackendMode(providerName: string): string {
+  if (claudeBackendMode === "cli" && providerName === "claude") {
+    return "claude-cli";
+  }
+  return providerName;
+}
+
 function getMockProvider(): BaseProvider {
   if (!mockProviderInstance) {
     mockProviderInstance = new MockProvider();
@@ -81,6 +105,19 @@ function getMockProvider(): BaseProvider {
 }
 
 export class ProviderFactory {
+  /**
+   * Set the Claude backend mode. Called by the settings layer on boot and
+   * whenever global settings change. See {@link claudeBackendMode}.
+   */
+  static setClaudeBackendMode(mode: "sdk" | "cli"): void {
+    claudeBackendMode = mode;
+  }
+
+  /** Get the current Claude backend mode (for diagnostics / tests). */
+  static getClaudeBackendMode(): "sdk" | "cli" {
+    return claudeBackendMode;
+  }
+
   /**
    * Determine which provider to use for a given model
    *
@@ -101,19 +138,19 @@ export class ProviderFactory {
     // Check each provider's canHandleModel function
     for (const [name, reg] of registrations) {
       if (reg.canHandleModel?.(lowerModel)) {
-        return name as ModelProvider;
+        return applyClaudeBackendMode(name) as ModelProvider;
       }
     }
 
     // Fallback: Check for explicit prefixes
     for (const [name] of registrations) {
       if (lowerModel.startsWith(`${name}-`)) {
-        return name as ModelProvider;
+        return applyClaudeBackendMode(name) as ModelProvider;
       }
     }
 
     // Default to claude (first registered provider or claude)
-    return "claude";
+    return applyClaudeBackendMode("claude") as ModelProvider;
   }
 
   /**
@@ -174,19 +211,19 @@ export class ProviderFactory {
     // Check each provider's canHandleModel function
     for (const [name, reg] of registrations) {
       if (reg.canHandleModel?.(lowerModel)) {
-        return name;
+        return applyClaudeBackendMode(name);
       }
     }
 
     // Fallback: Check for explicit prefixes
     for (const [name] of registrations) {
       if (lowerModel.startsWith(`${name}-`)) {
-        return name;
+        return applyClaudeBackendMode(name);
       }
     }
 
     // Default to claude (first registered provider or claude)
-    return "claude";
+    return applyClaudeBackendMode("claude");
   }
 
   /**
@@ -300,6 +337,7 @@ export class ProviderFactory {
 // Import providers for registration side-effects
 import { MockProvider } from "./mock-provider.js";
 import { ClaudeProvider } from "./claude-provider.js";
+import { ClaudeCodeCliProvider } from "./claude-cli-provider.js";
 import { CursorProvider } from "./cursor-provider.js";
 import { CodexProvider } from "./codex-provider.js";
 import { OpencodeProvider } from "./opencode-provider.js";
@@ -355,4 +393,13 @@ registerProvider("copilot", {
   aliases: ["github-copilot", "github"],
   canHandleModel: (model: string) => isCopilotModel(model),
   priority: 6, // High priority - check before Codex since both can handle GPT models
+});
+
+// Register Claude Code CLI provider
+// Priority 8: checked before Copilot (6) and well before Claude (0) to prevent
+// 'cli-' prefixed models from silently falling through to the SDK provider (design ADR-2)
+registerProvider("claude-cli", {
+  factory: () => new ClaudeCodeCliProvider(),
+  canHandleModel: (model: string) => isClaudeCliModel(model),
+  priority: 8,
 });

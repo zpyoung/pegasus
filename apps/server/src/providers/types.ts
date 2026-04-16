@@ -16,6 +16,8 @@ export type {
   McpHttpServerConfig,
   ContentBlock,
   ProviderMessage,
+  ProviderUsageInfo,
+  ClaudeCliSettings,
   InstallationStatus,
   ValidationResult,
   ModelDefinition,

@@ -183,8 +183,10 @@ export const queryKeys = {
   // CLI Status
   // ============================================
   cli: {
-    /** Claude CLI status */
+    /** Claude SDK provider status (legacy /claude-status route) */
     claude: () => ["cli", "claude"] as const,
+    /** Claude Code CLI provider status (/claude-cli-status route) */
+    claudeCli: () => ["cli", "claude-cli"] as const,
     /** Cursor CLI status */
     cursor: () => ["cli", "cursor"] as const,
     /** Codex CLI status */

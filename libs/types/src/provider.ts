@@ -232,6 +232,12 @@ export interface ExecuteOptions {
     additionalDirs?: string[];
     threadId?: string;
   };
+  /**
+   * Claude Code CLI-specific execution settings.
+   * Only meaningful when the selected model uses the `cli-` prefix (e.g., cli-sonnet).
+   * Ignored by all other providers.
+   */
+  claudeCliSettings?: ClaudeCliSettings;
   outputFormat?: {
     type: "json_schema";
     schema: Record<string, unknown>;
@@ -255,6 +261,100 @@ export interface ExecuteOptions {
    * When a profile/provider has apiKeySource='credentials', the Anthropic key from this object is used.
    */
   credentials?: Credentials;
+}
+
+/**
+ * Token usage information reported by the provider.
+ *
+ * Surfaces the token counts returned by Claude CLI's result events so that
+ * callers can track costs, enforce budgets, and expose usage in the UI.
+ * All fields are optional because not every provider / event will populate them.
+ */
+export interface ProviderUsageInfo {
+  /** Number of tokens in the input prompt */
+  inputTokens?: number;
+  /** Number of tokens in the generated output */
+  outputTokens?: number;
+  /** Tokens read from the prompt cache (reduces billable input tokens) */
+  cacheReadTokens?: number;
+  /** Tokens written to the prompt cache */
+  cacheCreationTokens?: number;
+  /** Total cost of the request in USD */
+  totalCostUsd?: number;
+  /** Total wall-clock duration of the request in milliseconds */
+  durationMs?: number;
+  /** API-only duration in milliseconds (excludes tool execution time) */
+  durationApiMs?: number;
+  /** Number of agent turns taken */
+  numTurns?: number;
+  /** Reason the response stopped (e.g., 'end_turn', 'max_tokens') */
+  stopReason?: string;
+  /** Terminal reason from CLI (e.g., 'success', 'error') */
+  terminalReason?: string;
+  /** Per-model breakdown for multi-model or fallback executions */
+  modelUsage?: Record<
+    string,
+    {
+      inputTokens: number;
+      outputTokens: number;
+      cacheReadInputTokens?: number;
+      cacheCreationInputTokens?: number;
+      costUSD?: number;
+    }
+  >;
+}
+
+/**
+ * Claude Code CLI-specific execution settings.
+ *
+ * Mirrors the `codexSettings` pattern in ExecuteOptions — collects flags that
+ * are unique to the `claude` CLI subprocess and have no equivalent in other
+ * providers.  All fields are optional so that callers only need to specify what
+ * they want to override from the CLI's own defaults.
+ */
+export interface ClaudeCliSettings {
+  /**
+   * Permission mode passed to `--permission-mode`.
+   * - 'default': Normal interactive mode (tools require approval).
+   * - 'plan': Read-only planning mode (no file writes).
+   * - 'acceptEdits': Auto-approve file edits without prompting.
+   * - 'bypassPermissions': Skip all permission checks (use with caution).
+   */
+  permissionMode?: "default" | "plan" | "acceptEdits" | "bypassPermissions";
+  /**
+   * Additional directories the subprocess is permitted to access.
+   * Maps to `--add-dir` flags on the CLI invocation.
+   */
+  additionalDirs?: string[];
+  /**
+   * Custom MCP config file path to pass via `--mcp-config`.
+   * When set alongside `ExecuteOptions.mcpServers`, this path takes precedence
+   * and the auto-generated temp file is skipped.
+   */
+  mcpConfigPath?: string;
+  /** Hard dollar cap per execution. Maps to `--max-budget-usd`. Print mode only. */
+  maxBudgetUsd?: number;
+  /** Auto-fallback model on overload. Maps to `--fallback-model`. Print mode only. */
+  fallbackModel?: string;
+  /** Human-readable session name for `--resume` lookup. Maps to `--name`. */
+  sessionName?: string;
+  /**
+   * Deterministic UUID for the session. Maps to `--session-id`.
+   * Mutually exclusive with `ExecuteOptions.sdkSessionId` (`--resume`).
+   * If both are set, `sdkSessionId` wins.
+   */
+  deterministicSessionId?: string;
+  /**
+   * Only use MCP servers from `--mcp-config`, ignore all others.
+   * Maps to `--strict-mcp-config`. Only applied when `mcpServers` are present.
+   */
+  strictMcpConfig?: boolean;
+  /**
+   * Stream watchdog idle timeout in milliseconds.
+   * Sets `CLAUDE_ENABLE_STREAM_WATCHDOG=1` and `CLAUDE_STREAM_IDLE_TIMEOUT_MS`.
+   * Set to 0 to disable. Undefined uses CLI's built-in default (90s).
+   */
+  streamWatchdogTimeoutMs?: number;
 }
 
 /**
@@ -292,6 +392,8 @@ export interface ProviderMessage {
   parent_tool_use_id?: string | null;
   /** Structured output from SDK when using outputFormat */
   structured_output?: Record<string, unknown>;
+  /** Token usage reported by the provider for this message (e.g., from CLI result events) */
+  usage?: ProviderUsageInfo;
 }
 
 /**
@@ -313,6 +415,11 @@ export interface InstallationStatus {
   hasApiKey?: boolean;
   hasOAuthToken?: boolean;
   authenticated?: boolean;
+  /**
+   * Three-state auth status for providers that can distinguish
+   * "not authenticated" from "unable to determine" (e.g., CLI errors).
+   */
+  authStatus?: "authenticated" | "not_authenticated" | "unknown";
   error?: string;
 }
 

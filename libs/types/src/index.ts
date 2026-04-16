@@ -21,6 +21,10 @@ export type {
   ReasoningEffort,
   // System prompt configuration for CLAUDE.md auto-loading
   SystemPromptPreset,
+  // Usage tracking
+  ProviderUsageInfo,
+  // Claude CLI settings
+  ClaudeCliSettings,
 } from "./provider.js";
 
 // Provider constants and utilities
@@ -326,6 +330,7 @@ export {
   isOpencodeModel,
   isGeminiModel,
   isCopilotModel,
+  isClaudeCliModel,
   getModelProvider,
   stripProviderPrefix,
   addProviderPrefix,

@@ -109,6 +109,7 @@ const SETTINGS_FIELDS_TO_SYNC = [
   "editorAutoSaveDelay",
   "defaultTerminalId",
   "enableAiCommitMessages",
+  "claudeBackendMode",
   "enableSkills",
   "skillsSources",
   "enableSubagents",
