@@ -8,6 +8,21 @@ This project was bootstrapped from an open-source upstream and has diverged
 substantially. The entries below describe changes relative to that upstream
 baseline.
 
+## [1.3.0] — 2026-04-14
+
+### ✨ Added
+
+- ✨ Add `preferredClaudeAuth` setting for Claude authentication preference — new `ClaudeAuthPreference` type (`auto` | `api_key` | `cli`) lets users force API key or CLI OAuth for the direct Anthropic provider; bumps `SETTINGS_VERSION` to 7 (`bc9f1ae`)
+
+### 🐛 Fixed
+
+- ⚡ Performance optimization waves 1-2 — Zustand selector discipline across views/settings/setup/hooks, incremental log parser with stable-prefix caching, bounded `AgentStreamStore` (50MB cap) as streaming buffer, bulk feature status endpoint collapsing 80+ per-card polls into 1 shared query, progress debounce 150ms → 500ms with RQ invalidation skipped during active streams (FPS 43→113, script −69%, heap −69%) (`aec9f59`)
+- ⚡ Realistic benchmark simulation with GPU capture and visual viewer — 10 concurrent agent streams with ~100K tokens/agent, GPU metrics via macOS powermetrics, HTML viewer (`pnpm test:perf:view`), 60-second measurement window, new `pnpm test:perf`, `test:perf:gpu`, and `test:perf:view` scripts (`27893bc`)
+- 🐛 Fix perf benchmark — replaced broken CDP Frames counter with rAF-based FPS loop, fixed worktree filtering so created features appear on the primary worktree, moved report output to a gitignored `perf/` directory (`fa6f93a`)
+- ⚡ Add performance benchmark tooling for baseline measurement — Playwright + CDP benchmark simulating 10 concurrent agent streams with FPS, heap, and CPU capture over 30s, plus `--compare` regression detection (`c7d06bb`)
+
+---
+
 ## [1.2.0] — 2026-04-13
 
 ### ✨ Added
@@ -171,6 +186,7 @@ baseline.
 
 ---
 
+[1.3.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.3.0
 [1.2.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.2.0
 [1.1.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.1.0
 [1.0.0]: https://github.com/zpyoung/pegasus/releases/tag/v1.0.0

@@ -11,6 +11,7 @@ import {
 } from "@pegasus/utils";
 import { type EventEmitter } from "../lib/events.js";
 import { execGitCommand } from "@pegasus/git-utils";
+import { attemptAutoFix, isPreCommitHookFailure } from "./merge-auto-fix.js";
 const logger = createLogger("MergeService");
 
 export interface MergeOptions {
@@ -19,6 +20,15 @@ export interface MergeOptions {
   deleteWorktreeAndBranch?: boolean;
   /** Remote name to fetch from before merging (defaults to 'origin') */
   remote?: string;
+  /**
+   * If true (default), invoke an AI agent to fix pre-commit hook failures
+   * (typecheck, lint, stale build artifacts) and retry the commit.
+   */
+  autoFix?: boolean;
+  /** Model to use for the auto-fix agent. Defaults to the Claude default. */
+  autoFixModel?: string;
+  /** Maximum auto-fix attempts before giving up (default 2). */
+  autoFixMaxAttempts?: number;
 }
 
 export interface MergeServiceResult {
@@ -219,16 +229,59 @@ async function mergeInWorktree(
     // locale, making text-based conflict detection reliable.
     await execGitCommand(mergeArgs, mergeDir, { LC_ALL: "C" });
   } catch (mergeError: unknown) {
-    return handleMergeError(mergeError, mergeDir, branchName, mergeTo, emitter);
+    return handleMergeError(
+      mergeError,
+      projectPath,
+      mergeDir,
+      branchName,
+      worktreePath,
+      mergeTo,
+      mergeMessage,
+      options,
+      emitter,
+    );
   }
 
   // If squash merge, need to commit (using safe array-based command)
   if (options?.squash) {
     const squashMessage = options?.message || `Merge ${branchName} (squash)`;
     try {
-      await execGitCommand(["commit", "-m", squashMessage], mergeDir);
+      await execGitCommand(["commit", "-m", squashMessage], mergeDir, {
+        LC_ALL: "C",
+      });
     } catch (commitError: unknown) {
-      const err = commitError as { message?: string };
+      const err = commitError as {
+        stdout?: string;
+        stderr?: string;
+        message?: string;
+      };
+      const commitOutput = `${err.stdout || ""} ${err.stderr || ""} ${err.message || ""}`;
+
+      // Try agent auto-fix if the pre-commit hook rejected this squash commit.
+      if ((options?.autoFix ?? true) && isPreCommitHookFailure(commitOutput)) {
+        const fix = await attemptAutoFix({
+          mergeDir,
+          branchName,
+          targetBranch: mergeTo,
+          errorOutput: commitOutput,
+          mergeMessage: squashMessage,
+          model: options?.autoFixModel,
+          maxAttempts: options?.autoFixMaxAttempts,
+          emitter,
+        });
+        if (fix.success) {
+          return postMergeCleanup(
+            projectPath,
+            branchName,
+            worktreePath,
+            mergeTo,
+            options,
+            emitter,
+          );
+        }
+        // Auto-fix didn't fix it — fall through to the error path below.
+      }
+
       emitter?.emit("merge:error", {
         branchName,
         targetBranch: mergeTo,
@@ -427,9 +480,13 @@ async function postMergeCleanup(
  */
 async function handleMergeError(
   mergeError: unknown,
+  projectPath: string,
   mergeDir: string,
   branchName: string,
+  worktreePath: string,
   mergeTo: string,
+  mergeMessage: string,
+  options: MergeOptions | undefined,
   emitter?: EventEmitter,
 ): Promise<MergeServiceResult> {
   // Check if this is a merge conflict.  We use a multi-layer strategy so
@@ -539,6 +596,44 @@ async function handleMergeError(
       error: `Merge CONFLICT: Automatic merge of "${branchName}" into "${mergeTo}" failed. Please resolve conflicts manually.`,
       hasConflicts: true,
       conflictFiles,
+    };
+  }
+
+  // Pre-commit hook failure path: merge succeeded textually but the commit
+  // was rejected by a hook (typecheck, lint, etc.). If auto-fix is enabled,
+  // dispatch an agent to repair the working tree and retry the commit.
+  if ((options?.autoFix ?? true) && isPreCommitHookFailure(output)) {
+    const fix = await attemptAutoFix({
+      mergeDir,
+      branchName,
+      targetBranch: mergeTo,
+      errorOutput: output,
+      mergeMessage,
+      model: options?.autoFixModel,
+      maxAttempts: options?.autoFixMaxAttempts,
+      emitter,
+    });
+    if (fix.success) {
+      return postMergeCleanup(
+        projectPath,
+        branchName,
+        worktreePath,
+        mergeTo,
+        options,
+        emitter,
+      );
+    }
+
+    // Auto-fix did not resolve it — surface as a standard merge error so the
+    // client sees the same failure it would have seen without auto-fix.
+    emitter?.emit("merge:error", {
+      branchName,
+      targetBranch: mergeTo,
+      error: fix.error || err.message || String(mergeError),
+    });
+    return {
+      success: false,
+      error: fix.error || err.message || String(mergeError),
     };
   }
 

@@ -20,6 +20,12 @@ vi.mock("@pegasus/utils", () => ({
   isValidRemoteName: (name: string) => /^[a-zA-Z0-9._-]+$/.test(name),
 }));
 
+// Mock simple-query-service so auto-fix doesn't hit the real provider
+const mockStreamingQuery = vi.fn();
+vi.mock("../../../src/providers/simple-query-service.js", () => ({
+  streamingQuery: (...args: unknown[]) => mockStreamingQuery(...args),
+}));
+
 describe("merge-service", () => {
   const projectPath = "/test/project";
   const branchName = "feature/my-branch";
@@ -332,6 +338,127 @@ describe("merge-service", () => {
           call[0][1] === "remove",
       );
       expect(worktreeRemoveCalls).toHaveLength(0);
+    });
+  });
+
+  describe("auto-fix for pre-commit hook failures", () => {
+    const preCommitError = [
+      "husky - pre-commit script failed (code 2)",
+      "error TS2305: Module has no exported member 'Foo'.",
+    ].join("\n");
+
+    it("invokes agent and retries commit when pre-commit hook fails", async () => {
+      let mergeCallCount = 0;
+      mockExecGitCommand.mockImplementation((args: string[]) => {
+        if (args[0] === "worktree" && args[1] === "list") {
+          return Promise.resolve(defaultWorktreeList);
+        }
+        if (args[0] === "merge" && args[1] !== "--abort") {
+          mergeCallCount += 1;
+          if (mergeCallCount === 1) {
+            const err = new Error(preCommitError);
+            (err as Record<string, unknown>).stderr = preCommitError;
+            throw err;
+          }
+          return Promise.resolve("");
+        }
+        if (args[0] === "commit") return Promise.resolve("");
+        return Promise.resolve("");
+      });
+
+      mockStreamingQuery.mockResolvedValue({ text: "fixed" });
+
+      const result = await performMerge(
+        projectPath,
+        branchName,
+        worktreePath,
+        targetBranch,
+        undefined,
+        mockEmitter as never,
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockStreamingQuery).toHaveBeenCalledTimes(1);
+      expect(mockStreamingQuery.mock.calls[0][0].cwd).toBe(projectPath);
+      const commitCalls = mockExecGitCommand.mock.calls.filter(
+        (call: unknown[]) => Array.isArray(call[0]) && call[0][0] === "commit",
+      );
+      expect(commitCalls.length).toBeGreaterThanOrEqual(1);
+
+      expect(mockEmitter.emit).toHaveBeenCalledWith(
+        "merge:auto-fix-start",
+        expect.any(Object),
+      );
+      expect(mockEmitter.emit).toHaveBeenCalledWith(
+        "merge:auto-fix-success",
+        expect.any(Object),
+      );
+    });
+
+    it("skips auto-fix when autoFix option is false", async () => {
+      mockExecGitCommand.mockImplementation((args: string[]) => {
+        if (args[0] === "worktree" && args[1] === "list") {
+          return Promise.resolve(defaultWorktreeList);
+        }
+        if (args[0] === "merge" && args[1] !== "--abort") {
+          const err = new Error(preCommitError);
+          (err as Record<string, unknown>).stderr = preCommitError;
+          throw err;
+        }
+        return Promise.resolve("");
+      });
+
+      mockStreamingQuery.mockResolvedValue({ text: "fixed" });
+
+      await expect(
+        performMerge(
+          projectPath,
+          branchName,
+          worktreePath,
+          targetBranch,
+          { autoFix: false },
+          mockEmitter as never,
+        ),
+      ).rejects.toThrow();
+
+      expect(mockStreamingQuery).not.toHaveBeenCalled();
+    });
+
+    it("gives up after maxAttempts and returns failure", async () => {
+      mockExecGitCommand.mockImplementation((args: string[]) => {
+        if (args[0] === "worktree" && args[1] === "list") {
+          return Promise.resolve(defaultWorktreeList);
+        }
+        if (args[0] === "merge" && args[1] !== "--abort") {
+          const err = new Error(preCommitError);
+          (err as Record<string, unknown>).stderr = preCommitError;
+          throw err;
+        }
+        if (args[0] === "commit") {
+          const err = new Error(preCommitError);
+          (err as Record<string, unknown>).stderr = preCommitError;
+          throw err;
+        }
+        return Promise.resolve("");
+      });
+
+      mockStreamingQuery.mockResolvedValue({ text: "couldn't fix" });
+
+      const result = await performMerge(
+        projectPath,
+        branchName,
+        worktreePath,
+        targetBranch,
+        { autoFixMaxAttempts: 2 },
+        mockEmitter as never,
+      );
+
+      expect(result.success).toBe(false);
+      expect(mockStreamingQuery).toHaveBeenCalledTimes(2);
+      expect(mockEmitter.emit).toHaveBeenCalledWith(
+        "merge:auto-fix-failed",
+        expect.any(Object),
+      );
     });
   });
 
